@@ -7,10 +7,10 @@ practice flow (FSRS scheduling with hybrid grading), and the dashboard.
 ## Development
 
 ```sh
-just dev-env-generate   # compose .env.local from config/ + secrets/
-just dev-db-start       # start the dev Postgres container
-bun run dev             # vite dev server on http://localhost:3000
+just dev
 ```
+
+`just dev` composes every `.env.local`, starts the local PostgreSQL container, runs `bun --cwd packages/db run db:migrate`, and starts the Vite server at `http://localhost:3000`. The migration step finishes successfully before the app process starts, so a fresh checkout never serves against an empty schema.
 
 ## Configuration
 
@@ -53,6 +53,8 @@ entries; importing writes entries, textbook examples, accepted answers (both
 directions, normalized via `src/shared/grading/normalize.ts`), two FSRS
 cards per entry, and best-effort Polly audio under
 `WORDHOLD_DATA_DIR/audio/`.
+
+Uploads accept JPEG, PNG, and WebP images up to 12 MiB, 12,000 pixels per side, and 40 million pixels total. Wordhold reads the format and dimensions from the file bytes instead of trusting the browser MIME declaration. Each verified page accepts at most 100 entries, and one import can make at most 50 Polly calls. Before new page or audio writes, storage reconciliation removes generated files older than 24 hours only when no page or audio row references them. This clears crash leftovers without touching recent in-flight writes or unrelated files.
 
 ## Practice flow
 

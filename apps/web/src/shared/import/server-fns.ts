@@ -2,12 +2,14 @@ import { createServerFn } from '@tanstack/react-start';
 import type { ExtractionResult } from '@wordhold/ai/extraction';
 import { courses } from '@wordhold/db/schema/courses';
 import { pages } from '@wordhold/db/schema/pages';
-import { asc, eq } from 'drizzle-orm';
+import { and, asc, eq, sql } from 'drizzle-orm';
 import { requireSession } from '../auth/require-session';
 import { db } from '../db/server';
 import { readDataFile, toBase64 } from '../storage/server';
 import { requireString } from '../validate/input';
+import { listOrSeedCourses } from './course-seeding';
 import { mimeForPath, runExtraction } from './extract';
+import { retryPendingExtraction } from './extraction-retry';
 
 // The three courses exist from day one; seeding on first read keeps setup
 // at zero steps. Names can be edited in the database once textbooks are
@@ -20,14 +22,22 @@ const seedCourses = [
 
 export const listCourses = createServerFn().handler(async () => {
   await requireSession();
-  const existing = await db.select().from(courses).orderBy(asc(courses.name));
-  if (existing.length > 0) {
-    return existing;
-  }
-  return db
-    .insert(courses)
-    .values(seedCourses.map((course) => ({ ...course })))
-    .returning();
+  return listOrSeedCourses<typeof courses.$inferSelect>({
+    withCriticalSection: async (work) =>
+      db.transaction(async (tx) => {
+        await tx.execute(
+          sql`select pg_advisory_xact_lock(hashtextextended('wordhold:seed-courses', 0))`,
+        );
+        return work({
+          list: () => tx.select().from(courses).orderBy(asc(courses.name)),
+          insertSeeds: () =>
+            tx
+              .insert(courses)
+              .values(seedCourses.map((course) => ({ ...course })))
+              .returning(),
+        });
+      }),
+  });
 });
 
 export const getCourse = createServerFn()
@@ -87,31 +97,40 @@ export const retryExtraction = createServerFn({ method: 'POST' })
   .validator(requireString)
   .handler(async ({ data }) => {
     await requireSession();
-    const [row] = await db
-      .select()
-      .from(pages)
-      .innerJoin(courses, eq(pages.courseId, courses.id))
-      .where(eq(pages.id, data));
-    if (row === undefined) {
-      throw new Error('Seite nicht gefunden.');
-    }
-    const bytes = await readDataFile(row.pages.imagePath);
-    const result = await runExtraction({
-      imageBase64: toBase64(bytes),
-      mediaType: mimeForPath(row.pages.imagePath),
-      language: row.courses.targetLanguage,
+    const updated = await retryPendingExtraction({
+      loadPending: async () => {
+        const [row] = await db
+          .select()
+          .from(pages)
+          .innerJoin(courses, eq(pages.courseId, courses.id))
+          .where(
+            and(eq(pages.id, data), eq(pages.status, 'awaiting_verification')),
+          );
+        if (row === undefined) {
+          return;
+        }
+        const bytes = await readDataFile(row.pages.imagePath);
+        return {
+          imageBase64: toBase64(bytes),
+          mediaType: mimeForPath(row.pages.imagePath),
+          language: row.courses.targetLanguage,
+        };
+      },
+      extract: runExtraction,
+      saveIfPending: async (result) => {
+        const [saved] = await db
+          .update(pages)
+          .set({
+            extraction: result,
+            label: sql`coalesce(${pages.label}, ${result.page.pageLabel ?? null})`,
+          })
+          .where(
+            and(eq(pages.id, data), eq(pages.status, 'awaiting_verification')),
+          )
+          .returning();
+        return saved;
+      },
     });
-    const [updated] = await db
-      .update(pages)
-      .set({
-        extraction: result,
-        label: row.pages.label ?? result.page.pageLabel ?? null,
-      })
-      .where(eq(pages.id, data))
-      .returning();
-    if (updated === undefined) {
-      throw new Error('Seite nicht gefunden.');
-    }
     return {
       ...updated,
       extraction: updated.extraction as ExtractionResult | null,

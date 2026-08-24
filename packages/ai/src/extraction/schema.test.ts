@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'bun:test';
 import { Schema } from 'effect';
-import { ExtractedPage } from './schema';
+import {
+  ExtractedPage,
+  maximumEntriesPerPage,
+  maximumEntryTextLength,
+} from './schema';
 
 const decode = Schema.decodeUnknownSync(ExtractedPage);
 
@@ -45,6 +49,36 @@ describe('ExtractedPage', () => {
             targetText: 'x',
             nativeText: 'y',
             confidence: 0.5,
+          },
+        ],
+      }),
+    ).toThrow();
+  });
+
+  it('rejects more entries than one verification page can accept', () => {
+    expect(() =>
+      decode({
+        overallConfidence: 1,
+        entries: Array.from({ length: maximumEntriesPerPage + 1 }, () => ({
+          type: 'word',
+          targetText: 'x',
+          nativeText: 'y',
+          confidence: 1,
+        })),
+      }),
+    ).toThrow();
+  });
+
+  it('rejects extracted fields over the verified-field limit', () => {
+    expect(() =>
+      decode({
+        overallConfidence: 1,
+        entries: [
+          {
+            type: 'word',
+            targetText: 'x'.repeat(maximumEntryTextLength + 1),
+            nativeText: 'y',
+            confidence: 1,
           },
         ],
       }),

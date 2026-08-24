@@ -1,3 +1,7 @@
+import {
+  maximumEntriesPerPage,
+  maximumLabelLength,
+} from '@wordhold/ai/extraction/schema';
 import { useState } from 'react';
 import { type DraftEntry, EntryRow } from './entry-row';
 
@@ -35,6 +39,7 @@ export const VerifyForm = ({
 
   return (
     <form
+      aria-busy={busy}
       className="flex flex-col gap-4"
       onSubmit={(event) => {
         event.preventDefault();
@@ -45,6 +50,8 @@ export const VerifyForm = ({
         Seitenbezeichnung
         <input
           className="rounded border border-neutral-300 px-2 py-1.5"
+          disabled={busy}
+          maxLength={maximumLabelLength}
           onChange={(event) => setLabel(event.target.value)}
           placeholder="z. B. Unité 3, Seite 42"
           value={label}
@@ -53,6 +60,7 @@ export const VerifyForm = ({
       <ul className="flex flex-col gap-3">
         {draftEntries.map((entry, index) => (
           <EntryRow
+            disabled={busy}
             entry={entry}
             // biome-ignore lint/suspicious/noArrayIndexKey: rows are positional edits of one page
             key={index}
@@ -73,6 +81,7 @@ export const VerifyForm = ({
       <div className="flex items-center gap-3">
         <button
           className="rounded border border-neutral-300 px-3 py-1.5 text-sm"
+          disabled={busy || draftEntries.length >= maximumEntriesPerPage}
           onClick={() => setDraftEntries([...draftEntries, emptyEntry])}
           type="button"
         >

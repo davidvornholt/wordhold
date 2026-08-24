@@ -1,4 +1,8 @@
 import type { GrammarInfo } from '@wordhold/ai/extraction/schema';
+import {
+  maximumEntryTextLength,
+  maximumExampleLength,
+} from '@wordhold/ai/extraction/schema';
 import type { EntryType } from '@wordhold/db/schema/entries';
 
 export type DraftEntry = {
@@ -41,6 +45,7 @@ const grammarSummary = (grammar: GrammarInfo): string => {
 
 type EntryRowProps = {
   readonly entry: DraftEntry;
+  readonly disabled: boolean;
   readonly targetLabel: string;
   readonly onChange: (entry: DraftEntry) => void;
   readonly onRemove: () => void;
@@ -48,6 +53,7 @@ type EntryRowProps = {
 
 export const EntryRow = ({
   entry,
+  disabled,
   targetLabel,
   onChange,
   onRemove,
@@ -66,6 +72,7 @@ export const EntryRow = ({
         <select
           aria-label="Typ"
           className="rounded border border-neutral-300 px-2 py-1.5 text-sm"
+          disabled={disabled}
           onChange={(event) =>
             onChange({ ...entry, type: event.target.value as EntryType })
           }
@@ -82,6 +89,7 @@ export const EntryRow = ({
         ) : null}
         <button
           className="ml-auto text-neutral-500 text-sm underline"
+          disabled={disabled}
           onClick={onRemove}
           type="button"
         >
@@ -92,6 +100,8 @@ export const EntryRow = ({
         <input
           aria-label={targetLabel}
           className={inputClass}
+          disabled={disabled}
+          maxLength={maximumEntryTextLength}
           onChange={(event) =>
             onChange({ ...entry, targetText: event.target.value })
           }
@@ -101,6 +111,8 @@ export const EntryRow = ({
         <input
           aria-label="Deutsch"
           className={inputClass}
+          disabled={disabled}
+          maxLength={maximumEntryTextLength}
           onChange={(event) =>
             onChange({ ...entry, nativeText: event.target.value })
           }
@@ -111,6 +123,8 @@ export const EntryRow = ({
       <input
         aria-label="Beispielsatz"
         className={inputClass}
+        disabled={disabled}
+        maxLength={maximumExampleLength}
         onChange={(event) =>
           onChange({ ...entry, example: event.target.value })
         }

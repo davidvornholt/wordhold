@@ -55,6 +55,7 @@ const CaptureScreen = () => {
           accept="image/jpeg,image/png,image/webp"
           capture="environment"
           className="rounded border border-neutral-300 p-2 text-sm"
+          disabled={busy}
           name="image"
           required={true}
           type="file"
