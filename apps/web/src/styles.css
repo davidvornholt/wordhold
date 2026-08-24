@@ -8,6 +8,9 @@
 @import "@wordhold/ui/themes/heirloom.css";
 @import "@wordhold/ui/themes/warm-print.css";
 
+@source "./**/*.{ts,tsx}";
+@source "../a11y/**/*.{ts,tsx}";
+
 /*
  * Map the semantic theme tokens (set by the .theme-* wrapper classes) to
  * Tailwind utilities: bg-background, text-foreground, font-display, etc.

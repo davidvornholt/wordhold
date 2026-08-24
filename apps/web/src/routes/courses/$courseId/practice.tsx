@@ -1,8 +1,15 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { getCourse } from '../../../features/import/server-fns';
-import { getPracticeSession } from '../../../features/practice/services/server-fns';
+import {
+  getPracticeSession,
+  submitAnswer,
+} from '../../../features/practice/services/server-fns';
 import { CardPractice } from '../../../features/practice/ui/card-practice';
+import {
+  PracticeEmpty,
+  PracticeLayout,
+} from '../../../features/practice/ui/practice-layout';
 import { germanLabels } from '../../../shared/languages';
 
 const PracticeScreen = () => {
@@ -13,27 +20,25 @@ const PracticeScreen = () => {
   const item = session.items.at(index);
 
   return (
-    <main className="mx-auto flex max-w-lg flex-col gap-4 p-6">
-      <Link className="text-neutral-500 text-sm underline" to="/">
-        ← Übersicht
-      </Link>
-      <h1 className="font-semibold text-2xl">{course.name}: Üben</h1>
+    <PracticeLayout
+      backControl={
+        <Link className="text-neutral-500 text-sm underline" to="/">
+          ← Übersicht
+        </Link>
+      }
+      courseName={course.name}
+    >
       {item === undefined ? (
-        <div className="flex flex-col gap-3 rounded-lg border border-neutral-200 p-6">
-          <p className="font-medium">
-            {session.items.length === 0
-              ? 'Gerade ist nichts fällig.'
-              : 'Sitzung abgeschlossen!'}
-          </p>
-          {session.items.length === 0 ? null : (
-            <p className="text-sm">
-              {stats.correct} richtig, {stats.wrong} falsch.
-            </p>
-          )}
-          <Link className="text-sm underline" to="/">
-            Zurück zur Übersicht
-          </Link>
-        </div>
+        <PracticeEmpty
+          backControl={
+            <Link className="text-sm underline" to="/">
+              Zurück zur Übersicht
+            </Link>
+          }
+          correct={stats.correct}
+          initialSession={session.items.length === 0}
+          wrong={stats.wrong}
+        />
       ) : (
         <CardPractice
           item={item}
@@ -49,11 +54,12 @@ const PracticeScreen = () => {
             setIndex(index + 1);
           }}
           position={index + 1}
+          submit={submitAnswer}
           targetLabel={germanLabels[course.targetLanguage]}
           total={session.items.length}
         />
       )}
-    </main>
+    </PracticeLayout>
   );
 };
 

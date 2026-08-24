@@ -43,6 +43,9 @@ export const VerifyForm = ({
       className="flex flex-col gap-4"
       onSubmit={(event) => {
         event.preventDefault();
+        if (busy) {
+          return;
+        }
         onSubmit(label, complete);
       }}
     >

@@ -1,93 +1,87 @@
-import { FixtureShell } from './fixture-shell';
+import { HomeShell } from '../src/app/home-shell';
+import { CourseGrid } from '../src/features/dashboard/ui/course-grid';
+import { FragileList } from '../src/features/dashboard/ui/fragile-list';
+import { PendingPages } from '../src/features/import/ui/pending-pages';
 import { navigateToFixture } from './fixture-state';
 
-export const SignedOutFixture = () => (
-  <FixtureShell signedIn={false}>
-    <div className="flex flex-col items-start gap-4">
-      <p className="text-neutral-600 text-sm">
-        Melde dich an, um deine Kurse zu sehen.
-      </p>
-      <button
-        className="rounded bg-neutral-900 px-4 py-2 text-sm text-white"
-        onClick={() => navigateToFixture('dashboard')}
-        type="button"
-      >
-        Mit GitHub anmelden
-      </button>
-    </div>
-  </FixtureShell>
+const course = {
+  id: '00000000-0000-0000-0000-000000000001',
+  name: 'English A2',
+  targetLanguage: 'en' as const,
+};
+const fixtureReviewsToday = 7;
+const fixtureDue = 4;
+const fixtureFresh = 2;
+const fixtureWords = 18;
+
+const navigation = (
+  <>
+    <a className="text-neutral-400 text-xs underline" href="/bake/heirloom">
+      Bake-off: Heirloom
+    </a>
+    <a className="text-neutral-400 text-xs underline" href="/bake/warm-print">
+      Bake-off: Warm Print
+    </a>
+  </>
 );
 
-const CourseFixture = ({ empty = false }: { readonly empty?: boolean }) => (
-  <li className="flex flex-col gap-3 rounded-lg border border-neutral-200 p-4">
-    <div>
-      <span className="font-medium">English A2</span>
-      <p className="text-neutral-500 text-xs">Englisch</p>
-    </div>
-    {empty ? (
-      <p className="text-neutral-500 text-sm">
-        Noch keine Wörter – fotografiere die erste Seite.
-      </p>
-    ) : (
-      <p className="flex items-baseline gap-1 text-sm">
-        <span className="font-semibold text-2xl">4</span>
-        <span>fällig</span>
-        <span className="text-neutral-500">· 2 neu · 18 Wörter</span>
-      </p>
-    )}
-    <div className="mt-auto flex gap-4">
-      {empty ? null : (
-        <button
-          className="font-medium text-sm underline"
-          onClick={() => navigateToFixture('practice')}
-          type="button"
-        >
-          Üben
-        </button>
-      )}
-      <button
-        className="text-sm underline"
-        onClick={() => navigateToFixture('import')}
-        type="button"
-      >
-        Seite fotografieren
-      </button>
-    </div>
-  </li>
+const action = (label: string, destination: 'import' | 'practice') => (
+  <button
+    className="text-sm underline"
+    onClick={() => navigateToFixture(destination)}
+    type="button"
+  >
+    {label}
+  </button>
+);
+
+export const SignedOutFixture = () => (
+  <HomeShell
+    navigation={navigation}
+    onSignIn={() => navigateToFixture('dashboard')}
+    onSignOut={() => undefined}
+    signedIn={false}
+  >
+    {null}
+  </HomeShell>
 );
 
 export const DashboardFixture = ({ empty = false }) => (
-  <FixtureShell>
-    <section className="flex flex-col gap-3">
-      <div className="flex items-baseline justify-between">
-        <h2 className="font-medium text-lg">Kurse</h2>
-        {empty ? null : (
-          <p className="text-neutral-500 text-sm">Heute 7 Antworten geübt.</p>
-        )}
-      </div>
-      <ul className="grid gap-3 sm:grid-cols-3">
-        <CourseFixture empty={empty} />
-      </ul>
-    </section>
-    {empty ? null : (
-      <section className="flex flex-col gap-3">
-        <h2 className="font-medium text-lg">Noch unsichere Wörter</h2>
-        <ul className="flex flex-col gap-2">
-          <li className="flex items-baseline justify-between gap-4 rounded-lg border border-neutral-200 p-3">
-            <div>
-              <p className="font-medium">memory</p>
-              <p className="text-neutral-500 text-sm">Erinnerung</p>
-            </div>
-            <p className="text-neutral-500 text-sm">2 Fehler · English A2</p>
-          </li>
-        </ul>
-      </section>
-    )}
-    <section className="flex flex-col gap-3">
-      <h2 className="font-medium text-lg">Seiten zur Überprüfung</h2>
-      <p className="text-neutral-500 text-sm">
-        Keine Seiten warten auf Überprüfung.
-      </p>
-    </section>
-  </FixtureShell>
+  <HomeShell
+    navigation={navigation}
+    onSignIn={() => undefined}
+    onSignOut={() => navigateToFixture('signed-out')}
+    signedIn={true}
+  >
+    <CourseGrid
+      courses={[course]}
+      renderImportAction={() => action('Seite fotografieren', 'import')}
+      renderPracticeAction={() => action('Üben', 'practice')}
+      reviewsToday={empty ? 0 : fixtureReviewsToday}
+      stats={[
+        {
+          courseId: course.id,
+          due: empty ? 0 : fixtureDue,
+          fresh: empty ? 0 : fixtureFresh,
+          words: empty ? 0 : fixtureWords,
+        },
+      ]}
+    />
+    <FragileList
+      words={
+        empty
+          ? []
+          : [
+              {
+                entryId: '00000000-0000-0000-0000-000000000002',
+                targetText: 'memory',
+                nativeText: 'Erinnerung',
+                courseName: 'English A2',
+                failures: 2,
+              },
+            ]
+      }
+    />
+    <PendingPages pages={[]} renderPageAction={() => null} />
+  </HomeShell>
 );

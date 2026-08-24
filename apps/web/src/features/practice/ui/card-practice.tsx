@@ -1,7 +1,10 @@
 import { type SubmitEvent, useState } from 'react';
-import type { PracticeSession } from '../services/practice-service';
-import { submitAnswer } from '../services/server-fns';
-import { FeedbackPanel, type SubmitResult } from './feedback-panel';
+import type { SubmitPayloadData } from '../schemas/submission-schema';
+import type {
+  PracticeSession,
+  SubmitResult,
+} from '../services/practice-service';
+import { FeedbackPanel } from './feedback-panel';
 
 type SessionItem = PracticeSession['items'][number];
 
@@ -10,6 +13,9 @@ type CardPracticeProps = {
   readonly position: number;
   readonly total: number;
   readonly targetLabel: string;
+  readonly submit: (input: {
+    readonly data: SubmitPayloadData;
+  }) => Promise<SubmitResult>;
   // Called with the grading result: true/false when graded, null when the
   // judge was unreachable and the card stayed untouched.
   readonly onNext: (correct: boolean | null) => void;
@@ -22,6 +28,7 @@ export const CardPractice = ({
   position,
   total,
   targetLabel,
+  submit,
   onNext,
 }: CardPracticeProps) => {
   const [answer, setAnswer] = useState('');
@@ -42,7 +49,7 @@ export const CardPractice = ({
     setBusy(true);
     setError(null);
     try {
-      const submitted = await submitAnswer({
+      const submitted = await submit({
         data: {
           cardId: item.cardId,
           revision: item.revision,
@@ -79,6 +86,7 @@ export const CardPractice = ({
         onSubmit={onSubmit}
       >
         <input
+          aria-label="Deine Antwort"
           autoCapitalize="off"
           autoComplete="off"
           autoCorrect="off"

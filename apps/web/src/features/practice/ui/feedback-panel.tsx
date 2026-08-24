@@ -1,6 +1,4 @@
-import type { submitAnswer } from '../services/server-fns';
-
-export type SubmitResult = Awaited<ReturnType<typeof submitAnswer>>;
+import type { SubmitResult } from '../services/practice-service';
 
 type FeedbackPanelProps = {
   readonly result: SubmitResult;

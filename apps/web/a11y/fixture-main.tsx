@@ -1,5 +1,4 @@
 import { createRoot } from 'react-dom/client';
-import '../src/styles.css';
 import { FixtureApp } from './fixture-app';
 
 const root = document.querySelector('#root');

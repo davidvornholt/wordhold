@@ -1,0 +1,54 @@
+import type { LanguageCode } from '@wordhold/db/schema/courses';
+import type { ReactNode } from 'react';
+import { CourseCard } from './course-card';
+
+type Course = {
+  readonly id: string;
+  readonly name: string;
+  readonly targetLanguage: LanguageCode;
+};
+
+type CourseStats = {
+  readonly courseId: string;
+  readonly due: number;
+  readonly fresh: number;
+  readonly words: number;
+};
+
+type CourseGridProps = {
+  readonly courses: ReadonlyArray<Course>;
+  readonly stats: ReadonlyArray<CourseStats>;
+  readonly reviewsToday: number;
+  readonly renderPracticeAction: (course: Course) => ReactNode;
+  readonly renderImportAction: (course: Course) => ReactNode;
+};
+
+export const CourseGrid = ({
+  courses,
+  stats,
+  reviewsToday,
+  renderPracticeAction,
+  renderImportAction,
+}: CourseGridProps) => (
+  <section className="flex flex-col gap-3">
+    <div className="flex items-baseline justify-between">
+      <h2 className="font-medium text-lg">Kurse</h2>
+      {reviewsToday > 0 ? (
+        <p className="text-neutral-500 text-sm">
+          Heute {reviewsToday} Antworten geübt.
+        </p>
+      ) : null}
+    </div>
+    <ul className="grid gap-3 sm:grid-cols-3">
+      {courses.map((course) => (
+        <CourseCard
+          course={course}
+          importAction={renderImportAction(course)}
+          key={course.id}
+          practiceAction={renderPracticeAction(course)}
+          stats={stats.find((item) => item.courseId === course.id)}
+        />
+      ))}
+    </ul>
+  </section>
+);

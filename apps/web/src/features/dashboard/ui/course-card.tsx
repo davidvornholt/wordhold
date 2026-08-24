@@ -1,5 +1,5 @@
-import { Link } from '@tanstack/react-router';
 import type { LanguageCode } from '@wordhold/db/schema/courses';
+import type { ReactNode } from 'react';
 import { germanLabels } from '../../../shared/languages';
 
 type CourseCardProps = {
@@ -11,9 +11,16 @@ type CourseCardProps = {
   readonly stats:
     | { readonly due: number; readonly fresh: number; readonly words: number }
     | undefined;
+  readonly practiceAction: ReactNode;
+  readonly importAction: ReactNode;
 };
 
-export const CourseCard = ({ course, stats }: CourseCardProps) => {
+export const CourseCard = ({
+  course,
+  stats,
+  practiceAction,
+  importAction,
+}: CourseCardProps) => {
   const due = stats?.due ?? 0;
   const fresh = stats?.fresh ?? 0;
   const words = stats?.words ?? 0;
@@ -39,22 +46,8 @@ export const CourseCard = ({ course, stats }: CourseCardProps) => {
         </p>
       )}
       <div className="mt-auto flex gap-4">
-        {due + fresh > 0 ? (
-          <Link
-            className="font-medium text-sm underline"
-            params={{ courseId: course.id }}
-            to="/courses/$courseId/practice"
-          >
-            Üben
-          </Link>
-        ) : null}
-        <Link
-          className="text-sm underline"
-          params={{ courseId: course.id }}
-          to="/courses/$courseId/import"
-        >
-          Seite fotografieren
-        </Link>
+        {due + fresh > 0 ? practiceAction : null}
+        {importAction}
       </div>
     </li>
   );

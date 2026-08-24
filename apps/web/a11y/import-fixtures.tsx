@@ -1,8 +1,11 @@
-import { type SubmitEvent, useState } from 'react';
+import { useRef, useState } from 'react';
 import { AudioRecovery } from '../src/features/import/ui/audio-recovery';
+import { CaptureScreen } from '../src/features/import/ui/capture-screen';
+import type { DraftEntry } from '../src/features/import/ui/entry-row';
+import { VerifyForm } from '../src/features/import/ui/verify-form';
 import { navigateToFixture } from './fixture-state';
 
-const BackButton = () => (
+const backControl = (
   <button
     className="text-neutral-500 text-sm underline"
     onClick={() => navigateToFixture('dashboard')}
@@ -12,57 +15,43 @@ const BackButton = () => (
   </button>
 );
 
-export const ImportFixture = ({ error = false }) => {
-  const [busy, setBusy] = useState(false);
-  const submit = (event: SubmitEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setBusy(true);
-    navigateToFixture('verification');
-  };
-  return (
-    <main className="mx-auto flex max-w-lg flex-col gap-4 p-6">
-      <BackButton />
-      <h1 className="font-semibold text-2xl">English A2: Seite erfassen</h1>
-      <p className="text-neutral-600 text-sm">
-        Fotografiere die Vokabelseite oder wähle ein vorhandenes Foto. Nach dem
-        Hochladen liest Wordhold die Einträge aus; du prüfst sie, bevor etwas
-        importiert wird.
-      </p>
-      <form className="flex flex-col gap-4" onSubmit={submit}>
-        <label className="flex flex-col gap-1 text-sm">
-          Foto der Vokabelseite
-          <input
-            accept="image/jpeg,image/png,image/webp"
-            className="rounded border border-neutral-300 p-2 text-sm"
-            disabled={busy}
-            name="image"
-            required={true}
-            type="file"
-          />
-        </label>
-        <button
-          className="rounded bg-neutral-900 px-4 py-2 text-sm text-white disabled:opacity-50"
-          disabled={busy}
-          type="submit"
-        >
-          {busy ? 'Wird gelesen …' : 'Hochladen und auslesen'}
-        </button>
-      </form>
-      {error ? (
-        <p className="text-red-700 text-sm" role="alert">
-          Das Foto konnte nicht gelesen werden. Wähle eine andere Datei.
-        </p>
-      ) : null}
-    </main>
-  );
+const initialEntries: ReadonlyArray<DraftEntry> = [
+  {
+    type: 'word',
+    targetText: 'memory',
+    nativeText: 'Erinnerung',
+    example: 'A lasting memory.',
+  },
+];
+
+export const ImportFixture = ({ error = false }) => (
+  <CaptureScreen
+    backControl={backControl}
+    busy={false}
+    courseName="English A2"
+    error={
+      error
+        ? 'Das Foto konnte nicht gelesen werden. Wähle eine andere Datei.'
+        : null
+    }
+    onSubmit={(event) => {
+      event.preventDefault();
+      navigateToFixture('verification');
+    }}
+  />
+);
+
+type VerificationFixtureProps = {
+  readonly empty?: boolean;
+  readonly audioRecovery?: boolean;
 };
 
 export const VerificationFixture = ({
   empty = false,
   audioRecovery = false,
-}) => (
+}: VerificationFixtureProps) => (
   <main className="mx-auto flex max-w-5xl flex-col gap-4 p-6">
-    <BackButton />
+    {backControl}
     <h1 className="font-semibold text-2xl">English A2: Seite überprüfen</h1>
     <div className="grid gap-6 lg:grid-cols-2">
       <svg
@@ -98,59 +87,77 @@ export const VerificationFixture = ({
           </div>
         ) : null}
         {audioRecovery || empty ? null : (
-          <form
-            className="flex flex-col gap-4"
-            onSubmit={(event) => {
-              event.preventDefault();
-              navigateToFixture('dashboard');
-            }}
-          >
-            <label className="flex flex-col gap-1 text-sm">
-              Abschnitt
-              <input
-                className="rounded border border-neutral-300 px-3 py-2"
-                defaultValue="Unit 3"
-                name="label"
-              />
-            </label>
-            <fieldset className="flex flex-col gap-3 rounded-lg border border-neutral-200 p-4">
-              <legend className="px-1 font-medium">Eintrag 1</legend>
-              <label className="flex flex-col gap-1 text-sm">
-                Englisch
-                <input
-                  className="rounded border border-neutral-300 px-3 py-2"
-                  defaultValue="memory"
-                  name="target-0"
-                  required={true}
-                />
-              </label>
-              <label className="flex flex-col gap-1 text-sm">
-                Deutsch
-                <input
-                  className="rounded border border-neutral-300 px-3 py-2"
-                  defaultValue="Erinnerung"
-                  name="native-0"
-                  required={true}
-                />
-              </label>
-              <label className="flex flex-col gap-1 text-sm">
-                Beispielsatz
-                <input
-                  className="rounded border border-neutral-300 px-3 py-2"
-                  defaultValue="A lasting memory."
-                  name="example-0"
-                />
-              </label>
-            </fieldset>
-            <button
-              className="rounded bg-neutral-900 px-4 py-2 text-sm text-white"
-              type="submit"
-            >
-              1 Einträge importieren
-            </button>
-          </form>
+          <VerifyForm
+            busy={false}
+            initialEntries={initialEntries}
+            initialLabel="Unit 3"
+            onSubmit={() => navigateToFixture('dashboard')}
+            targetLabel="Englisch"
+          />
         )}
       </div>
     </div>
   </main>
 );
+
+type Deferred = {
+  readonly promise: Promise<void>;
+  readonly resolve: () => void;
+  readonly reject: (cause: unknown) => void;
+};
+
+const makeDeferred = (): Deferred => {
+  let resolve: Deferred['resolve'] = () => undefined;
+  let reject: Deferred['reject'] = () => undefined;
+  const promise = new Promise<void>((accept, decline) => {
+    resolve = accept;
+    reject = decline;
+  });
+  return { promise, resolve, reject };
+};
+
+export const DeferredVerificationFixture = () => {
+  const deferred = useRef<Deferred | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [calls, setCalls] = useState(0);
+  const [snapshot, setSnapshot] = useState('none');
+  const [status, setStatus] = useState('idle');
+  return (
+    <main className="mx-auto flex max-w-lg flex-col gap-4 p-6">
+      <h1 className="font-semibold text-2xl">Seite überprüfen</h1>
+      <VerifyForm
+        busy={busy}
+        initialEntries={initialEntries}
+        initialLabel="Unit 3"
+        onSubmit={(label, entries) => {
+          const pending = makeDeferred();
+          deferred.current = pending;
+          setBusy(true);
+          setCalls((count) => count + 1);
+          setSnapshot(JSON.stringify({ label, entries }));
+          setStatus('pending');
+          pending.promise
+            .then(() => setStatus('resolved'))
+            .catch(() => setStatus('rejected'))
+            .finally(() => setBusy(false));
+        }}
+        targetLabel="Englisch"
+      />
+      <output aria-label="Verification calls">{calls}</output>
+      <output aria-label="Verification snapshot">{snapshot}</output>
+      <output aria-label="Verification status">{status}</output>
+      <fieldset>
+        <legend>Test controls</legend>
+        <button onClick={() => deferred.current?.resolve()} type="button">
+          Resolve verification
+        </button>
+        <button
+          onClick={() => deferred.current?.reject(new Error('Test rejection'))}
+          type="button"
+        >
+          Reject verification
+        </button>
+      </fieldset>
+    </main>
+  );
+};
