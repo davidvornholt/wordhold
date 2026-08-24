@@ -1,0 +1,4 @@
+{
+  "extends": "@davidvornholt/typescript-config/tanstack-start",
+  "include": ["src", "a11y", "playwright.config.ts", "vite.config.ts"]
+}

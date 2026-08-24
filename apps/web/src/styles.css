@@ -1,0 +1,84 @@
+@import "tailwindcss";
+@import "@fontsource/spectral/400.css";
+@import "@fontsource/spectral/600.css";
+@import "@fontsource/spectral/400-italic.css";
+@import "@fontsource-variable/hanken-grotesk";
+@import "@wordhold/ui/theme.css";
+
+@source "./**/*.{ts,tsx}";
+@source "../a11y/**/*.{ts,tsx}";
+
+/*
+ * Map the semantic theme tokens (defined at :root by @wordhold/ui/theme.css)
+ * to Tailwind utilities: bg-background, text-foreground, font-display, etc.
+ */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius: var(--radius);
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+}
+
+.root-recovery {
+  @apply mx-auto flex min-h-screen max-w-lg flex-col justify-center gap-5 p-6;
+}
+
+.root-feedback-brand {
+  @apply font-semibold text-muted-foreground text-sm;
+}
+
+.root-feedback-heading {
+  @apply font-display font-semibold text-2xl;
+}
+
+.root-feedback-copy {
+  @apply text-muted-foreground text-sm;
+}
+
+.root-feedback-link {
+  @apply w-fit self-center text-sm underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2;
+}
+
+.root-feedback-actions {
+  @apply flex flex-wrap items-center gap-4;
+}
+
+.root-feedback-button {
+  @apply bg-primary px-4 py-2 text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2;
+}
+
+.root-pending {
+  @apply mx-auto flex min-h-screen max-w-lg items-center p-6;
+}
+
+.audio-recovery {
+  @apply flex flex-col items-start gap-3 border border-border bg-card p-4;
+}
+
+.audio-recovery-heading {
+  @apply font-display text-lg;
+}
+
+.audio-recovery-copy {
+  @apply text-muted-foreground text-sm;
+}
+
+.audio-recovery-button {
+  @apply bg-primary px-4 py-2 text-primary-foreground text-sm disabled:opacity-50;
+}

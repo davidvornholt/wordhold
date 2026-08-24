@@ -1,0 +1,54 @@
+import type { LanguageCode } from '@wordhold/db/schema/courses';
+import type { ReactNode } from 'react';
+import { germanLabels } from '../../../shared/languages';
+
+type CourseCardProps = {
+  readonly course: {
+    readonly id: string;
+    readonly name: string;
+    readonly targetLanguage: LanguageCode;
+  };
+  readonly stats:
+    | { readonly due: number; readonly fresh: number; readonly words: number }
+    | undefined;
+  readonly practiceAction: ReactNode;
+  readonly importAction: ReactNode;
+};
+
+export const CourseCard = ({
+  course,
+  stats,
+  practiceAction,
+  importAction,
+}: CourseCardProps) => {
+  const due = stats?.due ?? 0;
+  const fresh = stats?.fresh ?? 0;
+  const words = stats?.words ?? 0;
+  return (
+    <li className="flex flex-col gap-3 border border-border bg-card p-4">
+      <div>
+        <span className="font-medium">{course.name}</span>
+        <p className="text-muted-foreground text-xs">
+          {germanLabels[course.targetLanguage]}
+        </p>
+      </div>
+      {words === 0 ? (
+        <p className="text-muted-foreground text-sm">
+          Noch keine Wörter – fotografiere die erste Seite.
+        </p>
+      ) : (
+        <p className="flex items-baseline gap-1 text-sm">
+          <span className="font-display text-3xl">{due}</span>
+          <span>fällig</span>
+          <span className="text-muted-foreground">
+            · {fresh} neu · {words} Wörter
+          </span>
+        </p>
+      )}
+      <div className="mt-auto flex gap-4">
+        {due + fresh > 0 ? practiceAction : null}
+        {importAction}
+      </div>
+    </li>
+  );
+};

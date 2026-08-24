@@ -1,0 +1,36 @@
+import { Judge } from '@wordhold/ai/judge';
+import type { JudgeInput, JudgeVerdictData } from '@wordhold/ai/judge/schema';
+import { Context, Effect, Layer } from 'effect';
+import { PracticeJudgeError } from '../errors/practice-errors';
+import type { CachedJudgeVerdict } from '../schemas/practice-models';
+
+export class PracticeJudge extends Context.Tag('wordhold/PracticeJudge')<
+  PracticeJudge,
+  {
+    readonly judge: (
+      input: JudgeInput,
+    ) => Effect.Effect<CachedJudgeVerdict, PracticeJudgeError>;
+  }
+>() {
+  static readonly live = Layer.effect(
+    PracticeJudge,
+    Effect.gen(function* () {
+      const judgeService = yield* Judge;
+      const judge = (input: JudgeInput) =>
+        judgeService.judge(input).pipe(
+          Effect.map(
+            (verdict: JudgeVerdictData) =>
+              ({ verdict, model: judgeService.modelId }) as const,
+          ),
+          Effect.mapError(
+            (cause) =>
+              new PracticeJudgeError({
+                cause,
+                message: 'Der KI-Prüfer ist gerade nicht erreichbar.',
+              }),
+          ),
+        );
+      return { judge } as const;
+    }),
+  );
+}
