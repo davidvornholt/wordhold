@@ -35,6 +35,7 @@ export const cards = pgTable(
     scheduledDays: real('scheduled_days').notNull().default(0),
     learningSteps: integer('learning_steps').notNull().default(0),
     lastReviewedAt: timestamp('last_reviewed_at', { withTimezone: true }),
+    revision: integer('revision').notNull().default(0),
   },
   (table) => [
     uniqueIndex('cards_entry_direction').on(table.entryId, table.direction),

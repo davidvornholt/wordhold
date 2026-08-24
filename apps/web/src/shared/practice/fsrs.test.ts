@@ -16,6 +16,7 @@ const newCard: typeof cards.$inferSelect = {
   scheduledDays: 0,
   learningSteps: 0,
   lastReviewedAt: null,
+  revision: 0,
 };
 
 describe('applyRating', () => {

@@ -12,6 +12,7 @@ const newCardsPerSession = 10;
 
 const itemColumns = {
   cardId: cards.id,
+  revision: cards.revision,
   direction: cards.direction,
   entryId: entries.id,
   entryType: entries.type,

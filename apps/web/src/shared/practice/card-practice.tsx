@@ -27,7 +27,8 @@ export const CardPractice = ({
   onNext,
 }: CardPracticeProps) => {
   const [answer, setAnswer] = useState('');
-  const [startedAt] = useState(() => Date.now());
+  const [submittedAnswer, setSubmittedAnswer] = useState<string | null>(null);
+  const [startedAt] = useState(() => performance.now());
   const [result, setResult] = useState<SubmitResult | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,14 +39,17 @@ export const CardPractice = ({
     if (busy || result !== null) {
       return;
     }
+    const answerSnapshot = answer;
+    setSubmittedAnswer(answerSnapshot);
     setBusy(true);
     setError(null);
     try {
       const submitted = await submitAnswer({
         data: {
           cardId: item.cardId,
-          answer,
-          elapsedMs: Date.now() - startedAt,
+          revision: item.revision,
+          answer: answerSnapshot,
+          elapsedMs: Math.floor(performance.now() - startedAt),
         },
       });
       setResult(submitted);
@@ -53,6 +57,7 @@ export const CardPractice = ({
         await new Audio(audioUrl).play().catch(() => undefined);
       }
     } catch (cause) {
+      setSubmittedAnswer(null);
       setError(cause instanceof Error ? cause.message : String(cause));
     } finally {
       setBusy(false);
@@ -70,16 +75,20 @@ export const CardPractice = ({
       <div className="rounded-lg border border-neutral-200 p-6">
         <p className="font-medium text-xl">{item.prompt}</p>
       </div>
-      <form className="flex flex-col gap-3" onSubmit={onSubmit}>
+      <form
+        aria-busy={busy}
+        className="flex flex-col gap-3"
+        onSubmit={onSubmit}
+      >
         <input
           autoCapitalize="off"
           autoComplete="off"
           autoCorrect="off"
           className="rounded border border-neutral-300 px-3 py-2"
-          disabled={result !== null}
+          disabled={busy || result !== null}
           onChange={(event) => setAnswer(event.target.value)}
           placeholder="Deine Antwort"
-          value={answer}
+          value={submittedAnswer ?? answer}
         />
         {result === null ? (
           <button

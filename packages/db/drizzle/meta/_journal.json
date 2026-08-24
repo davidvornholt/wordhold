@@ -15,6 +15,13 @@
       "when": 1787560448509,
       "tag": "0001_moaning_proemial_gods",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1787572722236,
+      "tag": "0002_many_prodigy",
+      "breakpoints": true
     }
   ]
 }

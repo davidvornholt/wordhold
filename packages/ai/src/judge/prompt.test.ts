@@ -35,6 +35,17 @@ describe('judgePrompt', () => {
 });
 
 describe('JudgeVerdict schema', () => {
+  const completeVerdict = {
+    correct: true,
+    acceptAsAlternative: true,
+    meaning: { ok: true },
+    grammar: { ok: true },
+    idiomaticity: { ok: true },
+    spelling: { ok: true },
+    intendedConstruction: { ok: true },
+    explanation: 'Passt.',
+  } as const;
+
   it('decodes a complete verdict', () => {
     const verdict = Schema.decodeUnknownSync(JudgeVerdict)({
       correct: false,
@@ -48,5 +59,30 @@ describe('JudgeVerdict schema', () => {
     });
     expect(verdict.correct).toBe(false);
     expect(verdict.idiomaticity.note).toBe('ungebräuchlich');
+  });
+
+  it('accepts a fully correct alternative', () => {
+    expect(
+      Schema.decodeUnknownSync(JudgeVerdict)(completeVerdict)
+        .acceptAsAlternative,
+    ).toBe(true);
+  });
+
+  it('rejects an alternative marked both accepted and incorrect', () => {
+    expect(() =>
+      Schema.decodeUnknownSync(JudgeVerdict)({
+        ...completeVerdict,
+        correct: false,
+      }),
+    ).toThrow();
+  });
+
+  it('rejects a correct alternative with a flawed grading dimension', () => {
+    expect(() =>
+      Schema.decodeUnknownSync(JudgeVerdict)({
+        ...completeVerdict,
+        spelling: { ok: false, note: 'Tippfehler' },
+      }),
+    ).toThrow();
   });
 });

@@ -1,25 +1,84 @@
 import { createServerFn } from '@tanstack/react-start';
+import { isAcceptedAlternative } from '@wordhold/ai/judge/schema';
 import { courses } from '@wordhold/db/schema/courses';
 import { acceptedAnswers, entries } from '@wordhold/db/schema/entries';
 import { cards, reviews } from '@wordhold/db/schema/practice';
-import { and, eq } from 'drizzle-orm';
-import { Schema } from 'effect';
+import { and, eq, sql } from 'drizzle-orm';
 import { requireSession } from '../auth/require-session';
 import { db } from '../db/server';
 import { normalizeAnswer } from '../grading/normalize';
 import { englishNames } from '../languages';
-import { applyRating } from './fsrs';
+import { applyRating, type DerivedRating } from './fsrs';
 import { judgeWithCache } from './judge-cache';
 import { deriveRating, type GradeOutcome, isCorrect } from './rating';
+import {
+  commitGradedAnswer,
+  StaleAnswerSubmissionError,
+} from './review-commit';
+import { decodeSubmitPayload } from './submission-schema';
 
-const SubmitPayload = Schema.Struct({
-  cardId: Schema.UUID,
-  answer: Schema.String,
-  elapsedMs: Schema.optional(Schema.Number),
-});
+type PersistReviewInput = {
+  readonly card: typeof cards.$inferSelect;
+  readonly expectedRevision: number;
+  readonly rating: DerivedRating;
+  readonly reviewedAt: Date;
+  readonly outcome: GradeOutcome;
+  readonly answer: string;
+  readonly elapsedMs: number | null;
+  readonly entryId: string;
+  readonly direction: (typeof cards.$inferSelect)['direction'];
+  readonly normalizedAnswer: string;
+};
+
+const persistReview = async (input: PersistReviewInput): Promise<void> =>
+  commitGradedAnswer(
+    async (work) =>
+      db.transaction(async (tx) =>
+        work({
+          advanceCard: async () => {
+            const [advanced] = await tx
+              .update(cards)
+              .set({
+                ...applyRating(input.card, input.rating, input.reviewedAt),
+                revision: sql`${cards.revision} + 1`,
+              })
+              .where(
+                and(
+                  eq(cards.id, input.card.id),
+                  eq(cards.revision, input.expectedRevision),
+                ),
+              )
+              .returning({ id: cards.id });
+            return advanced !== undefined;
+          },
+          insertAcceptedAlternative: async () => {
+            await tx
+              .insert(acceptedAnswers)
+              .values({
+                entryId: input.entryId,
+                direction: input.direction,
+                text: input.answer.trim(),
+                normalized: input.normalizedAnswer,
+                source: 'judge',
+              })
+              .onConflictDoNothing();
+          },
+          insertReview: async () => {
+            await tx.insert(reviews).values({
+              cardId: input.card.id,
+              rating: input.rating,
+              answerText: input.answer,
+              grading: input.outcome,
+              elapsedMs: input.elapsedMs,
+            });
+          },
+        }),
+      ),
+    input.outcome.method === 'judge' ? input.outcome.verdict : null,
+  );
 
 export const submitAnswer = createServerFn({ method: 'POST' })
-  .validator((input: unknown) => Schema.decodeUnknownSync(SubmitPayload)(input))
+  .validator((input: unknown) => decodeSubmitPayload(input))
   .handler(async ({ data }) => {
     await requireSession();
     const [row] = await db
@@ -27,9 +86,11 @@ export const submitAnswer = createServerFn({ method: 'POST' })
       .from(cards)
       .innerJoin(entries, eq(cards.entryId, entries.id))
       .innerJoin(courses, eq(entries.courseId, courses.id))
-      .where(eq(cards.id, data.cardId));
+      .where(and(eq(cards.id, data.cardId), eq(cards.revision, data.revision)));
     if (row === undefined) {
-      throw new Error('Karte nicht gefunden.');
+      throw new StaleAnswerSubmissionError(
+        'Diese Karte wurde bereits beantwortet. Lade die Übung neu.',
+      );
     }
     const { direction } = row.cards;
     const accepted = await db
@@ -76,33 +137,22 @@ export const submitAnswer = createServerFn({ method: 'POST' })
         };
       }
       outcome = { method: 'judge', verdict };
-      if (verdict.acceptAsAlternative) {
-        await db
-          .insert(acceptedAnswers)
-          .values({
-            entryId: row.entries.id,
-            direction,
-            text: data.answer.trim(),
-            normalized,
-            source: 'judge',
-          })
-          .onConflictDoNothing();
-      }
     }
 
     const correct = isCorrect(outcome);
     const rating = deriveRating(outcome, data.elapsedMs ?? null);
     const now = new Date();
-    await db
-      .update(cards)
-      .set(applyRating(row.cards, rating, now))
-      .where(eq(cards.id, row.cards.id));
-    await db.insert(reviews).values({
-      cardId: row.cards.id,
+    await persistReview({
+      card: row.cards,
+      expectedRevision: data.revision,
       rating,
-      answerText: data.answer,
-      grading: outcome,
+      reviewedAt: now,
+      outcome,
+      answer: data.answer,
       elapsedMs: data.elapsedMs ?? null,
+      entryId: row.entries.id,
+      direction,
+      normalizedAnswer: normalized,
     });
     return {
       graded: true as const,
@@ -112,6 +162,6 @@ export const submitAnswer = createServerFn({ method: 'POST' })
       explanation:
         outcome.method === 'judge' ? outcome.verdict.explanation : null,
       acceptedAsAlternative:
-        outcome.method === 'judge' && outcome.verdict.acceptAsAlternative,
+        outcome.method === 'judge' && isAcceptedAlternative(outcome.verdict),
     };
   });
