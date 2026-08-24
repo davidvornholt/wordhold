@@ -38,6 +38,15 @@
           "nursery": { "noUnusedClasses": "off" }
         }
       }
+    },
+    {
+      // AWS Polly's SDK commands require PascalCase request properties.
+      "includes": ["packages/ai/src/tts/service.ts"],
+      "linter": {
+        "rules": {
+          "style": { "useNamingConvention": "off" }
+        }
+      }
     }
   ]
 }

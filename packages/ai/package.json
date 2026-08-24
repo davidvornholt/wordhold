@@ -1,0 +1,34 @@
+{
+  "name": "@wordhold/ai",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./providers/bedrock": "./src/providers/bedrock.ts",
+    "./providers/vertex": "./src/providers/vertex.ts",
+    "./extraction": "./src/extraction/service.ts",
+    "./extraction/schema": "./src/extraction/schema.ts",
+    "./judge": "./src/judge/service.ts",
+    "./judge/schema": "./src/judge/schema.ts",
+    "./sentence": "./src/sentence/service.ts",
+    "./tts": "./src/tts/service.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "lint": "biome check --error-on-warnings .",
+    "lint:fix": "biome check --write --error-on-warnings .",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@ai-sdk/amazon-bedrock": "^5.0.61",
+    "@ai-sdk/google-vertex": "^5.0.61",
+    "@aws-sdk/client-polly": "^3.1116.0",
+    "ai": "^7.0.77",
+    "effect": "^3.22.1"
+  },
+  "devDependencies": {
+    "@davidvornholt/typescript-config": "workspace:*",
+    "@types/bun": "^1.4.0",
+    "typescript": "^7.0.2"
+  }
+}
