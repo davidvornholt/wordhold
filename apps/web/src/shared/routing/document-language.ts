@@ -1,0 +1,1 @@
+export const documentLanguage = 'de';

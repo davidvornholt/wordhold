@@ -4,15 +4,28 @@ import {
   Outlet,
   Scripts,
 } from '@tanstack/react-router';
+import type { ReactNode } from 'react';
+import { getSessionUser } from '../shared/auth/session-fn';
+import { documentLanguage } from '../shared/routing/document-language';
+import {
+  RootError,
+  RootNotFound,
+  RootPending,
+} from '../shared/routing/root-feedback';
+import { redirectExpiredOwnerRoute } from '../shared/routing/root-guard';
 import appCss from '../styles.css?url';
 
-const RootDocument = () => (
-  <html lang="en">
+type RootDocumentProps = {
+  readonly children: ReactNode;
+};
+
+const RootDocument = ({ children }: RootDocumentProps) => (
+  <html lang={documentLanguage}>
     <head>
       <HeadContent />
     </head>
     <body>
-      <Outlet />
+      {children}
       <Scripts />
     </body>
   </html>
@@ -27,5 +40,11 @@ export const Route = createRootRoute({
     ],
     links: [{ rel: 'stylesheet', href: appCss }],
   }),
-  component: RootDocument,
+  beforeLoad: ({ location }) =>
+    redirectExpiredOwnerRoute(location.pathname, getSessionUser),
+  shellComponent: RootDocument,
+  component: Outlet,
+  errorComponent: RootError,
+  notFoundComponent: RootNotFound,
+  pendingComponent: RootPending,
 });

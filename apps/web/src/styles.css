@@ -32,3 +32,35 @@
   --font-display: var(--font-display);
   --font-body: var(--font-body);
 }
+
+.root-recovery {
+  @apply mx-auto flex min-h-screen max-w-lg flex-col justify-center gap-5 p-6;
+}
+
+.root-feedback-brand {
+  @apply font-semibold text-neutral-500 text-sm;
+}
+
+.root-feedback-heading {
+  @apply font-semibold text-2xl;
+}
+
+.root-feedback-copy {
+  @apply text-neutral-600 text-sm;
+}
+
+.root-feedback-link {
+  @apply w-fit self-center text-sm underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2;
+}
+
+.root-feedback-actions {
+  @apply flex flex-wrap items-center gap-4;
+}
+
+.root-feedback-button {
+  @apply rounded bg-neutral-900 px-4 py-2 text-sm text-white focus-visible:outline-2 focus-visible:outline-offset-2;
+}
+
+.root-pending {
+  @apply mx-auto flex min-h-screen max-w-lg items-center p-6;
+}

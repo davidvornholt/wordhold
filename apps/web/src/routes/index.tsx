@@ -35,7 +35,9 @@ const Home = () => {
       <header className="flex items-baseline justify-between">
         <div>
           <h1 className="font-semibold text-2xl">Wordhold</h1>
-          <p className="text-neutral-500 text-sm">From page to memory.</p>
+          <p className="text-neutral-500 text-sm" lang="en">
+            From page to memory.
+          </p>
         </div>
         {user === null ? null : (
           <button
