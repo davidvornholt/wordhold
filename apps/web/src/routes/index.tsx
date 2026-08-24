@@ -1,8 +1,10 @@
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router';
 import { authClient } from '../shared/auth/client';
 import { getSessionUser } from '../shared/auth/session-fn';
+import { CourseCard } from '../shared/dashboard/course-card';
+import { FragileList } from '../shared/dashboard/fragile-list';
+import { getDashboard } from '../shared/dashboard/stats-fn';
 import { listCourses, listPendingPages } from '../shared/import/server-fns';
-import { germanLabels } from '../shared/languages';
 
 const SignedOut = () => (
   <div className="flex flex-col items-start gap-4">
@@ -25,7 +27,7 @@ const SignedOut = () => (
 );
 
 const Home = () => {
-  const { user, courses, pending } = Route.useLoaderData();
+  const { user, courses, pending, dashboard } = Route.useLoaderData();
   const router = useRouter();
 
   return (
@@ -49,40 +51,33 @@ const Home = () => {
         )}
       </header>
 
-      {user === null ? (
+      {user === null || dashboard === null ? (
         <SignedOut />
       ) : (
         <>
           <section className="flex flex-col gap-3">
-            <h2 className="font-medium text-lg">Kurse</h2>
+            <div className="flex items-baseline justify-between">
+              <h2 className="font-medium text-lg">Kurse</h2>
+              {dashboard.reviewsToday > 0 ? (
+                <p className="text-neutral-500 text-sm">
+                  Heute {dashboard.reviewsToday} Antworten geübt.
+                </p>
+              ) : null}
+            </div>
             <ul className="grid gap-3 sm:grid-cols-3">
               {courses.map((course) => (
-                <li
-                  className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-4"
+                <CourseCard
+                  course={course}
                   key={course.id}
-                >
-                  <span className="font-medium">{course.name}</span>
-                  <span className="text-neutral-500 text-xs">
-                    {germanLabels[course.targetLanguage]}
-                  </span>
-                  <Link
-                    className="font-medium text-sm underline"
-                    params={{ courseId: course.id }}
-                    to="/courses/$courseId/practice"
-                  >
-                    Üben
-                  </Link>
-                  <Link
-                    className="text-sm underline"
-                    params={{ courseId: course.id }}
-                    to="/courses/$courseId/import"
-                  >
-                    Seite fotografieren
-                  </Link>
-                </li>
+                  stats={dashboard.perCourse.find(
+                    (stats) => stats.courseId === course.id,
+                  )}
+                />
               ))}
             </ul>
           </section>
+
+          <FragileList words={dashboard.fragile} />
 
           <section className="flex flex-col gap-3">
             <h2 className="font-medium text-lg">Seiten zur Überprüfung</h2>
@@ -133,13 +128,14 @@ export const Route = createFileRoute('/')({
   loader: async () => {
     const user = await getSessionUser();
     if (user === null) {
-      return { user: null, courses: [], pending: [] } as const;
+      return { user: null, courses: [], pending: [], dashboard: null } as const;
     }
-    const [courses, pending] = await Promise.all([
+    const [courses, pending, dashboard] = await Promise.all([
       listCourses(),
       listPendingPages(),
+      getDashboard(),
     ]);
-    return { user, courses, pending } as const;
+    return { user, courses, pending, dashboard } as const;
   },
   component: Home,
 });

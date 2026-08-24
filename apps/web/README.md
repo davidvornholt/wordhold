@@ -54,3 +54,21 @@ entries; importing writes entries, textbook examples, accepted answers (both
 directions, normalized via `src/shared/grading/normalize.ts`), two FSRS
 cards per entry, and best-effort Polly audio under
 `WORDHOLD_DATA_DIR/audio/`.
+
+## Practice flow
+
+`/courses/$courseId/practice` serves everything due plus a bounded batch of
+new cards (`src/shared/practice/session-fn.ts`). Grading is hybrid: a
+normalized deterministic match is instant; only mismatches reach the AI
+judge, whose verdicts are cached per (entry, direction, normalized answer)
+and can write accepted alternatives back. FSRS ratings are derived from the
+outcome (fast exact = Easy, flawed-but-accepted = Hard, rejected = Again) —
+never self-reported. If the judge is unreachable the card is left
+untouched. Pronunciation plays via `GET /api/entries/$entryId/audio`.
+
+## Dashboard
+
+The signed-in start page shows only real data
+(`src/shared/dashboard/stats-fn.ts`): per-course due/new/word counts,
+today's review count, and "Wackelkandidaten" — entries with at least two
+Again-ratings in the last 30 days.
