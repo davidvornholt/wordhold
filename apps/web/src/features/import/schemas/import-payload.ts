@@ -6,6 +6,7 @@ import {
   maximumLabelLength,
 } from '@wordhold/ai/extraction/schema';
 import { Schema } from 'effect';
+import { ImportPayloadValidationError } from '../errors/import-payload-validation-error';
 
 // The human-verified shape of one entry, as submitted from the verify screen.
 // Confidence is dropped: after verification the human is the authority.
@@ -38,4 +39,16 @@ export const ImportPayload = Schema.Struct({
 });
 export type ImportPayloadData = typeof ImportPayload.Type;
 
-export const decodeImportPayload = Schema.decodeUnknownSync(ImportPayload);
+const decode = Schema.decodeUnknownSync(ImportPayload);
+
+export const decodeImportPayload = (input: unknown): ImportPayloadData => {
+  try {
+    return decode(input);
+  } catch (cause) {
+    // biome-ignore lint/style/useErrorCause: Data.TaggedError carries cause as a typed field
+    throw new ImportPayloadValidationError({
+      cause,
+      message: 'Die geprüften Einträge sind ungültig.',
+    });
+  }
+};

@@ -1,27 +1,31 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { pages } from '@wordhold/db/schema/pages';
-import { eq } from 'drizzle-orm';
+import { Effect } from 'effect';
 import { requireSession } from '../../../../shared/auth/require-session';
-import { db } from '../../../../shared/db/server';
-import { mimeForPath } from '../../../../shared/import/extract';
+import { serverRuntime } from '../../../../shared/runtime/server';
+import { MediaNotFoundError } from '../../../../shared/storage/media-not-found-error';
 import { privateMediaResponse } from '../../../../shared/storage/media-response';
-import { readDataFile } from '../../../../shared/storage/server';
+import { loadPageImage } from '../../../../shared/storage/media-service';
+import { mimeForPath } from '../../../../shared/storage/media-type';
+
+const imageResponse = (request: Request, pageId: string) =>
+  Effect.zipRight(requireSession(request.headers), loadPageImage(pageId)).pipe(
+    Effect.match({
+      onFailure: (error) => {
+        if (error instanceof MediaNotFoundError) {
+          return new Response(error.message, { status: 404 });
+        }
+        throw error;
+      },
+      onSuccess: ({ bytes, path }) =>
+        privateMediaResponse(bytes, mimeForPath(path)),
+    }),
+  );
 
 export const Route = createFileRoute('/api/pages/$pageId/image')({
   server: {
     handlers: {
-      GET: async ({ params }) => {
-        await requireSession();
-        const [page] = await db
-          .select()
-          .from(pages)
-          .where(eq(pages.id, params.pageId));
-        if (page === undefined) {
-          return new Response('Nicht gefunden', { status: 404 });
-        }
-        const bytes = await readDataFile(page.imagePath);
-        return privateMediaResponse(bytes, mimeForPath(page.imagePath));
-      },
+      GET: ({ params, request }) =>
+        serverRuntime.runPromise(imageResponse(request, params.pageId)),
     },
   },
 });

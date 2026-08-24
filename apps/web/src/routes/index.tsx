@@ -2,9 +2,9 @@ import { createFileRoute, Link, useRouter } from '@tanstack/react-router';
 import { getDashboard } from '../features/dashboard/services/server-fns';
 import { CourseCard } from '../features/dashboard/ui/course-card';
 import { FragileList } from '../features/dashboard/ui/fragile-list';
+import { listCourses, listPendingPages } from '../features/import/server-fns';
 import { authClient } from '../shared/auth/client';
 import { getSessionUser } from '../shared/auth/session-fn';
-import { listCourses, listPendingPages } from '../shared/import/server-fns';
 
 const SignedOut = () => (
   <div className="flex flex-col items-start gap-4">

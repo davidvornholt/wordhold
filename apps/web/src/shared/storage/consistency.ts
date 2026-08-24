@@ -1,3 +1,6 @@
+import { Effect } from 'effect';
+import { FileReferenceError } from './file-reference-error';
+
 const hoursPerDay = 24;
 const minutesPerHour = 60;
 const secondsPerMinute = 60;
@@ -32,29 +35,42 @@ export const orphanedDataFiles = (
     .map((file) => file.relativePath)
     .sort();
 
-type PersistFileReferenceInput<T> = {
-  readonly write: () => Promise<void>;
-  readonly persistReference: () => Promise<T>;
-  readonly remove: () => Promise<void>;
+type PersistFileReferenceInput<T, WriteError, PersistenceError, RemoveError> = {
+  readonly write: Effect.Effect<void, WriteError>;
+  readonly persistReference: Effect.Effect<T, PersistenceError>;
+  readonly remove: Effect.Effect<void, RemoveError>;
 };
 
-export const persistFileReference = async <T>(
-  input: PersistFileReferenceInput<T>,
-): Promise<T> => {
-  await input.write();
-  try {
-    return await input.persistReference();
-  } catch (persistenceError) {
-    try {
-      await input.remove();
-    } catch (cleanupError) {
-      throw Object.assign(
-        new Error('The database write and file cleanup both failed.', {
-          cause: cleanupError,
-        }),
-        { persistenceError },
-      );
-    }
-    throw persistenceError;
-  }
-};
+export const persistFileReference = <
+  T,
+  WriteError,
+  PersistenceError,
+  RemoveError,
+>(
+  input: PersistFileReferenceInput<
+    T,
+    WriteError,
+    PersistenceError,
+    RemoveError
+  >,
+): Effect.Effect<T, WriteError | PersistenceError | FileReferenceError> =>
+  input.write.pipe(
+    Effect.flatMap(() =>
+      input.persistReference.pipe(
+        Effect.catchAll((persistenceError) =>
+          input.remove.pipe(
+            Effect.catchAll((cleanupError) =>
+              Effect.fail(
+                new FileReferenceError({
+                  persistenceError,
+                  cleanupError,
+                  message: 'The database write and file cleanup both failed.',
+                }),
+              ),
+            ),
+            Effect.zipRight(Effect.fail(persistenceError)),
+          ),
+        ),
+      ),
+    ),
+  );

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import { Effect } from 'effect';
 import {
   orphanedDataFiles,
   orphanGracePeriodMs,
@@ -13,20 +14,19 @@ describe('persistFileReference', () => {
   it('removes a file when its database reference fails', async () => {
     const actions: Array<string> = [];
     await expect(
-      persistFileReference({
-        write: () => {
-          actions.push('write');
-          return Promise.resolve();
-        },
-        persistReference: () => {
-          actions.push('persist');
-          return Promise.reject(new Error('insert failed'));
-        },
-        remove: () => {
-          actions.push('remove');
-          return Promise.resolve();
-        },
-      }),
+      Effect.runPromise(
+        persistFileReference({
+          write: Effect.sync(() => {
+            actions.push('write');
+          }),
+          persistReference: Effect.sync(() => {
+            actions.push('persist');
+          }).pipe(Effect.zipRight(Effect.fail(new Error('insert failed')))),
+          remove: Effect.sync(() => {
+            actions.push('remove');
+          }),
+        }),
+      ),
     ).rejects.toThrow('insert failed');
     expect(actions).toEqual(['write', 'persist', 'remove']);
   });

@@ -1,10 +1,10 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import type { ExtractionResult } from '@wordhold/ai/extraction';
 import { useState } from 'react';
-import type { DraftEntry } from '../../../shared/import/entry-row';
-import { importPage } from '../../../shared/import/import-fn';
-import { getPage, retryExtraction } from '../../../shared/import/server-fns';
-import { VerifyForm } from '../../../shared/import/verify-form';
+import { importPage } from '../../../features/import/import-fn';
+import { getPage, retryExtraction } from '../../../features/import/server-fns';
+import type { DraftEntry } from '../../../features/import/ui/entry-row';
+import { VerifyForm } from '../../../features/import/ui/verify-form';
 import { germanLabels } from '../../../shared/languages';
 
 const draftsFromExtraction = (

@@ -1,3 +1,6 @@
+import { Effect } from 'effect';
+import { OwnerRepository } from './owner-repository';
+
 type OwnerSessionIdentity = {
   readonly session: {
     readonly token: string;
@@ -7,21 +10,17 @@ type OwnerSessionIdentity = {
   };
 };
 
-type OwnerSessionDependencies = {
-  readonly isAllowedUser: (userId: string) => Promise<boolean>;
-  readonly revokeSession: (token: string) => Promise<void>;
-};
-
-export const revalidateOwnerSession = async <T extends OwnerSessionIdentity>(
+export const revalidateOwnerSession = <T extends OwnerSessionIdentity>(
   session: T | null,
-  dependencies: OwnerSessionDependencies,
-): Promise<T | null> => {
-  if (session === null) {
+) =>
+  Effect.gen(function* () {
+    if (session === null) {
+      return null;
+    }
+    const repository = yield* OwnerRepository;
+    if (yield* repository.isAllowedUser(session.user.id)) {
+      return session;
+    }
+    yield* repository.revokeSession(session.session.token);
     return null;
-  }
-  if (await dependencies.isAllowedUser(session.user.id)) {
-    return session;
-  }
-  await dependencies.revokeSession(session.session.token);
-  return null;
-};
+  });

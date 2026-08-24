@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useState } from 'react';
+import { getCourse } from '../../../features/import/server-fns';
 import { getPracticeSession } from '../../../features/practice/services/server-fns';
 import { CardPractice } from '../../../features/practice/ui/card-practice';
-import { getCourse } from '../../../shared/import/server-fns';
 import { germanLabels } from '../../../shared/languages';
 
 const PracticeScreen = () => {

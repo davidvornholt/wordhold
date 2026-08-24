@@ -7,7 +7,7 @@ import {
   maximumIrregularForms,
   maximumLabelLength,
 } from '@wordhold/ai/extraction/schema';
-import { decodeImportPayload } from './schema';
+import { decodeImportPayload } from './import-payload';
 
 const pageId = 'd9428888-122b-41e1-b85c-61cd3cbb3210';
 const validEntry = {

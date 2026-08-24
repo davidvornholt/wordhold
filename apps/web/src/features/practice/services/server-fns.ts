@@ -1,8 +1,10 @@
 import { createServerFn } from '@tanstack/react-start';
+import { getRequest } from '@tanstack/react-start/server';
 import { PgLive } from '@wordhold/db/client';
 import { Effect, Layer, ManagedRuntime } from 'effect';
 import { judgeLayer } from '../../../shared/ai/runtime';
 import { requireSession } from '../../../shared/auth/require-session';
+import { authRuntime } from '../../../shared/auth/runtime';
 import { requireString } from '../../../shared/validate/input';
 import { decodeSubmitPayload } from '../schemas/submission-schema';
 import { JudgeCacheStore } from './judge-cache-store';
@@ -28,7 +30,7 @@ const practiceRuntime = ManagedRuntime.make(practiceLive);
 export const getPracticeSession = createServerFn()
   .validator(requireString)
   .handler(async ({ data: courseId }) => {
-    await requireSession();
+    await authRuntime.runPromise(requireSession(getRequest().headers));
     return practiceRuntime.runPromise(
       Effect.flatMap(PracticeService, (service) =>
         service.getSession(courseId),
@@ -39,7 +41,7 @@ export const getPracticeSession = createServerFn()
 export const submitAnswer = createServerFn({ method: 'POST' })
   .validator((input: unknown) => decodeSubmitPayload(input))
   .handler(async ({ data }) => {
-    await requireSession();
+    await authRuntime.runPromise(requireSession(getRequest().headers));
     return practiceRuntime.runPromise(
       Effect.flatMap(PracticeService, (service) => service.submit(data)),
     );

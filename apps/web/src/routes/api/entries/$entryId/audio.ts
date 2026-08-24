@@ -1,27 +1,32 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { entryAudio } from '@wordhold/db/schema/entries';
-import { eq } from 'drizzle-orm';
+import { Effect } from 'effect';
 import { requireSession } from '../../../../shared/auth/require-session';
-import { db } from '../../../../shared/db/server';
+import { serverRuntime } from '../../../../shared/runtime/server';
+import { MediaNotFoundError } from '../../../../shared/storage/media-not-found-error';
 import { privateMediaResponse } from '../../../../shared/storage/media-response';
-import { readDataFile } from '../../../../shared/storage/server';
+import { loadEntryAudio } from '../../../../shared/storage/media-service';
+
+const audioResponse = (request: Request, entryId: string) =>
+  Effect.zipRight(
+    requireSession(request.headers),
+    loadEntryAudio(entryId),
+  ).pipe(
+    Effect.match({
+      onFailure: (error) => {
+        if (error instanceof MediaNotFoundError) {
+          return new Response(error.message, { status: 404 });
+        }
+        throw error;
+      },
+      onSuccess: ({ bytes }) => privateMediaResponse(bytes, 'audio/mpeg'),
+    }),
+  );
 
 export const Route = createFileRoute('/api/entries/$entryId/audio')({
   server: {
     handlers: {
-      GET: async ({ params }) => {
-        await requireSession();
-        const [audio] = await db
-          .select()
-          .from(entryAudio)
-          .where(eq(entryAudio.entryId, params.entryId))
-          .limit(1);
-        if (audio === undefined) {
-          return new Response('Nicht gefunden', { status: 404 });
-        }
-        const bytes = await readDataFile(audio.path);
-        return privateMediaResponse(bytes, 'audio/mpeg');
-      },
+      GET: ({ params, request }) =>
+        serverRuntime.runPromise(audioResponse(request, params.entryId)),
     },
   },
 });

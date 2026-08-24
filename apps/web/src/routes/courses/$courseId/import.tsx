@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { type SubmitEvent, useState } from 'react';
-import { getCourse } from '../../../shared/import/server-fns';
+import { getCourse } from '../../../features/import/server-fns';
 
 type UploadResponse = {
   readonly pageId?: string;

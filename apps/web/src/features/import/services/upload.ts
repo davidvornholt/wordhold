@@ -1,0 +1,169 @@
+import type { ExtractionResult } from '@wordhold/ai/extraction';
+import { Effect } from 'effect';
+import { imageDimensionsFromData } from 'image-dimensions';
+import { persistFileReference } from '../../../shared/storage/consistency';
+import {
+  pageImageRelativePath,
+  Storage,
+  toBase64,
+} from '../../../shared/storage/server';
+import { CourseNotFoundError } from '../errors/course-not-found-error';
+import { UploadReadError } from '../errors/upload-read-error';
+import { UploadValidationError } from '../errors/upload-validation-error';
+import { extractPage } from './extract';
+import { reconcileStoredFiles } from './reconcile-stored-files';
+import { ImportRepository } from './repository';
+
+const bytesPerKibibyte = 1024;
+const kibibytesPerMebibyte = 1024;
+const maximumImageMebibytes = 12;
+const multipartOverheadKibibytes = 64;
+const badRequestStatus = 400;
+const contentTooLargeStatus = 413;
+const unsupportedMediaTypeStatus = 415;
+
+export const maximumImageBytes =
+  maximumImageMebibytes * kibibytesPerMebibyte * bytesPerKibibyte;
+export const maximumMultipartBytes =
+  maximumImageBytes + multipartOverheadKibibytes * bytesPerKibibyte;
+export const maximumImageWidth = 12_000;
+export const maximumImageHeight = 12_000;
+export const maximumImagePixels = 40_000_000;
+
+const formatDetails = {
+  jpeg: { extension: 'jpg', mediaType: 'image/jpeg' },
+  png: { extension: 'png', mediaType: 'image/png' },
+  webp: { extension: 'webp', mediaType: 'image/webp' },
+} as const;
+
+export type ValidatedPageImage = {
+  readonly bytes: Uint8Array;
+  readonly extension: 'jpg' | 'png' | 'webp';
+  readonly mediaType: 'image/jpeg' | 'image/png' | 'image/webp';
+  readonly width: number;
+  readonly height: number;
+};
+
+const invalidUpload = (message: string, status = badRequestStatus) =>
+  new UploadValidationError({ message, status });
+
+export const validatePageImage = (
+  image: File,
+): Effect.Effect<ValidatedPageImage, UploadValidationError | UploadReadError> =>
+  Effect.gen(function* () {
+    if (image.size === 0) {
+      return yield* invalidUpload('Das Bild ist leer.');
+    }
+    if (image.size > maximumImageBytes) {
+      return yield* invalidUpload(
+        'Das Bild ist größer als 12 MiB.',
+        contentTooLargeStatus,
+      );
+    }
+    const bytes = yield* Effect.tryPromise({
+      try: async () => new Uint8Array(await image.arrayBuffer()),
+      catch: (cause) =>
+        new UploadReadError({
+          cause,
+          message: 'Das Bild konnte nicht gelesen werden.',
+        }),
+    });
+    if (
+      bytes.byteLength !== image.size ||
+      bytes.byteLength > maximumImageBytes
+    ) {
+      return yield* invalidUpload('Ungültige Upload-Größe.');
+    }
+    const dimensions = yield* Effect.try({
+      try: () => imageDimensionsFromData(bytes),
+      catch: () =>
+        invalidUpload(
+          'Das Bild muss eine JPEG-, PNG- oder WebP-Datei sein.',
+          unsupportedMediaTypeStatus,
+        ),
+    });
+    if (dimensions === undefined || !(dimensions.type in formatDetails)) {
+      return yield* invalidUpload(
+        'Das Bild muss eine JPEG-, PNG- oder WebP-Datei sein.',
+        unsupportedMediaTypeStatus,
+      );
+    }
+    if (
+      dimensions.width > maximumImageWidth ||
+      dimensions.height > maximumImageHeight ||
+      dimensions.width * dimensions.height > maximumImagePixels
+    ) {
+      return yield* invalidUpload(
+        'Das Bild überschreitet die erlaubten Abmessungen.',
+        contentTooLargeStatus,
+      );
+    }
+    const details =
+      formatDetails[dimensions.type as keyof typeof formatDetails];
+    return {
+      bytes,
+      width: dimensions.width,
+      height: dimensions.height,
+      ...details,
+    };
+  });
+
+const errorMessage = (error: unknown): string =>
+  typeof error === 'object' &&
+  error !== null &&
+  'message' in error &&
+  typeof error.message === 'string'
+    ? error.message
+    : String(error);
+
+export const createUploadedPage = (courseId: string, image: File) =>
+  Effect.gen(function* () {
+    const repository = yield* ImportRepository;
+    const storage = yield* Storage;
+    const validated = yield* validatePageImage(image);
+    const course = yield* repository.getCourse(courseId);
+    if (course === undefined) {
+      return yield* new CourseNotFoundError({
+        message: 'Kurs nicht gefunden.',
+      });
+    }
+    yield* reconcileStoredFiles;
+    const pageId = crypto.randomUUID();
+    const imagePath = pageImageRelativePath(pageId, validated.extension);
+    yield* persistFileReference({
+      write: storage.write(imagePath, validated.bytes),
+      persistReference: repository.insertPage({
+        id: pageId,
+        courseId,
+        imagePath,
+      }),
+      remove: storage.remove(imagePath),
+    });
+
+    const extraction = yield* extractPage({
+      imageBase64: toBase64(validated.bytes),
+      mediaType: validated.mediaType,
+      language: course.targetLanguage,
+    }).pipe(
+      Effect.flatMap((result: ExtractionResult) =>
+        repository
+          .saveExtractionIfPending(pageId, result)
+          .pipe(
+            Effect.flatMap((updated) =>
+              updated === undefined
+                ? Effect.fail(
+                    new Error(
+                      'Die Seite wurde während des Auslesens bereits importiert.',
+                    ),
+                  )
+                : Effect.succeed(updated),
+            ),
+          ),
+      ),
+      Effect.match({
+        onFailure: (error) => errorMessage(error),
+        onSuccess: () => null,
+      }),
+    );
+    return { pageId, extractionError: extraction };
+  });
