@@ -1,0 +1,125 @@
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
+import type { ExtractionResult } from '@wordhold/ai/extraction';
+import { useState } from 'react';
+import type { DraftEntry } from '../../../shared/import/entry-row';
+import { importPage } from '../../../shared/import/import-fn';
+import { getPage, retryExtraction } from '../../../shared/import/server-fns';
+import { VerifyForm } from '../../../shared/import/verify-form';
+
+const languageLabels: Record<string, string> = {
+  de: 'Deutsch',
+  en: 'Englisch',
+  es: 'Spanisch',
+  fr: 'Französisch',
+};
+
+const draftsFromExtraction = (
+  extraction: ExtractionResult | null,
+): ReadonlyArray<DraftEntry> =>
+  extraction === null
+    ? []
+    : extraction.page.entries.map((entry) => ({
+        type: entry.type,
+        targetText: entry.targetText,
+        nativeText: entry.nativeText,
+        example: entry.example ?? '',
+        ...(entry.grammar === undefined ? {} : { grammar: entry.grammar }),
+        confidence: entry.confidence,
+      }));
+
+const toPayloadEntry = (draft: DraftEntry) => ({
+  type: draft.type,
+  targetText: draft.targetText,
+  nativeText: draft.nativeText,
+  ...(draft.grammar === undefined ? {} : { grammar: draft.grammar }),
+  ...(draft.example.trim() === '' ? {} : { example: draft.example.trim() }),
+});
+
+const VerifyScreen = () => {
+  const { page, course } = Route.useLoaderData();
+  const navigate = useNavigate();
+  const [extraction, setExtraction] = useState(page.extraction);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const run = async (action: () => Promise<void>) => {
+    setBusy(true);
+    setError(null);
+    try {
+      await action();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const targetLabel = languageLabels[course.targetLanguage] ?? 'Zielsprache';
+
+  return (
+    <main className="mx-auto flex max-w-5xl flex-col gap-4 p-6">
+      <Link className="text-neutral-500 text-sm underline" to="/">
+        ← Übersicht
+      </Link>
+      <h1 className="font-semibold text-2xl">
+        {course.name}: Seite überprüfen
+      </h1>
+      {error === null ? null : <p className="text-red-700 text-sm">{error}</p>}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <img
+          alt="Fotografierte Vokabelseite"
+          className="h-auto w-full self-start rounded-lg border border-neutral-200"
+          src={`/api/pages/${page.id}/image`}
+        />
+        <div>
+          {extraction === null ? (
+            <div className="flex flex-col items-start gap-3">
+              <p className="text-neutral-600 text-sm">
+                Die Seite wurde noch nicht ausgelesen oder das Auslesen ist
+                fehlgeschlagen.
+              </p>
+              <button
+                className="rounded bg-neutral-900 px-4 py-2 text-sm text-white disabled:opacity-50"
+                disabled={busy}
+                onClick={() =>
+                  run(async () => {
+                    const updated = await retryExtraction({ data: page.id });
+                    setExtraction(updated.extraction);
+                  })
+                }
+                type="button"
+              >
+                {busy ? 'Wird gelesen …' : 'Erneut auslesen'}
+              </button>
+            </div>
+          ) : (
+            <VerifyForm
+              busy={busy}
+              initialEntries={draftsFromExtraction(extraction)}
+              initialLabel={page.label ?? extraction.page.pageLabel ?? ''}
+              key={extraction.modelId + String(extraction.page.entries.length)}
+              onSubmit={(label, verified) =>
+                run(async () => {
+                  await importPage({
+                    data: {
+                      pageId: page.id,
+                      ...(label.trim() === '' ? {} : { label: label.trim() }),
+                      entries: verified.map(toPayloadEntry),
+                    },
+                  });
+                  await navigate({ to: '/' });
+                })
+              }
+              targetLabel={targetLabel}
+            />
+          )}
+        </div>
+      </div>
+    </main>
+  );
+};
+
+export const Route = createFileRoute('/pages/$pageId/verify')({
+  loader: ({ params }) => getPage({ data: params.pageId }),
+  component: VerifyScreen,
+});

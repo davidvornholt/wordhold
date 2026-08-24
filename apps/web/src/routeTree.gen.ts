@@ -10,13 +10,22 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiPagesRouteImport } from './routes/api/pages'
 import { Route as BakeHeirloomRouteImport } from './routes/bake/heirloom'
 import { Route as BakeWarmPrintRouteImport } from './routes/bake/warm-print'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as CoursesCourseIdImportRouteImport } from './routes/courses/$courseId/import'
+import { Route as PagesPageIdVerifyRouteImport } from './routes/pages/$pageId/verify'
+import { Route as ApiPagesPageIdImageRouteImport } from './routes/api/pages/$pageId/image'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPagesRoute = ApiPagesRouteImport.update({
+  id: '/api/pages',
+  path: '/api/pages',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BakeHeirloomRoute = BakeHeirloomRouteImport.update({
@@ -34,39 +43,94 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CoursesCourseIdImportRoute = CoursesCourseIdImportRouteImport.update({
+  id: '/courses/$courseId/import',
+  path: '/courses/$courseId/import',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PagesPageIdVerifyRoute = PagesPageIdVerifyRouteImport.update({
+  id: '/pages/$pageId/verify',
+  path: '/pages/$pageId/verify',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPagesPageIdImageRoute = ApiPagesPageIdImageRouteImport.update({
+  id: '/$pageId/image',
+  path: '/$pageId/image',
+  getParentRoute: () => ApiPagesRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/api/pages': typeof ApiPagesRouteWithChildren
   '/bake/heirloom': typeof BakeHeirloomRoute
   '/bake/warm-print': typeof BakeWarmPrintRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/courses/$courseId/import': typeof CoursesCourseIdImportRoute
+  '/pages/$pageId/verify': typeof PagesPageIdVerifyRoute
+  '/api/pages/$pageId/image': typeof ApiPagesPageIdImageRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/api/pages': typeof ApiPagesRouteWithChildren
   '/bake/heirloom': typeof BakeHeirloomRoute
   '/bake/warm-print': typeof BakeWarmPrintRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/courses/$courseId/import': typeof CoursesCourseIdImportRoute
+  '/pages/$pageId/verify': typeof PagesPageIdVerifyRoute
+  '/api/pages/$pageId/image': typeof ApiPagesPageIdImageRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/api/pages': typeof ApiPagesRouteWithChildren
   '/bake/heirloom': typeof BakeHeirloomRoute
   '/bake/warm-print': typeof BakeWarmPrintRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/courses/$courseId/import': typeof CoursesCourseIdImportRoute
+  '/pages/$pageId/verify': typeof PagesPageIdVerifyRoute
+  '/api/pages/$pageId/image': typeof ApiPagesPageIdImageRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/bake/heirloom' | '/bake/warm-print' | '/api/auth/$'
+  fullPaths:
+    | '/'
+    | '/api/pages'
+    | '/bake/heirloom'
+    | '/bake/warm-print'
+    | '/api/auth/$'
+    | '/courses/$courseId/import'
+    | '/pages/$pageId/verify'
+    | '/api/pages/$pageId/image'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/bake/heirloom' | '/bake/warm-print' | '/api/auth/$'
-  id: '__root__' | '/' | '/bake/heirloom' | '/bake/warm-print' | '/api/auth/$'
+  to:
+    | '/'
+    | '/api/pages'
+    | '/bake/heirloom'
+    | '/bake/warm-print'
+    | '/api/auth/$'
+    | '/courses/$courseId/import'
+    | '/pages/$pageId/verify'
+    | '/api/pages/$pageId/image'
+  id:
+    | '__root__'
+    | '/'
+    | '/api/pages'
+    | '/bake/heirloom'
+    | '/bake/warm-print'
+    | '/api/auth/$'
+    | '/courses/$courseId/import'
+    | '/pages/$pageId/verify'
+    | '/api/pages/$pageId/image'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApiPagesRoute: typeof ApiPagesRouteWithChildren
   BakeHeirloomRoute: typeof BakeHeirloomRoute
   BakeWarmPrintRoute: typeof BakeWarmPrintRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  CoursesCourseIdImportRoute: typeof CoursesCourseIdImportRoute
+  PagesPageIdVerifyRoute: typeof PagesPageIdVerifyRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -76,6 +140,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/pages': {
+      id: '/api/pages'
+      path: '/api/pages'
+      fullPath: '/api/pages'
+      preLoaderRoute: typeof ApiPagesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/bake/heirloom': {
@@ -99,14 +170,50 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/courses/$courseId/import': {
+      id: '/courses/$courseId/import'
+      path: '/courses/$courseId/import'
+      fullPath: '/courses/$courseId/import'
+      preLoaderRoute: typeof CoursesCourseIdImportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pages/$pageId/verify': {
+      id: '/pages/$pageId/verify'
+      path: '/pages/$pageId/verify'
+      fullPath: '/pages/$pageId/verify'
+      preLoaderRoute: typeof PagesPageIdVerifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/pages/$pageId/image': {
+      id: '/api/pages/$pageId/image'
+      path: '/$pageId/image'
+      fullPath: '/api/pages/$pageId/image'
+      preLoaderRoute: typeof ApiPagesPageIdImageRouteImport
+      parentRoute: typeof ApiPagesRoute
+    }
   }
 }
 
+interface ApiPagesRouteChildren {
+  ApiPagesPageIdImageRoute: typeof ApiPagesPageIdImageRoute
+}
+
+const ApiPagesRouteChildren: ApiPagesRouteChildren = {
+  ApiPagesPageIdImageRoute: ApiPagesPageIdImageRoute,
+}
+
+const ApiPagesRouteWithChildren = ApiPagesRoute._addFileChildren(
+  ApiPagesRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApiPagesRoute: ApiPagesRouteWithChildren,
   BakeHeirloomRoute: BakeHeirloomRoute,
   BakeWarmPrintRoute: BakeWarmPrintRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  CoursesCourseIdImportRoute: CoursesCourseIdImportRoute,
+  PagesPageIdVerifyRoute: PagesPageIdVerifyRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

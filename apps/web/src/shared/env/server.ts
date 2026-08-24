@@ -12,8 +12,14 @@ const required = (name: string): string => {
   return value;
 };
 
+const optional = (name: string, fallback: string): string => {
+  const value = process.env[name];
+  return value === undefined || value === '' ? fallback : value;
+};
+
 export const serverEnv = {
   databaseUrl: () => required('DATABASE_URL'),
+  dataDir: () => optional('WORDHOLD_DATA_DIR', 'data'),
   authSecret: () => required('AUTH_SECRET'),
   githubClientId: () => required('GITHUB_CLIENT_ID'),
   githubClientSecret: () => required('GITHUB_CLIENT_SECRET'),

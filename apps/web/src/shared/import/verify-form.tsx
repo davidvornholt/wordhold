@@ -1,0 +1,91 @@
+import { useState } from 'react';
+import { type DraftEntry, EntryRow } from './entry-row';
+
+const emptyEntry: DraftEntry = {
+  type: 'word',
+  targetText: '',
+  nativeText: '',
+  example: '',
+};
+
+type VerifyFormProps = {
+  readonly initialEntries: ReadonlyArray<DraftEntry>;
+  readonly initialLabel: string;
+  readonly targetLabel: string;
+  readonly busy: boolean;
+  readonly onSubmit: (
+    label: string,
+    verifiedEntries: ReadonlyArray<DraftEntry>,
+  ) => void;
+};
+
+export const VerifyForm = ({
+  initialEntries,
+  initialLabel,
+  targetLabel,
+  busy,
+  onSubmit,
+}: VerifyFormProps) => {
+  const [label, setLabel] = useState(initialLabel);
+  const [draftEntries, setDraftEntries] = useState(initialEntries);
+
+  const complete = draftEntries.filter(
+    (entry) => entry.targetText.trim() !== '' && entry.nativeText.trim() !== '',
+  );
+
+  return (
+    <form
+      className="flex flex-col gap-4"
+      onSubmit={(event) => {
+        event.preventDefault();
+        onSubmit(label, complete);
+      }}
+    >
+      <label className="flex flex-col gap-1 text-sm">
+        Seitenbezeichnung
+        <input
+          className="rounded border border-neutral-300 px-2 py-1.5"
+          onChange={(event) => setLabel(event.target.value)}
+          placeholder="z. B. Unité 3, Seite 42"
+          value={label}
+        />
+      </label>
+      <ul className="flex flex-col gap-3">
+        {draftEntries.map((entry, index) => (
+          <EntryRow
+            entry={entry}
+            // biome-ignore lint/suspicious/noArrayIndexKey: rows are positional edits of one page
+            key={index}
+            onChange={(next) =>
+              setDraftEntries(
+                draftEntries.map((current, i) =>
+                  i === index ? next : current,
+                ),
+              )
+            }
+            onRemove={() =>
+              setDraftEntries(draftEntries.filter((_, i) => i !== index))
+            }
+            targetLabel={targetLabel}
+          />
+        ))}
+      </ul>
+      <div className="flex items-center gap-3">
+        <button
+          className="rounded border border-neutral-300 px-3 py-1.5 text-sm"
+          onClick={() => setDraftEntries([...draftEntries, emptyEntry])}
+          type="button"
+        >
+          Eintrag hinzufügen
+        </button>
+        <button
+          className="rounded bg-neutral-900 px-4 py-1.5 text-sm text-white disabled:opacity-50"
+          disabled={busy || complete.length === 0}
+          type="submit"
+        >
+          {busy ? 'Importiere …' : `${complete.length} Einträge importieren`}
+        </button>
+      </div>
+    </form>
+  );
+};

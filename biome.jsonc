@@ -40,6 +40,26 @@
       }
     },
     {
+      // TanStack Start has no framework image component; plain <img> is the
+      // only way to render the auth-gated page photos.
+      "includes": ["apps/web/src/**", "!**/routeTree.gen.ts"],
+      "linter": {
+        "rules": {
+          "performance": { "noImgElement": "off" }
+        }
+      }
+    },
+    {
+      // Designated filesystem boundary: the one application file allowed to
+      // use Node APIs for the data directory.
+      "includes": ["apps/web/src/shared/storage/server.ts"],
+      "linter": {
+        "rules": {
+          "correctness": { "noNodejsModules": "off" }
+        }
+      }
+    },
+    {
       // AWS Polly's SDK commands require PascalCase request properties.
       "includes": ["packages/ai/src/tts/service.ts"],
       "linter": {
