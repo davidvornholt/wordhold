@@ -64,3 +64,19 @@
 .root-pending {
   @apply mx-auto flex min-h-screen max-w-lg items-center p-6;
 }
+
+.audio-recovery {
+  @apply flex flex-col items-start gap-3 rounded-lg border border-neutral-200 p-4;
+}
+
+.audio-recovery-heading {
+  @apply font-semibold text-lg;
+}
+
+.audio-recovery-copy {
+  @apply text-neutral-600 text-sm;
+}
+
+.audio-recovery-button {
+  @apply rounded bg-neutral-900 px-4 py-2 text-sm text-white disabled:opacity-50;
+}

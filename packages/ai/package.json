@@ -12,7 +12,8 @@
     "./judge": "./src/judge/service.ts",
     "./judge/schema": "./src/judge/schema.ts",
     "./sentence": "./src/sentence/service.ts",
-    "./tts": "./src/tts/service.ts"
+    "./tts": "./src/tts/service.ts",
+    "./tts/error": "./src/tts/error.ts"
   },
   "scripts": {
     "check-types": "tsc --noEmit",

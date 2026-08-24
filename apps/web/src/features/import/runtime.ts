@@ -6,9 +6,11 @@ import { Layer, ManagedRuntime } from 'effect';
 import { OwnerRepositoryLive } from '../../shared/auth/owner-repository';
 import { MediaRepositoryLive } from '../../shared/storage/media-service';
 import { StorageLive } from '../../shared/storage/server';
+import { AudioGenerationStoreLive } from './services/audio-generation-store';
 import { ImportRepositoryLive } from './services/repository-live';
 
 const databaseServices = Layer.mergeAll(
+  AudioGenerationStoreLive,
   ImportRepositoryLive,
   OwnerRepositoryLive,
   MediaRepositoryLive,

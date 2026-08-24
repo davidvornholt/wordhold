@@ -7,6 +7,10 @@ import { requireString } from '../../shared/validate/input';
 import { CourseNotFoundError } from './errors/course-not-found-error';
 import { PageNotFoundError } from './errors/page-not-found-error';
 import { importRuntime } from './runtime';
+import {
+  retryPageAudio,
+  serializableAudioReport,
+} from './services/audio-generation';
 import { retryPendingExtraction } from './services/extraction-retry';
 import { ImportRepository } from './services/repository';
 
@@ -89,6 +93,16 @@ export const retryExtraction = createServerFn({ method: 'POST' })
             extraction: updated.extraction as ExtractionResult | null,
           })),
         ),
+      ),
+    ),
+  );
+
+export const retryAudio = createServerFn({ method: 'POST' })
+  .validator(requireString)
+  .handler(({ data }) =>
+    importRuntime.runPromise(
+      authenticated(
+        retryPageAudio(data).pipe(Effect.map(serializableAudioReport)),
       ),
     ),
   );

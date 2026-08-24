@@ -1,6 +1,10 @@
 import type { ExtractionResult } from '@wordhold/ai/extraction';
 import { Effect } from 'effect';
 import { Storage, type StorageShape } from '../../../shared/storage/server';
+import {
+  AudioGenerationStore,
+  type AudioGenerationStoreShape,
+} from './audio-generation-store';
 import { ImportRepository, type ImportRepositoryShape } from './repository';
 
 const page = {
@@ -37,7 +41,6 @@ export const makeImportRepository = (
     insertPage: () => Effect.void,
     verifyPage: () => Effect.succeed([]),
     referencedPaths: Effect.succeed(new Set()),
-    upsertAudioReference: () => Effect.void,
     ...overrides,
   });
 
@@ -47,5 +50,16 @@ export const makeStorage = (overrides: Partial<StorageShape> = {}) =>
     read: () => Effect.succeed(new Uint8Array()),
     remove: () => Effect.void,
     reconcile: () => Effect.succeed([]),
+    ...overrides,
+  });
+
+export const makeAudioGenerationStore = (
+  overrides: Partial<AudioGenerationStoreShape> = {},
+) =>
+  AudioGenerationStore.of({
+    listMissingForPage: () => Effect.succeed([]),
+    hasReference: () => Effect.succeed(false),
+    upsertReference: () => Effect.void,
+    withCriticalSection: (_entryId, effect) => effect,
     ...overrides,
   });

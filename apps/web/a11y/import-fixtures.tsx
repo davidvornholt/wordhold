@@ -1,4 +1,5 @@
 import { type SubmitEvent, useState } from 'react';
+import { AudioRecovery } from '../src/features/import/ui/audio-recovery';
 import { navigateToFixture } from './fixture-state';
 
 const BackButton = () => (
@@ -56,7 +57,10 @@ export const ImportFixture = ({ error = false }) => {
   );
 };
 
-export const VerificationFixture = ({ empty = false }) => (
+export const VerificationFixture = ({
+  empty = false,
+  audioRecovery = false,
+}) => (
   <main className="mx-auto flex max-w-5xl flex-col gap-4 p-6">
     <BackButton />
     <h1 className="font-semibold text-2xl">English A2: Seite überprüfen</h1>
@@ -71,7 +75,15 @@ export const VerificationFixture = ({ empty = false }) => (
         <path d="M40 80h320M40 140h320M40 200h320" stroke="currentColor" />
       </svg>
       <div>
-        {empty ? (
+        {audioRecovery ? (
+          <AudioRecovery
+            busy={false}
+            imported={1}
+            onRetry={() => navigateToFixture('dashboard')}
+            pending={1}
+          />
+        ) : null}
+        {!audioRecovery && empty ? (
           <div className="flex flex-col items-start gap-3">
             <p className="text-neutral-600 text-sm">
               Die Seite wurde noch nicht ausgelesen oder das Auslesen ist
@@ -84,7 +96,8 @@ export const VerificationFixture = ({ empty = false }) => (
               Erneut auslesen
             </button>
           </div>
-        ) : (
+        ) : null}
+        {audioRecovery || empty ? null : (
           <form
             className="flex flex-col gap-4"
             onSubmit={(event) => {

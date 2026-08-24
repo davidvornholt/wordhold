@@ -4,6 +4,7 @@ import { Effect } from 'effect';
 import { requireSession } from '../../shared/auth/require-session';
 import { importRuntime } from './runtime';
 import { decodeImportPayload } from './schemas/import-payload';
+import { serializableAudioReport } from './services/audio-generation';
 import { importVerifiedPage } from './services/import-page';
 
 export const importPage = createServerFn({ method: 'POST' })
@@ -12,7 +13,12 @@ export const importPage = createServerFn({ method: 'POST' })
     importRuntime.runPromise(
       Effect.zipRight(
         requireSession(getRequest().headers),
-        importVerifiedPage(data),
+        importVerifiedPage(data).pipe(
+          Effect.map((result) => ({
+            ...result,
+            audio: serializableAudioReport(result.audio),
+          })),
+        ),
       ),
     ),
   );

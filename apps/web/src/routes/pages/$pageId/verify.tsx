@@ -2,7 +2,12 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import type { ExtractionResult } from '@wordhold/ai/extraction';
 import { useState } from 'react';
 import { importPage } from '../../../features/import/import-fn';
-import { getPage, retryExtraction } from '../../../features/import/server-fns';
+import {
+  getPage,
+  retryAudio,
+  retryExtraction,
+} from '../../../features/import/server-fns';
+import { AudioRecovery } from '../../../features/import/ui/audio-recovery';
 import type { DraftEntry } from '../../../features/import/ui/entry-row';
 import { VerifyForm } from '../../../features/import/ui/verify-form';
 import { germanLabels } from '../../../shared/languages';
@@ -35,6 +40,12 @@ const VerifyScreen = () => {
   const [extraction, setExtraction] = useState(page.extraction);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [completed, setCompleted] = useState<{
+    readonly imported: number | null;
+    readonly pending: number | null;
+  } | null>(
+    page.status === 'verified' ? { imported: null, pending: null } : null,
+  );
 
   const run = async (action: () => Promise<void>) => {
     setBusy(true);
@@ -66,7 +77,28 @@ const VerifyScreen = () => {
           src={`/api/pages/${page.id}/image`}
         />
         <div>
-          {extraction === null ? (
+          {completed === null ? null : (
+            <AudioRecovery
+              busy={busy}
+              imported={completed.imported}
+              onRetry={() =>
+                run(async () => {
+                  const result = await retryAudio({ data: page.id });
+                  if (result.pending === 0) {
+                    await navigate({ to: '/' });
+                    return;
+                  }
+                  setCompleted((current) =>
+                    current === null
+                      ? null
+                      : { ...current, pending: result.pending },
+                  );
+                })
+              }
+              pending={completed.pending}
+            />
+          )}
+          {completed === null && extraction === null ? (
             <div className="flex flex-col items-start gap-3">
               <p className="text-neutral-600 text-sm">
                 Die Seite wurde noch nicht ausgelesen oder das Auslesen ist
@@ -86,7 +118,8 @@ const VerifyScreen = () => {
                 {busy ? 'Wird gelesen …' : 'Erneut auslesen'}
               </button>
             </div>
-          ) : (
+          ) : null}
+          {completed === null && extraction !== null ? (
             <VerifyForm
               busy={busy}
               initialEntries={draftsFromExtraction(extraction)}
@@ -94,19 +127,26 @@ const VerifyScreen = () => {
               key={extraction.modelId + String(extraction.page.entries.length)}
               onSubmit={(label, verified) =>
                 run(async () => {
-                  await importPage({
+                  const result = await importPage({
                     data: {
                       pageId: page.id,
                       ...(label.trim() === '' ? {} : { label: label.trim() }),
                       entries: verified.map(toPayloadEntry),
                     },
                   });
-                  await navigate({ to: '/' });
+                  if (result.audio.pending === 0) {
+                    await navigate({ to: '/' });
+                    return;
+                  }
+                  setCompleted({
+                    imported: result.imported,
+                    pending: result.audio.pending,
+                  });
                 })
               }
               targetLabel={targetLabel}
             />
-          )}
+          ) : null}
         </div>
       </div>
     </main>

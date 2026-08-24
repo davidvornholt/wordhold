@@ -20,9 +20,6 @@ export const importVerifiedPage = (payload: ImportPayloadData) =>
     }
     yield* reconcileStoredFiles;
     const inserted = yield* repository.verifyPage(payload, row.page.courseId);
-    const audioGenerated = yield* generateAudio(
-      inserted,
-      row.course.targetLanguage,
-    );
-    return { imported: inserted.length, audioGenerated };
+    const audio = yield* generateAudio(inserted, row.course.targetLanguage);
+    return { imported: inserted.length, audio };
   });

@@ -64,6 +64,8 @@ export const FixtureApp = () => {
       return <VerificationFixture />;
     case 'verification-empty':
       return <VerificationFixture empty={true} />;
+    case 'verification-audio-recovery':
+      return <VerificationFixture audioRecovery={true} />;
     case 'practice':
       return <PracticeFixture />;
     case 'practice-feedback':

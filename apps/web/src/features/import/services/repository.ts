@@ -86,11 +86,6 @@ export type ImportRepositoryShape = {
     ReadonlySet<string>,
     ImportDatabaseError
   >;
-  readonly upsertAudioReference: (
-    entryId: string,
-    voice: string,
-    path: string,
-  ) => Effect.Effect<void, ImportDatabaseError>;
 };
 
 export class ImportRepository extends Context.Tag(

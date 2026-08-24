@@ -23,9 +23,4 @@ export const storageRepositoryLive = (sql: Database) => ({
     ),
     Effect.mapError((cause) => failure('list stored file references', cause)),
   ),
-  upsertAudioReference: (entryId: string, voice: string, path: string) =>
-    sql`insert into entry_audio (entry_id, voice, path) values (${entryId}, ${voice}, ${path}) on conflict (entry_id, voice) do update set path = excluded.path`.pipe(
-      Effect.asVoid,
-      Effect.mapError((cause) => failure('upsert audio reference', cause)),
-    ),
 });
