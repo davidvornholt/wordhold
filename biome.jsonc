@@ -13,5 +13,21 @@
     // files, so only force-ignore (`!!`) guarantees they are never discovered
     // as nested roots.
     "includes": ["**", "!.claude/workflows", "!!.claude/worktrees"]
-  }
+  },
+  "overrides": [
+    {
+      // Designated server environment boundary: the one application file
+      // allowed to read process.env. Everything else imports from it.
+      "includes": [
+        "apps/web/src/shared/env/server.ts",
+        "apps/web/src/shared/env/server.test.ts"
+      ],
+      "linter": {
+        "rules": {
+          "correctness": { "noNodejsModules": "off" },
+          "style": { "noProcessEnv": "off" }
+        }
+      }
+    }
+  ]
 }
