@@ -76,6 +76,16 @@
           "style": { "useNamingConvention": "off" }
         }
       }
+    },
+    {
+      // Test-only Vite fixtures load Tailwind through their separate HTML
+      // entrypoint, which Biome's import graph cannot connect to each JSX file.
+      "includes": ["apps/web/a11y/*.tsx"],
+      "linter": {
+        "rules": {
+          "nursery": { "noUndeclaredClasses": "off" }
+        }
+      }
     }
   ]
 }
