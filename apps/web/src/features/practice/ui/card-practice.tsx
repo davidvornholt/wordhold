@@ -71,14 +71,14 @@ export const CardPractice = ({
 
   return (
     <>
-      <p className="text-neutral-500 text-sm">
+      <p className="text-muted-foreground text-sm">
         Karte {position} von {total} ·{' '}
         {item.direction === 'to_target'
           ? `Übersetze ins ${targetLabel}e`
           : 'Übersetze ins Deutsche'}
       </p>
-      <div className="rounded-lg border border-neutral-200 p-6">
-        <p className="font-medium text-xl">{item.prompt}</p>
+      <div className="border border-border bg-card p-6">
+        <p className="font-display text-2xl">{item.prompt}</p>
       </div>
       <form
         aria-busy={busy}
@@ -90,7 +90,7 @@ export const CardPractice = ({
           autoCapitalize="off"
           autoComplete="off"
           autoCorrect="off"
-          className="rounded border border-neutral-300 px-3 py-2"
+          className="border border-input bg-card px-3 py-2"
           disabled={busy || result !== null}
           onChange={(event) => setAnswer(event.target.value)}
           placeholder="Deine Antwort"
@@ -98,7 +98,7 @@ export const CardPractice = ({
         />
         {result === null ? (
           <button
-            className="rounded bg-neutral-900 px-4 py-2 text-sm text-white disabled:opacity-50"
+            className="bg-primary px-4 py-2 text-primary-foreground text-sm disabled:opacity-50"
             disabled={busy || answer.trim() === ''}
             type="submit"
           >
@@ -106,7 +106,9 @@ export const CardPractice = ({
           </button>
         ) : null}
       </form>
-      {error === null ? null : <p className="text-red-700 text-sm">{error}</p>}
+      {error === null ? null : (
+        <p className="text-destructive text-sm">{error}</p>
+      )}
       {result === null ? null : (
         <FeedbackPanel
           audioUrl={audioUrl}

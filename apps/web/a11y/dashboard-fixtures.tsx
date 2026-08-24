@@ -22,17 +22,6 @@ const recoveryPage = {
   verifiedAt: new Date('2026-08-24T12:00:00Z'),
 };
 
-const navigation = (
-  <>
-    <a className="text-neutral-400 text-xs underline" href="/bake/heirloom">
-      Bake-off: Heirloom
-    </a>
-    <a className="text-neutral-400 text-xs underline" href="/bake/warm-print">
-      Bake-off: Warm Print
-    </a>
-  </>
-);
-
 const action = (label: string, destination: 'import' | 'practice') => (
   <button
     className="text-sm underline"
@@ -45,7 +34,6 @@ const action = (label: string, destination: 'import' | 'practice') => (
 
 export const SignedOutFixture = () => (
   <HomeShell
-    navigation={navigation}
     onSignIn={() => navigateToFixture('dashboard')}
     onSignOut={() => undefined}
     signedIn={false}
@@ -56,7 +44,6 @@ export const SignedOutFixture = () => (
 
 export const DashboardFixture = ({ empty = false, audioRecovery = false }) => (
   <HomeShell
-    navigation={navigation}
     onSignIn={() => undefined}
     onSignOut={() => navigateToFixture('signed-out')}
     signedIn={true}

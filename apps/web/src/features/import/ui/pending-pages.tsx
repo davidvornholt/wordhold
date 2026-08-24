@@ -17,9 +17,9 @@ export const PendingPages = ({
   renderPageAction,
 }: PendingPagesProps) => (
   <section className="flex flex-col gap-3">
-    <h2 className="font-medium text-lg">Seiten zur Überprüfung</h2>
+    <h2 className="font-display text-xl">Seiten zur Überprüfung</h2>
     {pages.length === 0 ? (
-      <p className="text-neutral-500 text-sm">
+      <p className="text-muted-foreground text-sm">
         Keine Seiten warten auf Überprüfung.
       </p>
     ) : (

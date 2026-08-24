@@ -9,7 +9,7 @@ import { completeAudioRecovery, navigateToFixture } from './fixture-state';
 
 const backControl = (
   <button
-    className="text-neutral-500 text-sm underline"
+    className="text-muted-foreground text-sm underline"
     onClick={() => navigateToFixture('dashboard')}
     type="button"
   >
@@ -59,7 +59,7 @@ export const VerificationFixture = ({
   <main className="mx-auto flex max-w-5xl flex-col gap-4 p-6">
     {audioRecovery ? (
       <button
-        className="text-neutral-500 text-sm underline"
+        className="text-muted-foreground text-sm underline"
         onClick={() => navigateToFixture('dashboard-audio-recovery')}
         type="button"
       >

@@ -1,5 +1,14 @@
 import type { SubmitResult } from '../services/practice-service';
 
+const panelTone = (result: SubmitResult) => {
+  if (!result.graded) {
+    return 'border-warning-foreground bg-warning';
+  }
+  return result.correct
+    ? 'border-primary bg-accent'
+    : 'border-destructive bg-destructive/10';
+};
+
 type FeedbackPanelProps = {
   readonly result: SubmitResult;
   readonly audioUrl: string | null;
@@ -11,13 +20,7 @@ export const FeedbackPanel = ({
   audioUrl,
   onNext,
 }: FeedbackPanelProps) => (
-  <div
-    className={`flex flex-col gap-3 rounded-lg border p-4 ${
-      result.graded && result.correct
-        ? 'border-green-300 bg-green-50'
-        : 'border-red-300 bg-red-50'
-    }`}
-  >
+  <div className={`flex flex-col gap-3 border-l-4 p-4 ${panelTone(result)}`}>
     {result.graded ? (
       <p className="font-medium">
         {result.correct ? 'Richtig!' : 'Leider falsch.'}
@@ -33,14 +36,14 @@ export const FeedbackPanel = ({
       <p className="text-sm">{result.explanation}</p>
     ) : null}
     {result.graded && result.acceptedAsAlternative ? (
-      <p className="text-green-800 text-sm">
+      <p className="text-accent-foreground text-sm">
         Deine Antwort wurde als gültige Alternative gespeichert.
       </p>
     ) : null}
     <div className="flex items-center gap-3">
       {audioUrl === null ? null : (
         <button
-          className="rounded border border-neutral-300 px-3 py-1.5 text-sm"
+          className="border border-input px-3 py-1.5 text-sm"
           onClick={async () => {
             await new Audio(audioUrl).play().catch(() => undefined);
           }}
@@ -50,7 +53,7 @@ export const FeedbackPanel = ({
         </button>
       )}
       <button
-        className="rounded bg-neutral-900 px-4 py-1.5 text-sm text-white"
+        className="bg-primary px-4 py-1.5 text-primary-foreground text-sm"
         onClick={onNext}
         type="button"
       >

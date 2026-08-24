@@ -22,7 +22,7 @@ const PracticeScreen = () => {
   return (
     <PracticeLayout
       backControl={
-        <Link className="text-neutral-500 text-sm underline" to="/">
+        <Link className="text-muted-foreground text-sm underline" to="/">
           ← Übersicht
         </Link>
       }

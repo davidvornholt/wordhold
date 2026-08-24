@@ -5,7 +5,7 @@ type VerificationImageProps = {
 export const VerificationImage = ({ src }: VerificationImageProps) => (
   <img
     alt="Fotografierte Vokabelseite"
-    className="h-auto w-full self-start rounded-lg border border-neutral-200"
+    className="h-auto w-full self-start border border-border"
     src={src}
   />
 );

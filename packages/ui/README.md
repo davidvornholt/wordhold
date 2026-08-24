@@ -2,22 +2,18 @@
 
 Shared design tokens for the Wordhold web app.
 
-Currently this package hosts the **design bake-off**: two candidate themes
-that define the *same semantic token names* with different value sets, each
-scoped to a wrapper class so both can render side by side in one app.
+`src/theme.css` is the single token source: the "heirloom-product" theme
+(winner of the design bake-off), applied at `:root`. Carded surfaces on warm
+off-white, Spectral serif display over Hanken Grotesk body, forest green as
+the single strong color, square corners throughout. Dark mode comes from
+`prefers-color-scheme` (no toggle).
 
-| Theme | Wrapper class | Character |
-| --- | --- | --- |
-| `themes/heirloom.css` | `.theme-heirloom` | Carded surfaces, Spectral serif display, forest green, square corners. |
-| `themes/warm-print.css` | `.theme-warm-print` | Flat print layout, rules over boxes, Fraunces display, parchment and register red, square corners. |
+All app color and type decisions consume these tokens through the Tailwind
+utilities mapped in `apps/web/src/styles.css`; no raw color values in app
+code. The design intent lives in the root `DESIGN.md`.
 
-Both themes opt into dark mode via `prefers-color-scheme` (no toggle).
-`src/themes/tokens.test.ts` enforces that the two files declare an identical
-set of custom properties, so the app can switch themes by swapping the
-wrapper class alone.
-
-Once a winner is chosen, `/design-init` turns it into the repo's real
-`DESIGN.md` + `theme.css` and the loser is deleted.
+`src/theme.test.ts` enforces that every color token has a dark-mode
+override and that dark mode introduces no tokens of its own.
 
 ## Configuration
 

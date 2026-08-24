@@ -13,7 +13,7 @@ export const PracticeLayout = ({
 }: PracticeLayoutProps) => (
   <main className="mx-auto flex max-w-lg flex-col gap-4 p-6">
     {backControl}
-    <h1 className="font-semibold text-2xl">{courseName}: Üben</h1>
+    <h1 className="font-display font-semibold text-2xl">{courseName}: Üben</h1>
     {children}
   </main>
 );
@@ -31,7 +31,7 @@ export const PracticeEmpty = ({
   wrong,
   backControl,
 }: PracticeEmptyProps) => (
-  <div className="flex flex-col gap-3 rounded-lg border border-neutral-200 p-6">
+  <div className="flex flex-col gap-3 border border-border bg-card p-6">
     <p className="font-medium">
       {initialSession ? 'Gerade ist nichts fällig.' : 'Sitzung abgeschlossen!'}
     </p>

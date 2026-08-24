@@ -30,22 +30,6 @@ const Home = () => {
         await authClient.signOut();
         await router.invalidate();
       }}
-      navigation={
-        <>
-          <Link
-            className="text-neutral-400 text-xs underline"
-            to="/bake/heirloom"
-          >
-            Bake-off: Heirloom
-          </Link>
-          <Link
-            className="text-neutral-400 text-xs underline"
-            to="/bake/warm-print"
-          >
-            Bake-off: Warm Print
-          </Link>
-        </>
-      }
       signedIn={user !== null && dashboard !== null}
     >
       {dashboard === null ? null : (

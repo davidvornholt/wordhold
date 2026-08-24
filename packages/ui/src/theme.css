@@ -1,10 +1,12 @@
 /*
- * Bake-off candidate A: "heirloom-product".
+ * Wordhold theme: "heirloom-product", the bake-off winner.
  * A well-made object from a serious workshop: carded surfaces on warm
  * off-white, Spectral serif display over Hanken Grotesk body, forest
  * green as the single strong color, square corners throughout.
+ * Warning tokens carry the "check this" ochre used for uncertain
+ * extraction results and ungraded answers.
  */
-.theme-heirloom {
+:root {
   --background: oklch(96.5% 0.008 92);
   --foreground: oklch(25% 0.02 150);
   --card: oklch(99.2% 0.004 92);
@@ -15,6 +17,8 @@
   --muted-foreground: oklch(46% 0.02 150);
   --accent: oklch(88% 0.045 152);
   --accent-foreground: oklch(30% 0.06 155);
+  --warning: oklch(90% 0.055 90);
+  --warning-foreground: oklch(38% 0.08 75);
   --destructive: oklch(46% 0.14 28);
   --destructive-foreground: oklch(97.5% 0.008 92);
   --border: oklch(86% 0.015 100);
@@ -23,14 +27,10 @@
   --radius: 0px;
   --font-display: "Spectral", georgia, serif;
   --font-body: "Hanken Grotesk Variable", system-ui, sans-serif;
-
-  background-color: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-body);
 }
 
 @media (prefers-color-scheme: dark) {
-  .theme-heirloom {
+  :root {
     --background: oklch(20% 0.015 155);
     --foreground: oklch(92% 0.012 95);
     --card: oklch(24.5% 0.018 155);
@@ -41,10 +41,18 @@
     --muted-foreground: oklch(70% 0.02 120);
     --accent: oklch(33% 0.045 152);
     --accent-foreground: oklch(88% 0.05 145);
+    --warning: oklch(32% 0.05 80);
+    --warning-foreground: oklch(85% 0.08 88);
     --destructive: oklch(64% 0.15 28);
     --destructive-foreground: oklch(16% 0.02 28);
     --border: oklch(31% 0.02 152);
     --input: oklch(35% 0.022 152);
     --ring: oklch(72% 0.1 152);
   }
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body);
 }

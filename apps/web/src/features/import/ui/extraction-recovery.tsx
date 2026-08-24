@@ -8,12 +8,12 @@ export const ExtractionRecovery = ({
   onRetry,
 }: ExtractionRecoveryProps) => (
   <div aria-busy={busy} className="flex flex-col items-start gap-3">
-    <p className="text-neutral-600 text-sm">
+    <p className="text-muted-foreground text-sm">
       Die Seite wurde noch nicht ausgelesen oder das Auslesen ist
       fehlgeschlagen.
     </p>
     <button
-      className="rounded bg-neutral-900 px-4 py-2 text-sm text-white disabled:opacity-50"
+      className="bg-primary px-4 py-2 text-primary-foreground text-sm disabled:opacity-50"
       disabled={busy}
       onClick={onRetry}
       type="button"

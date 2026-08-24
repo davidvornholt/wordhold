@@ -11,8 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiPagesRouteImport } from './routes/api/pages'
-import { Route as BakeHeirloomRouteImport } from './routes/bake/heirloom'
-import { Route as BakeWarmPrintRouteImport } from './routes/bake/warm-print'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as CoursesCourseIdImportRouteImport } from './routes/courses/$courseId/import'
 import { Route as CoursesCourseIdPracticeRouteImport } from './routes/courses/$courseId/practice'
@@ -28,16 +26,6 @@ const IndexRoute = IndexRouteImport.update({
 const ApiPagesRoute = ApiPagesRouteImport.update({
   id: '/api/pages',
   path: '/api/pages',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BakeHeirloomRoute = BakeHeirloomRouteImport.update({
-  id: '/bake/heirloom',
-  path: '/bake/heirloom',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BakeWarmPrintRoute = BakeWarmPrintRouteImport.update({
-  id: '/bake/warm-print',
-  path: '/bake/warm-print',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
@@ -74,8 +62,6 @@ const ApiPagesPageIdImageRoute = ApiPagesPageIdImageRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/api/pages': typeof ApiPagesRouteWithChildren
-  '/bake/heirloom': typeof BakeHeirloomRoute
-  '/bake/warm-print': typeof BakeWarmPrintRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/courses/$courseId/import': typeof CoursesCourseIdImportRoute
   '/courses/$courseId/practice': typeof CoursesCourseIdPracticeRoute
@@ -86,8 +72,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/api/pages': typeof ApiPagesRouteWithChildren
-  '/bake/heirloom': typeof BakeHeirloomRoute
-  '/bake/warm-print': typeof BakeWarmPrintRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/courses/$courseId/import': typeof CoursesCourseIdImportRoute
   '/courses/$courseId/practice': typeof CoursesCourseIdPracticeRoute
@@ -99,8 +83,6 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/api/pages': typeof ApiPagesRouteWithChildren
-  '/bake/heirloom': typeof BakeHeirloomRoute
-  '/bake/warm-print': typeof BakeWarmPrintRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/courses/$courseId/import': typeof CoursesCourseIdImportRoute
   '/courses/$courseId/practice': typeof CoursesCourseIdPracticeRoute
@@ -113,8 +95,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/api/pages'
-    | '/bake/heirloom'
-    | '/bake/warm-print'
     | '/api/auth/$'
     | '/courses/$courseId/import'
     | '/courses/$courseId/practice'
@@ -125,8 +105,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/api/pages'
-    | '/bake/heirloom'
-    | '/bake/warm-print'
     | '/api/auth/$'
     | '/courses/$courseId/import'
     | '/courses/$courseId/practice'
@@ -137,8 +115,6 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/api/pages'
-    | '/bake/heirloom'
-    | '/bake/warm-print'
     | '/api/auth/$'
     | '/courses/$courseId/import'
     | '/courses/$courseId/practice'
@@ -150,8 +126,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ApiPagesRoute: typeof ApiPagesRouteWithChildren
-  BakeHeirloomRoute: typeof BakeHeirloomRoute
-  BakeWarmPrintRoute: typeof BakeWarmPrintRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   CoursesCourseIdImportRoute: typeof CoursesCourseIdImportRoute
   CoursesCourseIdPracticeRoute: typeof CoursesCourseIdPracticeRoute
@@ -173,20 +147,6 @@ declare module '@tanstack/react-router' {
       path: '/api/pages'
       fullPath: '/api/pages'
       preLoaderRoute: typeof ApiPagesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/bake/heirloom': {
-      id: '/bake/heirloom'
-      path: '/bake/heirloom'
-      fullPath: '/bake/heirloom'
-      preLoaderRoute: typeof BakeHeirloomRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/bake/warm-print': {
-      id: '/bake/warm-print'
-      path: '/bake/warm-print'
-      fullPath: '/bake/warm-print'
-      preLoaderRoute: typeof BakeWarmPrintRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/auth/$': {
@@ -249,8 +209,6 @@ const ApiPagesRouteWithChildren = ApiPagesRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ApiPagesRoute: ApiPagesRouteWithChildren,
-  BakeHeirloomRoute: BakeHeirloomRoute,
-  BakeWarmPrintRoute: BakeWarmPrintRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   CoursesCourseIdImportRoute: CoursesCourseIdImportRoute,
   CoursesCourseIdPracticeRoute: CoursesCourseIdPracticeRoute,

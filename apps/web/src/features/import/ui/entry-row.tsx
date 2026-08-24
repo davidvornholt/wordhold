@@ -60,18 +60,19 @@ export const EntryRow = ({
 }: EntryRowProps) => {
   const uncertain =
     entry.confidence !== undefined && entry.confidence < lowConfidence;
-  const inputClass =
-    'w-full rounded border border-neutral-300 px-2 py-1.5 text-sm';
+  const inputClass = 'w-full border border-input bg-card px-2 py-1.5 text-sm';
   return (
     <li
-      className={`flex flex-col gap-2 rounded-lg border p-3 ${
-        uncertain ? 'border-amber-400 bg-amber-50' : 'border-neutral-200'
+      className={`flex flex-col gap-2 border p-3 ${
+        uncertain
+          ? 'border-warning-foreground/40 bg-warning'
+          : 'border-border bg-card'
       }`}
     >
       <div className="flex items-center gap-2">
         <select
           aria-label="Typ"
-          className="rounded border border-neutral-300 px-2 py-1.5 text-sm"
+          className="border border-input bg-card px-2 py-1.5 text-sm"
           disabled={disabled}
           onChange={(event) =>
             onChange({ ...entry, type: event.target.value as EntryType })
@@ -85,10 +86,12 @@ export const EntryRow = ({
           ))}
         </select>
         {uncertain ? (
-          <span className="text-amber-700 text-xs">unsicher gelesen</span>
+          <span className="text-warning-foreground text-xs">
+            unsicher gelesen
+          </span>
         ) : null}
         <button
-          className="ml-auto text-neutral-500 text-sm underline"
+          className="ml-auto text-muted-foreground text-sm underline"
           disabled={disabled}
           onClick={onRemove}
           type="button"
@@ -132,7 +135,7 @@ export const EntryRow = ({
         value={entry.example}
       />
       {entry.grammar === undefined ? null : (
-        <p className="text-neutral-500 text-xs">
+        <p className="text-muted-foreground text-xs">
           {grammarSummary(entry.grammar)}
         </p>
       )}

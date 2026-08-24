@@ -3,17 +3,14 @@
 @import "@fontsource/spectral/600.css";
 @import "@fontsource/spectral/400-italic.css";
 @import "@fontsource-variable/hanken-grotesk";
-@import "@fontsource-variable/fraunces";
-@import "@fontsource-variable/inter";
-@import "@wordhold/ui/themes/heirloom.css";
-@import "@wordhold/ui/themes/warm-print.css";
+@import "@wordhold/ui/theme.css";
 
 @source "./**/*.{ts,tsx}";
 @source "../a11y/**/*.{ts,tsx}";
 
 /*
- * Map the semantic theme tokens (set by the .theme-* wrapper classes) to
- * Tailwind utilities: bg-background, text-foreground, font-display, etc.
+ * Map the semantic theme tokens (defined at :root by @wordhold/ui/theme.css)
+ * to Tailwind utilities: bg-background, text-foreground, font-display, etc.
  */
 @theme inline {
   --color-background: var(--background);
@@ -26,6 +23,8 @@
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
@@ -41,15 +40,15 @@
 }
 
 .root-feedback-brand {
-  @apply font-semibold text-neutral-500 text-sm;
+  @apply font-semibold text-muted-foreground text-sm;
 }
 
 .root-feedback-heading {
-  @apply font-semibold text-2xl;
+  @apply font-display font-semibold text-2xl;
 }
 
 .root-feedback-copy {
-  @apply text-neutral-600 text-sm;
+  @apply text-muted-foreground text-sm;
 }
 
 .root-feedback-link {
@@ -61,7 +60,7 @@
 }
 
 .root-feedback-button {
-  @apply rounded bg-neutral-900 px-4 py-2 text-sm text-white focus-visible:outline-2 focus-visible:outline-offset-2;
+  @apply bg-primary px-4 py-2 text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2;
 }
 
 .root-pending {
@@ -69,17 +68,17 @@
 }
 
 .audio-recovery {
-  @apply flex flex-col items-start gap-3 rounded-lg border border-neutral-200 p-4;
+  @apply flex flex-col items-start gap-3 border border-border bg-card p-4;
 }
 
 .audio-recovery-heading {
-  @apply font-semibold text-lg;
+  @apply font-display text-lg;
 }
 
 .audio-recovery-copy {
-  @apply text-neutral-600 text-sm;
+  @apply text-muted-foreground text-sm;
 }
 
 .audio-recovery-button {
-  @apply rounded bg-neutral-900 px-4 py-2 text-sm text-white disabled:opacity-50;
+  @apply bg-primary px-4 py-2 text-primary-foreground text-sm disabled:opacity-50;
 }

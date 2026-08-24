@@ -52,7 +52,7 @@ export const VerifyForm = ({
       <label className="flex flex-col gap-1 text-sm">
         Seitenbezeichnung
         <input
-          className="rounded border border-neutral-300 px-2 py-1.5"
+          className="border border-input bg-card px-2 py-1.5"
           disabled={busy}
           maxLength={maximumLabelLength}
           onChange={(event) => setLabel(event.target.value)}
@@ -83,7 +83,7 @@ export const VerifyForm = ({
       </ul>
       <div className="flex items-center gap-3">
         <button
-          className="rounded border border-neutral-300 px-3 py-1.5 text-sm"
+          className="border border-input px-3 py-1.5 text-sm"
           disabled={busy || draftEntries.length >= maximumEntriesPerPage}
           onClick={() => setDraftEntries([...draftEntries, emptyEntry])}
           type="button"
@@ -91,7 +91,7 @@ export const VerifyForm = ({
           Eintrag hinzufügen
         </button>
         <button
-          className="rounded bg-neutral-900 px-4 py-1.5 text-sm text-white disabled:opacity-50"
+          className="bg-primary px-4 py-1.5 text-primary-foreground text-sm disabled:opacity-50"
           disabled={busy || complete.length === 0}
           type="submit"
         >

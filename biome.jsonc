@@ -30,16 +30,6 @@
       }
     },
     {
-      // Bake-off theme wrapper classes are consumed by apps/web, which Biome
-      // cannot see from inside the package.
-      "includes": ["packages/ui/src/themes/*.css"],
-      "linter": {
-        "rules": {
-          "nursery": { "noUnusedClasses": "off" }
-        }
-      }
-    },
-    {
       // TanStack Start has no framework image component; plain <img> is the
       // only way to render the auth-gated page photos.
       "includes": ["apps/web/src/**", "!**/routeTree.gen.ts"],

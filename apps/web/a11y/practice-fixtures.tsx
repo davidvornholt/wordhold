@@ -32,7 +32,7 @@ const result: SubmitResult = {
 
 const backControl = (
   <button
-    className="w-fit text-neutral-500 text-sm underline"
+    className="w-fit text-muted-foreground text-sm underline"
     onClick={() => navigateToFixture('dashboard')}
     type="button"
   >

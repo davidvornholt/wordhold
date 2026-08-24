@@ -4,7 +4,6 @@ type HomeShellProps = {
   readonly signedIn: boolean;
   readonly onSignIn: () => void;
   readonly onSignOut: () => void;
-  readonly navigation: ReactNode;
   readonly children: ReactNode;
 };
 
@@ -12,20 +11,19 @@ export const HomeShell = ({
   signedIn,
   onSignIn,
   onSignOut,
-  navigation,
   children,
 }: HomeShellProps) => (
   <main className="mx-auto flex max-w-3xl flex-col gap-8 p-6">
-    <header className="flex items-baseline justify-between">
+    <header className="flex items-baseline justify-between border-border border-b pb-5">
       <div>
-        <h1 className="font-semibold text-2xl">Wordhold</h1>
-        <p className="text-neutral-500 text-sm" lang="en">
+        <h1 className="font-display font-semibold text-3xl">Wordhold</h1>
+        <p className="text-muted-foreground text-sm" lang="en">
           From page to memory.
         </p>
       </div>
       {signedIn ? (
         <button
-          className="text-neutral-500 text-sm underline"
+          className="text-muted-foreground text-sm underline"
           onClick={onSignOut}
           type="button"
         >
@@ -37,11 +35,11 @@ export const HomeShell = ({
       children
     ) : (
       <div className="flex flex-col items-start gap-4">
-        <p className="text-neutral-600 text-sm">
+        <p className="text-muted-foreground text-sm">
           Melde dich an, um deine Kurse zu sehen.
         </p>
         <button
-          className="rounded bg-neutral-900 px-4 py-2 text-sm text-white"
+          className="bg-primary px-4 py-2 text-primary-foreground text-sm"
           onClick={onSignIn}
           type="button"
         >
@@ -49,8 +47,5 @@ export const HomeShell = ({
         </button>
       </div>
     )}
-    <nav className="flex gap-4 border-neutral-200 border-t pt-4">
-      {navigation}
-    </nav>
   </main>
 );

@@ -33,8 +33,8 @@ export const AudioRecoveryPages = ({
   return (
     <section className="flex flex-col gap-3">
       <div className="flex flex-col gap-1">
-        <h2 className="font-medium text-lg">Fehlendes Audio</h2>
-        <p className="text-neutral-500 text-sm">
+        <h2 className="font-display text-xl">Fehlendes Audio</h2>
+        <p className="text-muted-foreground text-sm">
           Bei diesen importierten Seiten fehlen Audiodateien.
         </p>
       </div>

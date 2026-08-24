@@ -25,22 +25,22 @@ export const CourseCard = ({
   const fresh = stats?.fresh ?? 0;
   const words = stats?.words ?? 0;
   return (
-    <li className="flex flex-col gap-3 rounded-lg border border-neutral-200 p-4">
+    <li className="flex flex-col gap-3 border border-border bg-card p-4">
       <div>
         <span className="font-medium">{course.name}</span>
-        <p className="text-neutral-500 text-xs">
+        <p className="text-muted-foreground text-xs">
           {germanLabels[course.targetLanguage]}
         </p>
       </div>
       {words === 0 ? (
-        <p className="text-neutral-500 text-sm">
+        <p className="text-muted-foreground text-sm">
           Noch keine Wörter – fotografiere die erste Seite.
         </p>
       ) : (
         <p className="flex items-baseline gap-1 text-sm">
-          <span className="font-semibold text-2xl">{due}</span>
+          <span className="font-display text-3xl">{due}</span>
           <span>fällig</span>
-          <span className="text-neutral-500">
+          <span className="text-muted-foreground">
             · {fresh} neu · {words} Wörter
           </span>
         </p>

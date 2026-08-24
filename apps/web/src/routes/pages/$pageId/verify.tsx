@@ -65,13 +65,15 @@ const VerifyScreen = () => {
 
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-4 p-6">
-      <Link className="text-neutral-500 text-sm underline" to="/">
+      <Link className="text-muted-foreground text-sm underline" to="/">
         ← Übersicht
       </Link>
-      <h1 className="font-semibold text-2xl">
+      <h1 className="font-display font-semibold text-2xl">
         {course.name}: Seite überprüfen
       </h1>
-      {error === null ? null : <p className="text-red-700 text-sm">{error}</p>}
+      {error === null ? null : (
+        <p className="text-destructive text-sm">{error}</p>
+      )}
       <div className="grid gap-6 lg:grid-cols-2">
         <VerificationImage src={`/api/pages/${page.id}/image`} />
         <div>

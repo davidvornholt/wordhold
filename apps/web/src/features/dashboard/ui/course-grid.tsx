@@ -32,9 +32,9 @@ export const CourseGrid = ({
 }: CourseGridProps) => (
   <section className="flex flex-col gap-3">
     <div className="flex items-baseline justify-between">
-      <h2 className="font-medium text-lg">Kurse</h2>
+      <h2 className="font-display text-xl">Kurse</h2>
       {reviewsToday > 0 ? (
-        <p className="text-neutral-500 text-sm">
+        <p className="text-muted-foreground text-sm">
           Heute {reviewsToday} Antworten geübt.
         </p>
       ) : null}
