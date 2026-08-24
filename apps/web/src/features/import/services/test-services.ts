@@ -33,6 +33,7 @@ export const makeImportRepository = (
     listOrSeedCourses: Effect.succeed([course]),
     getCourse: () => Effect.succeed(course),
     listPendingPages: Effect.succeed([]),
+    listAudioRecoveryPages: Effect.succeed([]),
     getPage: () => Effect.succeed({ page, course }),
     loadPendingExtraction: () =>
       Effect.succeed({ imagePath: page.imagePath, language: 'fr' }),

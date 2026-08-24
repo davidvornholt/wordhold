@@ -9,6 +9,8 @@ import {
 } from '../../../features/import/server-fns';
 import { AudioRecovery } from '../../../features/import/ui/audio-recovery';
 import type { DraftEntry } from '../../../features/import/ui/entry-row';
+import { ExtractionRecovery } from '../../../features/import/ui/extraction-recovery';
+import { VerificationImage } from '../../../features/import/ui/verification-image';
 import { VerifyForm } from '../../../features/import/ui/verify-form';
 import { germanLabels } from '../../../shared/languages';
 
@@ -71,11 +73,7 @@ const VerifyScreen = () => {
       </h1>
       {error === null ? null : <p className="text-red-700 text-sm">{error}</p>}
       <div className="grid gap-6 lg:grid-cols-2">
-        <img
-          alt="Fotografierte Vokabelseite"
-          className="h-auto w-full self-start rounded-lg border border-neutral-200"
-          src={`/api/pages/${page.id}/image`}
-        />
+        <VerificationImage src={`/api/pages/${page.id}/image`} />
         <div>
           {completed === null ? null : (
             <AudioRecovery
@@ -99,25 +97,15 @@ const VerifyScreen = () => {
             />
           )}
           {completed === null && extraction === null ? (
-            <div className="flex flex-col items-start gap-3">
-              <p className="text-neutral-600 text-sm">
-                Die Seite wurde noch nicht ausgelesen oder das Auslesen ist
-                fehlgeschlagen.
-              </p>
-              <button
-                className="rounded bg-neutral-900 px-4 py-2 text-sm text-white disabled:opacity-50"
-                disabled={busy}
-                onClick={() =>
-                  run(async () => {
-                    const updated = await retryExtraction({ data: page.id });
-                    setExtraction(updated.extraction);
-                  })
-                }
-                type="button"
-              >
-                {busy ? 'Wird gelesen …' : 'Erneut auslesen'}
-              </button>
-            </div>
+            <ExtractionRecovery
+              busy={busy}
+              onRetry={() =>
+                run(async () => {
+                  const updated = await retryExtraction({ data: page.id });
+                  setExtraction(updated.extraction);
+                })
+              }
+            />
           ) : null}
           {completed === null && extraction !== null ? (
             <VerifyForm

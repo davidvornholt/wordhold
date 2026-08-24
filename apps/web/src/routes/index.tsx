@@ -3,13 +3,19 @@ import { HomeShell } from '../app/home-shell';
 import { getDashboard } from '../features/dashboard/services/server-fns';
 import { CourseGrid } from '../features/dashboard/ui/course-grid';
 import { FragileList } from '../features/dashboard/ui/fragile-list';
-import { listCourses, listPendingPages } from '../features/import/server-fns';
+import {
+  listAudioRecoveryPages,
+  listCourses,
+  listPendingPages,
+} from '../features/import/server-fns';
+import { AudioRecoveryPages } from '../features/import/ui/audio-recovery-pages';
 import { PendingPages } from '../features/import/ui/pending-pages';
 import { authClient } from '../shared/auth/client';
 import { getSessionUser } from '../shared/auth/session-fn';
 
 const Home = () => {
-  const { user, courses, pending, dashboard } = Route.useLoaderData();
+  const { user, courses, pending, audioRecovery, dashboard } =
+    Route.useLoaderData();
   const router = useRouter();
 
   return (
@@ -70,6 +76,19 @@ const Home = () => {
 
           <FragileList words={dashboard.fragile} />
 
+          <AudioRecoveryPages
+            pages={audioRecovery}
+            renderPageAction={(page, label) => (
+              <Link
+                className="text-sm underline"
+                params={{ pageId: page.id }}
+                to="/pages/$pageId/verify"
+              >
+                {label}
+              </Link>
+            )}
+          />
+
           <PendingPages
             pages={pending}
             renderPageAction={(page, label) => (
@@ -92,14 +111,21 @@ export const Route = createFileRoute('/')({
   loader: async () => {
     const user = await getSessionUser();
     if (user === null) {
-      return { user: null, courses: [], pending: [], dashboard: null } as const;
+      return {
+        user: null,
+        courses: [],
+        pending: [],
+        audioRecovery: [],
+        dashboard: null,
+      } as const;
     }
-    const [courses, pending, dashboard] = await Promise.all([
+    const [courses, pending, audioRecovery, dashboard] = await Promise.all([
       listCourses(),
       listPendingPages(),
+      listAudioRecoveryPages(),
       getDashboard(),
     ]);
-    return { user, courses, pending, dashboard } as const;
+    return { user, courses, pending, audioRecovery, dashboard } as const;
   },
   component: Home,
 });

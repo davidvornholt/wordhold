@@ -11,6 +11,7 @@ import {
   retryPageAudio,
   serializableAudioReport,
 } from './services/audio-generation';
+import { audioRecoveryPages } from './services/audio-recovery-query';
 import { retryPendingExtraction } from './services/extraction-retry';
 import { ImportRepository } from './services/repository';
 
@@ -55,6 +56,10 @@ export const listPendingPages = createServerFn().handler(() =>
       }),
     ),
   ),
+);
+
+export const listAudioRecoveryPages = createServerFn().handler(() =>
+  importRuntime.runPromise(authenticated(audioRecoveryPages)),
 );
 
 export const getPage = createServerFn()

@@ -2,8 +2,10 @@ import { useRef, useState } from 'react';
 import { AudioRecovery } from '../src/features/import/ui/audio-recovery';
 import { CaptureScreen } from '../src/features/import/ui/capture-screen';
 import type { DraftEntry } from '../src/features/import/ui/entry-row';
+import { ExtractionRecovery } from '../src/features/import/ui/extraction-recovery';
+import { VerificationImage } from '../src/features/import/ui/verification-image';
 import { VerifyForm } from '../src/features/import/ui/verify-form';
-import { navigateToFixture } from './fixture-state';
+import { completeAudioRecovery, navigateToFixture } from './fixture-state';
 
 const backControl = (
   <button
@@ -23,6 +25,10 @@ const initialEntries: ReadonlyArray<DraftEntry> = [
     example: 'A lasting memory.',
   },
 ];
+
+const photographedPage = `data:image/svg+xml,${encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><title>Fixture page</title></svg>',
+)}`;
 
 export const ImportFixture = ({ error = false }) => (
   <CaptureScreen
@@ -51,40 +57,37 @@ export const VerificationFixture = ({
   audioRecovery = false,
 }: VerificationFixtureProps) => (
   <main className="mx-auto flex max-w-5xl flex-col gap-4 p-6">
-    {backControl}
+    {audioRecovery ? (
+      <button
+        className="text-neutral-500 text-sm underline"
+        onClick={() => navigateToFixture('dashboard-audio-recovery')}
+        type="button"
+      >
+        ← Übersicht
+      </button>
+    ) : (
+      backControl
+    )}
     <h1 className="font-semibold text-2xl">English A2: Seite überprüfen</h1>
     <div className="grid gap-6 lg:grid-cols-2">
-      <svg
-        aria-label="Fotografierte Vokabelseite"
-        className="h-auto w-full self-start rounded-lg border border-neutral-200"
-        role="img"
-        viewBox="0 0 400 520"
-      >
-        <rect fill="white" height="520" width="400" />
-        <path d="M40 80h320M40 140h320M40 200h320" stroke="currentColor" />
-      </svg>
+      <VerificationImage src={photographedPage} />
       <div>
         {audioRecovery ? (
           <AudioRecovery
             busy={false}
             imported={1}
-            onRetry={() => navigateToFixture('dashboard')}
+            onRetry={() => {
+              completeAudioRecovery();
+              navigateToFixture('dashboard-audio-recovery');
+            }}
             pending={1}
           />
         ) : null}
         {!audioRecovery && empty ? (
-          <div className="flex flex-col items-start gap-3">
-            <p className="text-neutral-600 text-sm">
-              Die Seite wurde noch nicht ausgelesen oder das Auslesen ist
-              fehlgeschlagen.
-            </p>
-            <button
-              className="rounded bg-neutral-900 px-4 py-2 text-sm text-white"
-              type="button"
-            >
-              Erneut auslesen
-            </button>
-          </div>
+          <ExtractionRecovery
+            busy={false}
+            onRetry={() => navigateToFixture('verification')}
+          />
         ) : null}
         {audioRecovery || empty ? null : (
           <VerifyForm

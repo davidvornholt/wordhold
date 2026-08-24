@@ -5,6 +5,16 @@ type AudioRecoveryProps = {
   readonly onRetry: () => void;
 };
 
+const pendingCopy = (pending: number | null): string => {
+  if (pending === null) {
+    return 'Fehlende Audiodateien können erneut erstellt werden.';
+  }
+  if (pending === 1) {
+    return '1 Audiodatei fehlt noch.';
+  }
+  return `${pending} Audiodateien fehlen noch.`;
+};
+
 export const AudioRecovery = ({
   imported,
   pending,
@@ -17,9 +27,7 @@ export const AudioRecovery = ({
       {imported === null
         ? 'Die Einträge wurden bereits importiert.'
         : `${imported} Einträge wurden importiert.`}{' '}
-      {pending === null
-        ? 'Fehlende Audiodateien können erneut erstellt werden.'
-        : `${pending} Audiodateien fehlen noch.`}
+      {pendingCopy(pending)}
     </p>
     <button
       className="audio-recovery-button"

@@ -33,6 +33,17 @@ export type PendingPage = {
   readonly capturedAt: Date;
 };
 
+export const maximumAudioRecoveryPages = 50;
+
+export type AudioRecoveryPage = {
+  readonly id: string;
+  readonly courseId: string;
+  readonly courseName: string;
+  readonly label: string | null;
+  readonly missingAudio: number;
+  readonly verifiedAt: Date;
+};
+
 export type PendingExtraction = {
   readonly imagePath: string;
   readonly language: LanguageCode;
@@ -55,6 +66,10 @@ export type ImportRepositoryShape = {
   ) => Effect.Effect<Course | undefined, ImportDatabaseError>;
   readonly listPendingPages: Effect.Effect<
     ReadonlyArray<PendingPage>,
+    ImportDatabaseError
+  >;
+  readonly listAudioRecoveryPages: Effect.Effect<
+    ReadonlyArray<AudioRecoveryPage>,
     ImportDatabaseError
   >;
   readonly getPage: (

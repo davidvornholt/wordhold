@@ -2,6 +2,7 @@ export const fixtureStates = [
   'signed-out',
   'dashboard',
   'dashboard-empty',
+  'dashboard-audio-recovery',
   'import',
   'import-error',
   'verification',
@@ -31,4 +32,13 @@ export const readFixtureState = (): FixtureState => {
 
 export const navigateToFixture = (state: FixtureState): void => {
   globalThis.location.assign(`/?state=${state}`);
+};
+
+const audioRecoveryStorageKey = 'wordhold-a11y-audio-recovered';
+
+export const audioRecoveryIsComplete = (): boolean =>
+  globalThis.sessionStorage.getItem(audioRecoveryStorageKey) === 'true';
+
+export const completeAudioRecovery = (): void => {
+  globalThis.sessionStorage.setItem(audioRecoveryStorageKey, 'true');
 };

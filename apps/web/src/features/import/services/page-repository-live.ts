@@ -2,7 +2,11 @@ import type { ExtractionResult } from '@wordhold/ai/extraction';
 import type { Database } from '@wordhold/db/client';
 import { Effect } from 'effect';
 import { ImportDatabaseError } from '../errors/import-database-error';
-import type { Page } from './repository';
+import {
+  type AudioRecoveryPage,
+  maximumAudioRecoveryPages,
+  type Page,
+} from './repository';
 
 const failure = (operation: string, cause: unknown) =>
   new ImportDatabaseError({
@@ -20,6 +24,27 @@ export const pageRepositoryLive = (sql: Database) => ({
     capturedAt: Date;
   }>`select pages.id, pages.course_id as "courseId", courses.name as "courseName", pages.label, pages.captured_at as "capturedAt" from pages inner join courses on pages.course_id = courses.id where pages.status = 'awaiting_verification' order by pages.captured_at`.pipe(
     Effect.mapError((cause) => failure('list pending pages', cause)),
+  ),
+  listAudioRecoveryPages: sql<AudioRecoveryPage>`
+    select pages.id,
+      pages.course_id as "courseId",
+      courses.name as "courseName",
+      pages.label,
+      count(entries.id)::integer as "missingAudio",
+      pages.verified_at as "verifiedAt"
+    from pages
+    inner join courses on courses.id = pages.course_id
+    inner join entries on entries.page_id = pages.id
+    where pages.status = 'verified'
+      and pages.verified_at is not null
+      and not exists(
+        select 1 from entry_audio where entry_audio.entry_id = entries.id
+      )
+    group by pages.id, courses.id
+    order by pages.verified_at, pages.id
+    limit ${maximumAudioRecoveryPages}
+  `.pipe(
+    Effect.mapError((cause) => failure('list pages missing audio', cause)),
   ),
   getPage: (pageId: string) =>
     sql<{
