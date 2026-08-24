@@ -2,10 +2,12 @@ import { createServerFn } from '@tanstack/react-start';
 import { courses } from '@wordhold/db/schema/courses';
 import { entries } from '@wordhold/db/schema/entries';
 import { cards, reviews } from '@wordhold/db/schema/practice';
-import { and, desc, eq, gte, isNotNull, lte, ne, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, isNotNull, lt, lte, ne, sql } from 'drizzle-orm';
 import { requireSession } from '../auth/require-session';
 import { db } from '../db/server';
+import { serverEnv } from '../env/server';
 import { ratings } from '../practice/rating';
+import { ownerDayBounds } from './day-boundary';
 
 // Fragile words: entries the schedule keeps bouncing back — at least two
 // Again-ratings inside the recent window.
@@ -97,10 +99,21 @@ const fragileWords = () =>
     .limit(fragileLimit);
 
 const reviewsToday = async () => {
+  // Absolute UTC bounds keep the result independent of PostgreSQL's session
+  // time zone. The end stays exclusive so midnight belongs to the next day.
+  const { startInclusive, endExclusive } = ownerDayBounds(
+    new Date(),
+    serverEnv.ownerTimeZone(),
+  );
   const [row] = await db
     .select({ count: countInt })
     .from(reviews)
-    .where(gte(reviews.reviewedAt, sql`date_trunc('day', now())`));
+    .where(
+      and(
+        gte(reviews.reviewedAt, startInclusive),
+        lt(reviews.reviewedAt, endExclusive),
+      ),
+    );
   return row?.count ?? 0;
 };
 

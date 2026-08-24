@@ -3,6 +3,7 @@ import { entryAudio } from '@wordhold/db/schema/entries';
 import { eq } from 'drizzle-orm';
 import { requireSession } from '../../../../shared/auth/require-session';
 import { db } from '../../../../shared/db/server';
+import { privateMediaResponse } from '../../../../shared/storage/media-response';
 import { readDataFile } from '../../../../shared/storage/server';
 
 export const Route = createFileRoute('/api/entries/$entryId/audio')({
@@ -19,12 +20,7 @@ export const Route = createFileRoute('/api/entries/$entryId/audio')({
           return new Response('Nicht gefunden', { status: 404 });
         }
         const bytes = await readDataFile(audio.path);
-        return new Response(bytes, {
-          headers: {
-            'cache-control': 'private, max-age=31536000, immutable',
-            'content-type': 'audio/mpeg',
-          },
-        });
+        return privateMediaResponse(bytes, 'audio/mpeg');
       },
     },
   },

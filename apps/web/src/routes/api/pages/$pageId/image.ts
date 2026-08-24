@@ -4,6 +4,7 @@ import { eq } from 'drizzle-orm';
 import { requireSession } from '../../../../shared/auth/require-session';
 import { db } from '../../../../shared/db/server';
 import { mimeForPath } from '../../../../shared/import/extract';
+import { privateMediaResponse } from '../../../../shared/storage/media-response';
 import { readDataFile } from '../../../../shared/storage/server';
 
 export const Route = createFileRoute('/api/pages/$pageId/image')({
@@ -19,12 +20,7 @@ export const Route = createFileRoute('/api/pages/$pageId/image')({
           return new Response('Nicht gefunden', { status: 404 });
         }
         const bytes = await readDataFile(page.imagePath);
-        return new Response(bytes, {
-          headers: {
-            'cache-control': 'private, max-age=31536000, immutable',
-            'content-type': mimeForPath(page.imagePath),
-          },
-        });
+        return privateMediaResponse(bytes, mimeForPath(page.imagePath));
       },
     },
   },

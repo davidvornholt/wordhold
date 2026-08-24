@@ -1,22 +1,26 @@
 import { account } from '@wordhold/db/schema/auth';
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { db } from '../db/server';
 import { serverEnv } from '../env/server';
+import { assertAllowedUser, mapAllowedGithubProfile } from './owner';
 
 // Wordhold is a single-user deployment: GitHub OAuth authenticates, but only
-// the allowlisted GitHub account ever receives a session. Blocking at session
-// creation keeps the gate in one place regardless of how sign-in evolves.
-const assertAllowedUser = async (userId: string): Promise<void> => {
-  const rows = await db
+// the allowlisted GitHub account may be persisted or receive a session.
+export const isAllowedUser = async (userId: string): Promise<boolean> => {
+  const [matchingAccount] = await db
     .select({ accountId: account.accountId })
     .from(account)
-    .where(eq(account.userId, userId));
-  const allowed = serverEnv.githubAllowedUserId();
-  if (!rows.some((row) => row.accountId === allowed)) {
-    throw new Error('This Wordhold instance belongs to someone else.');
-  }
+    .where(
+      and(
+        eq(account.userId, userId),
+        eq(account.providerId, 'github'),
+        eq(account.accountId, serverEnv.githubAllowedUserId()),
+      ),
+    )
+    .limit(1);
+  return matchingAccount !== undefined;
 };
 
 export const auth = betterAuth({
@@ -26,13 +30,14 @@ export const auth = betterAuth({
     github: {
       clientId: serverEnv.githubClientId(),
       clientSecret: serverEnv.githubClientSecret(),
+      mapProfileToUser: mapAllowedGithubProfile,
     },
   },
   databaseHooks: {
     session: {
       create: {
         before: async (session) => {
-          await assertAllowedUser(session.userId);
+          await assertAllowedUser(session.userId, isAllowedUser);
           return { data: session };
         },
       },

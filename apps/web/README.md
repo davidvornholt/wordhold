@@ -25,7 +25,8 @@ through `src/shared/env/server.ts`.
 | `AUTH_SECRET` | better-auth signing secret (64 hex chars). |
 | `GITHUB_CLIENT_ID` | GitHub OAuth app client ID. |
 | `GITHUB_CLIENT_SECRET` | GitHub OAuth app client secret. |
-| `GITHUB_ALLOWED_USER_ID` | Numeric GitHub user ID of the single allowed user; all other sign-ins are rejected at session creation. |
+| `GITHUB_ALLOWED_USER_ID` | Numeric GitHub user ID of the single allowed user. Wordhold rejects other profiles before persistence and rechecks existing sessions against the current value. |
+| `WORDHOLD_OWNER_TIME_ZONE` | Required IANA time zone for owner-local day boundaries, such as `Europe/Berlin`. |
 | `AWS_REGION` | AWS region for Bedrock and Polly (`eu-central-1`). |
 | `AWS_ACCESS_KEY_ID` | AWS credentials for Bedrock (judge, sentence generation) and Polly (TTS). |
 | `AWS_SECRET_ACCESS_KEY` | Secret half of the AWS credentials. |
@@ -35,13 +36,11 @@ through `src/shared/env/server.ts`.
 | `AI_EXTRACTION_ESCALATION_MODEL` | Google model ID for extraction escalation on low-confidence pages. |
 | `GOOGLE_VERTEX_LOCATION` | Google Enterprise AI region (`europe-west4`). |
 | `GOOGLE_SERVICE_ACCOUNT_JSON` | Service-account key JSON for the Google Enterprise AI adapter. |
-| `WORDHOLD_DATA_DIR` | Directory for page images and generated audio (optional, defaults to `data`, relative to the server working directory). |
+| `WORDHOLD_DATA_DIR` | Directory for page images and generated audio. Optional. Defaults to `~/.local/share/wordhold`, outside the Git checkout. Set an absolute path for deployment storage. |
 
 ## Auth
 
-GitHub OAuth via better-auth (`src/shared/auth/server.ts`), handled at
-`/api/auth/$`. This is a single-user instance: only the GitHub account whose
-ID matches `GITHUB_ALLOWED_USER_ID` ever receives a session.
+GitHub OAuth via better-auth (`src/shared/auth/server.ts`) is handled at `/api/auth/$`. This is a single-user instance. Only the GitHub account whose ID matches `GITHUB_ALLOWED_USER_ID` can be persisted or receive a session. Wordhold rechecks the linked GitHub account on each session use, so changing the allowlist signs out the former owner.
 
 ## Import flow
 
@@ -68,7 +67,4 @@ untouched. Pronunciation plays via `GET /api/entries/$entryId/audio`.
 
 ## Dashboard
 
-The signed-in start page shows only real data
-(`src/shared/dashboard/stats-fn.ts`): per-course due/new/word counts,
-today's review count, and "Wackelkandidaten" — entries with at least two
-Again-ratings in the last 30 days.
+The signed-in start page shows only real data (`src/shared/dashboard/stats-fn.ts`): per-course due/new/word counts, today's review count in `WORDHOLD_OWNER_TIME_ZONE`, and "Wackelkandidaten" with at least two Again-ratings in the last 30 days.
