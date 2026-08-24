@@ -1,11 +1,9 @@
 import { type SubmitEvent, useState } from 'react';
+import type { PracticeSession } from '../services/practice-service';
+import { submitAnswer } from '../services/server-fns';
 import { FeedbackPanel, type SubmitResult } from './feedback-panel';
-import type { getPracticeSession } from './session-fn';
-import { submitAnswer } from './submit-fn';
 
-type SessionItem = Awaited<
-  ReturnType<typeof getPracticeSession>
->['items'][number];
+type SessionItem = PracticeSession['items'][number];
 
 type CardPracticeProps = {
   readonly item: SessionItem;

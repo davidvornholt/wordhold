@@ -70,7 +70,7 @@
     },
     {
       // Boundary to the ts-fsrs scheduler, whose Card type speaks snake_case.
-      "includes": ["apps/web/src/shared/practice/fsrs.ts"],
+      "includes": ["apps/web/src/features/practice/services/fsrs.ts"],
       "linter": {
         "rules": {
           "style": { "useNamingConvention": "off" }

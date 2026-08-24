@@ -13,8 +13,8 @@ export const extractionRuntime = ManagedRuntime.make(
   Extraction.Default.pipe(Layer.provide(VertexProvider.live)),
 );
 
-export const judgeRuntime = ManagedRuntime.make(
-  Judge.Default.pipe(Layer.provide(BedrockProvider.live)),
+export const judgeLayer = Judge.Default.pipe(
+  Layer.provide(BedrockProvider.live),
 );
 
 export const sentenceRuntime = ManagedRuntime.make(

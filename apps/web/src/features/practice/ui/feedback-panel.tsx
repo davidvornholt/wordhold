@@ -1,4 +1,4 @@
-import type { submitAnswer } from './submit-fn';
+import type { submitAnswer } from '../services/server-fns';
 
 export type SubmitResult = Awaited<ReturnType<typeof submitAnswer>>;
 

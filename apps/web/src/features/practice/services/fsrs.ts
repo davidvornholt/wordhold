@@ -2,10 +2,9 @@
 // useNamingConvention override in the root biome.jsonc).
 import type { CardState, cards } from '@wordhold/db/schema/practice';
 import { type Card, createEmptyCard, fsrs, type Grade, State } from 'ts-fsrs';
+import type { DerivedRating } from '../../../shared/grading/rating';
 
 type CardRow = typeof cards.$inferSelect;
-
-export type DerivedRating = 1 | 2 | 3 | 4;
 
 const scheduler = fsrs();
 

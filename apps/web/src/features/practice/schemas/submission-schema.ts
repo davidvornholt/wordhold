@@ -29,4 +29,6 @@ export const SubmitPayload = Schema.Struct({
   elapsedMs: Schema.optional(ElapsedMilliseconds),
 });
 
+export type SubmitPayloadData = typeof SubmitPayload.Type;
+
 export const decodeSubmitPayload = Schema.decodeUnknownSync(SubmitPayload);

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import type { cards } from '@wordhold/db/schema/practice';
+import { ratings } from '../../../shared/grading/rating';
 import { applyRating } from './fsrs';
-import { ratings } from './rating';
 
 const newCard: typeof cards.$inferSelect = {
   id: '00000000-0000-0000-0000-000000000001',

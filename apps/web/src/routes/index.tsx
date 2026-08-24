@@ -1,9 +1,9 @@
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router';
+import { getDashboard } from '../features/dashboard/services/server-fns';
+import { CourseCard } from '../features/dashboard/ui/course-card';
+import { FragileList } from '../features/dashboard/ui/fragile-list';
 import { authClient } from '../shared/auth/client';
 import { getSessionUser } from '../shared/auth/session-fn';
-import { CourseCard } from '../shared/dashboard/course-card';
-import { FragileList } from '../shared/dashboard/fragile-list';
-import { getDashboard } from '../shared/dashboard/stats-fn';
 import { listCourses, listPendingPages } from '../shared/import/server-fns';
 
 const SignedOut = () => (

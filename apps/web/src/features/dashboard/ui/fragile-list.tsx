@@ -1,10 +1,4 @@
-type FragileWord = {
-  readonly entryId: string;
-  readonly targetText: string;
-  readonly nativeText: string;
-  readonly courseName: string;
-  readonly failures: number;
-};
+import type { FragileWord } from '../schemas/dashboard-models';
 
 export const FragileList = ({
   words,

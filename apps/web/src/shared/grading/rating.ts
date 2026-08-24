@@ -1,5 +1,6 @@
 import type { JudgeVerdictData } from '@wordhold/ai/judge/schema';
-import type { DerivedRating } from './fsrs';
+
+export type DerivedRating = 1 | 2 | 3 | 4;
 
 // Grading outcome as stored in reviews.grading. Ratings are always derived
 // from outcomes, never self-reported.

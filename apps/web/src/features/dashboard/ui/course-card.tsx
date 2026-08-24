@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import type { LanguageCode } from '@wordhold/db/schema/courses';
-import { germanLabels } from '../languages';
+import { germanLabels } from '../../../shared/languages';
 
 type CourseCardProps = {
   readonly course: {

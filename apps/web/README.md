@@ -59,7 +59,7 @@ Uploads accept JPEG, PNG, and WebP images up to 12 MiB, 12,000 pixels per side, 
 ## Practice flow
 
 `/courses/$courseId/practice` serves everything due plus a bounded batch of
-new cards (`src/shared/practice/session-fn.ts`). Grading is hybrid: a
+new cards (`src/features/practice/services/practice-service.ts`). Grading is hybrid: a
 normalized deterministic match is instant; only mismatches reach the AI
 judge, whose verdicts are cached per (entry, direction, normalized answer)
 and can write accepted alternatives back. FSRS ratings are derived from the
@@ -69,4 +69,4 @@ untouched. Pronunciation plays via `GET /api/entries/$entryId/audio`.
 
 ## Dashboard
 
-The signed-in start page shows only real data (`src/shared/dashboard/stats-fn.ts`): per-course due/new/word counts, today's review count in `WORDHOLD_OWNER_TIME_ZONE`, and "Wackelkandidaten" with at least two Again-ratings in the last 30 days.
+The signed-in start page shows only real data (`src/features/dashboard/services/dashboard-service.ts`): per-course due/new/word counts, today's review count in `WORDHOLD_OWNER_TIME_ZONE`, and "Wackelkandidaten" with at least two Again-ratings in the last 30 days.
