@@ -28,6 +28,16 @@
           "style": { "noProcessEnv": "off" }
         }
       }
+    },
+    {
+      // Bake-off theme wrapper classes are consumed by apps/web, which Biome
+      // cannot see from inside the package.
+      "includes": ["packages/ui/src/themes/*.css"],
+      "linter": {
+        "rules": {
+          "nursery": { "noUnusedClasses": "off" }
+        }
+      }
     }
   ]
 }

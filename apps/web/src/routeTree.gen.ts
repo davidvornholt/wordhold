@@ -10,11 +10,23 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as BakeHeirloomRouteImport } from './routes/bake/heirloom'
+import { Route as BakeWarmPrintRouteImport } from './routes/bake/warm-print'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BakeHeirloomRoute = BakeHeirloomRouteImport.update({
+  id: '/bake/heirloom',
+  path: '/bake/heirloom',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BakeWarmPrintRoute = BakeWarmPrintRouteImport.update({
+  id: '/bake/warm-print',
+  path: '/bake/warm-print',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
@@ -25,27 +37,35 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/bake/heirloom': typeof BakeHeirloomRoute
+  '/bake/warm-print': typeof BakeWarmPrintRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/bake/heirloom': typeof BakeHeirloomRoute
+  '/bake/warm-print': typeof BakeWarmPrintRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/bake/heirloom': typeof BakeHeirloomRoute
+  '/bake/warm-print': typeof BakeWarmPrintRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/auth/$'
+  fullPaths: '/' | '/bake/heirloom' | '/bake/warm-print' | '/api/auth/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/auth/$'
-  id: '__root__' | '/' | '/api/auth/$'
+  to: '/' | '/bake/heirloom' | '/bake/warm-print' | '/api/auth/$'
+  id: '__root__' | '/' | '/bake/heirloom' | '/bake/warm-print' | '/api/auth/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BakeHeirloomRoute: typeof BakeHeirloomRoute
+  BakeWarmPrintRoute: typeof BakeWarmPrintRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
@@ -56,6 +76,20 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bake/heirloom': {
+      id: '/bake/heirloom'
+      path: '/bake/heirloom'
+      fullPath: '/bake/heirloom'
+      preLoaderRoute: typeof BakeHeirloomRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bake/warm-print': {
+      id: '/bake/warm-print'
+      path: '/bake/warm-print'
+      fullPath: '/bake/warm-print'
+      preLoaderRoute: typeof BakeWarmPrintRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/auth/$': {
@@ -70,6 +104,8 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BakeHeirloomRoute: BakeHeirloomRoute,
+  BakeWarmPrintRoute: BakeWarmPrintRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport

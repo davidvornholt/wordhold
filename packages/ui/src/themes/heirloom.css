@@ -1,0 +1,50 @@
+/*
+ * Bake-off candidate A: "heirloom-product".
+ * A well-made object from a serious workshop: carded surfaces on warm
+ * off-white, Spectral serif display over Hanken Grotesk body, forest
+ * green as the single strong color, square corners throughout.
+ */
+.theme-heirloom {
+  --background: oklch(96.5% 0.008 92);
+  --foreground: oklch(25% 0.02 150);
+  --card: oklch(99.2% 0.004 92);
+  --card-foreground: oklch(25% 0.02 150);
+  --primary: oklch(43% 0.09 155);
+  --primary-foreground: oklch(97.5% 0.008 92);
+  --muted: oklch(91.5% 0.012 95);
+  --muted-foreground: oklch(46% 0.02 150);
+  --accent: oklch(88% 0.045 152);
+  --accent-foreground: oklch(30% 0.06 155);
+  --destructive: oklch(46% 0.14 28);
+  --destructive-foreground: oklch(97.5% 0.008 92);
+  --border: oklch(86% 0.015 100);
+  --input: oklch(82% 0.018 100);
+  --ring: oklch(43% 0.09 155);
+  --radius: 0px;
+  --font-display: "Spectral", georgia, serif;
+  --font-body: "Hanken Grotesk Variable", system-ui, sans-serif;
+
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body);
+}
+
+@media (prefers-color-scheme: dark) {
+  .theme-heirloom {
+    --background: oklch(20% 0.015 155);
+    --foreground: oklch(92% 0.012 95);
+    --card: oklch(24.5% 0.018 155);
+    --card-foreground: oklch(92% 0.012 95);
+    --primary: oklch(72% 0.1 152);
+    --primary-foreground: oklch(20% 0.03 155);
+    --muted: oklch(28% 0.018 152);
+    --muted-foreground: oklch(70% 0.02 120);
+    --accent: oklch(33% 0.045 152);
+    --accent-foreground: oklch(88% 0.05 145);
+    --destructive: oklch(64% 0.15 28);
+    --destructive-foreground: oklch(16% 0.02 28);
+    --border: oklch(31% 0.02 152);
+    --input: oklch(35% 0.022 152);
+    --ring: oklch(72% 0.1 152);
+  }
+}

@@ -1,1 +1,34 @@
 @import "tailwindcss";
+@import "@fontsource/spectral/400.css";
+@import "@fontsource/spectral/600.css";
+@import "@fontsource/spectral/400-italic.css";
+@import "@fontsource-variable/hanken-grotesk";
+@import "@fontsource-variable/fraunces";
+@import "@fontsource-variable/inter";
+@import "@wordhold/ui/themes/heirloom.css";
+@import "@wordhold/ui/themes/warm-print.css";
+
+/*
+ * Map the semantic theme tokens (set by the .theme-* wrapper classes) to
+ * Tailwind utilities: bg-background, text-foreground, font-display, etc.
+ */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius: var(--radius);
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+}
