@@ -130,9 +130,7 @@ const generateAudio = async (
 };
 
 export const importPage = createServerFn({ method: 'POST' })
-  .inputValidator((input: unknown) =>
-    Schema.decodeUnknownSync(ImportPayload)(input),
-  )
+  .validator((input: unknown) => Schema.decodeUnknownSync(ImportPayload)(input))
   .handler(async ({ data }) => {
     await requireSession();
     const [row] = await db

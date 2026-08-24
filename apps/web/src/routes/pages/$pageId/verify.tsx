@@ -5,13 +5,7 @@ import type { DraftEntry } from '../../../shared/import/entry-row';
 import { importPage } from '../../../shared/import/import-fn';
 import { getPage, retryExtraction } from '../../../shared/import/server-fns';
 import { VerifyForm } from '../../../shared/import/verify-form';
-
-const languageLabels: Record<string, string> = {
-  de: 'Deutsch',
-  en: 'Englisch',
-  es: 'Spanisch',
-  fr: 'Französisch',
-};
+import { germanLabels } from '../../../shared/languages';
 
 const draftsFromExtraction = (
   extraction: ExtractionResult | null,
@@ -54,7 +48,7 @@ const VerifyScreen = () => {
     }
   };
 
-  const targetLabel = languageLabels[course.targetLanguage] ?? 'Zielsprache';
+  const targetLabel = germanLabels[course.targetLanguage];
 
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-4 p-6">

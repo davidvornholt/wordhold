@@ -15,7 +15,9 @@ import { Route as BakeHeirloomRouteImport } from './routes/bake/heirloom'
 import { Route as BakeWarmPrintRouteImport } from './routes/bake/warm-print'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as CoursesCourseIdImportRouteImport } from './routes/courses/$courseId/import'
+import { Route as CoursesCourseIdPracticeRouteImport } from './routes/courses/$courseId/practice'
 import { Route as PagesPageIdVerifyRouteImport } from './routes/pages/$pageId/verify'
+import { Route as ApiEntriesEntryIdAudioRouteImport } from './routes/api/entries/$entryId/audio'
 import { Route as ApiPagesPageIdImageRouteImport } from './routes/api/pages/$pageId/image'
 
 const IndexRoute = IndexRouteImport.update({
@@ -48,9 +50,19 @@ const CoursesCourseIdImportRoute = CoursesCourseIdImportRouteImport.update({
   path: '/courses/$courseId/import',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CoursesCourseIdPracticeRoute = CoursesCourseIdPracticeRouteImport.update({
+  id: '/courses/$courseId/practice',
+  path: '/courses/$courseId/practice',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PagesPageIdVerifyRoute = PagesPageIdVerifyRouteImport.update({
   id: '/pages/$pageId/verify',
   path: '/pages/$pageId/verify',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiEntriesEntryIdAudioRoute = ApiEntriesEntryIdAudioRouteImport.update({
+  id: '/api/entries/$entryId/audio',
+  path: '/api/entries/$entryId/audio',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPagesPageIdImageRoute = ApiPagesPageIdImageRouteImport.update({
@@ -66,7 +78,9 @@ export interface FileRoutesByFullPath {
   '/bake/warm-print': typeof BakeWarmPrintRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/courses/$courseId/import': typeof CoursesCourseIdImportRoute
+  '/courses/$courseId/practice': typeof CoursesCourseIdPracticeRoute
   '/pages/$pageId/verify': typeof PagesPageIdVerifyRoute
+  '/api/entries/$entryId/audio': typeof ApiEntriesEntryIdAudioRoute
   '/api/pages/$pageId/image': typeof ApiPagesPageIdImageRoute
 }
 export interface FileRoutesByTo {
@@ -76,7 +90,9 @@ export interface FileRoutesByTo {
   '/bake/warm-print': typeof BakeWarmPrintRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/courses/$courseId/import': typeof CoursesCourseIdImportRoute
+  '/courses/$courseId/practice': typeof CoursesCourseIdPracticeRoute
   '/pages/$pageId/verify': typeof PagesPageIdVerifyRoute
+  '/api/entries/$entryId/audio': typeof ApiEntriesEntryIdAudioRoute
   '/api/pages/$pageId/image': typeof ApiPagesPageIdImageRoute
 }
 export interface FileRoutesById {
@@ -87,7 +103,9 @@ export interface FileRoutesById {
   '/bake/warm-print': typeof BakeWarmPrintRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/courses/$courseId/import': typeof CoursesCourseIdImportRoute
+  '/courses/$courseId/practice': typeof CoursesCourseIdPracticeRoute
   '/pages/$pageId/verify': typeof PagesPageIdVerifyRoute
+  '/api/entries/$entryId/audio': typeof ApiEntriesEntryIdAudioRoute
   '/api/pages/$pageId/image': typeof ApiPagesPageIdImageRoute
 }
 export interface FileRouteTypes {
@@ -99,7 +117,9 @@ export interface FileRouteTypes {
     | '/bake/warm-print'
     | '/api/auth/$'
     | '/courses/$courseId/import'
+    | '/courses/$courseId/practice'
     | '/pages/$pageId/verify'
+    | '/api/entries/$entryId/audio'
     | '/api/pages/$pageId/image'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -109,7 +129,9 @@ export interface FileRouteTypes {
     | '/bake/warm-print'
     | '/api/auth/$'
     | '/courses/$courseId/import'
+    | '/courses/$courseId/practice'
     | '/pages/$pageId/verify'
+    | '/api/entries/$entryId/audio'
     | '/api/pages/$pageId/image'
   id:
     | '__root__'
@@ -119,7 +141,9 @@ export interface FileRouteTypes {
     | '/bake/warm-print'
     | '/api/auth/$'
     | '/courses/$courseId/import'
+    | '/courses/$courseId/practice'
     | '/pages/$pageId/verify'
+    | '/api/entries/$entryId/audio'
     | '/api/pages/$pageId/image'
   fileRoutesById: FileRoutesById
 }
@@ -130,7 +154,9 @@ export interface RootRouteChildren {
   BakeWarmPrintRoute: typeof BakeWarmPrintRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   CoursesCourseIdImportRoute: typeof CoursesCourseIdImportRoute
+  CoursesCourseIdPracticeRoute: typeof CoursesCourseIdPracticeRoute
   PagesPageIdVerifyRoute: typeof PagesPageIdVerifyRoute
+  ApiEntriesEntryIdAudioRoute: typeof ApiEntriesEntryIdAudioRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -177,11 +203,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CoursesCourseIdImportRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/courses/$courseId/practice': {
+      id: '/courses/$courseId/practice'
+      path: '/courses/$courseId/practice'
+      fullPath: '/courses/$courseId/practice'
+      preLoaderRoute: typeof CoursesCourseIdPracticeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pages/$pageId/verify': {
       id: '/pages/$pageId/verify'
       path: '/pages/$pageId/verify'
       fullPath: '/pages/$pageId/verify'
       preLoaderRoute: typeof PagesPageIdVerifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/entries/$entryId/audio': {
+      id: '/api/entries/$entryId/audio'
+      path: '/api/entries/$entryId/audio'
+      fullPath: '/api/entries/$entryId/audio'
+      preLoaderRoute: typeof ApiEntriesEntryIdAudioRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/pages/$pageId/image': {
@@ -213,7 +253,9 @@ const rootRouteChildren: RootRouteChildren = {
   BakeWarmPrintRoute: BakeWarmPrintRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   CoursesCourseIdImportRoute: CoursesCourseIdImportRoute,
+  CoursesCourseIdPracticeRoute: CoursesCourseIdPracticeRoute,
   PagesPageIdVerifyRoute: PagesPageIdVerifyRoute,
+  ApiEntriesEntryIdAudioRoute: ApiEntriesEntryIdAudioRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -32,6 +32,8 @@ export const cards = pgTable(
     difficulty: real('difficulty'),
     reps: integer('reps').notNull().default(0),
     lapses: integer('lapses').notNull().default(0),
+    scheduledDays: real('scheduled_days').notNull().default(0),
+    learningSteps: integer('learning_steps').notNull().default(0),
     lastReviewedAt: timestamp('last_reviewed_at', { withTimezone: true }),
   },
   (table) => [

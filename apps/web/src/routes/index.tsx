@@ -2,12 +2,7 @@ import { createFileRoute, Link, useRouter } from '@tanstack/react-router';
 import { authClient } from '../shared/auth/client';
 import { getSessionUser } from '../shared/auth/session-fn';
 import { listCourses, listPendingPages } from '../shared/import/server-fns';
-
-const languageLabels: Record<string, string> = {
-  en: 'Englisch',
-  es: 'Spanisch',
-  fr: 'Französisch',
-};
+import { germanLabels } from '../shared/languages';
 
 const SignedOut = () => (
   <div className="flex flex-col items-start gap-4">
@@ -68,9 +63,15 @@ const Home = () => {
                 >
                   <span className="font-medium">{course.name}</span>
                   <span className="text-neutral-500 text-xs">
-                    {languageLabels[course.targetLanguage] ??
-                      course.targetLanguage}
+                    {germanLabels[course.targetLanguage]}
                   </span>
+                  <Link
+                    className="font-medium text-sm underline"
+                    params={{ courseId: course.id }}
+                    to="/courses/$courseId/practice"
+                  >
+                    Üben
+                  </Link>
                   <Link
                     className="text-sm underline"
                     params={{ courseId: course.id }}

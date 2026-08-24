@@ -6,14 +6,8 @@ import { asc, eq } from 'drizzle-orm';
 import { requireSession } from '../auth/require-session';
 import { db } from '../db/server';
 import { readDataFile, toBase64 } from '../storage/server';
+import { requireString } from '../validate/input';
 import { mimeForPath, runExtraction } from './extract';
-
-const requireString = (input: unknown): string => {
-  if (typeof input !== 'string') {
-    throw new Error('Ungültige Eingabe.');
-  }
-  return input;
-};
 
 // The three courses exist from day one; seeding on first read keeps setup
 // at zero steps. Names can be edited in the database once textbooks are
@@ -37,7 +31,7 @@ export const listCourses = createServerFn().handler(async () => {
 });
 
 export const getCourse = createServerFn()
-  .inputValidator(requireString)
+  .validator(requireString)
   .handler(async ({ data }) => {
     await requireSession();
     const [course] = await db
@@ -67,7 +61,7 @@ export const listPendingPages = createServerFn().handler(async () => {
 });
 
 export const getPage = createServerFn()
-  .inputValidator(requireString)
+  .validator(requireString)
   .handler(async ({ data }) => {
     await requireSession();
     const [row] = await db
@@ -90,7 +84,7 @@ export const getPage = createServerFn()
   });
 
 export const retryExtraction = createServerFn({ method: 'POST' })
-  .inputValidator(requireString)
+  .validator(requireString)
   .handler(async ({ data }) => {
     await requireSession();
     const [row] = await db

@@ -2,14 +2,7 @@ import { Extraction, type ExtractionResult } from '@wordhold/ai/extraction';
 import type { LanguageCode } from '@wordhold/db/schema/courses';
 import { Effect } from 'effect';
 import { extractionRuntime } from '../ai/runtime';
-
-// The extraction prompt speaks English, so language names do too.
-const languageNames: Record<LanguageCode, string> = {
-  de: 'German',
-  en: 'English',
-  es: 'Spanish',
-  fr: 'French',
-};
+import { englishNames } from '../languages';
 
 const extensionByMime: Record<string, string> = {
   'image/jpeg': 'jpg',
@@ -40,7 +33,7 @@ export const runExtraction = (input: {
       return yield* extraction.extract({
         imageBase64: input.imageBase64,
         mediaType: input.mediaType,
-        targetLanguage: languageNames[input.language],
+        targetLanguage: englishNames[input.language],
       });
     }),
   );

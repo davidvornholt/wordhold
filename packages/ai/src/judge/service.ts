@@ -46,6 +46,6 @@ export class Judge extends Effect.Service<Judge>()('@wordhold/ai/Judge', {
         },
         catch: (cause) => new JudgeError({ cause }),
       });
-    return { judge } as const;
+    return { judge, modelId } as const;
   }),
 }) {}
