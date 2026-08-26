@@ -1,13 +1,28 @@
 import { PgClient } from '@effect/sql-pg';
+import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import { Config, Effect, Redacted } from 'effect';
 import postgres from 'postgres';
-import { migrateDatabase } from '../migrate';
+import { makeDrizzle } from '../drizzle';
 
 type TestDatabase = {
   readonly name: string;
   readonly rootUrl: string;
   readonly url: string;
 };
+
+const migrationsFolder = `${import.meta.dir}/../../drizzle`;
+
+const migrateTestDatabase = (url: string) =>
+  Effect.acquireUseRelease(
+    Effect.sync(() => makeDrizzle(url)),
+    (database) =>
+      Effect.tryPromise({
+        try: () => migrate(database, { migrationsFolder }),
+        catch: (cause) =>
+          new Error('Could not migrate an isolated test database.', { cause }),
+      }),
+    (database) => Effect.promise(() => database.$client.end()),
+  );
 
 const allocate = Effect.gen(function* () {
   const rootUrl = yield* Config.string('DATABASE_URL').pipe(
@@ -50,7 +65,7 @@ export const withMigratedTestDatabase = <A, E, R>(
   use: (database: TestDatabase) => Effect.Effect<A, E, R>,
 ): Effect.Effect<A, E | Error, R> =>
   withTestDatabase((database) =>
-    Effect.zipRight(migrateDatabase(database.url), use(database)),
+    Effect.zipRight(migrateTestDatabase(database.url), use(database)),
   );
 
 export const testDatabaseLayer = (url: string) =>

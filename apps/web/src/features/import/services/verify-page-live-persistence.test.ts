@@ -68,7 +68,7 @@ describe('verifyPageLive persistence', () => {
           expect(units.map((unit) => unit.name)).toEqual(['Unit 3', 'Unit 4']);
           const persisted = yield* sql<{
             readonly pageId: string;
-            readonly unitId: string;
+            readonly unitId: string | null;
           }>`
             select page_id as "pageId", unit_id as "unitId"
             from entries
@@ -82,6 +82,7 @@ describe('verifyPageLive persistence', () => {
             ).size,
           ).toBe(2);
           expect(persisted.every((row) => row.pageId !== null)).toBe(true);
+          expect(persisted.every((row) => row.unitId !== null)).toBe(true);
           const unitThree = units.find((unit) => unit.name === 'Unit 3');
           expect(
             persisted.filter((row) => row.unitId === unitThree?.id),

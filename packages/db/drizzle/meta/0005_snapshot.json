@@ -1,5 +1,5 @@
 {
-  "id": "1b4f6a73-ed58-4243-9304-0b3684aa2a85",
+  "id": "c4e96021-9dd7-4bb9-8914-3773bc909bd7",
   "prevId": "991a4a93-4c50-4df1-a670-22482fd546cd",
   "version": "7",
   "dialect": "postgresql",
@@ -742,7 +742,7 @@
           "name": "unit_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "page_id": {
           "name": "page_id",

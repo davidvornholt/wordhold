@@ -1,31 +1,27 @@
 import { describe, expect, it } from 'bun:test';
 import { Effect } from 'effect';
 import { Database } from '../client';
-import { migrateDatabase } from '../migrate';
 import {
   testDatabaseLayer,
   withMigratedTestDatabase,
-  withTestDatabase,
 } from '../testing/postgres-test-database';
-import { MigrationError } from './migration-error';
+import { backfillUnits } from './backfill-units';
+import { UnitBackfillError } from './unit-backfill-error';
 
 const courseA = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const courseB = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const pageId = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
-const migrationBeforeUnits = 3;
-const migrationWithNullableUnits = 4;
 
 const provideDatabase = <A, E, R>(
   url: string,
   effect: Effect.Effect<A, E, R | Database>,
 ) => effect.pipe(Effect.provide(testDatabaseLayer(url)));
 
-describe('unit migrations', () => {
-  it('preserves page provenance and files orphaned vocabulary', async () => {
+describe('unit migration boundary', () => {
+  it('preserves page provenance and files every legacy row', async () => {
     await Effect.runPromise(
-      withTestDatabase((database) =>
+      withMigratedTestDatabase((database) =>
         Effect.gen(function* () {
-          yield* migrateDatabase(database.url, migrationBeforeUnits);
           yield* provideDatabase(
             database.url,
             Effect.gen(function* () {
@@ -47,7 +43,9 @@ describe('unit migrations', () => {
               `;
             }),
           );
-          yield* migrateDatabase(database.url);
+
+          yield* backfillUnits(database.url);
+
           const rows = yield* provideDatabase(
             database.url,
             Effect.gen(function* () {
@@ -55,7 +53,7 @@ describe('unit migrations', () => {
               return yield* sql<{
                 readonly isHolding: boolean;
                 readonly pageId: string | null;
-                readonly unitId: string;
+                readonly unitId: string | null;
               }>`
                 select units.is_holding as "isHolding",
                   entries.page_id as "pageId",
@@ -69,15 +67,10 @@ describe('unit migrations', () => {
             }),
           );
           expect(rows).toHaveLength(2);
-          expect(rows[0]).toMatchObject({
-            isHolding: false,
-            pageId,
-          });
-          expect(rows[1]).toMatchObject({
-            isHolding: true,
-            pageId: null,
-          });
+          expect(rows[0]).toMatchObject({ isHolding: false, pageId });
+          expect(rows[1]).toMatchObject({ isHolding: true, pageId: null });
           expect(rows[0]?.unitId).not.toBe(rows[1]?.unitId);
+          expect(rows.every((row) => row.unitId !== null)).toBe(true);
         }),
       ),
     );
@@ -96,12 +89,12 @@ describe('unit migrations', () => {
                 (${courseA}, 'French', 'fr'),
                 (${courseB}, 'English', 'en')
             `;
-            const units = yield* sql<{ readonly id: string }>`
+            const createdUnits = yield* sql<{ readonly id: string }>`
               insert into units (course_id, name, position)
               values (${courseA}, 'Unit 1', 0)
               returning id
             `;
-            const unitId = units[0]?.id ?? '';
+            const unitId = createdUnits[0]?.id ?? '';
             const mismatch = yield* Effect.either(sql`
               insert into entries (
                 course_id, unit_id, type, target_text, native_text
@@ -126,22 +119,25 @@ describe('unit migrations', () => {
     );
   });
 
-  it('stops the backfill before tightening a cross-course legacy row', async () => {
+  it('fails safely when legacy data crosses course ownership', async () => {
     await Effect.runPromise(
-      withTestDatabase((database) =>
+      withMigratedTestDatabase((database) =>
         Effect.gen(function* () {
-          yield* migrateDatabase(database.url, migrationWithNullableUnits);
           yield* provideDatabase(
             database.url,
             Effect.gen(function* () {
               const sql = yield* Database;
+              yield* sql`
+                alter table entries
+                drop constraint entries_unit_course_units_id_course_fk
+              `;
               yield* sql`
                 insert into courses (id, name, target_language)
                 values
                   (${courseA}, 'French', 'fr'),
                   (${courseB}, 'English', 'en')
               `;
-              const units = yield* sql<{ readonly id: string }>`
+              const createdUnits = yield* sql<{ readonly id: string }>`
                 insert into units (course_id, name, position)
                 values (${courseA}, 'Unit 1', 0)
                 returning id
@@ -150,16 +146,17 @@ describe('unit migrations', () => {
                 insert into entries (
                   course_id, unit_id, type, target_text, native_text
                 ) values (
-                  ${courseB}, ${units[0]?.id ?? null}, 'word', 'book', 'Buch'
+                  ${courseB}, ${createdUnits[0]?.id ?? null}, 'word', 'book', 'Buch'
                 )
               `;
             }),
           );
-          const result = yield* Effect.either(migrateDatabase(database.url));
+
+          const result = yield* Effect.either(backfillUnits(database.url));
           expect(result).toEqual(
             expect.objectContaining({
               _tag: 'Left',
-              left: expect.any(MigrationError),
+              left: expect.any(UnitBackfillError),
             }),
           );
         }),
