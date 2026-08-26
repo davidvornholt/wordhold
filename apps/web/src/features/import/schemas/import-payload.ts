@@ -8,25 +8,6 @@ import {
 import { Schema } from 'effect';
 import { ImportPayloadValidationError } from '../errors/import-payload-validation-error';
 
-// The human-verified shape of one entry, as submitted from the verify screen.
-// Confidence is dropped: after verification the human is the authority.
-export const VerifiedEntry = Schema.Struct({
-  type: Schema.Literal('word', 'expression', 'sentence'),
-  targetText: Schema.Trim.pipe(
-    Schema.minLength(1),
-    Schema.maxLength(maximumEntryTextLength),
-  ),
-  nativeText: Schema.Trim.pipe(
-    Schema.minLength(1),
-    Schema.maxLength(maximumEntryTextLength),
-  ),
-  grammar: Schema.optional(Grammar),
-  example: Schema.optional(
-    Schema.Trim.pipe(Schema.maxLength(maximumExampleLength)),
-  ),
-});
-export type VerifiedEntryData = typeof VerifiedEntry.Type;
-
 export const maximumUnitNameLength = 80;
 
 // Words are filed into a chapter of the textbook, either one that already
@@ -48,9 +29,28 @@ export const UnitSelection = Schema.Union(
 );
 export type UnitSelectionData = typeof UnitSelection.Type;
 
+// The human-verified shape of one entry, as submitted from the verify screen.
+// Confidence is dropped: after verification the human is the authority.
+export const VerifiedEntry = Schema.Struct({
+  unit: UnitSelection,
+  type: Schema.Literal('word', 'expression', 'sentence'),
+  targetText: Schema.Trim.pipe(
+    Schema.minLength(1),
+    Schema.maxLength(maximumEntryTextLength),
+  ),
+  nativeText: Schema.Trim.pipe(
+    Schema.minLength(1),
+    Schema.maxLength(maximumEntryTextLength),
+  ),
+  grammar: Schema.optional(Grammar),
+  example: Schema.optional(
+    Schema.Trim.pipe(Schema.maxLength(maximumExampleLength)),
+  ),
+});
+export type VerifiedEntryData = typeof VerifiedEntry.Type;
+
 export const ImportPayload = Schema.Struct({
   pageId: Schema.UUID,
-  unit: UnitSelection,
   label: Schema.optional(
     Schema.Trim.pipe(Schema.maxLength(maximumLabelLength)),
   ),

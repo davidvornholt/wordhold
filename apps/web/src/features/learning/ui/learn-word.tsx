@@ -25,7 +25,7 @@ export const LearnWord = ({
   const [typed, setTyped] = useState('');
   const [missed, setMissed] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [saveFailed, setSaveFailed] = useState(false);
   const audioUrl = item.hasAudio ? `/api/entries/${item.entryId}/audio` : null;
   const play = async () => {
     if (audioUrl !== null) {
@@ -42,6 +42,13 @@ export const LearnWord = ({
     new Audio(audioUrl).play().catch(() => undefined);
   }, [audioUrl]);
 
+  let actionLabel = 'Weiter';
+  if (busy) {
+    actionLabel = 'Wird gespeichert …';
+  } else if (saveFailed) {
+    actionLabel = 'Erneut versuchen';
+  }
+
   const onSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (busy) {
@@ -52,12 +59,13 @@ export const LearnWord = ({
       setTyped('');
       return;
     }
+    setMissed(false);
     setBusy(true);
-    setError(null);
+    setSaveFailed(false);
     try {
       await onLearned();
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+    } catch {
+      setSaveFailed(true);
     } finally {
       setBusy(false);
     }
@@ -103,15 +111,17 @@ export const LearnWord = ({
           disabled={busy || typed.trim() === ''}
           type="submit"
         >
-          {busy ? 'Wird gespeichert …' : 'Weiter'}
+          {actionLabel}
         </button>
       </form>
       <p aria-live="polite" className="text-sm">
         {missed ? 'Noch nicht ganz. Schreib das Wort genau so ab.' : null}
       </p>
-      {error === null ? null : (
-        <p className="text-destructive text-sm">{error}</p>
-      )}
+      {saveFailed ? (
+        <p className="text-destructive text-sm" role="alert">
+          Das Wort wurde nicht gespeichert. Versuch es noch einmal.
+        </p>
+      ) : null}
     </>
   );
 };

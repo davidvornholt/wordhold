@@ -7,7 +7,7 @@ describe('units', () => {
   // Two photos of the same chapter must land in one unit. Import resolves a
   // typed name to the existing unit, and this constraint is what makes that
   // resolution safe instead of a race that creates a duplicate chapter.
-  it('allows one unit of a given name per course', () => {
+  it('keeps names and positions unique inside a course', () => {
     const unique = getTableConfig(units)
       .indexes.filter((index) => index.config.unique)
       .map((index) =>
@@ -17,9 +17,11 @@ describe('units', () => {
       );
 
     expect(unique).toContain('course_id,name');
+    expect(unique).toContain('course_id,position');
+    expect(unique).toContain('id,course_id');
   });
 
-  it('refuses vocabulary that belongs to no unit', () => {
+  it('requires every vocabulary entry to belong to a unit', () => {
     const unitId = getTableConfig(entries).columns.find(
       (column) => column.name === 'unit_id',
     );
@@ -37,6 +39,13 @@ describe('units', () => {
     );
 
     expect(key?.reference().foreignTable).toBe(units);
+    expect(key?.reference().columns.map((column) => column.name)).toEqual([
+      'unit_id',
+      'course_id',
+    ]);
+    expect(
+      key?.reference().foreignColumns.map((column) => column.name),
+    ).toEqual(['id', 'course_id']);
     expect(key?.onDelete).toBe('restrict');
   });
 });
