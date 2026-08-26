@@ -17,7 +17,7 @@ and the app only ever sees decoded values.
 
 ## Why the judge uses Bedrock Mantle
 
-AWS supports GPT-5.6 Luna on both OpenAI-compatible endpoints, but its [model card](https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-openai-gpt-56-luna.html) explicitly marks Structured Outputs as unsupported on `bedrock-runtime`. The judge and sentence generator therefore use the `bedrock-mantle` Responses API. The request sends a strict JSON Schema, and the application decodes the returned value again with Effect Schema.
+AWS exposes GPT-5.6 Luna on both OpenAI-compatible endpoints. Its [model card](https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-openai-gpt-56-luna.html) marks Structured Outputs as unsupported on `bedrock-runtime` and lists Responses on `bedrock-mantle`, but it does not say that Mantle accepts OpenAI's strict `text.format` shape. The judge and sentence generator are configured to test that path. Each request sends a strict JSON Schema, and the application decodes the returned value again with Effect Schema. Do not deploy this provider until `provider:verify` succeeds against both production schemas. Documentation and mocked transport tests do not prove the premise.
 
 Mantle uses `https://bedrock-mantle.{region}.api.aws/openai/v1/responses`, the model ID `openai.gpt-5.6-luna`, and a Bedrock API key. Luna is available there in US regions, so `AWS_BEDROCK_REGION` is separate from the `AWS_REGION` that keeps Polly in Frankfurt. Responses are not stored by Bedrock.
 

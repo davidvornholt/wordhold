@@ -1,8 +1,12 @@
-import { Data, Effect, Exit, Schema } from 'effect';
+import { Data, Effect, Schema } from 'effect';
+import {
+  CreatedCredential,
+  CreatedCredentialIdentity,
+  ListedCredentials,
+} from './bedrock-credential-response';
 
 const iamUser = 'WordholdDevelopment';
 const serviceName = 'bedrock.amazonaws.com';
-const secretPath = 'secrets/dev.yaml';
 const secretIndex = ['apps', 'web', 'AWS_BEDROCK_API_KEY']
   .map((key) => `[${JSON.stringify(key)}]`)
   .join('');
@@ -27,32 +31,6 @@ type RunCommand = (
   command: Command,
 ) => Effect.Effect<CommandResult, CredentialRotationError>;
 
-const ListedCredentials = Schema.Struct({
-  credentials: Schema.propertySignature(
-    Schema.Array(
-      Schema.Struct({
-        id: Schema.propertySignature(Schema.String).pipe(
-          Schema.fromKey('ServiceSpecificCredentialId'),
-        ),
-      }),
-    ),
-  ).pipe(Schema.fromKey('ServiceSpecificCredentials')),
-});
-
-const CreatedCredential = Schema.Struct({
-  credential: Schema.propertySignature(
-    Schema.Struct({
-      id: Schema.propertySignature(Schema.String).pipe(
-        Schema.fromKey('ServiceSpecificCredentialId'),
-      ),
-      value: Schema.propertySignature(Schema.String).pipe(
-        // biome-ignore lint/security/noSecrets: This is an AWS response field name, not a credential value.
-        Schema.fromKey('ServiceApiKeyValue'),
-      ),
-    }),
-  ).pipe(Schema.fromKey('ServiceSpecificCredential')),
-});
-
 const decodeJson = <A, I>(schema: Schema.Schema<A, I>, value: string) =>
   Schema.decodeUnknown(Schema.parseJson(schema))(value).pipe(
     Effect.mapError(
@@ -63,9 +41,47 @@ const decodeJson = <A, I>(schema: Schema.Schema<A, I>, value: string) =>
     ),
   );
 
+const deleteCredential = (id: string): Command => ({
+  args: [
+    'aws',
+    'iam',
+    'delete-service-specific-credential',
+    '--user-name',
+    iamUser,
+    '--service-specific-credential-id',
+    id,
+    '--no-cli-pager',
+  ],
+});
+
+const revocationCommand = (id: string) =>
+  `aws iam delete-service-specific-credential --user-name ${iamUser} --service-specific-credential-id ${id}`;
+
+const failAfterCreate = (execute: RunCommand, id: string, failure: string) =>
+  execute(deleteCredential(id)).pipe(
+    Effect.matchEffect({
+      onFailure: () =>
+        Effect.fail(
+          new CredentialRotationError({
+            message: `${failure} Automatic cleanup failed. Revoke ${id} with: ${revocationCommand(id)}`,
+          }),
+        ),
+      onSuccess: (result) =>
+        Effect.fail(
+          new CredentialRotationError({
+            message:
+              result.exitCode === 0
+                ? `${failure} The replacement ${id} was automatically revoked.`
+                : `${failure} Automatic cleanup failed. Revoke ${id} with: ${revocationCommand(id)}`,
+          }),
+        ),
+    }),
+  );
+
 export const rotateBedrockApiKey = (
   execute: RunCommand,
   log: (message: string) => void,
+  secretPath: string,
 ) =>
   Effect.gen(function* () {
     const listed = yield* execute({
@@ -100,7 +116,7 @@ export const rotateBedrockApiKey = (
       });
     }
 
-    const created = yield* execute({
+    const creationResult = yield* execute({
       args: [
         'aws',
         'iam',
@@ -115,26 +131,48 @@ export const rotateBedrockApiKey = (
         'json',
         '--no-cli-pager',
       ],
-    }).pipe(
-      Effect.flatMap((result) =>
-        result.exitCode === 0
-          ? decodeJson(CreatedCredential, result.stdout)
-          : Effect.fail(
-              new CredentialRotationError({
-                message: 'AWS did not create a replacement Bedrock API key.',
-              }),
-            ),
+    });
+    if (creationResult.exitCode !== 0) {
+      return yield* new CredentialRotationError({
+        message: 'AWS did not create a replacement Bedrock API key.',
+      });
+    }
+
+    const identity = yield* decodeJson(
+      CreatedCredentialIdentity,
+      creationResult.stdout,
+    );
+    const created = yield* decodeJson(
+      CreatedCredential,
+      creationResult.stdout,
+    ).pipe(
+      Effect.catchAll(() =>
+        failAfterCreate(
+          execute,
+          identity.credential.id,
+          'AWS created a replacement, but its response did not contain the documented secret field.',
+        ),
       ),
     );
     const { credential } = created;
     const stored = yield* execute({
       args: ['sops', 'set', '--value-stdin', secretPath, secretIndex],
       stdin: JSON.stringify(credential.value),
-    });
+    }).pipe(
+      Effect.catchAll(() =>
+        failAfterCreate(
+          execute,
+          credential.id,
+          'AWS created a replacement, but SOPS did not store it.',
+        ),
+      ),
+    );
     if (stored.exitCode !== 0) {
-      return yield* new CredentialRotationError({
-        message: `AWS created ${credential.id}, but SOPS did not store it. Revoke that credential before retrying.`,
-      });
+      return yield* failAfterCreate(
+        execute,
+        credential.id,
+        'AWS created a replacement, but SOPS did not store it.',
+      );
     }
 
     log(`Replacement credential: ${credential.id}`);
@@ -142,48 +180,3 @@ export const rotateBedrockApiKey = (
       log(`Predecessor credential: ${oldIds[0]}`);
     }
   });
-
-const runCommand: RunCommand = (command) =>
-  Effect.tryPromise({
-    try: async () => {
-      const child = globalThis.Bun.spawn(command.args, {
-        stdin: command.stdin === undefined ? 'ignore' : 'pipe',
-        stdout: 'pipe',
-        stderr: 'pipe',
-      });
-      if (command.stdin !== undefined) {
-        child.stdin.write(command.stdin);
-        child.stdin.end();
-      }
-      const [exitCode, stdout] = await Promise.all([
-        child.exited,
-        new Response(child.stdout).text(),
-        new Response(child.stderr).text(),
-      ]);
-      return { exitCode, stdout };
-    },
-    catch: () =>
-      new CredentialRotationError({
-        message: 'Could not start AWS CLI or SOPS.',
-      }),
-  });
-
-if (import.meta.main) {
-  const messages: Array<string> = [];
-  const result = await Effect.runPromiseExit(
-    rotateBedrockApiKey(runCommand, (message) => messages.push(message)),
-  );
-  if (Exit.isFailure(result)) {
-    await globalThis.Bun.write(
-      globalThis.Bun.stderr,
-      'Bedrock API key rotation failed. No credential value was printed.\n',
-    );
-    // biome-ignore lint/correctness/noProcessGlobal: This CLI boundary must report failure to the shell.
-    globalThis.process.exitCode = 1;
-  } else {
-    await globalThis.Bun.write(
-      globalThis.Bun.stdout,
-      `${messages.join('\n')}\n`,
-    );
-  }
-}

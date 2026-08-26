@@ -42,7 +42,7 @@ through `src/shared/env/server.ts`.
 
 ## Provider credentials
 
-Both AWS credentials belong to one dedicated IAM user, `WordholdDevelopment`, which has no console password. The SigV4 pair permits only `polly:SynthesizeSpeech`. The Bedrock API key uses the same user's permissions. Mantle requires `bedrock-mantle:CallWithBearerToken`, `bedrock-mantle:CreateInference`, `bedrock-mantle:GetProject`, `bedrock-mantle:ListProjects`, and `bedrock-mantle:ListTagsForResources`. The [AWS permission reference](https://docs.aws.amazon.com/bedrock/latest/userguide/inference.html) documents that set.
+Both AWS credentials belong to one dedicated IAM user, `WordholdDevelopment`, which has no console password. The SigV4 pair permits only `polly:SynthesizeSpeech`. The Bedrock API key uses the same user's permissions. AWS controls Mantle API-key authentication with `bedrock-mantle:CallWithBearerToken`. Wordhold also needs `bedrock-mantle:CreateInference` on `arn:aws:bedrock-mantle:us-east-1:765727302936:project/default`. The [AWS service authorization reference](https://docs.aws.amazon.com/service-authorization/latest/reference/list_bedrock-mantle.html) marks `CreateInference` as project-scoped. This application does not need project listing, tagging, or management permissions.
 
 Rotate the Bedrock API key from the repository root:
 
@@ -55,7 +55,7 @@ aws iam delete-service-specific-credential \
   --service-specific-credential-id '<predecessor credential printed above>'
 ```
 
-The rotation command checks that AWS has at most one Bedrock key before creating another. It gives the replacement a 90-day lifetime and passes its one-time value from AWS CLI memory straight to `sops set --value-stdin`. The value never enters command arguments, terminal output, a pager, or a plaintext file. It prints the replacement and predecessor IDs only. `provider:verify` then makes real judge and sentence requests with the generated environment. Delete the explicitly named predecessor only after both requests pass.
+The rotation command needs an operator AWS identity that can list, create, and delete Bedrock service-specific credentials for `WordholdDevelopment`. The application SigV4 pair cannot manage its own credentials, and the repository credential broker does not manage AWS IAM users. The command checks that AWS has at most one Bedrock key before creating another. It gives the replacement a 90-day lifetime and passes the one-time `ServiceCredentialSecret` from AWS CLI memory straight to `sops set --value-stdin`. If decoding or storage fails after creation, it revokes the new ID automatically. If cleanup also fails, it prints the new ID and exact revocation command, never the value. `provider:verify` then makes real judge and sentence requests with the generated environment. Delete the explicitly named predecessor only after both requests pass.
 
 Rotate the Polly SigV4 pair with the same replace, verify, revoke order. Store both replacement values in `secrets/dev.yaml`, run `just dev-env-generate`, verify Polly through the web import flow, then call `aws iam delete-access-key --user-name WordholdDevelopment --access-key-id '<predecessor access key ID>'`. Never put either secret value in a shell argument or terminal output.
 
