@@ -15,13 +15,6 @@ Structured outputs are validated with Effect Schema via the Standard Schema
 bridge (`Schema.standardSchemaV1`), so the AI SDK retries on shape mismatch
 and the app only ever sees decoded values.
 
-Anthropic models on Bedrock answer a structured-output request as plain JSON
-text rather than through a tool call. A German quotation pair written as
-`„wort"` closes the JSON string on that unescaped ASCII quote: the rest of the
-sentence is discarded and the truncated remainder still parses, so nothing
-fails and the reader sees half a sentence. Both Bedrock prompts therefore
-forbid double and typographic quotes and ask for single quotes instead.
-
 ## Configuration
 
 | Variable | Purpose |
