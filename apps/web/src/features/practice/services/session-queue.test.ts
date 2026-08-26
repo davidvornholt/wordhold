@@ -105,7 +105,9 @@ describe('session queue', () => {
       wrong: 1,
     });
   });
+});
 
+describe('session queue transition guards', () => {
   it('tracks a first-attempt provider failure as ungraded', () => {
     const queue = advanceHead(createSessionQueue(items(2)), {
       graded: false,
