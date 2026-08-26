@@ -44,3 +44,12 @@ export const listCourseUnits = createServerFn()
       Effect.flatMap(CourseService, (service) => service.listUnits(courseId)),
     );
   });
+
+export const listUnitWords = createServerFn()
+  .validator(decodeId)
+  .handler(async ({ data: unitId }) => {
+    await authRuntime.runPromise(requireSession(getRequest().headers));
+    return courseRuntime.runPromise(
+      Effect.flatMap(CourseService, (service) => service.listWords(unitId)),
+    );
+  });

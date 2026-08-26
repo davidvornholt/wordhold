@@ -25,12 +25,7 @@ const recoveryPage = {
 
 const action = (
   label: string,
-  destination:
-    | 'import'
-    | 'practice'
-    | 'learn-units'
-    | 'drill-units'
-    | 'course-settings',
+  destination: 'course' | 'import' | 'practice',
 ) => (
   <button
     className="text-sm underline"
@@ -59,11 +54,11 @@ export const DashboardFixture = ({ empty = false, audioRecovery = false }) => (
   >
     <CourseGrid
       courses={[course]}
-      renderDrillAction={() => action('Einheit üben', 'drill-units')}
-      renderImportAction={() => action('Seite fotografieren', 'import')}
-      renderLearnAction={() => action('Lernen', 'learn-units')}
+      renderCourseLink={() => action(course.name, 'course')}
+      renderImportAction={() =>
+        action('fotografiere die erste Seite', 'import')
+      }
       renderPracticeAction={() => action('Üben', 'practice')}
-      renderSettingsAction={() => action('Einstellungen', 'course-settings')}
       reviewsToday={empty ? 0 : fixtureReviewsToday}
       stats={[
         {

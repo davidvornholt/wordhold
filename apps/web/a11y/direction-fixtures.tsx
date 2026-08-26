@@ -1,4 +1,4 @@
-import { CourseSettingsLayout } from '../src/features/courses/ui/course-settings-layout';
+import { CourseLayout } from '../src/features/courses/ui/course-layout';
 import { DirectionSettings } from '../src/features/courses/ui/direction-settings';
 import { sessionOptions } from '../src/features/practice/services/session-options';
 import { PracticeLayout } from '../src/features/practice/ui/practice-layout';
@@ -35,11 +35,11 @@ export const PracticeStartFixture = () => (
 // Saving is instant here, so the status line reaches "Gespeichert." the way it
 // does against the server.
 export const CourseSettingsFixture = () => (
-  <CourseSettingsLayout backControl={backControl} courseName="English A2">
+  <CourseLayout backControl={backControl} title="English A2: Einstellungen">
     <DirectionSettings
       initial={['to_target', 'to_native']}
       save={() => Promise.resolve()}
       targetLabel="Englisch"
     />
-  </CourseSettingsLayout>
+  </CourseLayout>
 );

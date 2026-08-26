@@ -41,7 +41,8 @@ export class CourseService extends Effect.Service<CourseService>()(
             updated ? Effect.succeed(directions) : Effect.fail(notFound),
         );
       const listUnits = (courseId: string) => store.listUnits(courseId);
-      return { getDirections, setDirections, listUnits } as const;
+      const listWords = (unitId: string) => store.listWords(unitId);
+      return { getDirections, setDirections, listUnits, listWords } as const;
     }),
   },
 ) {}

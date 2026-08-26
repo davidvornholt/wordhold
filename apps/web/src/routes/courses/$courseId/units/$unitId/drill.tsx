@@ -18,40 +18,47 @@ import { germanLabels } from '../../../../../shared/languages';
 const DrillScreen = () => {
   const { course, unit, directions, direction, drill } = Route.useLoaderData();
   const targetLabel = germanLabels[course.targetLanguage];
-  const backToUnits = (label: string) => (
+  const backToCourse = (label: string) => (
     <Link
       className="text-sm underline"
       params={{ courseId: course.id }}
-      to="/courses/$courseId/drill"
+      to="/courses/$courseId"
     >
       {label}
-    </Link>
-  );
-  const backControl = (
-    <Link
-      className="text-muted-foreground text-sm underline"
-      params={{ courseId: course.id }}
-      to="/courses/$courseId/drill"
-    >
-      ← Einheiten
     </Link>
   );
 
   if (unit === undefined) {
     return (
-      <PracticeLayout backControl={backControl} title={course.name}>
+      <PracticeLayout
+        backControl={backToCourse(`← ${course.name}`)}
+        title={course.name}
+      >
         <div className="flex flex-col gap-3 border border-border bg-card p-6">
           <p className="font-medium">
             Diese Einheit gehört nicht zu diesem Kurs.
           </p>
-          {backToUnits('Zurück zu den Einheiten')}
+          {backToCourse('Zurück zum Kurs')}
         </div>
       </PracticeLayout>
     );
   }
 
+  const backToUnit = (label: string) => (
+    <Link
+      className="text-sm underline"
+      params={{ courseId: course.id, unitId: unit.id }}
+      to="/courses/$courseId/units/$unitId"
+    >
+      {label}
+    </Link>
+  );
+
   return (
-    <PracticeLayout backControl={backControl} title={`${unit.name} üben`}>
+    <PracticeLayout
+      backControl={backToUnit(`← ${unit.name}`)}
+      title={`${unit.name} üben`}
+    >
       {drill === null ? (
         <SessionStart
           options={sessionOptions(directions, targetLabel)}
@@ -68,7 +75,7 @@ const DrillScreen = () => {
         />
       ) : (
         <SessionRunner
-          backControl={backToUnits('Zurück zu den Einheiten')}
+          backControl={backToUnit('Zurück zur Einheit')}
           emptyMessage="In dieser Einheit ist noch kein Wort gelernt."
           key={direction}
           mode="drill"

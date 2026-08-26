@@ -16,10 +16,10 @@ const LearnUnitScreen = () => {
       backControl={
         <Link
           className="text-muted-foreground text-sm underline"
-          params={{ courseId: course.id }}
-          to="/courses/$courseId/learn"
+          params={{ courseId: course.id, unitId: pass.unit.id }}
+          to="/courses/$courseId/units/$unitId"
         >
-          ← Einheiten
+          ← {pass.unit.name}
         </Link>
       }
       title={`${pass.unit.name} lernen`}

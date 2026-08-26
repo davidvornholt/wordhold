@@ -5,7 +5,7 @@ import {
   type CourseDirectionsData,
   decodeStoredDirections,
 } from '../schemas/course-directions';
-import type { CourseUnit } from '../schemas/course-units';
+import type { CourseUnit, UnitWord } from '../schemas/course-units';
 
 const databaseError = (operation: string, cause: unknown) =>
   new CourseDatabaseError({
@@ -28,6 +28,9 @@ export class CourseStore extends Context.Tag('wordhold/CourseStore')<
     readonly listUnits: (
       courseId: string,
     ) => Effect.Effect<ReadonlyArray<CourseUnit>, CourseDatabaseError>;
+    readonly listWords: (
+      unitId: string,
+    ) => Effect.Effect<ReadonlyArray<UnitWord>, CourseDatabaseError>;
   }
 >() {
   static readonly live = Layer.effect(
@@ -94,7 +97,22 @@ export class CourseStore extends Context.Tag('wordhold/CourseStore')<
           group by u.id
           order by u.position, u.name
         `.pipe(Effect.mapError((cause) => databaseError('list units', cause)));
-      return { readDirections, writeDirections, listUnits } as const;
+      // A word counts as learned only once both of its cards have been
+      // introduced, which is how the learning pass stamps them. An entry
+      // without cards has met nobody, so the missing aggregate reads false.
+      const listWords = (unitId: string) =>
+        sql<UnitWord>`
+          select e.id,
+            e.target_text as "targetText",
+            e.native_text as "nativeText",
+            coalesce(bool_and(c.introduced_at is not null), false) as learned
+          from entries e
+          left join cards c on c.entry_id = e.id
+          where e.unit_id = ${unitId}
+          group by e.id
+          order by e.created_at, e.target_text
+        `.pipe(Effect.mapError((cause) => databaseError('list words', cause)));
+      return { readDirections, writeDirections, listUnits, listWords } as const;
     }),
   );
 }
