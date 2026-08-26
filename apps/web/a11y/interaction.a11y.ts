@@ -75,6 +75,9 @@ test('the learning pass asks again for a wrong copy and records only the correct
   await expect(
     page.getByText('Noch nicht ganz. Schreib das Wort genau so ab.'),
   ).toBeVisible();
+  await expect(field).toHaveValue('');
+  await expect(advance).toBeDisabled();
+  await expect(field).toBeFocused();
   await expect(page.getByText('Wort 1 von 2')).toBeVisible();
   await expect(page.getByLabel('Introduced words')).toHaveText('0');
 
