@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import type { ExtractionResult } from '@wordhold/ai/extraction';
 import { useState } from 'react';
 import { importPage } from '../../../features/import/import-fn';
+import type { UnitSelectionData } from '../../../features/import/schemas/import-payload';
 import {
   getPage,
   retryAudio,
@@ -28,7 +29,10 @@ const draftsFromExtraction = (
         confidence: entry.confidence,
       }));
 
-const toPayloadEntry = (draft: DraftEntry) => ({
+const toPayloadEntry = (
+  draft: DraftEntry & { readonly unit: UnitSelectionData },
+) => ({
+  unit: draft.unit,
   type: draft.type,
   targetText: draft.targetText,
   nativeText: draft.nativeText,
@@ -37,7 +41,7 @@ const toPayloadEntry = (draft: DraftEntry) => ({
 });
 
 const VerifyScreen = () => {
-  const { page, course } = Route.useLoaderData();
+  const { page, course, units } = Route.useLoaderData();
   const navigate = useNavigate();
   const [extraction, setExtraction] = useState(page.extraction);
   const [busy, setBusy] = useState(false);
@@ -72,7 +76,9 @@ const VerifyScreen = () => {
         {course.name}: Seite überprüfen
       </h1>
       {error === null ? null : (
-        <p className="text-destructive text-sm">{error}</p>
+        <p className="text-destructive text-sm" role="alert">
+          {error}
+        </p>
       )}
       <div className="grid gap-6 lg:grid-cols-2">
         <VerificationImage src={`/api/pages/${page.id}/image`} />
@@ -135,6 +141,7 @@ const VerifyScreen = () => {
                 })
               }
               targetLabel={targetLabel}
+              units={units}
             />
           ) : null}
         </div>

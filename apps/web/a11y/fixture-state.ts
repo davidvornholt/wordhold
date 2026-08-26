@@ -7,6 +7,8 @@ export const fixtureStates = [
   'import-error',
   'verification',
   'verification-empty',
+  'verification-no-units',
+  'verification-stale-unit',
   'verification-audio-recovery',
   'verification-deferred',
   'practice',
