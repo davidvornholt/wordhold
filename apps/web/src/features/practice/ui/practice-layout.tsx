@@ -47,7 +47,9 @@ export const PracticeEmpty = ({
 
   return (
     <div className="flex flex-col gap-3 border border-border bg-card p-6">
-      <ManagedStepHeading className="font-medium">{heading}</ManagedStepHeading>
+      <ManagedStepHeading className="font-display text-xl">
+        {heading}
+      </ManagedStepHeading>
       {total === 0 ? null : (
         <p className="text-sm">
           {correct} von {total} Karten auf Anhieb richtig

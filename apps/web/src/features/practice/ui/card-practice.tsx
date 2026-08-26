@@ -78,7 +78,7 @@ export const CardPractice = ({
         {repeated ? ' · Noch einmal' : null}
       </p>
       <div className="border border-border bg-card p-6">
-        <ManagedStepHeading className="font-display text-2xl">
+        <ManagedStepHeading className="font-display text-xl">
           {item.prompt}
         </ManagedStepHeading>
       </div>
