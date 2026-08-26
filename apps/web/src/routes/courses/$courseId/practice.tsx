@@ -5,19 +5,23 @@ import {
   getPracticeSession,
   submitAnswer,
 } from '../../../features/practice/services/server-fns';
+import {
+  advanceQueue,
+  createSessionQueue,
+} from '../../../features/practice/services/session-queue';
 import { CardPractice } from '../../../features/practice/ui/card-practice';
 import {
   PracticeEmpty,
   PracticeLayout,
 } from '../../../features/practice/ui/practice-layout';
+import { SessionProgress } from '../../../features/practice/ui/session-progress';
 import { germanLabels } from '../../../shared/languages';
 
 const PracticeScreen = () => {
   const { course, session } = Route.useLoaderData();
-  const [index, setIndex] = useState(0);
-  const [stats, setStats] = useState({ correct: 0, wrong: 0 });
+  const [queue, setQueue] = useState(() => createSessionQueue(session.items));
 
-  const item = session.items.at(index);
+  const card = queue.pending.at(0);
 
   return (
     <PracticeLayout
@@ -28,35 +32,30 @@ const PracticeScreen = () => {
       }
       courseName={course.name}
     >
-      {item === undefined ? (
+      {queue.total === 0 ? null : (
+        <SessionProgress settled={queue.settled} total={queue.total} />
+      )}
+      {card === undefined ? (
         <PracticeEmpty
           backControl={
             <Link className="text-sm underline" to="/">
               Zurück zur Übersicht
             </Link>
           }
-          correct={stats.correct}
-          initialSession={session.items.length === 0}
-          wrong={stats.wrong}
+          correct={queue.correct}
+          total={queue.total}
+          wrong={queue.wrong}
         />
       ) : (
         <CardPractice
-          item={item}
-          key={item.cardId}
-          onNext={(correct) => {
-            if (correct !== null) {
-              setStats((current) =>
-                correct
-                  ? { ...current, correct: current.correct + 1 }
-                  : { ...current, wrong: current.wrong + 1 },
-              );
-            }
-            setIndex(index + 1);
-          }}
-          position={index + 1}
+          item={card}
+          key={`${card.cardId}-${card.revision}`}
+          onNext={(result) =>
+            setQueue((current) => advanceQueue(current, result))
+          }
+          repeated={card.repeated}
           submit={submitAnswer}
           targetLabel={germanLabels[course.targetLanguage]}
-          total={session.items.length}
         />
       )}
     </PracticeLayout>

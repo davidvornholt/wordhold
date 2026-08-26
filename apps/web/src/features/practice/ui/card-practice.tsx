@@ -10,23 +10,22 @@ type SessionItem = PracticeSession['items'][number];
 
 type CardPracticeProps = {
   readonly item: SessionItem;
-  readonly position: number;
-  readonly total: number;
+  // Whether this card was already missed earlier in the same session.
+  readonly repeated: boolean;
   readonly targetLabel: string;
   readonly submit: (input: {
     readonly data: SubmitPayloadData;
   }) => Promise<SubmitResult>;
-  // Called with the grading result: true/false when graded, null when the
-  // judge was unreachable and the card stayed untouched.
-  readonly onNext: (correct: boolean | null) => void;
+  // Hands the graded result to the session, which decides whether the card is
+  // done with or comes back later.
+  readonly onNext: (result: SubmitResult) => void;
 };
 
-// One card's answer round-trip. Mounted with key=cardId so answer state and
-// the elapsed-time clock reset per card.
+// One card's answer round-trip. Mounted with a key that changes per attempt so
+// answer state and the elapsed-time clock reset each time the card is asked.
 export const CardPractice = ({
   item,
-  position,
-  total,
+  repeated,
   targetLabel,
   submit,
   onNext,
@@ -72,10 +71,10 @@ export const CardPractice = ({
   return (
     <>
       <p className="text-muted-foreground text-sm">
-        Karte {position} von {total} ·{' '}
         {item.direction === 'to_target'
           ? `Übersetze ins ${targetLabel}e`
           : 'Übersetze ins Deutsche'}
+        {repeated ? ' · Noch einmal' : null}
       </p>
       <div className="border border-border bg-card p-6">
         <p className="font-display text-2xl">{item.prompt}</p>
@@ -112,7 +111,7 @@ export const CardPractice = ({
       {result === null ? null : (
         <FeedbackPanel
           audioUrl={audioUrl}
-          onNext={() => onNext(result.graded ? result.correct : null)}
+          onNext={() => onNext(result)}
           result={result}
         />
       )}

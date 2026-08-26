@@ -21,6 +21,7 @@ import {
   PracticeFeedbackFixture,
   PracticeFixture,
 } from './practice-fixtures';
+import { PracticeSessionFixture } from './practice-session-fixtures';
 
 export const FixtureApp = () => {
   const state = readFixtureState();
@@ -53,6 +54,8 @@ export const FixtureApp = () => {
       return <LearnDoneFixture />;
     case 'practice':
       return <PracticeFixture />;
+    case 'practice-session':
+      return <PracticeSessionFixture />;
     case 'practice-feedback':
       return <PracticeFeedbackFixture />;
     case 'practice-empty':

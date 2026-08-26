@@ -6,7 +6,9 @@ import { Effect } from 'effect';
 import { StaleAnswerSubmissionError } from '../errors/practice-errors';
 
 export type ReviewCommitOperations<E> = {
-  readonly advanceCard: () => Effect.Effect<boolean, E>;
+  // Returns the card's new revision, or undefined when another submission got
+  // there first and the expected revision no longer matches.
+  readonly advanceCard: () => Effect.Effect<number | undefined, E>;
   readonly insertReview: () => Effect.Effect<void, E>;
   readonly insertAcceptedAlternative: () => Effect.Effect<void, E>;
 };
@@ -21,7 +23,8 @@ export const commitGradedAnswer = <E>(
 ) =>
   runTransaction((operations) =>
     Effect.gen(function* () {
-      if (!(yield* operations.advanceCard())) {
+      const revision = yield* operations.advanceCard();
+      if (revision === undefined) {
         return yield* new StaleAnswerSubmissionError({
           message: 'Diese Karte wurde bereits beantwortet. Lade die Übung neu.',
         });
@@ -30,5 +33,6 @@ export const commitGradedAnswer = <E>(
         yield* operations.insertAcceptedAlternative();
       }
       yield* operations.insertReview();
+      return revision;
     }),
   );

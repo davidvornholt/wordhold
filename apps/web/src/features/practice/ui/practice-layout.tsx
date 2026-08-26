@@ -19,25 +19,29 @@ export const PracticeLayout = ({
 );
 
 type PracticeEmptyProps = {
-  readonly initialSession: boolean;
+  readonly total: number;
   readonly correct: number;
   readonly wrong: number;
   readonly backControl: ReactNode;
 };
 
+// The end of the session. Every card that was missed came back and was
+// answered, so the tally is per card, not per attempt: how many were right
+// straight away, and how many needed a second go.
 export const PracticeEmpty = ({
-  initialSession,
+  total,
   correct,
   wrong,
   backControl,
 }: PracticeEmptyProps) => (
   <div className="flex flex-col gap-3 border border-border bg-card p-6">
     <p className="font-medium">
-      {initialSession ? 'Gerade ist nichts fällig.' : 'Sitzung abgeschlossen!'}
+      {total === 0 ? 'Gerade ist nichts fällig.' : 'Sitzung abgeschlossen!'}
     </p>
-    {initialSession ? null : (
+    {total === 0 ? null : (
       <p className="text-sm">
-        {correct} richtig, {wrong} falsch.
+        {correct} von {total} Karten auf Anhieb richtig
+        {wrong === 0 ? '.' : `, ${wrong} noch einmal geübt.`}
       </p>
     )}
     {backControl}

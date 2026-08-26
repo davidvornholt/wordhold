@@ -13,6 +13,7 @@ export const fixtureStates = [
   'learn',
   'learn-done',
   'practice',
+  'practice-session',
   'practice-feedback',
   'practice-empty',
   'practice-deferred',

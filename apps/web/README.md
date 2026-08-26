@@ -100,6 +100,18 @@ outcome (fast exact = Easy, flawed-but-accepted = Hard, rejected = Again) —
 never self-reported. If the judge is unreachable the card is left
 untouched. Pronunciation plays via `GET /api/entries/$entryId/audio`.
 
+The session is one loop the learner works to the end
+(`src/features/practice/services/session-queue.ts`). A missed card goes back
+into the queue three cards later instead of leaving the session, because FSRS
+puts it on a one-minute relearning step and the dashboard would otherwise
+count it as due again moments after the session was closed. Answering a card
+bumps its revision, so `submit` returns the new one and the repeat is
+submitted against it rather than being rejected as stale. The progress bar
+counts distinct cards settled out of the cards the session started with, so a
+repeat never moves it backwards and the end never moves away. An answer the
+judge could not grade settles too: the card was left untouched, and asking
+again in the same session would only reach the same outage.
+
 ## Dashboard
 
 The signed-in start page shows only real data (`src/features/dashboard/services/dashboard-service.ts`): per-course due/new/word counts, how many words still await the learning pass, today's review count in `WORDHOLD_OWNER_TIME_ZONE`, and "Wackelkandidaten" with at least two Again-ratings in the last 30 days. Due and new count cards the practice session would actually offer, so they ignore words that have not been learned yet; the "zu lernen" figure counts words rather than cards, because the learning pass introduces both directions of a word together.

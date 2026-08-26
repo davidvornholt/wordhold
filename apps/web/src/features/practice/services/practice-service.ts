@@ -21,8 +21,6 @@ import { PracticeSessionStore } from './session-store';
 
 export type PracticeSession = {
   readonly items: ReadonlyArray<PracticeItem>;
-  readonly dueCount: number;
-  readonly newCount: number;
 };
 
 export type SubmitResult =
@@ -34,6 +32,9 @@ export type SubmitResult =
   | {
       readonly graded: true;
       readonly correct: boolean;
+      // The card's revision after this answer. A card that comes back later in
+      // the same session is submitted against it.
+      readonly revision: number;
       readonly rating: number;
       readonly expectedAnswers: ReadonlyArray<string>;
       readonly explanation: string | null;
@@ -106,11 +107,7 @@ export class PracticeService extends Effect.Service<PracticeService>()(
                 ? item.nativeText
                 : item.targetText,
           }));
-          return {
-            items,
-            dueCount: due.length,
-            newCount: fresh.length,
-          } satisfies PracticeSession;
+          return { items } satisfies PracticeSession;
         });
       const submit = (data: SubmitPayloadData) =>
         Effect.gen(function* () {
@@ -147,7 +144,7 @@ export class PracticeService extends Effect.Service<PracticeService>()(
           const elapsedMs = data.elapsedMs ?? null;
           const rating = deriveRating(outcome, elapsedMs);
           const reviewedAt = new Date(yield* Clock.currentTimeMillis);
-          yield* reviews.commit({
+          const revision = yield* reviews.commit({
             card: row.card,
             expectedRevision: data.revision,
             rating,
@@ -162,6 +159,7 @@ export class PracticeService extends Effect.Service<PracticeService>()(
           return {
             graded: true as const,
             correct,
+            revision,
             rating,
             expectedAnswers,
             explanation:
