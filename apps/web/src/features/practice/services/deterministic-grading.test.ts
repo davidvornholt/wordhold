@@ -16,6 +16,10 @@ describe('isDeterministicMatch', () => {
       isDeterministicMatch('der Weg', [answer('die Straße/der Weg')]),
     ).toBe(true);
     expect(isDeterministicMatch('amiga', [answer('amigo/a')])).toBe(true);
+    expect(isDeterministicMatch('profesora', [answer('profesor/a')])).toBe(
+      true,
+    );
+    expect(isDeterministicMatch('doctora', [answer('doctor/a')])).toBe(true);
     expect(isDeterministicMatch('actrice', [answer('acteur/trice')])).toBe(
       true,
     );
@@ -24,11 +28,15 @@ describe('isDeterministicMatch', () => {
     );
   });
 
-  it('rejects compact suffix fragments as standalone answers', () => {
+  it('rejects compact suffix fragments and invented forms', () => {
     expect(isDeterministicMatch('trice', [answer('acteur/trice')])).toBe(false);
     expect(isDeterministicMatch('ive', [answer('sportif/ive')])).toBe(false);
     expect(isDeterministicMatch('euse', [answer('heureux/euse')])).toBe(false);
     expect(isDeterministicMatch('onne', [answer('bon/onne')])).toBe(false);
+    expect(isDeterministicMatch('profesoa', [answer('profesor/a')])).toBe(
+      false,
+    );
+    expect(isDeterministicMatch('doctoa', [answer('doctor/a')])).toBe(false);
   });
 
   it('requires every branch in a submitted alternative to be accepted', () => {

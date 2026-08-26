@@ -22,9 +22,12 @@ const uppercaseStart = /^\p{Lu}/u;
 const compactSuffixReplacements: ReadonlyArray<{
   readonly fullEnding: string;
   readonly shorthand: string;
+  readonly alternativeEnding: string;
 }> = [
-  { fullEnding: 'teur', shorthand: 'trice' },
-  { fullEnding: 'if', shorthand: 'ive' },
+  { fullEnding: 'teur', shorthand: 'trice', alternativeEnding: 'trice' },
+  { fullEnding: 'if', shorthand: 'ive', alternativeEnding: 'ive' },
+  { fullEnding: 'o', shorthand: 'a', alternativeEnding: 'a' },
+  { fullEnding: 'or', shorthand: 'a', alternativeEnding: 'ora' },
 ];
 
 const compactWordAlternatives = new Set(['be/get', 'der/die']);
@@ -118,12 +121,6 @@ const expandSlashWord = (word: string): ExpansionState => {
   if (!(lowercaseWord.test(left) && lowercaseWord.test(right))) {
     return { _tag: 'Values', values: [word] };
   }
-  if (right.length === 1 && left.length > 1) {
-    return {
-      _tag: 'Values',
-      values: [left, `${left.slice(0, -1)}${right}`],
-    };
-  }
   const suffixReplacement = compactSuffixReplacements.find(
     ({ fullEnding, shorthand }) =>
       right === shorthand && left.endsWith(fullEnding),
@@ -133,7 +130,7 @@ const expandSlashWord = (word: string): ExpansionState => {
       _tag: 'Values',
       values: [
         left,
-        `${left.slice(0, -suffixReplacement.fullEnding.length)}${right}`,
+        `${left.slice(0, -suffixReplacement.fullEnding.length)}${suffixReplacement.alternativeEnding}`,
       ],
     };
   }

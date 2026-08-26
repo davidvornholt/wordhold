@@ -36,6 +36,14 @@ describe('answerVariants', () => {
       _tag: 'Expanded',
       readings: ['amigo', 'amiga'],
     });
+    expect(answerVariants('profesor/a')).toEqual({
+      _tag: 'Expanded',
+      readings: ['profesor', 'profesora'],
+    });
+    expect(answerVariants('doctor/a')).toEqual({
+      _tag: 'Expanded',
+      readings: ['doctor', 'doctora'],
+    });
     expect(answerVariants('acteur/trice')).toEqual({
       _tag: 'Expanded',
       readings: ['acteur', 'actrice'],
