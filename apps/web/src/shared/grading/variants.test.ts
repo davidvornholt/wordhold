@@ -36,6 +36,14 @@ describe('answerVariants', () => {
       _tag: 'Expanded',
       readings: ['amigo', 'amiga'],
     });
+    expect(answerVariants('acteur/trice')).toEqual({
+      _tag: 'Expanded',
+      readings: ['acteur', 'actrice'],
+    });
+    expect(answerVariants('sportif/ive')).toEqual({
+      _tag: 'Expanded',
+      readings: ['sportif', 'sportive'],
+    });
   });
 
   it('expands explicit and conservative compact phrase alternatives', () => {
@@ -53,6 +61,19 @@ describe('answerVariants', () => {
     expect(answerVariants('AC/DC')).toEqual({
       _tag: 'Expanded',
       readings: ['ac/dc'],
+    });
+  });
+
+  it('does not detach an unregistered multi-character suffix', () => {
+    expect(answerVariants('heureux/euse')).toEqual({ _tag: 'Overflow' });
+    expect(answerVariants('vendeur/euse')).toEqual({ _tag: 'Overflow' });
+    expect(answerVariants('bon/onne')).toEqual({ _tag: 'Overflow' });
+  });
+
+  it('expands complete alternatives when the separator makes them explicit', () => {
+    expect(answerVariants('bon / bonne')).toEqual({
+      _tag: 'Expanded',
+      readings: ['bon', 'bonne'],
     });
   });
 

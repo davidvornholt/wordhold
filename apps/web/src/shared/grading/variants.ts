@@ -19,6 +19,15 @@ const spacedPhraseSeparator = /\s+\/\s+/u;
 const lowercaseWord = /^\p{Ll}+$/u;
 const uppercaseStart = /^\p{Lu}/u;
 
+const compactSuffixReplacements: ReadonlyArray<{
+  readonly fullEnding: string;
+  readonly shorthand: string;
+}> = [
+  { fullEnding: 'teur', shorthand: 'trice' },
+  { fullEnding: 'if', shorthand: 'ive' },
+];
+
+const compactWordAlternatives = new Set(['be/get', 'der/die']);
 const flatMapBounded = (
   values: ReadonlyArray<string>,
   expand: (value: string) => ReadonlyArray<string>,
@@ -100,19 +109,38 @@ const splitPhraseAlternatives = (text: string): ReadonlyArray<string> => {
   return [text];
 };
 
-const expandSlashWord = (word: string): ReadonlyArray<string> => {
+const expandSlashWord = (word: string): ExpansionState => {
   const parts = word.split('/');
   if (parts.length !== 2) {
-    return [word];
+    return { _tag: 'Values', values: [word] };
   }
   const [left = '', right = ''] = parts;
   if (!(lowercaseWord.test(left) && lowercaseWord.test(right))) {
-    return [word];
+    return { _tag: 'Values', values: [word] };
   }
   if (right.length === 1 && left.length > 1) {
-    return [left, `${left.slice(0, -1)}${right}`];
+    return {
+      _tag: 'Values',
+      values: [left, `${left.slice(0, -1)}${right}`],
+    };
   }
-  return [left, right];
+  const suffixReplacement = compactSuffixReplacements.find(
+    ({ fullEnding, shorthand }) =>
+      right === shorthand && left.endsWith(fullEnding),
+  );
+  if (suffixReplacement !== undefined) {
+    return {
+      _tag: 'Values',
+      values: [
+        left,
+        `${left.slice(0, -suffixReplacement.fullEnding.length)}${right}`,
+      ],
+    };
+  }
+  if (compactWordAlternatives.has(word)) {
+    return { _tag: 'Values', values: [left, right] };
+  }
+  return { _tag: 'Overflow' };
 };
 
 const expandWordAlternatives = (text: string): ExpansionState => {
@@ -121,8 +149,12 @@ const expandWordAlternatives = (text: string): ExpansionState => {
     if (state._tag === 'Overflow') {
       return state;
     }
+    const wordExpansion = expandSlashWord(word);
+    if (wordExpansion._tag === 'Overflow') {
+      return wordExpansion;
+    }
     state = flatMapBounded(state.values, (sentence) =>
-      expandSlashWord(word).map((part) =>
+      wordExpansion.values.map((part) =>
         sentence === '' ? part : `${sentence} ${part}`,
       ),
     );
