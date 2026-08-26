@@ -11,7 +11,8 @@
     "./schema/pages": "./src/schema/pages.ts",
     "./schema/units": "./src/schema/units.ts",
     "./schema/entries": "./src/schema/entries.ts",
-    "./schema/practice": "./src/schema/practice.ts"
+    "./schema/practice": "./src/schema/practice.ts",
+    "./testing/postgres-test-database": "./src/testing/postgres-test-database.ts"
   },
   "scripts": {
     "check-types": "tsc --noEmit",
@@ -19,7 +20,7 @@
     "lint:fix": "biome check --write --error-on-warnings .",
     "test": "bun test",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "bun --env-file=.env.local drizzle-kit migrate"
+    "db:migrate": "bun --env-file=.env.local src/migrate.ts"
   },
   "dependencies": {
     "@effect/sql": "^0.52.1",

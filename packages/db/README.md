@@ -16,19 +16,11 @@ runtime access goes through the Effect layers in `src/client.ts`, which read
 
 ## Migrations
 
-Structure comes from Drizzle Kit only — never handwritten:
+Structure comes from Drizzle Kit only. Never handwrite structural or data statements into its SQL files:
 
 ```sh
 bun run db:generate   # emit SQL from the schema source of truth
-bun run db:migrate    # apply to the database from .env.local
+bun run db:migrate    # apply generated structure and registered data migrations
 ```
 
-A generated file may be extended with data statements when a new required
-column has to be filled for rows that already exist. Drizzle Kit emits the
-`add column ... not null` that such a column needs, but it cannot know what
-the existing rows should say, so applying its output as generated would fail
-against any non-empty database. `0004_tearful_energizer.sql` is the worked
-example: it adds the column nullable, derives one unit per already-imported
-page, gathers orphaned vocabulary under a per-course "Ohne Einheit", and only
-then tightens the column and adds the foreign key. Never edit the structural
-statements themselves — regenerate them from the schema instead.
+`src/migrate.ts` applies generated migrations in journal order and runs registered TypeScript data migrations at their declared boundary. The unit migration is split into generated structural steps around `src/migrations/backfill-units.ts`, which files existing vocabulary before Drizzle makes `entries.unit_id` required. Keep data changes in that code-owned path so regenerating SQL cannot erase them.

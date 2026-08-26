@@ -1,0 +1,2 @@
+ALTER TABLE "entries" ALTER COLUMN "unit_id" SET NOT NULL;--> statement-breakpoint
+ALTER TABLE "entries" ADD CONSTRAINT "entries_unit_course_units_id_course_fk" FOREIGN KEY ("unit_id","course_id") REFERENCES "public"."units"("id","course_id") ON DELETE restrict ON UPDATE no action;

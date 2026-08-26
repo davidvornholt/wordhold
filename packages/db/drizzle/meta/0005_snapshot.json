@@ -1,6 +1,6 @@
 {
-  "id": "991a4a93-4c50-4df1-a670-22482fd546cd",
-  "prevId": "7404f0d7-16ec-41d2-8ed1-9b6194b6e253",
+  "id": "1b4f6a73-ed58-4243-9304-0b3684aa2a85",
+  "prevId": "991a4a93-4c50-4df1-a670-22482fd546cd",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -742,7 +742,7 @@
           "name": "unit_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "page_id": {
           "name": "page_id",
@@ -807,6 +807,15 @@
           "columnsFrom": ["page_id"],
           "columnsTo": ["id"],
           "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "entries_unit_course_units_id_course_fk": {
+          "name": "entries_unit_course_units_id_course_fk",
+          "tableFrom": "entries",
+          "tableTo": "units",
+          "columnsFrom": ["unit_id", "course_id"],
+          "columnsTo": ["id", "course_id"],
+          "onDelete": "restrict",
           "onUpdate": "no action"
         }
       },
