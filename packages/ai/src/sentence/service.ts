@@ -30,6 +30,10 @@ export const sentencePrompt = (request: SentenceRequest): string =>
     'Use everyday school-life contexts a teenage learner knows. Each sentence',
     'must contain the vocabulary item in a natural form. Provide a faithful',
     'German translation as `native` for every sentence.',
+    // Same reason as the judge prompt: an unescaped quotation mark truncates
+    // the JSON string the provider streams back, silently losing the rest.
+    'Never use double quotes or typographic quotation marks; if a sentence',
+    "needs a quotation, use single quotes ('wort').",
   ].join(' ');
 
 export class SentenceGen extends Effect.Service<SentenceGen>()(
