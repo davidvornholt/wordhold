@@ -52,13 +52,14 @@ const cacheStore = Layer.succeed(JudgeCacheStore, {
 const runSubmit = (
   reviewStore: PracticeReviewStore['Type'],
   judge: PracticeJudge['Type'],
+  answer = 'wrong',
 ) =>
   Effect.runPromise(
     Effect.flatMap(PracticeService, (service) =>
       service.submit({
         cardId: card.id,
         revision: card.revision,
-        answer: 'wrong',
+        answer,
         elapsedMs: 1000,
       }),
     ).pipe(
@@ -103,6 +104,39 @@ describe('PracticeService', () => {
     );
     const receivedFailure = result._tag === 'Left' ? result.left : undefined;
     expect(receivedFailure).toBe(failure);
+  });
+
+  it('accepts one reading of an accepted answer without asking the judge', async () => {
+    let judgeCalls = 0;
+    const result = await runSubmit(
+      {
+        findSubmission: () => Effect.succeed(submission),
+        listAcceptedAnswers: () =>
+          Effect.succeed([
+            { text: 'to intend (to)', normalized: 'to intend (to)' },
+          ]),
+        commit: () => Effect.void,
+      },
+      {
+        judge: () =>
+          Effect.sync(() => {
+            judgeCalls += 1;
+          }).pipe(
+            Effect.flatMap(() =>
+              Effect.fail(
+                new PracticeJudgeError({
+                  cause: 'unexpected',
+                  message: 'judge must not run',
+                }),
+              ),
+            ),
+          ),
+      },
+      'to intend to',
+    );
+    const value = result._tag === 'Right' ? result.right : undefined;
+    expect(value).toMatchObject({ graded: true, correct: true });
+    expect(judgeCalls).toBe(0);
   });
 
   it('leaves the card untouched when the typed provider fails', async () => {

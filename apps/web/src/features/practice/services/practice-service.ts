@@ -6,6 +6,7 @@ import {
   type GradeOutcome,
   isCorrect,
 } from '../../../shared/grading/rating';
+import { answerVariants } from '../../../shared/grading/variants';
 import { englishNames } from '../../../shared/languages';
 import { StaleAnswerSubmissionError } from '../errors/practice-errors';
 import type {
@@ -60,7 +61,15 @@ const gradeAnswer = ({
   cache,
   judge,
 }: GradeAnswerInput) => {
-  if (accepted.some((answer) => answer.normalized === normalized)) {
+  const acceptedReadings = new Set(
+    accepted.flatMap((answer) => answerVariants(answer.text)),
+  );
+  if (
+    answerVariants(data.answer).some((reading) =>
+      acceptedReadings.has(reading),
+    ) ||
+    accepted.some((answer) => answer.normalized === normalized)
+  ) {
     return Effect.succeed<GradeOutcome>({ method: 'exact' });
   }
   const expectedAnswers = accepted.map((answer) => answer.text);

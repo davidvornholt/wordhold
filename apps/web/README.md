@@ -80,7 +80,11 @@ Uploads accept JPEG, PNG, and WebP images up to 12 MiB, 12,000 pixels per side, 
 
 `/courses/$courseId/practice` serves everything due plus a bounded batch of
 new cards (`src/features/practice/services/practice-service.ts`). Grading is hybrid: a
-normalized deterministic match is instant; only mismatches reach the AI
+normalized deterministic match is instant. Textbook answers carry optional
+and alternative parts (`to intend (to)`, `der/die Angestellte`,
+`die Straße / der Weg`), so `src/shared/grading/variants.ts` expands both the
+stored answer and the typed one into every reading before comparing; writing
+out any one reading counts as an exact match. Only real mismatches reach the AI
 judge, whose verdicts are cached per (entry, direction, normalized answer)
 and can write accepted alternatives back. FSRS ratings are derived from the
 outcome (fast exact = Easy, flawed-but-accepted = Hard, rejected = Again) —

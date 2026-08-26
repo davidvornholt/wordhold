@@ -6,6 +6,14 @@ import { providerJsonSchema } from '../structured-output';
 import { JudgeError } from './error';
 import { type JudgeInput, JudgeVerdict, type JudgeVerdictData } from './schema';
 
+// Anthropic on Bedrock answers a structured-output request with plain JSON
+// text. A model that writes a German quotation pair as „wort" ends the JSON
+// string on that unescaped quote: everything after it is lost and the truncated
+// remainder still parses, so a learner sees half a sentence. Single quotes need
+// no escaping, which keeps the explanation whole.
+const quotingRule =
+  "When you quote a word, wrap it in single quotes ('wort'). Never use double quotes or typographic quotation marks anywhere in your answer.";
+
 export const judgePrompt = (input: JudgeInput): string => {
   const answerLanguage =
     input.direction === 'to_target' ? input.targetLanguage : 'German';
@@ -24,6 +32,7 @@ export const judgePrompt = (input: JudgeInput): string => {
     'translation worth remembering permanently, not a near miss.',
     'Write the explanation in German, at most two short sentences, addressing',
     'the learner directly.',
+    quotingRule,
   ].join('\n');
 };
 
