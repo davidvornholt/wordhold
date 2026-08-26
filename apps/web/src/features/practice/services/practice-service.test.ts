@@ -49,6 +49,14 @@ const cacheStore = Layer.succeed(JudgeCacheStore, {
   withCriticalSection: (_key, effect) => effect,
 });
 
+const unavailableJudge = (cause: string) =>
+  Effect.fail(
+    new PracticeJudgeError({
+      cause,
+      message: 'judge unavailable',
+    }),
+  );
+
 const runSubmit = (
   reviewStore: PracticeReviewStore['Type'],
   judge: PracticeJudge['Type'],
@@ -93,17 +101,38 @@ describe('PracticeService', () => {
         commit: () => Effect.void,
       },
       {
-        judge: () =>
-          Effect.fail(
-            new PracticeJudgeError({
-              cause: 'unused',
-              message: 'judge unavailable',
-            }),
-          ),
+        judge: () => unavailableJudge('unused'),
       },
     );
     const receivedFailure = result._tag === 'Left' ? result.left : undefined;
     expect(receivedFailure).toBe(failure);
+  });
+
+  it('sends a compact suffix fragment to the judge', async () => {
+    let judgeCalls = 0;
+    const result = await runSubmit(
+      {
+        findSubmission: () => Effect.succeed(submission),
+        listAcceptedAnswers: () =>
+          Effect.succeed([
+            {
+              text: 'acteur/trice',
+              normalized: 'acteur/trice',
+              source: 'textbook',
+            },
+          ]),
+        commit: () => Effect.void,
+      },
+      {
+        judge: () => {
+          judgeCalls += 1;
+          return unavailableJudge('test rejection');
+        },
+      },
+      'trice',
+    );
+    expect(result).toMatchObject({ _tag: 'Right', right: { graded: false } });
+    expect(judgeCalls).toBe(1);
   });
 
   it('accepts one reading of an accepted answer without asking the judge', async () => {
@@ -158,13 +187,7 @@ describe('PracticeService', () => {
           }),
       },
       {
-        judge: () =>
-          Effect.fail(
-            new PracticeJudgeError({
-              cause: 'offline',
-              message: 'judge unavailable',
-            }),
-          ),
+        judge: () => unavailableJudge('offline'),
       },
     );
     expect(result._tag).toBe('Right');

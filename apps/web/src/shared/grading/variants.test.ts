@@ -36,6 +36,14 @@ describe('answerVariants', () => {
       _tag: 'Expanded',
       readings: ['amigo', 'amiga'],
     });
+    expect(answerVariants('acteur/trice')).toEqual({
+      _tag: 'Expanded',
+      readings: ['acteur', 'actrice'],
+    });
+    expect(answerVariants('sportif/ive')).toEqual({
+      _tag: 'Expanded',
+      readings: ['sportif', 'sportive'],
+    });
   });
 
   it('expands explicit and conservative compact phrase alternatives', () => {

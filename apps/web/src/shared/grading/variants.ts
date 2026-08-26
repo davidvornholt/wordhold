@@ -19,6 +19,14 @@ const spacedPhraseSeparator = /\s+\/\s+/u;
 const lowercaseWord = /^\p{Ll}+$/u;
 const uppercaseStart = /^\p{Lu}/u;
 
+const compactSuffixReplacements: ReadonlyArray<{
+  readonly fullEnding: string;
+  readonly shorthand: string;
+}> = [
+  { fullEnding: 'teur', shorthand: 'trice' },
+  { fullEnding: 'if', shorthand: 'ive' },
+];
+
 const flatMapBounded = (
   values: ReadonlyArray<string>,
   expand: (value: string) => ReadonlyArray<string>,
@@ -111,6 +119,16 @@ const expandSlashWord = (word: string): ReadonlyArray<string> => {
   }
   if (right.length === 1 && left.length > 1) {
     return [left, `${left.slice(0, -1)}${right}`];
+  }
+  const suffixReplacement = compactSuffixReplacements.find(
+    ({ fullEnding, shorthand }) =>
+      right === shorthand && left.endsWith(fullEnding),
+  );
+  if (suffixReplacement !== undefined) {
+    return [
+      left,
+      `${left.slice(0, -suffixReplacement.fullEnding.length)}${right}`,
+    ];
   }
   return [left, right];
 };

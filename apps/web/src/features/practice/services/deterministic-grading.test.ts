@@ -16,6 +16,17 @@ describe('isDeterministicMatch', () => {
       isDeterministicMatch('der Weg', [answer('die Straße/der Weg')]),
     ).toBe(true);
     expect(isDeterministicMatch('amiga', [answer('amigo/a')])).toBe(true);
+    expect(isDeterministicMatch('actrice', [answer('acteur/trice')])).toBe(
+      true,
+    );
+    expect(isDeterministicMatch('sportive', [answer('sportif/ive')])).toBe(
+      true,
+    );
+  });
+
+  it('rejects compact suffix fragments as standalone answers', () => {
+    expect(isDeterministicMatch('trice', [answer('acteur/trice')])).toBe(false);
+    expect(isDeterministicMatch('ive', [answer('sportif/ive')])).toBe(false);
   });
 
   it('requires every branch in a submitted alternative to be accepted', () => {
@@ -30,6 +41,15 @@ describe('isDeterministicMatch', () => {
     ).toBe(true);
     expect(
       isDeterministicMatch('to intend (wrong)', [answer('to intend (to)')]),
+    ).toBe(false);
+    expect(
+      isDeterministicMatch('acteur/trice', [
+        answer('acteur'),
+        answer('actrice'),
+      ]),
+    ).toBe(true);
+    expect(
+      isDeterministicMatch('acteur/trice', [answer('acteur'), answer('trice')]),
     ).toBe(false);
   });
 
