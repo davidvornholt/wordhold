@@ -26,6 +26,14 @@ const course = {
   createdAt: new Date(0),
 };
 
+const unit = {
+  id: 'd9428888-122b-41e1-b85c-61cd3cbb3212',
+  name: 'Unité 3',
+  position: 0,
+  isHolding: false,
+  entryCount: 12,
+};
+
 export const makeImportRepository = (
   overrides: Partial<ImportRepositoryShape> = {},
 ) =>
@@ -35,6 +43,7 @@ export const makeImportRepository = (
     listPendingPages: Effect.succeed([]),
     listAudioRecoveryPages: Effect.succeed([]),
     getPage: () => Effect.succeed({ page, course }),
+    listUnits: () => Effect.succeed([unit]),
     loadPendingExtraction: () =>
       Effect.succeed({ imagePath: page.imagePath, language: 'fr' }),
     saveExtractionIfPending: (_pageId, extraction: ExtractionResult) =>

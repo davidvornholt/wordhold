@@ -4,7 +4,11 @@ import { normalizeAnswer } from '../../../shared/grading/normalize';
 import { ImportDatabaseError } from '../errors/import-database-error';
 import { ImportInvariantError } from '../errors/import-invariant-error';
 import { PageAlreadyVerifiedError } from '../errors/page-already-verified-error';
-import type { ImportPayloadData } from '../schemas/import-payload';
+import { UnitNotFoundError } from '../errors/unit-not-found-error';
+import type {
+  ImportPayloadData,
+  UnitSelectionData,
+} from '../schemas/import-payload';
 import { commitVerifiedPage } from './verification-commit';
 
 const databaseFailure = (cause: unknown) =>
@@ -19,13 +23,51 @@ export const verifyPageLive = (
   payload: ImportPayloadData,
   courseId: string,
 ) => {
+  const resolveUnit = (unit: UnitSelectionData) =>
+    unit.kind === 'new'
+      ? sql<{ id: string }>`
+          insert into units (course_id, name, position)
+          values (
+            ${courseId},
+            ${unit.name},
+            coalesce((select max(position) + 1 from units where course_id = ${courseId}), 0)
+          )
+          on conflict (course_id, name) do update set name = excluded.name
+          returning id
+        `.pipe(Effect.map((rows) => rows[0]?.id))
+      : sql<{
+          id: string;
+        }>`select id from units where id = ${unit.unitId} and course_id = ${courseId} limit 1`.pipe(
+          Effect.map((rows) => rows[0]?.id),
+        );
+
   const insertEntries = Effect.gen(function* () {
+    // All position allocation for one course is serialized inside the
+    // transaction. The matching unique index remains the database invariant.
+    if (payload.entries.some((entry) => entry.unit.kind === 'new')) {
+      yield* sql`select pg_advisory_xact_lock(hashtextextended(${courseId}, 0))`;
+    }
+    const unitIds = yield* Effect.forEach(
+      payload.entries,
+      (entry) =>
+        Effect.gen(function* () {
+          const unitId = yield* resolveUnit(entry.unit);
+          if (unitId === undefined) {
+            return yield* new UnitNotFoundError({
+              message: 'Diese Einheit gibt es nicht mehr. Lade die Seite neu.',
+            });
+          }
+          return unitId;
+        }),
+      { concurrency: 1 },
+    );
     const inserted = yield* sql<{
       id: string;
       targetText: string;
     }>`insert into entries ${sql.insert(
-      payload.entries.map((entry) => ({
+      payload.entries.map((entry, index) => ({
         courseId,
+        unitId: unitIds[index],
         pageId: payload.pageId,
         type: entry.type,
         targetText: entry.targetText,
@@ -99,7 +141,8 @@ export const verifyPageLive = (
     .pipe(
       Effect.mapError((cause) =>
         cause instanceof PageAlreadyVerifiedError ||
-        cause instanceof ImportInvariantError
+        cause instanceof ImportInvariantError ||
+        cause instanceof UnitNotFoundError
           ? cause
           : databaseFailure(cause),
       ),

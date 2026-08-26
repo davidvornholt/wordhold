@@ -69,8 +69,14 @@ stores the image permanently under `WORDHOLD_DATA_DIR/pages/` (provenance)
 and runs vision extraction; a model failure never loses the photo — the page
 lands in the "awaiting verification" queue and extraction can be retried.
 `/pages/$pageId/verify` shows the photo next to the editable extracted
-entries; importing writes entries, textbook examples, accepted answers (both
-directions, normalized via `src/shared/grading/normalize.ts`), two FSRS
+entries and asks which unit the words belong to — an existing chapter of the
+course, or a new one named here. A course is a textbook, a unit is a chapter
+of it, and a page is one photo; a unit usually spans several photos, so a
+name that already exists resolves to that unit rather than failing. The unit
+is created in the same transaction as its entries, so a failed import never
+leaves an empty chapter behind. Importing writes entries, textbook examples,
+accepted answers (both directions, normalized via
+`src/shared/grading/normalize.ts`), two FSRS
 cards per entry, and best-effort Polly audio under
 `WORDHOLD_DATA_DIR/audio/`.
 

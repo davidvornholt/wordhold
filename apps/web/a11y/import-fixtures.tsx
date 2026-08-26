@@ -26,6 +26,30 @@ const initialEntries: ReadonlyArray<DraftEntry> = [
   },
 ];
 
+const units = [
+  {
+    id: '11111111-1111-4111-8111-111111111111',
+    name: 'Unit 2',
+    position: 0,
+    isHolding: false,
+    entryCount: 18,
+  },
+  {
+    id: '22222222-2222-4222-8222-222222222222',
+    name: 'Unit 3',
+    position: 1,
+    isHolding: false,
+    entryCount: 12,
+  },
+  {
+    id: '33333333-3333-4333-8333-333333333333',
+    name: 'Ohne Einheit',
+    position: 2,
+    isHolding: true,
+    entryCount: 2,
+  },
+];
+
 const photographedPage = `data:image/svg+xml,${encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><title>Fixture page</title></svg>',
 )}`;
@@ -50,11 +74,13 @@ export const ImportFixture = ({ error = false }) => (
 type VerificationFixtureProps = {
   readonly empty?: boolean;
   readonly audioRecovery?: boolean;
+  readonly noUnits?: boolean;
 };
 
 export const VerificationFixture = ({
   empty = false,
   audioRecovery = false,
+  noUnits = false,
 }: VerificationFixtureProps) => (
   <main className="mx-auto flex max-w-5xl flex-col gap-4 p-6">
     {audioRecovery ? (
@@ -96,6 +122,7 @@ export const VerificationFixture = ({
             initialLabel="Unit 3"
             onSubmit={() => navigateToFixture('dashboard')}
             targetLabel="Englisch"
+            units={noUnits ? [] : units}
           />
         )}
       </div>
@@ -145,6 +172,7 @@ export const DeferredVerificationFixture = () => {
             .finally(() => setBusy(false));
         }}
         targetLabel="Englisch"
+        units={units}
       />
       <output aria-label="Verification calls">{calls}</output>
       <output aria-label="Verification snapshot">{snapshot}</output>
