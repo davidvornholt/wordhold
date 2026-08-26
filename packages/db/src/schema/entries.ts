@@ -55,6 +55,7 @@ export type AnswerDirection = (typeof answerDirections)[number];
 export const answerDirectionEnum = pgEnum('answer_direction', answerDirections);
 
 export const answerSources = ['textbook', 'manual', 'judge'] as const;
+export type AnswerSource = (typeof answerSources)[number];
 export const answerSourceEnum = pgEnum('answer_source', answerSources);
 
 // The deterministic grading path: one row per accepted rendering, per

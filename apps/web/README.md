@@ -78,18 +78,7 @@ Uploads accept JPEG, PNG, and WebP images up to 12 MiB, 12,000 pixels per side, 
 
 ## Practice flow
 
-`/courses/$courseId/practice` serves everything due plus a bounded batch of
-new cards (`src/features/practice/services/practice-service.ts`). Grading is hybrid: a
-normalized deterministic match is instant. Textbook answers carry optional
-and alternative parts (`to intend (to)`, `der/die Angestellte`,
-`die Straße / der Weg`), so `src/shared/grading/variants.ts` expands both the
-stored answer and the typed one into every reading before comparing; writing
-out any one reading counts as an exact match. Only real mismatches reach the AI
-judge, whose verdicts are cached per (entry, direction, normalized answer)
-and can write accepted alternatives back. FSRS ratings are derived from the
-outcome (fast exact = Easy, flawed-but-accepted = Hard, rejected = Again) —
-never self-reported. If the judge is unreachable the card is left
-untouched. Pronunciation plays via `GET /api/entries/$entryId/audio`.
+`/courses/$courseId/practice` serves everything due plus a bounded batch of new cards (`src/features/practice/services/practice-service.ts`). Grading is hybrid: a normalized deterministic match is instant. Textbook-sourced answers may carry optional words, inline optional affixes, word alternatives, suffix shorthand, or explicit phrase alternatives, such as `to intend (to)`, `étudiant(e)`, `der/die Angestellte`, `amigo/a`, and `die Straße / der Weg`. The bounded parser in `src/shared/grading/variants.ts` expands at most 24 readings. Every reading expressed by the learner must be accepted before deterministic grading bypasses the AI judge. Overflow and unproven readings go to the judge instead of being truncated. Manual and judge-written accepted answers receive normalized literal matching but are not reinterpreted as textbook notation. Judge verdicts are cached per (entry, direction, normalized answer) and can write accepted alternatives back. FSRS ratings are derived from the outcome (fast exact = Easy, flawed-but-accepted = Hard, rejected = Again), never self-reported. If the judge is unreachable the card is left untouched. Pronunciation plays via `GET /api/entries/$entryId/audio`.
 
 ## Dashboard
 

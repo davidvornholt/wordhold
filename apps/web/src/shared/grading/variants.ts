@@ -1,56 +1,168 @@
 import { normalizeAnswer } from './normalize';
 
-// Textbook vocabulary carries optional and alternative parts: "to intend (to)",
-// "der/die Angestellte", "die Straße / der Weg". Writing out any one of those
-// readings is exactly right, so the deterministic path compares them all
-// instead of paying for a judge call and risking a wrong verdict.
-const maxVariants = 24;
-const optionalGroup = /\s*\((?<inner>[^()]*)\)\s*/u;
-const whitespace = /\s+/u;
-const phraseSeparator = ' / ';
+export const maximumAnswerVariants = 24;
 
-const expandOptionalGroups = (text: string): ReadonlyArray<string> => {
-  const match = optionalGroup.exec(text);
-  if (match === null) {
-    return [text];
+export type AnswerVariantExpansion =
+  | {
+      readonly _tag: 'Expanded';
+      readonly readings: ReadonlyArray<string>;
+    }
+  | { readonly _tag: 'Overflow' };
+
+type ExpansionState =
+  | { readonly _tag: 'Values'; readonly values: ReadonlyArray<string> }
+  | { readonly _tag: 'Overflow' };
+
+const optionalGroup = /\((?<inner>[^()]*)\)/u;
+const whitespace = /\s+/u;
+const spacedPhraseSeparator = /\s+\/\s+/u;
+const lowercaseWord = /^\p{Ll}+$/u;
+const uppercaseStart = /^\p{Lu}/u;
+
+const flatMapBounded = (
+  values: ReadonlyArray<string>,
+  expand: (value: string) => ReadonlyArray<string>,
+): ExpansionState => {
+  const expanded: Array<string> = [];
+  for (const value of values) {
+    for (const part of expand(value)) {
+      if (expanded.length === maximumAnswerVariants) {
+        return { _tag: 'Overflow' };
+      }
+      expanded.push(part);
+    }
   }
-  const before = text.slice(0, match.index);
-  const after = text.slice(match.index + match[0].length);
-  const inner = match.groups?.inner ?? '';
-  return [`${before} ${inner} ${after}`, `${before} ${after}`].flatMap(
-    expandOptionalGroups,
-  );
+  return { _tag: 'Values', values: expanded };
 };
 
-const expandWord = (word: string): ReadonlyArray<string> =>
-  word.includes('/') ? word.split('/').filter((part) => part !== '') : [word];
+const hasSimpleParentheses = (text: string): boolean => {
+  let depth = 0;
+  for (const character of text) {
+    if (character === '(') {
+      depth += 1;
+      if (depth > 1) {
+        return false;
+      }
+    } else if (character === ')') {
+      depth -= 1;
+      if (depth < 0) {
+        return false;
+      }
+    }
+  }
+  return depth === 0;
+};
 
-const expandWordAlternatives = (text: string): ReadonlyArray<string> =>
-  text
-    .split(whitespace)
-    .filter((word) => word !== '')
-    .reduce<ReadonlyArray<string>>(
-      (sentences, word) =>
-        expandWord(word)
-          .flatMap((part) =>
-            sentences.map((sentence) =>
-              sentence === '' ? part : `${sentence} ${part}`,
-            ),
-          )
-          .slice(0, maxVariants),
-      [''],
+const expandOptionalGroups = (text: string): ExpansionState => {
+  if (!hasSimpleParentheses(text)) {
+    return { _tag: 'Values', values: [text] };
+  }
+  let state: ExpansionState = { _tag: 'Values', values: [text] };
+  while (state._tag === 'Values') {
+    if (!state.values.some((value) => optionalGroup.test(value))) {
+      return state;
+    }
+    state = flatMapBounded(state.values, (value) => {
+      const match = optionalGroup.exec(value);
+      if (match === null) {
+        return [value];
+      }
+      const before = value.slice(0, match.index);
+      const after = value.slice(match.index + match[0].length);
+      const inner = match.groups?.inner ?? '';
+      return [`${before}${inner}${after}`, `${before}${after}`];
+    });
+  }
+  return state;
+};
+
+const splitPhraseAlternatives = (text: string): ReadonlyArray<string> => {
+  const spaced = text.split(spacedPhraseSeparator);
+  if (spaced.length > 1 && spaced.every((part) => part.trim() !== '')) {
+    return spaced;
+  }
+  const slash = text.indexOf('/');
+  if (slash < 0 || slash !== text.lastIndexOf('/')) {
+    return [text];
+  }
+  const left = text.slice(0, slash);
+  const right = text.slice(slash + 1);
+  const leftWords = left.trim().split(whitespace);
+  const rightWords = right.trim().split(whitespace);
+  const leftLast = leftWords.at(-1) ?? '';
+  if (
+    leftWords.length > 1 &&
+    rightWords.length > 1 &&
+    uppercaseStart.test(leftLast)
+  ) {
+    return [left, right];
+  }
+  return [text];
+};
+
+const expandSlashWord = (word: string): ReadonlyArray<string> => {
+  const parts = word.split('/');
+  if (parts.length !== 2) {
+    return [word];
+  }
+  const [left = '', right = ''] = parts;
+  if (!(lowercaseWord.test(left) && lowercaseWord.test(right))) {
+    return [word];
+  }
+  if (right.length === 1 && left.length > 1) {
+    return [left, `${left.slice(0, -1)}${right}`];
+  }
+  return [left, right];
+};
+
+const expandWordAlternatives = (text: string): ExpansionState => {
+  let state: ExpansionState = { _tag: 'Values', values: [''] };
+  for (const word of text.split(whitespace).filter((part) => part !== '')) {
+    if (state._tag === 'Overflow') {
+      return state;
+    }
+    state = flatMapBounded(state.values, (sentence) =>
+      expandSlashWord(word).map((part) =>
+        sentence === '' ? part : `${sentence} ${part}`,
+      ),
     );
+  }
+  return state;
+};
 
-const expandAlternatives = (text: string): ReadonlyArray<string> =>
-  text.includes(phraseSeparator)
-    ? text.split(phraseSeparator).flatMap(expandWordAlternatives)
-    : expandWordAlternatives(text);
+const normalizeReadings = (
+  phrases: ReadonlyArray<string>,
+): AnswerVariantExpansion => {
+  const readings: Array<string> = [];
+  for (const phrase of phrases) {
+    const alternatives = expandWordAlternatives(phrase);
+    if (alternatives._tag === 'Overflow') {
+      return alternatives;
+    }
+    for (const reading of alternatives.values) {
+      const normalized = normalizeAnswer(reading);
+      if (normalized !== '' && !readings.includes(normalized)) {
+        if (readings.length === maximumAnswerVariants) {
+          return { _tag: 'Overflow' };
+        }
+        readings.push(normalized);
+      }
+    }
+  }
+  return { _tag: 'Expanded', readings };
+};
 
-// Every reading of one written answer, normalized and deduplicated. The
-// answer's own normalized form is always the first entry.
-export const answerVariants = (text: string): ReadonlyArray<string> => {
-  const readings = expandOptionalGroups(text).flatMap(expandAlternatives);
-  return [...new Set([normalizeAnswer(text), ...readings.map(normalizeAnswer)])]
-    .filter((variant) => variant !== '')
-    .slice(0, maxVariants);
+export const answerVariants = (text: string): AnswerVariantExpansion => {
+  const phrases: Array<string> = [];
+  for (const phrase of splitPhraseAlternatives(text)) {
+    const optional = expandOptionalGroups(phrase);
+    if (optional._tag === 'Overflow') {
+      return optional;
+    }
+    if (phrases.length + optional.values.length > maximumAnswerVariants) {
+      return { _tag: 'Overflow' };
+    }
+    phrases.push(...optional.values);
+  }
+  return normalizeReadings(phrases);
 };

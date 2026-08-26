@@ -113,7 +113,11 @@ describe('PracticeService', () => {
         findSubmission: () => Effect.succeed(submission),
         listAcceptedAnswers: () =>
           Effect.succeed([
-            { text: 'to intend (to)', normalized: 'to intend (to)' },
+            {
+              text: 'to intend (to)',
+              normalized: 'to intend (to)',
+              source: 'textbook',
+            },
           ]),
         commit: () => Effect.void,
       },
@@ -145,7 +149,9 @@ describe('PracticeService', () => {
       {
         findSubmission: () => Effect.succeed(submission),
         listAcceptedAnswers: () =>
-          Effect.succeed([{ text: 'correct', normalized: 'correct' }]),
+          Effect.succeed([
+            { text: 'correct', normalized: 'correct', source: 'textbook' },
+          ]),
         commit: () =>
           Effect.sync(() => {
             commits += 1;
