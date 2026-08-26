@@ -19,6 +19,7 @@ type CourseCardProps = {
   readonly practiceAction: ReactNode;
   readonly learnAction: ReactNode;
   readonly importAction: ReactNode;
+  readonly settingsAction: ReactNode;
 };
 
 export const CourseCard = ({
@@ -27,6 +28,7 @@ export const CourseCard = ({
   practiceAction,
   learnAction,
   importAction,
+  settingsAction,
 }: CourseCardProps) => {
   const due = stats?.due ?? 0;
   const fresh = stats?.fresh ?? 0;
@@ -58,6 +60,7 @@ export const CourseCard = ({
         {due + fresh > 0 ? practiceAction : null}
         {unlearned > 0 ? learnAction : null}
         {importAction}
+        {settingsAction}
       </div>
     </li>
   );

@@ -43,6 +43,13 @@
       "when": 1787761485993,
       "tag": "0005_little_luminals",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1787768900052,
+      "tag": "0006_normal_wasp",
+      "breakpoints": true
     }
   ]
 }

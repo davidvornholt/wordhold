@@ -1,5 +1,5 @@
 import type { JudgeInput, JudgeVerdictData } from '@wordhold/ai/judge/schema';
-import type { AnswerDirection } from '@wordhold/db/schema/entries';
+import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import { Effect } from 'effect';
 import type {
   PracticeDatabaseError,

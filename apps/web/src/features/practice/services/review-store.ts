@@ -1,6 +1,7 @@
 import { Database } from '@wordhold/db/client';
 import type { LanguageCode } from '@wordhold/db/schema/courses';
-import type { AnswerDirection, EntryType } from '@wordhold/db/schema/entries';
+import type { AnswerDirection } from '@wordhold/db/schema/directions';
+import type { EntryType } from '@wordhold/db/schema/entries';
 import type { cards } from '@wordhold/db/schema/practice';
 import { Context, Effect, Layer } from 'effect';
 import {

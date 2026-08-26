@@ -112,6 +112,16 @@ repeat never moves it backwards and the end never moves away. An answer the
 judge could not grade settles too: the card was left untouched, and asking
 again in the same session would only reach the same outage.
 
+## Direction control
+
+A card is asked one way round: German first (`to_target`) or the foreign word first (`to_native`). Both are chosen twice over.
+
+A sitting picks one. `/courses/$courseId/practice` opens on a picker unless the URL already carries `?direction=`, and the choice only narrows the queue for that sitting (`src/features/practice/services/session-options.ts`). "Gemischt" is offered when there is more than one direction to mix; a course down to a single direction has nothing to pick, so it starts straight away.
+
+A course switches a direction off for good under `/courses/$courseId/settings`, stored in `courses.directions` (`src/features/courses/`). A direction that is off stops being asked, stops being scheduled, and stops being counted on the dashboard, in the practice queue as well as in the due and new figures. Its cards are only hidden: they keep their FSRS schedule, so switching the direction back on picks up where it left off instead of starting those words over. The last remaining direction cannot be switched off, because a course with none would schedule nothing and offer no screen to switch one back on from.
+
+The stored column is read by unnesting it into one row per direction. The Postgres driver hands an array column back as the raw text `{to_target,to_native}`, so a query returning rows is the only one whose shape this code decides; what comes back is then decoded with a Schema.
+
 ## Dashboard
 
 The signed-in start page shows only real data (`src/features/dashboard/services/dashboard-service.ts`): per-course due/new/word counts, how many words still await the learning pass, today's review count in `WORDHOLD_OWNER_TIME_ZONE`, and "Wackelkandidaten" with at least two Again-ratings in the last 30 days. Due and new count cards the practice session would actually offer, so they ignore words that have not been learned yet; the "zu lernen" figure counts words rather than cards, because the learning pass introduces both directions of a word together.

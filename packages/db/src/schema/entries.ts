@@ -9,6 +9,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 import { courses } from './courses';
+import { answerDirectionEnum } from './directions';
 import { pages } from './pages';
 import { units } from './units';
 
@@ -56,10 +57,6 @@ export const entryExamples = pgTable('entry_examples', {
   source: exampleSourceEnum('source').notNull().default('textbook'),
   position: integer('position').notNull().default(0),
 });
-
-export const answerDirections = ['to_target', 'to_native'] as const;
-export type AnswerDirection = (typeof answerDirections)[number];
-export const answerDirectionEnum = pgEnum('answer_direction', answerDirections);
 
 export const answerSources = ['textbook', 'manual', 'judge'] as const;
 export const answerSourceEnum = pgEnum('answer_source', answerSources);

@@ -4,6 +4,10 @@ import {
   RootPending,
 } from '../src/shared/routing/root-feedback';
 import { DashboardFixture, SignedOutFixture } from './dashboard-fixtures';
+import {
+  CourseSettingsFixture,
+  PracticeStartFixture,
+} from './direction-fixtures';
 import { navigateToFixture, readFixtureState } from './fixture-state';
 import {
   DeferredVerificationFixture,
@@ -52,8 +56,12 @@ export const FixtureApp = () => {
       return <LearnFixture />;
     case 'learn-done':
       return <LearnDoneFixture />;
+    case 'course-settings':
+      return <CourseSettingsFixture />;
     case 'practice':
       return <PracticeFixture />;
+    case 'practice-start':
+      return <PracticeStartFixture />;
     case 'practice-session':
       return <PracticeSessionFixture />;
     case 'practice-feedback':
