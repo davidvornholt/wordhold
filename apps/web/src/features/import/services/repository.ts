@@ -4,6 +4,7 @@ import { Context, type Effect } from 'effect';
 import type { ImportDatabaseError } from '../errors/import-database-error';
 import type { ImportInvariantError } from '../errors/import-invariant-error';
 import type { PageAlreadyVerifiedError } from '../errors/page-already-verified-error';
+import type { UnitNotFoundError } from '../errors/unit-not-found-error';
 import type { ImportPayloadData } from '../schemas/import-payload';
 
 export type Course = {
@@ -12,6 +13,14 @@ export type Course = {
   readonly targetLanguage: LanguageCode;
   readonly nativeLanguage: LanguageCode;
   readonly createdAt: Date;
+};
+
+export type Unit = {
+  readonly id: string;
+  readonly name: string;
+  readonly position: number;
+  readonly isHolding: boolean;
+  readonly entryCount: number;
 };
 
 export type Page = {
@@ -64,6 +73,9 @@ export type ImportRepositoryShape = {
   readonly getCourse: (
     courseId: string,
   ) => Effect.Effect<Course | undefined, ImportDatabaseError>;
+  readonly listUnits: (
+    courseId: string,
+  ) => Effect.Effect<ReadonlyArray<Unit>, ImportDatabaseError>;
   readonly listPendingPages: Effect.Effect<
     ReadonlyArray<PendingPage>,
     ImportDatabaseError
@@ -95,7 +107,7 @@ export type ImportRepositoryShape = {
     courseId: string,
   ) => Effect.Effect<
     ReadonlyArray<InsertedEntry>,
-    RepositoryFailure | PageAlreadyVerifiedError
+    RepositoryFailure | PageAlreadyVerifiedError | UnitNotFoundError
   >;
   readonly referencedPaths: Effect.Effect<
     ReadonlySet<string>,

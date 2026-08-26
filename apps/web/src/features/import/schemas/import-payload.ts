@@ -8,9 +8,31 @@ import {
 import { Schema } from 'effect';
 import { ImportPayloadValidationError } from '../errors/import-payload-validation-error';
 
+export const maximumUnitNameLength = 80;
+
+// Words are filed into a chapter of the textbook, either one that already
+// exists or one being started with this page. The tag keeps the two apart at
+// the boundary, so the server never has to guess whether a name means "find
+// this" or "create this".
+export const UnitSelection = Schema.Union(
+  Schema.Struct({
+    kind: Schema.Literal('existing'),
+    unitId: Schema.UUID,
+  }),
+  Schema.Struct({
+    kind: Schema.Literal('new'),
+    name: Schema.Trim.pipe(
+      Schema.minLength(1),
+      Schema.maxLength(maximumUnitNameLength),
+    ),
+  }),
+);
+export type UnitSelectionData = typeof UnitSelection.Type;
+
 // The human-verified shape of one entry, as submitted from the verify screen.
 // Confidence is dropped: after verification the human is the authority.
 export const VerifiedEntry = Schema.Struct({
+  unit: UnitSelection,
   type: Schema.Literal('word', 'expression', 'sentence'),
   targetText: Schema.Trim.pipe(
     Schema.minLength(1),

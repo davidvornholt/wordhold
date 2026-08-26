@@ -7,10 +7,12 @@ import {
   maximumIrregularForms,
   maximumLabelLength,
 } from '@wordhold/ai/extraction/schema';
-import { decodeImportPayload } from './import-payload';
+import { decodeImportPayload, maximumUnitNameLength } from './import-payload';
 
 const pageId = 'd9428888-122b-41e1-b85c-61cd3cbb3210';
+const unit = { kind: 'new', name: 'Unité 3' } as const;
 const validEntry = {
+  unit,
   type: 'word',
   targetText: 'souvenir',
   nativeText: 'Erinnerung',
@@ -74,5 +76,47 @@ describe('decodeImportPayload', () => {
     expect(invoke).toThrow();
     expect(writes).toBe(0);
     expect(providerCalls).toBe(0);
+  });
+
+  it('files each entry into the selected unit', () => {
+    const decoded = decodeImportPayload({
+      pageId,
+      entries: [
+        {
+          ...validEntry,
+          unit: { kind: 'existing', unitId: pageId },
+        },
+      ],
+    });
+
+    expect(decoded.entries[0]?.unit).toEqual({
+      kind: 'existing',
+      unitId: pageId,
+    });
+  });
+
+  it('trims the name of a unit being started', () => {
+    const decoded = decodeImportPayload({
+      pageId,
+      entries: [{ ...validEntry, unit: { kind: 'new', name: '  Unité 4  ' } }],
+    });
+
+    expect(decoded.entries[0]?.unit).toEqual({
+      kind: 'new',
+      name: 'Unité 4',
+    });
+  });
+
+  it.each([
+    { kind: 'new', name: '   ' },
+    { kind: 'new', name: over(maximumUnitNameLength) },
+    { kind: 'existing', unitId: 'not-a-uuid' },
+  ])('refuses an unusable unit selection', (selection) => {
+    expect(() =>
+      decodeImportPayload({
+        pageId,
+        entries: [{ ...validEntry, unit: selection }],
+      }),
+    ).toThrow();
   });
 });
