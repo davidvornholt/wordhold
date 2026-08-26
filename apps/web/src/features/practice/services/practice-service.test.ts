@@ -50,16 +50,25 @@ const cacheStore = Layer.succeed(JudgeCacheStore, {
   withCriticalSection: (_key, effect) => effect,
 });
 
+const unavailableJudge = (cause: string) =>
+  Effect.fail(
+    new PracticeJudgeError({
+      cause,
+      message: 'judge unavailable',
+    }),
+  );
+
 const runSubmit = (
   reviewStore: PracticeReviewStore['Type'],
   judge: PracticeJudge['Type'],
+  answer = 'wrong',
 ) =>
   Effect.runPromise(
     Effect.flatMap(PracticeService, (service) =>
       service.submit({
         cardId: card.id,
         revision: card.revision,
-        answer: 'wrong',
+        answer,
         elapsedMs: 1000,
       }),
     ).pipe(
@@ -93,17 +102,75 @@ describe('PracticeService', () => {
         commit: () => Effect.void,
       },
       {
-        judge: () =>
-          Effect.fail(
-            new PracticeJudgeError({
-              cause: 'unused',
-              message: 'judge unavailable',
-            }),
-          ),
+        judge: () => unavailableJudge('unused'),
       },
     );
     const receivedFailure = result._tag === 'Left' ? result.left : undefined;
     expect(receivedFailure).toBe(failure);
+  });
+
+  it('sends an ambiguous compact suffix fragment to the judge', async () => {
+    let judgeCalls = 0;
+    const result = await runSubmit(
+      {
+        findSubmission: () => Effect.succeed(submission),
+        listAcceptedAnswers: () =>
+          Effect.succeed([
+            {
+              text: 'bon/onne',
+              normalized: 'bon/onne',
+              source: 'textbook',
+            },
+          ]),
+        commit: () => Effect.void,
+      },
+      {
+        judge: () => {
+          judgeCalls += 1;
+          return unavailableJudge('test rejection');
+        },
+      },
+      'onne',
+    );
+    expect(result).toMatchObject({ _tag: 'Right', right: { graded: false } });
+    expect(judgeCalls).toBe(1);
+  });
+
+  it('accepts a reconstructed suffix reading without asking the judge', async () => {
+    let judgeCalls = 0;
+    const result = await runSubmit(
+      {
+        findSubmission: () => Effect.succeed(submission),
+        listAcceptedAnswers: () =>
+          Effect.succeed([
+            {
+              text: 'profesor/a',
+              normalized: 'profesor/a',
+              source: 'textbook',
+            },
+          ]),
+        commit: () => Effect.void,
+      },
+      {
+        judge: () =>
+          Effect.sync(() => {
+            judgeCalls += 1;
+          }).pipe(
+            Effect.flatMap(() =>
+              Effect.fail(
+                new PracticeJudgeError({
+                  cause: 'unexpected',
+                  message: 'judge must not run',
+                }),
+              ),
+            ),
+          ),
+      },
+      'profesora',
+    );
+    const value = result._tag === 'Right' ? result.right : undefined;
+    expect(value).toMatchObject({ graded: true, correct: true });
+    expect(judgeCalls).toBe(0);
   });
 
   it('leaves the card untouched when the typed provider fails', async () => {
@@ -112,20 +179,16 @@ describe('PracticeService', () => {
       {
         findSubmission: () => Effect.succeed(submission),
         listAcceptedAnswers: () =>
-          Effect.succeed([{ text: 'correct', normalized: 'correct' }]),
+          Effect.succeed([
+            { text: 'correct', normalized: 'correct', source: 'textbook' },
+          ]),
         commit: () =>
           Effect.sync(() => {
             commits += 1;
           }),
       },
       {
-        judge: () =>
-          Effect.fail(
-            new PracticeJudgeError({
-              cause: 'offline',
-              message: 'judge unavailable',
-            }),
-          ),
+        judge: () => unavailableJudge('offline'),
       },
     );
     expect(result._tag).toBe('Right');
