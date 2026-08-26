@@ -66,6 +66,9 @@ test('the learning pass asks again for a wrong copy and records only the correct
   const field = page.getByLabel('Schreib das Wort ab');
   const advance = page.getByRole('button', { name: 'Weiter' });
   await expect(page.getByText('Wort 1 von 2')).toBeVisible();
+  await expect(
+    page.getByRole('heading', { level: 2, name: 'memory' }),
+  ).toBeFocused();
 
   await field.fill('remember');
   await advance.click();
@@ -78,11 +81,16 @@ test('the learning pass asks again for a wrong copy and records only the correct
   await field.fill('Memory');
   await advance.click();
   await expect(page.getByText('Wort 2 von 2')).toBeVisible();
+  await expect(
+    page.getByRole('heading', { level: 2, name: 'to look (at)' }),
+  ).toBeFocused();
   await expect(page.getByLabel('Introduced words')).toHaveText('1');
 
   await page.getByLabel('Schreib das Wort ab').fill('to look at');
   await page.getByRole('button', { name: 'Weiter' }).click();
-  await expect(page.getByText('Einheit gelernt!')).toBeVisible();
+  await expect(
+    page.getByRole('heading', { level: 2, name: 'Einheit gelernt!' }),
+  ).toBeFocused();
   await expect(page.getByLabel('Introduced words')).toHaveText('2');
 });
 
@@ -101,8 +109,13 @@ test('the learning pass announces a persistence failure and retries the same wor
   await expect(page.getByLabel('Introduced words')).toHaveText('0');
   await expect(page.getByLabel('Introduction attempts')).toHaveText('1');
 
-  await page.getByRole('button', { name: 'Erneut versuchen' }).click();
+  const retry = page.getByRole('button', { name: 'Erneut versuchen' });
+  await expect(retry).toBeFocused();
+  await retry.click();
   await expect(page.getByText('Wort 2 von 2')).toBeVisible();
+  await expect(
+    page.getByRole('heading', { level: 2, name: 'to look (at)' }),
+  ).toBeFocused();
   await expect(page.getByLabel('Introduced words')).toHaveText('1');
   await expect(page.getByLabel('Introduction attempts')).toHaveText('2');
 });
