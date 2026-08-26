@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'bun:test';
-import { ConfigProvider, Effect, Layer } from 'effect';
+import { generateText, Output } from 'ai';
+import { ConfigProvider, Effect, Layer, type Schema } from 'effect';
+import { JudgeVerdict, type JudgeVerdictData } from '../judge/schema';
+import { SentenceBatch, type SentenceBatchData } from '../sentence/service';
+import {
+  providerJsonSchema,
+  structuredOutputOptions,
+} from '../structured-output';
 import { BedrockProvider } from './bedrock';
+
+const modelId = 'openai.gpt-5.6-luna';
 
 const provider = (region: string) =>
   Effect.runSync(
@@ -11,7 +20,7 @@ const provider = (region: string) =>
           Layer.setConfigProvider(
             ConfigProvider.fromMap(
               new Map([
-                ['AWS_REGION', region],
+                ['AWS_BEDROCK_REGION', region],
                 ['AWS_BEDROCK_API_KEY', 'ABSKtest'],
               ]),
             ),
@@ -21,84 +30,130 @@ const provider = (region: string) =>
     ),
   );
 
-type Call = { readonly url: string; readonly headers: Headers };
+type Call = {
+  readonly body: Record<string, unknown>;
+  readonly headers: Headers;
+  readonly url: string;
+};
 
-// The provider builds its own fetch-backed client, so the request itself is
-// the only honest place to read off which endpoint and which API the services
-// actually reach.
-const captureRequest = async (region: string): Promise<Call> => {
+const responseBody = (output: unknown): unknown =>
+  JSON.parse(`{
+    "id": "response-test",
+    "object": "response",
+    "created_at": 0,
+    "model": "${modelId}",
+    "output": [{
+      "id": "message-test",
+      "type": "message",
+      "status": "completed",
+      "role": "assistant",
+      "content": [{
+        "type": "output_text",
+        "text": ${JSON.stringify(JSON.stringify(output))},
+        "annotations": []
+      }]
+    }],
+    "status": "completed",
+    "usage": {
+      "input_tokens": 1,
+      "input_tokens_details": { "cached_tokens": 0 },
+      "output_tokens": 1,
+      "output_tokens_details": { "reasoning_tokens": 0 },
+      "total_tokens": 2
+    }
+  }`);
+
+const captureStructuredRequest = async <A, I>(options: {
+  readonly output: A;
+  readonly prompt: string;
+  readonly region: string;
+  readonly schema: Schema.Schema<A, I>;
+}): Promise<{ readonly call: Call; readonly output: unknown }> => {
   const original = globalThis.fetch;
   let call: Call | null = null;
-  // Written as wire JSON rather than an object literal: these are OpenAI's
-  // snake_case field names, not names this codebase chooses.
-  const chatCompletion = `{
-    "id": "x",
-    "created": 0,
-    "model": "global.openai.gpt-5.6-luna",
-    "choices": [
-      {
-        "index": 0,
-        "finish_reason": "stop",
-        "message": { "role": "assistant", "content": "ok" }
-      }
-    ],
-    "usage": { "prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2 }
-  }`;
-  const answer = () =>
-    Promise.resolve(
-      new Response(chatCompletion, {
-        status: 200,
-        headers: { 'content-type': 'application/json' },
-      }),
-    );
   globalThis.fetch = Object.assign(
     (input: RequestInfo | URL, init?: RequestInit) => {
-      call = { url: String(input), headers: new Headers(init?.headers) };
-      return answer();
+      call = {
+        body: JSON.parse(String(init?.body)) as Record<string, unknown>,
+        headers: new Headers(init?.headers),
+        url: String(input),
+      };
+      return Promise.resolve(
+        Response.json(responseBody(options.output), { status: 200 }),
+      );
     },
     { preconnect: original.preconnect },
   );
   try {
-    await provider(region)
-      .chat('global.openai.gpt-5.6-luna')
-      .doGenerate({
-        prompt: [{ role: 'user', content: [{ type: 'text', text: 'ping' }] }],
-      });
+    const result = await generateText({
+      model: provider(options.region).responses(modelId),
+      output: Output.object({ schema: providerJsonSchema(options.schema) }),
+      prompt: options.prompt,
+      providerOptions: structuredOutputOptions,
+    });
+    if (call === null) {
+      throw new Error('the provider made no request');
+    }
+    return { call, output: result.output };
   } finally {
     globalThis.fetch = original;
   }
-  if (call === null) {
-    throw new Error('the provider made no request');
-  }
-  return call;
 };
 
 describe('BedrockProvider', () => {
-  // Judging and sentence generation are only trustworthy because decoding is
-  // constrained to the schema, and that is a property of this endpoint rather
-  // than of the model. Bedrock's default host would answer too, just without
-  // the guarantee, so the URL is worth pinning.
-  it('sends chat completions to the OpenAI-compatible endpoint of its region', async () => {
-    const call = await captureRequest('eu-central-1');
+  it('sends strict judge output through the Mantle Responses API', async () => {
+    const verdict: JudgeVerdictData = {
+      correct: false,
+      acceptAsAlternative: false,
+      meaning: { ok: true, note: null },
+      grammar: { ok: true, note: null },
+      idiomaticity: { ok: false, note: '„Café“ bleibt französisch. ☕' },
+      spelling: { ok: true, note: null },
+      intendedConstruction: { ok: true, note: null },
+      explanation: 'Die Antwort „déjà vu“ ist verständlich, aber unpassend. 🧭',
+    };
+    const { call, output } = await captureStructuredRequest({
+      output: verdict,
+      prompt:
+        'Bewerte: Er schrieb „Café \\"München\\"“ und setzte 🧭 dahinter.',
+      region: 'us-east-1',
+      schema: JudgeVerdict,
+    });
 
     expect(call.url).toBe(
-      'https://bedrock-runtime.eu-central-1.amazonaws.com/openai/v1/chat/completions',
+      'https://bedrock-mantle.us-east-1.api.aws/openai/v1/responses',
     );
+    expect(call.headers.get('authorization')).toBe('Bearer ABSKtest');
+    expect(call.body.model).toBe(modelId);
+    expect(call.body.store).toBe(false);
+    expect(call.body).toHaveProperty('text.format.type', 'json_schema');
+    expect(call.body).toHaveProperty('text.format.strict', true);
+    expect(JSON.stringify(call.body.input)).toContain('München');
+    expect(output).toEqual(verdict);
   });
 
-  it('follows the configured region', async () => {
-    const call = await captureRequest('us-east-1');
+  it('sends strict sentence output with adversarial Unicode intact', async () => {
+    const batch: SentenceBatchData = {
+      sentences: [
+        {
+          target: 'Sie sagte: „Café \\"München\\" ☕“.',
+          native: 'She said, “Café \\"Munich\\" ☕.”',
+        },
+      ],
+    };
+    const { call, output } = await captureStructuredRequest({
+      output: batch,
+      prompt: 'Use „Café \\"München\\" ☕“ exactly, including Unicode.',
+      region: 'us-west-2',
+      schema: SentenceBatch,
+    });
 
     expect(call.url).toStartWith(
-      'https://bedrock-runtime.us-east-1.amazonaws.com/openai/v1/',
+      'https://bedrock-mantle.us-west-2.api.aws/openai/v1/',
     );
-  });
-
-  // This endpoint takes a bearer token. Signing the request the way the rest
-  // of the AWS SDK does would be rejected.
-  it('authenticates with the Bedrock API key as a bearer token', async () => {
-    const call = await captureRequest('eu-central-1');
-
-    expect(call.headers.get('authorization')).toBe('Bearer ABSKtest');
+    expect(call.body).toHaveProperty('text.format.type', 'json_schema');
+    expect(JSON.stringify(call.body.input)).toContain('Café');
+    expect(JSON.stringify(call.body.input)).toContain('☕');
+    expect(output).toEqual(batch);
   });
 });

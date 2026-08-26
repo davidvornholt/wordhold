@@ -27,7 +27,8 @@ through `src/shared/env/server.ts`.
 | `GITHUB_CLIENT_SECRET` | GitHub OAuth app client secret. |
 | `GITHUB_ALLOWED_USER_ID` | Numeric GitHub user ID of the single allowed user. Wordhold rejects other profiles before persistence and rechecks existing sessions against the current value. |
 | `WORDHOLD_OWNER_TIME_ZONE` | Required IANA time zone for owner-local day boundaries, such as `Europe/Berlin`. |
-| `AWS_REGION` | AWS region for Bedrock and Polly (`eu-central-1`). |
+| `AWS_REGION` | AWS region for Polly (`eu-central-1`). |
+| `AWS_BEDROCK_REGION` | AWS region for Bedrock Mantle (`us-east-1`). |
 | `AWS_BEDROCK_API_KEY` | Bedrock API key (`ABSK…`) for the OpenAI-compatible endpoint used by the judge and sentence generation. |
 | `AWS_ACCESS_KEY_ID` | SigV4 credentials for Polly (TTS). |
 | `AWS_SECRET_ACCESS_KEY` | Secret half of the SigV4 credentials. |
@@ -41,23 +42,24 @@ through `src/shared/env/server.ts`.
 
 ## Provider credentials
 
-Both AWS credentials belong to one dedicated IAM user, `WordholdDevelopment`, which has no console password and no permissions beyond Bedrock inference and `polly:SynthesizeSpeech`. Its inline policy `WordholdAiInference` allows `bedrock:InvokeModel` on the OpenAI model family, this account's `global.openai.gpt-*` inference profiles and its `project/default`, plus `bedrock:CallWithBearerToken`, which is what authorizes the API key itself.
+Both AWS credentials belong to one dedicated IAM user, `WordholdDevelopment`, which has no console password. The SigV4 pair permits only `polly:SynthesizeSpeech`. The Bedrock API key uses the same user's permissions. Mantle requires `bedrock-mantle:CallWithBearerToken`, `bedrock-mantle:CreateInference`, `bedrock-mantle:GetProject`, `bedrock-mantle:ListProjects`, and `bedrock-mantle:ListTagsForResources`. The [AWS permission reference](https://docs.aws.amazon.com/bedrock/latest/userguide/inference.html) documents that set.
 
-The two credentials are different kinds of thing and rotate differently:
+Rotate the Bedrock API key from the repository root:
 
 ```sh
-# SigV4 pair (Polly). Mint the replacement, store it, then delete the old key.
-aws iam create-access-key --user-name WordholdDevelopment
-
-# Bedrock API key (judge, sentence generation). The secret is shown once, at
-# creation, and never again, so pipe it straight into SOPS.
-aws iam create-service-specific-credential \
-  --user-name WordholdDevelopment --service-name bedrock.amazonaws.com
+bun run --cwd apps/web provider:rotate-bedrock-key
+just dev-env-generate
+bun run --cwd apps/web provider:verify
+aws iam delete-service-specific-credential \
+  --user-name WordholdDevelopment \
+  --service-specific-credential-id '<predecessor credential printed above>'
 ```
 
-Write either into `secrets/dev.yaml` with `just secrets edit dev`, verify with `just dev-env-generate`, then delete the superseded credential (`aws iam delete-access-key` or `aws iam delete-service-specific-credential`). Never echo a secret to a terminal.
+The rotation command checks that AWS has at most one Bedrock key before creating another. It gives the replacement a 90-day lifetime and passes its one-time value from AWS CLI memory straight to `sops set --value-stdin`. The value never enters command arguments, terminal output, a pager, or a plaintext file. It prints the replacement and predecessor IDs only. `provider:verify` then makes real judge and sentence requests with the generated environment. Delete the explicitly named predecessor only after both requests pass.
 
-Bedrock model IDs must be exact inference-profile identifiers, and a wrong one is rejected at invocation time rather than at startup. OpenAI models on Bedrock have no EU inference profile, so `eu-central-1` reaches them only through the `global.` profile.
+Rotate the Polly SigV4 pair with the same replace, verify, revoke order. Store both replacement values in `secrets/dev.yaml`, run `just dev-env-generate`, verify Polly through the web import flow, then call `aws iam delete-access-key --user-name WordholdDevelopment --access-key-id '<predecessor access key ID>'`. Never put either secret value in a shell argument or terminal output.
+
+Bedrock model IDs depend on the endpoint. Mantle uses `openai.gpt-5.6-luna`; `global.openai.gpt-5.6-luna` is a different inference-profile ID for `bedrock-runtime` and is rejected by Mantle.
 
 `GOOGLE_SERVICE_ACCOUNT_JSON` is the single-line key JSON for the `wordhold-extraction` service account in Google Cloud project `wordhold-a52aa0`, which holds `roles/aiplatform.user` and nothing else. The project has billing enabled and the Vertex AI API turned on. Page extraction is the only feature that uses it. Rotate by creating a second key with `gcloud iam service-accounts keys create`, writing it into `secrets/dev.yaml` with `just secrets edit dev`, then deleting the old key ID.
 

@@ -24,14 +24,14 @@ export const judgeWithCache = (
   Effect.gen(function* () {
     const cache = yield* JudgeCacheStore;
     const judge = yield* PracticeJudge;
-    const cached = yield* cache.read(request);
+    const cached = yield* cache.read(request, judge.model);
     if (cached !== undefined) {
       return cached.verdict;
     }
     return yield* cache.withCriticalSection(
       request,
       Effect.gen(function* () {
-        const rechecked = yield* cache.read(request);
+        const rechecked = yield* cache.read(request, judge.model);
         if (rechecked !== undefined) {
           return rechecked.verdict;
         }

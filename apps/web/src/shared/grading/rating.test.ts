@@ -8,11 +8,11 @@ const slowMs = 12_000;
 const verdict = (overrides: Partial<JudgeVerdictData>): JudgeVerdictData => ({
   correct: true,
   acceptAsAlternative: false,
-  meaning: { ok: true },
-  grammar: { ok: true },
-  idiomaticity: { ok: true },
-  spelling: { ok: true },
-  intendedConstruction: { ok: true },
+  meaning: { ok: true, note: null },
+  grammar: { ok: true, note: null },
+  idiomaticity: { ok: true, note: null },
+  spelling: { ok: true, note: null },
+  intendedConstruction: { ok: true, note: null },
   explanation: 'Passt.',
   ...overrides,
 });
@@ -44,7 +44,10 @@ describe('deriveRating', () => {
   });
 
   it('rates a rejected answer Again', () => {
-    const wrong = verdict({ correct: false, meaning: { ok: false } });
+    const wrong = verdict({
+      correct: false,
+      meaning: { ok: false, note: null },
+    });
     expect(deriveRating({ method: 'judge', verdict: wrong }, fastMs)).toBe(
       ratings.again,
     );

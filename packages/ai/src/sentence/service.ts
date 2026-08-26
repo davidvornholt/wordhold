@@ -50,7 +50,7 @@ export class SentenceGen extends Effect.Service<SentenceGen>()(
         Effect.tryPromise({
           try: async () => {
             const { output } = await generateText({
-              model: bedrock.chat(modelId),
+              model: bedrock.responses(modelId),
               output: Output.object({ schema: batchOutput }),
               prompt: sentencePrompt(request),
               providerOptions: structuredOutputOptions,

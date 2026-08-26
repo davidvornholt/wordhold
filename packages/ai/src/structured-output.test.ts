@@ -12,6 +12,20 @@ const outputSchemas = [
   ['SentenceBatch', () => providerJsonSchema(SentenceBatch)],
 ] as const;
 
+const objectNodes = (root: unknown): ReadonlyArray<Record<string, unknown>> => {
+  const pending: Array<unknown> = [root];
+  const nodes: Array<Record<string, unknown>> = [];
+  while (pending.length > 0) {
+    const node = pending.pop();
+    if (typeof node === 'object' && node !== null) {
+      const record = node as Record<string, unknown>;
+      nodes.push(record);
+      pending.push(...Object.values(record));
+    }
+  }
+  return nodes;
+};
+
 describe('providerJsonSchema', () => {
   for (const [name, convert] of outputSchemas) {
     it(`converts ${name} to a provider-ready JSON Schema`, () => {
@@ -21,6 +35,26 @@ describe('providerJsonSchema', () => {
       expect(Object.keys(converted.properties ?? {}).length).toBeGreaterThan(0);
       // Providers reject cross-references in structured output schemas.
       expect(JSON.stringify(converted)).not.toContain('$ref');
+    });
+  }
+
+  for (const [name, convert] of [
+    ['JudgeVerdict', () => providerJsonSchema(JudgeVerdict)],
+    ['SentenceBatch', () => providerJsonSchema(SentenceBatch)],
+  ] as const) {
+    it(`marks every ${name} object property as required`, () => {
+      const incompleteObjects = objectNodes(convert().jsonSchema)
+        .filter((node) => 'properties' in node)
+        .map((node) => ({
+          properties: Object.keys(
+            (node.properties ?? {}) as Record<string, unknown>,
+          ),
+          required: new Set(node.required as ReadonlyArray<string> | undefined),
+        }))
+        .filter(({ properties, required }) =>
+          properties.some((property) => !required.has(property)),
+        );
+      expect(incompleteObjects).toEqual([]);
     });
   }
 });

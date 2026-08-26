@@ -2,7 +2,7 @@ import { Schema } from 'effect';
 
 const Dimension = Schema.Struct({
   ok: Schema.Boolean,
-  note: Schema.optional(Schema.String),
+  note: Schema.NullOr(Schema.String),
 });
 
 type DimensionData = typeof Dimension.Type;

@@ -15,35 +15,18 @@ Structured outputs are validated with Effect Schema via the Standard Schema
 bridge (`Schema.standardSchemaV1`), so the AI SDK retries on shape mismatch
 and the app only ever sees decoded values.
 
-## Why the judge does not use Bedrock's native API
+## Why the judge uses Bedrock Mantle
 
-Bedrock exposes the same models two ways, and the difference decides whether
-structured output can be trusted. Its native API passes the JSON schema to
-the model as an instruction and hopes for the best, so the model can emit a
-character that terminates its own JSON early. German quotation marks did
-exactly that: the truncated remainder still parsed as valid JSON, so the
-learner silently got half a sentence of feedback with no error anywhere.
+AWS supports GPT-5.6 Luna on both OpenAI-compatible endpoints, but its [model card](https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-openai-gpt-56-luna.html) explicitly marks Structured Outputs as unsupported on `bedrock-runtime`. The judge and sentence generator therefore use the `bedrock-mantle` Responses API. The request sends a strict JSON Schema, and the application decodes the returned value again with Effect Schema.
 
-The OpenAI-compatible endpoint at
-`https://bedrock-runtime.{region}.amazonaws.com/openai/v1` constrains
-decoding against the schema, so malformed JSON is not a reachable output.
-Two things follow from using it:
-
-- It authenticates with a Bedrock API key (`AWS_BEDROCK_API_KEY`), not the
-  SigV4 pair. Polly still uses the pair, so both are configured.
-- It serves Chat Completions only. Requests to `/openai/v1/responses` are
-  rejected with a misleading 401 about `bedrock:CallWithBearerToken`, so the
-  provider is pinned to `.chat()` rather than the AI SDK's Responses default.
-
-`global.openai.gpt-5.6-luna` is the model both slots point at. OpenAI models
-on Bedrock have no EU inference profile, so the global profile is the only
-one reachable from `eu-central-1`.
+Mantle uses `https://bedrock-mantle.{region}.api.aws/openai/v1/responses`, the model ID `openai.gpt-5.6-luna`, and a Bedrock API key. Luna is available there in US regions, so `AWS_BEDROCK_REGION` is separate from the `AWS_REGION` that keeps Polly in Frankfurt. Responses are not stored by Bedrock.
 
 ## Configuration
 
 | Variable | Purpose |
 | --- | --- |
-| `AWS_REGION` | Region for Bedrock and Polly. |
+| `AWS_REGION` | Region for Polly. |
+| `AWS_BEDROCK_REGION` | Region for Bedrock Mantle (`us-east-1`). |
 | `AWS_BEDROCK_API_KEY` | Bedrock API key (`ABSK…`) for the OpenAI-compatible endpoint used by the judge and sentence generation. |
 | `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | SigV4 credentials for Polly. |
 | `AI_JUDGE_MODEL` | Bedrock model ID for the answer judge. |

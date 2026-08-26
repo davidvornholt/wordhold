@@ -38,11 +38,11 @@ describe('JudgeVerdict schema', () => {
   const completeVerdict = {
     correct: true,
     acceptAsAlternative: true,
-    meaning: { ok: true },
-    grammar: { ok: true },
-    idiomaticity: { ok: true },
-    spelling: { ok: true },
-    intendedConstruction: { ok: true },
+    meaning: { ok: true, note: null },
+    grammar: { ok: true, note: null },
+    idiomaticity: { ok: true, note: null },
+    spelling: { ok: true, note: null },
+    intendedConstruction: { ok: true, note: null },
     explanation: 'Passt.',
   } as const;
 
@@ -50,11 +50,11 @@ describe('JudgeVerdict schema', () => {
     const verdict = Schema.decodeUnknownSync(JudgeVerdict)({
       correct: false,
       acceptAsAlternative: false,
-      meaning: { ok: true },
-      grammar: { ok: true },
+      meaning: { ok: true, note: null },
+      grammar: { ok: true, note: null },
       idiomaticity: { ok: false, note: 'ungebräuchlich' },
-      spelling: { ok: true },
-      intendedConstruction: { ok: false },
+      spelling: { ok: true, note: null },
+      intendedConstruction: { ok: false, note: null },
       explanation: 'Fast! „le souvenir“ ist hier das gesuchte Wort.',
     });
     expect(verdict.correct).toBe(false);

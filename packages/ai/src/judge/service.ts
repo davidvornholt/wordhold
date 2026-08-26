@@ -43,7 +43,7 @@ export class Judge extends Effect.Service<Judge>()('@wordhold/ai/Judge', {
       Effect.tryPromise({
         try: async () => {
           const { output } = await generateText({
-            model: bedrock.chat(modelId),
+            model: bedrock.responses(modelId),
             output: Output.object({ schema: verdictOutput }),
             prompt: judgePrompt(input),
             providerOptions: structuredOutputOptions,

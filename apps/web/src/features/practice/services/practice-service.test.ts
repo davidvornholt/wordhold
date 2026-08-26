@@ -92,6 +92,7 @@ describe('PracticeService', () => {
         commit: () => Effect.void,
       },
       {
+        model: 'bedrock-mantle:test-model',
         judge: () =>
           Effect.fail(
             new PracticeJudgeError({
@@ -118,6 +119,7 @@ describe('PracticeService', () => {
           }),
       },
       {
+        model: 'bedrock-mantle:test-model',
         judge: () =>
           Effect.fail(
             new PracticeJudgeError({
