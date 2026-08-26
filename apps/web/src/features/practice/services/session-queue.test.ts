@@ -24,9 +24,22 @@ const items = (count: number) =>
 const ids = (queue: { readonly pending: ReadonlyArray<PracticeItem> }) =>
   queue.pending.map((pending) => pending.cardId);
 
+const head = (queue: ReturnType<typeof createSessionQueue>) => {
+  const card = queue.pending.at(0);
+  if (card === undefined) {
+    throw new Error('Expected a card at the head of the test queue.');
+  }
+  return card;
+};
+
+const advanceHead = (
+  queue: ReturnType<typeof createSessionQueue>,
+  outcome: Parameters<typeof advanceQueue>[2],
+) => advanceQueue(queue, head(queue), outcome);
+
 describe('session queue', () => {
   it('drops a card that was answered correctly and moves progress on', () => {
-    const queue = advanceQueue(createSessionQueue(items(shortSession)), {
+    const queue = advanceHead(createSessionQueue(items(shortSession)), {
       graded: true,
       correct: true,
       revision: 1,
@@ -36,7 +49,7 @@ describe('session queue', () => {
   });
 
   it('brings a missed card back later in the same session', () => {
-    const queue = advanceQueue(createSessionQueue(items(pastTheGap)), {
+    const queue = advanceHead(createSessionQueue(items(pastTheGap)), {
       graded: true,
       correct: false,
       revision: 1,
@@ -53,7 +66,7 @@ describe('session queue', () => {
   });
 
   it('carries the new revision into the repeat', () => {
-    const queue = advanceQueue(createSessionQueue(items(1)), {
+    const queue = advanceHead(createSessionQueue(items(1)), {
       graded: true,
       correct: false,
       revision: 4,
@@ -65,7 +78,7 @@ describe('session queue', () => {
   });
 
   it('puts the repeat last when fewer cards are left than the gap', () => {
-    const queue = advanceQueue(createSessionQueue(items(2)), {
+    const queue = advanceHead(createSessionQueue(items(2)), {
       graded: true,
       correct: false,
       revision: 1,
@@ -76,10 +89,10 @@ describe('session queue', () => {
   it('counts a card once however often it is missed', () => {
     const missTwice = [1, 2].reduce(
       (queue, revision) =>
-        advanceQueue(queue, { graded: true, correct: false, revision }),
+        advanceHead(queue, { graded: true, correct: false, revision }),
       createSessionQueue(items(1)),
     );
-    const finished = advanceQueue(missTwice, {
+    const finished = advanceHead(missTwice, {
       graded: true,
       correct: true,
       revision: 3,
@@ -93,16 +106,59 @@ describe('session queue', () => {
     });
   });
 
-  it('lets an ungraded card go without counting it either way', () => {
-    const queue = advanceQueue(createSessionQueue(items(2)), {
+  it('tracks a first-attempt provider failure as ungraded', () => {
+    const queue = advanceHead(createSessionQueue(items(2)), {
       graded: false,
     });
     expect(ids(queue)).toEqual(['card-1']);
-    expect(queue).toMatchObject({ settled: 1, correct: 0, wrong: 0 });
+    expect(queue).toMatchObject({
+      settled: 1,
+      correct: 0,
+      wrong: 0,
+      ungraded: 1,
+    });
+  });
+
+  it('tracks a repeated-card provider failure as ungraded instead of complete', () => {
+    const initial = createSessionQueue(items(1));
+    const repeated = advanceHead(initial, {
+      graded: true,
+      correct: false,
+      revision: 1,
+    });
+    const queue = advanceHead(repeated, { graded: false });
+    expect(queue).toMatchObject({
+      pending: [],
+      settled: 1,
+      total: 1,
+      correct: 0,
+      wrong: 0,
+      ungraded: 1,
+    });
+  });
+
+  it('ignores a duplicate transition after the expected card leaves the head', () => {
+    const initial = createSessionQueue(items(2));
+    const expected = head(initial);
+    const outcome = { graded: true, correct: true, revision: 1 } as const;
+    const advanced = advanceQueue(initial, expected, outcome);
+    expect(advanceQueue(advanced, expected, outcome)).toEqual(advanced);
+    expect(ids(advanced)).toEqual(['card-1']);
+  });
+
+  it('ignores a stale transition when the same card returns at a new revision', () => {
+    const initial = createSessionQueue(items(1));
+    const expected = head(initial);
+    const outcome = { graded: true, correct: false, revision: 1 } as const;
+    const repeated = advanceQueue(initial, expected, outcome);
+    expect(advanceQueue(repeated, expected, outcome)).toEqual(repeated);
+    expect(head(repeated)).toMatchObject({ cardId: 'card-0', revision: 1 });
   });
 
   it('ignores an answer once the queue is empty', () => {
     const empty = createSessionQueue([]);
-    expect(advanceQueue(empty, { graded: false })).toEqual(empty);
+    expect(
+      advanceQueue(empty, { cardId: 'card-0', revision: 0 }, { graded: false }),
+    ).toEqual(empty);
   });
 });

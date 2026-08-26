@@ -44,6 +44,7 @@ const PracticeScreen = () => {
           }
           correct={queue.correct}
           total={queue.total}
+          ungraded={queue.ungraded}
           wrong={queue.wrong}
         />
       ) : (
@@ -51,7 +52,7 @@ const PracticeScreen = () => {
           item={card}
           key={`${card.cardId}-${card.revision}`}
           onNext={(result) =>
-            setQueue((current) => advanceQueue(current, result))
+            setQueue((current) => advanceQueue(current, card, result))
           }
           repeated={card.repeated}
           submit={submitAnswer}

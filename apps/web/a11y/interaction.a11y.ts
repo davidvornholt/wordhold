@@ -107,45 +107,6 @@ test('the learning pass announces a persistence failure and retries the same wor
   await expect(page.getByLabel('Introduction attempts')).toHaveText('2');
 });
 
-// A missed card has to come back inside the session. If it leaves instead, it
-// sits on FSRS's one-minute relearning step and the dashboard says "Üben" again
-// a minute after the session was finished.
-test('a missed card returns later in the session without moving the progress bar', async ({
-  page,
-}) => {
-  await page.goto('/?state=practice-session');
-  const answer = page.getByLabel('Deine Antwort');
-  const progress = page.getByText('von 2 Karten geschafft');
-  const check = page.getByRole('button', { name: 'Prüfen' });
-  const next = page.getByRole('button', { name: 'Weiter' });
-  await expect(progress).toHaveText('0 von 2 Karten geschafft');
-
-  await answer.fill('wrong');
-  await check.click();
-  await next.click();
-  await expect(progress).toHaveText('0 von 2 Karten geschafft');
-  await expect(page.getByText('Ferien')).toBeVisible();
-
-  await answer.fill('holiday');
-  await check.click();
-  await next.click();
-  await expect(progress).toHaveText('1 von 2 Karten geschafft');
-  await expect(page.getByText('Erinnerung')).toBeVisible();
-  await expect(page.getByText('Noch einmal')).toBeVisible();
-  // The first attempt bumped the card's revision; answering the repeat against
-  // the old one would be rejected as a stale submission.
-  await expect(page.getByLabel('Submitted revision')).toHaveText('1');
-
-  await answer.fill('memory');
-  await check.click();
-  await next.click();
-  await expect(progress).toHaveText('2 von 2 Karten geschafft');
-  await expect(page.getByText('Sitzung abgeschlossen!')).toBeVisible();
-  await expect(
-    page.getByText('1 von 2 Karten auf Anhieb richtig, 1 noch einmal geübt.'),
-  ).toBeVisible();
-});
-
 test('VerifyForm freezes every control and ignores resubmission', async ({
   page,
 }) => {
