@@ -82,6 +82,7 @@ export const PracticeEmptyFixture = () => (
       }
       correct={0}
       total={0}
+      ungraded={0}
       wrong={0}
     />
   </PracticeLayout>

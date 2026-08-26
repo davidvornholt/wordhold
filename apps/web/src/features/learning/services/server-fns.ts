@@ -14,6 +14,16 @@ const learningLive = LearningService.Default.pipe(
 const learningRuntime = ManagedRuntime.make(learningLive);
 
 const decodeId = Schema.decodeUnknownSync(Schema.UUID);
+const decodePassRequest = Schema.decodeUnknownSync(
+  Schema.Struct({ courseId: Schema.UUID, unitId: Schema.UUID }),
+);
+const decodeIntroductionRequest = Schema.decodeUnknownSync(
+  Schema.Struct({
+    courseId: Schema.UUID,
+    unitId: Schema.UUID,
+    entryId: Schema.UUID,
+  }),
+);
 
 export const listLearnableUnits = createServerFn()
   .validator(decodeId)
@@ -25,19 +35,23 @@ export const listLearnableUnits = createServerFn()
   });
 
 export const getLearnPass = createServerFn()
-  .validator(decodeId)
-  .handler(async ({ data: unitId }) => {
+  .validator(decodePassRequest)
+  .handler(async ({ data }) => {
     await authRuntime.runPromise(requireSession(getRequest().headers));
     return learningRuntime.runPromise(
-      Effect.flatMap(LearningService, (service) => service.getPass(unitId)),
+      Effect.flatMap(LearningService, (service) =>
+        service.getPass(data.courseId, data.unitId),
+      ),
     );
   });
 
 export const introduceWord = createServerFn({ method: 'POST' })
-  .validator(decodeId)
-  .handler(async ({ data: entryId }) => {
+  .validator(decodeIntroductionRequest)
+  .handler(async ({ data }) => {
     await authRuntime.runPromise(requireSession(getRequest().headers));
     return learningRuntime.runPromise(
-      Effect.flatMap(LearningService, (service) => service.introduce(entryId)),
+      Effect.flatMap(LearningService, (service) =>
+        service.introduce(data.courseId, data.unitId, data.entryId),
+      ),
     );
   });

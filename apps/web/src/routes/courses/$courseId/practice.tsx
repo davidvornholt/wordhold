@@ -48,6 +48,7 @@ const SessionRunner = ({ session, targetLabel }: SessionRunnerProps) => {
           }
           correct={queue.correct}
           total={queue.total}
+          ungraded={queue.ungraded}
           wrong={queue.wrong}
         />
       ) : (
@@ -55,7 +56,7 @@ const SessionRunner = ({ session, targetLabel }: SessionRunnerProps) => {
           item={card}
           key={`${card.cardId}-${card.revision}`}
           onNext={(result) =>
-            setQueue((current) => advanceQueue(current, result))
+            setQueue((current) => advanceQueue(current, card, result))
           }
           repeated={card.repeated}
           submit={submitAnswer}

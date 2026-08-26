@@ -12,14 +12,14 @@ const items: ReadonlyArray<LearnItem> = [
     targetText: 'memory',
     nativeText: 'die Erinnerung',
     hasAudio: false,
-    acceptedNormalized: ['memory'],
+    textbookAnswers: ['memory'],
   },
   {
     entryId: '00000000-0000-0000-0000-000000000002',
     targetText: 'to look (at)',
     nativeText: 'ansehen',
     hasAudio: false,
-    acceptedNormalized: ['to look', 'to look at'],
+    textbookAnswers: ['to look (at)'],
   },
 ];
 
@@ -82,13 +82,23 @@ export const LearnUnitsFixture = () => (
   </LearningLayout>
 );
 
-export const LearnFixture = () => {
+export const LearnFixture = ({
+  failFirst = false,
+}: {
+  failFirst?: boolean;
+}) => {
   const [introduced, setIntroduced] = useState<ReadonlyArray<string>>([]);
+  const [attempts, setAttempts] = useState(0);
   return (
     <LearningLayout backControl={backControl} title="Unit 3 – Holidays lernen">
       <LearnPass
         items={items}
         onIntroduce={(entryId) => {
+          const attempt = attempts + 1;
+          setAttempts(attempt);
+          if (failFirst && attempt === 1) {
+            return Promise.reject(new Error('Fixture persistence failure'));
+          }
           setIntroduced((current) => [...current, entryId]);
           return Promise.resolve();
         }}
@@ -96,6 +106,7 @@ export const LearnFixture = () => {
         targetLabel="Englisch"
       />
       <output aria-label="Introduced words">{introduced.length}</output>
+      <output aria-label="Introduction attempts">{attempts}</output>
     </LearningLayout>
   );
 };
