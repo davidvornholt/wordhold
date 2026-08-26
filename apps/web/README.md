@@ -34,7 +34,7 @@ through `src/shared/env/server.ts`.
 | `AI_SENTENCE_MODEL` | Bedrock model ID for sentence generation (frontier Claude). |
 | `AI_EXTRACTION_MODEL` | Google model ID for page extraction. |
 | `AI_EXTRACTION_ESCALATION_MODEL` | Google model ID for extraction escalation on low-confidence pages. |
-| `GOOGLE_VERTEX_LOCATION` | Google Enterprise AI region (`europe-west4`). |
+| `GOOGLE_VERTEX_LOCATION` | Google Enterprise AI location (`global`). |
 | `GOOGLE_SERVICE_ACCOUNT_JSON` | Service-account key JSON for the Google Enterprise AI adapter. |
 | `WORDHOLD_DATA_DIR` | Directory for page images and generated audio. Optional. Defaults to `~/.local/share/wordhold`, outside the Git checkout. Set an absolute path for deployment storage. |
 
@@ -44,7 +44,17 @@ The AWS pair belongs to a dedicated IAM user, `WordholdDevelopment`, whose inlin
 
 Bedrock model IDs must be exact inference-profile identifiers; `aws bedrock list-inference-profiles --region eu-central-1` prints the valid set. A shortened ID such as `eu.anthropic.claude-haiku-4-5` is rejected at invocation time, not at startup.
 
-`GOOGLE_SERVICE_ACCOUNT_JSON` is the single-line key JSON for a Google Cloud service account holding the Vertex AI User role, in a project with billing enabled and the Vertex AI API turned on. Page extraction is the only feature that uses it.
+`GOOGLE_SERVICE_ACCOUNT_JSON` is the single-line key JSON for the `wordhold-extraction` service account in Google Cloud project `wordhold-a52aa0`, which holds `roles/aiplatform.user` and nothing else. The project has billing enabled and the Vertex AI API turned on. Page extraction is the only feature that uses it. Rotate by creating a second key with `gcloud iam service-accounts keys create`, writing it into `secrets/dev.yaml` with `just secrets edit dev`, then deleting the old key ID.
+
+Google model availability is per location, so `AI_EXTRACTION_MODEL` and `AI_EXTRACTION_ESCALATION_MODEL` are only valid together with `GOOGLE_VERTEX_LOCATION`. Gemini 3.x is served by the `global` endpoint; single regions such as `europe-west4` stop at the 2.5 generation, and Google's EU data-residency endpoint (`eu`) serves flash models only, no pro-class model. An ID that is wrong for the location fails at invocation with a 404, not at startup. Check one before configuring it:
+
+```sh
+curl -s -o /dev/null -w '%{http_code}\n' \
+  -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+  -H 'Content-Type: application/json' \
+  "https://aiplatform.googleapis.com/v1/projects/wordhold-a52aa0/locations/global/publishers/google/models/gemini-3.7-flash:generateContent" \
+  -d '{"contents":[{"role":"user","parts":[{"text":"ping"}]}]}'
+```
 
 ## Auth
 

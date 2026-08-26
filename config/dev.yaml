@@ -11,5 +11,5 @@ apps:
     AI_JUDGE_MODEL: eu.anthropic.claude-haiku-4-5-20251001-v1:0
     AI_SENTENCE_MODEL: eu.anthropic.claude-sonnet-5
     AI_EXTRACTION_MODEL: gemini-3.7-flash
-    AI_EXTRACTION_ESCALATION_MODEL: gemini-3.1-pro
-    GOOGLE_VERTEX_LOCATION: europe-west4
+    AI_EXTRACTION_ESCALATION_MODEL: gemini-3.1-pro-preview
+    GOOGLE_VERTEX_LOCATION: global
