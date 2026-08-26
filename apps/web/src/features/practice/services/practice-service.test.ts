@@ -116,8 +116,8 @@ describe('PracticeService', () => {
         listAcceptedAnswers: () =>
           Effect.succeed([
             {
-              text: 'heureux/euse',
-              normalized: 'heureux/euse',
+              text: 'bon/onne',
+              normalized: 'bon/onne',
               source: 'textbook',
             },
           ]),
@@ -129,7 +129,7 @@ describe('PracticeService', () => {
           return unavailableJudge('test rejection');
         },
       },
-      'euse',
+      'onne',
     );
     expect(result).toMatchObject({ _tag: 'Right', right: { graded: false } });
     expect(judgeCalls).toBe(1);
