@@ -63,9 +63,7 @@ describe('LearningService', () => {
       Effect.flatMap(LearningService, (service) =>
         service.introduce(courseId, unitId, entryId),
       ).pipe(
-        Effect.provide(
-          storeWith({ introduce: () => Effect.succeed(false) }),
-        ),
+        Effect.provide(storeWith({ introduce: () => Effect.succeed(false) })),
         Effect.provide(TestContext.TestContext),
         Effect.either,
       ),

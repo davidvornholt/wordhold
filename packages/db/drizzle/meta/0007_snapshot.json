@@ -137,12 +137,8 @@
           "name": "account_user_id_user_id_fk",
           "tableFrom": "account",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -229,12 +225,8 @@
           "name": "session_user_id_user_id_fk",
           "tableFrom": "session",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -244,9 +236,7 @@
         "session_token_unique": {
           "name": "session_token_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "token"
-          ]
+          "columns": ["token"]
         }
       },
       "policies": {},
@@ -310,9 +300,7 @@
         "user_email_unique": {
           "name": "user_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "policies": {},
@@ -497,12 +485,8 @@
           "name": "pages_course_id_courses_id_fk",
           "tableFrom": "pages",
           "tableTo": "courses",
-          "columnsFrom": [
-            "course_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["course_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -628,12 +612,8 @@
           "name": "units_course_id_courses_id_fk",
           "tableFrom": "units",
           "tableTo": "courses",
-          "columnsFrom": [
-            "course_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["course_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -729,12 +709,8 @@
           "name": "accepted_answers_entry_id_entries_id_fk",
           "tableFrom": "accepted_answers",
           "tableTo": "entries",
-          "columnsFrom": [
-            "entry_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["entry_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -819,12 +795,8 @@
           "name": "entries_course_id_courses_id_fk",
           "tableFrom": "entries",
           "tableTo": "courses",
-          "columnsFrom": [
-            "course_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["course_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -832,12 +804,8 @@
           "name": "entries_page_id_pages_id_fk",
           "tableFrom": "entries",
           "tableTo": "pages",
-          "columnsFrom": [
-            "page_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["page_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -845,14 +813,8 @@
           "name": "entries_unit_course_units_id_course_fk",
           "tableFrom": "entries",
           "tableTo": "units",
-          "columnsFrom": [
-            "unit_id",
-            "course_id"
-          ],
-          "columnsTo": [
-            "id",
-            "course_id"
-          ],
+          "columnsFrom": ["unit_id", "course_id"],
+          "columnsTo": ["id", "course_id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -928,12 +890,8 @@
           "name": "entry_audio_entry_id_entries_id_fk",
           "tableFrom": "entry_audio",
           "tableTo": "entries",
-          "columnsFrom": [
-            "entry_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["entry_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -995,12 +953,8 @@
           "name": "entry_examples_entry_id_entries_id_fk",
           "tableFrom": "entry_examples",
           "tableTo": "entries",
-          "columnsFrom": [
-            "entry_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["entry_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1137,12 +1091,8 @@
           "name": "cards_entry_id_entries_id_fk",
           "tableFrom": "cards",
           "tableTo": "entries",
-          "columnsFrom": [
-            "entry_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["entry_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1237,12 +1187,8 @@
           "name": "judge_cache_entry_id_entries_id_fk",
           "tableFrom": "judge_cache",
           "tableTo": "entries",
-          "columnsFrom": [
-            "entry_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["entry_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1308,12 +1254,8 @@
           "name": "reviews_card_id_cards_id_fk",
           "tableFrom": "reviews",
           "tableTo": "cards",
-          "columnsFrom": [
-            "card_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["card_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1329,64 +1271,37 @@
     "public.language": {
       "name": "language",
       "schema": "public",
-      "values": [
-        "de",
-        "en",
-        "es",
-        "fr"
-      ]
+      "values": ["de", "en", "es", "fr"]
     },
     "public.page_status": {
       "name": "page_status",
       "schema": "public",
-      "values": [
-        "awaiting_verification",
-        "verified"
-      ]
+      "values": ["awaiting_verification", "verified"]
     },
     "public.answer_direction": {
       "name": "answer_direction",
       "schema": "public",
-      "values": [
-        "to_target",
-        "to_native"
-      ]
+      "values": ["to_target", "to_native"]
     },
     "public.answer_source": {
       "name": "answer_source",
       "schema": "public",
-      "values": [
-        "textbook",
-        "manual",
-        "judge"
-      ]
+      "values": ["textbook", "manual", "judge"]
     },
     "public.entry_type": {
       "name": "entry_type",
       "schema": "public",
-      "values": [
-        "word",
-        "expression",
-        "sentence"
-      ]
+      "values": ["word", "expression", "sentence"]
     },
     "public.example_source": {
       "name": "example_source",
       "schema": "public",
-      "values": [
-        "textbook",
-        "generated"
-      ]
+      "values": ["textbook", "generated"]
     },
     "public.card_state": {
       "name": "card_state",
       "schema": "public",
-      "values": [
-        "new",
-        "learning",
-        "review",
-        "relearning"
-      ]
+      "values": ["new", "learning", "review", "relearning"]
     }
   },
   "schemas": {},

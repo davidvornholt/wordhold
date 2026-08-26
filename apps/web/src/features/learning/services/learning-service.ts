@@ -23,12 +23,7 @@ export class LearningService extends Effect.Service<LearningService>()(
       const introduce = (courseId: string, unitId: string, entryId: string) =>
         Effect.gen(function* () {
           const at = new Date(yield* Clock.currentTimeMillis);
-          const found = yield* store.introduce(
-            courseId,
-            unitId,
-            entryId,
-            at,
-          );
+          const found = yield* store.introduce(courseId, unitId, entryId, at);
           if (!found) {
             return yield* new LearningEntryNotFoundError({
               message:

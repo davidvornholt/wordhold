@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import {
-  maximumTextbookReadings,
-  textbookReadings,
-} from './textbook-notation';
+import { maximumTextbookReadings, textbookReadings } from './textbook-notation';
 
 describe('textbookReadings', () => {
   it('expands optional textbook fragments without changing their words', () => {

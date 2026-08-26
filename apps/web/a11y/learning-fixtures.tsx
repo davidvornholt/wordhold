@@ -82,7 +82,11 @@ export const LearnUnitsFixture = () => (
   </LearningLayout>
 );
 
-export const LearnFixture = ({ failFirst = false }: { failFirst?: boolean }) => {
+export const LearnFixture = ({
+  failFirst = false,
+}: {
+  failFirst?: boolean;
+}) => {
   const [introduced, setIntroduced] = useState<ReadonlyArray<string>>([]);
   const [attempts, setAttempts] = useState(0);
   return (

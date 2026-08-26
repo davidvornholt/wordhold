@@ -22,9 +22,7 @@ describe('PracticeSessionStore introduction contract', () => {
           yield* seedIntroducedCardFixture;
           const store = yield* PracticeSessionStore;
           const session = yield* store.load(fixtureCourseId, fixtureNow);
-          expect(session.due.map((item) => item.entryId)).toEqual([
-            dueEntryId,
-          ]);
+          expect(session.due.map((item) => item.entryId)).toEqual([dueEntryId]);
           expect(session.fresh.map((item) => item.entryId)).toEqual([
             freshEntryId,
             freshEntryId,

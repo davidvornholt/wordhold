@@ -42,6 +42,13 @@ export const LearnWord = ({
     new Audio(audioUrl).play().catch(() => undefined);
   }, [audioUrl]);
 
+  let actionLabel = 'Weiter';
+  if (busy) {
+    actionLabel = 'Wird gespeichert …';
+  } else if (saveFailed) {
+    actionLabel = 'Erneut versuchen';
+  }
+
   const onSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (busy) {
@@ -104,11 +111,7 @@ export const LearnWord = ({
           disabled={busy || typed.trim() === ''}
           type="submit"
         >
-          {busy
-            ? 'Wird gespeichert …'
-            : saveFailed
-              ? 'Erneut versuchen'
-              : 'Weiter'}
+          {actionLabel}
         </button>
       </form>
       <p aria-live="polite" className="text-sm">

@@ -27,10 +27,7 @@ export const backfillIntroductions = (url: string) =>
             .update(cards)
             .set({ introducedAt: sql`${cards.lastReviewedAt}` })
             .where(
-              and(
-                isNull(cards.introducedAt),
-                isNotNull(cards.lastReviewedAt),
-              ),
+              and(isNull(cards.introducedAt), isNotNull(cards.lastReviewedAt)),
             ),
         );
         const remaining = yield* attempt('prove completion', () =>
@@ -38,10 +35,7 @@ export const backfillIntroductions = (url: string) =>
             .select({ id: cards.id })
             .from(cards)
             .where(
-              and(
-                isNull(cards.introducedAt),
-                isNotNull(cards.lastReviewedAt),
-              ),
+              and(isNull(cards.introducedAt), isNotNull(cards.lastReviewedAt)),
             )
             .limit(1),
         );
