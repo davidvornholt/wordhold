@@ -2,5 +2,5 @@
 dev:
     just dev-env-generate
     just dev-db-start
-    bun --cwd packages/db run db:migrate
+    bun run --cwd packages/db db:migrate
     bun run dev
