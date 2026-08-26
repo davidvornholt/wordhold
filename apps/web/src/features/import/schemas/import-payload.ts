@@ -27,8 +27,30 @@ export const VerifiedEntry = Schema.Struct({
 });
 export type VerifiedEntryData = typeof VerifiedEntry.Type;
 
+export const maximumUnitNameLength = 80;
+
+// Words are filed into a chapter of the textbook, either one that already
+// exists or one being started with this page. The tag keeps the two apart at
+// the boundary, so the server never has to guess whether a name means "find
+// this" or "create this".
+export const UnitSelection = Schema.Union(
+  Schema.Struct({
+    kind: Schema.Literal('existing'),
+    unitId: Schema.UUID,
+  }),
+  Schema.Struct({
+    kind: Schema.Literal('new'),
+    name: Schema.Trim.pipe(
+      Schema.minLength(1),
+      Schema.maxLength(maximumUnitNameLength),
+    ),
+  }),
+);
+export type UnitSelectionData = typeof UnitSelection.Type;
+
 export const ImportPayload = Schema.Struct({
   pageId: Schema.UUID,
+  unit: UnitSelection,
   label: Schema.optional(
     Schema.Trim.pipe(Schema.maxLength(maximumLabelLength)),
   ),

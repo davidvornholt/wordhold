@@ -29,6 +29,13 @@
       "when": 1787755047053,
       "tag": "0003_chief_mojo",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1787759271690,
+      "tag": "0004_tearful_energizer",
+      "breakpoints": true
     }
   ]
 }

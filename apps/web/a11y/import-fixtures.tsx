@@ -26,6 +26,21 @@ const initialEntries: ReadonlyArray<DraftEntry> = [
   },
 ];
 
+const units = [
+  {
+    id: '11111111-1111-4111-8111-111111111111',
+    name: 'Unit 2',
+    position: 0,
+    entryCount: 18,
+  },
+  {
+    id: '22222222-2222-4222-8222-222222222222',
+    name: 'Unit 3',
+    position: 1,
+    entryCount: 12,
+  },
+];
+
 const photographedPage = `data:image/svg+xml,${encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><title>Fixture page</title></svg>',
 )}`;
@@ -96,6 +111,7 @@ export const VerificationFixture = ({
             initialLabel="Unit 3"
             onSubmit={() => navigateToFixture('dashboard')}
             targetLabel="Englisch"
+            units={units}
           />
         )}
       </div>
@@ -132,12 +148,12 @@ export const DeferredVerificationFixture = () => {
         busy={busy}
         initialEntries={initialEntries}
         initialLabel="Unit 3"
-        onSubmit={(label, entries) => {
+        onSubmit={(label, unit, entries) => {
           const pending = makeDeferred();
           deferred.current = pending;
           setBusy(true);
           setCalls((count) => count + 1);
-          setSnapshot(JSON.stringify({ label, entries }));
+          setSnapshot(JSON.stringify({ label, unit, entries }));
           setStatus('pending');
           pending.promise
             .then(() => setStatus('resolved'))
@@ -145,6 +161,7 @@ export const DeferredVerificationFixture = () => {
             .finally(() => setBusy(false));
         }}
         targetLabel="Englisch"
+        units={units}
       />
       <output aria-label="Verification calls">{calls}</output>
       <output aria-label="Verification snapshot">{snapshot}</output>

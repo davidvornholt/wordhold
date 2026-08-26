@@ -10,6 +10,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { courses } from './courses';
 import { pages } from './pages';
+import { units } from './units';
 
 export const entryTypes = ['word', 'expression', 'sentence'] as const;
 export type EntryType = (typeof entryTypes)[number];
@@ -23,6 +24,12 @@ export const entries = pgTable('entries', {
   courseId: uuid('course_id')
     .notNull()
     .references(() => courses.id, { onDelete: 'cascade' }),
+  // A unit outlives the photo it was captured from, so deleting a page only
+  // clears provenance. Deleting a unit that still holds vocabulary is refused
+  // rather than silently taking the words with it.
+  unitId: uuid('unit_id')
+    .notNull()
+    .references(() => units.id, { onDelete: 'restrict' }),
   pageId: uuid('page_id').references(() => pages.id, {
     onDelete: 'set null',
   }),

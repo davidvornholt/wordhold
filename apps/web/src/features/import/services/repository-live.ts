@@ -4,6 +4,7 @@ import { courseRepositoryLive } from './course-repository-live';
 import { pageRepositoryLive } from './page-repository-live';
 import { ImportRepository } from './repository';
 import { storageRepositoryLive } from './storage-repository-live';
+import { unitRepositoryLive } from './unit-repository-live';
 import { verifyPageLive } from './verify-page-live';
 
 export const ImportRepositoryLive = Layer.effect(
@@ -14,6 +15,7 @@ export const ImportRepositoryLive = Layer.effect(
       ...courseRepositoryLive(sql),
       ...pageRepositoryLive(sql),
       ...storageRepositoryLive(sql),
+      ...unitRepositoryLive(sql),
       verifyPage: (payload, courseId) => verifyPageLive(sql, payload, courseId),
     });
   }),

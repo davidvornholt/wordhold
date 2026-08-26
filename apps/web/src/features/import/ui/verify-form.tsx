@@ -3,7 +3,10 @@ import {
   maximumLabelLength,
 } from '@wordhold/ai/extraction/schema';
 import { useState } from 'react';
+import type { UnitSelectionData } from '../schemas/import-payload';
+import type { Unit } from '../services/repository';
 import { type DraftEntry, EntryRow } from './entry-row';
+import { UnitPicker } from './unit-picker';
 
 const emptyEntry: DraftEntry = {
   type: 'word',
@@ -16,26 +19,39 @@ type VerifyFormProps = {
   readonly initialEntries: ReadonlyArray<DraftEntry>;
   readonly initialLabel: string;
   readonly targetLabel: string;
+  readonly units: ReadonlyArray<Unit>;
   readonly busy: boolean;
   readonly onSubmit: (
     label: string,
+    unit: UnitSelectionData,
     verifiedEntries: ReadonlyArray<DraftEntry>,
   ) => void;
 };
+
+// The unit a course is currently working through is the last one started, so
+// that is what the picker opens on. A course with no units yet has nothing to
+// choose from and starts naming one straight away.
+const initialSelection = (units: ReadonlyArray<Unit>): UnitSelectionData =>
+  units.length === 0
+    ? { kind: 'new', name: '' }
+    : { kind: 'existing', unitId: units.at(-1)?.id ?? '' };
 
 export const VerifyForm = ({
   initialEntries,
   initialLabel,
   targetLabel,
+  units,
   busy,
   onSubmit,
 }: VerifyFormProps) => {
   const [label, setLabel] = useState(initialLabel);
+  const [unit, setUnit] = useState(() => initialSelection(units));
   const [draftEntries, setDraftEntries] = useState(initialEntries);
 
   const complete = draftEntries.filter(
     (entry) => entry.targetText.trim() !== '' && entry.nativeText.trim() !== '',
   );
+  const unitNamed = unit.kind === 'existing' || unit.name.trim() !== '';
 
   return (
     <form
@@ -43,12 +59,18 @@ export const VerifyForm = ({
       className="flex flex-col gap-4"
       onSubmit={(event) => {
         event.preventDefault();
-        if (busy) {
+        if (busy || !unitNamed) {
           return;
         }
-        onSubmit(label, complete);
+        onSubmit(label, unit, complete);
       }}
     >
+      <UnitPicker
+        disabled={busy}
+        onChange={setUnit}
+        selection={unit}
+        units={units}
+      />
       <label className="flex flex-col gap-1 text-sm">
         Seitenbezeichnung
         <input
@@ -92,7 +114,7 @@ export const VerifyForm = ({
         </button>
         <button
           className="bg-primary px-4 py-1.5 text-primary-foreground text-sm disabled:opacity-50"
-          disabled={busy || complete.length === 0}
+          disabled={busy || complete.length === 0 || !unitNamed}
           type="submit"
         >
           {busy ? 'Importiere …' : `${complete.length} Einträge importieren`}

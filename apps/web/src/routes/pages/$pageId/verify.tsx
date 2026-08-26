@@ -37,7 +37,7 @@ const toPayloadEntry = (draft: DraftEntry) => ({
 });
 
 const VerifyScreen = () => {
-  const { page, course } = Route.useLoaderData();
+  const { page, course, units } = Route.useLoaderData();
   const navigate = useNavigate();
   const [extraction, setExtraction] = useState(page.extraction);
   const [busy, setBusy] = useState(false);
@@ -115,11 +115,12 @@ const VerifyScreen = () => {
               initialEntries={draftsFromExtraction(extraction)}
               initialLabel={page.label ?? extraction.page.pageLabel ?? ''}
               key={extraction.modelId + String(extraction.page.entries.length)}
-              onSubmit={(label, verified) =>
+              onSubmit={(label, unit, verified) =>
                 run(async () => {
                   const result = await importPage({
                     data: {
                       pageId: page.id,
+                      unit,
                       ...(label.trim() === '' ? {} : { label: label.trim() }),
                       entries: verified.map(toPayloadEntry),
                     },
@@ -135,6 +136,7 @@ const VerifyScreen = () => {
                 })
               }
               targetLabel={targetLabel}
+              units={units}
             />
           ) : null}
         </div>
