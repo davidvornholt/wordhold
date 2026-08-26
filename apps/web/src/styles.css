@@ -35,8 +35,17 @@
   --font-body: var(--font-body);
 }
 
+/*
+ * Every screen sits in the same column, so moving between them never shifts
+ * the page under the reader. Screens differ in the rhythm inside the column,
+ * not in how wide it is.
+ */
+@utility page-column {
+  @apply mx-auto w-full max-w-3xl;
+}
+
 .root-recovery {
-  @apply mx-auto flex min-h-screen max-w-lg flex-col justify-center gap-5 p-6;
+  @apply page-column flex min-h-screen flex-col justify-center gap-5 p-6;
 }
 
 .root-feedback-brand {
@@ -64,7 +73,7 @@
 }
 
 .root-pending {
-  @apply mx-auto flex min-h-screen max-w-lg items-center p-6;
+  @apply page-column flex min-h-screen items-center p-6;
 }
 
 .audio-recovery {

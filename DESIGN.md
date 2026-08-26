@@ -23,6 +23,10 @@ Rules:
 - Square corners everywhere: `--radius` is `0px` and no `rounded-*` classes are used.
 - Content sits in bordered cards: `border border-border bg-card` on the warm off-white page background. Lists that are not cards use hairline dividers (`divide-y divide-border`).
 
+## Page column
+
+Every screen sits in the same column: the `page-column` utility in `apps/web/src/styles.css` (`mx-auto w-full max-w-3xl`), plus `p-6` and whatever vertical rhythm the screen needs. Moving between the overview, a course, a unit, a sitting, or a page review never shifts the content sideways. A screen that needs more room asks for it inside the column — the verification screen splits into two grid columns — rather than by widening its own shell.
+
 ## Color semantics
 
 - `primary` (forest green) is the single strong color: primary buttons, correct-answer feedback border.

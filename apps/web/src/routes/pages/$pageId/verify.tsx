@@ -64,7 +64,7 @@ const VerifyScreen = () => {
   const targetLabel = germanLabels[course.targetLanguage];
 
   return (
-    <main className="mx-auto flex max-w-5xl flex-col gap-4 p-6">
+    <main className="page-column flex flex-col gap-4 p-6">
       <Link className="text-muted-foreground text-sm underline" to="/">
         ← Übersicht
       </Link>

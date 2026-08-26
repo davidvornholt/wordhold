@@ -71,7 +71,7 @@ export const VerificationFixture = ({
   empty = false,
   audioRecovery = false,
 }: VerificationFixtureProps) => (
-  <main className="mx-auto flex max-w-5xl flex-col gap-4 p-6">
+  <main className="page-column flex flex-col gap-4 p-6">
     {audioRecovery ? (
       <button
         className="text-muted-foreground text-sm underline"
@@ -142,7 +142,7 @@ export const DeferredVerificationFixture = () => {
   const [snapshot, setSnapshot] = useState('none');
   const [status, setStatus] = useState('idle');
   return (
-    <main className="mx-auto flex max-w-lg flex-col gap-4 p-6">
+    <main className="page-column flex flex-col gap-4 p-6">
       <h1 className="font-semibold text-2xl">Seite überprüfen</h1>
       <VerifyForm
         busy={busy}
