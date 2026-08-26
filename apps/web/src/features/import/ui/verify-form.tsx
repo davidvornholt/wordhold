@@ -103,7 +103,7 @@ export const VerifyForm = ({
           />
         ))}
       </ul>
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <button
           className="border border-input px-3 py-1.5 text-sm"
           disabled={busy || draftEntries.length >= maximumEntriesPerPage}

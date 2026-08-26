@@ -44,6 +44,26 @@
   @apply mx-auto w-full max-w-3xl;
 }
 
+@utility verification-screen {
+  @apply flex flex-col gap-4 py-6;
+}
+
+@utility verification-header {
+  @apply page-column flex flex-col gap-4 px-6;
+}
+
+@utility verification-workbench {
+  @apply mx-auto grid w-full max-w-7xl gap-6 px-6 xl:grid-cols-2;
+}
+
+@utility verification-image-pane {
+  @apply w-full max-w-xl justify-self-center xl:max-w-none;
+}
+
+@utility verification-form-pane {
+  @apply w-full max-w-3xl justify-self-center xl:max-w-none;
+}
+
 .root-recovery {
   @apply page-column flex min-h-screen flex-col justify-center gap-5 p-6;
 }
