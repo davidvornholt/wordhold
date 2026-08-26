@@ -13,6 +13,8 @@ const unitMigrations = [
   '0005_known_captain_universe',
 ] as const;
 
+const requiredUnitMigrations = ['0006_smooth_sue_storm'] as const;
+
 const applyGeneratedMigrations = (
   url: string,
   migrations: ReadonlyArray<string>,
@@ -40,3 +42,6 @@ export const migrateToPreUnitSchema = (url: string) =>
 
 export const migrateToNullableUnits = (url: string) =>
   applyGeneratedMigrations(url, unitMigrations);
+
+export const migrateToRequiredUnits = (url: string) =>
+  applyGeneratedMigrations(url, requiredUnitMigrations);

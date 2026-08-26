@@ -30,7 +30,7 @@ export const entries = pgTable(
     // A unit outlives the photo it was captured from, so deleting a page only
     // clears provenance. Deleting a unit that still holds vocabulary is refused
     // rather than silently taking the words with it.
-    unitId: uuid('unit_id'),
+    unitId: uuid('unit_id').notNull(),
     pageId: uuid('page_id').references(() => pages.id, {
       onDelete: 'set null',
     }),

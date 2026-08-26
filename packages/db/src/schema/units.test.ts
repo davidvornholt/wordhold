@@ -21,12 +21,12 @@ describe('units', () => {
     expect(unique).toContain('id,course_id');
   });
 
-  it('keeps legacy vocabulary readable during the phase-one backfill', () => {
+  it('requires every vocabulary entry to belong to a unit', () => {
     const unitId = getTableConfig(entries).columns.find(
       (column) => column.name === 'unit_id',
     );
 
-    expect(unitId?.notNull).toBe(false);
+    expect(unitId?.notNull).toBe(true);
   });
 
   // Deleting a chapter must not be a way to lose vocabulary by accident, so
