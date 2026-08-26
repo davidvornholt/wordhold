@@ -3,10 +3,14 @@ import { Effect } from 'effect';
 import { Database } from '../client';
 import {
   testDatabaseLayer,
-  withMigratedTestDatabase,
+  withTestDatabase,
 } from '../testing/postgres-test-database';
 import { backfillUnits } from './backfill-units';
 import { UnitBackfillError } from './unit-backfill-error';
+import {
+  migrateToNullableUnits,
+  migrateToPreUnitSchema,
+} from './unit-migration-test-support';
 
 const courseA = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const courseB = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
@@ -19,8 +23,10 @@ const provideDatabase = <A, E, R>(
 describe('unit backfill failures', () => {
   it('rolls back every unit and assignment when filing fails', async () => {
     await Effect.runPromise(
-      withMigratedTestDatabase((database) =>
+      withTestDatabase((database) =>
         Effect.gen(function* () {
+          yield* migrateToPreUnitSchema(database.url);
+          yield* migrateToNullableUnits(database.url);
           yield* provideDatabase(
             database.url,
             Effect.gen(function* () {
@@ -110,8 +116,10 @@ describe('unit backfill failures', () => {
 
   it('reports the exact ownership mismatch operation and message', async () => {
     await Effect.runPromise(
-      withMigratedTestDatabase((database) =>
+      withTestDatabase((database) =>
         Effect.gen(function* () {
+          yield* migrateToPreUnitSchema(database.url);
+          yield* migrateToNullableUnits(database.url);
           yield* provideDatabase(
             database.url,
             Effect.gen(function* () {

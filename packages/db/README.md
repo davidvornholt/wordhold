@@ -19,8 +19,8 @@ bun run db:generate   # emit SQL from the schema source of truth
 bun run db:migrate    # apply generated structure
 ```
 
-The unit rollout has two deployable phases so existing vocabulary remains readable while it is filed. Phase one, this change, applies the generated nullable `entries.unit_id` column and the composite course/unit integrity constraint, then new imports always write a unit.
+The unit rollout has two deployable phases so existing vocabulary remains readable while it is filed. Phase one applied the nullable `entries.unit_id` column and the composite course/unit integrity constraint, then new imports began writing a unit.
 
 After phase one is deployed, run `bun run db:backfill-units` once in each deployed database. This code-owned command preserves page provenance, files page-backed vocabulary into real units, files vocabulary without a page into explicit holding units, and fails through its typed Effect error channel if it finds cross-course ownership or cannot prove completion.
 
-Before phase two is created, run `SELECT count(*) FROM entries WHERE unit_id IS NULL;` in every deployed database and record that it returns exactly `0`. Phase two may then make `entries.unit_id` required through a separately generated Drizzle migration; it does not belong in this pull request.
+Before deploying phase two, run `SELECT count(*) FROM entries WHERE unit_id IS NULL;` in every deployed database and record that it returns exactly `0`. The generated phase-two migration makes `entries.unit_id` required and PostgreSQL refuses to apply it while any legacy row remains unfiled.

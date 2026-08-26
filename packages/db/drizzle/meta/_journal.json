@@ -43,6 +43,13 @@
       "when": 1787781041356,
       "tag": "0005_known_captain_universe",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1787783127213,
+      "tag": "0006_smooth_sue_storm",
+      "breakpoints": true
     }
   ]
 }
