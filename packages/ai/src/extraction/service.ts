@@ -2,6 +2,7 @@ import { generateText, Output } from 'ai';
 import { Effect, Schema } from 'effect';
 import { extractionEscalationModel, extractionModel } from '../config';
 import { VertexProvider } from '../providers/vertex';
+import { providerJsonSchema } from '../structured-output';
 import { ExtractionError } from './error';
 import { ExtractedPage, type ExtractedPageData } from './schema';
 
@@ -39,21 +40,22 @@ export class Extraction extends Effect.Service<Extraction>()(
       const primaryId = yield* extractionModel;
       const escalationId = yield* extractionEscalationModel;
 
-      const runModel = (modelId: string, input: PageImage) =>
+      const pageOutput = providerJsonSchema(ExtractedPage);
+      const decodePage = Schema.decodeUnknown(ExtractedPage);
+
+      const callModel = (modelId: string, input: PageImage) =>
         Effect.tryPromise({
           try: async () => {
             const { output } = await generateText({
               model: vertex(modelId),
-              output: Output.object({
-                schema: Schema.standardSchemaV1(ExtractedPage),
-              }),
+              output: Output.object({ schema: pageOutput }),
               messages: [
                 {
                   role: 'user',
                   content: [
                     {
-                      type: 'image',
-                      image: input.imageBase64,
+                      type: 'file',
+                      data: input.imageBase64,
                       mediaType: input.mediaType,
                     },
                     {
@@ -68,6 +70,18 @@ export class Extraction extends Effect.Service<Extraction>()(
           },
           catch: (cause) => new ExtractionError({ cause }),
         });
+
+      const runModel = (
+        modelId: string,
+        input: PageImage,
+      ): Effect.Effect<ExtractedPageData, ExtractionError> =>
+        callModel(modelId, input).pipe(
+          Effect.flatMap((output) =>
+            decodePage(output).pipe(
+              Effect.mapError((cause) => new ExtractionError({ cause })),
+            ),
+          ),
+        );
 
       // Fast model first; escalate to the strong model when the fast one is
       // unsure or finds nothing.
