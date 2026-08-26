@@ -9,8 +9,9 @@ import { type JudgeInput, JudgeVerdict, type JudgeVerdictData } from './schema';
 // Anthropic on Bedrock answers a structured-output request with plain JSON
 // text. A model that writes a German quotation pair as „wort" ends the JSON
 // string on that unescaped quote: everything after it is lost and the truncated
-// remainder still parses, so a learner sees half a sentence. Single quotes need
-// no escaping, which keeps the explanation whole.
+// remainder still parses, so a learner sees half a sentence. Asking for single
+// quotes is only a best-effort mitigation. Model output remains untrusted and
+// may ignore the instruction or repeat quotation marks from prompt inputs.
 const quotingRule =
   "When you quote a word, wrap it in single quotes ('wort'). Never use double quotes or typographic quotation marks anywhere in your answer.";
 
