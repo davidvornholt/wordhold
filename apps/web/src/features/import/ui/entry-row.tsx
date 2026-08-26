@@ -4,6 +4,7 @@ import {
   maximumExampleLength,
 } from '@wordhold/ai/extraction/schema';
 import type { EntryType } from '@wordhold/db/schema/entries';
+import type { ReactNode } from 'react';
 
 export type DraftEntry = {
   readonly type: EntryType;
@@ -47,6 +48,7 @@ type EntryRowProps = {
   readonly entry: DraftEntry;
   readonly disabled: boolean;
   readonly targetLabel: string;
+  readonly unitControl: ReactNode;
   readonly onChange: (entry: DraftEntry) => void;
   readonly onRemove: () => void;
 };
@@ -55,6 +57,7 @@ export const EntryRow = ({
   entry,
   disabled,
   targetLabel,
+  unitControl,
   onChange,
   onRemove,
 }: EntryRowProps) => {
@@ -99,6 +102,7 @@ export const EntryRow = ({
           Entfernen
         </button>
       </div>
+      {unitControl}
       <div className="grid gap-2 sm:grid-cols-2">
         <input
           aria-label={targetLabel}

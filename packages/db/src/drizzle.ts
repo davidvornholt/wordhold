@@ -18,6 +18,7 @@ import {
 } from './schema/entries';
 import { pages } from './schema/pages';
 import { cards, judgeCache, reviews } from './schema/practice';
+import { units } from './schema/units';
 
 export const schema = {
   user,
@@ -29,6 +30,7 @@ export const schema = {
   accountRelations,
   courses,
   pages,
+  units,
   entries,
   entryExamples,
   acceptedAnswers,

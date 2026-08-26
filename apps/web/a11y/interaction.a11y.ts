@@ -64,12 +64,13 @@ test('VerifyForm freezes every control and ignores resubmission', async ({
   const target = page.getByLabel('Englisch');
   const add = page.getByRole('button', { name: 'Eintrag hinzufügen' });
   const remove = page.getByRole('button', { name: 'Entfernen' });
+  const unit = page.getByLabel('Einheit für Eintrag 1');
   await label.fill('First label');
   await target.fill('first target');
   await page.getByRole('button', { name: '1 Einträge importieren' }).click();
 
   await Promise.all(
-    [label, target, add, remove].map((control) =>
+    [label, target, unit, add, remove].map((control) =>
       expect(control).toBeDisabled(),
     ),
   );
