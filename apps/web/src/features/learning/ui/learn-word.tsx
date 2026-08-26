@@ -1,4 +1,4 @@
-import { type SubmitEvent, useEffect, useState } from 'react';
+import { type SubmitEvent, useEffect, useRef, useState } from 'react';
 import type { LearnItem } from '../schemas/learning-models';
 import { matchesLearnItem } from '../services/learn-check';
 import { ManagedFocusHeading } from './managed-focus-heading';
@@ -27,6 +27,7 @@ export const LearnWord = ({
   const [missed, setMissed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [saveFailed, setSaveFailed] = useState(false);
+  const actionRef = useRef<HTMLButtonElement>(null);
   const audioUrl = item.hasAudio ? `/api/entries/${item.entryId}/audio` : null;
   const play = async () => {
     if (audioUrl !== null) {
@@ -42,6 +43,12 @@ export const LearnWord = ({
     }
     new Audio(audioUrl).play().catch(() => undefined);
   }, [audioUrl]);
+
+  useEffect(() => {
+    if (saveFailed && !busy) {
+      actionRef.current?.focus();
+    }
+  }, [busy, saveFailed]);
 
   let actionLabel = 'Weiter';
   if (busy) {
@@ -112,6 +119,7 @@ export const LearnWord = ({
         <button
           className="bg-primary px-4 py-2 text-primary-foreground text-sm disabled:opacity-50"
           disabled={busy || typed.trim() === ''}
+          ref={actionRef}
           type="submit"
         >
           {actionLabel}

@@ -109,8 +109,13 @@ test('the learning pass announces a persistence failure and retries the same wor
   await expect(page.getByLabel('Introduced words')).toHaveText('0');
   await expect(page.getByLabel('Introduction attempts')).toHaveText('1');
 
-  await page.getByRole('button', { name: 'Erneut versuchen' }).click();
+  const retry = page.getByRole('button', { name: 'Erneut versuchen' });
+  await expect(retry).toBeFocused();
+  await retry.click();
   await expect(page.getByText('Wort 2 von 2')).toBeVisible();
+  await expect(
+    page.getByRole('heading', { level: 2, name: 'to look (at)' }),
+  ).toBeFocused();
   await expect(page.getByLabel('Introduced words')).toHaveText('1');
   await expect(page.getByLabel('Introduction attempts')).toHaveText('2');
 });
