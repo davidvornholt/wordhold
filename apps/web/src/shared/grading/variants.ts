@@ -108,29 +108,38 @@ const splitPhraseAlternatives = (text: string): ReadonlyArray<string> => {
   return [text];
 };
 
-const expandSlashWord = (word: string): ReadonlyArray<string> => {
+const expandSlashWord = (word: string): ExpansionState => {
   const parts = word.split('/');
   if (parts.length !== 2) {
-    return [word];
+    return { _tag: 'Values', values: [word] };
   }
   const [left = '', right = ''] = parts;
   if (!(lowercaseWord.test(left) && lowercaseWord.test(right))) {
-    return [word];
+    return { _tag: 'Values', values: [word] };
   }
   if (right.length === 1 && left.length > 1) {
-    return [left, `${left.slice(0, -1)}${right}`];
+    return {
+      _tag: 'Values',
+      values: [left, `${left.slice(0, -1)}${right}`],
+    };
   }
   const suffixReplacement = compactSuffixReplacements.find(
     ({ fullEnding, shorthand }) =>
       right === shorthand && left.endsWith(fullEnding),
   );
   if (suffixReplacement !== undefined) {
-    return [
-      left,
-      `${left.slice(0, -suffixReplacement.fullEnding.length)}${right}`,
-    ];
+    return {
+      _tag: 'Values',
+      values: [
+        left,
+        `${left.slice(0, -suffixReplacement.fullEnding.length)}${right}`,
+      ],
+    };
   }
-  return [left, right];
+  if (right.length < left.length) {
+    return { _tag: 'Overflow' };
+  }
+  return { _tag: 'Values', values: [left, right] };
 };
 
 const expandWordAlternatives = (text: string): ExpansionState => {
@@ -139,8 +148,12 @@ const expandWordAlternatives = (text: string): ExpansionState => {
     if (state._tag === 'Overflow') {
       return state;
     }
+    const wordExpansion = expandSlashWord(word);
+    if (wordExpansion._tag === 'Overflow') {
+      return wordExpansion;
+    }
     state = flatMapBounded(state.values, (sentence) =>
-      expandSlashWord(word).map((part) =>
+      wordExpansion.values.map((part) =>
         sentence === '' ? part : `${sentence} ${part}`,
       ),
     );

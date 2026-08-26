@@ -108,7 +108,7 @@ describe('PracticeService', () => {
     expect(receivedFailure).toBe(failure);
   });
 
-  it('sends a compact suffix fragment to the judge', async () => {
+  it('sends an ambiguous compact suffix fragment to the judge', async () => {
     let judgeCalls = 0;
     const result = await runSubmit(
       {
@@ -116,8 +116,8 @@ describe('PracticeService', () => {
         listAcceptedAnswers: () =>
           Effect.succeed([
             {
-              text: 'acteur/trice',
-              normalized: 'acteur/trice',
+              text: 'heureux/euse',
+              normalized: 'heureux/euse',
               source: 'textbook',
             },
           ]),
@@ -129,7 +129,7 @@ describe('PracticeService', () => {
           return unavailableJudge('test rejection');
         },
       },
-      'trice',
+      'euse',
     );
     expect(result).toMatchObject({ _tag: 'Right', right: { graded: false } });
     expect(judgeCalls).toBe(1);

@@ -64,6 +64,11 @@ describe('answerVariants', () => {
     });
   });
 
+  it('does not detach an unregistered multi-character suffix', () => {
+    expect(answerVariants('heureux/euse')).toEqual({ _tag: 'Overflow' });
+    expect(answerVariants('vendeur/euse')).toEqual({ _tag: 'Overflow' });
+  });
+
   it('combines optional parts with alternatives', () => {
     expect(answerVariants('to be/get used to (sth.)')).toEqual({
       _tag: 'Expanded',

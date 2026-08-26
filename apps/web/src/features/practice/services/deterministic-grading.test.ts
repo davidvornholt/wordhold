@@ -27,6 +27,7 @@ describe('isDeterministicMatch', () => {
   it('rejects compact suffix fragments as standalone answers', () => {
     expect(isDeterministicMatch('trice', [answer('acteur/trice')])).toBe(false);
     expect(isDeterministicMatch('ive', [answer('sportif/ive')])).toBe(false);
+    expect(isDeterministicMatch('euse', [answer('heureux/euse')])).toBe(false);
   });
 
   it('requires every branch in a submitted alternative to be accepted', () => {
