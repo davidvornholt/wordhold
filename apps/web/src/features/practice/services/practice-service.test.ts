@@ -135,7 +135,7 @@ describe('PracticeService', () => {
     expect(judgeCalls).toBe(1);
   });
 
-  it('accepts one reading of an accepted answer without asking the judge', async () => {
+  it('accepts a reconstructed suffix reading without asking the judge', async () => {
     let judgeCalls = 0;
     const result = await runSubmit(
       {
@@ -143,8 +143,8 @@ describe('PracticeService', () => {
         listAcceptedAnswers: () =>
           Effect.succeed([
             {
-              text: 'to intend (to)',
-              normalized: 'to intend (to)',
+              text: 'profesor/a',
+              normalized: 'profesor/a',
               source: 'textbook',
             },
           ]),
@@ -165,7 +165,7 @@ describe('PracticeService', () => {
             ),
           ),
       },
-      'to intend to',
+      'profesora',
     );
     const value = result._tag === 'Right' ? result.right : undefined;
     expect(value).toMatchObject({ graded: true, correct: true });
