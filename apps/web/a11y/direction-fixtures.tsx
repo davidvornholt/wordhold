@@ -16,7 +16,7 @@ const backControl = (
 );
 
 export const PracticeStartFixture = () => (
-  <PracticeLayout backControl={backControl} courseName="English A2">
+  <PracticeLayout backControl={backControl} title="English A2: Üben">
     <SessionStart
       options={sessionOptions(['to_target', 'to_native'], 'Englisch')}
       renderStartAction={(option) => (

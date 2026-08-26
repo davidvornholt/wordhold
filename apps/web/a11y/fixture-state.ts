@@ -13,6 +13,8 @@ export const fixtureStates = [
   'learn',
   'learn-done',
   'course-settings',
+  'drill-units',
+  'drill-start',
   'practice',
   'practice-start',
   'practice-session',

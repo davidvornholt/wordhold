@@ -14,6 +14,7 @@ import type {
 } from '../schemas/practice-models';
 import { applyRating } from './fsrs';
 import { commitGradedAnswer, type RunReviewTransaction } from './review-commit';
+import { advancesSchedule } from './schedule-guard';
 
 type SubmissionRow = typeof cards.$inferSelect & {
   readonly entryType: EntryType;
@@ -139,9 +140,10 @@ export class PracticeReviewStore extends Context.Tag(
                 insertReview: () =>
                   sql`
                     insert into reviews
-                      (card_id, rating, answer_text, grading, elapsed_ms)
+                      (card_id, rating, answer_text, grading, elapsed_ms, mode)
                     values (${input.card.id}, ${input.rating}, ${input.answer},
-                      ${JSON.stringify(input.outcome)}::jsonb, ${input.elapsedMs})
+                      ${JSON.stringify(input.outcome)}::jsonb, ${input.elapsedMs},
+                      ${input.mode}::review_mode)
                   `.pipe(Effect.asVoid, Effect.mapError(mapCommitError)),
               }),
             )
@@ -150,9 +152,15 @@ export class PracticeReviewStore extends Context.Tag(
                 Effect.fail(mapCommitError(cause)),
               ),
             );
+        // The review is always written; only the card's schedule is withheld.
+        // A drilled word still shows up in what was practised, and statistics
+        // can tell the two apart by the review's mode.
         return commitGradedAnswer(
           runTransaction,
           input.outcome.method === 'judge' ? input.outcome.verdict : null,
+          advancesSchedule(input.mode, input.card, input.reviewedAt)
+            ? { advance: true }
+            : { advance: false, revision: input.expectedRevision },
         );
       };
       return { findSubmission, listAcceptedAnswers, commit } as const;

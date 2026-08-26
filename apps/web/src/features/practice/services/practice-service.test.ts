@@ -42,6 +42,7 @@ const submission: SubmissionRecord = {
 
 const sessionStore = Layer.succeed(PracticeSessionStore, {
   load: () => Effect.succeed({ due: [], fresh: [] }),
+  loadUnit: () => Effect.succeed([]),
 });
 
 const cacheStore = Layer.succeed(JudgeCacheStore, {
@@ -61,6 +62,7 @@ const runSubmit = (
         revision: card.revision,
         answer: 'wrong',
         elapsedMs: 1000,
+        mode: 'scheduled',
       }),
     ).pipe(
       Effect.provide(

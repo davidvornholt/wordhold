@@ -8,6 +8,7 @@ import {
   CourseSettingsFixture,
   PracticeStartFixture,
 } from './direction-fixtures';
+import { DrillStartFixture, DrillUnitsFixture } from './drill-fixtures';
 import { navigateToFixture, readFixtureState } from './fixture-state';
 import {
   DeferredVerificationFixture,
@@ -58,6 +59,10 @@ export const FixtureApp = () => {
       return <LearnDoneFixture />;
     case 'course-settings':
       return <CourseSettingsFixture />;
+    case 'drill-units':
+      return <DrillUnitsFixture />;
+    case 'drill-start':
+      return <DrillStartFixture />;
     case 'practice':
       return <PracticeFixture />;
     case 'practice-start':

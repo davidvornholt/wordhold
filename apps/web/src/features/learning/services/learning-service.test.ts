@@ -9,7 +9,6 @@ const storeWith = (store: Partial<LearningStore['Type']>) =>
   LearningService.Default.pipe(
     Layer.provide(
       Layer.succeed(LearningStore, {
-        listUnits: () => Effect.succeed([]),
         loadPass: () => Effect.succeed(undefined),
         introduce: () => Effect.void,
         ...store,

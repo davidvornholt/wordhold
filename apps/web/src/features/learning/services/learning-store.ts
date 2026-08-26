@@ -1,11 +1,7 @@
 import { Database } from '@wordhold/db/client';
 import { Context, Effect, Layer } from 'effect';
 import { LearningDatabaseError } from '../errors/learning-errors';
-import type {
-  LearnableUnit,
-  LearnItem,
-  LearnPass,
-} from '../schemas/learning-models';
+import type { LearnItem, LearnPass } from '../schemas/learning-models';
 
 type UnitRow = { readonly id: string; readonly name: string };
 type ItemRow = Omit<LearnItem, 'acceptedNormalized'>;
@@ -21,9 +17,6 @@ const databaseError = (operation: string, cause: unknown) =>
 export class LearningStore extends Context.Tag('wordhold/LearningStore')<
   LearningStore,
   {
-    readonly listUnits: (
-      courseId: string,
-    ) => Effect.Effect<ReadonlyArray<LearnableUnit>, LearningDatabaseError>;
     readonly loadPass: (
       unitId: string,
     ) => Effect.Effect<LearnPass | undefined, LearningDatabaseError>;
@@ -37,20 +30,6 @@ export class LearningStore extends Context.Tag('wordhold/LearningStore')<
     LearningStore,
     Effect.gen(function* () {
       const sql = yield* Database;
-      const listUnits = (courseId: string) =>
-        sql<LearnableUnit>`
-          select u.id, u.name,
-            count(distinct e.id)::int as words,
-            count(distinct e.id) filter (
-              where c.introduced_at is null
-            )::int as unlearned
-          from units u
-          left join entries e on e.unit_id = u.id
-          left join cards c on c.entry_id = e.id
-          where u.course_id = ${courseId}
-          group by u.id
-          order by u.position, u.name
-        `.pipe(Effect.mapError((cause) => databaseError('list units', cause)));
       const loadPass = (unitId: string) =>
         Effect.all(
           {
@@ -120,7 +99,7 @@ export class LearningStore extends Context.Tag('wordhold/LearningStore')<
           Effect.asVoid,
           Effect.mapError((cause) => databaseError('introduce word', cause)),
         );
-      return { listUnits, loadPass, introduce } as const;
+      return { loadPass, introduce } as const;
     }),
   );
 }

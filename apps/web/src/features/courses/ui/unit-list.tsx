@@ -1,20 +1,23 @@
 import type { ReactNode } from 'react';
-import type { LearnableUnit } from '../schemas/learning-models';
+import type { CourseUnit } from '../schemas/course-units';
 
 type UnitListProps = {
-  readonly units: ReadonlyArray<LearnableUnit>;
-  readonly renderLearnAction: (unit: LearnableUnit) => ReactNode;
+  readonly units: ReadonlyArray<CourseUnit>;
+  // Returns null for a unit this screen has nothing to offer on: a unit with
+  // no unmet words has nothing to learn, one with no learned words has
+  // nothing to drill.
+  readonly renderAction: (unit: CourseUnit) => ReactNode;
   readonly importAction: ReactNode;
 };
 
-const unitProgress = (unit: LearnableUnit): string =>
+const unitProgress = (unit: CourseUnit): string =>
   unit.unlearned === 0
     ? `Alle ${unit.words} Wörter gelernt`
     : `${unit.unlearned} von ${unit.words} Wörtern noch nicht gelernt`;
 
 export const UnitList = ({
   units,
-  renderLearnAction,
+  renderAction,
   importAction,
 }: UnitListProps) =>
   units.length === 0 ? (
@@ -39,7 +42,7 @@ export const UnitList = ({
               {unitProgress(unit)}
             </p>
           </div>
-          {unit.unlearned === 0 ? null : renderLearnAction(unit)}
+          {renderAction(unit)}
         </li>
       ))}
     </ul>

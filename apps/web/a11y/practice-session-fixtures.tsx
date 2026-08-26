@@ -66,7 +66,7 @@ export const PracticeSessionFixture = () => {
           ← Übersicht
         </button>
       }
-      courseName="English A2"
+      title="English A2: Üben"
     >
       <SessionProgress settled={queue.settled} total={queue.total} />
       {pending === undefined ? (
@@ -81,6 +81,7 @@ export const PracticeSessionFixture = () => {
             </button>
           }
           correct={queue.correct}
+          emptyMessage="Gerade ist nichts fällig."
           total={queue.total}
           wrong={queue.wrong}
         />
@@ -88,6 +89,7 @@ export const PracticeSessionFixture = () => {
         <CardPractice
           item={pending}
           key={`${pending.cardId}-${pending.revision}`}
+          mode="scheduled"
           onNext={(result) =>
             setQueue((current) => advanceQueue(current, result))
           }

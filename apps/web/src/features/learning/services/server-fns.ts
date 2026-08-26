@@ -15,15 +15,6 @@ const learningRuntime = ManagedRuntime.make(learningLive);
 
 const decodeId = Schema.decodeUnknownSync(Schema.UUID);
 
-export const listLearnableUnits = createServerFn()
-  .validator(decodeId)
-  .handler(async ({ data: courseId }) => {
-    await authRuntime.runPromise(requireSession(getRequest().headers));
-    return learningRuntime.runPromise(
-      Effect.flatMap(LearningService, (service) => service.listUnits(courseId)),
-    );
-  });
-
 export const getLearnPass = createServerFn()
   .validator(decodeId)
   .handler(async ({ data: unitId }) => {

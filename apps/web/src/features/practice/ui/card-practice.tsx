@@ -1,3 +1,4 @@
+import type { ReviewMode } from '@wordhold/db/schema/practice';
 import { type SubmitEvent, useState } from 'react';
 import type { SubmitPayloadData } from '../schemas/submission-schema';
 import type {
@@ -13,6 +14,9 @@ type CardPracticeProps = {
   // Whether this card was already missed earlier in the same session.
   readonly repeated: boolean;
   readonly targetLabel: string;
+  // Which sitting this is. A drill leaves the schedule of a word that was not
+  // due alone.
+  readonly mode: ReviewMode;
   readonly submit: (input: {
     readonly data: SubmitPayloadData;
   }) => Promise<SubmitResult>;
@@ -27,6 +31,7 @@ export const CardPractice = ({
   item,
   repeated,
   targetLabel,
+  mode,
   submit,
   onNext,
 }: CardPracticeProps) => {
@@ -54,6 +59,7 @@ export const CardPractice = ({
           revision: item.revision,
           answer: answerSnapshot,
           elapsedMs: Math.floor(performance.now() - startedAt),
+          mode,
         },
       });
       setResult(submitted);

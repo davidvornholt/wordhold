@@ -1,7 +1,7 @@
 import { Data } from 'effect';
 
-export class CourseSettingsDatabaseError extends Data.TaggedError(
-  'CourseSettingsDatabaseError',
+export class CourseDatabaseError extends Data.TaggedError(
+  'CourseDatabaseError',
 )<{
   readonly operation: string;
   readonly cause: unknown;

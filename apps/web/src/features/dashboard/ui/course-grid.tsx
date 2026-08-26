@@ -22,6 +22,7 @@ type CourseGridProps = {
   readonly reviewsToday: number;
   readonly renderPracticeAction: (course: Course) => ReactNode;
   readonly renderLearnAction: (course: Course) => ReactNode;
+  readonly renderDrillAction: (course: Course) => ReactNode;
   readonly renderImportAction: (course: Course) => ReactNode;
   readonly renderSettingsAction: (course: Course) => ReactNode;
 };
@@ -32,6 +33,7 @@ export const CourseGrid = ({
   reviewsToday,
   renderPracticeAction,
   renderLearnAction,
+  renderDrillAction,
   renderImportAction,
   renderSettingsAction,
 }: CourseGridProps) => (
@@ -48,6 +50,7 @@ export const CourseGrid = ({
       {courses.map((course) => (
         <CourseCard
           course={course}
+          drillAction={renderDrillAction(course)}
           importAction={renderImportAction(course)}
           key={course.id}
           learnAction={renderLearnAction(course)}

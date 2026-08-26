@@ -1,9 +1,9 @@
 import { useState } from 'react';
+import { UnitList } from '../src/features/courses/ui/unit-list';
 import type { LearnItem } from '../src/features/learning/schemas/learning-models';
 import { LearnDone } from '../src/features/learning/ui/learn-done';
 import { LearnPass } from '../src/features/learning/ui/learn-pass';
 import { LearningLayout } from '../src/features/learning/ui/learning-layout';
-import { UnitList } from '../src/features/learning/ui/unit-list';
 import { navigateToFixture } from './fixture-state';
 
 const items: ReadonlyArray<LearnItem> = [
@@ -55,15 +55,17 @@ export const LearnUnitsFixture = () => (
           Seite fotografieren
         </button>
       }
-      renderLearnAction={(unit) => (
-        <button
-          className="whitespace-nowrap font-medium text-sm underline"
-          onClick={() => navigateToFixture('learn')}
-          type="button"
-        >
-          {unit.unlearned} lernen
-        </button>
-      )}
+      renderAction={(unit) =>
+        unit.unlearned === 0 ? null : (
+          <button
+            className="whitespace-nowrap font-medium text-sm underline"
+            onClick={() => navigateToFixture('learn')}
+            type="button"
+          >
+            {unit.unlearned} lernen
+          </button>
+        )
+      }
       units={[
         {
           id: '00000000-0000-0000-0000-000000000003',

@@ -9,6 +9,7 @@ const validPayload = {
   revision: 0,
   answer: 'souvenir',
   elapsedMs: ordinaryElapsedMs,
+  mode: 'scheduled',
 } as const;
 
 describe('decodeSubmitPayload', () => {
@@ -28,5 +29,15 @@ describe('decodeSubmitPayload', () => {
     maximumElapsedMs + 1,
   ])('rejects invalid elapsed time %p', (elapsedMs) => {
     expect(() => decodeSubmitPayload({ ...validPayload, elapsedMs })).toThrow();
+  });
+
+  // The mode decides whether the answer may rewrite the card's schedule, so an
+  // unreadable one must not fall through to the scheduled default.
+  it('rejects a payload without a recognised mode', () => {
+    expect(() =>
+      decodeSubmitPayload({ ...validPayload, mode: 'cram' }),
+    ).toThrow();
+    const { mode: _mode, ...withoutMode } = validPayload;
+    expect(() => decodeSubmitPayload(withoutMode)).toThrow();
   });
 });

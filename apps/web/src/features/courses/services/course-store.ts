@@ -1,50 +1,46 @@
 import { Database } from '@wordhold/db/client';
 import { Context, Effect, Layer } from 'effect';
-import { CourseSettingsDatabaseError } from '../errors/courses-errors';
+import { CourseDatabaseError } from '../errors/courses-errors';
 import {
   type CourseDirectionsData,
   decodeStoredDirections,
 } from '../schemas/course-directions';
+import type { CourseUnit } from '../schemas/course-units';
 
 const databaseError = (operation: string, cause: unknown) =>
-  new CourseSettingsDatabaseError({
+  new CourseDatabaseError({
     operation,
     cause,
-    message: 'Die Kurseinstellungen konnten nicht geladen werden.',
+    message: 'Der Kurs konnte nicht geladen werden.',
   });
 
-export class CourseDirectionsStore extends Context.Tag(
-  'wordhold/CourseDirectionsStore',
-)<
-  CourseDirectionsStore,
+export class CourseStore extends Context.Tag('wordhold/CourseStore')<
+  CourseStore,
   {
-    readonly read: (
+    readonly readDirections: (
       courseId: string,
-    ) => Effect.Effect<
-      CourseDirectionsData | undefined,
-      CourseSettingsDatabaseError
-    >;
+    ) => Effect.Effect<CourseDirectionsData | undefined, CourseDatabaseError>;
     // Resolves false when no course carries that id.
-    readonly write: (
+    readonly writeDirections: (
       courseId: string,
       directions: CourseDirectionsData,
-    ) => Effect.Effect<boolean, CourseSettingsDatabaseError>;
+    ) => Effect.Effect<boolean, CourseDatabaseError>;
+    readonly listUnits: (
+      courseId: string,
+    ) => Effect.Effect<ReadonlyArray<CourseUnit>, CourseDatabaseError>;
   }
 >() {
   static readonly live = Layer.effect(
-    CourseDirectionsStore,
+    CourseStore,
     Effect.gen(function* () {
       const sql = yield* Database;
       // The column is unnested into one row per direction rather than read as
       // an array: the Postgres driver hands an array column back as the raw
       // text `{to_target,to_native}`, so a query that returns rows is the only
       // one whose shape this code decides. No rows means no such course.
-      const read = (
+      const readDirections = (
         courseId: string,
-      ): Effect.Effect<
-        CourseDirectionsData | undefined,
-        CourseSettingsDatabaseError
-      > =>
+      ): Effect.Effect<CourseDirectionsData | undefined, CourseDatabaseError> =>
         sql<{ readonly direction: unknown }>`
           select d.direction
           from courses c
@@ -67,7 +63,10 @@ export class CourseDirectionsStore extends Context.Tag(
       // The array is written as one text literal rather than as a parameter
       // per element: the values are enum names the schema already validated,
       // and this keeps the driver out of deciding how an array is shaped.
-      const write = (courseId: string, directions: CourseDirectionsData) =>
+      const writeDirections = (
+        courseId: string,
+        directions: CourseDirectionsData,
+      ) =>
         sql<{ readonly id: string }>`
           update courses
           set directions = ${`{${directions.join(',')}}`}::answer_direction[]
@@ -79,7 +78,23 @@ export class CourseDirectionsStore extends Context.Tag(
             databaseError('write course directions', cause),
           ),
         );
-      return { read, write } as const;
+      // Both counts come from the cards, because "learned" is a property of
+      // the cards behind a word, not of the word itself.
+      const listUnits = (courseId: string) =>
+        sql<CourseUnit>`
+          select u.id, u.name,
+            count(distinct e.id)::int as words,
+            count(distinct e.id) filter (
+              where c.introduced_at is null
+            )::int as unlearned
+          from units u
+          left join entries e on e.unit_id = u.id
+          left join cards c on c.entry_id = e.id
+          where u.course_id = ${courseId}
+          group by u.id
+          order by u.position, u.name
+        `.pipe(Effect.mapError((cause) => databaseError('list units', cause)));
+      return { readDirections, writeDirections, listUnits } as const;
     }),
   );
 }

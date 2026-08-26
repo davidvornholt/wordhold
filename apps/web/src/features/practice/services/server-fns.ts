@@ -5,7 +5,10 @@ import { Effect, Layer, ManagedRuntime } from 'effect';
 import { judgeLayer } from '../../../shared/ai/runtime';
 import { requireSession } from '../../../shared/auth/require-session';
 import { authRuntime } from '../../../shared/auth/runtime';
-import { decodeSessionRequest } from '../schemas/session-request';
+import {
+  decodeDrillRequest,
+  decodeSessionRequest,
+} from '../schemas/session-request';
 import { decodeSubmitPayload } from '../schemas/submission-schema';
 import { JudgeCacheStore } from './judge-cache-store';
 import { PracticeJudge } from './practice-judge';
@@ -33,6 +36,15 @@ export const getPracticeSession = createServerFn()
     await authRuntime.runPromise(requireSession(getRequest().headers));
     return practiceRuntime.runPromise(
       Effect.flatMap(PracticeService, (service) => service.getSession(data)),
+    );
+  });
+
+export const getUnitDrill = createServerFn()
+  .validator(decodeDrillRequest)
+  .handler(async ({ data }) => {
+    await authRuntime.runPromise(requireSession(getRequest().headers));
+    return practiceRuntime.runPromise(
+      Effect.flatMap(PracticeService, (service) => service.getDrill(data)),
     );
   });
 

@@ -1,3 +1,4 @@
+import { reviewModes } from '@wordhold/db/schema/practice';
 import { Schema } from 'effect';
 
 const hoursPerDay = 24;
@@ -27,6 +28,10 @@ export const SubmitPayload = Schema.Struct({
   revision: CardRevision,
   answer: Schema.String,
   elapsedMs: Schema.optional(ElapsedMilliseconds),
+  // Which sitting the answer came from. It decides whether the answer may
+  // rewrite the card's schedule, so the client states it rather than the
+  // server guessing from the card.
+  mode: Schema.Literal(...reviewModes),
 });
 
 export type SubmitPayloadData = typeof SubmitPayload.Type;

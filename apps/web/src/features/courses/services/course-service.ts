@@ -4,20 +4,20 @@ import type {
   CourseDirectionsData,
   SetCourseDirectionsData,
 } from '../schemas/course-directions';
-import { CourseDirectionsStore } from './course-directions-store';
+import { CourseStore } from './course-store';
 
 const notFound = new CourseSettingsNotFoundError({
   message: 'Kurs nicht gefunden.',
 });
 
-export class CourseSettingsService extends Effect.Service<CourseSettingsService>()(
-  'wordhold/CourseSettingsService',
+export class CourseService extends Effect.Service<CourseService>()(
+  'wordhold/CourseService',
   {
     effect: Effect.gen(function* () {
-      const store = yield* CourseDirectionsStore;
+      const store = yield* CourseStore;
       const getDirections = (courseId: string) =>
         Effect.flatMap(
-          store.read(courseId),
+          store.readDirections(courseId),
           (
             directions,
           ): Effect.Effect<
@@ -35,10 +35,13 @@ export class CourseSettingsService extends Effect.Service<CourseSettingsService>
         courseId,
         directions,
       }: SetCourseDirectionsData) =>
-        Effect.flatMap(store.write(courseId, directions), (updated) =>
-          updated ? Effect.succeed(directions) : Effect.fail(notFound),
+        Effect.flatMap(
+          store.writeDirections(courseId, directions),
+          (updated) =>
+            updated ? Effect.succeed(directions) : Effect.fail(notFound),
         );
-      return { getDirections, setDirections } as const;
+      const listUnits = (courseId: string) => store.listUnits(courseId);
+      return { getDirections, setDirections, listUnits } as const;
     }),
   },
 ) {}

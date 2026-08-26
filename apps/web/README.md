@@ -84,7 +84,7 @@ Uploads accept JPEG, PNG, and WebP images up to 12 MiB, 12,000 pixels per side, 
 
 ## Learning pass
 
-`/courses/$courseId/learn` lists the course's units with how many of their words have never been met, and `/courses/$courseId/units/$unitId/learn` walks through those words one at a time (`src/features/learning/`). The word is spoken, its German and its translation are both on screen, and the learner copies it. Nothing here is graded and nothing reaches the scheduler: copying a word you can see says nothing about whether you will remember it tomorrow, so the match is the deterministic normalization from `src/shared/grading/normalize.ts` against the spelling shown plus that entry's accepted answers, never the AI judge. A wrong copy just asks again.
+`/courses/$courseId/learn` lists the course's units with how many of their words have never been met, and `/courses/$courseId/units/$unitId/learn` walks through those words one at a time (`src/features/learning/`). The unit list itself belongs to `src/features/courses/`, because the drill screen needs the same per-unit counts and features must not import each other. The word is spoken, its German and its translation are both on screen, and the learner copies it. Nothing here is graded and nothing reaches the scheduler: copying a word you can see says nothing about whether you will remember it tomorrow, so the match is the deterministic normalization from `src/shared/grading/normalize.ts` against the spelling shown plus that entry's accepted answers, never the AI judge. A wrong copy just asks again.
 
 Writing a word correctly stamps `cards.introduced_at` on both of its cards, one word at a time, so leaving halfway keeps what was learned. `introduced_at` is deliberately separate from the FSRS `state` column: `state` says where a card stands in the scheduler, `introduced_at` says whether the learner has ever met the word. Cards without it are excluded from the practice queue and from the dashboard's due and new counts.
 
@@ -111,6 +111,14 @@ counts distinct cards settled out of the cards the session started with, so a
 repeat never moves it backwards and the end never moves away. An answer the
 judge could not grade settles too: the card was left untouched, and asking
 again in the same session would only reach the same outage.
+
+## Unit drill
+
+Reviews mix across the whole course, which is what spaced repetition needs and the wrong shape the night before a class test on one unit. `/courses/$courseId/drill` lists the course's units with how many of their words have been learned, and `/courses/$courseId/units/$unitId/drill` runs a sitting made only of that unit's learned cards, due or not (`src/features/practice/services/session-store.ts`). It picks a direction the same way the scheduled queue does and runs the same session loop, so a missed card comes back within the drill.
+
+Cramming must not damage the schedule. Every answer is written to `reviews` with `reviews.mode` set to `drill`, so statistics can tell a drilled answer from one the queue asked for. Whether it also rewrites the card's FSRS schedule is decided by `src/features/practice/services/schedule-guard.ts`: a drilled card in `review` state that was not due yet is left alone, because writing a fresh interval from a crammed answer is exactly what would push a word the learner barely knows three weeks out. A card that was genuinely due counts as a real review. So does a card still on a learning or relearning step, whose steps are minutes apart and exist to be answered again — including the repeat of a card missed moments earlier in the same drill.
+
+When the schedule is held back, the card row is not touched at all, so the revision the session answers against stays where it is and the repeat is not rejected as stale.
 
 ## Direction control
 
