@@ -86,6 +86,27 @@ test('the learning pass asks again for a wrong copy and records only the correct
   await expect(page.getByLabel('Introduced words')).toHaveText('2');
 });
 
+test('the learning pass announces a persistence failure and retries the same word', async ({
+  page,
+}) => {
+  await page.goto('/?state=learn-retry');
+  const field = page.getByLabel('Schreib das Wort ab');
+  await field.fill('memory');
+  await page.getByRole('button', { name: 'Weiter' }).click();
+
+  await expect(page.getByRole('alert')).toHaveText(
+    'Das Wort wurde nicht gespeichert. Versuch es noch einmal.',
+  );
+  await expect(page.getByText('Wort 1 von 2')).toBeVisible();
+  await expect(page.getByLabel('Introduced words')).toHaveText('0');
+  await expect(page.getByLabel('Introduction attempts')).toHaveText('1');
+
+  await page.getByRole('button', { name: 'Erneut versuchen' }).click();
+  await expect(page.getByText('Wort 2 von 2')).toBeVisible();
+  await expect(page.getByLabel('Introduced words')).toHaveText('1');
+  await expect(page.getByLabel('Introduction attempts')).toHaveText('2');
+});
+
 test('VerifyForm freezes every control and ignores resubmission', async ({
   page,
 }) => {
@@ -94,12 +115,13 @@ test('VerifyForm freezes every control and ignores resubmission', async ({
   const target = page.getByLabel('Englisch');
   const add = page.getByRole('button', { name: 'Eintrag hinzufügen' });
   const remove = page.getByRole('button', { name: 'Entfernen' });
+  const unit = page.getByLabel('Einheit für Eintrag 1');
   await label.fill('First label');
   await target.fill('first target');
   await page.getByRole('button', { name: '1 Einträge importieren' }).click();
 
   await Promise.all(
-    [label, target, add, remove].map((control) =>
+    [label, target, unit, add, remove].map((control) =>
       expect(control).toBeDisabled(),
     ),
   );

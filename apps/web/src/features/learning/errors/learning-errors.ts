@@ -13,3 +13,9 @@ export class LearningUnitNotFoundError extends Data.TaggedError(
 )<{
   readonly message: string;
 }> {}
+
+export class LearningEntryNotFoundError extends Data.TaggedError(
+  'LearningEntryNotFoundError',
+)<{
+  readonly message: string;
+}> {}
