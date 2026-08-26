@@ -27,6 +27,7 @@ const compactSuffixReplacements: ReadonlyArray<{
   { fullEnding: 'if', shorthand: 'ive' },
 ];
 
+const compactWordAlternatives = new Set(['be/get', 'der/die']);
 const flatMapBounded = (
   values: ReadonlyArray<string>,
   expand: (value: string) => ReadonlyArray<string>,
@@ -136,10 +137,10 @@ const expandSlashWord = (word: string): ExpansionState => {
       ],
     };
   }
-  if (right.length < left.length) {
-    return { _tag: 'Overflow' };
+  if (compactWordAlternatives.has(word)) {
+    return { _tag: 'Values', values: [left, right] };
   }
-  return { _tag: 'Values', values: [left, right] };
+  return { _tag: 'Overflow' };
 };
 
 const expandWordAlternatives = (text: string): ExpansionState => {
