@@ -2,6 +2,7 @@ export type CourseStats = {
   readonly courseId: string;
   readonly due: number;
   readonly fresh: number;
+  readonly unlearned: number;
   readonly words: number;
 };
 

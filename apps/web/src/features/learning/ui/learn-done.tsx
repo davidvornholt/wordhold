@@ -1,0 +1,20 @@
+import type { ReactNode } from 'react';
+
+type LearnDoneProps = {
+  readonly learned: number;
+  readonly practiceControl: ReactNode;
+};
+
+export const LearnDone = ({ learned, practiceControl }: LearnDoneProps) => (
+  <div className="flex flex-col gap-3 border border-border bg-card p-6">
+    <p className="font-medium">
+      {learned === 0
+        ? 'In dieser Einheit gibt es nichts mehr zu lernen.'
+        : 'Einheit gelernt!'}
+    </p>
+    {learned === 0 ? null : (
+      <p className="text-sm">{learned} Wörter zählen ab jetzt beim Üben mit.</p>
+    )}
+    {practiceControl}
+  </div>
+);

@@ -11,6 +11,11 @@ import {
   VerificationFixture,
 } from './import-fixtures';
 import {
+  LearnDoneFixture,
+  LearnFixture,
+  LearnUnitsFixture,
+} from './learning-fixtures';
+import {
   DeferredPracticeFixture,
   PracticeEmptyFixture,
   PracticeFeedbackFixture,
@@ -40,6 +45,12 @@ export const FixtureApp = () => {
       return <VerificationFixture audioRecovery={true} />;
     case 'verification-deferred':
       return <DeferredVerificationFixture />;
+    case 'learn-units':
+      return <LearnUnitsFixture />;
+    case 'learn':
+      return <LearnFixture />;
+    case 'learn-done':
+      return <LearnDoneFixture />;
     case 'practice':
       return <PracticeFixture />;
     case 'practice-feedback':

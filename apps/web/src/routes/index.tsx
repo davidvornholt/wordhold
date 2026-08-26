@@ -45,6 +45,15 @@ const Home = () => {
                 Seite fotografieren
               </Link>
             )}
+            renderLearnAction={(course) => (
+              <Link
+                className="font-medium text-sm underline"
+                params={{ courseId: course.id }}
+                to="/courses/$courseId/learn"
+              >
+                Lernen
+              </Link>
+            )}
             renderPracticeAction={(course) => (
               <Link
                 className="font-medium text-sm underline"

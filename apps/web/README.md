@@ -82,10 +82,17 @@ cards per entry, and best-effort Polly audio under
 
 Uploads accept JPEG, PNG, and WebP images up to 12 MiB, 12,000 pixels per side, and 40 million pixels total. Wordhold reads the format and dimensions from the file bytes instead of trusting the browser MIME declaration. Each verified page accepts at most 100 entries, and one import can make at most 50 Polly calls. Before new page or audio writes, storage reconciliation removes generated files older than 24 hours only when no page or audio row references them. This clears crash leftovers without touching recent in-flight writes or unrelated files.
 
+## Learning pass
+
+`/courses/$courseId/learn` lists the course's units with how many of their words have never been met, and `/courses/$courseId/units/$unitId/learn` walks through those words one at a time (`src/features/learning/`). The word is spoken, its German and its translation are both on screen, and the learner copies it. Nothing here is graded and nothing reaches the scheduler: copying a word you can see says nothing about whether you will remember it tomorrow, so the match is the deterministic normalization from `src/shared/grading/normalize.ts` against the spelling shown plus that entry's accepted answers, never the AI judge. A wrong copy just asks again.
+
+Writing a word correctly stamps `cards.introduced_at` on both of its cards, one word at a time, so leaving halfway keeps what was learned. `introduced_at` is deliberately separate from the FSRS `state` column: `state` says where a card stands in the scheduler, `introduced_at` says whether the learner has ever met the word. Cards without it are excluded from the practice queue and from the dashboard's due and new counts.
+
 ## Practice flow
 
 `/courses/$courseId/practice` serves everything due plus a bounded batch of
-new cards (`src/features/practice/services/practice-service.ts`). Grading is hybrid: a
+new cards, both restricted to introduced cards
+(`src/features/practice/services/practice-service.ts`). Grading is hybrid: a
 normalized deterministic match is instant; only mismatches reach the AI
 judge, whose verdicts are cached per (entry, direction, normalized answer)
 and can write accepted alternatives back. FSRS ratings are derived from the
@@ -95,4 +102,4 @@ untouched. Pronunciation plays via `GET /api/entries/$entryId/audio`.
 
 ## Dashboard
 
-The signed-in start page shows only real data (`src/features/dashboard/services/dashboard-service.ts`): per-course due/new/word counts, today's review count in `WORDHOLD_OWNER_TIME_ZONE`, and "Wackelkandidaten" with at least two Again-ratings in the last 30 days.
+The signed-in start page shows only real data (`src/features/dashboard/services/dashboard-service.ts`): per-course due/new/word counts, how many words still await the learning pass, today's review count in `WORDHOLD_OWNER_TIME_ZONE`, and "Wackelkandidaten" with at least two Again-ratings in the last 30 days. Due and new count cards the practice session would actually offer, so they ignore words that have not been learned yet; the "zu lernen" figure counts words rather than cards, because the learning pass introduces both directions of a word together.

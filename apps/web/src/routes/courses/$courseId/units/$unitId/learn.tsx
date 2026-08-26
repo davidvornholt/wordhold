@@ -1,0 +1,56 @@
+import { createFileRoute, Link } from '@tanstack/react-router';
+import { getCourse } from '../../../../../features/import/server-fns';
+import {
+  getLearnPass,
+  introduceWord,
+} from '../../../../../features/learning/services/server-fns';
+import { LearnPass } from '../../../../../features/learning/ui/learn-pass';
+import { LearningLayout } from '../../../../../features/learning/ui/learning-layout';
+import { germanLabels } from '../../../../../shared/languages';
+
+const LearnUnitScreen = () => {
+  const { course, pass } = Route.useLoaderData();
+
+  return (
+    <LearningLayout
+      backControl={
+        <Link
+          className="text-muted-foreground text-sm underline"
+          params={{ courseId: course.id }}
+          to="/courses/$courseId/learn"
+        >
+          ← Einheiten
+        </Link>
+      }
+      title={`${pass.unit.name} lernen`}
+    >
+      <LearnPass
+        items={pass.items}
+        onIntroduce={async (entryId) => {
+          await introduceWord({ data: entryId });
+        }}
+        practiceControl={
+          <Link
+            className="w-fit font-medium text-sm underline"
+            params={{ courseId: course.id }}
+            to="/courses/$courseId/practice"
+          >
+            Jetzt üben
+          </Link>
+        }
+        targetLabel={germanLabels[course.targetLanguage]}
+      />
+    </LearningLayout>
+  );
+};
+
+export const Route = createFileRoute('/courses/$courseId/units/$unitId/learn')({
+  loader: async ({ params }) => {
+    const [course, pass] = await Promise.all([
+      getCourse({ data: params.courseId }),
+      getLearnPass({ data: params.unitId }),
+    ]);
+    return { course, pass };
+  },
+  component: LearnUnitScreen,
+});
