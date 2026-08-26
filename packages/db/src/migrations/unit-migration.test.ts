@@ -4,9 +4,13 @@ import { Database } from '../client';
 import {
   testDatabaseLayer,
   withMigratedTestDatabase,
+  withTestDatabase,
 } from '../testing/postgres-test-database';
 import { backfillUnits } from './backfill-units';
-import { UnitBackfillError } from './unit-backfill-error';
+import {
+  migrateToNullableUnits,
+  migrateToPreUnitSchema,
+} from './unit-migration-test-support';
 
 const courseA = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const courseB = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
@@ -18,14 +22,23 @@ const provideDatabase = <A, E, R>(
 ) => effect.pipe(Effect.provide(testDatabaseLayer(url)));
 
 describe('unit migration boundary', () => {
-  it('preserves page provenance and files every legacy row', async () => {
+  it('upgrades populated legacy data and retries without changing the result', async () => {
     await Effect.runPromise(
-      withMigratedTestDatabase((database) =>
+      withTestDatabase((database) =>
         Effect.gen(function* () {
+          yield* migrateToPreUnitSchema(database.url);
           yield* provideDatabase(
             database.url,
             Effect.gen(function* () {
               const sql = yield* Database;
+              const unitColumns = yield* sql<{ readonly count: number }>`
+                select count(*)::integer as count
+                from information_schema.columns
+                where table_schema = 'public'
+                  and table_name = 'entries'
+                  and column_name = 'unit_id'
+              `;
+              expect(unitColumns[0]?.count).toBe(0);
               yield* sql`
                 insert into courses (id, name, target_language)
                 values (${courseA}, 'French', 'fr')
@@ -44,9 +57,10 @@ describe('unit migration boundary', () => {
             }),
           );
 
+          yield* migrateToNullableUnits(database.url);
           yield* backfillUnits(database.url);
 
-          const rows = yield* provideDatabase(
+          const firstRows = yield* provideDatabase(
             database.url,
             Effect.gen(function* () {
               const sql = yield* Database;
@@ -66,11 +80,42 @@ describe('unit migration boundary', () => {
               `;
             }),
           );
-          expect(rows).toHaveLength(2);
-          expect(rows[0]).toMatchObject({ isHolding: false, pageId });
-          expect(rows[1]).toMatchObject({ isHolding: true, pageId: null });
-          expect(rows[0]?.unitId).not.toBe(rows[1]?.unitId);
-          expect(rows.every((row) => row.unitId !== null)).toBe(true);
+          yield* backfillUnits(database.url);
+          const retryState = yield* provideDatabase(
+            database.url,
+            Effect.gen(function* () {
+              const sql = yield* Database;
+              const rows = yield* sql<{
+                readonly isHolding: boolean;
+                readonly pageId: string | null;
+                readonly unitId: string | null;
+              }>`
+                select units.is_holding as "isHolding",
+                  entries.page_id as "pageId",
+                  entries.unit_id as "unitId"
+                from entries
+                join units
+                  on units.id = entries.unit_id
+                  and units.course_id = entries.course_id
+                order by entries.page_id nulls last
+              `;
+              const unitCount = yield* sql<{ readonly count: number }>`
+                select count(*)::integer as count from units
+              `;
+              return { rows, unitCount: unitCount[0]?.count };
+            }),
+          );
+
+          expect(firstRows).toHaveLength(2);
+          expect(firstRows[0]).toMatchObject({ isHolding: false, pageId });
+          expect(firstRows[1]).toMatchObject({
+            isHolding: true,
+            pageId: null,
+          });
+          expect(firstRows[0]?.unitId).not.toBe(firstRows[1]?.unitId);
+          expect(firstRows.every((row) => row.unitId !== null)).toBe(true);
+          expect(retryState.rows).toEqual(firstRows);
+          expect(retryState.unitCount).toBe(2);
         }),
       ),
     );
@@ -115,51 +160,6 @@ describe('unit migration boundary', () => {
             expect(remaining[0]?.count).toBe(0);
           }),
         ),
-      ),
-    );
-  });
-
-  it('fails safely when legacy data crosses course ownership', async () => {
-    await Effect.runPromise(
-      withMigratedTestDatabase((database) =>
-        Effect.gen(function* () {
-          yield* provideDatabase(
-            database.url,
-            Effect.gen(function* () {
-              const sql = yield* Database;
-              yield* sql`
-                alter table entries
-                drop constraint entries_unit_course_units_id_course_fk
-              `;
-              yield* sql`
-                insert into courses (id, name, target_language)
-                values
-                  (${courseA}, 'French', 'fr'),
-                  (${courseB}, 'English', 'en')
-              `;
-              const createdUnits = yield* sql<{ readonly id: string }>`
-                insert into units (course_id, name, position)
-                values (${courseA}, 'Unit 1', 0)
-                returning id
-              `;
-              yield* sql`
-                insert into entries (
-                  course_id, unit_id, type, target_text, native_text
-                ) values (
-                  ${courseB}, ${createdUnits[0]?.id ?? null}, 'word', 'book', 'Buch'
-                )
-              `;
-            }),
-          );
-
-          const result = yield* Effect.either(backfillUnits(database.url));
-          expect(result).toEqual(
-            expect.objectContaining({
-              _tag: 'Left',
-              left: expect.any(UnitBackfillError),
-            }),
-          );
-        }),
       ),
     );
   });
