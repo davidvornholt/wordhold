@@ -24,5 +24,4 @@ The unit rollout has two deployable phases so existing vocabulary remains readab
 After phase one is deployed, run `bun run db:backfill-units` once in each deployed database. This code-owned command preserves page provenance, files page-backed vocabulary into real units, files vocabulary without a page into explicit holding units, and fails through its typed Effect error channel if it finds cross-course ownership or cannot prove completion.
 
 Before deploying phase two, run `SELECT count(*) FROM entries WHERE unit_id IS NULL;` in every deployed database and record that it returns exactly `0`. The generated phase-two migration makes `entries.unit_id` required and PostgreSQL refuses to apply it while any legacy row remains unfiled.
-
 The learning-pass migration adds nullable `cards.introduced_at`. After applying it, run `bun run db:backfill-introductions` once in each deployed database. The command preserves the review timestamp for every card already answered, leaves untouched cards null so they enter the learning pass, supports safe retries, and fails through a typed Effect error if it cannot prove completion.
