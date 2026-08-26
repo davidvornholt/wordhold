@@ -16,6 +16,7 @@ export const fixtureStates = [
   'learn-retry',
   'learn-done',
   'course-settings',
+  'course-settings-deferred',
   'practice',
   'practice-start',
   'practice-session',
