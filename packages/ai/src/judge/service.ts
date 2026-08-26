@@ -2,7 +2,10 @@ import { generateText, Output } from 'ai';
 import { Effect, Schema } from 'effect';
 import { judgeModel } from '../config';
 import { BedrockProvider } from '../providers/bedrock';
-import { providerJsonSchema } from '../structured-output';
+import {
+  providerJsonSchema,
+  structuredOutputOptions,
+} from '../structured-output';
 import { JudgeError } from './error';
 import { type JudgeInput, JudgeVerdict, type JudgeVerdictData } from './schema';
 
@@ -40,9 +43,10 @@ export class Judge extends Effect.Service<Judge>()('@wordhold/ai/Judge', {
       Effect.tryPromise({
         try: async () => {
           const { output } = await generateText({
-            model: bedrock(modelId),
+            model: bedrock.chat(modelId),
             output: Output.object({ schema: verdictOutput }),
             prompt: judgePrompt(input),
+            providerOptions: structuredOutputOptions,
           });
           return output;
         },

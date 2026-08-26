@@ -28,10 +28,11 @@ through `src/shared/env/server.ts`.
 | `GITHUB_ALLOWED_USER_ID` | Numeric GitHub user ID of the single allowed user. Wordhold rejects other profiles before persistence and rechecks existing sessions against the current value. |
 | `WORDHOLD_OWNER_TIME_ZONE` | Required IANA time zone for owner-local day boundaries, such as `Europe/Berlin`. |
 | `AWS_REGION` | AWS region for Bedrock and Polly (`eu-central-1`). |
-| `AWS_ACCESS_KEY_ID` | AWS credentials for Bedrock (judge, sentence generation) and Polly (TTS). |
-| `AWS_SECRET_ACCESS_KEY` | Secret half of the AWS credentials. |
-| `AI_JUDGE_MODEL` | Bedrock model ID for answer judging (fast Claude). |
-| `AI_SENTENCE_MODEL` | Bedrock model ID for sentence generation (frontier Claude). |
+| `AWS_BEDROCK_API_KEY` | Bedrock API key (`ABSK…`) for the OpenAI-compatible endpoint used by the judge and sentence generation. |
+| `AWS_ACCESS_KEY_ID` | SigV4 credentials for Polly (TTS). |
+| `AWS_SECRET_ACCESS_KEY` | Secret half of the SigV4 credentials. |
+| `AI_JUDGE_MODEL` | Bedrock model ID for answer judging. |
+| `AI_SENTENCE_MODEL` | Bedrock model ID for sentence generation. |
 | `AI_EXTRACTION_MODEL` | Google model ID for page extraction. |
 | `AI_EXTRACTION_ESCALATION_MODEL` | Google model ID for extraction escalation on low-confidence pages. |
 | `GOOGLE_VERTEX_LOCATION` | Google Enterprise AI location (`global`). |
@@ -40,9 +41,23 @@ through `src/shared/env/server.ts`.
 
 ## Provider credentials
 
-The AWS pair belongs to a dedicated IAM user, `WordholdDevelopment`, whose inline policy `WordholdAiInference` allows only Bedrock inference on Anthropic Claude models (foundation models plus this account's `eu.anthropic.claude-*` inference profiles) and `polly:SynthesizeSpeech`. It has no console password and no other permissions. Rotate by minting a second access key for that user, writing it into `secrets/dev.yaml` with `just secrets edit dev`, then deleting the old key.
+Both AWS credentials belong to one dedicated IAM user, `WordholdDevelopment`, which has no console password and no permissions beyond Bedrock inference and `polly:SynthesizeSpeech`. Its inline policy `WordholdAiInference` allows `bedrock:InvokeModel` on the OpenAI model family, this account's `global.openai.gpt-*` inference profiles and its `project/default`, plus `bedrock:CallWithBearerToken`, which is what authorizes the API key itself.
 
-Bedrock model IDs must be exact inference-profile identifiers; `aws bedrock list-inference-profiles --region eu-central-1` prints the valid set. A shortened ID such as `eu.anthropic.claude-haiku-4-5` is rejected at invocation time, not at startup.
+The two credentials are different kinds of thing and rotate differently:
+
+```sh
+# SigV4 pair (Polly). Mint the replacement, store it, then delete the old key.
+aws iam create-access-key --user-name WordholdDevelopment
+
+# Bedrock API key (judge, sentence generation). The secret is shown once, at
+# creation, and never again, so pipe it straight into SOPS.
+aws iam create-service-specific-credential \
+  --user-name WordholdDevelopment --service-name bedrock.amazonaws.com
+```
+
+Write either into `secrets/dev.yaml` with `just secrets edit dev`, verify with `just dev-env-generate`, then delete the superseded credential (`aws iam delete-access-key` or `aws iam delete-service-specific-credential`). Never echo a secret to a terminal.
+
+Bedrock model IDs must be exact inference-profile identifiers, and a wrong one is rejected at invocation time rather than at startup. OpenAI models on Bedrock have no EU inference profile, so `eu-central-1` reaches them only through the `global.` profile.
 
 `GOOGLE_SERVICE_ACCOUNT_JSON` is the single-line key JSON for the `wordhold-extraction` service account in Google Cloud project `wordhold-a52aa0`, which holds `roles/aiplatform.user` and nothing else. The project has billing enabled and the Vertex AI API turned on. Page extraction is the only feature that uses it. Rotate by creating a second key with `gcloud iam service-accounts keys create`, writing it into `secrets/dev.yaml` with `just secrets edit dev`, then deleting the old key ID.
 

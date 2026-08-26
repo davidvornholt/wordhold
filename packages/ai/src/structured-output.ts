@@ -8,3 +8,12 @@ import { JSONSchema, type Schema } from 'effect';
 // model returns is untrusted until decoding validates it.
 export const providerJsonSchema = <A, I>(schema: Schema.Schema<A, I>) =>
   jsonSchema<unknown>(JSONSchema.make(schema));
+
+// Constrained decoding is the entire reason these calls go through the
+// OpenAI-compatible endpoint, so it is requested explicitly instead of being
+// left to a provider default that could change under us. `medium` is Luna's
+// own default reasoning level; the calls here are short grading and sentence
+// tasks where the model still has to reason about German grammar.
+export const structuredOutputOptions = {
+  openai: { strictJsonSchema: true, reasoningEffort: 'medium' },
+};

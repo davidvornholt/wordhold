@@ -5,6 +5,9 @@ import { Config } from 'effect';
 export const awsRegion = Config.string('AWS_REGION');
 export const awsAccessKeyId = Config.redacted('AWS_ACCESS_KEY_ID');
 export const awsSecretAccessKey = Config.redacted('AWS_SECRET_ACCESS_KEY');
+// Bedrock's OpenAI-compatible endpoint takes a bearer token, not the SigV4
+// pair above. Polly still needs the pair, so both live here.
+export const bedrockApiKey = Config.redacted('AWS_BEDROCK_API_KEY');
 
 export const judgeModel = Config.string('AI_JUDGE_MODEL');
 export const sentenceModel = Config.string('AI_SENTENCE_MODEL');

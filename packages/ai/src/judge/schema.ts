@@ -22,8 +22,16 @@ const allDimensionsPass = (verdict: {
 
 // Multi-dimensional verdict: an answer is judged on what it got right and
 // wrong, not just pass/fail. `correct` drives FSRS rating derivation;
-// `acceptAsAlternative` triggers the accepted-answer write-back so the same
+// `acceptAsAlternative` proposes the accepted-answer write-back so the same
 // answer never reaches the judge again.
+//
+// Nothing here constrains one field by another. Structured output guarantees
+// the shape, not the reasoning, and a model that calls an answer a good
+// alternative while faulting one dimension has still written a verdict worth
+// showing. Rejecting it at decoding would discard the explanation too and
+// leave the learner looking at "judge unreachable" over a disagreement about
+// a boolean. `isAcceptedAlternative` is the gate that matters, because it
+// guards the only irreversible step: writing the answer back as accepted.
 export const JudgeVerdict = Schema.Struct({
   correct: Schema.Boolean,
   acceptAsAlternative: Schema.Boolean,
@@ -33,17 +41,7 @@ export const JudgeVerdict = Schema.Struct({
   spelling: Dimension,
   intendedConstruction: Dimension,
   explanation: Schema.String,
-}).pipe(
-  Schema.filter(
-    (verdict) =>
-      !verdict.acceptAsAlternative ||
-      (verdict.correct && allDimensionsPass(verdict)),
-    {
-      message: () =>
-        'An accepted alternative must be correct and pass every grading dimension.',
-    },
-  ),
-);
+});
 export type JudgeVerdictData = typeof JudgeVerdict.Type;
 
 export const isAcceptedAlternative = (verdict: JudgeVerdictData): boolean =>

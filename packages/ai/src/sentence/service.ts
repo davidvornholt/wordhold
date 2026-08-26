@@ -2,7 +2,10 @@ import { generateText, Output } from 'ai';
 import { Effect, Schema } from 'effect';
 import { sentenceModel } from '../config';
 import { BedrockProvider } from '../providers/bedrock';
-import { providerJsonSchema } from '../structured-output';
+import {
+  providerJsonSchema,
+  structuredOutputOptions,
+} from '../structured-output';
 import { SentenceGenError } from './error';
 
 export const SentenceBatch = Schema.Struct({
@@ -47,9 +50,10 @@ export class SentenceGen extends Effect.Service<SentenceGen>()(
         Effect.tryPromise({
           try: async () => {
             const { output } = await generateText({
-              model: bedrock(modelId),
+              model: bedrock.chat(modelId),
               output: Output.object({ schema: batchOutput }),
               prompt: sentencePrompt(request),
+              providerOptions: structuredOutputOptions,
             });
             return output;
           },
