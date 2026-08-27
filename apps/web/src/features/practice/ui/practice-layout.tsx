@@ -44,6 +44,7 @@ export const PracticeEmpty = ({
   backControl,
 }: PracticeEmptyProps) => {
   const heading = sessionHeading(total, ungraded);
+  const cardLabel = total === 1 ? 'Karte' : 'Karten';
 
   return (
     <div className="flex flex-col gap-3 border border-border bg-card p-6">
@@ -52,7 +53,7 @@ export const PracticeEmpty = ({
       </ManagedStepHeading>
       {total === 0 ? null : (
         <p className="text-sm">
-          {correct} von {total} Karten auf Anhieb richtig
+          {correct} von {total} {cardLabel} auf Anhieb richtig
           {wrong === 0 ? '.' : `, ${wrong} noch einmal geübt.`}
         </p>
       )}

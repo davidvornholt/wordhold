@@ -88,6 +88,24 @@ export const PracticeEmptyFixture = () => (
   </PracticeLayout>
 );
 
+type PracticeOneCardSummaryFixtureProps = {
+  readonly ungraded: boolean;
+};
+
+export const PracticeOneCardSummaryFixture = ({
+  ungraded,
+}: PracticeOneCardSummaryFixtureProps) => (
+  <PracticeLayout backControl={backControl} courseName="English A2">
+    <PracticeEmpty
+      backControl={backControl}
+      correct={ungraded ? 0 : 1}
+      total={1}
+      ungraded={ungraded ? 1 : 0}
+      wrong={0}
+    />
+  </PracticeLayout>
+);
+
 type DeferredResult = {
   readonly promise: Promise<SubmitResult>;
   readonly resolve: (value: SubmitResult) => void;
