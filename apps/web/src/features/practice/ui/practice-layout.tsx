@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { ManagedStepHeading } from './managed-step-heading';
 
 type PracticeLayoutProps = {
   readonly backControl: ReactNode;
@@ -41,22 +42,28 @@ export const PracticeEmpty = ({
   wrong,
   ungraded,
   backControl,
-}: PracticeEmptyProps) => (
-  <div className="flex flex-col gap-3 border border-border bg-card p-6">
-    <p className="font-medium">{sessionHeading(total, ungraded)}</p>
-    {total === 0 ? null : (
-      <p className="text-sm">
-        {correct} von {total} Karten auf Anhieb richtig
-        {wrong === 0 ? '.' : `, ${wrong} noch einmal geübt.`}
-      </p>
-    )}
-    {ungraded === 0 ? null : (
-      <p className="border-warning-foreground border-l-4 bg-warning p-3 text-sm">
-        {ungraded === 1
-          ? '1 Karte konnte nicht bewertet werden und bleibt fällig.'
-          : `${ungraded} Karten konnten nicht bewertet werden und bleiben fällig.`}
-      </p>
-    )}
-    {backControl}
-  </div>
-);
+}: PracticeEmptyProps) => {
+  const heading = sessionHeading(total, ungraded);
+
+  return (
+    <div className="flex flex-col gap-3 border border-border bg-card p-6">
+      <ManagedStepHeading className="font-display text-xl">
+        {heading}
+      </ManagedStepHeading>
+      {total === 0 ? null : (
+        <p className="text-sm">
+          {correct} von {total} Karten auf Anhieb richtig
+          {wrong === 0 ? '.' : `, ${wrong} noch einmal geübt.`}
+        </p>
+      )}
+      {ungraded === 0 ? null : (
+        <p className="border-warning-foreground border-l-4 bg-warning p-3 text-sm">
+          {ungraded === 1
+            ? '1 Karte konnte nicht bewertet werden und bleibt fällig.'
+            : `${ungraded} Karten konnten nicht bewertet werden und bleiben fällig.`}
+        </p>
+      )}
+      {backControl}
+    </div>
+  );
+};
