@@ -1,5 +1,5 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
-import postgres from 'postgres';
+import { makePostgresConnection } from './postgres-connection';
 import {
   account,
   accountRelations,
@@ -42,4 +42,5 @@ export const schema = {
 
 // Plain drizzle client for consumers that need one outside the Effect runtime
 // (better-auth's adapter). Effect code uses PgLive from ./client instead.
-export const makeDrizzle = (url: string) => drizzle(postgres(url), { schema });
+export const makeDrizzle = (url: string) =>
+  drizzle(makePostgresConnection(url), { schema });

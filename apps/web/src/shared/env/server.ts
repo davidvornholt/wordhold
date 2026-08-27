@@ -30,11 +30,33 @@ const requiredTimeZone = (name: string): string => {
   return value;
 };
 
+const requiredHttpOrigin = (name: string): string => {
+  const value = required(name);
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch (cause) {
+    throw new Error(`${name} must be an HTTP(S) origin`, { cause });
+  }
+  const isHttp = url.protocol === 'http:' || url.protocol === 'https:';
+  const isOrigin =
+    url.pathname === '/' &&
+    url.search === '' &&
+    url.hash === '' &&
+    url.username === '' &&
+    url.password === '';
+  if (!(isHttp && isOrigin)) {
+    throw new Error(`${name} must be an HTTP(S) origin`);
+  }
+  return url.origin;
+};
+
 export const defaultDataDir = (): string =>
   join(homedir(), '.local', 'share', 'wordhold');
 
 export const serverEnv = {
   databaseUrl: () => required('DATABASE_URL'),
+  publicUrl: () => requiredHttpOrigin('WORDHOLD_PUBLIC_URL'),
   dataDir: () => optional('WORDHOLD_DATA_DIR', defaultDataDir()),
   ownerTimeZone: () => requiredTimeZone('WORDHOLD_OWNER_TIME_ZONE'),
   authSecret: () => required('AUTH_SECRET'),
