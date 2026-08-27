@@ -8,6 +8,7 @@ import { authRuntime } from './runtime';
 // Wordhold is a single-user deployment: GitHub OAuth authenticates, but only
 // the allowlisted GitHub account may be persisted or receive a session.
 export const auth = betterAuth({
+  baseURL: serverEnv.publicUrl(),
   secret: serverEnv.authSecret(),
   database: drizzleAdapter(db, { provider: 'pg' }),
   socialProviders: {

@@ -1,0 +1,261 @@
+name: Publish container
+
+# personal-infra binds this workflow by path and id and accepts only a
+# successful push run for the exact source commit. The publishing gate waits
+# for the canonical Standards run at that commit instead of duplicating it.
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  container-smoke:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:18-alpine
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: app
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U app -d app"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - name: Checkout the pull request head
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build the runtime image without credentials
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          load: true
+          tags: wordhold:pull-request
+          cache-from: type=gha
+
+      - name: Verify migrations and database-backed health
+        run: |
+          set -euo pipefail
+          env_file="$RUNNER_TEMP/wordhold-smoke.env"
+          cat >"$env_file" <<'ENV'
+          DATABASE_URL=postgresql://app:app@127.0.0.1:5432/app
+          WORDHOLD_PUBLIC_URL=http://127.0.0.1:3100
+          WORDHOLD_DATA_DIR=/tmp/wordhold
+          WORDHOLD_OWNER_TIME_ZONE=Europe/Berlin
+          AUTH_SECRET=0000000000000000000000000000000000000000000000000000000000000000
+          GITHUB_CLIENT_ID=preview-inert
+          GITHUB_CLIENT_SECRET=preview-inert
+          GITHUB_ALLOWED_USER_ID=1
+          AWS_REGION=eu-central-1
+          AWS_BEDROCK_REGION=us-east-1
+          AWS_BEDROCK_API_KEY=preview-inert
+          AWS_ACCESS_KEY_ID=preview-inert
+          AWS_SECRET_ACCESS_KEY=preview-inert
+          AI_JUDGE_MODEL=preview-inert
+          AI_SENTENCE_MODEL=preview-inert
+          AI_EXTRACTION_MODEL=preview-inert
+          AI_EXTRACTION_ESCALATION_MODEL=preview-inert
+          GOOGLE_VERTEX_LOCATION=global
+          GOOGLE_SERVICE_ACCOUNT_JSON={}
+          PORT=3100
+          ENV
+
+          for _ in 1 2; do
+            docker run --rm --network host --env-file "$env_file" \
+              wordhold:pull-request \
+              bun run --cwd packages/db db:migrate:production
+          done
+
+          container=wordhold-pull-request-smoke
+          trap 'docker rm --force "$container" >/dev/null 2>&1 || true' EXIT
+          docker run --detach --rm --name "$container" --network host \
+            --read-only --tmpfs /tmp:rw,nosuid,nodev,noexec,size=64m \
+            --cap-drop ALL --security-opt no-new-privileges \
+            --env-file "$env_file" wordhold:pull-request
+
+          response=
+          for _ in $(seq 1 40); do
+            if response=$(curl --fail --silent --show-error \
+              http://127.0.0.1:3100/api/health); then
+              break
+            fi
+            sleep 0.25
+          done
+          test "$(jq -er .status <<<"$response")" = ok
+          test "$(docker inspect "$container" --format '{{.Config.User}}')" = 65532:65532
+
+  gate:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+    outputs:
+      gated-sha: ${{ steps.gate.outputs.sha }}
+    steps:
+      - name: Require the standards gate for this exact commit
+        id: gate
+        env:
+          GATE_JOB: check
+          GATE_WORKFLOW: standards.yml
+          GATE_WORKFLOW_PATH: .github/workflows/standards.yml
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          deadline=$(($(date -u +%s) + 2400))
+          while :; do
+            runs=$(gh api "repos/$REPOSITORY/actions/workflows/$GATE_WORKFLOW/runs?head_sha=$SHA&event=push&per_page=100")
+            total_count=$(jq -er '.total_count' <<<"$runs")
+            if [ "$total_count" -gt 100 ]; then
+              echo "::error::More than 100 candidate $GATE_WORKFLOW runs exist for $SHA"
+              exit 1
+            fi
+            run=$(jq -cr \
+              --arg event push \
+              --arg path "$GATE_WORKFLOW_PATH" \
+              --arg sha "$SHA" \
+              '[.workflow_runs[] | select(.head_sha == $sha and .event == $event and .path == $path)] | sort_by(.run_attempt, .id) | last // empty' \
+              <<<"$runs")
+            if [ -n "$run" ] && [ "$(jq -er .status <<<"$run")" = completed ]; then
+              break
+            fi
+            if [ "$(date -u +%s)" -ge "$deadline" ]; then
+              echo "::error::The $GATE_WORKFLOW gate did not complete for $SHA within the deadline"
+              exit 1
+            fi
+            sleep 20
+          done
+
+          test "$(jq -er .head_sha <<<"$run")" = "$SHA"
+          conclusion=$(jq -er .conclusion <<<"$run")
+          if [ "$conclusion" != success ]; then
+            echo "::error::The $GATE_WORKFLOW gate concluded $conclusion for $SHA"
+            exit 1
+          fi
+
+          run_id=$(jq -er .id <<<"$run")
+          jobs=$(gh api "repos/$REPOSITORY/actions/runs/$run_id/jobs?per_page=100")
+          job_count=$(jq -er '.total_count' <<<"$jobs")
+          if [ "$job_count" -gt 100 ]; then
+            echo "::error::More than 100 jobs exist in $GATE_WORKFLOW run $run_id"
+            exit 1
+          fi
+          job=$(jq -cer --arg name "$GATE_JOB" '[.jobs[] | select(.name == $name)] | if length == 1 then .[0] else empty end' <<<"$jobs")
+          if [ -z "$job" ]; then
+            echo "::error::The $GATE_WORKFLOW run $run_id did not contain exactly one $GATE_JOB job"
+            exit 1
+          fi
+          job_conclusion=$(jq -er .conclusion <<<"$job")
+          if [ "$job_conclusion" != success ]; then
+            echo "::error::The $GATE_JOB job of run $run_id concluded $job_conclusion for $SHA"
+            exit 1
+          fi
+
+          echo "::notice::$GATE_WORKFLOW run $run_id gated $SHA"
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: gate
+    if: needs.gate.outputs.gated-sha == github.sha
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - name: Checkout the commit being published
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+
+      - name: Require the exact current main commit
+        env:
+          GATED_SHA: ${{ needs.gate.outputs.gated-sha }}
+        run: |
+          set -euo pipefail
+          checkout_sha=$(git rev-parse HEAD)
+          remote_main_sha=$(git ls-remote origin refs/heads/main | cut -f1)
+          test "$checkout_sha" = "$GATED_SHA"
+          test "$GATED_SHA" = "$GITHUB_SHA"
+          test "$GITHUB_SHA" = "$remote_main_sha"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to the GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Build and publish the tracked tag
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          provenance: false
+          tags: ghcr.io/davidvornholt/wordhold:main
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Emit immutable promotion record
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+          IMAGE: ghcr.io/davidvornholt/wordhold
+          REF: ${{ github.ref }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          [[ "$DIGEST" =~ ^sha256:[0-9a-f]{64}$ && "$SHA" =~ ^[0-9a-f]{40}$ && "$RUN_ID" =~ ^[1-9][0-9]*$ ]]
+          test "$REPOSITORY" = davidvornholt/wordhold
+          test "$REF" = refs/heads/main
+          test "$IMAGE" = ghcr.io/davidvornholt/wordhold
+          record=$(jq -cn --arg repository "$REPOSITORY" --arg ref "$REF" --arg sha "$SHA" --arg runId "$RUN_ID" --arg image "$IMAGE" --arg digest "$DIGEST" '{repository:$repository,ref:$ref,sha:$sha,runId:$runId,image:$image,digest:$digest}')
+          marker_left=IMAGE_PROMOTION
+          marker_right=_RECORD
+          printf '%s %s\n' "${marker_left}${marker_right}" "$record"
+
+      - name: Require anonymous access to the exact digest
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+          IMAGE: ghcr.io/davidvornholt/wordhold
+        run: |
+          set -euo pipefail
+          [[ "$DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          docker logout ghcr.io
+          anonymous_config="$RUNNER_TEMP/anonymous-docker"
+          mkdir -p "$anonymous_config"
+          printf '{"auths":{}}\n' >"$anonymous_config/config.json"
+          DOCKER_CONFIG="$anonymous_config" \
+            docker buildx imagetools inspect "$IMAGE@$DIGEST" >/dev/null

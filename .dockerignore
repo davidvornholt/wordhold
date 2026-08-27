@@ -1,0 +1,11 @@
+.git
+.github
+.turbo
+.env*
+**/.env*
+**/dist
+**/node_modules
+apps/web/playwright-report
+apps/web/test-results
+config/dev.local.yaml
+secrets

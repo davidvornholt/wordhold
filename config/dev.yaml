@@ -6,6 +6,7 @@
 # This file is seeded once and then owned by your repo.
 apps:
   web:
+    WORDHOLD_PUBLIC_URL: http://localhost:3000
     WORDHOLD_OWNER_TIME_ZONE: Europe/Berlin
     AWS_REGION: eu-central-1
     AWS_BEDROCK_REGION: us-east-1

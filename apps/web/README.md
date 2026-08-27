@@ -22,6 +22,7 @@ through `src/shared/env/server.ts`.
 | Variable | Purpose |
 | --- | --- |
 | `DATABASE_URL` | Postgres connection string for the app database. |
+| `WORDHOLD_PUBLIC_URL` | Public HTTP(S) origin used for authentication callbacks. Production uses `https://wordhold.vornholt.online`; previews use their own origin. |
 | `AUTH_SECRET` | better-auth signing secret (64 hex chars). |
 | `GITHUB_CLIENT_ID` | GitHub OAuth app client ID. |
 | `GITHUB_CLIENT_SECRET` | GitHub OAuth app client secret. |
@@ -39,6 +40,12 @@ through `src/shared/env/server.ts`.
 | `GOOGLE_VERTEX_LOCATION` | Google Enterprise AI location (`global`). |
 | `GOOGLE_SERVICE_ACCOUNT_JSON` | Service-account key JSON for the Google Enterprise AI adapter. |
 | `WORDHOLD_DATA_DIR` | Directory for page images and generated audio. Optional. Defaults to `~/.local/share/wordhold`, outside the Git checkout. Set an absolute path for deployment storage. |
+
+## Production image
+
+The root `Dockerfile` builds the app with TanStack Start's Nitro Bun preset and serves HTTP on `0.0.0.0:3000`. Run `bun run --cwd packages/db db:migrate:production` from the same image before starting a new digest. The command applies the committed Drizzle migrations from `packages/db/drizzle` and exits non-zero when PostgreSQL is unavailable or a migration fails.
+
+`GET /api/health` returns `200` only after a real PostgreSQL query succeeds. It returns `503` when the database is unavailable and always disables response caching. Runtime infrastructure should use this endpoint for readiness after migrations.
 
 ## Provider credentials
 

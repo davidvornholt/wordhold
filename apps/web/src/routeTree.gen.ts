@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiPagesRouteImport } from './routes/api/pages'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as CoursesCourseIdIndexRouteImport } from './routes/courses/$courseId/index'
@@ -26,6 +27,11 @@ import { Route as CoursesCourseIdUnitsUnitIdLearnRouteImport } from './routes/co
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiHealthRoute = ApiHealthRouteImport.update({
+  id: '/api/health',
+  path: '/api/health',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPagesRoute = ApiPagesRouteImport.update({
@@ -94,6 +100,7 @@ const CoursesCourseIdUnitsUnitIdLearnRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/api/health': typeof ApiHealthRoute
   '/api/pages': typeof ApiPagesRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/courses/$courseId/import': typeof CoursesCourseIdImportRoute
@@ -109,6 +116,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/api/health': typeof ApiHealthRoute
   '/api/pages': typeof ApiPagesRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/courses/$courseId/import': typeof CoursesCourseIdImportRoute
@@ -125,6 +133,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/api/health': typeof ApiHealthRoute
   '/api/pages': typeof ApiPagesRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/courses/$courseId/import': typeof CoursesCourseIdImportRoute
@@ -142,6 +151,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/api/health'
     | '/api/pages'
     | '/api/auth/$'
     | '/courses/$courseId/import'
@@ -157,6 +167,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/api/health'
     | '/api/pages'
     | '/api/auth/$'
     | '/courses/$courseId/import'
@@ -172,6 +183,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/api/health'
     | '/api/pages'
     | '/api/auth/$'
     | '/courses/$courseId/import'
@@ -188,6 +200,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApiHealthRoute: typeof ApiHealthRoute
   ApiPagesRoute: typeof ApiPagesRouteWithChildren
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   CoursesCourseIdImportRoute: typeof CoursesCourseIdImportRoute
@@ -208,6 +221,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/health': {
+      id: '/api/health'
+      path: '/api/health'
+      fullPath: '/api/health'
+      preLoaderRoute: typeof ApiHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/pages': {
@@ -311,6 +331,7 @@ const ApiPagesRouteWithChildren = ApiPagesRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApiHealthRoute: ApiHealthRoute,
   ApiPagesRoute: ApiPagesRouteWithChildren,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   CoursesCourseIdImportRoute: CoursesCourseIdImportRoute,
