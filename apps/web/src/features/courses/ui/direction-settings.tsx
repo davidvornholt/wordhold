@@ -2,7 +2,7 @@ import {
   type AnswerDirection,
   answerDirections,
 } from '@wordhold/db/schema/directions';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   directionDescription,
   directionLabel,
@@ -28,10 +28,22 @@ export const DirectionSettings = ({
 }: DirectionSettingsProps) => {
   const [directions, setDirections] =
     useState<ReadonlyArray<AnswerDirection>>(initial);
+  const restoreFocus = useRef<HTMLInputElement | null>(null);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState('');
 
-  const toggle = async (direction: AnswerDirection) => {
+  useEffect(() => {
+    if (saving || restoreFocus.current === null) {
+      return;
+    }
+    restoreFocus.current.focus();
+    restoreFocus.current = null;
+  }, [saving]);
+
+  const toggle = async (
+    direction: AnswerDirection,
+    trigger: HTMLInputElement,
+  ) => {
     if (saving) {
       return;
     }
@@ -44,6 +56,7 @@ export const DirectionSettings = ({
       setStatus('Eine Richtung bleibt immer an, sonst gibt es nichts zu üben.');
       return;
     }
+    restoreFocus.current = trigger;
     setDirections(next);
     setSaving(true);
     setStatus('Wird gespeichert …');
@@ -75,7 +88,7 @@ export const DirectionSettings = ({
               checked={directions.includes(direction)}
               className="mt-1 accent-primary"
               id={direction}
-              onChange={() => toggle(direction)}
+              onChange={(event) => toggle(direction, event.currentTarget)}
               type="checkbox"
             />
             <span className="flex flex-col gap-0.5">
