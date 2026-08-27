@@ -80,6 +80,7 @@ describe('PracticeReviewStore introduction contract', () => {
               outcome: { method: 'judge', verdict: acceptedVerdict },
               answer: 'nouveau',
               elapsedMs: 1000,
+              mode: 'scheduled',
               entryId: identity.entryId,
               direction: identity.direction,
               normalizedAnswer: 'nouveau',

@@ -18,6 +18,15 @@ export type SessionRequestData = typeof SessionRequest.Type;
 
 export const decodeSessionRequest = Schema.decodeUnknownSync(SessionRequest);
 
+export const DrillRequest = Schema.Struct({
+  unitId: Schema.UUID,
+  direction: SessionDirectionSchema,
+});
+
+export type DrillRequestData = typeof DrillRequest.Type;
+
+export const decodeDrillRequest = Schema.decodeUnknownSync(DrillRequest);
+
 const PracticeSearch = Schema.Struct({
   direction: Schema.optional(SessionDirectionSchema),
 });

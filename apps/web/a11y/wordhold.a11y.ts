@@ -60,7 +60,8 @@ test('authenticated routes remain reachable through their user transitions', asy
     'dashboard',
   );
 
-  await page.getByRole('button', { name: 'Üben' }).click();
+  // Exact, because the card also offers "Einheit üben" next to it.
+  await page.getByRole('button', { name: 'Üben', exact: true }).click();
   await page.getByLabel('Deine Antwort').fill('wrong');
   await page.getByRole('button', { name: 'Prüfen' }).click();
   await expect(page.locator('body')).toHaveAttribute(

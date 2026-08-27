@@ -2,7 +2,7 @@ import type { JudgeVerdictData } from '@wordhold/ai/judge/schema';
 import type { LanguageCode } from '@wordhold/db/schema/courses';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import type { EntryType } from '@wordhold/db/schema/entries';
-import type { cards } from '@wordhold/db/schema/practice';
+import type { cards, ReviewMode } from '@wordhold/db/schema/practice';
 import type {
   DerivedRating,
   GradeOutcome,
@@ -42,6 +42,7 @@ export type PersistReviewInput = {
   readonly entryId: string;
   readonly direction: AnswerDirection;
   readonly normalizedAnswer: string;
+  readonly mode: ReviewMode;
 };
 
 export type CachedJudgeVerdict = {

@@ -15,6 +15,7 @@ import type {
 import type { AcceptedAnswer } from './deterministic-grading';
 import { applyRating } from './fsrs';
 import { commitGradedAnswer, type RunReviewTransaction } from './review-commit';
+import { advancesSchedule } from './schedule-guard';
 
 type SubmissionRow = typeof cards.$inferSelect & {
   readonly entryType: EntryType;
@@ -117,18 +118,26 @@ export class PracticeReviewStore extends Context.Tag(
           sql
             .withTransaction(
               work({
-                advanceCard: () =>
-                  sql<{ readonly revision: number }>`
-                    update cards set state = ${next.state}::card_state,
-                      due_at = ${next.dueAt}, stability = ${next.stability},
-                      difficulty = ${next.difficulty}, reps = ${next.reps},
-                      lapses = ${next.lapses}, scheduled_days = ${next.scheduledDays},
-                      learning_steps = ${next.learningSteps},
-                      last_reviewed_at = ${next.lastReviewedAt}, revision = revision + 1
-                    where id = ${input.card.id} and revision = ${input.expectedRevision}
-                      and introduced_at is not null
-                    returning revision
-                  `.pipe(
+                advanceCard: (advanceSchedule) =>
+                  (advanceSchedule
+                    ? sql<{ readonly revision: number }>`
+                        update cards set state = ${next.state}::card_state,
+                          due_at = ${next.dueAt}, stability = ${next.stability},
+                          difficulty = ${next.difficulty}, reps = ${next.reps},
+                          lapses = ${next.lapses}, scheduled_days = ${next.scheduledDays},
+                          learning_steps = ${next.learningSteps},
+                          last_reviewed_at = ${next.lastReviewedAt}, revision = revision + 1
+                        where id = ${input.card.id} and revision = ${input.expectedRevision}
+                          and introduced_at is not null
+                        returning revision
+                      `
+                    : sql<{ readonly revision: number }>`
+                        update cards set revision = revision + 1
+                        where id = ${input.card.id} and revision = ${input.expectedRevision}
+                          and introduced_at is not null
+                        returning revision
+                      `
+                  ).pipe(
                     Effect.map((rows) => rows.at(0)?.revision),
                     Effect.mapError(mapCommitError),
                   ),
@@ -143,9 +152,10 @@ export class PracticeReviewStore extends Context.Tag(
                 insertReview: () =>
                   sql`
                     insert into reviews
-                      (card_id, rating, answer_text, grading, elapsed_ms)
+                      (card_id, rating, answer_text, grading, elapsed_ms, mode)
                     values (${input.card.id}, ${input.rating}, ${input.answer},
-                      ${JSON.stringify(input.outcome)}::jsonb, ${input.elapsedMs})
+                      ${JSON.stringify(input.outcome)}::jsonb, ${input.elapsedMs},
+                      ${input.mode}::review_mode)
                   `.pipe(Effect.asVoid, Effect.mapError(mapCommitError)),
               }),
             )
@@ -154,9 +164,13 @@ export class PracticeReviewStore extends Context.Tag(
                 Effect.fail(mapCommitError(cause)),
               ),
             );
+        // The review is always written. A future review card still claims its
+        // revision, but its FSRS fields stay unchanged. The client mode labels
+        // provenance only and cannot alter this server-owned decision.
         return commitGradedAnswer(
           runTransaction,
           input.outcome.method === 'judge' ? input.outcome.verdict : null,
+          advancesSchedule(input.card, input.reviewedAt),
         );
       };
       return { findSubmission, listAcceptedAnswers, commit } as const;

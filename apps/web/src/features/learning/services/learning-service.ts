@@ -10,7 +10,6 @@ export class LearningService extends Effect.Service<LearningService>()(
   {
     effect: Effect.gen(function* () {
       const store = yield* LearningStore;
-      const listUnits = (courseId: string) => store.listUnits(courseId);
       const getPass = (courseId: string, unitId: string) =>
         Effect.gen(function* () {
           const pass = yield* store.loadPass(courseId, unitId);
@@ -31,7 +30,7 @@ export class LearningService extends Effect.Service<LearningService>()(
             });
           }
         });
-      return { listUnits, getPass, introduce } as const;
+      return { getPass, introduce } as const;
     }),
   },
 ) {}

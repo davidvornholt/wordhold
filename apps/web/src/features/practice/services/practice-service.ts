@@ -12,7 +12,10 @@ import type {
   PracticeItem,
   SubmissionRecord,
 } from '../schemas/practice-models';
-import type { SessionRequestData } from '../schemas/session-request';
+import type {
+  DrillRequestData,
+  SessionRequestData,
+} from '../schemas/session-request';
 import type { SubmitPayloadData } from '../schemas/submission-schema';
 import {
   type AcceptedAnswer,
@@ -54,6 +57,13 @@ type GradeAnswerInput = {
   readonly cache: JudgeCacheStore['Type'];
   readonly judge: PracticeJudge['Type'];
 };
+
+// The side of the card the learner sees. Stored rows carry both texts; which
+// one is the question depends on the direction the card is asked in.
+const withPrompt = (item: Omit<PracticeItem, 'prompt'>): PracticeItem => ({
+  ...item,
+  prompt: item.direction === 'to_target' ? item.nativeText : item.targetText,
+});
 
 const gradeAnswer = ({
   row,
@@ -102,15 +112,15 @@ export class PracticeService extends Effect.Service<PracticeService>()(
         Effect.gen(function* () {
           const now = new Date(yield* Clock.currentTimeMillis);
           const { due, fresh } = yield* sessions.load(courseId, direction, now);
-          const items = [...due, ...fresh].map((item) => ({
-            ...item,
-            prompt:
-              item.direction === 'to_target'
-                ? item.nativeText
-                : item.targetText,
-          }));
-          return { items } satisfies PracticeSession;
+          return {
+            items: [...due, ...fresh].map(withPrompt),
+          } satisfies PracticeSession;
         });
+      const getDrill = ({ unitId, direction }: DrillRequestData) =>
+        Effect.map(
+          sessions.loadUnit(unitId, direction),
+          (items): PracticeSession => ({ items: items.map(withPrompt) }),
+        );
       const submit = (data: SubmitPayloadData) =>
         Effect.gen(function* () {
           const row = yield* reviews.findSubmission(data.cardId, data.revision);
@@ -157,6 +167,7 @@ export class PracticeService extends Effect.Service<PracticeService>()(
             entryId: row.entry.id,
             direction: row.card.direction,
             normalizedAnswer: normalized,
+            mode: data.mode,
           });
           return {
             graded: true as const,
@@ -171,7 +182,7 @@ export class PracticeService extends Effect.Service<PracticeService>()(
               isAcceptedAlternative(outcome.verdict),
           };
         });
-      return { getSession, submit } as const;
+      return { getSession, getDrill, submit } as const;
     }),
   },
 ) {}

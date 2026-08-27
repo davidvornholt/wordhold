@@ -3,18 +3,18 @@ import { ManagedStepHeading } from './managed-step-heading';
 
 type PracticeLayoutProps = {
   readonly backControl: ReactNode;
-  readonly courseName: string;
+  readonly title: string;
   readonly children: ReactNode;
 };
 
 export const PracticeLayout = ({
   backControl,
-  courseName,
+  title,
   children,
 }: PracticeLayoutProps) => (
-  <main className="mx-auto flex max-w-lg flex-col gap-4 p-6">
+  <main className="page-column flex flex-col gap-4 p-6">
     {backControl}
-    <h1 className="font-display font-semibold text-2xl">{courseName}: Üben</h1>
+    <h1 className="font-display font-semibold text-2xl">{title}</h1>
     {children}
   </main>
 );
@@ -23,6 +23,7 @@ type PracticeEmptyProps = {
   readonly total: number;
   readonly correct: number;
   readonly wrong: number;
+  readonly emptyMessage: string;
   readonly ungraded: number;
   readonly backControl: ReactNode;
 };
@@ -35,15 +36,16 @@ const sessionHeading = (total: number, ungraded: number) => {
 };
 
 // The end of the session. The tally is per card, not per attempt. A provider
-// failure is its own outcome because that card remains due.
+// failure is its own outcome because the card's stored state stays unchanged.
 export const PracticeEmpty = ({
   total,
   correct,
   wrong,
+  emptyMessage,
   ungraded,
   backControl,
 }: PracticeEmptyProps) => {
-  const heading = sessionHeading(total, ungraded);
+  const heading = total === 0 ? emptyMessage : sessionHeading(total, ungraded);
   const cardLabel = total === 1 ? 'Karte' : 'Karten';
 
   return (
@@ -60,8 +62,8 @@ export const PracticeEmpty = ({
       {ungraded === 0 ? null : (
         <p className="border-warning-foreground border-l-4 bg-warning p-3 text-sm">
           {ungraded === 1
-            ? '1 Karte konnte nicht bewertet werden und bleibt fällig.'
-            : `${ungraded} Karten konnten nicht bewertet werden und bleiben fällig.`}
+            ? '1 Karte konnte nicht bewertet werden. Lernstand und Termin blieben unverändert.'
+            : `${ungraded} Karten konnten nicht bewertet werden. Lernstände und Termine blieben unverändert.`}
         </p>
       )}
       {backControl}

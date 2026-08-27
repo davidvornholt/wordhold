@@ -18,6 +18,7 @@ type CourseCardProps = {
     | undefined;
   readonly practiceAction: ReactNode;
   readonly learnAction: ReactNode;
+  readonly drillAction: ReactNode;
   readonly importAction: ReactNode;
   readonly settingsAction: ReactNode;
 };
@@ -27,6 +28,7 @@ export const CourseCard = ({
   stats,
   practiceAction,
   learnAction,
+  drillAction,
   importAction,
   settingsAction,
 }: CourseCardProps) => {
@@ -59,6 +61,9 @@ export const CourseCard = ({
       <div className="mt-auto flex flex-wrap gap-4">
         {due + fresh > 0 ? practiceAction : null}
         {unlearned > 0 ? learnAction : null}
+        {/* Drilling needs learned words, which is the only thing it asks
+            about; whether any of them are due today is beside the point. */}
+        {words - unlearned > 0 ? drillAction : null}
         {importAction}
         {settingsAction}
       </div>

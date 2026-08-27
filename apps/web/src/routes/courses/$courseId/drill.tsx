@@ -1,21 +1,27 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
+import { learnedWords } from '../../../features/courses/schemas/course-units';
 import { listCourseUnits } from '../../../features/courses/services/server-fns';
 import { UnitList } from '../../../features/courses/ui/unit-list';
 import { getCourse } from '../../../features/import/server-fns';
-import { LearningLayout } from '../../../features/learning/ui/learning-layout';
+import { PracticeLayout } from '../../../features/practice/ui/practice-layout';
 
-const LearnUnitsScreen = () => {
+const DrillUnitsScreen = () => {
   const { course, units } = Route.useLoaderData();
 
   return (
-    <LearningLayout
+    <PracticeLayout
       backControl={
         <Link className="text-muted-foreground text-sm underline" to="/">
           ← Übersicht
         </Link>
       }
-      title={`${course.name}: Lernen`}
+      title={`${course.name}: Einheit üben`}
     >
+      <p className="text-muted-foreground text-sm">
+        Für die Arbeit morgen. Eine Einheit am Stück, unabhängig davon, was
+        heute fällig wäre. Wörter, die noch nicht dran waren, behalten dabei
+        ihren Termin.
+      </p>
       <UnitList
         importAction={
           <Link
@@ -27,23 +33,23 @@ const LearnUnitsScreen = () => {
           </Link>
         }
         renderAction={(unit) =>
-          unit.unlearned === 0 ? null : (
+          learnedWords(unit) === 0 ? null : (
             <Link
               className="whitespace-nowrap font-medium text-sm underline"
               params={{ courseId: course.id, unitId: unit.id }}
-              to="/courses/$courseId/units/$unitId/learn"
+              to="/courses/$courseId/units/$unitId/drill"
             >
-              {unit.unlearned} lernen
+              {learnedWords(unit)} üben
             </Link>
           )
         }
         units={units}
       />
-    </LearningLayout>
+    </PracticeLayout>
   );
 };
 
-export const Route = createFileRoute('/courses/$courseId/learn')({
+export const Route = createFileRoute('/courses/$courseId/drill')({
   loader: async ({ params }) => {
     const [course, units] = await Promise.all([
       getCourse({ data: params.courseId }),
@@ -51,5 +57,5 @@ export const Route = createFileRoute('/courses/$courseId/learn')({
     ]);
     return { course, units };
   },
-  component: LearnUnitsScreen,
+  component: DrillUnitsScreen,
 });

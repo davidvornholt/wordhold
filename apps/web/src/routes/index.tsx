@@ -36,6 +36,15 @@ const Home = () => {
         <>
           <CourseGrid
             courses={courses}
+            renderDrillAction={(course) => (
+              <Link
+                className="text-sm underline"
+                params={{ courseId: course.id }}
+                to="/courses/$courseId/drill"
+              >
+                Einheit üben
+              </Link>
+            )}
             renderImportAction={(course) => (
               <Link
                 className="text-sm underline"

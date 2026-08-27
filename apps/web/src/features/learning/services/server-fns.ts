@@ -13,7 +13,6 @@ const learningLive = LearningService.Default.pipe(
 
 const learningRuntime = ManagedRuntime.make(learningLive);
 
-const decodeId = Schema.decodeUnknownSync(Schema.UUID);
 const decodePassRequest = Schema.decodeUnknownSync(
   Schema.Struct({ courseId: Schema.UUID, unitId: Schema.UUID }),
 );
@@ -24,15 +23,6 @@ const decodeIntroductionRequest = Schema.decodeUnknownSync(
     entryId: Schema.UUID,
   }),
 );
-
-export const listLearnableUnits = createServerFn()
-  .validator(decodeId)
-  .handler(async ({ data: courseId }) => {
-    await authRuntime.runPromise(requireSession(getRequest().headers));
-    return learningRuntime.runPromise(
-      Effect.flatMap(LearningService, (service) => service.listUnits(courseId)),
-    );
-  });
 
 export const getLearnPass = createServerFn()
   .validator(decodePassRequest)

@@ -9,6 +9,7 @@ import {
   DeferredCourseSettingsFixture,
   PracticeStartFixture,
 } from './direction-fixtures';
+import { DrillStartFixture, DrillUnitsFixture } from './drill-fixtures';
 import { navigateToFixture, readFixtureState } from './fixture-state';
 import {
   DeferredVerificationFixture,
@@ -27,7 +28,10 @@ import {
   PracticeFixture,
   PracticeOneCardSummaryFixture,
 } from './practice-fixtures';
-import { PracticeSessionFixture } from './practice-session-fixtures';
+import {
+  FutureDrillSessionFixture,
+  PracticeSessionFixture,
+} from './practice-session-fixtures';
 import { StaleUnitVerificationFixture } from './stale-unit-fixture';
 
 export const FixtureApp = () => {
@@ -67,6 +71,10 @@ export const FixtureApp = () => {
       return <LearnDoneFixture />;
     case 'course-settings':
       return <CourseSettingsFixture />;
+    case 'drill-units':
+      return <DrillUnitsFixture />;
+    case 'drill-start':
+      return <DrillStartFixture />;
     case 'course-settings-deferred':
       return <DeferredCourseSettingsFixture />;
     case 'practice':
@@ -75,6 +83,8 @@ export const FixtureApp = () => {
       return <PracticeStartFixture />;
     case 'practice-session':
       return <PracticeSessionFixture />;
+    case 'drill-session':
+      return <FutureDrillSessionFixture />;
     case 'practice-feedback':
       return <PracticeFeedbackFixture />;
     case 'practice-empty':

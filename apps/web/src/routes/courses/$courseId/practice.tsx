@@ -1,71 +1,16 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { useState } from 'react';
 import { getCourseDirections } from '../../../features/courses/services/server-fns';
 import { getCourse } from '../../../features/import/server-fns';
 import { parsePracticeSearch } from '../../../features/practice/schemas/session-request';
-import type { PracticeSession } from '../../../features/practice/services/practice-service';
-import {
-  getPracticeSession,
-  submitAnswer,
-} from '../../../features/practice/services/server-fns';
+import { getPracticeSession } from '../../../features/practice/services/server-fns';
 import {
   resolveSessionDirection,
   sessionOptions,
 } from '../../../features/practice/services/session-options';
-import {
-  advanceQueue,
-  createSessionQueue,
-} from '../../../features/practice/services/session-queue';
-import { CardPractice } from '../../../features/practice/ui/card-practice';
-import {
-  PracticeEmpty,
-  PracticeLayout,
-} from '../../../features/practice/ui/practice-layout';
-import { SessionProgress } from '../../../features/practice/ui/session-progress';
+import { PracticeLayout } from '../../../features/practice/ui/practice-layout';
+import { SessionRunner } from '../../../features/practice/ui/session-runner';
 import { SessionStart } from '../../../features/practice/ui/session-start';
 import { germanLabels } from '../../../shared/languages';
-
-type SessionRunnerProps = {
-  readonly session: PracticeSession;
-  readonly targetLabel: string;
-};
-
-const SessionRunner = ({ session, targetLabel }: SessionRunnerProps) => {
-  const [queue, setQueue] = useState(() => createSessionQueue(session.items));
-  const card = queue.pending.at(0);
-
-  return (
-    <>
-      {queue.total === 0 ? null : (
-        <SessionProgress settled={queue.settled} total={queue.total} />
-      )}
-      {card === undefined ? (
-        <PracticeEmpty
-          backControl={
-            <Link className="text-sm underline" to="/">
-              Zurück zur Übersicht
-            </Link>
-          }
-          correct={queue.correct}
-          total={queue.total}
-          ungraded={queue.ungraded}
-          wrong={queue.wrong}
-        />
-      ) : (
-        <CardPractice
-          item={card}
-          key={`${card.cardId}-${card.revision}`}
-          onNext={(result) =>
-            setQueue((current) => advanceQueue(current, card, result))
-          }
-          repeated={card.repeated}
-          submit={submitAnswer}
-          targetLabel={targetLabel}
-        />
-      )}
-    </>
-  );
-};
 
 const PracticeScreen = () => {
   const { course, directions, direction, session } = Route.useLoaderData();
@@ -78,7 +23,7 @@ const PracticeScreen = () => {
           ← Übersicht
         </Link>
       }
-      courseName={course.name}
+      title={`${course.name}: Üben`}
     >
       {session === null ? (
         <SessionStart
@@ -96,7 +41,14 @@ const PracticeScreen = () => {
         />
       ) : (
         <SessionRunner
+          backControl={
+            <Link className="text-sm underline" to="/">
+              Zurück zur Übersicht
+            </Link>
+          }
+          emptyMessage="Gerade ist nichts fällig."
           key={direction}
+          mode="scheduled"
           session={session}
           targetLabel={targetLabel}
         />

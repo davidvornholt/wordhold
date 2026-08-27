@@ -43,10 +43,11 @@ const backControl = (
 );
 
 export const PracticeFixture = () => (
-  <PracticeLayout backControl={backControl} courseName="English A2">
+  <PracticeLayout backControl={backControl} title="English A2: Üben">
     <SessionProgress settled={0} total={1} />
     <CardPractice
       item={item}
+      mode="scheduled"
       onNext={() => undefined}
       repeated={true}
       submit={() => {
@@ -59,7 +60,7 @@ export const PracticeFixture = () => (
 );
 
 export const PracticeFeedbackFixture = () => (
-  <PracticeLayout backControl={backControl} courseName="English A2">
+  <PracticeLayout backControl={backControl} title="English A2: Üben">
     <FeedbackPanel
       audioUrl={null}
       onNext={() => navigateToFixture('practice-empty')}
@@ -69,7 +70,7 @@ export const PracticeFeedbackFixture = () => (
 );
 
 export const PracticeEmptyFixture = () => (
-  <PracticeLayout backControl={backControl} courseName="English A2">
+  <PracticeLayout backControl={backControl} title="English A2: Üben">
     <PracticeEmpty
       backControl={
         <button
@@ -81,6 +82,7 @@ export const PracticeEmptyFixture = () => (
         </button>
       }
       correct={0}
+      emptyMessage="Gerade ist nichts fällig."
       total={0}
       ungraded={0}
       wrong={0}
@@ -95,10 +97,11 @@ type PracticeOneCardSummaryFixtureProps = {
 export const PracticeOneCardSummaryFixture = ({
   ungraded,
 }: PracticeOneCardSummaryFixtureProps) => (
-  <PracticeLayout backControl={backControl} courseName="English A2">
+  <PracticeLayout backControl={backControl} title="English A2: Üben">
     <PracticeEmpty
       backControl={backControl}
       correct={ungraded ? 0 : 1}
+      emptyMessage="Gerade ist nichts fällig."
       total={1}
       ungraded={ungraded ? 1 : 0}
       wrong={0}
@@ -134,9 +137,10 @@ export const DeferredPracticeFixture = () => {
     return pending.promise;
   };
   return (
-    <PracticeLayout backControl={backControl} courseName="English A2">
+    <PracticeLayout backControl={backControl} title="English A2: Üben">
       <CardPractice
         item={item}
+        mode="scheduled"
         onNext={() => undefined}
         repeated={false}
         submit={submit}

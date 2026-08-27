@@ -5,14 +5,14 @@ import { Effect, Layer, ManagedRuntime, Schema } from 'effect';
 import { requireSession } from '../../../shared/auth/require-session';
 import { authRuntime } from '../../../shared/auth/runtime';
 import { decodeSetCourseDirections } from '../schemas/course-directions';
-import { CourseDirectionsStore } from './course-directions-store';
-import { CourseSettingsService } from './course-settings-service';
+import { CourseService } from './course-service';
+import { CourseStore } from './course-store';
 
-const courseSettingsLive = CourseSettingsService.Default.pipe(
-  Layer.provide(CourseDirectionsStore.live.pipe(Layer.provide(PgLive))),
+const courseLive = CourseService.Default.pipe(
+  Layer.provide(CourseStore.live.pipe(Layer.provide(PgLive))),
 );
 
-const courseSettingsRuntime = ManagedRuntime.make(courseSettingsLive);
+const courseRuntime = ManagedRuntime.make(courseLive);
 
 const decodeId = Schema.decodeUnknownSync(Schema.UUID);
 
@@ -20,8 +20,8 @@ export const getCourseDirections = createServerFn()
   .validator(decodeId)
   .handler(async ({ data: courseId }) => {
     await authRuntime.runPromise(requireSession(getRequest().headers));
-    return courseSettingsRuntime.runPromise(
-      Effect.flatMap(CourseSettingsService, (service) =>
+    return courseRuntime.runPromise(
+      Effect.flatMap(CourseService, (service) =>
         service.getDirections(courseId),
       ),
     );
@@ -31,9 +31,16 @@ export const setCourseDirections = createServerFn({ method: 'POST' })
   .validator(decodeSetCourseDirections)
   .handler(async ({ data }) => {
     await authRuntime.runPromise(requireSession(getRequest().headers));
-    return courseSettingsRuntime.runPromise(
-      Effect.flatMap(CourseSettingsService, (service) =>
-        service.setDirections(data),
-      ),
+    return courseRuntime.runPromise(
+      Effect.flatMap(CourseService, (service) => service.setDirections(data)),
+    );
+  });
+
+export const listCourseUnits = createServerFn()
+  .validator(decodeId)
+  .handler(async ({ data: courseId }) => {
+    await authRuntime.runPromise(requireSession(getRequest().headers));
+    return courseRuntime.runPromise(
+      Effect.flatMap(CourseService, (service) => service.listUnits(courseId)),
     );
   });
