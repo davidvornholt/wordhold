@@ -23,6 +23,7 @@ import {
   PracticeEmptyFixture,
   PracticeFeedbackFixture,
   PracticeFixture,
+  PracticeOneCardSummaryFixture,
 } from './practice-fixtures';
 import {
   FutureDrillSessionFixture,
@@ -91,6 +92,10 @@ export const FixtureApp = () => {
       return <PracticeFeedbackFixture />;
     case 'practice-empty':
       return <PracticeEmptyFixture />;
+    case 'practice-complete-one-card':
+      return <PracticeOneCardSummaryFixture ungraded={false} />;
+    case 'practice-ungraded-one-card':
+      return <PracticeOneCardSummaryFixture ungraded={true} />;
     case 'practice-deferred':
       return <DeferredPracticeFixture />;
     case 'loading':

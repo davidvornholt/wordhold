@@ -6,6 +6,7 @@ import type {
   SubmitResult,
 } from '../services/practice-service';
 import { FeedbackPanel } from './feedback-panel';
+import { ManagedStepHeading } from './managed-step-heading';
 
 type SessionItem = PracticeSession['items'][number];
 
@@ -83,7 +84,9 @@ export const CardPractice = ({
         {repeated ? ' · Noch einmal' : null}
       </p>
       <div className="border border-border bg-card p-6">
-        <p className="font-display text-2xl">{item.prompt}</p>
+        <ManagedStepHeading className="font-display text-xl">
+          {item.prompt}
+        </ManagedStepHeading>
       </div>
       <form
         aria-busy={busy}
