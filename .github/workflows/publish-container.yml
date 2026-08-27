@@ -5,6 +5,12 @@ name: Publish container
 # for the canonical Standards run at that commit instead of duplicating it.
 on:
   pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+      - labeled
   push:
     branches:
       - main
@@ -15,12 +21,14 @@ jobs:
   container-smoke:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 90
     concurrency:
       group: ${{ github.workflow }}-pr-${{ github.event.pull_request.number }}
       cancel-in-progress: true
     permissions:
+      actions: read
       contents: read
+      pull-requests: read
     services:
       postgres:
         image: public.ecr.aws/docker/library/postgres:18-alpine
@@ -40,6 +48,76 @@ jobs:
         uses: actions/checkout@v7
         with:
           persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Require the exact pull request head before build
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          [[ "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+
+      - name: Select an eligible exact-head preview gate
+        id: eligibility
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          echo 'eligible=false' >>"$GITHUB_OUTPUT"
+          [[ "$HEAD_SHA" =~ ^[0-9a-f]{40}$ && "$PR_NUMBER" =~ ^[1-9][0-9]{0,5}$ ]]
+          test "$REPOSITORY" = davidvornholt/wordhold
+          pr=$(gh api "repos/$REPOSITORY/pulls/$PR_NUMBER")
+          test "$(jq -er .number <<<"$pr")" = "$PR_NUMBER"
+          if [ "$(jq -er .state <<<"$pr")" = open ] \
+            && [ "$(jq -er .draft <<<"$pr")" = false ] \
+            && [ "$(jq -er .base.repo.full_name <<<"$pr")" = "$REPOSITORY" ] \
+            && [ "$(jq -er .base.ref <<<"$pr")" = main ] \
+            && [ "$(jq -er .head.repo.full_name <<<"$pr")" = "$REPOSITORY" ] \
+            && [ "$(jq -er .head.sha <<<"$pr")" = "$HEAD_SHA" ] \
+            && [ "$(jq -er 'any(.labels[]; .name == "pr-preview")' <<<"$pr")" = true ]; then
+            echo 'eligible=true' >>"$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Bun for the exact-head gate
+        if: steps.eligibility.outputs.eligible == 'true'
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Install just for the exact-head gate
+        if: steps.eligibility.outputs.eligible == 'true'
+        uses: extractions/setup-just@v4
+        with:
+          just-version: "1.57.0"
+
+      - name: Install exact-head dependencies
+        if: steps.eligibility.outputs.eligible == 'true'
+        run: bun install --frozen-lockfile
+
+      - name: Install exact-head Playwright Chromium
+        if: steps.eligibility.outputs.eligible == 'true'
+        run: |
+          set -euo pipefail
+          playwright=$(find . -path '*/node_modules/.bin/playwright' -print -quit)
+          test -n "$playwright"
+          "$playwright" install --with-deps chromium
+
+      - name: Run the full exact-head repository gate
+        id: exact_head_gate
+        if: steps.eligibility.outputs.eligible == 'true'
+        env:
+          DATABASE_URL: postgresql://app:app@127.0.0.1:5432/app
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          STANDARDS_SKIP_GITHUB_CHECK: "true"
+        run: |
+          set -euo pipefail
+          [[ "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          bun run check
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
@@ -51,6 +129,10 @@ jobs:
           file: ./Dockerfile
           load: true
           tags: wordhold:pull-request
+          labels: |
+            org.opencontainers.image.revision=${{ github.event.pull_request.head.sha }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            online.vornholt.wordhold.preview=true
 
       - name: Verify migrations and database-backed health
         run: |
@@ -102,6 +184,157 @@ jobs:
           done
           test "$(jq -er .status <<<"$response")" = ok
           test "$(docker inspect "$container" --format '{{.Config.User}}')" = 65532:65532
+
+      - name: Require the exact current Standards gate and preview eligibility
+        id: preview
+        env:
+          EXACT_HEAD_GATE_OUTCOME: ${{ steps.exact_head_gate.outcome }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          echo 'eligible=false' >>"$GITHUB_OUTPUT"
+          [[ "$HEAD_SHA" =~ ^[0-9a-f]{40}$ && "$PR_NUMBER" =~ ^[1-9][0-9]{0,5}$ ]]
+          [[ "$RUN_ID" =~ ^[1-9][0-9]*$ && "$RUN_ATTEMPT" =~ ^[1-9][0-9]*$ ]]
+          test "$REPOSITORY" = davidvornholt/wordhold
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          if [ "$EXACT_HEAD_GATE_OUTCOME" != success ]; then
+            echo "::notice::The full exact-head repository gate did not run successfully"
+            exit 0
+          fi
+
+          preview_is_current() {
+            pr=$(gh api "repos/$REPOSITORY/pulls/$PR_NUMBER")
+            test "$(jq -er .number <<<"$pr")" = "$PR_NUMBER"
+            test "$(jq -er .base.repo.full_name <<<"$pr")" = "$REPOSITORY"
+            test "$(jq -er .base.ref <<<"$pr")" = main
+            test "$(jq -er .head.repo.full_name <<<"$pr")" = "$REPOSITORY"
+            test "$(jq -er .head.sha <<<"$pr")" = "$HEAD_SHA"
+            test "$(jq -er .state <<<"$pr")" = open
+            test "$(jq -er .draft <<<"$pr")" = false
+            test "$(jq -er 'any(.labels[]; .name == "pr-preview")' <<<"$pr")" = true
+          }
+          if ! preview_is_current; then
+            echo "::notice::Pull request $PR_NUMBER is no longer eligible at $HEAD_SHA"
+            exit 0
+          fi
+
+          gate_workflow=$(gh api "repos/$REPOSITORY/actions/workflows/standards.yml")
+          test "$(jq -er .path <<<"$gate_workflow")" = .github/workflows/standards.yml
+          test "$(jq -er .state <<<"$gate_workflow")" = active
+          gate_workflow_id=$(jq -er '.id | select(. >= 1 and floor == .)' <<<"$gate_workflow")
+
+          deadline=$(($(date -u +%s) + 2400))
+          while :; do
+            runs=$(gh api "repos/$REPOSITORY/actions/workflows/$gate_workflow_id/runs?head_sha=$HEAD_SHA&event=pull_request&per_page=100")
+            test "$(jq -er .total_count <<<"$runs")" -le 100
+            gate_run=$(jq -cr \
+              '[.workflow_runs[] | select(
+                .path == ".github/workflows/standards.yml"
+                and .event == "pull_request"
+                and .head_repository.full_name == "davidvornholt/wordhold"
+              )] | sort_by(.run_attempt, .id) | last // empty' <<<"$runs")
+            if [ -n "$gate_run" ] && [ "$(jq -er .status <<<"$gate_run")" = completed ]; then
+              break
+            fi
+            if [ "$(date -u +%s)" -ge "$deadline" ]; then
+              echo "::error::The Standards gate did not complete for $HEAD_SHA within the deadline"
+              exit 1
+            fi
+            sleep 20
+          done
+
+          test "$(jq -er .head_sha <<<"$gate_run")" = "$HEAD_SHA"
+          test "$(jq -er .conclusion <<<"$gate_run")" = success
+          gate_run_id=$(jq -er '.id | select(. >= 1 and floor == .)' <<<"$gate_run")
+          jobs=$(gh api "repos/$REPOSITORY/actions/runs/$gate_run_id/jobs?per_page=100")
+          test "$(jq -er .total_count <<<"$jobs")" -le 100
+          gate_jobs=$(jq -c '[.jobs[] | select(.name == "check")]' <<<"$jobs")
+          test "$(jq -er length <<<"$gate_jobs")" = 1
+          test "$(jq -er '.[0].status' <<<"$gate_jobs")" = completed
+          test "$(jq -er '.[0].conclusion' <<<"$gate_jobs")" = success
+          test "$(jq -er '.[0].head_sha' <<<"$gate_jobs")" = "$HEAD_SHA"
+
+          if ! preview_is_current; then
+            echo "::notice::Pull request $PR_NUMBER changed while its Standards gate was running"
+            exit 0
+          fi
+
+          revision=$(docker image inspect wordhold:pull-request \
+            --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}')
+          source=$(docker image inspect wordhold:pull-request \
+            --format '{{ index .Config.Labels "org.opencontainers.image.source" }}')
+          preview_owner=$(docker image inspect wordhold:pull-request \
+            --format '{{ index .Config.Labels "online.vornholt.wordhold.preview" }}')
+          test "$revision" = "$HEAD_SHA"
+          test "$source" = "https://github.com/$REPOSITORY"
+          test "$preview_owner" = true
+          image_size=$(docker image inspect wordhold:pull-request --format '{{.Size}}')
+          [[ "$image_size" =~ ^[1-9][0-9]*$ ]]
+          test "$image_size" -le 2147483648
+
+          artifact_root="$RUNNER_TEMP/wordhold-pr-preview"
+          mkdir -p "$artifact_root"
+          docker image save wordhold:pull-request | gzip -6 >"$artifact_root/wordhold-image.tar.gz"
+          archive_size=$(stat --format '%s' "$artifact_root/wordhold-image.tar.gz")
+          test "$archive_size" -gt 0
+          test "$archive_size" -le 1610612736
+          gzip --test "$artifact_root/wordhold-image.tar.gz"
+          jq -nS \
+            --arg archive wordhold-image.tar.gz \
+            --arg headSha "$HEAD_SHA" \
+            --arg imageRepository ghcr.io/davidvornholt/wordhold \
+            --arg imageTag wordhold:pull-request \
+            --arg job container-smoke \
+            --arg path .github/workflows/publish-container.yml \
+            --arg repository "$REPOSITORY" \
+            --argjson pullRequest "$PR_NUMBER" \
+            --argjson runAttempt "$RUN_ATTEMPT" \
+            --argjson runId "$RUN_ID" \
+            --argjson standardsRunId "$gate_run_id" \
+            --argjson version 1 \
+            --argjson workflowId 343592175 \
+            '{
+              version: $version,
+              repository: $repository,
+              pullRequest: $pullRequest,
+              headSha: $headSha,
+              standards: {
+                path: ".github/workflows/standards.yml",
+                runId: $standardsRunId,
+                job: "check"
+              },
+              workflow: {
+                id: $workflowId,
+                path: $path,
+                runId: $runId,
+                runAttempt: $runAttempt,
+                job: $job
+              },
+              image: {
+                repository: $imageRepository,
+                archive: $archive,
+                tag: $imageTag
+              }
+            }' >"$artifact_root/metadata.json"
+          echo 'eligible=true' >>"$GITHUB_OUTPUT"
+
+      - name: Upload the immutable preview artifact
+        if: steps.preview.outputs.eligible == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: wordhold-pr-preview-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/wordhold-pr-preview/metadata.json
+            ${{ runner.temp }}/wordhold-pr-preview/wordhold-image.tar.gz
+          if-no-files-found: error
+          retention-days: 3
+          compression-level: 0
+          overwrite: false
 
   gate:
     if: github.event_name == 'push'
@@ -277,3 +510,85 @@ jobs:
           printf '{"auths":{}}\n' >"$anonymous_config/config.json"
           DOCKER_CONFIG="$anonymous_config" \
             docker buildx imagetools inspect "$IMAGE@$DIGEST" >/dev/null
+
+  announce:
+    needs: build
+    if: needs.build.result == 'success' && needs.build.outputs.digest != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout trusted announcement inputs
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+          sparse-checkout: |
+            .github/actions/sops-secret
+            secrets/ci.yaml
+          sparse-checkout-cone-mode: false
+
+      - name: Resolve broker App ID
+        uses: ./.github/actions/sops-secret
+        with:
+          age-key: ${{ secrets.SOPS_AGE_KEY }}
+          secret-file: secrets/ci.yaml
+          secret-key: broker_app.app_id
+          env-name: BROKER_APP_ID
+
+      - name: Resolve broker App private key
+        uses: ./.github/actions/sops-secret
+        with:
+          age-key: ${{ secrets.SOPS_AGE_KEY }}
+          secret-file: secrets/ci.yaml
+          secret-key: broker_app.private_key
+          env-name: BROKER_APP_PRIVATE_KEY
+
+      - name: Mint the personal-infra announcement token
+        id: broker
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ env.BROKER_APP_ID }}
+          private-key: ${{ env.BROKER_APP_PRIVATE_KEY }}
+          owner: davidvornholt
+          repositories: personal-infra
+          permission-contents: write
+
+      - name: Clear broker App credentials
+        run: |
+          {
+            echo "BROKER_APP_ID="
+            echo "BROKER_APP_PRIVATE_KEY="
+          } >> "$GITHUB_ENV"
+
+      - name: Announce the exact production image
+        env:
+          BUILD_DIGEST: ${{ needs.build.outputs.digest }}
+          GH_TOKEN: ${{ steps.broker.outputs.token }}
+          IMAGE_REPOSITORY: ghcr.io/davidvornholt/wordhold
+          SOURCE_REF: ${{ github.ref }}
+          SOURCE_REPOSITORY: ${{ github.repository }}
+          SOURCE_RUN_ID: ${{ github.run_id }}
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          [[ "$BUILD_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ && "$SOURCE_RUN_ID" =~ ^[1-9][0-9]*$ ]]
+          test "$SOURCE_REPOSITORY" = davidvornholt/wordhold
+          test "$SOURCE_REF" = refs/heads/main
+          test "$IMAGE_REPOSITORY" = ghcr.io/davidvornholt/wordhold
+          checkout_sha=$(git rev-parse HEAD)
+          remote_main_sha=$(git ls-remote origin refs/heads/main | cut -f1)
+          test "$checkout_sha" = "$SOURCE_SHA"
+          test "$SOURCE_SHA" = "$GITHUB_SHA"
+          test "$GITHUB_SHA" = "$remote_main_sha"
+          gh api repos/davidvornholt/personal-infra/dispatches \
+            -f event_type=image-bump \
+            -f 'client_payload[app]=wordhold' \
+            -f "client_payload[source_repository]=$SOURCE_REPOSITORY" \
+            -f "client_payload[source_ref]=$SOURCE_REF" \
+            -f "client_payload[source_sha]=$SOURCE_SHA" \
+            -f "client_payload[source_run_id]=$SOURCE_RUN_ID" \
+            -f "client_payload[image_repository]=$IMAGE_REPOSITORY" \
+            -f "client_payload[digest]=$BUILD_DIGEST"
