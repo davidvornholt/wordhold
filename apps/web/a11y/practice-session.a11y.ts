@@ -10,15 +10,15 @@ test('a missed card returns later and a double click advances only once', async 
 }) => {
   await page.goto('/?state=practice-session');
   const answer = page.getByLabel('Deine Antwort');
-  const progress = page.getByText('von 2 Karten geschafft');
+  const progress = page.getByText('von 2 Karten bearbeitet');
   const check = page.getByRole('button', { name: 'Prüfen' });
   const next = page.getByRole('button', { name: 'Weiter' });
-  await expect(progress).toHaveText('0 von 2 Karten geschafft');
+  await expect(progress).toHaveText('0 von 2 Karten bearbeitet');
 
   await answer.fill('wrong');
   await check.click();
   await next.dblclick();
-  await expect(progress).toHaveText('0 von 2 Karten geschafft');
+  await expect(progress).toHaveText('0 von 2 Karten bearbeitet');
   const holidayHeading = page.getByRole('heading', {
     level: 2,
     name: 'Ferien',
@@ -29,7 +29,7 @@ test('a missed card returns later and a double click advances only once', async 
   await answer.fill('holiday');
   await check.click();
   await next.click();
-  await expect(progress).toHaveText('1 von 2 Karten geschafft');
+  await expect(progress).toHaveText('1 von 2 Karten bearbeitet');
   const repeatedHeading = page.getByRole('heading', {
     level: 2,
     name: 'Erinnerung',
@@ -42,7 +42,7 @@ test('a missed card returns later and a double click advances only once', async 
   await answer.fill('memory');
   await check.click();
   await next.click();
-  await expect(progress).toHaveText('2 von 2 Karten geschafft');
+  await expect(progress).toHaveText('2 von 2 Karten bearbeitet');
   const completeHeading = page.getByRole('heading', {
     level: 2,
     name: 'Sitzung abgeschlossen!',
@@ -81,6 +81,7 @@ test('a first-attempt grading failure stays due in the final summary', async ({
   });
   await expect(endedHeading).toBeVisible();
   await expect(endedHeading).toBeFocused();
+  await expect(page.getByText('2 von 2 Karten bearbeitet')).toBeVisible();
   await expect(
     page.getByText('1 Karte konnte nicht bewertet werden und bleibt fällig.'),
   ).toBeVisible();
@@ -116,10 +117,19 @@ test('a repeated-card grading failure stays due in the final summary', async ({
   });
   await expect(endedHeading).toBeVisible();
   await expect(endedHeading).toBeFocused();
+  await expect(page.getByText('2 von 2 Karten bearbeitet')).toBeVisible();
   await expect(
     page.getByText('1 von 2 Karten auf Anhieb richtig.'),
   ).toBeVisible();
   await expect(
     page.getByText('1 Karte konnte nicht bewertet werden und bleibt fällig.'),
   ).toBeVisible();
+});
+
+test('a one-card session uses the singular progress label', async ({
+  page,
+}) => {
+  await page.goto('/?state=practice');
+  await expect(page.getByText('0 von 1 Karte bearbeitet')).toBeVisible();
+  await expect(page.getByText('0 von 1 Karten bearbeitet')).toHaveCount(0);
 });

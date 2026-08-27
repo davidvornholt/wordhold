@@ -44,7 +44,7 @@ const backControl = (
 
 export const PracticeFixture = () => (
   <PracticeLayout backControl={backControl} courseName="English A2">
-    <SessionProgress settled={1} total={4} />
+    <SessionProgress settled={0} total={1} />
     <CardPractice
       item={item}
       onNext={() => undefined}
