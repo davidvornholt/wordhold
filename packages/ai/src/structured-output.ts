@@ -9,8 +9,8 @@ import { JSONSchema, type Schema } from 'effect';
 export const providerJsonSchema = <A, I>(schema: Schema.Schema<A, I>) =>
   jsonSchema<unknown>(JSONSchema.make(schema));
 
-// These calls are stateless. Disabling response storage preserves the prior
-// request behavior when they move to the Responses API.
+// These calls are stateless. Disabling response storage preserves that behavior
+// on the Responses API.
 export const structuredOutputOptions = {
   openai: {
     strictJsonSchema: true,
