@@ -1,6 +1,7 @@
 import type { LanguageCode } from '@wordhold/db/schema/courses';
 import type { ReactNode } from 'react';
 import { languageSubtitle } from '../../../shared/languages';
+import { hasAvailablePractice } from '../schemas/dashboard-models';
 
 type CourseCardProps = {
   readonly course: {
@@ -60,7 +61,9 @@ export const CourseCard = ({
           </span>
         </p>
       )}
-      <div className="mt-auto">{due + fresh > 0 ? practiceAction : null}</div>
+      <div className="mt-auto">
+        {hasAvailablePractice(stats) ? practiceAction : null}
+      </div>
     </li>
   );
 };

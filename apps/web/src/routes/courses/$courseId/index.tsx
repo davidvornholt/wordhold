@@ -2,11 +2,13 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { listCourseUnits } from '../../../features/courses/services/server-fns';
 import { CourseLayout } from '../../../features/courses/ui/course-layout';
 import { CourseOverview } from '../../../features/courses/ui/course-overview';
+import { hasAvailablePractice } from '../../../features/dashboard/schemas/dashboard-models';
+import { getDashboard } from '../../../features/dashboard/services/server-fns';
 import { getCourse } from '../../../features/import/server-fns';
 import { languageSubtitle } from '../../../shared/languages';
 
 const CourseScreen = () => {
-  const { course, units } = Route.useLoaderData();
+  const { course, units, practiceAvailable } = Route.useLoaderData();
 
   return (
     <CourseLayout
@@ -28,6 +30,7 @@ const CourseScreen = () => {
           </Link>
         }
         languageLabel={languageSubtitle(course.name, course.targetLanguage)}
+        practiceAvailable={practiceAvailable}
         practiceAction={
           <Link
             className="font-medium text-sm underline"
@@ -63,11 +66,18 @@ const CourseScreen = () => {
 
 export const Route = createFileRoute('/courses/$courseId/')({
   loader: async ({ params }) => {
-    const [course, units] = await Promise.all([
+    const [course, units, dashboard] = await Promise.all([
       getCourse({ data: params.courseId }),
       listCourseUnits({ data: params.courseId }),
+      getDashboard(),
     ]);
-    return { course, units };
+    return {
+      course,
+      units,
+      practiceAvailable: hasAvailablePractice(
+        dashboard.perCourse.find((stats) => stats.courseId === course.id),
+      ),
+    };
   },
   component: CourseScreen,
 });

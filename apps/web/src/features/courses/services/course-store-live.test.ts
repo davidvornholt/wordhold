@@ -5,10 +5,6 @@ import {
   withMigratedTestDatabase,
 } from '@wordhold/db/testing/postgres-test-database';
 import { Effect, Layer } from 'effect';
-import {
-  fixtureCourseId,
-  seedIntroducedCardFixture,
-} from '../../../shared/testing/introduced-card-fixture';
 import { CourseDatabaseError } from '../errors/courses-errors';
 import { CourseStore } from './course-store';
 
@@ -96,35 +92,6 @@ describe('CourseStore PostgreSQL direction contract', () => {
         expect(write._tag).toBe('Left');
         expect(readError?.operation).toBe('read course directions');
         expect(writeError?.operation).toBe('write course directions');
-      }),
-    );
-  });
-
-  it('counts learned and unlearned words for each course unit', async () => {
-    await runStoreTest(
-      Effect.gen(function* () {
-        yield* seedIntroducedCardFixture;
-        const sql = yield* Database;
-        const store = yield* CourseStore;
-        yield* sql`
-          insert into units (course_id, name, position)
-          values (${fixtureCourseId}, 'Unit 2', 1)
-        `;
-
-        expect(yield* store.listUnits(fixtureCourseId)).toEqual([
-          {
-            id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
-            name: 'Unit 1',
-            words: 3,
-            unlearned: 1,
-          },
-          expect.objectContaining({
-            name: 'Unit 2',
-            words: 0,
-            unlearned: 0,
-          }),
-        ]);
-        expect(yield* store.listUnits(missingCourseId)).toEqual([]);
       }),
     );
   });

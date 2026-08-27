@@ -84,7 +84,7 @@ Uploads accept JPEG, PNG, and WebP images up to 12 MiB, 12,000 pixels per side, 
 
 ## Course page
 
-`/courses/$courseId` is where a course is worked on (`src/features/courses/`). It carries the course totals, the three things that act on the whole course — practise, photograph a page, settings — and the list of its units with how much of each has been learned. `/courses/$courseId/units/$unitId` opens one unit: every word in it with its translation, marked when the learning pass has not met it yet, and the two sittings that unit offers. Learning appears while the unit still holds unmet words, drilling once it holds met ones, so a unit nobody has started offers only the learning pass and a finished one offers only the drill.
+`/courses/$courseId` is where a course is worked on (`src/features/courses/`). It carries the course totals, actions that apply to the whole course, and the list of its units with how much of each has been learned. Practice appears only when the dashboard's queue counts say the course has an introduced due or fresh card in an enabled direction. `/courses/$courseId/units/$unitId` opens one unit: every word in it with its translation, marked when the learning pass has not met it yet, and the two sittings that unit offers. Learning appears while the unit still holds unmet words, drilling once it holds met ones, so a unit nobody has started offers only the learning pass and a finished one offers only the drill.
 
 This is deliberately the only unit list. Learning and drilling used to have a picker each, which meant three routes listing the same units and five links on every dashboard card. Both sittings now start from the unit itself, where the learner can see what the sitting will ask about.
 

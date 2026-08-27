@@ -56,6 +56,8 @@ export const FixtureApp = () => {
       return <DeferredVerificationFixture />;
     case 'course':
       return <CourseFixture />;
+    case 'course-no-practice':
+      return <CourseFixture practiceAvailable={false} />;
     case 'unit':
       return <UnitFixture />;
     case 'unit-fresh':

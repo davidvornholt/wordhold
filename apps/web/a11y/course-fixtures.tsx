@@ -60,7 +60,11 @@ const control = (label: string, destination: FixtureState) => (
   </button>
 );
 
-export const CourseFixture = () => (
+export const CourseFixture = ({
+  practiceAvailable = true,
+}: {
+  readonly practiceAvailable?: boolean;
+}) => (
   <CourseLayout
     backControl={control('← Übersicht', 'dashboard')}
     title="English A2"
@@ -68,6 +72,7 @@ export const CourseFixture = () => (
     <CourseOverview
       importAction={control('Seite fotografieren', 'import')}
       languageLabel="Englisch"
+      practiceAvailable={practiceAvailable}
       practiceAction={control('Üben', 'practice')}
       renderUnitLink={(unit) => control(unit.name, 'unit')}
       settingsAction={control('Einstellungen', 'course-settings')}

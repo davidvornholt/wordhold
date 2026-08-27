@@ -81,21 +81,25 @@ export class CourseStore extends Context.Tag('wordhold/CourseStore')<
             databaseError('write course directions', cause),
           ),
         );
-      // Both counts come from the cards, because "learned" is a property of
-      // the cards behind a word, not of the word itself.
+      // A word remains unlearned until every card behind it is introduced.
       const listUnits = (courseId: string) =>
         sql<CourseUnit>`
           select u.id, u.name,
             count(distinct e.id)::int as words,
             count(distinct e.id) filter (
-              where c.introduced_at is null
+              where not coalesce(c.learned, false)
             )::int as unlearned
           from units u
           left join entries e on e.unit_id = u.id
-          left join cards c on c.entry_id = e.id
+          left join (
+            select entry_id,
+              count(*) = cardinality(enum_range(null::answer_direction))
+                and bool_and(introduced_at is not null) as learned
+            from cards group by entry_id
+          ) c on c.entry_id = e.id
           where u.course_id = ${courseId}
           group by u.id
-          order by u.position, u.name
+          order by u.position, u.name, u.id
         `.pipe(Effect.mapError((cause) => databaseError('list units', cause)));
       // A word counts as learned only once both of its cards have been
       // introduced, which is how the learning pass stamps them. An entry
@@ -105,12 +109,16 @@ export class CourseStore extends Context.Tag('wordhold/CourseStore')<
           select e.id,
             e.target_text as "targetText",
             e.native_text as "nativeText",
-            coalesce(bool_and(c.introduced_at is not null), false) as learned
+            coalesce(
+              count(c.id) = cardinality(enum_range(null::answer_direction))
+                and bool_and(c.introduced_at is not null),
+              false
+            ) as learned
           from entries e
           left join cards c on c.entry_id = e.id
           where e.unit_id = ${unitId}
           group by e.id
-          order by e.created_at, e.target_text
+          order by e.created_at, e.target_text, e.id
         `.pipe(Effect.mapError((cause) => databaseError('list words', cause)));
       return { readDirections, writeDirections, listUnits, listWords } as const;
     }),

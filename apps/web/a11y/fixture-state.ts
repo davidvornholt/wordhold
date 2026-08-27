@@ -12,6 +12,7 @@ export const fixtureStates = [
   'verification-audio-recovery',
   'verification-deferred',
   'course',
+  'course-no-practice',
   'unit',
   'unit-fresh',
   'learn',
