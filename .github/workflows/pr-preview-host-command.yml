@@ -33,7 +33,7 @@ permissions:
 jobs:
   command:
     runs-on: ubuntu-latest
-    timeout-minutes: 110
+    timeout-minutes: 210
     environment:
       name: pr-preview
       url: https://${{ inputs.pull-request-number }}.pr.wordhold.vornholt.online
@@ -182,7 +182,7 @@ jobs:
             'prod-1.vornholt.online ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFkom7Y24gnBa9X+gUDBZvlCnXiuKTo87ROOtlMpgNH5' \
             >"$known_hosts"
           chmod 0600 "$known_hosts"
-          timeout 100m ssh \
+          timeout 200m ssh \
             -o BatchMode=yes \
             -o ConnectTimeout=15 \
             -o IdentitiesOnly=yes \

@@ -101,6 +101,18 @@ describe('trusted preview workflow-run selection', () => {
 });
 
 describe('trusted preview skipped-run freshness', () => {
+  it('fails closed when workflow run discovery is malformed', () => {
+    const result = runSelection({
+      candidatesResponse: apiRecord([
+        ['total_count', 1],
+        ['workflow_runs', null],
+      ]),
+    });
+
+    expect(result.exitCode).not.toBe(0);
+    expect(result.outputs.mode).toBe('none');
+  });
+
   it('ignores a newer all-skipped edit when selecting the latest state-changing run', () => {
     const skippedRunId = 101;
     const skippedRunNumber = 11;

@@ -43,6 +43,7 @@ type SelectionScenario = {
   readonly associated?: ReadonlyArray<Record<string, unknown>>;
   readonly baseFrom?: string;
   readonly candidates?: ReadonlyArray<Record<string, unknown>>;
+  readonly candidatesResponse?: Record<string, unknown>;
   readonly candidateJobConclusions?: Readonly<Record<number, string>>;
   readonly conclusion?: string;
   readonly directAssociations?: ReadonlyArray<{ readonly number: number }>;
@@ -174,10 +175,11 @@ exit "$status"
       [
         'SELECT_CANDIDATES',
         json(
-          apiRecord([
-            ['total_count', candidates.length],
-            ['workflow_runs', candidates],
-          ]),
+          scenario.candidatesResponse ??
+            apiRecord([
+              ['total_count', candidates.length],
+              ['workflow_runs', candidates],
+            ]),
         ),
       ],
       ['SELECT_JOBS_BY_RUN', json(jobsByRun)],

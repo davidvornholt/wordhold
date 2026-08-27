@@ -192,12 +192,22 @@ jobs:
 
           candidates=$(gh api "repos/$REPOSITORY/actions/workflows/343592175/runs?head_sha=$EVENT_HEAD_SHA&event=pull_request&per_page=100")
           test "$(jq -er .total_count <<<"$candidates")" -le 100
-          mapfile -t ordered_candidates < <(jq -cr \
-            '[.workflow_runs[] | select(
+          ordered_candidate_lines="$(jq -er \
+            '.workflow_runs
+            | if type == "array" then . else error("workflow_runs must be an array") end
+            | [.[] | select(
               .path == ".github/workflows/publish-container.yml"
               and .event == "pull_request"
               and .head_repository.full_name == "davidvornholt/wordhold"
-            )] | sort_by(.run_number, .run_attempt, .id) | reverse[]' <<<"$candidates")
+            )]
+            | sort_by(.run_number, .run_attempt, .id)
+            | reverse
+            | map(tojson)
+            | join("\n")' <<<"$candidates")"
+          ordered_candidates=()
+          if [ -n "$ordered_candidate_lines" ]; then
+            mapfile -t ordered_candidates <<<"$ordered_candidate_lines"
+          fi
           latest=
           for candidate in "${ordered_candidates[@]}"; do
             candidate_status=$(jq -er .status <<<"$candidate")
@@ -569,9 +579,9 @@ jobs:
           tag="pr-$PR_NUMBER-$HEAD_SHA-run-$RUN_ID-attempt-$RUN_ATTEMPT"
           docker image tag wordhold:pull-request "$IMAGE:$tag"
           docker image push "$IMAGE:$tag"
-          mapfile -t digests < <(docker buildx imagetools inspect "$IMAGE:$tag" | awk '$1 == "Digest:" { print $2 }')
-          test "${#digests[@]}" = 1
-          digest="${digests[0]}"
+          inspect_output="$(docker buildx imagetools inspect "$IMAGE:$tag")"
+          digest="$(awk '$1 == "Digest:" { print $2 }' <<<"$inspect_output")"
+          [[ -n "$digest" && "$digest" != *$'\n'* && "$digest" != *$'\r'* ]]
           [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
 
           docker logout ghcr.io

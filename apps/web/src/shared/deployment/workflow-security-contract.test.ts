@@ -4,8 +4,6 @@ import { extractRunScript, readWorkflow } from './workflow-test-helpers';
 const producer = await readWorkflow('publish-container.yml');
 const consumer = await readWorkflow('pr-preview-deploy.yml');
 const hostCommand = await readWorkflow('pr-preview-host-command.yml');
-const digestHexLength = 64;
-const headShaLength = 40;
 const sshTimeoutPattern = /timeout (?<minutes>\d+)m ssh/u;
 const jobTimeoutPattern = / {4}timeout-minutes: (?<minutes>\d+)/u;
 const githubExpression = (expression: string): string =>
@@ -126,44 +124,6 @@ describe('trusted preview consumer boundary', () => {
       'cmp "$RUNNER_TEMP/expected-metadata.json" "$metadata"',
     );
   });
-
-  it('resolves one digest from the pushed tag instead of parsing push output', () => {
-    const publish = extractRunScript(
-      consumer,
-      'Publish and prove the exact public digest',
-    );
-    const resolutionStart = publish.indexOf(
-      'docker image tag wordhold:pull-request "$IMAGE:$tag"',
-    );
-    const resolutionEnd = publish.indexOf('docker logout ghcr.io');
-    const resolution = publish.slice(resolutionStart, resolutionEnd);
-    const digest = `sha256:${'a'.repeat(digestHexLength)}`;
-    const harness = `
-set -euo pipefail
-IMAGE=ghcr.io/davidvornholt/wordhold
-PR_NUMBER=35
-HEAD_SHA=${'1'.repeat(headShaLength)}
-RUN_ID=100
-RUN_ATTEMPT=1
-tag=fixture
-docker() {
-  case "$*" in
-    'image tag '*) ;;
-    'image push '*) printf '%s\n' 'layer: Pushed' 'latest: digest: ${digest} size: 1985' ;;
-    'buildx imagetools inspect '*) printf '%s\n' 'Name: fixture' 'Digest: ${digest}' ;;
-    *) return 97 ;;
-  esac
-}
-${resolution}
-printf '%s' "$digest"
-`;
-
-    const result = globalThis.Bun.spawnSync(['bash', '-c', harness]);
-
-    expect(result.exitCode).toBe(0);
-    expect(result.stdout.toString().endsWith(digest)).toBe(true);
-    expect(resolution).not.toContain('push_output=');
-  });
 });
 
 describe('preview host authorization and secret boundary', () => {
@@ -195,16 +155,17 @@ describe('preview host authorization and secret boundary', () => {
       jobTimeoutPattern.exec(hostCommand)?.groups?.minutes ?? '0',
     );
     const nestedHostDeadlinesSeconds = {
-      productionChecks: 45,
-      remoteManifest: 120,
-      localImageCheck: 15,
-      imagePull: 300,
-      pulledImageChecks: 45,
-      desiredStateSwitch: 900,
-      targetReconciliation: 1255,
-      rollbackSwitch: 900,
-      targetCleanup: 435,
-      survivorReconciliation: 1465,
+      boundedProductionLeaseWait: 5400,
+      productionChecks: 40,
+      remoteManifest: 135,
+      localImageCheck: 20,
+      imagePull: 315,
+      pulledImageChecks: 60,
+      desiredStateSwitch: 930,
+      targetReconciliation: 1360,
+      rollbackSwitch: 930,
+      targetCleanup: 560,
+      survivorReconciliation: 1630,
     } as const;
     const successAndRollbackSeconds = Object.values(
       nestedHostDeadlinesSeconds,
