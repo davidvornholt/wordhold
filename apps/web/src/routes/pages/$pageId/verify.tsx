@@ -68,21 +68,25 @@ const VerifyScreen = () => {
   const targetLabel = germanLabels[course.targetLanguage];
 
   return (
-    <main className="mx-auto flex max-w-5xl flex-col gap-4 p-6">
-      <Link className="text-muted-foreground text-sm underline" to="/">
-        ← Übersicht
-      </Link>
-      <h1 className="font-display font-semibold text-2xl">
-        {course.name}: Seite überprüfen
-      </h1>
-      {error === null ? null : (
-        <p className="text-destructive text-sm" role="alert">
-          {error}
-        </p>
-      )}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <VerificationImage src={`/api/pages/${page.id}/image`} />
-        <div>
+    <main className="verification-screen">
+      <div className="verification-header">
+        <Link className="text-muted-foreground text-sm underline" to="/">
+          ← Übersicht
+        </Link>
+        <h1 className="font-display font-semibold text-2xl">
+          {course.name}: Seite überprüfen
+        </h1>
+        {error === null ? null : (
+          <p className="text-destructive text-sm" role="alert">
+            {error}
+          </p>
+        )}
+      </div>
+      <div className="verification-workbench">
+        <div className="verification-image-pane">
+          <VerificationImage src={`/api/pages/${page.id}/image`} />
+        </div>
+        <div className="verification-form-pane">
           {completed === null ? null : (
             <AudioRecovery
               busy={busy}

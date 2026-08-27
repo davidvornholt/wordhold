@@ -45,7 +45,7 @@ test('authenticated routes remain reachable through their user transitions', asy
     'data-fixture',
     'verification',
   );
-  await page.getByRole('button', { name: '1 Einträge importieren' }).click();
+  await page.getByRole('button', { name: '12 Einträge importieren' }).click();
   await expect(page.locator('body')).toHaveAttribute(
     'data-fixture',
     'dashboard',
