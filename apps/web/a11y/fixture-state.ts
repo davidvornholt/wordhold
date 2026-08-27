@@ -15,6 +15,7 @@ export const fixtureStates = [
   'course-no-practice',
   'unit',
   'unit-fresh',
+  'unit-empty',
   'learn',
   'learn-retry',
   'learn-done',

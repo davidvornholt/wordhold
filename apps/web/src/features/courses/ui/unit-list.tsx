@@ -8,10 +8,14 @@ type UnitListProps = {
   readonly renderUnitLink: (unit: CourseUnit) => ReactNode;
 };
 
-const unitProgress = (unit: CourseUnit): string =>
-  unit.unlearned === 0
+const unitProgress = (unit: CourseUnit): string => {
+  if (unit.words === 0) {
+    return 'Noch keine Wörter';
+  }
+  return unit.unlearned === 0
     ? `${unit.words} Wörter · alle gelernt`
     : `${unit.words} Wörter · ${unit.unlearned} noch nicht gelernt`;
+};
 
 export const UnitList = ({ units, renderUnitLink }: UnitListProps) =>
   units.length === 0 ? (

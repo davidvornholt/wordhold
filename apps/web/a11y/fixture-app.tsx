@@ -64,7 +64,9 @@ export const FixtureApp = () => {
     case 'unit':
       return <UnitFixture />;
     case 'unit-fresh':
-      return <UnitFixture fresh={true} />;
+      return <UnitFixture state="fresh" />;
+    case 'unit-empty':
+      return <UnitFixture state="empty" />;
     case 'learn':
       return <LearnFixture />;
     case 'learn-retry':
