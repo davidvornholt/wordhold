@@ -58,6 +58,13 @@ const unavailableJudge = (cause: string) =>
     }),
   );
 
+const testJudge = (
+  judge: PracticeJudge['Type']['judge'],
+): PracticeJudge['Type'] => ({
+  model: 'bedrock-mantle:test-model',
+  judge,
+});
+
 const runSubmit = (
   reviewStore: PracticeReviewStore['Type'],
   judge: PracticeJudge['Type'],
@@ -101,10 +108,7 @@ describe('PracticeService', () => {
         listAcceptedAnswers: () => Effect.succeed([]),
         commit: () => Effect.succeed(1),
       },
-      {
-        model: 'bedrock-mantle:test-model',
-        judge: () => unavailableJudge('unused'),
-      },
+      testJudge(() => unavailableJudge('unused')),
     );
     const receivedFailure = result._tag === 'Left' ? result.left : undefined;
     expect(receivedFailure).toBe(failure);
@@ -125,13 +129,10 @@ describe('PracticeService', () => {
           ]),
         commit: () => Effect.succeed(1),
       },
-      {
-        model: 'bedrock-mantle:test-model',
-        judge: () => {
-          judgeCalls += 1;
-          return unavailableJudge('test rejection');
-        },
-      },
+      testJudge(() => {
+        judgeCalls += 1;
+        return unavailableJudge('test rejection');
+      }),
       'onne',
     );
     expect(result).toMatchObject({ _tag: 'Right', right: { graded: false } });
@@ -153,22 +154,20 @@ describe('PracticeService', () => {
           ]),
         commit: () => Effect.succeed(1),
       },
-      {
-        model: 'bedrock-mantle:test-model',
-        judge: () =>
-          Effect.sync(() => {
-            judgeCalls += 1;
-          }).pipe(
-            Effect.flatMap(() =>
-              Effect.fail(
-                new PracticeJudgeError({
-                  cause: 'unexpected',
-                  message: 'judge must not run',
-                }),
-              ),
+      testJudge(() =>
+        Effect.sync(() => {
+          judgeCalls += 1;
+        }).pipe(
+          Effect.flatMap(() =>
+            Effect.fail(
+              new PracticeJudgeError({
+                cause: 'unexpected',
+                message: 'judge must not run',
+              }),
             ),
           ),
-      },
+        ),
+      ),
       'profesora',
     );
     const value = result._tag === 'Right' ? result.right : undefined;
@@ -191,10 +190,7 @@ describe('PracticeService', () => {
             return commits;
           }),
       },
-      {
-        model: 'bedrock-mantle:test-model',
-        judge: () => unavailableJudge('offline'),
-      },
+      testJudge(() => unavailableJudge('offline')),
     );
     expect(result._tag).toBe('Right');
     const value = result._tag === 'Right' ? result.right : undefined;
