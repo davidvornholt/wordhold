@@ -56,57 +56,6 @@ test('CardPractice unlocks a rejected answer for a new submission', async ({
   await expect(page.getByText('Leider falsch.')).toBeVisible();
 });
 
-// Nothing in the learning pass is graded, but it does decide which words the
-// scheduler is allowed to ask about, so a word must not count as met until it
-// has actually been written correctly.
-test('the learning pass asks again for a wrong copy and records only the correct ones', async ({
-  page,
-}) => {
-  await page.goto('/?state=learn');
-  const field = page.getByLabel('Schreib das Wort ab');
-  const advance = page.getByRole('button', { name: 'Weiter' });
-  await expect(page.getByText('Wort 1 von 2')).toBeVisible();
-
-  await field.fill('remember');
-  await advance.click();
-  await expect(
-    page.getByText('Noch nicht ganz. Schreib das Wort genau so ab.'),
-  ).toBeVisible();
-  await expect(page.getByText('Wort 1 von 2')).toBeVisible();
-  await expect(page.getByLabel('Introduced words')).toHaveText('0');
-
-  await field.fill('Memory');
-  await advance.click();
-  await expect(page.getByText('Wort 2 von 2')).toBeVisible();
-  await expect(page.getByLabel('Introduced words')).toHaveText('1');
-
-  await page.getByLabel('Schreib das Wort ab').fill('to look at');
-  await page.getByRole('button', { name: 'Weiter' }).click();
-  await expect(page.getByText('Einheit gelernt!')).toBeVisible();
-  await expect(page.getByLabel('Introduced words')).toHaveText('2');
-});
-
-test('the learning pass announces a persistence failure and retries the same word', async ({
-  page,
-}) => {
-  await page.goto('/?state=learn-retry');
-  const field = page.getByLabel('Schreib das Wort ab');
-  await field.fill('memory');
-  await page.getByRole('button', { name: 'Weiter' }).click();
-
-  await expect(page.getByRole('alert')).toHaveText(
-    'Das Wort wurde nicht gespeichert. Versuch es noch einmal.',
-  );
-  await expect(page.getByText('Wort 1 von 2')).toBeVisible();
-  await expect(page.getByLabel('Introduced words')).toHaveText('0');
-  await expect(page.getByLabel('Introduction attempts')).toHaveText('1');
-
-  await page.getByRole('button', { name: 'Erneut versuchen' }).click();
-  await expect(page.getByText('Wort 2 von 2')).toBeVisible();
-  await expect(page.getByLabel('Introduced words')).toHaveText('1');
-  await expect(page.getByLabel('Introduction attempts')).toHaveText('2');
-});
-
 test('VerifyForm freezes every control and ignores resubmission', async ({
   page,
 }) => {

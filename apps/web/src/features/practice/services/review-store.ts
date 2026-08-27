@@ -1,7 +1,10 @@
 import { Database } from '@wordhold/db/client';
 import type { LanguageCode } from '@wordhold/db/schema/courses';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
-import type { EntryType } from '@wordhold/db/schema/entries';
+import type {
+  AnswerSource,
+  EntryType,
+} from '@wordhold/db/schema/entries';
 import type { cards } from '@wordhold/db/schema/practice';
 import { Context, Effect, Layer } from 'effect';
 import {
@@ -12,6 +15,7 @@ import type {
   PersistReviewInput,
   SubmissionRecord,
 } from '../schemas/practice-models';
+import type { AcceptedAnswer } from './deterministic-grading';
 import { applyRating } from './fsrs';
 import { commitGradedAnswer, type RunReviewTransaction } from './review-commit';
 
@@ -41,10 +45,7 @@ export class PracticeReviewStore extends Context.Tag(
     readonly listAcceptedAnswers: (
       entryId: string,
       direction: AnswerDirection,
-    ) => Effect.Effect<
-      ReadonlyArray<{ readonly text: string; readonly normalized: string }>,
-      PracticeDatabaseError
-    >;
+    ) => Effect.Effect<ReadonlyArray<AcceptedAnswer>, PracticeDatabaseError>;
     // Resolves with the card's revision after the review, which the practice
     // session needs to answer the same card again.
     readonly commit: (
@@ -72,6 +73,7 @@ export class PracticeReviewStore extends Context.Tag(
           join entries e on e.id = c.entry_id
           join courses co on co.id = e.course_id
           where c.id = ${cardId} and c.revision = ${revision}
+            and c.introduced_at is not null
         `.pipe(
           Effect.map((rows) => {
             const [row] = rows;
@@ -96,8 +98,12 @@ export class PracticeReviewStore extends Context.Tag(
         entryId: string,
         direction: AnswerDirection,
       ) =>
-        sql<{ readonly text: string; readonly normalized: string }>`
-          select text, normalized from accepted_answers
+        sql<{
+          readonly text: string;
+          readonly normalized: string;
+          readonly source: AnswerSource;
+        }>`
+          select text, normalized, source from accepted_answers
           where entry_id = ${entryId} and direction = ${direction}
         `.pipe(
           Effect.mapError((cause) =>
@@ -123,6 +129,7 @@ export class PracticeReviewStore extends Context.Tag(
                       learning_steps = ${next.learningSteps},
                       last_reviewed_at = ${next.lastReviewedAt}, revision = revision + 1
                     where id = ${input.card.id} and revision = ${input.expectedRevision}
+                      and introduced_at is not null
                     returning revision
                   `.pipe(
                     Effect.map((rows) => rows.at(0)?.revision),

@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'bun:test';
-import { decodeSubmitPayload, maximumElapsedMs } from './submission-schema';
+import {
+  decodeSubmitPayload,
+  maximumElapsedMs,
+  maximumSubmittedAnswerLength,
+} from './submission-schema';
 
 const ordinaryElapsedMs = 1200;
 const fractionalElapsedMs = 1.5;
@@ -28,5 +32,14 @@ describe('decodeSubmitPayload', () => {
     maximumElapsedMs + 1,
   ])('rejects invalid elapsed time %p', (elapsedMs) => {
     expect(() => decodeSubmitPayload({ ...validPayload, elapsedMs })).toThrow();
+  });
+
+  it('rejects an answer over the parser input limit', () => {
+    expect(() =>
+      decodeSubmitPayload({
+        ...validPayload,
+        answer: 'a'.repeat(maximumSubmittedAnswerLength + 1),
+      }),
+    ).toThrow();
   });
 });

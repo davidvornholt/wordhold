@@ -1,6 +1,6 @@
 import { normalizeAnswer } from '../../../shared/grading/normalize';
+import { answerVariants } from '../../../shared/grading/variants';
 import type { LearnItem } from '../schemas/learning-models';
-import { textbookReadings } from './textbook-notation';
 
 // The learning pass is copying practice, not recall practice: the word is on
 // screen while it is typed. So the check is deterministic and local — the same
@@ -12,7 +12,14 @@ export const matchesLearnItem = (item: LearnItem, typed: string): boolean => {
   if (normalized === '') {
     return false;
   }
-  return [item.targetText, ...item.textbookAnswers].some((text) =>
-    textbookReadings(text).includes(normalized),
-  );
+  const answers = [item.targetText, ...item.textbookAnswers];
+  if (answers.some((answer) => normalizeAnswer(answer) === normalized)) {
+    return true;
+  }
+  return answers.some((answer) => {
+    const expansion = answerVariants(answer);
+    return (
+      expansion._tag === 'Expanded' && expansion.readings.includes(normalized)
+    );
+  });
 };

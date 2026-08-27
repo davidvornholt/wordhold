@@ -14,6 +14,10 @@ import type {
 } from '../schemas/practice-models';
 import type { SessionRequestData } from '../schemas/session-request';
 import type { SubmitPayloadData } from '../schemas/submission-schema';
+import {
+  type AcceptedAnswer,
+  isDeterministicMatch,
+} from './deterministic-grading';
 import { judgeWithCache } from './judge-cache';
 import { JudgeCacheStore } from './judge-cache-store';
 import { PracticeJudge } from './practice-judge';
@@ -44,10 +48,7 @@ export type SubmitResult =
 
 type GradeAnswerInput = {
   readonly row: SubmissionRecord;
-  readonly accepted: ReadonlyArray<{
-    readonly text: string;
-    readonly normalized: string;
-  }>;
+  readonly accepted: ReadonlyArray<AcceptedAnswer>;
   readonly data: SubmitPayloadData;
   readonly normalized: string;
   readonly cache: JudgeCacheStore['Type'];
@@ -62,7 +63,7 @@ const gradeAnswer = ({
   cache,
   judge,
 }: GradeAnswerInput) => {
-  if (accepted.some((answer) => answer.normalized === normalized)) {
+  if (isDeterministicMatch(data.answer, accepted)) {
     return Effect.succeed<GradeOutcome>({ method: 'exact' });
   }
   const expectedAnswers = accepted.map((answer) => answer.text);

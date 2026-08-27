@@ -44,7 +44,7 @@ const backControl = (
 
 export const PracticeFixture = () => (
   <PracticeLayout backControl={backControl} courseName="English A2">
-    <SessionProgress settled={1} total={4} />
+    <SessionProgress settled={0} total={1} />
     <CardPractice
       item={item}
       onNext={() => undefined}
@@ -83,6 +83,24 @@ export const PracticeEmptyFixture = () => (
       correct={0}
       total={0}
       ungraded={0}
+      wrong={0}
+    />
+  </PracticeLayout>
+);
+
+type PracticeOneCardSummaryFixtureProps = {
+  readonly ungraded: boolean;
+};
+
+export const PracticeOneCardSummaryFixture = ({
+  ungraded,
+}: PracticeOneCardSummaryFixtureProps) => (
+  <PracticeLayout backControl={backControl} courseName="English A2">
+    <PracticeEmpty
+      backControl={backControl}
+      correct={ungraded ? 0 : 1}
+      total={1}
+      ungraded={ungraded ? 1 : 0}
       wrong={0}
     />
   </PracticeLayout>

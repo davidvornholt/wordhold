@@ -22,6 +22,8 @@ export const fixtureStates = [
   'practice-session',
   'practice-feedback',
   'practice-empty',
+  'practice-complete-one-card',
+  'practice-ungraded-one-card',
   'practice-deferred',
   'loading',
   'error',
