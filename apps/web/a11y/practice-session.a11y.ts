@@ -39,7 +39,7 @@ test('a missed card returns later and a double click advances only once', async 
   ).toBeVisible();
 });
 
-test('a first-attempt grading failure stays due in the final summary', async ({
+test('a first-attempt grading failure keeps its stored state in the final summary', async ({
   page,
 }) => {
   await page.goto('/?state=practice-session');
@@ -57,11 +57,13 @@ test('a first-attempt grading failure stays due in the final summary', async ({
   await next.click();
   await expect(page.getByText('Sitzung beendet.')).toBeVisible();
   await expect(
-    page.getByText('1 Karte konnte nicht bewertet werden und bleibt fällig.'),
+    page.getByText(
+      '1 Karte konnte nicht bewertet werden. Lernstand und Termin blieben unverändert.',
+    ),
   ).toBeVisible();
 });
 
-test('a repeated-card grading failure stays due in the final summary', async ({
+test('a repeated-card grading failure keeps its stored state in the final summary', async ({
   page,
 }) => {
   await page.goto('/?state=practice-session');
@@ -85,6 +87,27 @@ test('a repeated-card grading failure stays due in the final summary', async ({
     page.getByText('1 von 2 Karten auf Anhieb richtig.'),
   ).toBeVisible();
   await expect(
-    page.getByText('1 Karte konnte nicht bewertet werden und bleibt fällig.'),
+    page.getByText(
+      '1 Karte konnte nicht bewertet werden. Lernstand und Termin blieben unverändert.',
+    ),
   ).toBeVisible();
+});
+
+test('an ungraded future drill card keeps its existing date in the summary', async ({
+  page,
+}) => {
+  await page.goto('/?state=drill-session');
+  await page.getByLabel('Deine Antwort').fill('ungraded');
+  await page.getByRole('button', { name: 'Prüfen' }).click();
+  await page.getByRole('button', { name: 'Weiter' }).click();
+
+  await expect(page.getByText('Sitzung beendet.')).toBeVisible();
+  await expect(
+    page.getByText(
+      '1 Karte konnte nicht bewertet werden. Lernstand und Termin blieben unverändert.',
+    ),
+  ).toBeVisible();
+  await expect(
+    page.getByText('1 Karte konnte nicht bewertet werden und bleibt fällig.'),
+  ).toHaveCount(0);
 });

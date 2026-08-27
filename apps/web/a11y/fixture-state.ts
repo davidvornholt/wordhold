@@ -24,6 +24,7 @@ export const fixtureStates = [
   'practice',
   'practice-start',
   'practice-session',
+  'drill-session',
   'practice-feedback',
   'practice-empty',
   'practice-deferred',

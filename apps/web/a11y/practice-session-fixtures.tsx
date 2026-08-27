@@ -1,3 +1,4 @@
+import type { ReviewMode } from '@wordhold/db/schema/practice';
 import { useState } from 'react';
 import type { SubmitPayloadData } from '../src/features/practice/schemas/submission-schema';
 import type { SubmitResult } from '../src/features/practice/services/practice-service';
@@ -35,9 +36,12 @@ const items = [
 
 // Grades against the expected answer the way the server would, and hands back
 // the revision the card would have after being written.
-const grade = ({ data }: { readonly data: SubmitPayloadData }) => {
+const grade = (
+  sessionItems: ReadonlyArray<ReturnType<typeof card>>,
+  { data }: { readonly data: SubmitPayloadData },
+) => {
   const expected =
-    items.find((item) => item.cardId === data.cardId)?.targetText ?? '';
+    sessionItems.find((item) => item.cardId === data.cardId)?.targetText ?? '';
   if (data.answer === 'ungraded') {
     return Promise.resolve<SubmitResult>({
       graded: false,
@@ -59,8 +63,18 @@ const grade = ({ data }: { readonly data: SubmitPayloadData }) => {
 
 // The whole session loop against the real queue, so a missed card genuinely
 // comes back and the progress bar genuinely stays where it was.
-export const PracticeSessionFixture = () => {
-  const [queue, setQueue] = useState(() => createSessionQueue(items));
+type PracticeSessionFixtureProps = {
+  readonly sessionItems?: ReadonlyArray<ReturnType<typeof card>>;
+  readonly mode?: ReviewMode;
+  readonly title?: string;
+};
+
+export const PracticeSessionFixture = ({
+  sessionItems = items,
+  mode = 'scheduled',
+  title = 'English A2: Üben',
+}: PracticeSessionFixtureProps) => {
+  const [queue, setQueue] = useState(() => createSessionQueue(sessionItems));
   const pending = queue.pending.at(0);
   return (
     <PracticeLayout
@@ -73,7 +87,7 @@ export const PracticeSessionFixture = () => {
           ← Übersicht
         </button>
       }
-      title="English A2: Üben"
+      title={title}
     >
       <SessionProgress settled={queue.settled} total={queue.total} />
       {pending === undefined ? (
@@ -97,12 +111,12 @@ export const PracticeSessionFixture = () => {
         <CardPractice
           item={pending}
           key={`${pending.cardId}-${pending.revision}`}
-          mode="scheduled"
+          mode={mode}
           onNext={(result) =>
             setQueue((current) => advanceQueue(current, pending, result))
           }
           repeated={pending.repeated}
-          submit={grade}
+          submit={(input) => grade(sessionItems, input)}
           targetLabel="Englisch"
         />
       )}
@@ -110,3 +124,13 @@ export const PracticeSessionFixture = () => {
     </PracticeLayout>
   );
 };
+
+// Unit drills may contain review cards whose existing date is still in the
+// future. The practice item does not expose that server-owned date to the UI.
+export const FutureDrillSessionFixture = () => (
+  <PracticeSessionFixture
+    mode="drill"
+    sessionItems={[items[0]]}
+    title="Unit 3 – Holidays üben"
+  />
+);

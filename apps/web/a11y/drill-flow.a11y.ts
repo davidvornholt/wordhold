@@ -26,7 +26,7 @@ test('the drill reaches a unit sitting through the course page', async ({
   await page.getByRole('button', { name: 'Deutsch → Englisch' }).click();
   await expect(page.locator('body')).toHaveAttribute(
     'data-fixture',
-    'practice-session',
+    'drill-session',
   );
 });
 
