@@ -2,9 +2,10 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { Context, Effect, Layer, Redacted } from 'effect';
 import { bedrockApiKey, bedrockRegion } from '../config';
 
-// AWS documents Structured Outputs for GPT-5.6 Luna only through the Mantle
-// Responses API. The runtime endpoint accepts Luna requests but does not
-// constrain their output to the supplied schema.
+// This client targets AWS Mantle's OpenAI-compatible Responses endpoint.
+// Wordhold sends a strict text.format schema, but AWS does not document whether
+// Mantle accepts that shape. Live provider verification must prove the path
+// before deployment.
 export class BedrockProvider extends Context.Tag('@wordhold/ai/Bedrock')<
   BedrockProvider,
   ReturnType<typeof createOpenAI>
