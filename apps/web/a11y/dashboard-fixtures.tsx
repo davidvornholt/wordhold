@@ -13,6 +13,7 @@ const course = {
 const fixtureReviewsToday = 7;
 const fixtureDue = 4;
 const fixtureFresh = 2;
+const fixtureUnlearned = 6;
 const fixtureWords = 18;
 const recoveryPage = {
   id: '00000000-0000-0000-0000-000000000003',
@@ -22,7 +23,10 @@ const recoveryPage = {
   verifiedAt: new Date('2026-08-24T12:00:00Z'),
 };
 
-const action = (label: string, destination: 'import' | 'practice') => (
+const action = (
+  label: string,
+  destination: 'import' | 'practice' | 'learn-units',
+) => (
   <button
     className="text-sm underline"
     onClick={() => navigateToFixture(destination)}
@@ -51,6 +55,7 @@ export const DashboardFixture = ({ empty = false, audioRecovery = false }) => (
     <CourseGrid
       courses={[course]}
       renderImportAction={() => action('Seite fotografieren', 'import')}
+      renderLearnAction={() => action('Lernen', 'learn-units')}
       renderPracticeAction={() => action('Üben', 'practice')}
       reviewsToday={empty ? 0 : fixtureReviewsToday}
       stats={[
@@ -58,6 +63,7 @@ export const DashboardFixture = ({ empty = false, audioRecovery = false }) => (
           courseId: course.id,
           due: empty ? 0 : fixtureDue,
           fresh: empty ? 0 : fixtureFresh,
+          unlearned: empty ? 0 : fixtureUnlearned,
           words: empty ? 0 : fixtureWords,
         },
       ]}

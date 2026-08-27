@@ -1,0 +1,1 @@
+ALTER TABLE "entries" ALTER COLUMN "unit_id" SET NOT NULL;

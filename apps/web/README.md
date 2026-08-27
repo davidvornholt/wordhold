@@ -86,24 +86,31 @@ stores the image permanently under `WORDHOLD_DATA_DIR/pages/` (provenance)
 and runs vision extraction; a model failure never loses the photo — the page
 lands in the "awaiting verification" queue and extraction can be retried.
 `/pages/$pageId/verify` shows the photo next to the editable extracted
-entries; importing writes entries, textbook examples, accepted answers (both
-directions, normalized via `src/shared/grading/normalize.ts`), two FSRS
+entries and asks which unit the words belong to — an existing chapter of the
+course, or a new one named here. A course is a textbook, a unit is a chapter
+of it, and a page is one photo; a unit usually spans several photos, so a
+name that already exists resolves to that unit rather than failing. The unit
+is created in the same transaction as its entries, so a failed import never
+leaves an empty chapter behind. Importing writes entries, textbook examples,
+accepted answers (both directions, normalized via
+`src/shared/grading/normalize.ts`), two FSRS
 cards per entry, and best-effort Polly audio under
 `WORDHOLD_DATA_DIR/audio/`.
 
 Uploads accept JPEG, PNG, and WebP images up to 12 MiB, 12,000 pixels per side, and 40 million pixels total. Wordhold reads the format and dimensions from the file bytes instead of trusting the browser MIME declaration. Each verified page accepts at most 100 entries, and one import can make at most 50 Polly calls. Before new page or audio writes, storage reconciliation removes generated files older than 24 hours only when no page or audio row references them. This clears crash leftovers without touching recent in-flight writes or unrelated files.
 
+## Learning pass
+
+`/courses/$courseId/learn` lists the course's units with how many of their words have never been met, and `/courses/$courseId/units/$unitId/learn` walks through those words one at a time (`src/features/learning/`). The word is spoken, its German and its translation are both on screen, and the learner copies it. Nothing here is graded and nothing reaches the scheduler. Copying a word you can see says nothing about whether you will remember it tomorrow, so the match uses deterministic normalization from `src/shared/grading/normalize.ts` and the bounded textbook-notation parser in `src/shared/grading/variants.ts`. It accepts the displayed spelling and only textbook-authored readings. Manual and judge-written alternatives never count. A wrong copy asks again.
+
+Writing a word correctly stamps `cards.introduced_at` on both of its cards, one word at a time, so leaving halfway keeps what was learned. The write must still match the course, unit, and word loaded for the page. If persistence fails, the page keeps the same word and offers a retry. `introduced_at` is deliberately separate from the FSRS `state` column. `state` says where a card stands in the scheduler, while `introduced_at` says whether the learner has ever met the word. Cards without it are excluded from the practice queue and from the dashboard's due and new counts. After deploying the generated column migration, run `bun run --cwd packages/db db:backfill-introductions` to preserve the review time of cards already answered.
+
 ## Practice flow
 
-`/courses/$courseId/practice` serves everything due plus a bounded batch of
-new cards (`src/features/practice/services/practice-service.ts`). Grading is hybrid: a
-normalized deterministic match is instant; only mismatches reach the AI
-judge, whose verdicts are cached per (entry, direction, normalized answer)
-and can write accepted alternatives back. FSRS ratings are derived from the
-outcome (fast exact = Easy, flawed-but-accepted = Hard, rejected = Again) —
-never self-reported. If the judge is unreachable the card is left
-untouched. Pronunciation plays via `GET /api/entries/$entryId/audio`.
+`/courses/$courseId/practice` serves everything due plus a bounded batch of new cards, both restricted to introduced cards (`src/features/practice/services/practice-service.ts`). Grading is hybrid. A normalized deterministic match is instant. Textbook-sourced answers may carry optional words, inline optional affixes, word alternatives, suffix shorthand, or explicit phrase alternatives, such as `to intend (to)`, `étudiant(e)`, `der/die Angestellte`, `amigo/a`, and `die Straße / der Weg`. The bounded parser in `src/shared/grading/variants.ts` expands at most 24 readings. Every reading expressed by the learner must be accepted before deterministic grading bypasses the AI judge. Overflow and unproven readings go to the judge instead of being truncated. Manual and judge-written accepted answers receive normalized literal matching but are not reinterpreted as textbook notation. Judge verdicts are cached per entry, direction, and normalized answer and can write accepted alternatives back. FSRS derives ratings from the outcome. A fast exact answer is Easy, a flawed but accepted answer is Hard, and a rejected answer is Again. The learner never reports a rating. If the judge is unreachable, the card stays untouched. Pronunciation plays via `GET /api/entries/$entryId/audio`.
+
+The session is one loop the learner works to the end (`src/features/practice/services/session-queue.ts`). A missed card goes back into the queue three cards later instead of leaving the session, because FSRS puts it on a one-minute relearning step and the dashboard would otherwise count it as due again moments after the session was closed. Answering a card bumps its revision, so `submit` returns the new one and the repeat is submitted against it rather than being rejected as stale. The progress bar counts distinct cards once they leave the queue, including cards the judge could not grade. A repeat therefore never moves it backwards, and the end never moves away. An ungraded answer leaves the session without changing the card. The final summary counts ungraded cards and warns that they remain due instead of claiming the sitting was completed.
 
 ## Dashboard
 
-The signed-in start page shows only real data (`src/features/dashboard/services/dashboard-service.ts`): per-course due/new/word counts, today's review count in `WORDHOLD_OWNER_TIME_ZONE`, and "Wackelkandidaten" with at least two Again-ratings in the last 30 days.
+The signed-in start page shows only real data (`src/features/dashboard/services/dashboard-service.ts`): per-course due/new/word counts, how many words still await the learning pass, today's review count in `WORDHOLD_OWNER_TIME_ZONE`, and "Wackelkandidaten" with at least two Again-ratings in the last 30 days. Due and new count cards the practice session would actually offer, so they ignore words that have not been learned yet; the "zu lernen" figure counts words rather than cards, because the learning pass introduces both directions of a word together.

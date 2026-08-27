@@ -13,6 +13,10 @@ import type {
   SubmissionRecord,
 } from '../schemas/practice-models';
 import type { SubmitPayloadData } from '../schemas/submission-schema';
+import {
+  type AcceptedAnswer,
+  isDeterministicMatch,
+} from './deterministic-grading';
 import { judgeWithCache } from './judge-cache';
 import { JudgeCacheStore } from './judge-cache-store';
 import { PracticeJudge } from './practice-judge';
@@ -21,8 +25,6 @@ import { PracticeSessionStore } from './session-store';
 
 export type PracticeSession = {
   readonly items: ReadonlyArray<PracticeItem>;
-  readonly dueCount: number;
-  readonly newCount: number;
 };
 
 export type SubmitResult =
@@ -34,6 +36,9 @@ export type SubmitResult =
   | {
       readonly graded: true;
       readonly correct: boolean;
+      // The card's revision after this answer. A card that comes back later in
+      // the same session is submitted against it.
+      readonly revision: number;
       readonly rating: number;
       readonly expectedAnswers: ReadonlyArray<string>;
       readonly explanation: string | null;
@@ -42,10 +47,7 @@ export type SubmitResult =
 
 type GradeAnswerInput = {
   readonly row: SubmissionRecord;
-  readonly accepted: ReadonlyArray<{
-    readonly text: string;
-    readonly normalized: string;
-  }>;
+  readonly accepted: ReadonlyArray<AcceptedAnswer>;
   readonly data: SubmitPayloadData;
   readonly normalized: string;
   readonly cache: JudgeCacheStore['Type'];
@@ -60,7 +62,7 @@ const gradeAnswer = ({
   cache,
   judge,
 }: GradeAnswerInput) => {
-  if (accepted.some((answer) => answer.normalized === normalized)) {
+  if (isDeterministicMatch(data.answer, accepted)) {
     return Effect.succeed<GradeOutcome>({ method: 'exact' });
   }
   const expectedAnswers = accepted.map((answer) => answer.text);
@@ -106,11 +108,7 @@ export class PracticeService extends Effect.Service<PracticeService>()(
                 ? item.nativeText
                 : item.targetText,
           }));
-          return {
-            items,
-            dueCount: due.length,
-            newCount: fresh.length,
-          } satisfies PracticeSession;
+          return { items } satisfies PracticeSession;
         });
       const submit = (data: SubmitPayloadData) =>
         Effect.gen(function* () {
@@ -147,7 +145,7 @@ export class PracticeService extends Effect.Service<PracticeService>()(
           const elapsedMs = data.elapsedMs ?? null;
           const rating = deriveRating(outcome, elapsedMs);
           const reviewedAt = new Date(yield* Clock.currentTimeMillis);
-          yield* reviews.commit({
+          const revision = yield* reviews.commit({
             card: row.card,
             expectedRevision: data.revision,
             rating,
@@ -162,6 +160,7 @@ export class PracticeService extends Effect.Service<PracticeService>()(
           return {
             graded: true as const,
             correct,
+            revision,
             rating,
             expectedAnswers,
             explanation:

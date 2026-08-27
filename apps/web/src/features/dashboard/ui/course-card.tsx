@@ -9,9 +9,15 @@ type CourseCardProps = {
     readonly targetLanguage: LanguageCode;
   };
   readonly stats:
-    | { readonly due: number; readonly fresh: number; readonly words: number }
+    | {
+        readonly due: number;
+        readonly fresh: number;
+        readonly unlearned: number;
+        readonly words: number;
+      }
     | undefined;
   readonly practiceAction: ReactNode;
+  readonly learnAction: ReactNode;
   readonly importAction: ReactNode;
 };
 
@@ -19,10 +25,12 @@ export const CourseCard = ({
   course,
   stats,
   practiceAction,
+  learnAction,
   importAction,
 }: CourseCardProps) => {
   const due = stats?.due ?? 0;
   const fresh = stats?.fresh ?? 0;
+  const unlearned = stats?.unlearned ?? 0;
   const words = stats?.words ?? 0;
   return (
     <li className="flex flex-col gap-3 border border-border bg-card p-4">
@@ -41,12 +49,14 @@ export const CourseCard = ({
           <span className="font-display text-3xl">{due}</span>
           <span>fällig</span>
           <span className="text-muted-foreground">
-            · {fresh} neu · {words} Wörter
+            · {fresh} neu
+            {unlearned > 0 ? ` · ${unlearned} zu lernen` : ''} · {words} Wörter
           </span>
         </p>
       )}
-      <div className="mt-auto flex gap-4">
+      <div className="mt-auto flex flex-wrap gap-4">
         {due + fresh > 0 ? practiceAction : null}
+        {unlearned > 0 ? learnAction : null}
         {importAction}
       </div>
     </li>
