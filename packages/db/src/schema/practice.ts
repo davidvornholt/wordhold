@@ -10,7 +10,8 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { answerDirectionEnum, entries } from './entries';
+import { answerDirectionEnum } from './directions';
+import { entries } from './entries';
 
 export const cardStates = ['new', 'learning', 'review', 'relearning'] as const;
 export type CardState = (typeof cardStates)[number];

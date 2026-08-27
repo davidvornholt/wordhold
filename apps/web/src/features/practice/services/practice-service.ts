@@ -12,6 +12,7 @@ import type {
   PracticeItem,
   SubmissionRecord,
 } from '../schemas/practice-models';
+import type { SessionRequestData } from '../schemas/session-request';
 import type { SubmitPayloadData } from '../schemas/submission-schema';
 import {
   type AcceptedAnswer,
@@ -97,10 +98,10 @@ export class PracticeService extends Effect.Service<PracticeService>()(
       const reviews = yield* PracticeReviewStore;
       const cache = yield* JudgeCacheStore;
       const judge = yield* PracticeJudge;
-      const getSession = (courseId: string) =>
+      const getSession = ({ courseId, direction }: SessionRequestData) =>
         Effect.gen(function* () {
           const now = new Date(yield* Clock.currentTimeMillis);
-          const { due, fresh } = yield* sessions.load(courseId, now);
+          const { due, fresh } = yield* sessions.load(courseId, direction, now);
           const items = [...due, ...fresh].map((item) => ({
             ...item,
             prompt:

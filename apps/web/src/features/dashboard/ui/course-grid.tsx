@@ -23,6 +23,7 @@ type CourseGridProps = {
   readonly renderPracticeAction: (course: Course) => ReactNode;
   readonly renderLearnAction: (course: Course) => ReactNode;
   readonly renderImportAction: (course: Course) => ReactNode;
+  readonly renderSettingsAction: (course: Course) => ReactNode;
 };
 
 export const CourseGrid = ({
@@ -32,6 +33,7 @@ export const CourseGrid = ({
   renderPracticeAction,
   renderLearnAction,
   renderImportAction,
+  renderSettingsAction,
 }: CourseGridProps) => (
   <section className="flex flex-col gap-3">
     <div className="flex items-baseline justify-between">
@@ -50,6 +52,7 @@ export const CourseGrid = ({
           key={course.id}
           learnAction={renderLearnAction(course)}
           practiceAction={renderPracticeAction(course)}
+          settingsAction={renderSettingsAction(course)}
           stats={stats.find((item) => item.courseId === course.id)}
         />
       ))}

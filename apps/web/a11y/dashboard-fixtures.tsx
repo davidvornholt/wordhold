@@ -25,7 +25,7 @@ const recoveryPage = {
 
 const action = (
   label: string,
-  destination: 'import' | 'practice' | 'learn-units',
+  destination: 'import' | 'practice' | 'learn-units' | 'course-settings',
 ) => (
   <button
     className="text-sm underline"
@@ -57,6 +57,7 @@ export const DashboardFixture = ({ empty = false, audioRecovery = false }) => (
       renderImportAction={() => action('Seite fotografieren', 'import')}
       renderLearnAction={() => action('Lernen', 'learn-units')}
       renderPracticeAction={() => action('Üben', 'practice')}
+      renderSettingsAction={() => action('Einstellungen', 'course-settings')}
       reviewsToday={empty ? 0 : fixtureReviewsToday}
       stats={[
         {

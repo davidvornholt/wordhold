@@ -46,18 +46,23 @@ export class DashboardStore extends Context.Tag('wordhold/DashboardStore')<
         Effect.all(
           {
             // "Due" and "new" both mean a card the practice session would
-            // offer, and it offers nothing that has not been learned first.
+            // offer. It offers nothing that has not been learned first, and
+            // nothing in a direction the course has switched off.
             due: sql<CountRow>`
               select e.course_id as "courseId", count(*)::int as count
               from cards c join entries e on e.id = c.entry_id
+              join courses co on co.id = e.course_id
               where c.introduced_at is not null and c.state <> 'new'
+                and c.direction = any(co.directions)
                 and c.due_at is not null and c.due_at <= ${now}
               group by e.course_id
             `,
             fresh: sql<CountRow>`
               select e.course_id as "courseId", count(*)::int as count
               from cards c join entries e on e.id = c.entry_id
+              join courses co on co.id = e.course_id
               where c.introduced_at is not null and c.state = 'new'
+                and c.direction = any(co.directions)
               group by e.course_id
             `,
             // Counted per word, not per card: the learning pass introduces

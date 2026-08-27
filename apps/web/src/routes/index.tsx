@@ -63,6 +63,15 @@ const Home = () => {
                 Üben
               </Link>
             )}
+            renderSettingsAction={(course) => (
+              <Link
+                className="text-sm underline"
+                params={{ courseId: course.id }}
+                to="/courses/$courseId/settings"
+              >
+                Einstellungen
+              </Link>
+            )}
             reviewsToday={dashboard.reviewsToday}
             stats={dashboard.perCourse}
           />

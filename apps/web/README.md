@@ -94,6 +94,16 @@ Writing a word correctly stamps `cards.introduced_at` on both of its cards, one 
 
 The session is one loop the learner works to the end (`src/features/practice/services/session-queue.ts`). A missed card goes back into the queue three cards later instead of leaving the session, because FSRS puts it on a one-minute relearning step and the dashboard would otherwise count it as due again moments after the session was closed. Answering a card bumps its revision, so `submit` returns the new one and the repeat is submitted against it rather than being rejected as stale. The progress bar counts distinct cards once they leave the queue, including cards the judge could not grade. A repeat therefore never moves it backwards, and the end never moves away. An ungraded answer leaves the session without changing the card. The final summary counts ungraded cards and warns that they remain due instead of claiming the sitting was completed.
 
+## Direction control
+
+A card is asked one way round: German first (`to_target`) or the foreign word first (`to_native`). Both are chosen twice over.
+
+A sitting picks one. `/courses/$courseId/practice` opens on a picker unless the URL already carries `?direction=`, and the choice only narrows the queue for that sitting (`src/features/practice/services/session-options.ts`). "Gemischt" is offered when there is more than one direction to mix; a course down to a single direction has nothing to pick, so it starts straight away.
+
+A course switches a direction off for good under `/courses/$courseId/settings`, stored in `courses.directions` (`src/features/courses/`). A direction that is off stops being asked, stops being scheduled, and stops being counted on the dashboard, in the practice queue as well as in the due and new figures. Its cards are only hidden: they keep their FSRS schedule, so switching the direction back on picks up where it left off instead of starting those words over. The last remaining direction cannot be switched off, because a course with none would schedule nothing and offer no screen to switch one back on from.
+
+The stored column is read by unnesting it into one row per direction. The Postgres driver hands an array column back as the raw text `{to_target,to_native}`, so a query returning rows is the only one whose shape this code decides; what comes back is then decoded with a Schema.
+
 ## Dashboard
 
 The signed-in start page shows only real data (`src/features/dashboard/services/dashboard-service.ts`): per-course due/new/word counts, how many words still await the learning pass, today's review count in `WORDHOLD_OWNER_TIME_ZONE`, and "Wackelkandidaten" with at least two Again-ratings in the last 30 days. Due and new count cards the practice session would actually offer, so they ignore words that have not been learned yet; the "zu lernen" figure counts words rather than cards, because the learning pass introduces both directions of a word together.
