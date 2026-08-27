@@ -19,6 +19,26 @@ describe('matchesLearnItem', () => {
     expect(matchesLearnItem(item, 'to look at')).toBe(true);
   });
 
+  it('uses the shared textbook notation contract', () => {
+    expect(
+      matchesLearnItem(
+        { ...item, targetText: 'amigo/a', textbookAnswers: ['amigo/a'] },
+        'amiga',
+      ),
+    ).toBe(true);
+  });
+
+  it('accepts the displayed spelling but not an unproven overflow reading', () => {
+    const overflow = 'aa/bb cc/dd ee/ff gg/hh ii/jj';
+    const overflowItem = {
+      ...item,
+      targetText: overflow,
+      textbookAnswers: [overflow],
+    };
+    expect(matchesLearnItem(overflowItem, overflow)).toBe(true);
+    expect(matchesLearnItem(overflowItem, 'bb dd ff hh jj')).toBe(false);
+  });
+
   it('does not accept a semantic alternative proposed by the judge', () => {
     expect(matchesLearnItem(item, 'to watch')).toBe(false);
   });

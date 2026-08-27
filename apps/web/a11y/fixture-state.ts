@@ -25,6 +25,8 @@ export const fixtureStates = [
   'drill-session',
   'practice-feedback',
   'practice-empty',
+  'practice-complete-one-card',
+  'practice-ungraded-one-card',
   'practice-deferred',
   'loading',
   'error',
