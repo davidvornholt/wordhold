@@ -2,7 +2,7 @@ import { Database } from '@wordhold/db/client';
 import { Effect } from 'effect';
 
 export const fixtureCourseId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
-const fixtureUnitId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+export const fixtureUnitId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const unlearnedEntryId = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
 export const freshEntryId = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
 export const dueEntryId = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';

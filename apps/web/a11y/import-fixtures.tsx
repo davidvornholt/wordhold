@@ -6,6 +6,10 @@ import { ExtractionRecovery } from '../src/features/import/ui/extraction-recover
 import { VerificationImage } from '../src/features/import/ui/verification-image';
 import { VerifyForm } from '../src/features/import/ui/verify-form';
 import { completeAudioRecovery, navigateToFixture } from './fixture-state';
+import {
+  photographedPage,
+  verificationEntries,
+} from './verification-fixture-data';
 
 const backControl = (
   <button
@@ -17,7 +21,7 @@ const backControl = (
   </button>
 );
 
-const initialEntries: ReadonlyArray<DraftEntry> = [
+const deferredEntries: ReadonlyArray<DraftEntry> = [
   {
     type: 'word',
     targetText: 'memory',
@@ -50,10 +54,6 @@ const units = [
   },
 ];
 
-const photographedPage = `data:image/svg+xml,${encodeURIComponent(
-  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><title>Fixture page</title></svg>',
-)}`;
-
 export const ImportFixture = ({ error = false }) => (
   <CaptureScreen
     backControl={backControl}
@@ -82,22 +82,28 @@ export const VerificationFixture = ({
   audioRecovery = false,
   noUnits = false,
 }: VerificationFixtureProps) => (
-  <main className="mx-auto flex max-w-5xl flex-col gap-4 p-6">
-    {audioRecovery ? (
-      <button
-        className="text-muted-foreground text-sm underline"
-        onClick={() => navigateToFixture('dashboard-audio-recovery')}
-        type="button"
-      >
-        ← Übersicht
-      </button>
-    ) : (
-      backControl
-    )}
-    <h1 className="font-semibold text-2xl">English A2: Seite überprüfen</h1>
-    <div className="grid gap-6 lg:grid-cols-2">
-      <VerificationImage src={photographedPage} />
-      <div>
+  <main className="verification-screen">
+    <div className="verification-header">
+      {audioRecovery ? (
+        <button
+          className="text-muted-foreground text-sm underline"
+          onClick={() => navigateToFixture('dashboard-audio-recovery')}
+          type="button"
+        >
+          ← Übersicht
+        </button>
+      ) : (
+        backControl
+      )}
+      <h1 className="font-display font-semibold text-2xl">
+        English A2: Seite überprüfen
+      </h1>
+    </div>
+    <div className="verification-workbench">
+      <div className="verification-image-pane">
+        <VerificationImage src={photographedPage} />
+      </div>
+      <div className="verification-form-pane">
         {audioRecovery ? (
           <AudioRecovery
             busy={false}
@@ -118,7 +124,7 @@ export const VerificationFixture = ({
         {audioRecovery || empty ? null : (
           <VerifyForm
             busy={false}
-            initialEntries={initialEntries}
+            initialEntries={verificationEntries}
             initialLabel="Unit 3"
             onSubmit={() => navigateToFixture('dashboard')}
             targetLabel="Englisch"
@@ -153,11 +159,11 @@ export const DeferredVerificationFixture = () => {
   const [snapshot, setSnapshot] = useState('none');
   const [status, setStatus] = useState('idle');
   return (
-    <main className="mx-auto flex max-w-lg flex-col gap-4 p-6">
+    <main className="page-column flex flex-col gap-4 p-6">
       <h1 className="font-semibold text-2xl">Seite überprüfen</h1>
       <VerifyForm
         busy={busy}
-        initialEntries={initialEntries}
+        initialEntries={deferredEntries}
         initialLabel="Unit 3"
         onSubmit={(label, entries) => {
           const pending = makeDeferred();

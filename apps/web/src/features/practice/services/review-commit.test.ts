@@ -64,10 +64,10 @@ describe('commitGradedAnswer', () => {
     const { store, transaction } = makeTransactionalStore();
     const results = await Promise.all([
       Effect.runPromise(
-        commitGradedAnswer(transaction(0), verdict()).pipe(Effect.either),
+        commitGradedAnswer(transaction(0), verdict(), true).pipe(Effect.either),
       ),
       Effect.runPromise(
-        commitGradedAnswer(transaction(0), verdict()).pipe(Effect.either),
+        commitGradedAnswer(transaction(0), verdict(), true).pipe(Effect.either),
       ),
     ]);
     const accepted = results.filter((result) => result._tag === 'Right');
@@ -82,10 +82,21 @@ describe('commitGradedAnswer', () => {
     expect(store).toEqual({ revision: 1, reviews: 1, alternatives: 1 });
   });
 
+  it('claims the revision for a held-back answer', async () => {
+    const { store, transaction } = makeTransactionalStore();
+    const revision = await Effect.runPromise(
+      commitGradedAnswer(transaction(0), verdict(), false),
+    );
+    expect(revision).toBe(1);
+    expect(store).toEqual({ revision: 1, reviews: 1, alternatives: 1 });
+  });
+
   it('rolls back the card and alternative when review insertion fails', async () => {
     const { store, transaction } = makeTransactionalStore();
     await expect(
-      Effect.runPromise(commitGradedAnswer(transaction(0, true), verdict())),
+      Effect.runPromise(
+        commitGradedAnswer(transaction(0, true), verdict(), true),
+      ),
     ).rejects.toThrow('review insert failed');
     expect(store).toEqual({ revision: 0, reviews: 0, alternatives: 0 });
   });
@@ -95,7 +106,7 @@ describe('commitGradedAnswer', () => {
     verdict({ spelling: { ok: false, note: 'Tippfehler' } }),
   ])('rechecks the alternative predicate before persistence', async (value) => {
     const { store, transaction } = makeTransactionalStore();
-    await Effect.runPromise(commitGradedAnswer(transaction(0), value));
+    await Effect.runPromise(commitGradedAnswer(transaction(0), value, true));
     expect(store.alternatives).toBe(0);
     expect(store.reviews).toBe(1);
   });

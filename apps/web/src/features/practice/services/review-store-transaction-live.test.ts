@@ -54,6 +54,7 @@ const makeInput = (
       outcome: { method: 'judge', verdict: acceptedVerdict },
       answer,
       elapsedMs: 750,
+      mode: 'scheduled',
       entryId,
       direction,
       normalizedAnswer: answer,

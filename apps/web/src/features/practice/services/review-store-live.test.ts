@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import type { JudgeVerdictData } from '@wordhold/ai/judge/schema';
 import { Database } from '@wordhold/db/client';
-import type { AnswerDirection } from '@wordhold/db/schema/entries';
+import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import type { cards } from '@wordhold/db/schema/practice';
 import {
   testDatabaseLayer,
@@ -80,6 +80,7 @@ describe('PracticeReviewStore introduction contract', () => {
               outcome: { method: 'judge', verdict: acceptedVerdict },
               answer: 'nouveau',
               elapsedMs: 1000,
+              mode: 'scheduled',
               entryId: identity.entryId,
               direction: identity.direction,
               normalizedAnswer: 'nouveau',

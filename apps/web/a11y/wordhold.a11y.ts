@@ -29,6 +29,10 @@ test('authenticated routes remain reachable through their user transitions', asy
     'dashboard',
   );
 
+  // The dashboard card holds nothing but the course name and today's practice;
+  // importing, units and settings are reached through the course page.
+  await page.getByRole('button', { name: 'English A2' }).click();
+  await expect(page.locator('body')).toHaveAttribute('data-fixture', 'course');
   await page.getByRole('button', { name: 'Seite fotografieren' }).click();
   await expect(page.locator('body')).toHaveAttribute('data-fixture', 'import');
   await page.getByLabel('Foto der Vokabelseite').setInputFiles({
@@ -41,19 +45,22 @@ test('authenticated routes remain reachable through their user transitions', asy
     'data-fixture',
     'verification',
   );
-  await page.getByRole('button', { name: '1 Einträge importieren' }).click();
+  await page.getByRole('button', { name: '12 Einträge importieren' }).click();
   await expect(page.locator('body')).toHaveAttribute(
     'data-fixture',
     'dashboard',
   );
 
-  await page.getByRole('button', { name: 'Lernen' }).click();
-  await expect(page.locator('body')).toHaveAttribute(
-    'data-fixture',
-    'learn-units',
-  );
+  await page.getByRole('button', { name: 'English A2' }).click();
+  await expect(page.locator('body')).toHaveAttribute('data-fixture', 'course');
+  await page.getByRole('button', { name: 'Unit 3 – Holidays' }).click();
+  await expect(page.locator('body')).toHaveAttribute('data-fixture', 'unit');
   await page.getByRole('button', { name: '2 lernen' }).click();
   await expect(page.locator('body')).toHaveAttribute('data-fixture', 'learn');
+  await page.getByRole('button', { name: 'Unit 3 – Holidays' }).click();
+  await expect(page.locator('body')).toHaveAttribute('data-fixture', 'unit');
+  await page.getByRole('button', { name: 'English A2' }).click();
+  await expect(page.locator('body')).toHaveAttribute('data-fixture', 'course');
   await page.getByRole('button', { name: 'Übersicht' }).click();
   await expect(page.locator('body')).toHaveAttribute(
     'data-fixture',

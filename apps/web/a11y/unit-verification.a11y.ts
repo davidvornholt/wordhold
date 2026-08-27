@@ -8,7 +8,10 @@ test('VerifyForm defaults to the latest real unit and routes entries independent
   page,
 }) => {
   await page.goto('/?state=verification-deferred');
-  const firstUnit = page.getByLabel('Einheit für Eintrag 1');
+  const firstUnit = page
+    .locator('form > ul > li')
+    .first()
+    .getByLabel('Einheit für Eintrag 1');
   await expect(firstUnit).toHaveValue('22222222-2222-4222-8222-222222222222');
   await firstUnit.selectOption('11111111-1111-4111-8111-111111111111');
   await page.getByRole('button', { name: 'Eintrag hinzufügen' }).click();
@@ -32,7 +35,11 @@ test('VerifyForm requires a name when switching to a new unit', async ({
   page,
 }) => {
   await page.goto('/?state=verification-deferred');
-  await page.getByLabel('Einheit für Eintrag 1').selectOption('new');
+  await page
+    .locator('form > ul > li')
+    .first()
+    .getByLabel('Einheit für Eintrag 1')
+    .selectOption('new');
   const name = page.getByLabel('Name der Einheit');
   const submit = page.getByRole('button', { name: '1 Einträge importieren' });
   await expect(name).toHaveAttribute('required', '');
@@ -50,11 +57,16 @@ test('VerifyForm starts with a required new-unit name when a course has no units
   page,
 }) => {
   await page.goto('/?state=verification-no-units');
-  await expect(page.getByLabel('Einheit für Eintrag 1')).toHaveValue('new');
-  const name = page.getByLabel('Name der Einheit');
+  await expect(
+    page.locator('form > ul > li').first().getByLabel('Einheit für Eintrag 1'),
+  ).toHaveValue('new');
+  const name = page
+    .locator('form > ul > li')
+    .first()
+    .getByLabel('Name der Einheit');
   await expect(name).toBeVisible();
   await expect(
-    page.getByRole('button', { name: '1 Einträge importieren' }),
+    page.getByRole('button', { name: '12 Einträge importieren' }),
   ).toBeDisabled();
   await name.press('Enter');
   await expect(page.locator('body')).toHaveAttribute(
@@ -72,7 +84,9 @@ test('VerifyForm announces a stale unit failure and unlocks recovery', async ({
   await expect(page.getByRole('alert')).toHaveText(
     'Diese Einheit gibt es nicht mehr. Lade die Seite neu.',
   );
-  await expect(page.getByLabel('Einheit für Eintrag 1')).toBeEnabled();
+  await expect(
+    page.locator('form > ul > li').first().getByLabel('Einheit für Eintrag 1'),
+  ).toBeEnabled();
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
 });
 
@@ -81,9 +95,13 @@ test('VerifyForm remains usable in its existing and new-unit mobile states', asy
 }) => {
   await page.setViewportSize({ width: 320, height: 720 });
   await page.goto('/?state=verification');
-  await expect(page.getByLabel('Einheit für Eintrag 1')).toBeInViewport();
+  const firstRow = page.locator('form > ul > li').first();
+  const firstUnit = firstRow.getByLabel('Einheit für Eintrag 1');
+  await expect(firstUnit).toBeInViewport();
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
-  await page.getByLabel('Einheit für Eintrag 1').selectOption('new');
-  await expect(page.getByLabel('Name der Einheit')).toBeInViewport();
+  await firstUnit.selectOption('new');
+  const name = firstRow.getByLabel('Name der Einheit');
+  await name.scrollIntoViewIfNeeded();
+  await expect(name).toBeInViewport();
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
 });

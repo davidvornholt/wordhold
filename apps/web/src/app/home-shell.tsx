@@ -13,7 +13,7 @@ export const HomeShell = ({
   onSignOut,
   children,
 }: HomeShellProps) => (
-  <main className="mx-auto flex max-w-3xl flex-col gap-8 p-6">
+  <main className="page-column flex flex-col gap-8 p-6">
     <header className="flex items-baseline justify-between border-border border-b pb-5">
       <div>
         <h1 className="font-display font-semibold text-3xl">Wordhold</h1>

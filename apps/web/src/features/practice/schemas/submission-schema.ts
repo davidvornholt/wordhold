@@ -1,4 +1,5 @@
 import { maximumEntryTextLength } from '@wordhold/ai/extraction/schema';
+import { reviewModes } from '@wordhold/db/schema/practice';
 import { Schema } from 'effect';
 
 const hoursPerDay = 24;
@@ -29,6 +30,9 @@ export const SubmitPayload = Schema.Struct({
   revision: CardRevision,
   answer: Schema.String.pipe(Schema.maxLength(maximumSubmittedAnswerLength)),
   elapsedMs: Schema.optional(ElapsedMilliseconds),
+  // Which sitting the answer came from. This is provenance for the review
+  // log. Scheduling is derived from the server-owned card state.
+  mode: Schema.Literal(...reviewModes),
 });
 
 export type SubmitPayloadData = typeof SubmitPayload.Type;
