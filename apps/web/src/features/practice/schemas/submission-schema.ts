@@ -1,3 +1,4 @@
+import { maximumEntryTextLength } from '@wordhold/ai/extraction/schema';
 import { Schema } from 'effect';
 
 const hoursPerDay = 24;
@@ -8,6 +9,7 @@ const maximumIncrementablePostgresInteger = 2_147_483_646;
 
 export const maximumElapsedMs =
   hoursPerDay * minutesPerHour * secondsPerMinute * millisecondsPerSecond;
+export const maximumSubmittedAnswerLength = maximumEntryTextLength;
 
 const ElapsedMilliseconds = Schema.Number.pipe(
   Schema.finite(),
@@ -25,7 +27,7 @@ const CardRevision = Schema.Number.pipe(
 export const SubmitPayload = Schema.Struct({
   cardId: Schema.UUID,
   revision: CardRevision,
-  answer: Schema.String,
+  answer: Schema.String.pipe(Schema.maxLength(maximumSubmittedAnswerLength)),
   elapsedMs: Schema.optional(ElapsedMilliseconds),
 });
 
