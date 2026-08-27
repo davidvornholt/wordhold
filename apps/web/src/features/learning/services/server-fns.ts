@@ -13,7 +13,6 @@ const learningLive = LearningService.Default.pipe(
 
 const learningRuntime = ManagedRuntime.make(learningLive);
 
-const decodeId = Schema.decodeUnknownSync(Schema.UUID);
 const decodePassRequest = Schema.decodeUnknownSync(
   Schema.Struct({ courseId: Schema.UUID, unitId: Schema.UUID }),
 );

@@ -6,10 +6,6 @@ import { commitGradedAnswer, type RunReviewTransaction } from './review-commit';
 
 type Store = { revision: number; reviews: number; alternatives: number };
 
-// A revision the card is already at, so a held-back answer handing it straight
-// back is visibly not the result of an increment.
-const heldRevision = 4;
-
 const verdict = (
   overrides: Partial<JudgeVerdictData> = {},
 ): JudgeVerdictData => ({
@@ -68,14 +64,10 @@ describe('commitGradedAnswer', () => {
     const { store, transaction } = makeTransactionalStore();
     const results = await Promise.all([
       Effect.runPromise(
-        commitGradedAnswer(transaction(0), verdict(), { advance: true }).pipe(
-          Effect.either,
-        ),
+        commitGradedAnswer(transaction(0), verdict(), true).pipe(Effect.either),
       ),
       Effect.runPromise(
-        commitGradedAnswer(transaction(0), verdict(), { advance: true }).pipe(
-          Effect.either,
-        ),
+        commitGradedAnswer(transaction(0), verdict(), true).pipe(Effect.either),
       ),
     ]);
     const accepted = results.filter((result) => result._tag === 'Right');
@@ -90,28 +82,20 @@ describe('commitGradedAnswer', () => {
     expect(store).toEqual({ revision: 1, reviews: 1, alternatives: 1 });
   });
 
-  // What a drill of a word that was not due does: the answer is on record, the
-  // card's schedule is not rewritten, and the session keeps answering against
-  // the revision it already holds.
-  it('records a held-back answer without touching the card', async () => {
+  it('claims the revision for a held-back answer', async () => {
     const { store, transaction } = makeTransactionalStore();
     const revision = await Effect.runPromise(
-      commitGradedAnswer(transaction(0), verdict(), {
-        advance: false,
-        revision: heldRevision,
-      }),
+      commitGradedAnswer(transaction(0), verdict(), false),
     );
-    expect(revision).toBe(heldRevision);
-    expect(store).toEqual({ revision: 0, reviews: 1, alternatives: 1 });
+    expect(revision).toBe(1);
+    expect(store).toEqual({ revision: 1, reviews: 1, alternatives: 1 });
   });
 
   it('rolls back the card and alternative when review insertion fails', async () => {
     const { store, transaction } = makeTransactionalStore();
     await expect(
       Effect.runPromise(
-        commitGradedAnswer(transaction(0, true), verdict(), {
-          advance: true,
-        }),
+        commitGradedAnswer(transaction(0, true), verdict(), true),
       ),
     ).rejects.toThrow('review insert failed');
     expect(store).toEqual({ revision: 0, reviews: 0, alternatives: 0 });
@@ -122,9 +106,7 @@ describe('commitGradedAnswer', () => {
     verdict({ spelling: { ok: false, note: 'Tippfehler' } }),
   ])('rechecks the alternative predicate before persistence', async (value) => {
     const { store, transaction } = makeTransactionalStore();
-    await Effect.runPromise(
-      commitGradedAnswer(transaction(0), value, { advance: true }),
-    );
+    await Effect.runPromise(commitGradedAnswer(transaction(0), value, true));
     expect(store.alternatives).toBe(0);
     expect(store.reviews).toBe(1);
   });

@@ -28,9 +28,8 @@ export const SubmitPayload = Schema.Struct({
   revision: CardRevision,
   answer: Schema.String,
   elapsedMs: Schema.optional(ElapsedMilliseconds),
-  // Which sitting the answer came from. It decides whether the answer may
-  // rewrite the card's schedule, so the client states it rather than the
-  // server guessing from the card.
+  // Which sitting the answer came from. This is provenance for the review
+  // log. Scheduling is derived from the server-owned card state.
   mode: Schema.Literal(...reviewModes),
 });
 

@@ -31,8 +31,8 @@ describe('decodeSubmitPayload', () => {
     expect(() => decodeSubmitPayload({ ...validPayload, elapsedMs })).toThrow();
   });
 
-  // The mode decides whether the answer may rewrite the card's schedule, so an
-  // unreadable one must not fall through to the scheduled default.
+  // Mode is stored review provenance, so invalid labels must not reach the
+  // database enum or silently fall through to its default.
   it('rejects a payload without a recognised mode', () => {
     expect(() =>
       decodeSubmitPayload({ ...validPayload, mode: 'cram' }),

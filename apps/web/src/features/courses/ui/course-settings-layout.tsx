@@ -11,7 +11,7 @@ export const CourseSettingsLayout = ({
   courseName,
   children,
 }: CourseSettingsLayoutProps) => (
-  <main className="mx-auto flex max-w-lg flex-col gap-4 p-6">
+  <main className="page-column flex flex-col gap-4 p-6">
     {backControl}
     <h1 className="font-display font-semibold text-2xl">
       {courseName}: Einstellungen

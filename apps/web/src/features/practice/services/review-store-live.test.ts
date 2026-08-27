@@ -1,79 +1,16 @@
 import { describe, expect, it } from 'bun:test';
-import type { JudgeVerdictData } from '@wordhold/ai/judge/schema';
 import { Database } from '@wordhold/db/client';
-import {
-  testDatabaseLayer,
-  withMigratedTestDatabase,
-} from '@wordhold/db/testing/postgres-test-database';
-import { Effect, Layer } from 'effect';
+import { Effect } from 'effect';
 import {
   dueEntryId,
   freshEntryId,
-  seedIntroducedCardFixture,
 } from '../../../shared/testing/introduced-card-fixture';
 import { StaleAnswerSubmissionError } from '../errors/practice-errors';
-import type { PersistReviewInput } from '../schemas/practice-models';
 import { PracticeReviewStore } from './review-store';
-
-const acceptedVerdict: JudgeVerdictData = {
-  correct: true,
-  acceptAsAlternative: true,
-  meaning: { ok: true },
-  grammar: { ok: true },
-  idiomaticity: { ok: true },
-  spelling: { ok: true },
-  intendedConstruction: { ok: true },
-  explanation: 'Passt.',
-};
-
-const makeInput = (
-  entryId: string,
-  direction: 'to_target' | 'to_native',
-  answer: string,
-) =>
-  Effect.gen(function* () {
-    const sql = yield* Database;
-    const store = yield* PracticeReviewStore;
-    const rows = yield* sql<{ readonly id: string }>`
-      select id from cards
-      where entry_id = ${entryId} and direction = ${direction}
-    `;
-    const cardId = rows.at(0)?.id;
-    if (cardId === undefined) {
-      return yield* Effect.die('Expected the seeded card.');
-    }
-    const submission = yield* store.findSubmission(cardId, 0);
-    if (submission === undefined) {
-      return yield* Effect.die('Expected the seeded card revision.');
-    }
-    return {
-      card: submission.card,
-      expectedRevision: 0,
-      rating: 3,
-      reviewedAt: new Date('2026-08-20T12:01:00.000Z'),
-      outcome: { method: 'judge', verdict: acceptedVerdict },
-      answer,
-      elapsedMs: 750,
-      entryId,
-      direction,
-      normalizedAnswer: answer,
-    } satisfies PersistReviewInput;
-  });
-
-const runReviewTest = <A, E>(
-  test: Effect.Effect<A, E, Database | PracticeReviewStore>,
-) =>
-  Effect.runPromise(
-    withMigratedTestDatabase((database) => {
-      const databaseLayer = testDatabaseLayer(database.url);
-      return Effect.zipRight(seedIntroducedCardFixture, test).pipe(
-        Effect.provide(
-          PracticeReviewStore.live.pipe(Layer.provide(databaseLayer)),
-        ),
-        Effect.provide(databaseLayer),
-      );
-    }),
-  );
+import {
+  makeReviewInput,
+  runReviewTest,
+} from './review-store-live-test-support';
 
 describe('PracticeReviewStore PostgreSQL transaction', () => {
   it('returns the revision written by PostgreSQL', async () => {
@@ -81,7 +18,11 @@ describe('PracticeReviewStore PostgreSQL transaction', () => {
       Effect.gen(function* () {
         const store = yield* PracticeReviewStore;
         const sql = yield* Database;
-        const input = yield* makeInput(dueEntryId, 'to_target', 'souvenir');
+        const input = yield* makeReviewInput({
+          entryId: dueEntryId,
+          direction: 'to_target',
+          answer: 'souvenir',
+        });
         expect(yield* store.commit(input)).toBe(1);
         const rows = yield* sql<{
           readonly revision: number;
@@ -103,7 +44,11 @@ describe('PracticeReviewStore PostgreSQL transaction', () => {
       Effect.gen(function* () {
         const store = yield* PracticeReviewStore;
         const sql = yield* Database;
-        const input = yield* makeInput(freshEntryId, 'to_target', 'ouvrage');
+        const input = yield* makeReviewInput({
+          entryId: freshEntryId,
+          direction: 'to_target',
+          answer: 'ouvrage',
+        });
         const results = yield* Effect.all(
           [
             store.commit(input).pipe(Effect.either),
@@ -145,11 +90,12 @@ describe('PracticeReviewStore PostgreSQL transaction', () => {
           alter table reviews add constraint test_reject_review
           check (answer_text <> 'force rollback')
         `;
-        const input = yield* makeInput(
-          freshEntryId,
-          'to_native',
-          'force rollback',
-        );
+        const input = yield* makeReviewInput({
+          entryId: dueEntryId,
+          direction: 'to_native',
+          answer: 'force rollback',
+          mode: 'drill',
+        });
         expect((yield* store.commit(input).pipe(Effect.either))._tag).toBe(
           'Left',
         );

@@ -9,6 +9,7 @@ import {
   dueEntryId,
   fixtureCourseId,
   fixtureNow,
+  fixtureUnitId,
   freshEntryId,
   seedIntroducedCardFixture,
 } from '../../../shared/testing/introduced-card-fixture';
@@ -67,6 +68,50 @@ describe('PracticeSessionStore introduction contract', () => {
             fixtureNow,
           );
           expect(disabled).toEqual({ due: [], fresh: [] });
+        }).pipe(
+          Effect.provide(
+            PracticeSessionStore.live.pipe(Layer.provide(databaseLayer)),
+          ),
+          Effect.provide(databaseLayer),
+        );
+      }),
+    );
+  });
+
+  it('loads every introduced card in one unit and respects directions', async () => {
+    await Effect.runPromise(
+      withMigratedTestDatabase((database) => {
+        const databaseLayer = testDatabaseLayer(database.url);
+        return Effect.gen(function* () {
+          yield* seedIntroducedCardFixture;
+          const sql = yield* Database;
+          const store = yield* PracticeSessionStore;
+
+          const mixed = yield* store.loadUnit(fixtureUnitId, 'both');
+          expect(
+            mixed
+              .map(({ entryId, direction }) => `${entryId}:${direction}`)
+              .sort(),
+          ).toEqual(
+            [
+              `${dueEntryId}:to_native`,
+              `${dueEntryId}:to_target`,
+              `${freshEntryId}:to_native`,
+              `${freshEntryId}:to_target`,
+            ].sort(),
+          );
+          const target = yield* store.loadUnit(fixtureUnitId, 'to_target');
+          expect(target.map(({ direction }) => direction)).toEqual([
+            'to_target',
+            'to_target',
+          ]);
+
+          yield* sql`
+            update courses
+            set directions = '{to_native}'::answer_direction[]
+            where id = ${fixtureCourseId}
+          `;
+          expect(yield* store.loadUnit(fixtureUnitId, 'to_target')).toEqual([]);
         }).pipe(
           Effect.provide(
             PracticeSessionStore.live.pipe(Layer.provide(databaseLayer)),
