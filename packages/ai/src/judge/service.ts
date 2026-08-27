@@ -2,16 +2,18 @@ import { generateText, Output } from 'ai';
 import { Effect, Schema } from 'effect';
 import { judgeModel } from '../config';
 import { BedrockProvider } from '../providers/bedrock';
-import { providerJsonSchema } from '../structured-output';
+import {
+  providerJsonSchema,
+  structuredOutputOptions,
+} from '../structured-output';
 import { JudgeError } from './error';
 import { type JudgeInput, JudgeVerdict, type JudgeVerdictData } from './schema';
 
-// Anthropic on Bedrock answers a structured-output request with plain JSON
-// text. A model that writes a German quotation pair as „wort" ends the JSON
-// string on that unescaped quote: everything after it is lost and the truncated
-// remainder still parses, so a learner sees half a sentence. Asking for single
-// quotes is only a best-effort mitigation. Model output remains untrusted and
-// may ignore the instruction or repeat quotation marks from prompt inputs.
+// Luna reaches this service through AWS Mantle's Responses endpoint. Wordhold
+// sends a strict text.format schema, but mocked transport tests cannot prove
+// that Mantle accepts or enforces it. Keep the prompt-level quotation rule as a
+// best-effort guard. Model output remains untrusted and may repeat quotation
+// marks from prompt inputs.
 const quotingRule =
   "When you quote a word, wrap it in single quotes ('wort'). Never use double quotes or typographic quotation marks anywhere in your answer.";
 
@@ -50,9 +52,10 @@ export class Judge extends Effect.Service<Judge>()('@wordhold/ai/Judge', {
       Effect.tryPromise({
         try: async () => {
           const { output } = await generateText({
-            model: bedrock(modelId),
+            model: bedrock.responses(modelId),
             output: Output.object({ schema: verdictOutput }),
             prompt: judgePrompt(input),
+            providerOptions: structuredOutputOptions,
           });
           return output;
         },

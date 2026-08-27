@@ -8,3 +8,12 @@ import { JSONSchema, type Schema } from 'effect';
 // model returns is untrusted until decoding validates it.
 export const providerJsonSchema = <A, I>(schema: Schema.Schema<A, I>) =>
   jsonSchema<unknown>(JSONSchema.make(schema));
+
+// These calls are stateless. Disabling response storage preserves that behavior
+// on the Responses API.
+export const structuredOutputOptions = {
+  openai: {
+    strictJsonSchema: true,
+    store: false,
+  },
+};

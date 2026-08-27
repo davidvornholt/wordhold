@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { Schema } from 'effect';
-import { JudgeVerdict } from './schema';
+import { isAcceptedAlternative, JudgeVerdict } from './schema';
 import { judgePrompt } from './service';
 
 describe('judgePrompt', () => {
@@ -38,11 +38,11 @@ describe('JudgeVerdict schema', () => {
   const completeVerdict = {
     correct: true,
     acceptAsAlternative: true,
-    meaning: { ok: true },
-    grammar: { ok: true },
-    idiomaticity: { ok: true },
-    spelling: { ok: true },
-    intendedConstruction: { ok: true },
+    meaning: { ok: true, note: null },
+    grammar: { ok: true, note: null },
+    idiomaticity: { ok: true, note: null },
+    spelling: { ok: true, note: null },
+    intendedConstruction: { ok: true, note: null },
     explanation: 'Passt.',
   } as const;
 
@@ -50,11 +50,11 @@ describe('JudgeVerdict schema', () => {
     const verdict = Schema.decodeUnknownSync(JudgeVerdict)({
       correct: false,
       acceptAsAlternative: false,
-      meaning: { ok: true },
-      grammar: { ok: true },
+      meaning: { ok: true, note: null },
+      grammar: { ok: true, note: null },
       idiomaticity: { ok: false, note: 'ungebräuchlich' },
-      spelling: { ok: true },
-      intendedConstruction: { ok: false },
+      spelling: { ok: true, note: null },
+      intendedConstruction: { ok: false, note: null },
       explanation: 'Fast! „le souvenir“ ist hier das gesuchte Wort.',
     });
     expect(verdict.correct).toBe(false);
@@ -63,26 +63,22 @@ describe('JudgeVerdict schema', () => {
 
   it('accepts a fully correct alternative', () => {
     expect(
-      Schema.decodeUnknownSync(JudgeVerdict)(completeVerdict)
-        .acceptAsAlternative,
+      isAcceptedAlternative(
+        Schema.decodeUnknownSync(JudgeVerdict)(completeVerdict),
+      ),
     ).toBe(true);
   });
 
-  it('rejects an alternative marked both accepted and incorrect', () => {
-    expect(() =>
-      Schema.decodeUnknownSync(JudgeVerdict)({
-        ...completeVerdict,
-        correct: false,
-      }),
-    ).toThrow();
-  });
+  // A model that proposes an alternative while faulting the answer has still
+  // written an explanation worth showing. It is kept and shown; only the
+  // write-back is refused, because that is the step that cannot be undone.
+  it.each([
+    { ...completeVerdict, correct: false },
+    { ...completeVerdict, spelling: { ok: false, note: 'Tippfehler' } },
+  ])('shows a self-contradicting verdict but never stores it', (input) => {
+    const verdict = Schema.decodeUnknownSync(JudgeVerdict)(input);
 
-  it('rejects a correct alternative with a flawed grading dimension', () => {
-    expect(() =>
-      Schema.decodeUnknownSync(JudgeVerdict)({
-        ...completeVerdict,
-        spelling: { ok: false, note: 'Tippfehler' },
-      }),
-    ).toThrow();
+    expect(verdict.explanation).toBe('Passt.');
+    expect(isAcceptedAlternative(verdict)).toBe(false);
   });
 });

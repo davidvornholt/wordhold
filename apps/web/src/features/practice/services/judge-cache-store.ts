@@ -25,6 +25,7 @@ export class JudgeCacheStore extends Context.Tag('wordhold/JudgeCacheStore')<
   {
     readonly read: (
       key: JudgeCacheKey,
+      model: string,
     ) => Effect.Effect<CachedJudgeVerdict | undefined, PracticeDatabaseError>;
     readonly write: (
       key: JudgeCacheKey,
@@ -40,11 +41,12 @@ export class JudgeCacheStore extends Context.Tag('wordhold/JudgeCacheStore')<
     JudgeCacheStore,
     Effect.gen(function* () {
       const sql = yield* Database;
-      const read = (key: JudgeCacheKey) =>
+      const read = (key: JudgeCacheKey, model: string) =>
         sql<CacheRow>`
           select verdict, model from judge_cache
           where entry_id = ${key.entryId} and direction = ${key.direction}
             and normalized_answer = ${key.normalizedAnswer}
+            and model = ${model}
         `.pipe(
           Effect.flatMap((rows) => {
             const [row] = rows;
@@ -70,7 +72,9 @@ export class JudgeCacheStore extends Context.Tag('wordhold/JudgeCacheStore')<
             (entry_id, direction, normalized_answer, verdict, model)
           values (${key.entryId}, ${key.direction}, ${key.normalizedAnswer},
             ${JSON.stringify(value.verdict)}::jsonb, ${value.model})
-          on conflict do nothing
+          on conflict (entry_id, direction, normalized_answer) do update
+          set verdict = excluded.verdict, model = excluded.model,
+            created_at = now()
         `.pipe(
           Effect.asVoid,
           Effect.mapError((cause) => databaseError('write judge cache', cause)),

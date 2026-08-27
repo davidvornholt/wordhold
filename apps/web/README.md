@@ -27,11 +27,13 @@ through `src/shared/env/server.ts`.
 | `GITHUB_CLIENT_SECRET` | GitHub OAuth app client secret. |
 | `GITHUB_ALLOWED_USER_ID` | Numeric GitHub user ID of the single allowed user. Wordhold rejects other profiles before persistence and rechecks existing sessions against the current value. |
 | `WORDHOLD_OWNER_TIME_ZONE` | Required IANA time zone for owner-local day boundaries, such as `Europe/Berlin`. |
-| `AWS_REGION` | AWS region for Bedrock and Polly (`eu-central-1`). |
-| `AWS_ACCESS_KEY_ID` | AWS credentials for Bedrock (judge, sentence generation) and Polly (TTS). |
-| `AWS_SECRET_ACCESS_KEY` | Secret half of the AWS credentials. |
-| `AI_JUDGE_MODEL` | Bedrock model ID for answer judging (fast Claude). |
-| `AI_SENTENCE_MODEL` | Bedrock model ID for sentence generation (frontier Claude). |
+| `AWS_REGION` | AWS region for Polly (`eu-central-1`). |
+| `AWS_BEDROCK_REGION` | AWS region for Bedrock Mantle (`us-east-1`). |
+| `AWS_BEDROCK_API_KEY` | Bedrock API key (`ABSK…`) for the OpenAI-compatible endpoint used by the judge and sentence generation. |
+| `AWS_ACCESS_KEY_ID` | SigV4 credentials for Polly (TTS). |
+| `AWS_SECRET_ACCESS_KEY` | Secret half of the SigV4 credentials. |
+| `AI_JUDGE_MODEL` | Bedrock model ID for answer judging. |
+| `AI_SENTENCE_MODEL` | Bedrock model ID for sentence generation. |
 | `AI_EXTRACTION_MODEL` | Google model ID for page extraction. |
 | `AI_EXTRACTION_ESCALATION_MODEL` | Google model ID for extraction escalation on low-confidence pages. |
 | `GOOGLE_VERTEX_LOCATION` | Google Enterprise AI location (`global`). |
@@ -40,9 +42,24 @@ through `src/shared/env/server.ts`.
 
 ## Provider credentials
 
-The AWS pair belongs to a dedicated IAM user, `WordholdDevelopment`, whose inline policy `WordholdAiInference` allows only Bedrock inference on Anthropic Claude models (foundation models plus this account's `eu.anthropic.claude-*` inference profiles) and `polly:SynthesizeSpeech`. It has no console password and no other permissions. Rotate by minting a second access key for that user, writing it into `secrets/dev.yaml` with `just secrets edit dev`, then deleting the old key.
+Both AWS credentials belong to one dedicated IAM user, `WordholdDevelopment`, which has no console password. The SigV4 pair permits only `polly:SynthesizeSpeech`. The Bedrock API key uses the same user's permissions. AWS controls Mantle API-key authentication with `bedrock-mantle:CallWithBearerToken`. Wordhold also needs `bedrock-mantle:CreateInference` on `arn:aws:bedrock-mantle:us-east-1:765727302936:project/default`. The [AWS service authorization reference](https://docs.aws.amazon.com/service-authorization/latest/reference/list_bedrock-mantle.html) marks `CreateInference` as project-scoped. This application does not need project listing, tagging, or management permissions.
 
-Bedrock model IDs must be exact inference-profile identifiers; `aws bedrock list-inference-profiles --region eu-central-1` prints the valid set. A shortened ID such as `eu.anthropic.claude-haiku-4-5` is rejected at invocation time, not at startup.
+Rotate the Bedrock API key from the repository root:
+
+```sh
+bun run --cwd apps/web provider:rotate-bedrock-key
+just dev-env-generate
+bun run --cwd apps/web provider:verify
+aws iam delete-service-specific-credential \
+  --user-name WordholdDevelopment \
+  --service-specific-credential-id '<predecessor credential printed above>'
+```
+
+The rotation command needs an operator AWS identity that can list, create, and delete Bedrock service-specific credentials for `WordholdDevelopment`. The application SigV4 pair cannot manage its own credentials, and the repository credential broker does not manage AWS IAM users. The command checks that AWS has at most one Bedrock key before creating another. It gives the replacement a 90-day lifetime and passes the one-time `ServiceCredentialSecret` from AWS CLI memory straight to `sops set --value-stdin`. If decoding or storage fails after creation, it revokes the new ID automatically. If cleanup also fails, it prints the new ID and exact revocation command, never the value. `provider:verify` then makes real judge and sentence requests with the generated environment. Delete the explicitly named predecessor only after both requests pass.
+
+Rotate the Polly SigV4 pair with the same replace, verify, revoke order. Store both replacement values in `secrets/dev.yaml`, run `just dev-env-generate`, verify Polly through the web import flow, then call `aws iam delete-access-key --user-name WordholdDevelopment --access-key-id '<predecessor access key ID>'`. Never put either secret value in a shell argument or terminal output.
+
+Bedrock model IDs depend on the endpoint. Mantle uses `openai.gpt-5.6-luna`; `global.openai.gpt-5.6-luna` is a different inference-profile ID for `bedrock-runtime` and is rejected by Mantle.
 
 `GOOGLE_SERVICE_ACCOUNT_JSON` is the single-line key JSON for the `wordhold-extraction` service account in Google Cloud project `wordhold-a52aa0`, which holds `roles/aiplatform.user` and nothing else. The project has billing enabled and the Vertex AI API turned on. Page extraction is the only feature that uses it. Rotate by creating a second key with `gcloud iam service-accounts keys create`, writing it into `secrets/dev.yaml` with `just secrets edit dev`, then deleting the old key ID.
 

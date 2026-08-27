@@ -11,11 +11,11 @@ const verdict = (
 ): JudgeVerdictData => ({
   correct: true,
   acceptAsAlternative: true,
-  meaning: { ok: true },
-  grammar: { ok: true },
-  idiomaticity: { ok: true },
-  spelling: { ok: true },
-  intendedConstruction: { ok: true },
+  meaning: { ok: true, note: null },
+  grammar: { ok: true, note: null },
+  idiomaticity: { ok: true, note: null },
+  spelling: { ok: true, note: null },
+  intendedConstruction: { ok: true, note: null },
   explanation: 'Passt.',
   ...overrides,
 });

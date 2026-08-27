@@ -12,11 +12,11 @@ import { PracticeJudge } from './practice-judge';
 const verdict: JudgeVerdictData = {
   correct: false,
   acceptAsAlternative: false,
-  meaning: { ok: false },
-  grammar: { ok: true },
-  idiomaticity: { ok: true },
-  spelling: { ok: true },
-  intendedConstruction: { ok: true },
+  meaning: { ok: false, note: null },
+  grammar: { ok: true, note: null },
+  idiomaticity: { ok: true, note: null },
+  spelling: { ok: true, note: null },
+  intendedConstruction: { ok: true, note: null },
   explanation: 'Das bedeutet etwas anderes.',
 };
 
@@ -51,6 +51,7 @@ describe('judgeWithCache', () => {
             withCriticalSection: (_key, effect) => effect,
           }),
           Layer.succeed(PracticeJudge, {
+            model: 'bedrock-mantle:test-model',
             judge: () =>
               Effect.sync(() => {
                 judgeCalls += 1;
@@ -83,6 +84,7 @@ describe('judgeWithCache', () => {
               withCriticalSection: (_key, effect) => effect,
             }),
             Layer.succeed(PracticeJudge, {
+              model: 'bedrock-mantle:test-model',
               judge: () => Effect.fail(failure),
             }),
           ),
@@ -94,7 +96,6 @@ describe('judgeWithCache', () => {
     const receivedFailure = result._tag === 'Left' ? result.left : undefined;
     expect(receivedFailure).toBe(failure);
   });
-
   it('judges once when concurrent misses share a critical section', async () => {
     const mutex = Effect.unsafeMakeSemaphore(1);
     let cached:
@@ -111,6 +112,7 @@ describe('judgeWithCache', () => {
         withCriticalSection: (_key, effect) => mutex.withPermits(1)(effect),
       }),
       Layer.succeed(PracticeJudge, {
+        model: 'bedrock-mantle:test-model',
         judge: () =>
           Effect.sync(() => {
             judgeCalls += 1;
@@ -125,5 +127,74 @@ describe('judgeWithCache', () => {
     );
     expect(results).toEqual([verdict, verdict]);
     expect(judgeCalls).toBe(1);
+  });
+});
+
+describe('judge cache validity', () => {
+  it('returns a verdict cached by the active provider and model', async () => {
+    let judgeCalls = 0;
+    const result = await Effect.runPromise(
+      judgeWithCache(request).pipe(
+        Effect.provide(
+          Layer.merge(
+            Layer.succeed(JudgeCacheStore, {
+              read: (_key, model) =>
+                Effect.succeed(
+                  model === 'bedrock-mantle:test-model'
+                    ? { verdict, model }
+                    : undefined,
+                ),
+              write: () => Effect.void,
+              withCriticalSection: (_key, effect) => effect,
+            }),
+            Layer.succeed(PracticeJudge, {
+              model: 'bedrock-mantle:test-model',
+              judge: () =>
+                Effect.sync(() => {
+                  judgeCalls += 1;
+                  return { verdict, model: 'bedrock-mantle:test-model' };
+                }),
+            }),
+          ),
+        ),
+      ),
+    );
+
+    expect(result).toEqual(verdict);
+    expect(judgeCalls).toBe(0);
+  });
+
+  it('replaces a verdict cached by an old provider or model', async () => {
+    let cached = { verdict, model: 'bedrock-runtime:old-model' };
+    let judgeCalls = 0;
+    const result = await Effect.runPromise(
+      judgeWithCache(request).pipe(
+        Effect.provide(
+          Layer.merge(
+            Layer.succeed(JudgeCacheStore, {
+              read: (_key, model) =>
+                Effect.succeed(cached.model === model ? cached : undefined),
+              write: (_key, value) =>
+                Effect.sync(() => {
+                  cached = value;
+                }),
+              withCriticalSection: (_key, effect) => effect,
+            }),
+            Layer.succeed(PracticeJudge, {
+              model: 'bedrock-mantle:test-model',
+              judge: () =>
+                Effect.sync(() => {
+                  judgeCalls += 1;
+                  return { verdict, model: 'bedrock-mantle:test-model' };
+                }),
+            }),
+          ),
+        ),
+      ),
+    );
+
+    expect(result).toEqual(verdict);
+    expect(judgeCalls).toBe(1);
+    expect(cached.model).toBe('bedrock-mantle:test-model');
   });
 });
