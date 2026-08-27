@@ -36,13 +36,22 @@ const Home = () => {
         <>
           <CourseGrid
             courses={courses}
+            renderCourseLink={(course) => (
+              <Link
+                className="font-medium underline"
+                params={{ courseId: course.id }}
+                to="/courses/$courseId"
+              >
+                {course.name}
+              </Link>
+            )}
             renderImportAction={(course) => (
               <Link
-                className="text-sm underline"
+                className="underline"
                 params={{ courseId: course.id }}
                 to="/courses/$courseId/import"
               >
-                Seite fotografieren
+                fotografiere die erste Seite
               </Link>
             )}
             renderPracticeAction={(course) => (

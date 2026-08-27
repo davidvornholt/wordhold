@@ -9,7 +9,12 @@ const fragileMinFailures = 2;
 const fragileLimit = 8;
 
 type CountRow = { readonly courseId: string; readonly count: number };
-type MutableCourseStats = { due: number; fresh: number; words: number };
+type MutableCourseStats = {
+  due: number;
+  fresh: number;
+  unlearned: number;
+  words: number;
+};
 
 const databaseError = (cause: unknown) =>
   new DashboardDatabaseError({
@@ -40,16 +45,33 @@ export class DashboardStore extends Context.Tag('wordhold/DashboardStore')<
       const courseCounts = (now: Date) =>
         Effect.all(
           {
+            // "Due" and "new" both mean a card the practice session would
+            // offer. It offers nothing that has not been learned first, and
+            // nothing in a direction the course has switched off.
             due: sql<CountRow>`
               select e.course_id as "courseId", count(*)::int as count
               from cards c join entries e on e.id = c.entry_id
-              where c.state <> 'new' and c.due_at is not null and c.due_at <= ${now}
+              join courses co on co.id = e.course_id
+              where c.introduced_at is not null and c.state <> 'new'
+                and c.direction = any(co.directions)
+                and c.due_at is not null and c.due_at <= ${now}
               group by e.course_id
             `,
             fresh: sql<CountRow>`
               select e.course_id as "courseId", count(*)::int as count
               from cards c join entries e on e.id = c.entry_id
-              where c.state = 'new' group by e.course_id
+              join courses co on co.id = e.course_id
+              where c.introduced_at is not null and c.state = 'new'
+                and c.direction = any(co.directions)
+              group by e.course_id
+            `,
+            // Counted per word, not per card: the learning pass introduces
+            // both directions of a word together, and "12 zu lernen" means
+            // twelve words to work through.
+            unlearned: sql<CountRow>`
+              select e.course_id as "courseId", count(distinct e.id)::int as count
+              from cards c join entries e on e.id = c.entry_id
+              where c.introduced_at is null group by e.course_id
             `,
             words: sql<CountRow>`
               select course_id as "courseId", count(*)::int as count
@@ -58,14 +80,14 @@ export class DashboardStore extends Context.Tag('wordhold/DashboardStore')<
           },
           { concurrency: 'unbounded' },
         ).pipe(
-          Effect.map(({ due, fresh, words }) => {
+          Effect.map(({ due, fresh, unlearned, words }) => {
             const counts = new Map<string, MutableCourseStats>();
             const slot = (courseId: string) => {
               const existing = counts.get(courseId);
               if (existing !== undefined) {
                 return existing;
               }
-              const created = { due: 0, fresh: 0, words: 0 };
+              const created = { due: 0, fresh: 0, unlearned: 0, words: 0 };
               counts.set(courseId, created);
               return created;
             };
@@ -74,6 +96,9 @@ export class DashboardStore extends Context.Tag('wordhold/DashboardStore')<
             }
             for (const row of fresh) {
               slot(row.courseId).fresh = row.count;
+            }
+            for (const row of unlearned) {
+              slot(row.courseId).unlearned = row.count;
             }
             for (const row of words) {
               slot(row.courseId).words = row.count;

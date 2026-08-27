@@ -1,0 +1,2 @@
+ALTER TABLE "courses" ADD COLUMN "directions" "answer_direction"[] DEFAULT '{"to_target","to_native"}' NOT NULL;--> statement-breakpoint
+ALTER TABLE "courses" ADD CONSTRAINT "courses_directions_non_empty" CHECK (cardinality("courses"."directions") > 0);

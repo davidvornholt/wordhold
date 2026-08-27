@@ -12,6 +12,7 @@ type CourseStats = {
   readonly courseId: string;
   readonly due: number;
   readonly fresh: number;
+  readonly unlearned: number;
   readonly words: number;
 };
 
@@ -19,6 +20,7 @@ type CourseGridProps = {
   readonly courses: ReadonlyArray<Course>;
   readonly stats: ReadonlyArray<CourseStats>;
   readonly reviewsToday: number;
+  readonly renderCourseLink: (course: Course) => ReactNode;
   readonly renderPracticeAction: (course: Course) => ReactNode;
   readonly renderImportAction: (course: Course) => ReactNode;
 };
@@ -27,6 +29,7 @@ export const CourseGrid = ({
   courses,
   stats,
   reviewsToday,
+  renderCourseLink,
   renderPracticeAction,
   renderImportAction,
 }: CourseGridProps) => (
@@ -43,6 +46,7 @@ export const CourseGrid = ({
       {courses.map((course) => (
         <CourseCard
           course={course}
+          courseLink={renderCourseLink(course)}
           importAction={renderImportAction(course)}
           key={course.id}
           practiceAction={renderPracticeAction(course)}

@@ -9,6 +9,14 @@ import {
 import { JudgeError } from './error';
 import { type JudgeInput, JudgeVerdict, type JudgeVerdictData } from './schema';
 
+// Luna reaches this service through AWS Mantle's Responses endpoint. Wordhold
+// sends a strict text.format schema, but mocked transport tests cannot prove
+// that Mantle accepts or enforces it. Keep the prompt-level quotation rule as a
+// best-effort guard. Model output remains untrusted and may repeat quotation
+// marks from prompt inputs.
+const quotingRule =
+  "When you quote a word, wrap it in single quotes ('wort'). Never use double quotes or typographic quotation marks anywhere in your answer.";
+
 export const judgePrompt = (input: JudgeInput): string => {
   const answerLanguage =
     input.direction === 'to_target' ? input.targetLanguage : 'German';
@@ -27,6 +35,7 @@ export const judgePrompt = (input: JudgeInput): string => {
     'translation worth remembering permanently, not a near miss.',
     'Write the explanation in German, at most two short sentences, addressing',
     'the learner directly.',
+    quotingRule,
   ].join('\n');
 };
 
@@ -43,7 +52,7 @@ export class Judge extends Effect.Service<Judge>()('@wordhold/ai/Judge', {
       Effect.tryPromise({
         try: async () => {
           const { output } = await generateText({
-            model: bedrock.chat(modelId),
+            model: bedrock.responses(modelId),
             output: Output.object({ schema: verdictOutput }),
             prompt: judgePrompt(input),
             providerOptions: structuredOutputOptions,

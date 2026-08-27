@@ -35,8 +35,37 @@
   --font-body: var(--font-body);
 }
 
+/*
+ * Every screen anchors navigation and titles to the same column, so moving
+ * between them never shifts those landmarks. A task may widen its workbench
+ * without moving the shared anchors.
+ */
+@utility page-column {
+  @apply mx-auto w-full max-w-3xl;
+}
+
+@utility verification-screen {
+  @apply flex flex-col gap-4 py-6;
+}
+
+@utility verification-header {
+  @apply page-column flex flex-col gap-4 px-6;
+}
+
+@utility verification-workbench {
+  @apply mx-auto grid w-full max-w-7xl gap-6 px-6 xl:grid-cols-2;
+}
+
+@utility verification-image-pane {
+  @apply w-full max-w-xl justify-self-center xl:max-w-none;
+}
+
+@utility verification-form-pane {
+  @apply w-full max-w-3xl justify-self-center xl:max-w-none;
+}
+
 .root-recovery {
-  @apply mx-auto flex min-h-screen max-w-lg flex-col justify-center gap-5 p-6;
+  @apply page-column flex min-h-screen flex-col justify-center gap-5 p-6;
 }
 
 .root-feedback-brand {
@@ -64,7 +93,7 @@
 }
 
 .root-pending {
-  @apply mx-auto flex min-h-screen max-w-lg items-center p-6;
+  @apply page-column flex min-h-screen items-center p-6;
 }
 
 .audio-recovery {

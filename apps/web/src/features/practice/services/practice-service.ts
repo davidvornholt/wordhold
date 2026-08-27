@@ -12,7 +12,15 @@ import type {
   PracticeItem,
   SubmissionRecord,
 } from '../schemas/practice-models';
+import type {
+  DrillRequestData,
+  SessionRequestData,
+} from '../schemas/session-request';
 import type { SubmitPayloadData } from '../schemas/submission-schema';
+import {
+  type AcceptedAnswer,
+  isDeterministicMatch,
+} from './deterministic-grading';
 import { judgeWithCache } from './judge-cache';
 import { JudgeCacheStore } from './judge-cache-store';
 import { PracticeJudge } from './practice-judge';
@@ -21,8 +29,6 @@ import { PracticeSessionStore } from './session-store';
 
 export type PracticeSession = {
   readonly items: ReadonlyArray<PracticeItem>;
-  readonly dueCount: number;
-  readonly newCount: number;
 };
 
 export type SubmitResult =
@@ -34,6 +40,9 @@ export type SubmitResult =
   | {
       readonly graded: true;
       readonly correct: boolean;
+      // The card's revision after this answer. A card that comes back later in
+      // the same session is submitted against it.
+      readonly revision: number;
       readonly rating: number;
       readonly expectedAnswers: ReadonlyArray<string>;
       readonly explanation: string | null;
@@ -42,15 +51,19 @@ export type SubmitResult =
 
 type GradeAnswerInput = {
   readonly row: SubmissionRecord;
-  readonly accepted: ReadonlyArray<{
-    readonly text: string;
-    readonly normalized: string;
-  }>;
+  readonly accepted: ReadonlyArray<AcceptedAnswer>;
   readonly data: SubmitPayloadData;
   readonly normalized: string;
   readonly cache: JudgeCacheStore['Type'];
   readonly judge: PracticeJudge['Type'];
 };
+
+// The side of the card the learner sees. Stored rows carry both texts; which
+// one is the question depends on the direction the card is asked in.
+const withPrompt = (item: Omit<PracticeItem, 'prompt'>): PracticeItem => ({
+  ...item,
+  prompt: item.direction === 'to_target' ? item.nativeText : item.targetText,
+});
 
 const gradeAnswer = ({
   row,
@@ -60,7 +73,7 @@ const gradeAnswer = ({
   cache,
   judge,
 }: GradeAnswerInput) => {
-  if (accepted.some((answer) => answer.normalized === normalized)) {
+  if (isDeterministicMatch(data.answer, accepted)) {
     return Effect.succeed<GradeOutcome>({ method: 'exact' });
   }
   const expectedAnswers = accepted.map((answer) => answer.text);
@@ -95,23 +108,19 @@ export class PracticeService extends Effect.Service<PracticeService>()(
       const reviews = yield* PracticeReviewStore;
       const cache = yield* JudgeCacheStore;
       const judge = yield* PracticeJudge;
-      const getSession = (courseId: string) =>
+      const getSession = ({ courseId, direction }: SessionRequestData) =>
         Effect.gen(function* () {
           const now = new Date(yield* Clock.currentTimeMillis);
-          const { due, fresh } = yield* sessions.load(courseId, now);
-          const items = [...due, ...fresh].map((item) => ({
-            ...item,
-            prompt:
-              item.direction === 'to_target'
-                ? item.nativeText
-                : item.targetText,
-          }));
+          const { due, fresh } = yield* sessions.load(courseId, direction, now);
           return {
-            items,
-            dueCount: due.length,
-            newCount: fresh.length,
+            items: [...due, ...fresh].map(withPrompt),
           } satisfies PracticeSession;
         });
+      const getDrill = ({ unitId, direction }: DrillRequestData) =>
+        Effect.map(
+          sessions.loadUnit(unitId, direction),
+          (items): PracticeSession => ({ items: items.map(withPrompt) }),
+        );
       const submit = (data: SubmitPayloadData) =>
         Effect.gen(function* () {
           const row = yield* reviews.findSubmission(data.cardId, data.revision);
@@ -147,7 +156,7 @@ export class PracticeService extends Effect.Service<PracticeService>()(
           const elapsedMs = data.elapsedMs ?? null;
           const rating = deriveRating(outcome, elapsedMs);
           const reviewedAt = new Date(yield* Clock.currentTimeMillis);
-          yield* reviews.commit({
+          const revision = yield* reviews.commit({
             card: row.card,
             expectedRevision: data.revision,
             rating,
@@ -158,10 +167,12 @@ export class PracticeService extends Effect.Service<PracticeService>()(
             entryId: row.entry.id,
             direction: row.card.direction,
             normalizedAnswer: normalized,
+            mode: data.mode,
           });
           return {
             graded: true as const,
             correct,
+            revision,
             rating,
             expectedAnswers,
             explanation:
@@ -171,7 +182,7 @@ export class PracticeService extends Effect.Service<PracticeService>()(
               isAcceptedAlternative(outcome.verdict),
           };
         });
-      return { getSession, submit } as const;
+      return { getSession, getDrill, submit } as const;
     }),
   },
 ) {}

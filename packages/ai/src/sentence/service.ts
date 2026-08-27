@@ -33,6 +33,11 @@ export const sentencePrompt = (request: SentenceRequest): string =>
     'Use everyday school-life contexts a teenage learner knows. Each sentence',
     'must contain the vocabulary item in a natural form. Provide a faithful',
     'German translation as `native` for every sentence.',
+    // Like the judge rule, this is only a best-effort mitigation. Model output
+    // remains untrusted and may ignore the instruction or repeat quotation
+    // marks from prompt inputs.
+    'Never use double quotes or typographic quotation marks; if a sentence',
+    "needs a quotation, use single quotes ('wort').",
   ].join(' ');
 
 export class SentenceGen extends Effect.Service<SentenceGen>()(
@@ -50,7 +55,7 @@ export class SentenceGen extends Effect.Service<SentenceGen>()(
         Effect.tryPromise({
           try: async () => {
             const { output } = await generateText({
-              model: bedrock.chat(modelId),
+              model: bedrock.responses(modelId),
               output: Output.object({ schema: batchOutput }),
               prompt: sentencePrompt(request),
               providerOptions: structuredOutputOptions,

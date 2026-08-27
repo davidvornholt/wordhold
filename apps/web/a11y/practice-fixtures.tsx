@@ -7,6 +7,7 @@ import {
   PracticeEmpty,
   PracticeLayout,
 } from '../src/features/practice/ui/practice-layout';
+import { SessionProgress } from '../src/features/practice/ui/session-progress';
 import { navigateToFixture } from './fixture-state';
 
 const item = {
@@ -24,6 +25,7 @@ const item = {
 const result: SubmitResult = {
   graded: true,
   correct: false,
+  revision: 1,
   rating: 1,
   expectedAnswers: ['memory'],
   explanation: 'Das bedeutet etwas anderes.',
@@ -41,23 +43,24 @@ const backControl = (
 );
 
 export const PracticeFixture = () => (
-  <PracticeLayout backControl={backControl} courseName="English A2">
+  <PracticeLayout backControl={backControl} title="English A2: Üben">
+    <SessionProgress settled={0} total={1} />
     <CardPractice
       item={item}
+      mode="scheduled"
       onNext={() => undefined}
-      position={1}
+      repeated={true}
       submit={() => {
         navigateToFixture('practice-feedback');
         return Promise.resolve(result);
       }}
       targetLabel="Englisch"
-      total={4}
     />
   </PracticeLayout>
 );
 
 export const PracticeFeedbackFixture = () => (
-  <PracticeLayout backControl={backControl} courseName="English A2">
+  <PracticeLayout backControl={backControl} title="English A2: Üben">
     <FeedbackPanel
       audioUrl={null}
       onNext={() => navigateToFixture('practice-empty')}
@@ -67,7 +70,7 @@ export const PracticeFeedbackFixture = () => (
 );
 
 export const PracticeEmptyFixture = () => (
-  <PracticeLayout backControl={backControl} courseName="English A2">
+  <PracticeLayout backControl={backControl} title="English A2: Üben">
     <PracticeEmpty
       backControl={
         <button
@@ -79,7 +82,28 @@ export const PracticeEmptyFixture = () => (
         </button>
       }
       correct={0}
-      initialSession={true}
+      emptyMessage="Gerade ist nichts fällig."
+      total={0}
+      ungraded={0}
+      wrong={0}
+    />
+  </PracticeLayout>
+);
+
+type PracticeOneCardSummaryFixtureProps = {
+  readonly ungraded: boolean;
+};
+
+export const PracticeOneCardSummaryFixture = ({
+  ungraded,
+}: PracticeOneCardSummaryFixtureProps) => (
+  <PracticeLayout backControl={backControl} title="English A2: Üben">
+    <PracticeEmpty
+      backControl={backControl}
+      correct={ungraded ? 0 : 1}
+      emptyMessage="Gerade ist nichts fällig."
+      total={1}
+      ungraded={ungraded ? 1 : 0}
       wrong={0}
     />
   </PracticeLayout>
@@ -113,14 +137,14 @@ export const DeferredPracticeFixture = () => {
     return pending.promise;
   };
   return (
-    <PracticeLayout backControl={backControl} courseName="English A2">
+    <PracticeLayout backControl={backControl} title="English A2: Üben">
       <CardPractice
         item={item}
+        mode="scheduled"
         onNext={() => undefined}
-        position={1}
+        repeated={false}
         submit={submit}
         targetLabel="Englisch"
-        total={1}
       />
       <output aria-label="Submit calls">{calls}</output>
       <output aria-label="Submitted answer">{submittedAnswer}</output>

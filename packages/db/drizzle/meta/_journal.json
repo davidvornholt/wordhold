@@ -29,6 +29,48 @@
       "when": 1787755047053,
       "tag": "0003_chief_mojo",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1787779099021,
+      "tag": "0004_watery_iron_patriot",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1787781041356,
+      "tag": "0005_known_captain_universe",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1787783127213,
+      "tag": "0006_smooth_sue_storm",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1787784237385,
+      "tag": "0007_soft_machine_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1787787591970,
+      "tag": "0008_demonic_zzzax",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1787788937780,
+      "tag": "0009_thick_odin",
+      "breakpoints": true
     }
   ]
 }
