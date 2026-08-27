@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import type { JudgeVerdictData } from '@wordhold/ai/judge/schema';
 import { Database } from '@wordhold/db/client';
-import type { AnswerDirection } from '@wordhold/db/schema/entries';
+import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import type { cards } from '@wordhold/db/schema/practice';
 import {
   testDatabaseLayer,
