@@ -27,6 +27,7 @@ export const LearnWord = ({
   const [missed, setMissed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [saveFailed, setSaveFailed] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
   const actionRef = useRef<HTMLButtonElement>(null);
   const audioUrl = item.hasAudio ? `/api/entries/${item.entryId}/audio` : null;
   const play = async () => {
@@ -49,6 +50,12 @@ export const LearnWord = ({
       actionRef.current?.focus();
     }
   }, [busy, saveFailed]);
+
+  useEffect(() => {
+    if (missed && typed === '') {
+      inputRef.current?.focus();
+    }
+  }, [missed, typed]);
 
   let actionLabel = 'Weiter';
   if (busy) {
@@ -114,6 +121,7 @@ export const LearnWord = ({
           disabled={busy}
           onChange={(event) => setTyped(event.target.value)}
           placeholder="Schreib das Wort ab"
+          ref={inputRef}
           value={typed}
         />
         <button
