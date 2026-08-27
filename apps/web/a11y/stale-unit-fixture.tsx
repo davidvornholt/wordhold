@@ -25,7 +25,7 @@ export const StaleUnitVerificationFixture = () => {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   return (
-    <main className="mx-auto flex max-w-lg flex-col gap-4 p-6">
+    <main className="page-column flex flex-col gap-4 p-6">
       <h1 className="font-display font-semibold text-2xl">Seite überprüfen</h1>
       {error === null ? null : (
         <p className="text-destructive text-sm" role="alert">
