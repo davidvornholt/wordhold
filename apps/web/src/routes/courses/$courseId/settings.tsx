@@ -3,7 +3,7 @@ import {
   getCourseDirections,
   setCourseDirections,
 } from '../../../features/courses/services/server-fns';
-import { CourseSettingsLayout } from '../../../features/courses/ui/course-settings-layout';
+import { CourseLayout } from '../../../features/courses/ui/course-layout';
 import { DirectionSettings } from '../../../features/courses/ui/direction-settings';
 import { getCourse } from '../../../features/import/server-fns';
 import { germanLabels } from '../../../shared/languages';
@@ -12,13 +12,17 @@ const CourseSettingsScreen = () => {
   const { course, directions } = Route.useLoaderData();
 
   return (
-    <CourseSettingsLayout
+    <CourseLayout
       backControl={
-        <Link className="text-muted-foreground text-sm underline" to="/">
-          ← Übersicht
+        <Link
+          className="text-muted-foreground text-sm underline"
+          params={{ courseId: course.id }}
+          to="/courses/$courseId"
+        >
+          ← {course.name}
         </Link>
       }
-      courseName={course.name}
+      title={`${course.name}: Einstellungen`}
     >
       <DirectionSettings
         initial={directions}
@@ -29,7 +33,7 @@ const CourseSettingsScreen = () => {
         }
         targetLabel={germanLabels[course.targetLanguage]}
       />
-    </CourseSettingsLayout>
+    </CourseLayout>
   );
 };
 

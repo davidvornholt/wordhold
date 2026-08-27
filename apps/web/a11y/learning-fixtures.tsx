@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { UnitList } from '../src/features/courses/ui/unit-list';
 import type { LearnItem } from '../src/features/learning/schemas/learning-models';
 import { LearnDone } from '../src/features/learning/ui/learn-done';
 import { LearnPass } from '../src/features/learning/ui/learn-pass';
@@ -26,10 +25,10 @@ const items: ReadonlyArray<LearnItem> = [
 const backControl = (
   <button
     className="w-fit text-muted-foreground text-sm underline"
-    onClick={() => navigateToFixture('dashboard')}
+    onClick={() => navigateToFixture('unit')}
     type="button"
   >
-    ← Übersicht
+    ← Unit 3 – Holidays
   </button>
 );
 
@@ -41,47 +40,6 @@ const practiceControl = (
   >
     Jetzt üben
   </button>
-);
-
-export const LearnUnitsFixture = () => (
-  <LearningLayout backControl={backControl} title="English A2: Lernen">
-    <UnitList
-      importAction={
-        <button
-          className="w-fit text-sm underline"
-          onClick={() => navigateToFixture('import')}
-          type="button"
-        >
-          Seite fotografieren
-        </button>
-      }
-      renderAction={(unit) =>
-        unit.unlearned === 0 ? null : (
-          <button
-            className="whitespace-nowrap font-medium text-sm underline"
-            onClick={() => navigateToFixture('learn')}
-            type="button"
-          >
-            {unit.unlearned} lernen
-          </button>
-        )
-      }
-      units={[
-        {
-          id: '00000000-0000-0000-0000-000000000003',
-          name: 'Unit 3 – Holidays',
-          words: 18,
-          unlearned: 2,
-        },
-        {
-          id: '00000000-0000-0000-0000-000000000004',
-          name: 'Unit 2 – School',
-          words: 16,
-          unlearned: 0,
-        },
-      ]}
-    />
-  </LearningLayout>
 );
 
 export const LearnFixture = ({

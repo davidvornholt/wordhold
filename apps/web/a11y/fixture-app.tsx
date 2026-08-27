@@ -3,24 +3,21 @@ import {
   RootNotFound,
   RootPending,
 } from '../src/shared/routing/root-feedback';
+import { CourseFixture, UnitFixture } from './course-fixtures';
 import { DashboardFixture, SignedOutFixture } from './dashboard-fixtures';
 import {
   CourseSettingsFixture,
   DeferredCourseSettingsFixture,
   PracticeStartFixture,
 } from './direction-fixtures';
-import { DrillStartFixture, DrillUnitsFixture } from './drill-fixtures';
+import { DrillStartFixture } from './drill-fixtures';
 import { navigateToFixture, readFixtureState } from './fixture-state';
 import {
   DeferredVerificationFixture,
   ImportFixture,
   VerificationFixture,
 } from './import-fixtures';
-import {
-  LearnDoneFixture,
-  LearnFixture,
-  LearnUnitsFixture,
-} from './learning-fixtures';
+import { LearnDoneFixture, LearnFixture } from './learning-fixtures';
 import {
   DeferredPracticeFixture,
   PracticeEmptyFixture,
@@ -61,8 +58,16 @@ export const FixtureApp = () => {
       return <VerificationFixture audioRecovery={true} />;
     case 'verification-deferred':
       return <DeferredVerificationFixture />;
-    case 'learn-units':
-      return <LearnUnitsFixture />;
+    case 'course':
+      return <CourseFixture />;
+    case 'course-no-practice':
+      return <CourseFixture practiceAvailable={false} />;
+    case 'unit':
+      return <UnitFixture />;
+    case 'unit-fresh':
+      return <UnitFixture state="fresh" />;
+    case 'unit-empty':
+      return <UnitFixture state="empty" />;
     case 'learn':
       return <LearnFixture />;
     case 'learn-retry':
@@ -71,8 +76,6 @@ export const FixtureApp = () => {
       return <LearnDoneFixture />;
     case 'course-settings':
       return <CourseSettingsFixture />;
-    case 'drill-units':
-      return <DrillUnitsFixture />;
     case 'drill-start':
       return <DrillStartFixture />;
     case 'course-settings-deferred':

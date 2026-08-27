@@ -36,31 +36,22 @@ const Home = () => {
         <>
           <CourseGrid
             courses={courses}
-            renderDrillAction={(course) => (
+            renderCourseLink={(course) => (
               <Link
-                className="text-sm underline"
+                className="font-medium underline"
                 params={{ courseId: course.id }}
-                to="/courses/$courseId/drill"
+                to="/courses/$courseId"
               >
-                Einheit üben
+                {course.name}
               </Link>
             )}
             renderImportAction={(course) => (
               <Link
-                className="text-sm underline"
+                className="underline"
                 params={{ courseId: course.id }}
                 to="/courses/$courseId/import"
               >
-                Seite fotografieren
-              </Link>
-            )}
-            renderLearnAction={(course) => (
-              <Link
-                className="font-medium text-sm underline"
-                params={{ courseId: course.id }}
-                to="/courses/$courseId/learn"
-              >
-                Lernen
+                fotografiere die erste Seite
               </Link>
             )}
             renderPracticeAction={(course) => (
@@ -70,15 +61,6 @@ const Home = () => {
                 to="/courses/$courseId/practice"
               >
                 Üben
-              </Link>
-            )}
-            renderSettingsAction={(course) => (
-              <Link
-                className="text-sm underline"
-                params={{ courseId: course.id }}
-                to="/courses/$courseId/settings"
-              >
-                Einstellungen
               </Link>
             )}
             reviewsToday={dashboard.reviewsToday}
