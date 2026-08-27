@@ -94,7 +94,7 @@ export const LearnWord = ({
       </p>
       <div className="flex flex-col gap-2 border border-border bg-card p-6">
         <p className="text-lg">{item.nativeText}</p>
-        <ManagedFocusHeading className="font-display text-2xl">
+        <ManagedFocusHeading className="font-display text-xl">
           {item.targetText}
         </ManagedFocusHeading>
         <p className="text-muted-foreground text-sm">{targetLabel}</p>
