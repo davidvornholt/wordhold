@@ -37,7 +37,30 @@ describe('trusted preview lifecycle selection', () => {
 
     expect(result.exitCode).toBe(0);
     expect(result.outputs.mode).toBe('destroy-ineligible');
-    expect(result.outputs['previous-base-ref']).toBe('main');
+  });
+
+  it('retries teardown after a retarget cleanup failed', () => {
+    const outsideMain = eligiblePullRequest({
+      base: apiRecord([
+        ['repo', apiRecord([['full_name', 'davidvornholt/wordhold']])],
+        ['ref', 'stacked'],
+      ]),
+    });
+    const retarget = runSelection({
+      action: 'edited',
+      baseFrom: 'main',
+      pullRequest: outsideMain,
+      trigger: 'pull_request_target',
+    });
+    const laterClose = runSelection({
+      action: 'closed',
+      pullRequest: { ...outsideMain, state: 'closed' },
+      trigger: 'pull_request_target',
+    });
+
+    expect(retarget.outputs.mode).toBe('destroy-ineligible');
+    expect(laterClose.exitCode).toBe(0);
+    expect(laterClose.outputs.mode).toBe('destroy-ineligible');
   });
 
   it('leaves a retarget into main for the producer to build', () => {

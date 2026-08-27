@@ -43,6 +43,7 @@ type SelectionScenario = {
   readonly associated?: ReadonlyArray<Record<string, unknown>>;
   readonly baseFrom?: string;
   readonly candidates?: ReadonlyArray<Record<string, unknown>>;
+  readonly candidateJobConclusions?: Readonly<Record<number, string>>;
   readonly conclusion?: string;
   readonly directAssociations?: ReadonlyArray<{ readonly number: number }>;
   readonly pullRequest?: Record<string, unknown>;
@@ -82,7 +83,13 @@ endpoint="\${@: -1}"
 printf '%s\n' "$endpoint" >>"$SELECT_GH_LOG"
 case "$endpoint" in
   */actions/runs/100) printf '%s' "$SELECT_RUN" ;;
-  */actions/runs/100/attempts/1/jobs*) printf '%s' "$SELECT_JOBS" ;;
+  */actions/runs/*/attempts/*/jobs*)
+    if [[ "$endpoint" =~ /actions/runs/([0-9]+)/attempts/ ]]; then
+      jq -cer --arg id "\${BASH_REMATCH[1]}" '.[$id]' <<<"$SELECT_JOBS_BY_RUN"
+    else
+      exit 97
+    fi
+    ;;
   */actions/workflows/343592175/runs*) printf '%s' "$SELECT_CANDIDATES" ;;
   */commits/*/pulls*) printf '%s' "$SELECT_ASSOCIATED" ;;
   */pulls/35) printf '%s' "$SELECT_PR" ;;
@@ -112,6 +119,41 @@ exit "$status"
     conclusion: scenario.conclusion ?? 'success',
   };
   const candidates = scenario.candidates ?? [run];
+  const candidateJobConclusions = {
+    [producerRunId]: scenario.producerJobConclusion ?? 'success',
+    ...scenario.candidateJobConclusions,
+  };
+  const jobsByRun = Object.fromEntries(
+    Object.entries(candidateJobConclusions).map(([runId, conclusion]) => [
+      runId,
+      apiRecord([
+        ['total_count', 1],
+        [
+          'jobs',
+          [
+            apiRecord([
+              ['name', 'container-smoke'],
+              ['status', 'completed'],
+              ['conclusion', conclusion],
+              ['run_id', Number(runId)],
+              ['run_attempt', 1],
+              ['head_sha', headSha],
+              [
+                'steps',
+                [
+                  {
+                    name: 'Run the full exact-head repository gate',
+                    status: 'completed',
+                    conclusion: 'success',
+                  },
+                ],
+              ],
+            ]),
+          ],
+        ],
+      ]),
+    ]),
+  );
   const result = globalThis.Bun.spawnSync(['bash', '-c', harness], {
     cwd: repositoryRoot.pathname,
     env: selectionEnvironment([
@@ -138,37 +180,7 @@ exit "$status"
           ]),
         ),
       ],
-      [
-        'SELECT_JOBS',
-        json(
-          apiRecord([
-            ['total_count', 1],
-            [
-              'jobs',
-              [
-                apiRecord([
-                  ['name', 'container-smoke'],
-                  ['status', 'completed'],
-                  ['conclusion', scenario.producerJobConclusion ?? 'success'],
-                  ['run_id', producerRunId],
-                  ['run_attempt', 1],
-                  ['head_sha', headSha],
-                  [
-                    'steps',
-                    [
-                      {
-                        name: 'Run the full exact-head repository gate',
-                        status: 'completed',
-                        conclusion: 'success',
-                      },
-                    ],
-                  ],
-                ]),
-              ],
-            ],
-          ]),
-        ),
-      ],
+      ['SELECT_JOBS_BY_RUN', json(jobsByRun)],
       ['SELECT_PR', json(scenario.pullRequest ?? eligiblePullRequest())],
       ['SELECT_RUN', json(run)],
       ['TRIGGER', scenario.trigger ?? 'workflow_run'],

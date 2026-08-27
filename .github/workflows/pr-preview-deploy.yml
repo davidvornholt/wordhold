@@ -32,7 +32,6 @@ jobs:
       head-sha: ${{ steps.select.outputs.head-sha }}
       mode: ${{ steps.select.outputs.mode }}
       pull-request-number: ${{ steps.select.outputs.pull-request-number }}
-      previous-base-ref: ${{ steps.select.outputs.previous-base-ref }}
       run-attempt: ${{ steps.select.outputs.run-attempt }}
       run-id: ${{ steps.select.outputs.run-id }}
     steps:
@@ -126,12 +125,7 @@ jobs:
               {
                 echo 'mode=destroy-ineligible'
                 echo "pull-request-number=$EVENT_PR_NUMBER"
-                echo 'previous-base-ref=main'
               } >>"$GITHUB_OUTPUT"
-              exit 0
-            fi
-            if [ "$(jq -er .base.ref <<<"$pr")" != main ]; then
-              echo "::notice::Pull request $EVENT_PR_NUMBER is outside the main preview lane"
               exit 0
             fi
             if preview_is_eligible; then
@@ -198,13 +192,53 @@ jobs:
 
           candidates=$(gh api "repos/$REPOSITORY/actions/workflows/343592175/runs?head_sha=$EVENT_HEAD_SHA&event=pull_request&per_page=100")
           test "$(jq -er .total_count <<<"$candidates")" -le 100
-          latest=$(jq -cr \
+          mapfile -t ordered_candidates < <(jq -cr \
             '[.workflow_runs[] | select(
               .path == ".github/workflows/publish-container.yml"
               and .event == "pull_request"
               and .head_repository.full_name == "davidvornholt/wordhold"
-            )] | sort_by(.run_number, .run_attempt, .id) | last // empty' <<<"$candidates")
-          test -n "$latest"
+            )] | sort_by(.run_number, .run_attempt, .id) | reverse[]' <<<"$candidates")
+          latest=
+          for candidate in "${ordered_candidates[@]}"; do
+            candidate_status=$(jq -er .status <<<"$candidate")
+            if [ "$candidate_status" != completed ]; then
+              latest="$candidate"
+              break
+            fi
+            candidate_conclusion=$(jq -er .conclusion <<<"$candidate")
+            case "$candidate_conclusion" in
+              failure|cancelled|timed_out)
+                latest="$candidate"
+                break
+                ;;
+              skipped)
+                continue
+                ;;
+              success)
+                candidate_id=$(jq -er '.id | select(. >= 1 and floor == .)' <<<"$candidate")
+                candidate_attempt=$(jq -er '.run_attempt | select(. >= 1 and floor == .)' <<<"$candidate")
+                candidate_jobs=$(gh api "repos/$REPOSITORY/actions/runs/$candidate_id/attempts/$candidate_attempt/jobs?per_page=100")
+                test "$(jq -er .total_count <<<"$candidate_jobs")" -le 100
+                candidate_smoke_jobs=$(jq -c '[.jobs[] | select(.name == "container-smoke")]' <<<"$candidate_jobs")
+                test "$(jq -er length <<<"$candidate_smoke_jobs")" = 1
+                test "$(jq -er '.[0].status' <<<"$candidate_smoke_jobs")" = completed
+                if [ "$(jq -er '.[0].conclusion' <<<"$candidate_smoke_jobs")" = skipped ]; then
+                  continue
+                fi
+                test "$(jq -er '.[0].conclusion' <<<"$candidate_smoke_jobs")" = success
+                latest="$candidate"
+                break
+                ;;
+              *)
+                echo "::error::Candidate run has unsupported conclusion $candidate_conclusion"
+                exit 1
+                ;;
+            esac
+          done
+          if [ -z "$latest" ]; then
+            echo "::notice::No state-changing Publish container run exists for $EVENT_HEAD_SHA"
+            exit 0
+          fi
           if [ "$(jq -er .id <<<"$latest")" != "$EVENT_RUN_ID" ] \
             || [ "$(jq -er .run_attempt <<<"$latest")" != "$run_attempt" ]; then
             echo "::notice::Run $EVENT_RUN_ID attempt $run_attempt is stale"
@@ -451,7 +485,7 @@ jobs:
           source=$(docker image inspect wordhold:pull-request \
             --format '{{ index .Config.Labels "org.opencontainers.image.source" }}')
           preview_owner=$(docker image inspect wordhold:pull-request \
-            --format '{{ index .Config.Labels "online.vornholt.wordhold.preview" }}')
+            --format '{{ index .Config.Labels "io.personal-infra.wordhold-preview" }}')
           test "$revision" = "$HEAD_SHA"
           test "$source" = "https://github.com/$REPOSITORY"
           test "$preview_owner" = true
@@ -534,11 +568,11 @@ jobs:
           echo "$GH_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
           tag="pr-$PR_NUMBER-$HEAD_SHA-run-$RUN_ID-attempt-$RUN_ATTEMPT"
           docker image tag wordhold:pull-request "$IMAGE:$tag"
-          push_output=$(docker image push "$IMAGE:$tag")
-          digest=$(awk '$1 == "digest:" { print $2; exit }' <<<"$push_output")
+          docker image push "$IMAGE:$tag"
+          mapfile -t digests < <(docker buildx imagetools inspect "$IMAGE:$tag" | awk '$1 == "Digest:" { print $2 }')
+          test "${#digests[@]}" = 1
+          digest="${digests[0]}"
           [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
-          tagged_digest=$(docker buildx imagetools inspect "$IMAGE:$tag" | awk '$1 == "Digest:" { print $2; exit }')
-          test "$tagged_digest" = "$digest"
 
           docker logout ghcr.io
           anonymous_config="$RUNNER_TEMP/anonymous-docker"
@@ -550,7 +584,7 @@ jobs:
           remote_source=$(docker image inspect "$IMAGE@$digest" \
             --format '{{ index .Config.Labels "org.opencontainers.image.source" }}')
           remote_owner=$(docker image inspect "$IMAGE@$digest" \
-            --format '{{ index .Config.Labels "online.vornholt.wordhold.preview" }}')
+            --format '{{ index .Config.Labels "io.personal-infra.wordhold-preview" }}')
           test "$remote_revision" = "$HEAD_SHA"
           test "$remote_source" = "https://github.com/$REPOSITORY"
           test "$remote_owner" = true
@@ -584,7 +618,6 @@ jobs:
       operation: destroy
       reason: ineligible
       pull-request-number: ${{ fromJSON(needs.select.outputs.pull-request-number) }}
-      previous-base-ref: ${{ needs.select.outputs.previous-base-ref }}
 
   cleanup-failed-build:
     needs: select

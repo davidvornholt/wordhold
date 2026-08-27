@@ -118,7 +118,7 @@ jobs:
           labels: |
             org.opencontainers.image.revision=${{ github.event.pull_request.head.sha }}
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
-            online.vornholt.wordhold.preview=true
+            io.personal-infra.wordhold-preview=true
 
       - name: Verify migrations and database-backed health
         run: |
@@ -197,7 +197,7 @@ jobs:
           source=$(docker image inspect wordhold:pull-request \
             --format '{{ index .Config.Labels "org.opencontainers.image.source" }}')
           preview_owner=$(docker image inspect wordhold:pull-request \
-            --format '{{ index .Config.Labels "online.vornholt.wordhold.preview" }}')
+            --format '{{ index .Config.Labels "io.personal-infra.wordhold-preview" }}')
           test "$revision" = "$HEAD_SHA"
           test "$source" = "https://github.com/$REPOSITORY"
           test "$preview_owner" = true

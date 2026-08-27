@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'bun:test';
-import { apiRecord, eligiblePullRequest } from './preview-selection-fixtures';
+import {
+  apiRecord,
+  eligiblePullRequest,
+  producerRun,
+} from './preview-selection-fixtures';
 import { runSelection } from './workflow-test-helpers';
 
 describe('trusted preview workflow-run selection', () => {
@@ -78,6 +82,8 @@ describe('trusted preview workflow-run selection', () => {
           ['id', newerRunId],
           ['run_attempt', 1],
           ['run_number', newerRunNumber],
+          ['status', 'completed'],
+          ['conclusion', 'failure'],
           ['path', '.github/workflows/publish-container.yml'],
           ['event', 'pull_request'],
           [
@@ -91,5 +97,25 @@ describe('trusted preview workflow-run selection', () => {
 
     expect(result.exitCode).toBe(0);
     expect(result.outputs.mode).toBe('none');
+  });
+});
+
+describe('trusted preview skipped-run freshness', () => {
+  it('ignores a newer all-skipped edit when selecting the latest state-changing run', () => {
+    const skippedRunId = 101;
+    const skippedRunNumber = 11;
+    const currentRun = producerRun([{ number: 35 }]);
+    const skippedEdit = apiRecord([
+      ...Object.entries(currentRun),
+      ['id', skippedRunId],
+      ['run_number', skippedRunNumber],
+    ]);
+    const result = runSelection({
+      candidateJobConclusions: { [skippedRunId]: 'skipped' },
+      candidates: [currentRun, skippedEdit],
+    });
+
+    expect(result.exitCode).toBe(0);
+    expect(result.outputs.mode).toBe('deploy');
   });
 });
