@@ -70,6 +70,7 @@ export const LearnWord = ({
       return;
     }
     if (!matchesLearnItem(item, typed)) {
+      setSaveFailed(false);
       setMissed(true);
       setTyped('');
       return;
@@ -119,7 +120,10 @@ export const LearnWord = ({
           autoCorrect="off"
           className="border border-input bg-card px-3 py-2"
           disabled={busy}
-          onChange={(event) => setTyped(event.target.value)}
+          onChange={(event) => {
+            setTyped(event.target.value);
+            setSaveFailed(false);
+          }}
           placeholder="Schreib das Wort ab"
           ref={inputRef}
           value={typed}
