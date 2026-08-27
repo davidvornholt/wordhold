@@ -10,16 +10,21 @@ export class DatabaseMigrationError extends Data.TaggedError(
   readonly message: string;
 }> {}
 
+const migrationError = () =>
+  new DatabaseMigrationError({
+    message: 'Could not apply the Wordhold database migrations.',
+  });
+
 export const migrateDatabase = (url: string) =>
   Effect.acquireUseRelease(
-    Effect.sync(() => makeDrizzle(url)),
+    Effect.try({
+      try: () => makeDrizzle(url),
+      catch: migrationError,
+    }),
     (database) =>
       Effect.tryPromise({
         try: () => migrate(database, { migrationsFolder }),
-        catch: () =>
-          new DatabaseMigrationError({
-            message: 'Could not apply the Wordhold database migrations.',
-          }),
+        catch: migrationError,
       }),
     (database) => Effect.promise(() => database.$client.end()),
   );

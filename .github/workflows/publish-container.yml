@@ -11,14 +11,14 @@ on:
 
 permissions: {}
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false
-
 jobs:
   container-smoke:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: ${{ github.workflow }}-pr-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
     permissions:
       contents: read
     services:
@@ -51,7 +51,6 @@ jobs:
           file: ./Dockerfile
           load: true
           tags: wordhold:pull-request
-          cache-from: type=gha
 
       - name: Verify migrations and database-backed health
         run: |
@@ -107,6 +106,7 @@ jobs:
   gate:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     permissions:
       actions: read
     outputs:
@@ -179,6 +179,11 @@ jobs:
     needs: gate
     if: needs.gate.outputs.gated-sha == github.sha
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: ${{ github.workflow }}-publication
+      cancel-in-progress: false
+      queue: max
     permissions:
       contents: read
       packages: write
@@ -212,7 +217,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
-      - name: Build and publish the tracked tag
+      - name: Build and publish the exact source tag
         id: build
         uses: docker/build-push-action@v6
         with:
@@ -220,16 +225,15 @@ jobs:
           file: ./Dockerfile
           push: true
           provenance: false
-          tags: ghcr.io/davidvornholt/wordhold:main
+          tags: ghcr.io/davidvornholt/wordhold:${{ github.sha }}
           labels: |
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
-      - name: Emit immutable promotion record
+      - name: Promote the exact current main image
         env:
           DIGEST: ${{ steps.build.outputs.digest }}
+          GATED_SHA: ${{ needs.gate.outputs.gated-sha }}
           IMAGE: ghcr.io/davidvornholt/wordhold
           REF: ${{ github.ref }}
           REPOSITORY: ${{ github.repository }}
@@ -241,6 +245,20 @@ jobs:
           test "$REPOSITORY" = davidvornholt/wordhold
           test "$REF" = refs/heads/main
           test "$IMAGE" = ghcr.io/davidvornholt/wordhold
+
+          checkout_sha=$(git rev-parse HEAD)
+          remote_main_sha=$(git ls-remote origin refs/heads/main | cut -f1)
+          source_digest=$(docker buildx imagetools inspect "$IMAGE:$SHA" | awk '$1 == "Digest:" { print $2; exit }')
+          test "$checkout_sha" = "$GATED_SHA"
+          test "$GATED_SHA" = "$SHA"
+          test "$SHA" = "$GITHUB_SHA"
+          test "$GITHUB_SHA" = "$remote_main_sha"
+          test "$source_digest" = "$DIGEST"
+
+          docker buildx imagetools create --prefer-index=false --tag "$IMAGE:main" "$IMAGE@$DIGEST"
+          tracked_digest=$(docker buildx imagetools inspect "$IMAGE:main" | awk '$1 == "Digest:" { print $2; exit }')
+          test "$tracked_digest" = "$DIGEST"
+
           record=$(jq -cn --arg repository "$REPOSITORY" --arg ref "$REF" --arg sha "$SHA" --arg runId "$RUN_ID" --arg image "$IMAGE" --arg digest "$DIGEST" '{repository:$repository,ref:$ref,sha:$sha,runId:$runId,image:$image,digest:$digest}')
           marker_left=IMAGE_PROMOTION
           marker_right=_RECORD

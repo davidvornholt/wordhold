@@ -5,7 +5,10 @@ import {
   withTestDatabase,
 } from '@wordhold/db/testing/postgres-test-database';
 import { Effect } from 'effect';
-import { migrateDatabase } from './migrate';
+import { DatabaseMigrationError, migrateDatabase } from './migrate';
+
+const getMigrationError = (url: string) =>
+  Effect.runPromise(migrateDatabase(url).pipe(Effect.flip));
 
 it('applies every migration and is safe to rerun', async () => {
   const migrationCount = await Effect.runPromise(
@@ -23,4 +26,30 @@ it('applies every migration and is safe to rerun', async () => {
   );
 
   expect(migrationCount).toBeGreaterThan(0);
+});
+
+it('reports a malformed database URL as a typed migration error', async () => {
+  const error = await getMigrationError('not a database URL');
+
+  expect(error).toBeInstanceOf(DatabaseMigrationError);
+  expect(error).toEqual(
+    expect.objectContaining({
+      _tag: 'DatabaseMigrationError',
+      message: 'Could not apply the Wordhold database migrations.',
+    }),
+  );
+});
+
+it('reports an unreachable database as a typed migration error', async () => {
+  const error = await getMigrationError(
+    'postgres://postgres:postgres@127.0.0.1:1/wordhold?connect_timeout=1',
+  );
+
+  expect(error).toBeInstanceOf(DatabaseMigrationError);
+  expect(error).toEqual(
+    expect.objectContaining({
+      _tag: 'DatabaseMigrationError',
+      message: 'Could not apply the Wordhold database migrations.',
+    }),
+  );
 });
