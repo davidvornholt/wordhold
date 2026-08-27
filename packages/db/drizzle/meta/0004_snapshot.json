@@ -1,5 +1,5 @@
 {
-  "id": "3f8bf20f-993b-4ada-9c9f-da3d9135e2cc",
+  "id": "991a4a93-4c50-4df1-a670-22482fd546cd",
   "prevId": "7404f0d7-16ec-41d2-8ed1-9b6194b6e253",
   "version": "7",
   "dialect": "postgresql",
@@ -527,6 +527,13 @@
           "notNull": true,
           "default": 0
         },
+        "is_holding": {
+          "name": "is_holding",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -547,6 +554,48 @@
             },
             {
               "expression": "name",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "units_course_position": {
+          "name": "units_course_position",
+          "columns": [
+            {
+              "expression": "course_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "position",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "units_id_course": {
+          "name": "units_id_course",
+          "columns": [
+            {
+              "expression": "id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "course_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -693,7 +742,7 @@
           "name": "unit_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "page_id": {
           "name": "page_id",
@@ -749,15 +798,6 @@
           "columnsFrom": ["course_id"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "entries_unit_id_units_id_fk": {
-          "name": "entries_unit_id_units_id_fk",
-          "tableFrom": "entries",
-          "tableTo": "units",
-          "columnsFrom": ["unit_id"],
-          "columnsTo": ["id"],
-          "onDelete": "restrict",
           "onUpdate": "no action"
         },
         "entries_page_id_pages_id_fk": {

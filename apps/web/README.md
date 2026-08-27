@@ -84,33 +84,15 @@ Uploads accept JPEG, PNG, and WebP images up to 12 MiB, 12,000 pixels per side, 
 
 ## Learning pass
 
-`/courses/$courseId/learn` lists the course's units with how many of their words have never been met, and `/courses/$courseId/units/$unitId/learn` walks through those words one at a time (`src/features/learning/`). The unit list itself belongs to `src/features/courses/`, because the drill screen needs the same per-unit counts and features must not import each other. The word is spoken, its German and its translation are both on screen, and the learner copies it. Nothing here is graded and nothing reaches the scheduler: copying a word you can see says nothing about whether you will remember it tomorrow, so the match is the deterministic normalization from `src/shared/grading/normalize.ts` against the spelling shown plus that entry's accepted answers, never the AI judge. A wrong copy just asks again.
+`/courses/$courseId/learn` lists the course's units with how many of their words have never been met, and `/courses/$courseId/units/$unitId/learn` walks through those words one at a time (`src/features/learning/`). The unit list belongs to `src/features/courses/`, because the drill screen needs the same per-unit counts and features must not import each other. The word is spoken, its German and its translation are both on screen, and the learner copies it. Nothing here is graded and nothing reaches the scheduler. Copying a word you can see says nothing about whether you will remember it tomorrow, so the match uses deterministic normalization from `src/shared/grading/normalize.ts` against the displayed spelling and bounded variants of textbook-authored optional notation. Judge-written alternatives never count. A wrong copy asks again.
 
-Writing a word correctly stamps `cards.introduced_at` on both of its cards, one word at a time, so leaving halfway keeps what was learned. `introduced_at` is deliberately separate from the FSRS `state` column: `state` says where a card stands in the scheduler, `introduced_at` says whether the learner has ever met the word. Cards without it are excluded from the practice queue and from the dashboard's due and new counts.
+Writing a word correctly stamps `cards.introduced_at` on both of its cards, one word at a time, so leaving halfway keeps what was learned. The write must still match the course, unit, and word loaded for the page. If persistence fails, the page keeps the same word and offers a retry. `introduced_at` is deliberately separate from the FSRS `state` column. `state` says where a card stands in the scheduler, while `introduced_at` says whether the learner has ever met the word. Cards without it are excluded from the practice queue and from the dashboard's due and new counts. After deploying the generated column migration, run `bun run --cwd packages/db db:backfill-introductions` to preserve the review time of cards already answered.
 
 ## Practice flow
 
-`/courses/$courseId/practice` serves everything due plus a bounded batch of
-new cards, both restricted to introduced cards
-(`src/features/practice/services/practice-service.ts`). Grading is hybrid: a
-normalized deterministic match is instant; only mismatches reach the AI
-judge, whose verdicts are cached per (entry, direction, normalized answer)
-and can write accepted alternatives back. FSRS ratings are derived from the
-outcome (fast exact = Easy, flawed-but-accepted = Hard, rejected = Again) —
-never self-reported. If the judge is unreachable the card is left
-untouched. Pronunciation plays via `GET /api/entries/$entryId/audio`.
+`/courses/$courseId/practice` serves everything due plus a bounded batch of new cards, both restricted to introduced cards (`src/features/practice/services/practice-service.ts`). Grading is hybrid. A normalized deterministic match is instant, while only mismatches reach the AI judge. Verdicts are cached per entry, direction, and normalized answer and can write accepted alternatives back. FSRS derives ratings from the outcome. A fast exact answer is Easy, a flawed but accepted answer is Hard, and a rejected answer is Again. The learner never reports a rating. If the judge is unreachable, the card stays untouched. Pronunciation plays via `GET /api/entries/$entryId/audio`.
 
-The session is one loop the learner works to the end
-(`src/features/practice/services/session-queue.ts`). A missed card goes back
-into the queue three cards later instead of leaving the session, because FSRS
-puts it on a one-minute relearning step and the dashboard would otherwise
-count it as due again moments after the session was closed. Answering a card
-bumps its revision, so `submit` returns the new one and the repeat is
-submitted against it rather than being rejected as stale. The progress bar
-counts distinct cards settled out of the cards the session started with, so a
-repeat never moves it backwards and the end never moves away. An answer the
-judge could not grade settles too: the card was left untouched, and asking
-again in the same session would only reach the same outage.
+The session is one loop the learner works to the end (`src/features/practice/services/session-queue.ts`). A missed card goes back into the queue three cards later instead of leaving the session, because FSRS puts it on a one-minute relearning step and the dashboard would otherwise count it as due again moments after the session was closed. Answering a card bumps its revision, so `submit` returns the new one and the repeat is submitted against it rather than being rejected as stale. The progress bar counts distinct cards settled out of the cards the session started with, so a repeat never moves it backwards and the end never moves away. An answer the judge could not grade leaves the session without changing the card. The final summary names every ungraded card and warns that it remains due instead of claiming the sitting was completed.
 
 ## Unit drill
 

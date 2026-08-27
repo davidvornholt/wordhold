@@ -6,6 +6,7 @@ import {
 import { DashboardFixture, SignedOutFixture } from './dashboard-fixtures';
 import {
   CourseSettingsFixture,
+  DeferredCourseSettingsFixture,
   PracticeStartFixture,
 } from './direction-fixtures';
 import { DrillStartFixture, DrillUnitsFixture } from './drill-fixtures';
@@ -27,6 +28,7 @@ import {
   PracticeFixture,
 } from './practice-fixtures';
 import { PracticeSessionFixture } from './practice-session-fixtures';
+import { StaleUnitVerificationFixture } from './stale-unit-fixture';
 
 export const FixtureApp = () => {
   const state = readFixtureState();
@@ -47,6 +49,10 @@ export const FixtureApp = () => {
       return <VerificationFixture />;
     case 'verification-empty':
       return <VerificationFixture empty={true} />;
+    case 'verification-no-units':
+      return <VerificationFixture noUnits={true} />;
+    case 'verification-stale-unit':
+      return <StaleUnitVerificationFixture />;
     case 'verification-audio-recovery':
       return <VerificationFixture audioRecovery={true} />;
     case 'verification-deferred':
@@ -55,6 +61,8 @@ export const FixtureApp = () => {
       return <LearnUnitsFixture />;
     case 'learn':
       return <LearnFixture />;
+    case 'learn-retry':
+      return <LearnFixture failFirst={true} />;
     case 'learn-done':
       return <LearnDoneFixture />;
     case 'course-settings':
@@ -63,6 +71,8 @@ export const FixtureApp = () => {
       return <DrillUnitsFixture />;
     case 'drill-start':
       return <DrillStartFixture />;
+    case 'course-settings-deferred':
+      return <DeferredCourseSettingsFixture />;
     case 'practice':
       return <PracticeFixture />;
     case 'practice-start':

@@ -4,8 +4,9 @@ import { LearningDatabaseError } from '../errors/learning-errors';
 import type { LearnItem, LearnPass } from '../schemas/learning-models';
 
 type UnitRow = { readonly id: string; readonly name: string };
-type ItemRow = Omit<LearnItem, 'acceptedNormalized'>;
-type AnswerRow = { readonly entryId: string; readonly normalized: string };
+type ItemRow = Omit<LearnItem, 'textbookAnswers'>;
+type AnswerRow = { readonly entryId: string; readonly text: string };
+type EntryMatchRow = { readonly found: boolean };
 
 const databaseError = (operation: string, cause: unknown) =>
   new LearningDatabaseError({
@@ -18,23 +19,27 @@ export class LearningStore extends Context.Tag('wordhold/LearningStore')<
   LearningStore,
   {
     readonly loadPass: (
+      courseId: string,
       unitId: string,
     ) => Effect.Effect<LearnPass | undefined, LearningDatabaseError>;
     readonly introduce: (
+      courseId: string,
+      unitId: string,
       entryId: string,
       at: Date,
-    ) => Effect.Effect<void, LearningDatabaseError>;
+    ) => Effect.Effect<boolean, LearningDatabaseError>;
   }
 >() {
   static readonly live = Layer.effect(
     LearningStore,
     Effect.gen(function* () {
       const sql = yield* Database;
-      const loadPass = (unitId: string) =>
+      const loadPass = (courseId: string, unitId: string) =>
         Effect.all(
           {
             units: sql<UnitRow>`
-              select id, name from units where id = ${unitId}
+              select id, name from units
+              where id = ${unitId} and course_id = ${courseId}
             `,
             items: sql<ItemRow>`
               select e.id as "entryId", e.target_text as "targetText",
@@ -43,22 +48,21 @@ export class LearningStore extends Context.Tag('wordhold/LearningStore')<
                   select 1 from entry_audio a where a.entry_id = e.id
                 ) as "hasAudio"
               from entries e
-              where e.unit_id = ${unitId}
+              join units u on u.id = e.unit_id and u.course_id = e.course_id
+              where u.id = ${unitId} and u.course_id = ${courseId}
                 and exists(
                   select 1 from cards c
                   where c.entry_id = e.id and c.introduced_at is null
                 )
               order by e.created_at asc, e.id asc
             `,
-            // The learner types the target text, so only that direction's
-            // accepted answers can match. They are fetched as rows rather than
-            // aggregated in SQL because a Postgres array would arrive shaped
-            // by the driver rather than by this query.
             answers: sql<AnswerRow>`
-              select a.entry_id as "entryId", a.normalized
+              select a.entry_id as "entryId", a.text
               from accepted_answers a
               join entries e on e.id = a.entry_id
-              where e.unit_id = ${unitId} and a.direction = 'to_target'
+              join units u on u.id = e.unit_id and u.course_id = e.course_id
+              where u.id = ${unitId} and u.course_id = ${courseId}
+                and a.direction = 'to_target' and a.source = 'textbook'
             `,
           },
           { concurrency: 'unbounded' },
@@ -69,9 +73,9 @@ export class LearningStore extends Context.Tag('wordhold/LearningStore')<
             for (const answer of answers) {
               const existing = byEntry.get(answer.entryId);
               if (existing === undefined) {
-                byEntry.set(answer.entryId, [answer.normalized]);
+                byEntry.set(answer.entryId, [answer.text]);
               } else {
-                existing.push(answer.normalized);
+                existing.push(answer.text);
               }
             }
             return unit === undefined
@@ -80,7 +84,7 @@ export class LearningStore extends Context.Tag('wordhold/LearningStore')<
                   unit,
                   items: items.map((item) => ({
                     ...item,
-                    acceptedNormalized: byEntry.get(item.entryId) ?? [],
+                    textbookAnswers: byEntry.get(item.entryId) ?? [],
                   })),
                 } satisfies LearnPass);
           }),
@@ -91,12 +95,28 @@ export class LearningStore extends Context.Tag('wordhold/LearningStore')<
       // Both directions of a word are introduced together: the pass teaches the
       // word, not one way of asking about it. Already introduced cards keep
       // their original timestamp, so replaying a pass costs nothing.
-      const introduce = (entryId: string, at: Date) =>
-        sql`
-          update cards set introduced_at = ${at}
-          where entry_id = ${entryId} and introduced_at is null
+      const introduce = (
+        courseId: string,
+        unitId: string,
+        entryId: string,
+        at: Date,
+      ) =>
+        sql<EntryMatchRow>`
+          with matching_entry as (
+            select e.id
+            from entries e
+            join units u on u.id = e.unit_id and u.course_id = e.course_id
+            where e.id = ${entryId} and u.id = ${unitId}
+              and u.course_id = ${courseId}
+          ), updated as (
+            update cards set introduced_at = ${at}
+            where entry_id in (select id from matching_entry)
+              and introduced_at is null
+            returning id
+          )
+          select exists(select 1 from matching_entry) as found
         `.pipe(
-          Effect.asVoid,
+          Effect.map((rows) => rows[0]?.found ?? false),
           Effect.mapError((cause) => databaseError('introduce word', cause)),
         );
       return { loadPass, introduce } as const;

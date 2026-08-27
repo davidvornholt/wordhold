@@ -23,27 +23,42 @@ type PracticeEmptyProps = {
   readonly correct: number;
   readonly wrong: number;
   readonly emptyMessage: string;
+  readonly ungraded: number;
   readonly backControl: ReactNode;
 };
 
-// The end of the session. Every card that was missed came back and was
-// answered, so the tally is per card, not per attempt: how many were right
-// straight away, and how many needed a second go.
+const sessionHeading = (total: number, ungraded: number) => {
+  if (total === 0) {
+    return 'Gerade ist nichts fällig.';
+  }
+  return ungraded === 0 ? 'Sitzung abgeschlossen!' : 'Sitzung beendet.';
+};
+
+// The end of the session. The tally is per card, not per attempt. A provider
+// failure is its own outcome because that card remains due.
 export const PracticeEmpty = ({
   total,
   correct,
   wrong,
   emptyMessage,
+  ungraded,
   backControl,
 }: PracticeEmptyProps) => (
   <div className="flex flex-col gap-3 border border-border bg-card p-6">
     <p className="font-medium">
-      {total === 0 ? emptyMessage : 'Sitzung abgeschlossen!'}
+      {total === 0 ? emptyMessage : sessionHeading(total, ungraded)}
     </p>
     {total === 0 ? null : (
       <p className="text-sm">
         {correct} von {total} Karten auf Anhieb richtig
         {wrong === 0 ? '.' : `, ${wrong} noch einmal geübt.`}
+      </p>
+    )}
+    {ungraded === 0 ? null : (
+      <p className="border-warning-foreground border-l-4 bg-warning p-3 text-sm">
+        {ungraded === 1
+          ? '1 Karte konnte nicht bewertet werden und bleibt fällig.'
+          : `${ungraded} Karten konnten nicht bewertet werden und bleiben fällig.`}
       </p>
     )}
     {backControl}

@@ -19,6 +19,8 @@ type DirectionSettingsProps = {
 // Which directions this course practises at all. Switching one off hides its
 // cards; it never destroys them, so switching it back on carries on where it
 // stopped. Each change saves on its own, which is why there is no save button.
+// The controls stay locked until that save settles, so the server can never
+// receive two snapshots in an order the screen no longer represents.
 export const DirectionSettings = ({
   initial,
   targetLabel,
@@ -26,9 +28,13 @@ export const DirectionSettings = ({
 }: DirectionSettingsProps) => {
   const [directions, setDirections] =
     useState<ReadonlyArray<AnswerDirection>>(initial);
+  const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState('');
 
   const toggle = async (direction: AnswerDirection) => {
+    if (saving) {
+      return;
+    }
     const next = directions.includes(direction)
       ? directions.filter((value) => value !== direction)
       : answerDirections.filter(
@@ -39,6 +45,7 @@ export const DirectionSettings = ({
       return;
     }
     setDirections(next);
+    setSaving(true);
     setStatus('Wird gespeichert …');
     try {
       await save(next);
@@ -48,12 +55,18 @@ export const DirectionSettings = ({
       setStatus(
         `Speichern fehlgeschlagen: ${cause instanceof Error ? cause.message : String(cause)}`,
       );
+    } finally {
+      setSaving(false);
     }
   };
 
   return (
     <section className="flex flex-col gap-3">
-      <fieldset className="flex flex-col gap-4 border border-border bg-card p-4">
+      <fieldset
+        aria-busy={saving}
+        className="flex flex-col gap-4 border border-border bg-card p-4"
+        disabled={saving}
+      >
         <legend className="px-1 font-medium">Abfragerichtungen</legend>
         {answerDirections.map((direction) => (
           <div className="flex items-start gap-3 text-sm" key={direction}>
@@ -79,7 +92,9 @@ export const DirectionSettings = ({
           </div>
         ))}
       </fieldset>
-      <output className="text-sm">{status}</output>
+      <output aria-label="Speicherstatus" className="text-sm">
+        {status}
+      </output>
     </section>
   );
 };

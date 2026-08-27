@@ -38,6 +38,13 @@ const items = [
 const grade = ({ data }: { readonly data: SubmitPayloadData }) => {
   const expected =
     items.find((item) => item.cardId === data.cardId)?.targetText ?? '';
+  if (data.answer === 'ungraded') {
+    return Promise.resolve<SubmitResult>({
+      graded: false,
+      expectedAnswers: [expected],
+      message: 'Der KI-Prüfer ist gerade nicht erreichbar.',
+    });
+  }
   const correct = data.answer === expected;
   return Promise.resolve<SubmitResult>({
     graded: true,
@@ -83,6 +90,7 @@ export const PracticeSessionFixture = () => {
           correct={queue.correct}
           emptyMessage="Gerade ist nichts fällig."
           total={queue.total}
+          ungraded={queue.ungraded}
           wrong={queue.wrong}
         />
       ) : (
@@ -91,7 +99,7 @@ export const PracticeSessionFixture = () => {
           key={`${pending.cardId}-${pending.revision}`}
           mode="scheduled"
           onNext={(result) =>
-            setQueue((current) => advanceQueue(current, result))
+            setQueue((current) => advanceQueue(current, pending, result))
           }
           repeated={pending.repeated}
           submit={grade}
