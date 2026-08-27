@@ -30,6 +30,6 @@ test('the drill reaches a unit sitting and only offers units with learned words'
   await page.getByRole('button', { name: 'Deutsch → Englisch' }).click();
   await expect(page.locator('body')).toHaveAttribute(
     'data-fixture',
-    'practice-session',
+    'drill-session',
   );
 });

@@ -27,7 +27,10 @@ import {
   PracticeFeedbackFixture,
   PracticeFixture,
 } from './practice-fixtures';
-import { PracticeSessionFixture } from './practice-session-fixtures';
+import {
+  FutureDrillSessionFixture,
+  PracticeSessionFixture,
+} from './practice-session-fixtures';
 import { StaleUnitVerificationFixture } from './stale-unit-fixture';
 
 export const FixtureApp = () => {
@@ -79,6 +82,8 @@ export const FixtureApp = () => {
       return <PracticeStartFixture />;
     case 'practice-session':
       return <PracticeSessionFixture />;
+    case 'drill-session':
+      return <FutureDrillSessionFixture />;
     case 'practice-feedback':
       return <PracticeFeedbackFixture />;
     case 'practice-empty':

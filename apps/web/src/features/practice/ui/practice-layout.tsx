@@ -35,7 +35,7 @@ const sessionHeading = (total: number, ungraded: number) => {
 };
 
 // The end of the session. The tally is per card, not per attempt. A provider
-// failure is its own outcome because that card remains due.
+// failure is its own outcome because the card's stored state stays unchanged.
 export const PracticeEmpty = ({
   total,
   correct,
@@ -57,8 +57,8 @@ export const PracticeEmpty = ({
     {ungraded === 0 ? null : (
       <p className="border-warning-foreground border-l-4 bg-warning p-3 text-sm">
         {ungraded === 1
-          ? '1 Karte konnte nicht bewertet werden und bleibt fällig.'
-          : `${ungraded} Karten konnten nicht bewertet werden und bleiben fällig.`}
+          ? '1 Karte konnte nicht bewertet werden. Lernstand und Termin blieben unverändert.'
+          : `${ungraded} Karten konnten nicht bewertet werden. Lernstände und Termine blieben unverändert.`}
       </p>
     )}
     {backControl}
