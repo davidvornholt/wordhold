@@ -16,7 +16,8 @@ const runDigestResolution = (inspectExitCode: number) => {
   );
   const resolutionEnd = publish.indexOf('docker logout ghcr.io');
   const resolution = publish.slice(resolutionStart, resolutionEnd);
-  const digest = `sha256:${'a'.repeat(digestHexLength)}`;
+  const pushDigest = `sha256:${'a'.repeat(digestHexLength)}`;
+  const inspectDigest = `sha256:${'b'.repeat(digestHexLength)}`;
   const harness = `
 set -euo pipefail
 IMAGE=ghcr.io/davidvornholt/wordhold
@@ -28,16 +29,17 @@ tag=fixture
 docker() {
   case "$*" in
     'image tag '*) ;;
-    'image push '*) printf '%s\n' 'layer: Pushed' 'latest: digest: ${digest} size: 1985' ;;
-    'buildx imagetools inspect '*) printf '%s\n' 'Name: fixture' 'Digest: ${digest}'; return ${inspectExitCode} ;;
+    'image push '*) printf '%s\n' 'layer: Pushed' 'latest: digest: ${pushDigest} size: 1985' ;;
+    'buildx imagetools inspect '*) printf '%s\n' 'Name: fixture' 'Digest: ${inspectDigest}'; return ${inspectExitCode} ;;
     *) return 97 ;;
   esac
 }
 ${resolution}
-printf '%s' "$digest"
+printf '\nresolved=%s\n' "$digest"
 `;
 
   return {
+    inspectDigest,
     resolution,
     result: globalThis.Bun.spawnSync(['bash', '-c', harness]),
   } as const;
@@ -45,11 +47,11 @@ printf '%s' "$digest"
 
 describe('preview digest resolution', () => {
   it('resolves one digest from the pushed tag instead of parsing push output', () => {
-    const { resolution, result } = runDigestResolution(0);
-    const digest = `sha256:${'a'.repeat(digestHexLength)}`;
+    const { inspectDigest, resolution, result } = runDigestResolution(0);
+    const resolvedDigest = result.stdout.toString().trim().split('\n').at(-1);
 
     expect(result.exitCode).toBe(0);
-    expect(result.stdout.toString().endsWith(digest)).toBe(true);
+    expect(resolvedDigest).toBe(`resolved=${inspectDigest}`);
     expect(resolution).not.toContain('push_output=');
   });
 
