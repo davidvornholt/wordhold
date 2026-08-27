@@ -68,6 +68,7 @@ export const entryExamples = pgTable('entry_examples', {
 });
 
 export const answerSources = ['textbook', 'manual', 'judge'] as const;
+export type AnswerSource = (typeof answerSources)[number];
 export const answerSourceEnum = pgEnum('answer_source', answerSources);
 
 // The deterministic grading path: one row per accepted rendering, per
