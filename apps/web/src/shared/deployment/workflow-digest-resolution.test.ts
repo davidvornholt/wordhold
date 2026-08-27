@@ -12,10 +12,11 @@ const runDigestResolution = (inspectExitCode: number) => {
     'Publish and prove the exact public digest',
   );
   const resolutionStart = publish.indexOf(
-    'docker image tag wordhold:pull-request "$IMAGE:$tag"',
+    'tag="pr-$PR_NUMBER-$HEAD_SHA-run-$RUN_ID-attempt-$RUN_ATTEMPT"',
   );
   const resolutionEnd = publish.indexOf('docker logout ghcr.io');
   const resolution = publish.slice(resolutionStart, resolutionEnd);
+  const expectedTag = `ghcr.io/davidvornholt/wordhold:pr-35-${'1'.repeat(headShaLength)}-run-100-attempt-1`;
   const pushDigest = `sha256:${'a'.repeat(digestHexLength)}`;
   const inspectDigest = `sha256:${'b'.repeat(digestHexLength)}`;
   const harness = `
@@ -25,12 +26,11 @@ PR_NUMBER=35
 HEAD_SHA=${'1'.repeat(headShaLength)}
 RUN_ID=100
 RUN_ATTEMPT=1
-tag=fixture
 docker() {
   case "$*" in
-    'image tag '*) ;;
-    'image push '*) printf '%s\n' 'layer: Pushed' 'latest: digest: ${pushDigest} size: 1985' ;;
-    'buildx imagetools inspect '*) printf '%s\n' 'Name: fixture' 'Digest: ${inspectDigest}'; return ${inspectExitCode} ;;
+    'image tag wordhold:pull-request ${expectedTag}') ;;
+    'image push ${expectedTag}') printf '%s\n' 'layer: Pushed' 'latest: digest: ${pushDigest} size: 1985' ;;
+    'buildx imagetools inspect ${expectedTag}') printf '%s\n' 'Name: fixture' 'Digest: ${inspectDigest}'; return ${inspectExitCode} ;;
     *) return 97 ;;
   esac
 }
