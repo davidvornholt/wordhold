@@ -11,6 +11,7 @@ on:
       - reopened
       - ready_for_review
       - labeled
+      - edited
   push:
     branches:
       - main
@@ -19,16 +20,16 @@ permissions: {}
 
 jobs:
   container-smoke:
-    if: github.event_name == 'pull_request'
+    if: >-
+      github.event_name == 'pull_request' &&
+      (github.event.action != 'edited' || github.event.changes.base != null)
     runs-on: ubuntu-latest
     timeout-minutes: 90
     concurrency:
       group: ${{ github.workflow }}-pr-${{ github.event.pull_request.number }}
       cancel-in-progress: true
     permissions:
-      actions: read
       contents: read
-      pull-requests: read
     services:
       postgres:
         image: public.ecr.aws/docker/library/postgres:18-alpine
@@ -58,29 +59,14 @@ jobs:
           [[ "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]
           test "$(git rev-parse HEAD)" = "$HEAD_SHA"
 
-      - name: Select an eligible exact-head preview gate
+      - name: Select eligibility from the pull request event
         id: eligibility
         env:
-          GH_TOKEN: ${{ github.token }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          REPOSITORY: ${{ github.repository }}
+          ELIGIBLE: ${{ github.event.pull_request.state == 'open' && !github.event.pull_request.draft && github.event.pull_request.base.repo.full_name == github.repository && github.event.pull_request.base.ref == 'main' && github.event.pull_request.head.repo.full_name == github.repository && contains(github.event.pull_request.labels.*.name, 'pr-preview') }}
         run: |
           set -euo pipefail
-          echo 'eligible=false' >>"$GITHUB_OUTPUT"
-          [[ "$HEAD_SHA" =~ ^[0-9a-f]{40}$ && "$PR_NUMBER" =~ ^[1-9][0-9]{0,5}$ ]]
-          test "$REPOSITORY" = davidvornholt/wordhold
-          pr=$(gh api "repos/$REPOSITORY/pulls/$PR_NUMBER")
-          test "$(jq -er .number <<<"$pr")" = "$PR_NUMBER"
-          if [ "$(jq -er .state <<<"$pr")" = open ] \
-            && [ "$(jq -er .draft <<<"$pr")" = false ] \
-            && [ "$(jq -er .base.repo.full_name <<<"$pr")" = "$REPOSITORY" ] \
-            && [ "$(jq -er .base.ref <<<"$pr")" = main ] \
-            && [ "$(jq -er .head.repo.full_name <<<"$pr")" = "$REPOSITORY" ] \
-            && [ "$(jq -er .head.sha <<<"$pr")" = "$HEAD_SHA" ] \
-            && [ "$(jq -er 'any(.labels[]; .name == "pr-preview")' <<<"$pr")" = true ]; then
-            echo 'eligible=true' >>"$GITHUB_OUTPUT"
-          fi
+          [[ "$ELIGIBLE" =~ ^(true|false)$ ]]
+          echo "eligible=$ELIGIBLE" >>"$GITHUB_OUTPUT"
 
       - name: Set up Bun for the exact-head gate
         if: steps.eligibility.outputs.eligible == 'true'
@@ -185,12 +171,11 @@ jobs:
           test "$(jq -er .status <<<"$response")" = ok
           test "$(docker inspect "$container" --format '{{.Config.User}}')" = 65532:65532
 
-      - name: Require the exact current Standards gate and preview eligibility
+      - name: Package the eligible exact-head preview artifact
         id: preview
         env:
           EXACT_HEAD_GATE_OUTCOME: ${{ steps.exact_head_gate.outcome }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REPOSITORY: ${{ github.repository }}
           RUN_ATTEMPT: ${{ github.run_attempt }}
@@ -204,63 +189,6 @@ jobs:
           test "$(git rev-parse HEAD)" = "$HEAD_SHA"
           if [ "$EXACT_HEAD_GATE_OUTCOME" != success ]; then
             echo "::notice::The full exact-head repository gate did not run successfully"
-            exit 0
-          fi
-
-          preview_is_current() {
-            pr=$(gh api "repos/$REPOSITORY/pulls/$PR_NUMBER")
-            test "$(jq -er .number <<<"$pr")" = "$PR_NUMBER"
-            test "$(jq -er .base.repo.full_name <<<"$pr")" = "$REPOSITORY"
-            test "$(jq -er .base.ref <<<"$pr")" = main
-            test "$(jq -er .head.repo.full_name <<<"$pr")" = "$REPOSITORY"
-            test "$(jq -er .head.sha <<<"$pr")" = "$HEAD_SHA"
-            test "$(jq -er .state <<<"$pr")" = open
-            test "$(jq -er .draft <<<"$pr")" = false
-            test "$(jq -er 'any(.labels[]; .name == "pr-preview")' <<<"$pr")" = true
-          }
-          if ! preview_is_current; then
-            echo "::notice::Pull request $PR_NUMBER is no longer eligible at $HEAD_SHA"
-            exit 0
-          fi
-
-          gate_workflow=$(gh api "repos/$REPOSITORY/actions/workflows/standards.yml")
-          test "$(jq -er .path <<<"$gate_workflow")" = .github/workflows/standards.yml
-          test "$(jq -er .state <<<"$gate_workflow")" = active
-          gate_workflow_id=$(jq -er '.id | select(. >= 1 and floor == .)' <<<"$gate_workflow")
-
-          deadline=$(($(date -u +%s) + 2400))
-          while :; do
-            runs=$(gh api "repos/$REPOSITORY/actions/workflows/$gate_workflow_id/runs?head_sha=$HEAD_SHA&event=pull_request&per_page=100")
-            test "$(jq -er .total_count <<<"$runs")" -le 100
-            gate_run=$(jq -cr \
-              '[.workflow_runs[] | select(
-                .path == ".github/workflows/standards.yml"
-                and .event == "pull_request"
-                and .head_repository.full_name == "davidvornholt/wordhold"
-              )] | sort_by(.run_attempt, .id) | last // empty' <<<"$runs")
-            if [ -n "$gate_run" ] && [ "$(jq -er .status <<<"$gate_run")" = completed ]; then
-              break
-            fi
-            if [ "$(date -u +%s)" -ge "$deadline" ]; then
-              echo "::error::The Standards gate did not complete for $HEAD_SHA within the deadline"
-              exit 1
-            fi
-            sleep 20
-          done
-
-          test "$(jq -er .head_sha <<<"$gate_run")" = "$HEAD_SHA"
-          test "$(jq -er .conclusion <<<"$gate_run")" = success
-          gate_run_id=$(jq -er '.id | select(. >= 1 and floor == .)' <<<"$gate_run")
-          jobs=$(gh api "repos/$REPOSITORY/actions/runs/$gate_run_id/jobs?per_page=100")
-          test "$(jq -er .total_count <<<"$jobs")" -le 100
-          gate_jobs=$(jq -c '[.jobs[] | select(.name == "check")]' <<<"$jobs")
-          test "$(jq -er length <<<"$gate_jobs")" = 1
-          test "$(jq -er '.[0].status' <<<"$gate_jobs")" = completed
-          test "$(jq -er '.[0].conclusion' <<<"$gate_jobs")" = success
-          test "$(jq -er '.[0].head_sha' <<<"$gate_jobs")" = "$HEAD_SHA"
-
-          if ! preview_is_current; then
-            echo "::notice::Pull request $PR_NUMBER changed while its Standards gate was running"
             exit 0
           fi
 
@@ -295,7 +223,6 @@ jobs:
             --argjson pullRequest "$PR_NUMBER" \
             --argjson runAttempt "$RUN_ATTEMPT" \
             --argjson runId "$RUN_ID" \
-            --argjson standardsRunId "$gate_run_id" \
             --argjson version 1 \
             --argjson workflowId 343592175 \
             '{
@@ -303,11 +230,6 @@ jobs:
               repository: $repository,
               pullRequest: $pullRequest,
               headSha: $headSha,
-              standards: {
-                path: ".github/workflows/standards.yml",
-                runId: $standardsRunId,
-                job: "check"
-              },
               workflow: {
                 id: $workflowId,
                 path: $path,

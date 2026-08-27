@@ -26,6 +26,11 @@ on:
         required: false
         type: string
         default: ""
+      previous-base-ref:
+        description: Previous base branch for a trusted retarget teardown
+        required: false
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -45,6 +50,7 @@ jobs:
           HEAD_SHA: ${{ inputs.head-sha }}
           IMAGE: ${{ inputs.image }}
           OPERATION: ${{ inputs.operation }}
+          PREVIOUS_BASE_REF: ${{ inputs.previous-base-ref }}
           PR_NUMBER: ${{ inputs.pull-request-number }}
           REASON: ${{ inputs.reason }}
           REPOSITORY: ${{ github.repository }}
@@ -55,6 +61,7 @@ jobs:
           case "$OPERATION" in
             deploy)
               test -z "$REASON"
+              test -z "$PREVIOUS_BASE_REF"
               [[ "$IMAGE" =~ ^ghcr\.io/davidvornholt/wordhold@sha256:[0-9a-f]{64}$ ]]
               [[ "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]
               printf 'command=deploy %s %s %s %s\n' \
@@ -65,8 +72,10 @@ jobs:
               case "$REASON" in
                 ineligible)
                   test -z "$HEAD_SHA"
+                  [[ "$PREVIOUS_BASE_REF" =~ ^(main)?$ ]]
                   ;;
                 failed-build|failed-publication)
+                  test -z "$PREVIOUS_BASE_REF"
                   [[ "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]
                   ;;
                 *)
@@ -146,6 +155,7 @@ jobs:
           HEAD_SHA: ${{ inputs.head-sha }}
           HOST_COMMAND: ${{ steps.validate.outputs.command }}
           OPERATION: ${{ inputs.operation }}
+          PREVIOUS_BASE_REF: ${{ inputs.previous-base-ref }}
           PR_NUMBER: ${{ inputs.pull-request-number }}
           REASON: ${{ inputs.reason }}
           REPOSITORY: ${{ github.repository }}
@@ -154,16 +164,24 @@ jobs:
           echo 'in_scope=false' >>"$GITHUB_OUTPUT"
           pr=$(gh api "repos/$REPOSITORY/pulls/$PR_NUMBER")
           test "$(jq -er .number <<<"$pr")" = "$PR_NUMBER"
+          base_ref=$(jq -er .base.ref <<<"$pr")
           if [ "$(jq -er .base.repo.full_name <<<"$pr")" != "$REPOSITORY" ] \
-            || [ "$(jq -er .base.ref <<<"$pr")" != main ] \
             || [ "$(jq -er .head.repo.full_name <<<"$pr")" != "$REPOSITORY" ]; then
-            echo "::notice::Pull request $PR_NUMBER is outside the same-repository main preview lane"
+            echo "::notice::Pull request $PR_NUMBER is outside the same-repository preview boundary"
+            exit 0
+          fi
+          if [ "$base_ref" != main ] \
+            && { [ "$OPERATION" != destroy ] \
+              || [ "$REASON" != ineligible ] \
+              || [ "$PREVIOUS_BASE_REF" != main ]; }; then
+            echo "::notice::Pull request $PR_NUMBER is outside the main preview lane"
             exit 0
           fi
           echo 'in_scope=true' >>"$GITHUB_OUTPUT"
           current_head=$(jq -er '.head.sha | select(test("^[0-9a-f]{40}$"))' <<<"$pr")
           eligible=false
-          if [ "$(jq -er .state <<<"$pr")" = open ] \
+          if [ "$base_ref" = main ] \
+            && [ "$(jq -er .state <<<"$pr")" = open ] \
             && [ "$(jq -er .draft <<<"$pr")" = false ] \
             && [ "$(jq -er 'any(.labels[]; .name == "pr-preview")' <<<"$pr")" = true ]; then
             eligible=true

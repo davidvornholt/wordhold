@@ -11,6 +11,7 @@ on:
       - closed
       - converted_to_draft
       - unlabeled
+      - edited
 
 permissions: {}
 
@@ -31,6 +32,7 @@ jobs:
       head-sha: ${{ steps.select.outputs.head-sha }}
       mode: ${{ steps.select.outputs.mode }}
       pull-request-number: ${{ steps.select.outputs.pull-request-number }}
+      previous-base-ref: ${{ steps.select.outputs.previous-base-ref }}
       run-attempt: ${{ steps.select.outputs.run-attempt }}
       run-id: ${{ steps.select.outputs.run-id }}
     steps:
@@ -38,6 +40,7 @@ jobs:
         id: select
         env:
           EVENT_ACTION: ${{ github.event.action }}
+          EVENT_BASE_FROM: ${{ github.event.changes.base.ref.from }}
           EVENT_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
           EVENT_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
           EVENT_LABEL: ${{ github.event.label.name }}
@@ -92,6 +95,16 @@ jobs:
                   exit 0
                 fi
                 ;;
+              edited)
+                if [ -z "$EVENT_BASE_FROM" ]; then
+                  echo "::notice::Ignoring an edit that did not change the base branch"
+                  exit 0
+                fi
+                if [ "$EVENT_BASE_FROM" != main ]; then
+                  echo "::notice::The previous base was not in the main preview lane"
+                  exit 0
+                fi
+                ;;
               *)
                 echo "::error::Unexpected pull_request_target action $EVENT_ACTION"
                 exit 1
@@ -101,9 +114,24 @@ jobs:
             pr=$(gh api "repos/$REPOSITORY/pulls/$EVENT_PR_NUMBER")
             test "$(jq -er .number <<<"$pr")" = "$EVENT_PR_NUMBER"
             if [ "$(jq -er .base.repo.full_name <<<"$pr")" != "$REPOSITORY" ] \
-              || [ "$(jq -er .base.ref <<<"$pr")" != main ] \
               || [ "$(jq -er .head.repo.full_name <<<"$pr")" != "$REPOSITORY" ]; then
-              echo "::notice::Pull request $EVENT_PR_NUMBER is outside the same-repository main preview lane"
+              echo "::notice::Pull request $EVENT_PR_NUMBER is outside the same-repository preview boundary"
+              exit 0
+            fi
+            if [ "$EVENT_ACTION" = edited ]; then
+              if [ "$(jq -er .base.ref <<<"$pr")" = main ]; then
+                echo "::notice::Pull request $EVENT_PR_NUMBER returned to the main preview lane before teardown"
+                exit 0
+              fi
+              {
+                echo 'mode=destroy-ineligible'
+                echo "pull-request-number=$EVENT_PR_NUMBER"
+                echo 'previous-base-ref=main'
+              } >>"$GITHUB_OUTPUT"
+              exit 0
+            fi
+            if [ "$(jq -er .base.ref <<<"$pr")" != main ]; then
+              echo "::notice::Pull request $EVENT_PR_NUMBER is outside the main preview lane"
               exit 0
             fi
             if preview_is_eligible; then
@@ -212,9 +240,30 @@ jobs:
               exit 1
               ;;
           esac
-          if ! trusted_workflows_match_main; then
-            echo "::error::The producer or Standards workflow at $EVENT_HEAD_SHA differs from current main"
-            exit 1
+          if [ "$mode" = deploy ]; then
+            if ! trusted_workflows_match_main; then
+              echo "::error::The producer or Standards workflow at $EVENT_HEAD_SHA differs from current main"
+              exit 1
+            fi
+            producer_jobs=$(gh api "repos/$REPOSITORY/actions/runs/$EVENT_RUN_ID/attempts/$run_attempt/jobs?per_page=100")
+            test "$(jq -er .total_count <<<"$producer_jobs")" -le 100
+            smoke_jobs=$(jq -c '[.jobs[] | select(.name == "container-smoke")]' <<<"$producer_jobs")
+            test "$(jq -er length <<<"$smoke_jobs")" = 1
+            test "$(jq -er '.[0].status' <<<"$smoke_jobs")" = completed
+            if [ "$(jq -er '.[0].conclusion' <<<"$smoke_jobs")" = skipped ]; then
+              echo "::notice::The producer job was skipped and does not change preview state"
+              exit 0
+            fi
+            test "$(jq -er '.[0].conclusion' <<<"$smoke_jobs")" = success
+            test "$(jq -er '.[0].run_id' <<<"$smoke_jobs")" = "$EVENT_RUN_ID"
+            test "$(jq -er '.[0].run_attempt' <<<"$smoke_jobs")" = "$run_attempt"
+            test "$(jq -er '.[0].head_sha' <<<"$smoke_jobs")" = "$EVENT_HEAD_SHA"
+            exact_head_gates=$(jq -c \
+              '[.[0].steps[] | select(.name == "Run the full exact-head repository gate")]' \
+              <<<"$smoke_jobs")
+            test "$(jq -er length <<<"$exact_head_gates")" = 1
+            test "$(jq -er '.[0].status' <<<"$exact_head_gates")" = completed
+            test "$(jq -er '.[0].conclusion' <<<"$exact_head_gates")" = success
           fi
           pr=$(gh api "repos/$REPOSITORY/pulls/$pr_number")
           test "$(jq -er .head.sha <<<"$pr")" = "$EVENT_HEAD_SHA"
@@ -242,6 +291,7 @@ jobs:
       image: ${{ steps.publish.outputs.image }}
     steps:
       - name: Fetch and validate the exact gated artifact
+        id: validate
         env:
           GH_TOKEN: ${{ github.token }}
           HEAD_SHA: ${{ needs.select.outputs.head-sha }}
@@ -270,6 +320,32 @@ jobs:
           test "$(jq -er length <<<"$exact_head_gates")" = 1
           test "$(jq -er '.[0].status' <<<"$exact_head_gates")" = completed
           test "$(jq -er '.[0].conclusion' <<<"$exact_head_gates")" = success
+
+          standards_workflow=$(gh api "repos/$REPOSITORY/actions/workflows/standards.yml")
+          test "$(jq -er .path <<<"$standards_workflow")" = .github/workflows/standards.yml
+          test "$(jq -er .state <<<"$standards_workflow")" = active
+          standards_workflow_id=$(jq -er '.id | select(. >= 1 and floor == .)' <<<"$standards_workflow")
+          standards_runs=$(gh api "repos/$REPOSITORY/actions/workflows/$standards_workflow_id/runs?head_sha=$HEAD_SHA&event=pull_request&per_page=100")
+          test "$(jq -er .total_count <<<"$standards_runs")" -le 100
+          standards_run=$(jq -cr \
+            '[.workflow_runs[] | select(
+              .path == ".github/workflows/standards.yml"
+              and .event == "pull_request"
+              and .head_repository.full_name == "davidvornholt/wordhold"
+            )] | sort_by(.run_number, .run_attempt, .id) | last // empty' \
+            <<<"$standards_runs")
+          test -n "$standards_run"
+          test "$(jq -er .head_sha <<<"$standards_run")" = "$HEAD_SHA"
+          test "$(jq -er .status <<<"$standards_run")" = completed
+          test "$(jq -er .conclusion <<<"$standards_run")" = success
+          standards_run_id=$(jq -er '.id | select(. >= 1 and floor == .)' <<<"$standards_run")
+          standards_jobs=$(gh api "repos/$REPOSITORY/actions/runs/$standards_run_id/jobs?per_page=100")
+          test "$(jq -er .total_count <<<"$standards_jobs")" -le 100
+          standards_checks=$(jq -c '[.jobs[] | select(.name == "check")]' <<<"$standards_jobs")
+          test "$(jq -er length <<<"$standards_checks")" = 1
+          test "$(jq -er '.[0].status' <<<"$standards_checks")" = completed
+          test "$(jq -er '.[0].conclusion' <<<"$standards_checks")" = success
+          test "$(jq -er '.[0].head_sha' <<<"$standards_checks")" = "$HEAD_SHA"
 
           artifact_name="wordhold-pr-preview-$PR_NUMBER-$HEAD_SHA-$RUN_ATTEMPT"
           artifacts=$(gh api "repos/$REPOSITORY/actions/runs/$RUN_ID/artifacts?per_page=100")
@@ -321,7 +397,6 @@ jobs:
           test "$image_tar_size" -le 2147483648
 
           metadata="$artifact_root/metadata.json"
-          standards_run_id=$(jq -er '.standards.runId | select(. >= 1 and floor == .)' "$metadata")
           jq -nS \
             --arg archive wordhold-image.tar.gz \
             --arg headSha "$HEAD_SHA" \
@@ -333,7 +408,6 @@ jobs:
             --argjson pullRequest "$PR_NUMBER" \
             --argjson runAttempt "$RUN_ATTEMPT" \
             --argjson runId "$RUN_ID" \
-            --argjson standardsRunId "$standards_run_id" \
             --argjson version 1 \
             --argjson workflowId 343592175 \
             '{
@@ -341,11 +415,6 @@ jobs:
               repository: $repository,
               pullRequest: $pullRequest,
               headSha: $headSha,
-              standards: {
-                path: ".github/workflows/standards.yml",
-                runId: $standardsRunId,
-                job: "check"
-              },
               workflow: {
                 id: $workflowId,
                 path: $path,
@@ -360,21 +429,6 @@ jobs:
               }
             }' >"$RUNNER_TEMP/expected-metadata.json"
           cmp "$RUNNER_TEMP/expected-metadata.json" "$metadata"
-
-          standards_run=$(gh api "repos/$REPOSITORY/actions/runs/$standards_run_id")
-          test "$(jq -er .path <<<"$standards_run")" = .github/workflows/standards.yml
-          test "$(jq -er .event <<<"$standards_run")" = pull_request
-          test "$(jq -er .head_sha <<<"$standards_run")" = "$HEAD_SHA"
-          test "$(jq -er .head_repository.full_name <<<"$standards_run")" = "$REPOSITORY"
-          test "$(jq -er .status <<<"$standards_run")" = completed
-          test "$(jq -er .conclusion <<<"$standards_run")" = success
-          standards_jobs=$(gh api "repos/$REPOSITORY/actions/runs/$standards_run_id/jobs?per_page=100")
-          test "$(jq -er .total_count <<<"$standards_jobs")" -le 100
-          checks=$(jq -c '[.jobs[] | select(.name == "check")]' <<<"$standards_jobs")
-          test "$(jq -er length <<<"$checks")" = 1
-          test "$(jq -er '.[0].status' <<<"$checks")" = completed
-          test "$(jq -er '.[0].conclusion' <<<"$checks")" = success
-          test "$(jq -er '.[0].head_sha' <<<"$checks")" = "$HEAD_SHA"
 
       - name: Load and validate the untrusted image without running it
         env:
@@ -440,15 +494,24 @@ jobs:
           current_main_ref=$(gh api "repos/$REPOSITORY/git/ref/heads/main")
           test "$(jq -er .object.sha <<<"$current_main_ref")" = "$main_sha"
 
-          metadata="$RUNNER_TEMP/wordhold-preview-artifact/metadata.json"
-          standards_run_id=$(jq -er '.standards.runId | select(. >= 1 and floor == .)' "$metadata")
-          standards_run=$(gh api "repos/$REPOSITORY/actions/runs/$standards_run_id")
-          test "$(jq -er .path <<<"$standards_run")" = .github/workflows/standards.yml
-          test "$(jq -er .event <<<"$standards_run")" = pull_request
+          standards_workflow=$(gh api "repos/$REPOSITORY/actions/workflows/standards.yml")
+          test "$(jq -er .path <<<"$standards_workflow")" = .github/workflows/standards.yml
+          test "$(jq -er .state <<<"$standards_workflow")" = active
+          standards_workflow_id=$(jq -er '.id | select(. >= 1 and floor == .)' <<<"$standards_workflow")
+          standards_runs=$(gh api "repos/$REPOSITORY/actions/workflows/$standards_workflow_id/runs?head_sha=$HEAD_SHA&event=pull_request&per_page=100")
+          test "$(jq -er .total_count <<<"$standards_runs")" -le 100
+          standards_run=$(jq -cr \
+            '[.workflow_runs[] | select(
+              .path == ".github/workflows/standards.yml"
+              and .event == "pull_request"
+              and .head_repository.full_name == "davidvornholt/wordhold"
+            )] | sort_by(.run_number, .run_attempt, .id) | last // empty' \
+            <<<"$standards_runs")
+          test -n "$standards_run"
           test "$(jq -er .head_sha <<<"$standards_run")" = "$HEAD_SHA"
-          test "$(jq -er .head_repository.full_name <<<"$standards_run")" = "$REPOSITORY"
           test "$(jq -er .status <<<"$standards_run")" = completed
           test "$(jq -er .conclusion <<<"$standards_run")" = success
+          standards_run_id=$(jq -er '.id | select(. >= 1 and floor == .)' <<<"$standards_run")
           standards_jobs=$(gh api "repos/$REPOSITORY/actions/runs/$standards_run_id/jobs?per_page=100")
           test "$(jq -er .total_count <<<"$standards_jobs")" -le 100
           checks=$(jq -c '[.jobs[] | select(.name == "check")]' <<<"$standards_jobs")
@@ -521,6 +584,7 @@ jobs:
       operation: destroy
       reason: ineligible
       pull-request-number: ${{ fromJSON(needs.select.outputs.pull-request-number) }}
+      previous-base-ref: ${{ needs.select.outputs.previous-base-ref }}
 
   cleanup-failed-build:
     needs: select
