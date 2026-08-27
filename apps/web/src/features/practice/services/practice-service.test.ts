@@ -122,7 +122,7 @@ describe('PracticeService', () => {
               source: 'textbook',
             },
           ]),
-        commit: () => Effect.void,
+        commit: () => Effect.succeed(1),
       },
       {
         judge: () => {
@@ -149,7 +149,7 @@ describe('PracticeService', () => {
               source: 'textbook',
             },
           ]),
-        commit: () => Effect.void,
+        commit: () => Effect.succeed(1),
       },
       {
         judge: () =>
