@@ -23,18 +23,28 @@ type VerifyFormProps = {
   readonly busy: boolean;
   readonly onSubmit: (
     label: string,
-    unit: UnitSelectionData,
-    verifiedEntries: ReadonlyArray<DraftEntry>,
+    verifiedEntries: ReadonlyArray<VerificationEntry>,
   ) => void;
 };
+
+export type VerificationEntry = DraftEntry & {
+  readonly unit: UnitSelectionData;
+};
+
+const entryIsComplete = (entry: DraftEntry): boolean =>
+  entry.targetText.trim() !== '' && entry.nativeText.trim() !== '';
 
 // The unit a course is currently working through is the last one started, so
 // that is what the picker opens on. A course with no units yet has nothing to
 // choose from and starts naming one straight away.
-const initialSelection = (units: ReadonlyArray<Unit>): UnitSelectionData =>
-  units.length === 0
+const initialUnitSelection = (
+  units: ReadonlyArray<Unit>,
+): UnitSelectionData => {
+  const latestRealUnit = units.findLast((unit) => !unit.isHolding);
+  return latestRealUnit === undefined
     ? { kind: 'new', name: '' }
-    : { kind: 'existing', unitId: units.at(-1)?.id ?? '' };
+    : { kind: 'existing', unitId: latestRealUnit.id };
+};
 
 export const VerifyForm = ({
   initialEntries,
@@ -45,13 +55,19 @@ export const VerifyForm = ({
   onSubmit,
 }: VerifyFormProps) => {
   const [label, setLabel] = useState(initialLabel);
-  const [unit, setUnit] = useState(() => initialSelection(units));
-  const [draftEntries, setDraftEntries] = useState(initialEntries);
-
-  const complete = draftEntries.filter(
-    (entry) => entry.targetText.trim() !== '' && entry.nativeText.trim() !== '',
+  const [draftEntries, setDraftEntries] = useState<
+    ReadonlyArray<VerificationEntry>
+  >(() =>
+    initialEntries.map((entry) => ({
+      ...entry,
+      unit: initialUnitSelection(units),
+    })),
   );
-  const unitNamed = unit.kind === 'existing' || unit.name.trim() !== '';
+
+  const complete = draftEntries.filter(entryIsComplete);
+  const unitsNamed = complete.every(
+    (entry) => entry.unit.kind === 'existing' || entry.unit.name.trim() !== '',
+  );
 
   return (
     <form
@@ -59,18 +75,12 @@ export const VerifyForm = ({
       className="flex flex-col gap-4"
       onSubmit={(event) => {
         event.preventDefault();
-        if (busy || !unitNamed) {
+        if (busy || complete.length === 0 || !unitsNamed) {
           return;
         }
-        onSubmit(label, unit, complete);
+        onSubmit(label, complete);
       }}
     >
-      <UnitPicker
-        disabled={busy}
-        onChange={setUnit}
-        selection={unit}
-        units={units}
-      />
       <label className="flex flex-col gap-1 text-sm">
         Seitenbezeichnung
         <input
@@ -92,7 +102,7 @@ export const VerifyForm = ({
             onChange={(next) =>
               setDraftEntries(
                 draftEntries.map((current, i) =>
-                  i === index ? next : current,
+                  i === index ? { ...next, unit: current.unit } : current,
                 ),
               )
             }
@@ -100,6 +110,22 @@ export const VerifyForm = ({
               setDraftEntries(draftEntries.filter((_, i) => i !== index))
             }
             targetLabel={targetLabel}
+            unitControl={
+              <UnitPicker
+                disabled={busy}
+                label={`Einheit für Eintrag ${index + 1}`}
+                onChange={(unit) =>
+                  setDraftEntries(
+                    draftEntries.map((current, i) =>
+                      i === index ? { ...current, unit } : current,
+                    ),
+                  )
+                }
+                required={entryIsComplete(entry)}
+                selection={entry.unit}
+                units={units}
+              />
+            }
           />
         ))}
       </ul>
@@ -107,14 +133,19 @@ export const VerifyForm = ({
         <button
           className="border border-input px-3 py-1.5 text-sm"
           disabled={busy || draftEntries.length >= maximumEntriesPerPage}
-          onClick={() => setDraftEntries([...draftEntries, emptyEntry])}
+          onClick={() =>
+            setDraftEntries([
+              ...draftEntries,
+              { ...emptyEntry, unit: initialUnitSelection(units) },
+            ])
+          }
           type="button"
         >
           Eintrag hinzufügen
         </button>
         <button
           className="bg-primary px-4 py-1.5 text-primary-foreground text-sm disabled:opacity-50"
-          disabled={busy || complete.length === 0 || !unitNamed}
+          disabled={busy || complete.length === 0 || !unitsNamed}
           type="submit"
         >
           {busy ? 'Importiere …' : `${complete.length} Einträge importieren`}

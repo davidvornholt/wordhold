@@ -84,47 +84,29 @@ Uploads accept JPEG, PNG, and WebP images up to 12 MiB, 12,000 pixels per side, 
 
 ## Course page
 
-`/courses/$courseId` is where a course is worked on (`src/features/courses/`). It carries the course totals, the three things that act on the whole course — practise, photograph a page, settings — and the list of its units with how much of each has been learned. `/courses/$courseId/units/$unitId` opens one unit: every word in it with its translation, marked when the learning pass has not met it yet, and the two sittings that unit offers. Learning appears while the unit still holds unmet words, drilling once it holds met ones, so a unit nobody has started offers only the learning pass and a finished one offers only the drill.
+`/courses/$courseId` is where a course is worked on (`src/features/courses/`). It carries the course totals, actions that apply to the whole course, and the list of its units with how much of each has been learned. Practice appears only when the dashboard's queue counts say the course has an introduced due or fresh card in an enabled direction. `/courses/$courseId/units/$unitId` opens one unit: every word in it with its translation, marked when the learning pass has not met it yet, and the two sittings that unit offers. Learning appears while the unit still holds unmet words, drilling once it holds met ones, so a unit nobody has started offers only the learning pass and a finished one offers only the drill. An empty unit offers neither and is not described as learned.
 
 This is deliberately the only unit list. Learning and drilling used to have a picker each, which meant three routes listing the same units and five links on every dashboard card. Both sittings now start from the unit itself, where the learner can see what the sitting will ask about.
 
 ## Learning pass
 
-`/courses/$courseId/units/$unitId/learn` walks through the unit's unmet words one at a time (`src/features/learning/`). The word is spoken, its German and its translation are both on screen, and the learner copies it. Nothing here is graded and nothing reaches the scheduler: copying a word you can see says nothing about whether you will remember it tomorrow, so the match is the deterministic normalization from `src/shared/grading/normalize.ts` against the spelling shown plus that entry's accepted answers, never the AI judge. A wrong copy just asks again.
+`/courses/$courseId/units/$unitId/learn` walks through the unit's unmet words one at a time (`src/features/learning/`). The word is spoken, its German and its translation are both on screen, and the learner copies it. Nothing here is graded and nothing reaches the scheduler. Copying a word you can see says nothing about whether you will remember it tomorrow, so the match uses deterministic normalization from `src/shared/grading/normalize.ts` against the displayed spelling and bounded variants of textbook-authored optional notation. Judge-written alternatives never count. A wrong copy asks again.
 
-Writing a word correctly stamps `cards.introduced_at` on both of its cards, one word at a time, so leaving halfway keeps what was learned. `introduced_at` is deliberately separate from the FSRS `state` column: `state` says where a card stands in the scheduler, `introduced_at` says whether the learner has ever met the word. Cards without it are excluded from the practice queue and from the dashboard's due and new counts.
+Writing a word correctly stamps `cards.introduced_at` on both of its cards, one word at a time, so leaving halfway keeps what was learned. The write must still match the course, unit, and word loaded for the page. If persistence fails, the page keeps the same word and offers a retry. `introduced_at` is deliberately separate from the FSRS `state` column. `state` says where a card stands in the scheduler, while `introduced_at` says whether the learner has ever met the word. Cards without it are excluded from the practice queue and from the dashboard's due and new counts. After deploying the generated column migration, run `bun run --cwd packages/db db:backfill-introductions` to preserve the review time of cards already answered.
 
 ## Practice flow
 
-`/courses/$courseId/practice` serves everything due plus a bounded batch of
-new cards, both restricted to introduced cards
-(`src/features/practice/services/practice-service.ts`). Grading is hybrid: a
-normalized deterministic match is instant; only mismatches reach the AI
-judge, whose verdicts are cached per (entry, direction, normalized answer)
-and can write accepted alternatives back. FSRS ratings are derived from the
-outcome (fast exact = Easy, flawed-but-accepted = Hard, rejected = Again) —
-never self-reported. If the judge is unreachable the card is left
-untouched. Pronunciation plays via `GET /api/entries/$entryId/audio`.
+`/courses/$courseId/practice` serves everything due plus a bounded batch of new cards, both restricted to introduced cards (`src/features/practice/services/practice-service.ts`). Grading is hybrid. A normalized deterministic match is instant, while only mismatches reach the AI judge. Verdicts are cached per entry, direction, and normalized answer and can write accepted alternatives back. FSRS derives ratings from the outcome. A fast exact answer is Easy, a flawed but accepted answer is Hard, and a rejected answer is Again. The learner never reports a rating. If the judge is unreachable, the card stays untouched. Pronunciation plays via `GET /api/entries/$entryId/audio`.
 
-The session is one loop the learner works to the end
-(`src/features/practice/services/session-queue.ts`). A missed card goes back
-into the queue three cards later instead of leaving the session, because FSRS
-puts it on a one-minute relearning step and the dashboard would otherwise
-count it as due again moments after the session was closed. Answering a card
-bumps its revision, so `submit` returns the new one and the repeat is
-submitted against it rather than being rejected as stale. The progress bar
-counts distinct cards settled out of the cards the session started with, so a
-repeat never moves it backwards and the end never moves away. An answer the
-judge could not grade settles too: the card was left untouched, and asking
-again in the same session would only reach the same outage.
+The session is one loop the learner works to the end (`src/features/practice/services/session-queue.ts`). A missed card goes back into the queue three cards later instead of leaving the session, because FSRS puts it on a one-minute relearning step and the dashboard would otherwise count it as due again moments after the session was closed. Answering a card bumps its revision, so `submit` returns the new one and the repeat is submitted against it rather than being rejected as stale. The progress bar counts distinct cards settled out of the cards the session started with, so a repeat never moves it backwards and the end never moves away. An answer the judge could not grade leaves the session without changing the card. The final summary counts ungraded cards and says their learning state and existing schedule stayed unchanged instead of claiming the sitting was completed.
 
 ## Unit drill
 
 Reviews mix across the whole course, which is what spaced repetition needs and the wrong shape the night before a class test on one unit. `/courses/$courseId/units/$unitId/drill` runs a sitting made only of that unit's learned cards, due or not (`src/features/practice/services/session-store.ts`). It picks a direction the same way the scheduled queue does and runs the same session loop, so a missed card comes back within the drill.
 
-Cramming must not damage the schedule. Every answer is written to `reviews` with `reviews.mode` set to `drill`, so statistics can tell a drilled answer from one the queue asked for. Whether it also rewrites the card's FSRS schedule is decided by `src/features/practice/services/schedule-guard.ts`: a drilled card in `review` state that was not due yet is left alone, because writing a fresh interval from a crammed answer is exactly what would push a word the learner barely knows three weeks out. A card that was genuinely due counts as a real review. So does a card still on a learning or relearning step, whose steps are minutes apart and exist to be answered again — including the repeat of a card missed moments earlier in the same drill.
+Cramming must not damage the schedule. Every answer is written to `reviews` with `reviews.mode` set to `drill`, so statistics can tell a drilled answer from one the queue asked for. The mode is only provenance. Whether an answer rewrites the card's FSRS schedule is decided from the server-owned card by `src/features/practice/services/schedule-guard.ts`. A card in `review` state that was not due yet keeps its schedule, because writing a fresh interval from a crammed answer is exactly what would push a word the learner barely knows three weeks out. A card that was genuinely due counts as a real review. So does a card still on a learning or relearning step, whose steps are minutes apart and exist to be answered again, including the repeat of a card missed moments earlier in the same drill.
 
-When the schedule is held back, the card row is not touched at all, so the revision the session answers against stays where it is and the repeat is not rejected as stale.
+When the schedule is held back, the card still claims and increments its revision with compare-and-swap. Its FSRS fields do not change. A duplicate or stale answer therefore cannot write a second review, and a repeat in the same sitting uses the returned revision.
 
 ## Direction control
 
@@ -138,4 +120,4 @@ The stored column is read by unnesting it into one row per direction. The Postgr
 
 ## Dashboard
 
-The signed-in start page shows only real data (`src/features/dashboard/services/dashboard-service.ts`): per-course due/new/word counts, how many words still await the learning pass, today's review count in `WORDHOLD_OWNER_TIME_ZONE`, and "Wackelkandidaten" with at least two Again-ratings in the last 30 days. A course card answers one question — is there work here today — so it carries the counts, the course name as the way into the course page, and "Üben" when something is actually due. A course with no words yet carries the import link inside its own empty sentence instead. Due and new count cards the practice session would actually offer, so they ignore words that have not been learned yet; the "zu lernen" figure counts words rather than cards, because the learning pass introduces both directions of a word together.
+The signed-in start page shows only real data (`src/features/dashboard/services/dashboard-service.ts`): per-course due/new/word counts, how many words still await the learning pass, today's review count in `WORDHOLD_OWNER_TIME_ZONE`, and "Wackelkandidaten" with at least two Again-ratings in the last 30 days. A course card answers one question: is there work here today. It carries the counts, the course name as the way into the course page, and "Üben" when an introduced due or fresh card is available in an enabled direction. A course with no words yet carries the import link inside its own empty sentence instead. Due and new count cards the practice session would actually offer, so they ignore words that have not been learned yet; the "zu lernen" figure counts words rather than cards, because the learning pass introduces both directions of a word together.

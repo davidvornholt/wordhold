@@ -30,6 +30,7 @@ const unit = {
   id: 'd9428888-122b-41e1-b85c-61cd3cbb3212',
   name: 'Unité 3',
   position: 0,
+  isHolding: false,
   entryCount: 12,
 };
 

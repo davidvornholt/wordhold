@@ -17,7 +17,10 @@ export type SessionQueue = {
   readonly total: number;
   readonly correct: number;
   readonly wrong: number;
+  readonly ungraded: number;
 };
+
+export type ExpectedCard = Pick<PracticeItem, 'cardId' | 'revision'>;
 
 export type AnswerOutcome =
   | { readonly graded: false }
@@ -35,6 +38,7 @@ export const createSessionQueue = (
   total: items.length,
   correct: 0,
   wrong: 0,
+  ungraded: 0,
 });
 
 const settleCorrect = (
@@ -74,10 +78,15 @@ const requeue = (
 // feeds only ever moves forward.
 export const advanceQueue = (
   queue: SessionQueue,
+  expected: ExpectedCard,
   outcome: AnswerOutcome,
 ): SessionQueue => {
   const card = queue.pending.at(0);
-  if (card === undefined) {
+  if (
+    card === undefined ||
+    card.cardId !== expected.cardId ||
+    card.revision !== expected.revision
+  ) {
     return queue;
   }
   if (!outcome.graded) {
@@ -87,6 +96,8 @@ export const advanceQueue = (
       ...queue,
       pending: queue.pending.slice(1),
       settled: queue.settled + 1,
+      wrong: card.repeated ? queue.wrong - 1 : queue.wrong,
+      ungraded: queue.ungraded + 1,
     };
   }
   return outcome.correct

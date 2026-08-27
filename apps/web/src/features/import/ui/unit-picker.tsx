@@ -10,6 +10,8 @@ const newUnitValue = 'new';
 type UnitPickerProps = {
   readonly units: ReadonlyArray<Unit>;
   readonly selection: UnitSelectionData;
+  readonly label: string;
+  readonly required: boolean;
   readonly disabled: boolean;
   readonly onChange: (selection: UnitSelectionData) => void;
 };
@@ -17,6 +19,8 @@ type UnitPickerProps = {
 export const UnitPicker = ({
   units,
   selection,
+  label,
+  required,
   disabled,
   onChange,
 }: UnitPickerProps) => {
@@ -26,7 +30,7 @@ export const UnitPicker = ({
   return (
     <div className="flex flex-col gap-2">
       <label className="flex flex-col gap-1 text-sm" htmlFor={selectId}>
-        Einheit
+        {label}
         <select
           className="border border-input bg-card px-2 py-1.5"
           disabled={disabled}
@@ -62,7 +66,7 @@ export const UnitPicker = ({
               onChange({ kind: 'new', name: event.target.value })
             }
             placeholder="z. B. Unité 3"
-            required={true}
+            required={required}
             value={selection.name}
           />
         </label>

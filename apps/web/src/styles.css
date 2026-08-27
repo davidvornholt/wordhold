@@ -36,9 +36,9 @@
 }
 
 /*
- * Every screen sits in the same column, so moving between them never shifts
- * the page under the reader. Screens differ in the rhythm inside the column,
- * not in how wide it is.
+ * Every screen anchors navigation and titles to the same column, so moving
+ * between them never shifts those landmarks. A task may widen its workbench
+ * without moving the shared anchors.
  */
 @utility page-column {
   @apply mx-auto w-full max-w-3xl;

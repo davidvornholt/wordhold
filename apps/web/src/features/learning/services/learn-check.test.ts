@@ -7,7 +7,7 @@ const item: LearnItem = {
   targetText: 'to look (at)',
   nativeText: 'ansehen',
   hasAudio: false,
-  acceptedNormalized: ['to look', 'to look at'],
+  textbookAnswers: ['to look (at)'],
 };
 
 describe('matchesLearnItem', () => {
@@ -15,8 +15,12 @@ describe('matchesLearnItem', () => {
     expect(matchesLearnItem(item, 'To Look (at)')).toBe(true);
   });
 
-  it('accepts a stored variant of the same word', () => {
+  it('accepts a bounded reading of textbook notation', () => {
     expect(matchesLearnItem(item, 'to look at')).toBe(true);
+  });
+
+  it('does not accept a semantic alternative proposed by the judge', () => {
+    expect(matchesLearnItem(item, 'to watch')).toBe(false);
   });
 
   it('rejects a different word', () => {

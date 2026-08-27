@@ -21,7 +21,7 @@ export const DrillStartFixture = () => (
       renderStartAction={(option) => (
         <button
           className="w-fit font-medium underline"
-          onClick={() => navigateToFixture('practice-session')}
+          onClick={() => navigateToFixture('drill-session')}
           type="button"
         >
           {option.label}

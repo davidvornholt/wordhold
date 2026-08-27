@@ -7,6 +7,7 @@ type CourseOverviewProps = {
   // print the same word twice under its own heading.
   readonly languageLabel: string | null;
   readonly units: ReadonlyArray<CourseUnit>;
+  readonly practiceAvailable: boolean;
   readonly practiceAction: ReactNode;
   readonly importAction: ReactNode;
   readonly settingsAction: ReactNode;
@@ -30,6 +31,7 @@ const courseSummary = (
 export const CourseOverview = ({
   languageLabel,
   units,
+  practiceAvailable,
   practiceAction,
   importAction,
   settingsAction,
@@ -42,7 +44,7 @@ export const CourseOverview = ({
         {courseSummary(languageLabel, totals)}
       </p>
       <div className="flex flex-wrap gap-4">
-        {totals.words > 0 ? practiceAction : null}
+        {practiceAvailable ? practiceAction : null}
         {importAction}
         {settingsAction}
       </div>

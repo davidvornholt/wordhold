@@ -19,6 +19,7 @@ export type Unit = {
   readonly id: string;
   readonly name: string;
   readonly position: number;
+  readonly isHolding: boolean;
   readonly entryCount: number;
 };
 

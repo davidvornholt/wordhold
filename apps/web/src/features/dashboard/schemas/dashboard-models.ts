@@ -19,3 +19,7 @@ export type DashboardData = {
   readonly fragile: ReadonlyArray<FragileWord>;
   readonly reviewsToday: number;
 };
+
+export const hasAvailablePractice = (
+  stats: Pick<CourseStats, 'due' | 'fresh'> | undefined,
+): boolean => (stats?.due ?? 0) + (stats?.fresh ?? 0) > 0;

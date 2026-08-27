@@ -26,6 +26,13 @@ const finishedUnit = {
   unlearned: 0,
 };
 
+const emptyUnit = {
+  id: '00000000-0000-0000-0000-000000000005',
+  name: 'Unit 5 – Empty',
+  words: 0,
+  unlearned: 0,
+};
+
 const mixedWords: ReadonlyArray<UnitWord> = [
   {
     id: '00000000-0000-0000-0000-000000000011',
@@ -60,7 +67,11 @@ const control = (label: string, destination: FixtureState) => (
   </button>
 );
 
-export const CourseFixture = () => (
+export const CourseFixture = ({
+  practiceAvailable = true,
+}: {
+  readonly practiceAvailable?: boolean;
+}) => (
   <CourseLayout
     backControl={control('← Übersicht', 'dashboard')}
     title="English A2"
@@ -68,18 +79,39 @@ export const CourseFixture = () => (
     <CourseOverview
       importAction={control('Seite fotografieren', 'import')}
       languageLabel="Englisch"
+      practiceAvailable={practiceAvailable}
       practiceAction={control('Üben', 'practice')}
       renderUnitLink={(unit) => control(unit.name, 'unit')}
       settingsAction={control('Einstellungen', 'course-settings')}
-      units={[mixedUnit, freshUnit, finishedUnit]}
+      units={[mixedUnit, freshUnit, finishedUnit, emptyUnit]}
     />
   </CourseLayout>
 );
 
-// `fresh` is a unit nobody has met yet, which has words to learn and nothing to
-// drill: a drill would have no card to ask.
-export const UnitFixture = ({ fresh = false }) => {
-  const unit = fresh ? freshUnit : mixedUnit;
+type UnitFixtureProps = {
+  readonly state?: 'mixed' | 'fresh' | 'empty';
+};
+
+const unitsByState = {
+  mixed: mixedUnit,
+  fresh: freshUnit,
+  empty: emptyUnit,
+} as const;
+
+const wordsByState: Record<
+  NonNullable<UnitFixtureProps['state']>,
+  ReadonlyArray<UnitWord>
+> = {
+  mixed: mixedWords,
+  fresh: freshWords,
+  empty: [],
+};
+
+// A fresh unit has words to learn and nothing to drill. An empty one offers
+// neither action.
+export const UnitFixture = ({ state = 'mixed' }: UnitFixtureProps) => {
+  const unit = unitsByState[state];
+  const words = wordsByState[state];
   return (
     <CourseLayout
       backControl={control('← English A2', 'course')}
@@ -90,7 +122,7 @@ export const UnitFixture = ({ fresh = false }) => {
         learnAction={control(`${unit.unlearned} lernen`, 'learn')}
         targetLanguage="en"
         unit={unit}
-        words={fresh ? freshWords : mixedWords}
+        words={words}
       />
     </CourseLayout>
   );

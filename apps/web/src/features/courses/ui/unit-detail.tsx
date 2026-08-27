@@ -16,10 +16,14 @@ type UnitDetailProps = {
   readonly drillAction: ReactNode;
 };
 
-const unitSummary = (unit: CourseUnit): string =>
-  unit.unlearned === 0
+const unitSummary = (unit: CourseUnit): string => {
+  if (unit.words === 0) {
+    return 'Noch keine Wörter';
+  }
+  return unit.unlearned === 0
     ? `${unit.words} Wörter · alle gelernt`
     : `${unit.words} Wörter · ${learnedWords(unit)} gelernt · ${unit.unlearned} noch nicht gelernt`;
+};
 
 export const UnitDetail = ({
   unit,

@@ -7,6 +7,7 @@ import { CourseFixture, UnitFixture } from './course-fixtures';
 import { DashboardFixture, SignedOutFixture } from './dashboard-fixtures';
 import {
   CourseSettingsFixture,
+  DeferredCourseSettingsFixture,
   PracticeStartFixture,
 } from './direction-fixtures';
 import { DrillStartFixture } from './drill-fixtures';
@@ -23,7 +24,11 @@ import {
   PracticeFeedbackFixture,
   PracticeFixture,
 } from './practice-fixtures';
-import { PracticeSessionFixture } from './practice-session-fixtures';
+import {
+  FutureDrillSessionFixture,
+  PracticeSessionFixture,
+} from './practice-session-fixtures';
+import { StaleUnitVerificationFixture } from './stale-unit-fixture';
 
 export const FixtureApp = () => {
   const state = readFixtureState();
@@ -44,30 +49,44 @@ export const FixtureApp = () => {
       return <VerificationFixture />;
     case 'verification-empty':
       return <VerificationFixture empty={true} />;
+    case 'verification-no-units':
+      return <VerificationFixture noUnits={true} />;
+    case 'verification-stale-unit':
+      return <StaleUnitVerificationFixture />;
     case 'verification-audio-recovery':
       return <VerificationFixture audioRecovery={true} />;
     case 'verification-deferred':
       return <DeferredVerificationFixture />;
     case 'course':
       return <CourseFixture />;
+    case 'course-no-practice':
+      return <CourseFixture practiceAvailable={false} />;
     case 'unit':
       return <UnitFixture />;
     case 'unit-fresh':
-      return <UnitFixture fresh={true} />;
+      return <UnitFixture state="fresh" />;
+    case 'unit-empty':
+      return <UnitFixture state="empty" />;
     case 'learn':
       return <LearnFixture />;
+    case 'learn-retry':
+      return <LearnFixture failFirst={true} />;
     case 'learn-done':
       return <LearnDoneFixture />;
     case 'course-settings':
       return <CourseSettingsFixture />;
     case 'drill-start':
       return <DrillStartFixture />;
+    case 'course-settings-deferred':
+      return <DeferredCourseSettingsFixture />;
     case 'practice':
       return <PracticeFixture />;
     case 'practice-start':
       return <PracticeStartFixture />;
     case 'practice-session':
       return <PracticeSessionFixture />;
+    case 'drill-session':
+      return <FutureDrillSessionFixture />;
     case 'practice-feedback':
       return <PracticeFeedbackFixture />;
     case 'practice-empty':

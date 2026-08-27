@@ -115,17 +115,24 @@ export class PracticeReviewStore extends Context.Tag(
           sql
             .withTransaction(
               work({
-                advanceCard: () =>
-                  sql<{ readonly revision: number }>`
-                    update cards set state = ${next.state}::card_state,
-                      due_at = ${next.dueAt}, stability = ${next.stability},
-                      difficulty = ${next.difficulty}, reps = ${next.reps},
-                      lapses = ${next.lapses}, scheduled_days = ${next.scheduledDays},
-                      learning_steps = ${next.learningSteps},
-                      last_reviewed_at = ${next.lastReviewedAt}, revision = revision + 1
-                    where id = ${input.card.id} and revision = ${input.expectedRevision}
-                    returning revision
-                  `.pipe(
+                advanceCard: (advanceSchedule) =>
+                  (advanceSchedule
+                    ? sql<{ readonly revision: number }>`
+                        update cards set state = ${next.state}::card_state,
+                          due_at = ${next.dueAt}, stability = ${next.stability},
+                          difficulty = ${next.difficulty}, reps = ${next.reps},
+                          lapses = ${next.lapses}, scheduled_days = ${next.scheduledDays},
+                          learning_steps = ${next.learningSteps},
+                          last_reviewed_at = ${next.lastReviewedAt}, revision = revision + 1
+                        where id = ${input.card.id} and revision = ${input.expectedRevision}
+                        returning revision
+                      `
+                    : sql<{ readonly revision: number }>`
+                        update cards set revision = revision + 1
+                        where id = ${input.card.id} and revision = ${input.expectedRevision}
+                        returning revision
+                      `
+                  ).pipe(
                     Effect.map((rows) => rows.at(0)?.revision),
                     Effect.mapError(mapCommitError),
                   ),
@@ -152,15 +159,13 @@ export class PracticeReviewStore extends Context.Tag(
                 Effect.fail(mapCommitError(cause)),
               ),
             );
-        // The review is always written; only the card's schedule is withheld.
-        // A drilled word still shows up in what was practised, and statistics
-        // can tell the two apart by the review's mode.
+        // The review is always written. A future review card still claims its
+        // revision, but its FSRS fields stay unchanged. The client mode labels
+        // provenance only and cannot alter this server-owned decision.
         return commitGradedAnswer(
           runTransaction,
           input.outcome.method === 'judge' ? input.outcome.verdict : null,
-          advancesSchedule(input.mode, input.card, input.reviewedAt)
-            ? { advance: true }
-            : { advance: false, revision: input.expectedRevision },
+          advancesSchedule(input.card, input.reviewedAt),
         );
       };
       return { findSubmission, listAcceptedAnswers, commit } as const;

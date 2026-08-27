@@ -11,9 +11,12 @@ export const unitRepositoryLive = (sql: Database) => ({
       select units.id,
         units.name,
         units.position,
+        units.is_holding as "isHolding",
         count(entries.id)::integer as "entryCount"
       from units
-      left join entries on entries.unit_id = units.id
+      left join entries
+        on entries.unit_id = units.id
+        and entries.course_id = units.course_id
       where units.course_id = ${courseId}
       group by units.id
       order by units.position, units.name

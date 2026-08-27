@@ -6,7 +6,7 @@ export type LearnItem = {
   readonly targetText: string;
   readonly nativeText: string;
   readonly hasAudio: boolean;
-  readonly acceptedNormalized: ReadonlyArray<string>;
+  readonly textbookAnswers: ReadonlyArray<string>;
 };
 
 export type LearnPass = {
