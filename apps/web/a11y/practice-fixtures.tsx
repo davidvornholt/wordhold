@@ -7,6 +7,7 @@ import {
   PracticeEmpty,
   PracticeLayout,
 } from '../src/features/practice/ui/practice-layout';
+import { SessionProgress } from '../src/features/practice/ui/session-progress';
 import { navigateToFixture } from './fixture-state';
 
 const item = {
@@ -24,6 +25,7 @@ const item = {
 const result: SubmitResult = {
   graded: true,
   correct: false,
+  revision: 1,
   rating: 1,
   expectedAnswers: ['memory'],
   explanation: 'Das bedeutet etwas anderes.',
@@ -42,16 +44,16 @@ const backControl = (
 
 export const PracticeFixture = () => (
   <PracticeLayout backControl={backControl} courseName="English A2">
+    <SessionProgress settled={0} total={1} />
     <CardPractice
       item={item}
       onNext={() => undefined}
-      position={1}
+      repeated={true}
       submit={() => {
         navigateToFixture('practice-feedback');
         return Promise.resolve(result);
       }}
       targetLabel="Englisch"
-      total={4}
     />
   </PracticeLayout>
 );
@@ -79,7 +81,26 @@ export const PracticeEmptyFixture = () => (
         </button>
       }
       correct={0}
-      initialSession={true}
+      total={0}
+      ungraded={0}
+      wrong={0}
+    />
+  </PracticeLayout>
+);
+
+type PracticeOneCardSummaryFixtureProps = {
+  readonly ungraded: boolean;
+};
+
+export const PracticeOneCardSummaryFixture = ({
+  ungraded,
+}: PracticeOneCardSummaryFixtureProps) => (
+  <PracticeLayout backControl={backControl} courseName="English A2">
+    <PracticeEmpty
+      backControl={backControl}
+      correct={ungraded ? 0 : 1}
+      total={1}
+      ungraded={ungraded ? 1 : 0}
       wrong={0}
     />
   </PracticeLayout>
@@ -117,10 +138,9 @@ export const DeferredPracticeFixture = () => {
       <CardPractice
         item={item}
         onNext={() => undefined}
-        position={1}
+        repeated={false}
         submit={submit}
         targetLabel="Englisch"
-        total={1}
       />
       <output aria-label="Submit calls">{calls}</output>
       <output aria-label="Submitted answer">{submittedAnswer}</output>

@@ -36,10 +36,10 @@ const makeTransactionalStore = () => {
             advanceCard: () =>
               Effect.sync(() => {
                 if (draft.revision !== expectedRevision) {
-                  return false;
+                  return;
                 }
                 draft.revision += 1;
-                return true;
+                return draft.revision;
               }),
             insertAcceptedAlternative: () =>
               Effect.sync(() => {
@@ -70,7 +70,11 @@ describe('commitGradedAnswer', () => {
         commitGradedAnswer(transaction(0), verdict()).pipe(Effect.either),
       ),
     ]);
-    expect(results.filter((result) => result._tag === 'Right')).toHaveLength(1);
+    const accepted = results.filter((result) => result._tag === 'Right');
+    expect(accepted).toHaveLength(1);
+    expect(
+      accepted.at(0)?._tag === 'Right' ? accepted.at(0)?.right : undefined,
+    ).toBe(1);
     const rejection = results.find((result) => result._tag === 'Left');
     expect(rejection?._tag).toBe('Left');
     const failure = rejection?._tag === 'Left' ? rejection.left : undefined;

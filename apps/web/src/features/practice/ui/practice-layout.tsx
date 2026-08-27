@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { ManagedStepHeading } from './managed-step-heading';
 
 type PracticeLayoutProps = {
   readonly backControl: ReactNode;
@@ -19,27 +20,51 @@ export const PracticeLayout = ({
 );
 
 type PracticeEmptyProps = {
-  readonly initialSession: boolean;
+  readonly total: number;
   readonly correct: number;
   readonly wrong: number;
+  readonly ungraded: number;
   readonly backControl: ReactNode;
 };
 
+const sessionHeading = (total: number, ungraded: number) => {
+  if (total === 0) {
+    return 'Gerade ist nichts fällig.';
+  }
+  return ungraded === 0 ? 'Sitzung abgeschlossen!' : 'Sitzung beendet.';
+};
+
+// The end of the session. The tally is per card, not per attempt. A provider
+// failure is its own outcome because that card remains due.
 export const PracticeEmpty = ({
-  initialSession,
+  total,
   correct,
   wrong,
+  ungraded,
   backControl,
-}: PracticeEmptyProps) => (
-  <div className="flex flex-col gap-3 border border-border bg-card p-6">
-    <p className="font-medium">
-      {initialSession ? 'Gerade ist nichts fällig.' : 'Sitzung abgeschlossen!'}
-    </p>
-    {initialSession ? null : (
-      <p className="text-sm">
-        {correct} richtig, {wrong} falsch.
-      </p>
-    )}
-    {backControl}
-  </div>
-);
+}: PracticeEmptyProps) => {
+  const heading = sessionHeading(total, ungraded);
+  const cardLabel = total === 1 ? 'Karte' : 'Karten';
+
+  return (
+    <div className="flex flex-col gap-3 border border-border bg-card p-6">
+      <ManagedStepHeading className="font-display text-xl">
+        {heading}
+      </ManagedStepHeading>
+      {total === 0 ? null : (
+        <p className="text-sm">
+          {correct} von {total} {cardLabel} auf Anhieb richtig
+          {wrong === 0 ? '.' : `, ${wrong} noch einmal geübt.`}
+        </p>
+      )}
+      {ungraded === 0 ? null : (
+        <p className="border-warning-foreground border-l-4 bg-warning p-3 text-sm">
+          {ungraded === 1
+            ? '1 Karte konnte nicht bewertet werden und bleibt fällig.'
+            : `${ungraded} Karten konnten nicht bewertet werden und bleiben fällig.`}
+        </p>
+      )}
+      {backControl}
+    </div>
+  );
+};

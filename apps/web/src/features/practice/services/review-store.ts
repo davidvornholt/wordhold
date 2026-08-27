@@ -46,10 +46,12 @@ export class PracticeReviewStore extends Context.Tag(
       entryId: string,
       direction: AnswerDirection,
     ) => Effect.Effect<ReadonlyArray<AcceptedAnswer>, PracticeDatabaseError>;
+    // Resolves with the card's revision after the review, which the practice
+    // session needs to answer the same card again.
     readonly commit: (
       input: PersistReviewInput,
     ) => Effect.Effect<
-      void,
+      number,
       PracticeDatabaseError | StaleAnswerSubmissionError
     >;
   }
@@ -119,7 +121,7 @@ export class PracticeReviewStore extends Context.Tag(
             .withTransaction(
               work({
                 advanceCard: () =>
-                  sql<{ readonly id: string }>`
+                  sql<{ readonly revision: number }>`
                     update cards set state = ${next.state}::card_state,
                       due_at = ${next.dueAt}, stability = ${next.stability},
                       difficulty = ${next.difficulty}, reps = ${next.reps},
@@ -128,12 +130,9 @@ export class PracticeReviewStore extends Context.Tag(
                       last_reviewed_at = ${next.lastReviewedAt}, revision = revision + 1
                     where id = ${input.card.id} and revision = ${input.expectedRevision}
                       and introduced_at is not null
-                    returning id
+                    returning revision
                   `.pipe(
-                    Effect.map((rows) => {
-                      const [advanced] = rows;
-                      return advanced !== undefined;
-                    }),
+                    Effect.map((rows) => rows.at(0)?.revision),
                     Effect.mapError(mapCommitError),
                   ),
                 insertAcceptedAlternative: () =>

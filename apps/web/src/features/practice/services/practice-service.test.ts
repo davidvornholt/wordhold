@@ -99,7 +99,7 @@ describe('PracticeService', () => {
       {
         findSubmission: () => Effect.fail(failure),
         listAcceptedAnswers: () => Effect.succeed([]),
-        commit: () => Effect.void,
+        commit: () => Effect.succeed(1),
       },
       {
         judge: () => unavailableJudge('unused'),
@@ -122,7 +122,7 @@ describe('PracticeService', () => {
               source: 'textbook',
             },
           ]),
-        commit: () => Effect.void,
+        commit: () => Effect.succeed(1),
       },
       {
         judge: () => {
@@ -149,7 +149,7 @@ describe('PracticeService', () => {
               source: 'textbook',
             },
           ]),
-        commit: () => Effect.void,
+        commit: () => Effect.succeed(1),
       },
       {
         judge: () =>
@@ -185,6 +185,7 @@ describe('PracticeService', () => {
         commit: () =>
           Effect.sync(() => {
             commits += 1;
+            return commits;
           }),
       },
       {
