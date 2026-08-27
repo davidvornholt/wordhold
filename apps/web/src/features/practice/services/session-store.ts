@@ -5,6 +5,11 @@ import type { PracticeItem } from '../schemas/practice-models';
 
 const newCardsPerSession = 10;
 
+// Both queries below require `introduced_at`: a card is only asked once the
+// word behind it has been through the learning pass. Asking about a word the
+// learner has never seen produces a failure that says nothing about memory,
+// and FSRS would schedule the word on that failure.
+
 type ItemRow = Omit<PracticeItem, 'prompt'>;
 
 export class PracticeSessionStore extends Context.Tag(
@@ -39,6 +44,7 @@ export class PracticeSessionStore extends Context.Tag(
               from cards c
               join entries e on e.id = c.entry_id
               where e.course_id = ${courseId}
+                and c.introduced_at is not null
                 and c.state <> 'new'
                 and c.due_at is not null
                 and c.due_at <= ${now}
@@ -51,7 +57,9 @@ export class PracticeSessionStore extends Context.Tag(
                 exists(select 1 from entry_audio a where a.entry_id = e.id) as "hasAudio"
               from cards c
               join entries e on e.id = c.entry_id
-              where e.course_id = ${courseId} and c.state = 'new'
+              where e.course_id = ${courseId}
+                and c.introduced_at is not null
+                and c.state = 'new'
               order by e.created_at asc, c.direction asc
               limit ${newCardsPerSession}
             `,

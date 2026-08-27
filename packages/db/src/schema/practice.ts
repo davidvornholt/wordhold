@@ -26,6 +26,12 @@ export const cards = pgTable(
       .notNull()
       .references(() => entries.id, { onDelete: 'cascade' }),
     direction: answerDirectionEnum('direction').notNull(),
+    // When the learner first met this word in the learning pass, null until
+    // then. Deliberately not folded into `state`: `state` says where the card
+    // stands in the FSRS state machine, this says whether the person has ever
+    // seen the word at all. A card that has not been introduced is never
+    // scheduled, never counted, and never asked.
+    introducedAt: timestamp('introduced_at', { withTimezone: true }),
     state: cardStateEnum('state').notNull().default('new'),
     dueAt: timestamp('due_at', { withTimezone: true }),
     stability: real('stability'),

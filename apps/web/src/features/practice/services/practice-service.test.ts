@@ -16,6 +16,7 @@ const card: typeof cards.$inferSelect = {
   id: '00000000-0000-0000-0000-000000000001',
   entryId: '00000000-0000-0000-0000-000000000002',
   direction: 'to_target',
+  introducedAt: new Date('2026-08-01T09:00:00Z'),
   state: 'new',
   dueAt: null,
   stability: null,

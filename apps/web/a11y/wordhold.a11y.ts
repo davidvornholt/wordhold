@@ -47,6 +47,19 @@ test('authenticated routes remain reachable through their user transitions', asy
     'dashboard',
   );
 
+  await page.getByRole('button', { name: 'Lernen' }).click();
+  await expect(page.locator('body')).toHaveAttribute(
+    'data-fixture',
+    'learn-units',
+  );
+  await page.getByRole('button', { name: '2 lernen' }).click();
+  await expect(page.locator('body')).toHaveAttribute('data-fixture', 'learn');
+  await page.getByRole('button', { name: 'Übersicht' }).click();
+  await expect(page.locator('body')).toHaveAttribute(
+    'data-fixture',
+    'dashboard',
+  );
+
   await page.getByRole('button', { name: 'Üben' }).click();
   await page.getByLabel('Deine Antwort').fill('wrong');
   await page.getByRole('button', { name: 'Prüfen' }).click();

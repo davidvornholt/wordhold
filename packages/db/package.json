@@ -21,7 +21,8 @@
     "test": "bun test",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "bun --env-file=.env.local drizzle-kit migrate",
-    "db:backfill-units": "bun --env-file=.env.local src/migrations/backfill-units.ts"
+    "db:backfill-units": "bun --env-file=.env.local src/migrations/backfill-units.ts",
+    "db:backfill-introductions": "bun --env-file=.env.local src/migrations/backfill-introductions.ts"
   },
   "dependencies": {
     "@effect/sql": "^0.52.1",

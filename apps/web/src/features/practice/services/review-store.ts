@@ -71,6 +71,7 @@ export class PracticeReviewStore extends Context.Tag(
           join entries e on e.id = c.entry_id
           join courses co on co.id = e.course_id
           where c.id = ${cardId} and c.revision = ${revision}
+            and c.introduced_at is not null
         `.pipe(
           Effect.map((rows) => {
             const [row] = rows;
@@ -126,6 +127,7 @@ export class PracticeReviewStore extends Context.Tag(
                       learning_steps = ${next.learningSteps},
                       last_reviewed_at = ${next.lastReviewedAt}, revision = revision + 1
                     where id = ${input.card.id} and revision = ${input.expectedRevision}
+                      and introduced_at is not null
                     returning id
                   `.pipe(
                     Effect.map((rows) => {

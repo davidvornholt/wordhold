@@ -12,6 +12,7 @@ type CourseStats = {
   readonly courseId: string;
   readonly due: number;
   readonly fresh: number;
+  readonly unlearned: number;
   readonly words: number;
 };
 
@@ -20,6 +21,7 @@ type CourseGridProps = {
   readonly stats: ReadonlyArray<CourseStats>;
   readonly reviewsToday: number;
   readonly renderPracticeAction: (course: Course) => ReactNode;
+  readonly renderLearnAction: (course: Course) => ReactNode;
   readonly renderImportAction: (course: Course) => ReactNode;
 };
 
@@ -28,6 +30,7 @@ export const CourseGrid = ({
   stats,
   reviewsToday,
   renderPracticeAction,
+  renderLearnAction,
   renderImportAction,
 }: CourseGridProps) => (
   <section className="flex flex-col gap-3">
@@ -45,6 +48,7 @@ export const CourseGrid = ({
           course={course}
           importAction={renderImportAction(course)}
           key={course.id}
+          learnAction={renderLearnAction(course)}
           practiceAction={renderPracticeAction(course)}
           stats={stats.find((item) => item.courseId === course.id)}
         />

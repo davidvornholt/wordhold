@@ -13,10 +13,12 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiPagesRouteImport } from './routes/api/pages'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as CoursesCourseIdImportRouteImport } from './routes/courses/$courseId/import'
+import { Route as CoursesCourseIdLearnRouteImport } from './routes/courses/$courseId/learn'
 import { Route as CoursesCourseIdPracticeRouteImport } from './routes/courses/$courseId/practice'
 import { Route as PagesPageIdVerifyRouteImport } from './routes/pages/$pageId/verify'
 import { Route as ApiEntriesEntryIdAudioRouteImport } from './routes/api/entries/$entryId/audio'
 import { Route as ApiPagesPageIdImageRouteImport } from './routes/api/pages/$pageId/image'
+import { Route as CoursesCourseIdUnitsUnitIdLearnRouteImport } from './routes/courses/$courseId/units/$unitId/learn'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -36,6 +38,11 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 const CoursesCourseIdImportRoute = CoursesCourseIdImportRouteImport.update({
   id: '/courses/$courseId/import',
   path: '/courses/$courseId/import',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CoursesCourseIdLearnRoute = CoursesCourseIdLearnRouteImport.update({
+  id: '/courses/$courseId/learn',
+  path: '/courses/$courseId/learn',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CoursesCourseIdPracticeRoute = CoursesCourseIdPracticeRouteImport.update({
@@ -58,26 +65,36 @@ const ApiPagesPageIdImageRoute = ApiPagesPageIdImageRouteImport.update({
   path: '/$pageId/image',
   getParentRoute: () => ApiPagesRoute,
 } as any)
+const CoursesCourseIdUnitsUnitIdLearnRoute =
+  CoursesCourseIdUnitsUnitIdLearnRouteImport.update({
+    id: '/courses/$courseId/units/$unitId/learn',
+    path: '/courses/$courseId/units/$unitId/learn',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/api/pages': typeof ApiPagesRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/courses/$courseId/import': typeof CoursesCourseIdImportRoute
+  '/courses/$courseId/learn': typeof CoursesCourseIdLearnRoute
   '/courses/$courseId/practice': typeof CoursesCourseIdPracticeRoute
   '/pages/$pageId/verify': typeof PagesPageIdVerifyRoute
   '/api/entries/$entryId/audio': typeof ApiEntriesEntryIdAudioRoute
   '/api/pages/$pageId/image': typeof ApiPagesPageIdImageRoute
+  '/courses/$courseId/units/$unitId/learn': typeof CoursesCourseIdUnitsUnitIdLearnRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/api/pages': typeof ApiPagesRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/courses/$courseId/import': typeof CoursesCourseIdImportRoute
+  '/courses/$courseId/learn': typeof CoursesCourseIdLearnRoute
   '/courses/$courseId/practice': typeof CoursesCourseIdPracticeRoute
   '/pages/$pageId/verify': typeof PagesPageIdVerifyRoute
   '/api/entries/$entryId/audio': typeof ApiEntriesEntryIdAudioRoute
   '/api/pages/$pageId/image': typeof ApiPagesPageIdImageRoute
+  '/courses/$courseId/units/$unitId/learn': typeof CoursesCourseIdUnitsUnitIdLearnRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -85,10 +102,12 @@ export interface FileRoutesById {
   '/api/pages': typeof ApiPagesRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/courses/$courseId/import': typeof CoursesCourseIdImportRoute
+  '/courses/$courseId/learn': typeof CoursesCourseIdLearnRoute
   '/courses/$courseId/practice': typeof CoursesCourseIdPracticeRoute
   '/pages/$pageId/verify': typeof PagesPageIdVerifyRoute
   '/api/entries/$entryId/audio': typeof ApiEntriesEntryIdAudioRoute
   '/api/pages/$pageId/image': typeof ApiPagesPageIdImageRoute
+  '/courses/$courseId/units/$unitId/learn': typeof CoursesCourseIdUnitsUnitIdLearnRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -97,30 +116,36 @@ export interface FileRouteTypes {
     | '/api/pages'
     | '/api/auth/$'
     | '/courses/$courseId/import'
+    | '/courses/$courseId/learn'
     | '/courses/$courseId/practice'
     | '/pages/$pageId/verify'
     | '/api/entries/$entryId/audio'
     | '/api/pages/$pageId/image'
+    | '/courses/$courseId/units/$unitId/learn'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/api/pages'
     | '/api/auth/$'
     | '/courses/$courseId/import'
+    | '/courses/$courseId/learn'
     | '/courses/$courseId/practice'
     | '/pages/$pageId/verify'
     | '/api/entries/$entryId/audio'
     | '/api/pages/$pageId/image'
+    | '/courses/$courseId/units/$unitId/learn'
   id:
     | '__root__'
     | '/'
     | '/api/pages'
     | '/api/auth/$'
     | '/courses/$courseId/import'
+    | '/courses/$courseId/learn'
     | '/courses/$courseId/practice'
     | '/pages/$pageId/verify'
     | '/api/entries/$entryId/audio'
     | '/api/pages/$pageId/image'
+    | '/courses/$courseId/units/$unitId/learn'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -128,9 +153,11 @@ export interface RootRouteChildren {
   ApiPagesRoute: typeof ApiPagesRouteWithChildren
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   CoursesCourseIdImportRoute: typeof CoursesCourseIdImportRoute
+  CoursesCourseIdLearnRoute: typeof CoursesCourseIdLearnRoute
   CoursesCourseIdPracticeRoute: typeof CoursesCourseIdPracticeRoute
   PagesPageIdVerifyRoute: typeof PagesPageIdVerifyRoute
   ApiEntriesEntryIdAudioRoute: typeof ApiEntriesEntryIdAudioRoute
+  CoursesCourseIdUnitsUnitIdLearnRoute: typeof CoursesCourseIdUnitsUnitIdLearnRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -163,6 +190,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CoursesCourseIdImportRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/courses/$courseId/learn': {
+      id: '/courses/$courseId/learn'
+      path: '/courses/$courseId/learn'
+      fullPath: '/courses/$courseId/learn'
+      preLoaderRoute: typeof CoursesCourseIdLearnRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/courses/$courseId/practice': {
       id: '/courses/$courseId/practice'
       path: '/courses/$courseId/practice'
@@ -191,6 +225,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPagesPageIdImageRouteImport
       parentRoute: typeof ApiPagesRoute
     }
+    '/courses/$courseId/units/$unitId/learn': {
+      id: '/courses/$courseId/units/$unitId/learn'
+      path: '/courses/$courseId/units/$unitId/learn'
+      fullPath: '/courses/$courseId/units/$unitId/learn'
+      preLoaderRoute: typeof CoursesCourseIdUnitsUnitIdLearnRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -211,9 +252,11 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPagesRoute: ApiPagesRouteWithChildren,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   CoursesCourseIdImportRoute: CoursesCourseIdImportRoute,
+  CoursesCourseIdLearnRoute: CoursesCourseIdLearnRoute,
   CoursesCourseIdPracticeRoute: CoursesCourseIdPracticeRoute,
   PagesPageIdVerifyRoute: PagesPageIdVerifyRoute,
   ApiEntriesEntryIdAudioRoute: ApiEntriesEntryIdAudioRoute,
+  CoursesCourseIdUnitsUnitIdLearnRoute: CoursesCourseIdUnitsUnitIdLearnRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

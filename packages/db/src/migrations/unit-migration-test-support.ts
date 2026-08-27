@@ -14,6 +14,7 @@ const unitMigrations = [
 ] as const;
 
 const requiredUnitMigrations = ['0006_smooth_sue_storm'] as const;
+const learningMigrations = ['0007_soft_machine_man'] as const;
 
 const applyGeneratedMigrations = (
   url: string,
@@ -45,3 +46,6 @@ export const migrateToNullableUnits = (url: string) =>
 
 export const migrateToRequiredUnits = (url: string) =>
   applyGeneratedMigrations(url, requiredUnitMigrations);
+
+export const migrateToLearningSchema = (url: string) =>
+  applyGeneratedMigrations(url, learningMigrations);
