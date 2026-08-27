@@ -4,6 +4,8 @@ import { extractRunScript, readWorkflow } from './workflow-test-helpers';
 const producer = await readWorkflow('publish-container.yml');
 const consumer = await readWorkflow('pr-preview-deploy.yml');
 const hostCommand = await readWorkflow('pr-preview-host-command.yml');
+const hostOwnedMaximumMinutes = 180;
+const outerCleanupMarginMinutes = 20;
 const sshTimeoutPattern = /timeout (?<minutes>\d+)m ssh/u;
 const jobTimeoutPattern = / {4}timeout-minutes: (?<minutes>\d+)/u;
 const githubExpression = (expression: string): string =>
@@ -147,31 +149,18 @@ describe('preview host authorization and secret boundary', () => {
     expect(hostCommand).toContain('StrictHostKeyChecking=yes');
   });
 
-  it('leaves enough time for host success and rollback before outer cancellation', () => {
+  it('keeps outer cancellation above the host-owned maximum', () => {
     const sshMinutes = Number(
       sshTimeoutPattern.exec(hostCommand)?.groups?.minutes ?? '0',
     );
     const jobMinutes = Number(
       jobTimeoutPattern.exec(hostCommand)?.groups?.minutes ?? '0',
     );
-    const nestedHostDeadlinesSeconds = {
-      boundedProductionLeaseWait: 5400,
-      productionChecks: 40,
-      remoteManifest: 135,
-      localImageCheck: 20,
-      imagePull: 315,
-      pulledImageChecks: 60,
-      desiredStateSwitch: 930,
-      targetReconciliation: 1360,
-      rollbackSwitch: 930,
-      targetCleanup: 560,
-      survivorReconciliation: 1630,
-    } as const;
-    const successAndRollbackSeconds = Object.values(
-      nestedHostDeadlinesSeconds,
-    ).reduce((total, deadline) => total + deadline, 0);
 
-    expect(sshMinutes * 60).toBeGreaterThan(successAndRollbackSeconds);
+    expect(sshMinutes).toBeGreaterThan(hostOwnedMaximumMinutes);
+    expect(sshMinutes - hostOwnedMaximumMinutes).toBeGreaterThanOrEqual(
+      outerCleanupMarginMinutes,
+    );
     expect(jobMinutes).toBeGreaterThan(sshMinutes);
   });
 });
