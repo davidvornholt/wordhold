@@ -1,16 +1,17 @@
 import { scanWcag22AaViolations } from '@davidvornholt/a11y-testing/axe';
-import { expect, type Page, test } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { assertNoAccessibilityViolations } from './a11y-assertions';
 
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
-
-const firstEntry = (page: Page) => page.locator('form > ul > li').first();
 
 test('VerifyForm defaults to the latest real unit and routes entries independently', async ({
   page,
 }) => {
   await page.goto('/?state=verification-deferred');
-  const firstUnit = firstEntry(page).getByLabel('Einheit für Eintrag 1');
+  const firstUnit = page
+    .locator('form > ul > li')
+    .first()
+    .getByLabel('Einheit für Eintrag 1');
   await expect(firstUnit).toHaveValue('22222222-2222-4222-8222-222222222222');
   await firstUnit.selectOption('11111111-1111-4111-8111-111111111111');
   await page.getByRole('button', { name: 'Eintrag hinzufügen' }).click();
@@ -34,7 +35,9 @@ test('VerifyForm requires a name when switching to a new unit', async ({
   page,
 }) => {
   await page.goto('/?state=verification-deferred');
-  await firstEntry(page)
+  await page
+    .locator('form > ul > li')
+    .first()
     .getByLabel('Einheit für Eintrag 1')
     .selectOption('new');
   const name = page.getByLabel('Name der Einheit');
@@ -55,9 +58,12 @@ test('VerifyForm starts with a required new-unit name when a course has no units
 }) => {
   await page.goto('/?state=verification-no-units');
   await expect(
-    firstEntry(page).getByLabel('Einheit für Eintrag 1'),
+    page.locator('form > ul > li').first().getByLabel('Einheit für Eintrag 1'),
   ).toHaveValue('new');
-  const name = firstEntry(page).getByLabel('Name der Einheit');
+  const name = page
+    .locator('form > ul > li')
+    .first()
+    .getByLabel('Name der Einheit');
   await expect(name).toBeVisible();
   await expect(
     page.getByRole('button', { name: '12 Einträge importieren' }),
@@ -79,7 +85,7 @@ test('VerifyForm announces a stale unit failure and unlocks recovery', async ({
     'Diese Einheit gibt es nicht mehr. Lade die Seite neu.',
   );
   await expect(
-    firstEntry(page).getByLabel('Einheit für Eintrag 1'),
+    page.locator('form > ul > li').first().getByLabel('Einheit für Eintrag 1'),
   ).toBeEnabled();
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
 });
@@ -89,7 +95,7 @@ test('VerifyForm remains usable in its existing and new-unit mobile states', asy
 }) => {
   await page.setViewportSize({ width: 320, height: 720 });
   await page.goto('/?state=verification');
-  const firstRow = firstEntry(page);
+  const firstRow = page.locator('form > ul > li').first();
   const firstUnit = firstRow.getByLabel('Einheit für Eintrag 1');
   await expect(firstUnit).toBeInViewport();
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
