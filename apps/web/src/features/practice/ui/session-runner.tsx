@@ -41,6 +41,7 @@ export const SessionRunner = ({
           correct={queue.correct}
           emptyMessage={emptyMessage}
           total={queue.total}
+          ungraded={queue.ungraded}
           wrong={queue.wrong}
         />
       ) : (
@@ -49,7 +50,7 @@ export const SessionRunner = ({
           key={`${card.cardId}-${card.revision}`}
           mode={mode}
           onNext={(result) =>
-            setQueue((current) => advanceQueue(current, result))
+            setQueue((current) => advanceQueue(current, card, result))
           }
           repeated={card.repeated}
           submit={submitAnswer}

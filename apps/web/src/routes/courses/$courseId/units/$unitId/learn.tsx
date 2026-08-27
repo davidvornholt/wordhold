@@ -27,7 +27,13 @@ const LearnUnitScreen = () => {
       <LearnPass
         items={pass.items}
         onIntroduce={async (entryId) => {
-          await introduceWord({ data: entryId });
+          await introduceWord({
+            data: {
+              courseId: course.id,
+              unitId: pass.unit.id,
+              entryId,
+            },
+          });
         }}
         practiceControl={
           <Link
@@ -48,7 +54,9 @@ export const Route = createFileRoute('/courses/$courseId/units/$unitId/learn')({
   loader: async ({ params }) => {
     const [course, pass] = await Promise.all([
       getCourse({ data: params.courseId }),
-      getLearnPass({ data: params.unitId }),
+      getLearnPass({
+        data: { courseId: params.courseId, unitId: params.unitId },
+      }),
     ]);
     return { course, pass };
   },

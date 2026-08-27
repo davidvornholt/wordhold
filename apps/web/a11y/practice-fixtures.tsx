@@ -84,6 +84,7 @@ export const PracticeEmptyFixture = () => (
       correct={0}
       emptyMessage="Gerade ist nichts fällig."
       total={0}
+      ungraded={0}
       wrong={0}
     />
   </PracticeLayout>

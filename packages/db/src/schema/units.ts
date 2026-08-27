@@ -1,4 +1,5 @@
 import {
+  boolean,
   integer,
   pgTable,
   text,
@@ -21,9 +22,14 @@ export const units = pgTable(
       .references(() => courses.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     position: integer('position').notNull().default(0),
+    isHolding: boolean('is_holding').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),
   },
-  (table) => [uniqueIndex('units_course_name').on(table.courseId, table.name)],
+  (table) => [
+    uniqueIndex('units_course_name').on(table.courseId, table.name),
+    uniqueIndex('units_course_position').on(table.courseId, table.position),
+    uniqueIndex('units_id_course').on(table.id, table.courseId),
+  ],
 );

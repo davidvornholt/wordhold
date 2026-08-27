@@ -1,6 +1,6 @@
 {
-  "id": "8d45aa1d-da64-4e02-8602-9acb22fa627c",
-  "prevId": "d4e0c70f-50c1-4ae7-bfde-0c4c9eb84623",
+  "id": "7336fc69-0bf4-4186-877b-f6afb7ac841d",
+  "prevId": "449e9aaa-fb09-4c00-908b-9671aa3d7318",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -406,14 +406,6 @@
           "notNull": true,
           "default": "'de'"
         },
-        "directions": {
-          "name": "directions",
-          "type": "answer_direction[]",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'{\"to_target\",\"to_native\"}'"
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -535,6 +527,13 @@
           "notNull": true,
           "default": 0
         },
+        "is_holding": {
+          "name": "is_holding",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -555,6 +554,48 @@
             },
             {
               "expression": "name",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "units_course_position": {
+          "name": "units_course_position",
+          "columns": [
+            {
+              "expression": "course_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "position",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "units_id_course": {
+          "name": "units_id_course",
+          "columns": [
+            {
+              "expression": "id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "course_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -759,15 +800,6 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "entries_unit_id_units_id_fk": {
-          "name": "entries_unit_id_units_id_fk",
-          "tableFrom": "entries",
-          "tableTo": "units",
-          "columnsFrom": ["unit_id"],
-          "columnsTo": ["id"],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
-        },
         "entries_page_id_pages_id_fk": {
           "name": "entries_page_id_pages_id_fk",
           "tableFrom": "entries",
@@ -775,6 +807,15 @@
           "columnsFrom": ["page_id"],
           "columnsTo": ["id"],
           "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "entries_unit_course_units_id_course_fk": {
+          "name": "entries_unit_course_units_id_course_fk",
+          "tableFrom": "entries",
+          "tableTo": "units",
+          "columnsFrom": ["unit_id", "course_id"],
+          "columnsTo": ["id", "course_id"],
+          "onDelete": "restrict",
           "onUpdate": "no action"
         }
       },
@@ -1188,14 +1229,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "mode": {
-          "name": "mode",
-          "type": "review_mode",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'scheduled'"
-        },
         "answer_text": {
           "name": "answer_text",
           "type": "text",
@@ -1240,15 +1273,15 @@
       "schema": "public",
       "values": ["de", "en", "es", "fr"]
     },
-    "public.answer_direction": {
-      "name": "answer_direction",
-      "schema": "public",
-      "values": ["to_target", "to_native"]
-    },
     "public.page_status": {
       "name": "page_status",
       "schema": "public",
       "values": ["awaiting_verification", "verified"]
+    },
+    "public.answer_direction": {
+      "name": "answer_direction",
+      "schema": "public",
+      "values": ["to_target", "to_native"]
     },
     "public.answer_source": {
       "name": "answer_source",
@@ -1269,11 +1302,6 @@
       "name": "card_state",
       "schema": "public",
       "values": ["new", "learning", "review", "relearning"]
-    },
-    "public.review_mode": {
-      "name": "review_mode",
-      "schema": "public",
-      "values": ["scheduled", "drill"]
     }
   },
   "schemas": {},

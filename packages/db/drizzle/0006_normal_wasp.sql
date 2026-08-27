@@ -1,1 +1,0 @@
-ALTER TABLE "courses" ADD COLUMN "directions" "answer_direction"[] DEFAULT '{"to_target","to_native"}' NOT NULL;
