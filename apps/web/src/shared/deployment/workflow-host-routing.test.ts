@@ -21,19 +21,22 @@ const secretInterpolationPattern =
   /\$\{?(?:SOPS_AGE_KEY|identity|key|public_key|fingerprint)\b/u;
 const keyFailureContracts = [
   [
-    "grep --quiet --extended-regexp '^AGE-SECRET-KEY-1[A-Z0-9]{58}$'",
+    'if ! grep --quiet --extended-regexp \'^AGE-SECRET-KEY-1[A-Z0-9]{58}$\' "$identity"; then',
     'The protected preview age identity has an invalid format',
   ],
   [
-    'sha256sum --check --quiet',
+    'if ! echo "$sha  $sops" | sha256sum --check --quiet; then',
     'The pinned SOPS download failed checksum verification',
   ],
   [
-    'SOPS_AGE_KEY_FILE="$identity" "$sops" decrypt',
+    'if ! SOPS_AGE_KEY_FILE="$identity" "$sops" decrypt \\',
     'The protected preview age identity cannot decrypt the current main secret',
   ],
   ['[ ! -s "$key" ]', 'The decrypted preview SSH key is empty'],
-  ['ssh-keygen -y -f "$key"', 'The decrypted preview SSH key is invalid'],
+  [
+    'if ! public_key=$(ssh-keygen -y -f "$key"); then',
+    'The decrypted preview SSH key is invalid',
+  ],
   [
     '[[ ! "$public_key" =~ ^ssh-ed25519',
     'The decrypted preview SSH key has an unexpected type',
