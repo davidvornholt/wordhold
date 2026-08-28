@@ -39,6 +39,8 @@ curl --fail --silent --show-error https://wordhold.vornholt.online/api/health
 
 An open, non-draft, same-repository pull request targeting `main` gets a preview when it carries the `pr-preview` label. Its URL is `https://<pull-request-number>.pr.wordhold.vornholt.online`. Removing the label, converting the pull request to draft, retargeting it, closing it, or failing its replacement build removes the preview. Destroy is idempotent, so a later lifecycle event retries a failed removal.
 
+This branch is a disposable end-to-end proof of that preview lifecycle and will not be merged.
+
 Create the label once:
 
 ```bash
