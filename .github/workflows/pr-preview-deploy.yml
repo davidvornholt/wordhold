@@ -710,6 +710,10 @@ jobs:
           printf '%s\n' "$SOPS_AGE_KEY" >"$identity"
           chmod 0600 "$identity"
           unset SOPS_AGE_KEY
+          if ! grep --quiet --extended-regexp '^AGE-SECRET-KEY-1[A-Z0-9]{58}$' "$identity"; then
+            echo "::error::The protected preview age identity has an invalid format"
+            exit 1
+          fi
           version=v3.13.2
           case "$(uname -m)" in
             x86_64)
@@ -729,20 +733,38 @@ jobs:
           curl --fail --silent --show-error --location \
             --output "$sops" \
             "https://github.com/getsops/sops/releases/download/${version}/sops-${version}.linux.${arch}"
-          echo "$sha  $sops" | sha256sum --check --quiet
+          if ! echo "$sha  $sops" | sha256sum --check --quiet; then
+            echo "::error::The pinned SOPS download failed checksum verification"
+            exit 1
+          fi
           chmod +x "$sops"
 
           key="$RUNNER_TEMP/wordhold-preview-ssh-key"
-          SOPS_AGE_KEY_FILE="$identity" "$sops" decrypt \
+          if ! SOPS_AGE_KEY_FILE="$identity" "$sops" decrypt \
             --extract '["ci"]["ssh_private_key"]' \
             --output-type binary \
-            "$RUNNER_TEMP/wordhold-pr-preview.yaml" >"$key"
+            "$RUNNER_TEMP/wordhold-pr-preview.yaml" >"$key"; then
+            echo "::error::The protected preview age identity cannot decrypt the current main secret"
+            exit 1
+          fi
           chmod 0600 "$key"
-          test -s "$key"
-          public_key=$(ssh-keygen -y -f "$key")
-          [[ "$public_key" =~ ^ssh-ed25519\ [A-Za-z0-9+/=]+$ ]]
+          if [ ! -s "$key" ]; then
+            echo "::error::The decrypted preview SSH key is empty"
+            exit 1
+          fi
+          if ! public_key=$(ssh-keygen -y -f "$key"); then
+            echo "::error::The decrypted preview SSH key is invalid"
+            exit 1
+          fi
+          if [[ ! "$public_key" =~ ^ssh-ed25519\ [A-Za-z0-9+/=]+$ ]]; then
+            echo "::error::The decrypted preview SSH key has an unexpected type"
+            exit 1
+          fi
           fingerprint=$(ssh-keygen -lf "$key" -E sha256 | awk '{print $2}')
-          test "$fingerprint" = 'SHA256:Hr/UHJBfarMnhIP7niepNhq9W33ZrvdU+ENNdc3X7Ds'
+          if [ "$fingerprint" != 'SHA256:Hr/UHJBfarMnhIP7niepNhq9W33ZrvdU+ENNdc3X7Ds' ]; then
+            echo "::error::The decrypted preview SSH key does not match the pinned deploy key"
+            exit 1
+          fi
 
       - name: Revalidate eligibility and run the restricted host command
         id: host
