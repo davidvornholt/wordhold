@@ -14,7 +14,7 @@ keys:
   - &pr-preview age1m4xacu26c9v0uwc854wawrgjczccjycayfhg2aen3kgllf0h3qxsn42pdc
   # Replacement preview identity. Keep both recipients until a live preview
   # proves the replacement, then remove the old recipient.
-  - &pr-preview-next age14c2g27q4uwdlj589wfgsqrhssuk8fpfj6f3xncwu7ly6l0c5j56qrvkte5
+  - &pr-preview-next age1j7ax2t268ac39cpra70t8j4c2zwxullkqqfrss5zdvkwteceyvxsu039dm
 creation_rules:
   - path_regex: secrets/dev\.yaml$
     key_groups:
