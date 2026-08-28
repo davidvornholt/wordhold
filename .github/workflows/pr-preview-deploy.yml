@@ -704,7 +704,12 @@ jobs:
           SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
         run: |
           set -euo pipefail
+          umask 077
           test -n "$SOPS_AGE_KEY"
+          identity="$RUNNER_TEMP/wordhold-preview-age-identity"
+          printf '%s\n' "$SOPS_AGE_KEY" >"$identity"
+          chmod 0600 "$identity"
+          unset SOPS_AGE_KEY
           version=v3.13.2
           case "$(uname -m)" in
             x86_64)
@@ -728,7 +733,7 @@ jobs:
           chmod +x "$sops"
 
           key="$RUNNER_TEMP/wordhold-preview-ssh-key"
-          "$sops" decrypt \
+          SOPS_AGE_KEY_FILE="$identity" "$sops" decrypt \
             --extract '["ci"]["ssh_private_key"]' \
             --output-type binary \
             "$RUNNER_TEMP/wordhold-pr-preview.yaml" >"$key"
@@ -800,6 +805,7 @@ jobs:
         run: |
           rm -f \
             "$RUNNER_TEMP/sops" \
+            "$RUNNER_TEMP/wordhold-preview-age-identity" \
             "$RUNNER_TEMP/wordhold-pr-preview.yaml" \
             "$RUNNER_TEMP/wordhold-preview-known-hosts" \
             "$RUNNER_TEMP/wordhold-preview-ssh-key"
