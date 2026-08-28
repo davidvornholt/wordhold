@@ -75,6 +75,6 @@ gh run rerun --repo davidvornholt/wordhold --failed <run-id>
 
 Rotate the preview age identity without creating a decryption gap. First add the new recipient beside the old recipient in `.sops.yaml`, re-encrypt `secrets/pr-preview.yaml` with `sops updatekeys`, and merge that pull request. Then replace the environment's `SOPS_AGE_KEY`. Finally remove the old recipient and re-encrypt in a second pull request.
 
-Rotate the preview SSH key in three reviewed steps. First add the new public key to the `personal-infra` Wordhold preview controller. Next replace `ci.ssh_private_key` in `secrets/pr-preview.yaml` and its pinned SHA-256 fingerprint in `.github/workflows/pr-preview-host-command.yml`. Remove the old public key from `personal-infra` only after a labeled preview deploys through the new key.
+Rotate the preview SSH key in three reviewed steps. First add the new public key to the `personal-infra` Wordhold preview controller. Next replace `ci.ssh_private_key` in `secrets/pr-preview.yaml` and its pinned SHA-256 fingerprint in `.github/workflows/pr-preview-deploy.yml`. Remove the old public key from `personal-infra` only after a labeled preview deploys through the new key.
 
-When the server SSH host key changes, verify the new fingerprint through the provider console before changing the pinned `known_hosts` entry in `.github/workflows/pr-preview-host-command.yml`. Never learn a replacement key from the same network connection it is meant to authenticate.
+When the server SSH host key changes, verify the new fingerprint through the provider console before changing the pinned `known_hosts` entry in `.github/workflows/pr-preview-deploy.yml`. Never learn a replacement key from the same network connection it is meant to authenticate.
