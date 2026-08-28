@@ -12,6 +12,9 @@ keys:
   # Dedicated PR preview environment identity. It can decrypt only the
   # restricted host key and is not available to ordinary repository jobs.
   - &pr-preview age1m4xacu26c9v0uwc854wawrgjczccjycayfhg2aen3kgllf0h3qxsn42pdc
+  # Replacement preview identity. Keep both recipients until a live preview
+  # proves the replacement, then remove the old recipient.
+  - &pr-preview-next age14c2g27q4uwdlj589wfgsqrhssuk8fpfj6f3xncwu7ly6l0c5j56qrvkte5
 creation_rules:
   - path_regex: secrets/dev\.yaml$
     key_groups:
@@ -27,3 +30,4 @@ creation_rules:
       - age:
           - *david
           - *pr-preview
+          - *pr-preview-next
