@@ -6,6 +6,17 @@ const validation = extractRunScript(
   consumer,
   'Validate the exact host command',
 );
+const keyResolution = extractRunScript(
+  consumer,
+  'Resolve the dedicated preview SSH key',
+);
+const cleanupStepName = 'Remove temporary key material';
+const cleanupStepStart = consumer.indexOf(`      - name: ${cleanupStepName}\n`);
+const cleanupStepHeader = consumer.slice(
+  cleanupStepStart,
+  consumer.indexOf('        run: |\n', cleanupStepStart),
+);
+const cleanup = extractRunScript(consumer, cleanupStepName);
 const headShaLength = 40;
 const digestHexLength = 64;
 const headSha = '1'.repeat(headShaLength);
@@ -58,6 +69,24 @@ exit "$status"
 };
 
 describe('preview host routing', () => {
+  it('passes the complete protected age identity through a temporary file', () => {
+    const restrictiveUmask = keyResolution.indexOf('umask 077');
+    const identityWrite = keyResolution.indexOf(
+      `printf '%s\\n' "$SOPS_AGE_KEY" >"$identity"`,
+    );
+
+    expect(restrictiveUmask).toBeGreaterThanOrEqual(0);
+    expect(identityWrite).toBeGreaterThan(restrictiveUmask);
+    expect(keyResolution).toContain('unset SOPS_AGE_KEY');
+    expect(keyResolution).toContain(
+      'SOPS_AGE_KEY_FILE="$identity" "$sops" decrypt',
+    );
+    expect(cleanupStepHeader).toContain('        if: always()');
+    expect(cleanup).toContain(
+      'rm -f \\\n  "$RUNNER_TEMP/sops" \\\n  "$RUNNER_TEMP/wordhold-preview-age-identity" \\',
+    );
+  });
+
   it('deploys only a successfully published exact digest', () => {
     const result = runRouting({ mode: 'deploy', publishResult: 'success' });
 
