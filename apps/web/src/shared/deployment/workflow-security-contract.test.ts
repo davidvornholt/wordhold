@@ -3,7 +3,8 @@ import { extractRunScript, readWorkflow } from './workflow-test-helpers';
 
 const producer = await readWorkflow('publish-container.yml');
 const consumer = await readWorkflow('pr-preview-deploy.yml');
-const hostCommand = await readWorkflow('pr-preview-host-command.yml');
+const hostCommand = consumer.slice(consumer.indexOf('  command:'));
+const hostCommandHeader = hostCommand.split('    runs-on:', 1)[0] ?? '';
 const hostOwnedMaximumMinutes = 180;
 const outerCleanupMarginMinutes = 20;
 const sshTimeoutPattern = /timeout (?<minutes>\d+)m ssh/u;
@@ -129,7 +130,18 @@ describe('trusted preview consumer boundary', () => {
 });
 
 describe('preview host authorization and secret boundary', () => {
+  it('runs every selected mode through the direct host command job', () => {
+    expect(hostCommandHeader).toContain(
+      '    needs:\n      - select\n      - publish',
+    );
+    expect(hostCommandHeader).toContain(
+      "    if: >-\n      always() &&\n      needs.select.result == 'success' &&\n      needs.select.outputs.mode != 'none'",
+    );
+  });
+
   it('uses only the dedicated main-only environment secret contract', () => {
+    expect(hostCommand).toContain('    runs-on: ubuntu-latest');
+    expect(hostCommand).toContain('    steps:');
     expect(hostCommand).toContain('      name: pr-preview');
     expect(hostCommand).toContain(
       `SOPS_AGE_KEY: ${githubExpression('secrets.SOPS_AGE_KEY')}`,
@@ -137,6 +149,28 @@ describe('preview host authorization and secret boundary', () => {
     expect(hostCommand).toContain('secrets/pr-preview.yaml?ref=$main_sha');
     expect(hostCommand).not.toContain('secrets: inherit');
     expect(hostCommand).not.toContain('secrets/ci.yaml');
+    expect(consumer).not.toContain('uses: ./.github/workflows/');
+    expect(consumer.match(/secrets\.SOPS_AGE_KEY/gu)).toHaveLength(1);
+  });
+
+  it('maps every selected lifecycle outcome into one fail-closed host job', () => {
+    const validation = extractRunScript(
+      consumer,
+      'Validate the exact host command',
+    );
+
+    expect(validation).toContain('failure|cancelled|timed_out)');
+    expect(validation).toContain('reason=failed-publication');
+    expect(validation).toContain('destroy-ineligible)');
+    expect(validation).toContain('reason=ineligible');
+    expect(validation).toContain('destroy-failed-build)');
+    expect(validation).toContain('reason=failed-build');
+    expect(
+      validation.match(/test "\$PUBLISH_RESULT" = skipped/gu),
+    ).toHaveLength(2);
+    expect(validation).toContain(
+      '::error::Only exact preview deploy and destroy modes are allowed',
+    );
   });
 
   it('allows only the exact forced-command shapes after a current PR check', () => {
