@@ -140,6 +140,12 @@ describe('preview host routing', () => {
     expect(diagnosticLines).not.toMatch(secretInterpolationPattern);
   });
 
+  it('accepts the standard optional SSH public key comment', () => {
+    expect(keyResolution).toContain(
+      '[[ ! "$public_key" =~ ^ssh-ed25519\\ [A-Za-z0-9+/=]+(\\ .*)?$ ]]',
+    );
+  });
+
   it('deploys only a successfully published exact digest', () => {
     const result = runRouting({ mode: 'deploy', publishResult: 'success' });
 

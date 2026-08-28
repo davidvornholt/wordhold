@@ -756,7 +756,7 @@ jobs:
             echo "::error::The decrypted preview SSH key is invalid"
             exit 1
           fi
-          if [[ ! "$public_key" =~ ^ssh-ed25519\ [A-Za-z0-9+/=]+$ ]]; then
+          if [[ ! "$public_key" =~ ^ssh-ed25519\ [A-Za-z0-9+/=]+(\ .*)?$ ]]; then
             echo "::error::The decrypted preview SSH key has an unexpected type"
             exit 1
           fi
