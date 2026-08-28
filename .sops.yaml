@@ -9,6 +9,9 @@ keys:
   # ~/.config/sops/age/wordhold-ci.txt until the GitHub repository exists;
   # then it becomes the SOPS_AGE_KEY Actions secret.
   - &ci age1000l9npgttyd2597cw6waanjfefelkvedu2aggxsrptzg4scfadsv6gkkh
+  # Dedicated PR preview environment identity. It can decrypt only the
+  # restricted host key and is not available to ordinary repository jobs.
+  - &pr-preview age1m4xacu26c9v0uwc854wawrgjczccjycayfhg2aen3kgllf0h3qxsn42pdc
 creation_rules:
   - path_regex: secrets/dev\.yaml$
     key_groups:
@@ -19,3 +22,8 @@ creation_rules:
       - age:
           - *david
           - *ci
+  - path_regex: secrets/pr-preview\.yaml$
+    key_groups:
+      - age:
+          - *david
+          - *pr-preview

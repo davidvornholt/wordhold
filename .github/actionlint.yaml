@@ -1,8 +1,12 @@
 # actionlint v1.7.12 predates GitHub's documented `concurrency.queue` setting
 # and rejects the key as a syntax error. Upstream support is tracked at
-# rhysd/actionlint#654. This ignore applies only to the publication workflow and
-# that unsupported key. Delete this file when the pinned actionlint supports it.
+# rhysd/actionlint#654. These ignores apply only to the two workflows that use
+# FIFO deployment queues and only to that unsupported key. Delete this file
+# when the pinned actionlint supports it.
 paths:
   .github/workflows/publish-container.yml:
+    ignore:
+      - '^unexpected key "queue" for "concurrency" section\. expected one of "cancel-in-progress", "group"$'
+  .github/workflows/pr-preview-deploy.yml:
     ignore:
       - '^unexpected key "queue" for "concurrency" section\. expected one of "cancel-in-progress", "group"$'
