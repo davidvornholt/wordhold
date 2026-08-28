@@ -17,6 +17,32 @@ const cleanupStepHeader = consumer.slice(
   consumer.indexOf('        run: |\n', cleanupStepStart),
 );
 const cleanup = extractRunScript(consumer, cleanupStepName);
+const secretInterpolationPattern =
+  /\$\{?(?:SOPS_AGE_KEY|identity|key|public_key|fingerprint)\b/u;
+const keyFailureContracts = [
+  [
+    "grep --quiet --extended-regexp '^AGE-SECRET-KEY-1[A-Z0-9]{58}$'",
+    'The protected preview age identity has an invalid format',
+  ],
+  [
+    'sha256sum --check --quiet',
+    'The pinned SOPS download failed checksum verification',
+  ],
+  [
+    'SOPS_AGE_KEY_FILE="$identity" "$sops" decrypt',
+    'The protected preview age identity cannot decrypt the current main secret',
+  ],
+  ['[ ! -s "$key" ]', 'The decrypted preview SSH key is empty'],
+  ['ssh-keygen -y -f "$key"', 'The decrypted preview SSH key is invalid'],
+  [
+    '[[ ! "$public_key" =~ ^ssh-ed25519',
+    'The decrypted preview SSH key has an unexpected type',
+  ],
+  [
+    '[ "$fingerprint" !=',
+    'The decrypted preview SSH key does not match the pinned deploy key',
+  ],
+] as const;
 const headShaLength = 40;
 const digestHexLength = 64;
 const headSha = '1'.repeat(headShaLength);
@@ -85,6 +111,30 @@ describe('preview host routing', () => {
     expect(cleanup).toContain(
       'rm -f \\\n  "$RUNNER_TEMP/sops" \\\n  "$RUNNER_TEMP/wordhold-preview-age-identity" \\',
     );
+  });
+
+  it('fails key resolution with fixed diagnostics that cannot print secrets', () => {
+    const diagnosticLines = keyResolution
+      .split('\n')
+      .filter((line) => line.includes('echo "::error::'))
+      .join('\n');
+
+    for (const [guard, diagnostic] of keyFailureContracts) {
+      const guardStart = keyResolution.indexOf(guard);
+      const diagnosticStart = keyResolution.indexOf(
+        `echo "::error::${diagnostic}"`,
+        guardStart,
+      );
+      const branchEnd = keyResolution.indexOf('\nfi', diagnosticStart);
+
+      expect(guardStart).toBeGreaterThanOrEqual(0);
+      expect(diagnosticStart).toBeGreaterThan(guardStart);
+      expect(branchEnd).toBeGreaterThan(diagnosticStart);
+      expect(keyResolution.slice(diagnosticStart, branchEnd)).toContain(
+        '\n  exit 1',
+      );
+    }
+    expect(diagnosticLines).not.toMatch(secretInterpolationPattern);
   });
 
   it('deploys only a successfully published exact digest', () => {
