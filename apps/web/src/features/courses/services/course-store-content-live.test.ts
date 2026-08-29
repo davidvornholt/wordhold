@@ -47,19 +47,19 @@ describe('CourseStore PostgreSQL course contents', () => {
           {
             id: fixtureUnitId,
             name: 'Unit 1',
-            words: 3,
+            entries: 3,
             unlearned: 1,
           },
           {
             id: '99999999-9999-4999-8999-999999999999',
             name: 'Unit 2',
-            words: 0,
+            entries: 0,
             unlearned: 0,
           },
           {
             id: 'ffffffff-ffff-4fff-8fff-ffffffffffff',
             name: 'Unit 3',
-            words: 0,
+            entries: 0,
             unlearned: 0,
           },
         ]);
@@ -69,8 +69,8 @@ describe('CourseStore PostgreSQL course contents', () => {
   });
 });
 
-describe('CourseStore PostgreSQL word contents', () => {
-  it('lists words deterministically and requires every direction card', async () => {
+describe('CourseStore PostgreSQL entry contents', () => {
+  it('lists entries deterministically and requires every direction card', async () => {
     await runStoreTest(
       Effect.gen(function* () {
         yield* seedIntroducedCardFixture;
@@ -83,7 +83,7 @@ describe('CourseStore PostgreSQL word contents', () => {
             and direction = 'to_target'
         `;
 
-        expect(yield* store.listWords(fixtureUnitId)).toEqual([
+        expect(yield* store.listEntries(fixtureUnitId)).toEqual([
           {
             id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
             targetText: 'livre',
@@ -103,11 +103,11 @@ describe('CourseStore PostgreSQL word contents', () => {
             learned: false,
           },
         ]);
-        expect(yield* store.listWords(missingUnitId)).toEqual([]);
+        expect(yield* store.listEntries(missingUnitId)).toEqual([]);
         expect(yield* store.listUnits(fixtureCourseId)).toContainEqual({
           id: fixtureUnitId,
           name: 'Unit 1',
-          words: 3,
+          entries: 3,
           unlearned: 1,
         });
 
@@ -116,7 +116,7 @@ describe('CourseStore PostgreSQL word contents', () => {
           where entry_id = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc'
             and direction = 'to_native'
         `;
-        expect(yield* store.listWords(fixtureUnitId)).toContainEqual({
+        expect(yield* store.listEntries(fixtureUnitId)).toContainEqual({
           id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
           targetText: 'neuf',
           nativeText: 'neu',
@@ -125,7 +125,7 @@ describe('CourseStore PostgreSQL word contents', () => {
         expect(yield* store.listUnits(fixtureCourseId)).toContainEqual({
           id: fixtureUnitId,
           name: 'Unit 1',
-          words: 3,
+          entries: 3,
           unlearned: 1,
         });
       }),
@@ -134,7 +134,7 @@ describe('CourseStore PostgreSQL word contents', () => {
 });
 
 describe('CourseStore PostgreSQL course content errors', () => {
-  it('maps PostgreSQL unit and word failures to their operations', async () => {
+  it('maps PostgreSQL unit and entry failures to their operations', async () => {
     await runStoreTest(
       Effect.gen(function* () {
         const sql = yield* Database;
@@ -143,15 +143,17 @@ describe('CourseStore PostgreSQL course content errors', () => {
         const units = yield* store
           .listUnits(fixtureCourseId)
           .pipe(Effect.either);
-        const words = yield* store.listWords(fixtureUnitId).pipe(Effect.either);
+        const entries = yield* store
+          .listEntries(fixtureUnitId)
+          .pipe(Effect.either);
         const unitsError = units._tag === 'Left' ? units.left : undefined;
-        const wordsError = words._tag === 'Left' ? words.left : undefined;
+        const entriesError = entries._tag === 'Left' ? entries.left : undefined;
         expect(units._tag).toBe('Left');
-        expect(words._tag).toBe('Left');
+        expect(entries._tag).toBe('Left');
         expect(unitsError).toBeInstanceOf(CourseDatabaseError);
-        expect(wordsError).toBeInstanceOf(CourseDatabaseError);
+        expect(entriesError).toBeInstanceOf(CourseDatabaseError);
         expect(unitsError?.operation).toBe('list units');
-        expect(wordsError?.operation).toBe('list words');
+        expect(entriesError?.operation).toBe('list entries');
       }),
     );
   });

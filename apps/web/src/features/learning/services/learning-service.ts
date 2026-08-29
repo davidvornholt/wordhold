@@ -26,7 +26,7 @@ export class LearningService extends Effect.Service<LearningService>()(
           if (!found) {
             return yield* new LearningEntryNotFoundError({
               message:
-                'Das Wort gehört nicht mehr zu dieser Einheit. Lade die Seite neu.',
+                'Die Vokabel gehört nicht mehr zu dieser Einheit. Lade die Seite neu.',
             });
           }
         });

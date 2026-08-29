@@ -49,7 +49,7 @@ export const UnitPicker = ({
           <option value={newUnitValue}>Neue Einheit …</option>
           {units.map((unit) => (
             <option key={unit.id} value={unit.id}>
-              {unit.name} ({unit.entryCount} Wörter)
+              {unit.name} ({unit.entryCount} Vokabeln)
             </option>
           ))}
         </select>

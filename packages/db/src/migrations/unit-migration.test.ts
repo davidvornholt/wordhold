@@ -142,14 +142,14 @@ describe('unit migration boundary', () => {
             const unitId = createdUnits[0]?.id ?? '';
             const mismatch = yield* Effect.either(sql`
               insert into entries (
-                course_id, unit_id, type, target_text, native_text
-              ) values (${courseB}, ${unitId}, 'word', 'book', 'Buch')
+                course_id, unit_id, target_text, native_text
+              ) values (${courseB}, ${unitId}, 'book', 'Buch')
             `);
             expect(mismatch._tag).toBe('Left');
             yield* sql`
               insert into entries (
-                course_id, unit_id, type, target_text, native_text
-              ) values (${courseA}, ${unitId}, 'word', 'livre', 'Buch')
+                course_id, unit_id, target_text, native_text
+              ) values (${courseA}, ${unitId}, 'livre', 'Buch')
             `;
             yield* sql`delete from courses where id = ${courseA}`;
             const remaining = yield* sql<{ readonly count: number }>`

@@ -30,9 +30,9 @@ const seed = Effect.gen(function* () {
   `;
   yield* sql`
     insert into entries (
-      id, course_id, unit_id, type, target_text, native_text
+      id, course_id, unit_id, target_text, native_text
     ) values (
-      ${entryA}, ${courseA}, ${unitA}, 'word', 'to look (at)', 'ansehen'
+      ${entryA}, ${courseA}, ${unitA}, 'to look (at)', 'ansehen'
     )
   `;
   yield* sql`

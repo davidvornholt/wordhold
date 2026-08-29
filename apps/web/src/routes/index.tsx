@@ -67,7 +67,7 @@ const Home = () => {
             stats={dashboard.perCourse}
           />
 
-          <FragileList words={dashboard.fragile} />
+          <FragileList entries={dashboard.fragile} />
 
           <AudioRecoveryPages
             pages={audioRecovery}

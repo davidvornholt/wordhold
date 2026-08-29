@@ -14,7 +14,7 @@ type CourseCardProps = {
         readonly due: number;
         readonly fresh: number;
         readonly unlearned: number;
-        readonly words: number;
+        readonly entries: number;
       }
     | undefined;
   // The course's name as a link into the course itself, which is where
@@ -37,7 +37,7 @@ export const CourseCard = ({
   const due = stats?.due ?? 0;
   const fresh = stats?.fresh ?? 0;
   const unlearned = stats?.unlearned ?? 0;
-  const words = stats?.words ?? 0;
+  const entries = stats?.entries ?? 0;
   const subtitle = languageSubtitle(course.name, course.targetLanguage);
   return (
     <li className="flex flex-col gap-3 border border-border bg-card p-4">
@@ -47,9 +47,9 @@ export const CourseCard = ({
           <p className="text-muted-foreground text-xs">{subtitle}</p>
         )}
       </div>
-      {words === 0 ? (
+      {entries === 0 ? (
         <p className="text-muted-foreground text-sm">
-          Noch keine Wörter – {importAction}.
+          Noch keine Vokabeln – {importAction}.
         </p>
       ) : (
         <p className="flex items-baseline gap-1 text-sm">
@@ -57,7 +57,8 @@ export const CourseCard = ({
           <span>fällig</span>
           <span className="text-muted-foreground">
             · {fresh} neu
-            {unlearned > 0 ? ` · ${unlearned} zu lernen` : ''} · {words} Wörter
+            {unlearned > 0 ? ` · ${unlearned} zu lernen` : ''} · {entries}{' '}
+            Vokabeln
           </span>
         </p>
       )}

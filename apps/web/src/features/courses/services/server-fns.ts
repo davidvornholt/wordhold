@@ -45,11 +45,11 @@ export const listCourseUnits = createServerFn()
     );
   });
 
-export const listUnitWords = createServerFn()
+export const listUnitEntries = createServerFn()
   .validator(decodeId)
   .handler(async ({ data: unitId }) => {
     await authRuntime.runPromise(requireSession(getRequest().headers));
     return courseRuntime.runPromise(
-      Effect.flatMap(CourseService, (service) => service.listWords(unitId)),
+      Effect.flatMap(CourseService, (service) => service.listEntries(unitId)),
     );
   });

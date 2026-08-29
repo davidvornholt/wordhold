@@ -9,7 +9,6 @@ import { type DraftEntry, EntryRow } from './entry-row';
 import { UnitPicker } from './unit-picker';
 
 const emptyEntry: DraftEntry = {
-  type: 'word',
   targetText: '',
   nativeText: '',
   example: '',

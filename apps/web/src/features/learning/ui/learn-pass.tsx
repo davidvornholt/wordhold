@@ -1,7 +1,7 @@
 import { type ReactNode, useState } from 'react';
 import type { LearnItem } from '../schemas/learning-models';
 import { LearnDone } from './learn-done';
-import { LearnWord } from './learn-word';
+import { LearnEntry } from './learn-entry';
 
 type LearnPassProps = {
   readonly items: ReadonlyArray<LearnItem>;
@@ -10,7 +10,7 @@ type LearnPassProps = {
   readonly practiceControl: ReactNode;
 };
 
-// Every word of the unit the learner has not met, one after the other. Each is
+// Every entry of the unit the learner has not met, one after the other. Each is
 // recorded as met the moment it has been written correctly, so leaving halfway
 // keeps what was learned and coming back resumes with the rest.
 export const LearnPass = ({
@@ -25,7 +25,7 @@ export const LearnPass = ({
   return item === undefined ? (
     <LearnDone learned={index} practiceControl={practiceControl} />
   ) : (
-    <LearnWord
+    <LearnEntry
       item={item}
       key={item.entryId}
       onLearned={async () => {

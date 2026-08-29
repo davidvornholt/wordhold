@@ -1,7 +1,7 @@
 import { Database } from '@wordhold/db/client';
 import type { LanguageCode } from '@wordhold/db/schema/courses';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
-import type { AnswerSource, EntryType } from '@wordhold/db/schema/entries';
+import type { AnswerSource } from '@wordhold/db/schema/entries';
 import type { cards } from '@wordhold/db/schema/practice';
 import { Context, Effect, Layer } from 'effect';
 import {
@@ -18,7 +18,6 @@ import { commitGradedAnswer, type RunReviewTransaction } from './review-commit';
 import { advancesSchedule } from './schedule-guard';
 
 type SubmissionRow = typeof cards.$inferSelect & {
-  readonly entryType: EntryType;
   readonly targetText: string;
   readonly nativeText: string;
   readonly targetLanguage: LanguageCode;
@@ -65,7 +64,7 @@ export class PracticeReviewStore extends Context.Tag(
             c.reps, c.lapses, c.scheduled_days as "scheduledDays",
             c.learning_steps as "learningSteps",
             c.last_reviewed_at as "lastReviewedAt", c.revision,
-            e.type as "entryType", e.target_text as "targetText",
+            e.target_text as "targetText",
             e.native_text as "nativeText", co.target_language as "targetLanguage"
           from cards c
           join entries e on e.id = c.entry_id
@@ -81,7 +80,6 @@ export class PracticeReviewStore extends Context.Tag(
                   card: row,
                   entry: {
                     id: row.entryId,
-                    type: row.entryType,
                     targetText: row.targetText,
                     nativeText: row.nativeText,
                   },

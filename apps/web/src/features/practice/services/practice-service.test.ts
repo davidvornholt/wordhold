@@ -33,7 +33,6 @@ const submission: SubmissionRecord = {
   card,
   entry: {
     id: card.entryId,
-    type: 'word',
     targetText: 'correct',
     nativeText: 'richtig',
   },

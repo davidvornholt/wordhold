@@ -13,7 +13,7 @@ type CourseStats = {
   readonly due: number;
   readonly fresh: number;
   readonly unlearned: number;
-  readonly words: number;
+  readonly entries: number;
 };
 
 type CourseGridProps = {

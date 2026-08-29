@@ -3,10 +3,10 @@ export type CourseStats = {
   readonly due: number;
   readonly fresh: number;
   readonly unlearned: number;
-  readonly words: number;
+  readonly entries: number;
 };
 
-export type FragileWord = {
+export type FragileEntry = {
   readonly entryId: string;
   readonly targetText: string;
   readonly nativeText: string;
@@ -16,7 +16,7 @@ export type FragileWord = {
 
 export type DashboardData = {
   readonly perCourse: ReadonlyArray<CourseStats>;
-  readonly fragile: ReadonlyArray<FragileWord>;
+  readonly fragile: ReadonlyArray<FragileEntry>;
   readonly reviewsToday: number;
 };
 

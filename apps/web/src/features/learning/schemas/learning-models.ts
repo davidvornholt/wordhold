@@ -1,4 +1,4 @@
-// One word of a learning pass. The target text is on screen while the learner
+// One entry of a learning pass. The target text is on screen while the learner
 // types it, so the answers travel with the item and the match happens without
 // a round trip; nothing here is graded and nothing is hidden.
 export type LearnItem = {

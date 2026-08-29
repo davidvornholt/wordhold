@@ -92,8 +92,8 @@ export class LearningStore extends Context.Tag('wordhold/LearningStore')<
             databaseError('load learning pass', cause),
           ),
         );
-      // Both directions of a word are introduced together: the pass teaches the
-      // word, not one way of asking about it. Already introduced cards keep
+      // Both directions of a entry are introduced together: the pass teaches the
+      // entry, not one way of asking about it. Already introduced cards keep
       // their original timestamp, so replaying a pass costs nothing.
       const introduce = (
         courseId: string,
@@ -117,7 +117,7 @@ export class LearningStore extends Context.Tag('wordhold/LearningStore')<
           select exists(select 1 from matching_entry) as found
         `.pipe(
           Effect.map((rows) => rows[0]?.found ?? false),
-          Effect.mapError((cause) => databaseError('introduce word', cause)),
+          Effect.mapError((cause) => databaseError('introduce entry', cause)),
         );
       return { loadPass, introduce } as const;
     }),

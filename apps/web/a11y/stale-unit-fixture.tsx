@@ -4,7 +4,6 @@ import { VerifyForm } from '../src/features/import/ui/verify-form';
 
 const entries: ReadonlyArray<DraftEntry> = [
   {
-    type: 'word',
     targetText: 'memory',
     nativeText: 'Erinnerung',
     example: '',

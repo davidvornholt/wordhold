@@ -3,22 +3,14 @@ import {
   maximumEntryTextLength,
   maximumExampleLength,
 } from '@wordhold/ai/extraction/schema';
-import type { EntryType } from '@wordhold/db/schema/entries';
 import type { ReactNode } from 'react';
 
 export type DraftEntry = {
-  readonly type: EntryType;
   readonly targetText: string;
   readonly nativeText: string;
   readonly example: string;
   readonly grammar?: GrammarInfo;
   readonly confidence?: number;
-};
-
-const typeLabels: Record<EntryType, string> = {
-  word: 'Wort',
-  expression: 'Ausdruck',
-  sentence: 'Satz',
 };
 
 const lowConfidence = 0.8;
@@ -73,21 +65,6 @@ export const EntryRow = ({
       }`}
     >
       <div className="flex items-center gap-2">
-        <select
-          aria-label="Typ"
-          className="border border-input bg-card px-2 py-1.5 text-sm"
-          disabled={disabled}
-          onChange={(event) =>
-            onChange({ ...entry, type: event.target.value as EntryType })
-          }
-          value={entry.type}
-        >
-          {Object.entries(typeLabels).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
         {uncertain ? (
           <span className="text-warning-foreground text-xs">
             unsicher gelesen

@@ -30,7 +30,7 @@ describe('units', () => {
   });
 
   // Deleting a chapter must not be a way to lose vocabulary by accident, so
-  // the database refuses the delete while words still point at it.
+  // the database refuses the delete while entries still point at it.
   it('refuses to delete a unit that still holds vocabulary', () => {
     const [key] = getTableConfig(entries).foreignKeys.filter((foreignKey) =>
       foreignKey

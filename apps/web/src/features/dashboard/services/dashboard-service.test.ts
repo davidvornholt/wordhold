@@ -12,7 +12,7 @@ describe('DashboardService', () => {
     });
     const store = Layer.succeed(DashboardStore, {
       courseCounts: () => Effect.fail(failure),
-      fragileWords: () => Effect.fail(failure),
+      fragileEntries: () => Effect.fail(failure),
       reviewsBetween: () => Effect.fail(failure),
     });
     const result = await Effect.runPromise(

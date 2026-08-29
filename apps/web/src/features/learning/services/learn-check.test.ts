@@ -43,12 +43,12 @@ describe('matchesLearnItem', () => {
     expect(matchesLearnItem(item, 'to watch')).toBe(false);
   });
 
-  it('rejects a different word', () => {
+  it('rejects a different entry', () => {
     expect(matchesLearnItem(item, 'to watch')).toBe(false);
   });
 
   // Nothing on screen has been copied yet, and normalization strips trailing
-  // punctuation, so whitespace alone must not open the next word.
+  // punctuation, so whitespace alone must not open the next entry.
   it('rejects an empty answer', () => {
     expect(matchesLearnItem(item, '  ')).toBe(false);
   });

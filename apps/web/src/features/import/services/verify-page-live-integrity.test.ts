@@ -16,7 +16,6 @@ const staleUnitId = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
 
 const selectedEntry = (unitId: string) => ({
   unit: { kind: 'existing' as const, unitId },
-  type: 'word' as const,
   targetText: 'mémoire',
   nativeText: 'Erinnerung',
 });
@@ -108,7 +107,6 @@ describe('verifyPageLive integrity', () => {
                 entries: [
                   {
                     unit: { kind: 'new', name: 'Unit 4' },
-                    type: 'word',
                     targetText: 'mémoire',
                     nativeText: 'Erinnerung',
                   },
