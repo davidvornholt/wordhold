@@ -102,6 +102,9 @@ export type ImportRepositoryShape = {
     readonly courseId: string;
     readonly imagePath: string;
   }) => Effect.Effect<void, ImportDatabaseError>;
+  readonly deletePendingPage: (
+    pageId: string,
+  ) => Effect.Effect<string | undefined, ImportDatabaseError>;
   readonly verifyPage: (
     payload: ImportPayloadData,
     courseId: string,

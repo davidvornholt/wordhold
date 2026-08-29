@@ -4,6 +4,7 @@ import { getDashboard } from '../features/dashboard/services/server-fns';
 import { CourseGrid } from '../features/dashboard/ui/course-grid';
 import { FragileList } from '../features/dashboard/ui/fragile-list';
 import {
+  discardPage,
   listAudioRecoveryPages,
   listCourses,
   listPendingPages,
@@ -83,6 +84,10 @@ const Home = () => {
           />
 
           <PendingPages
+            onDiscard={async (page) => {
+              await discardPage({ data: page.id });
+              await router.invalidate({ sync: true });
+            }}
             pages={pending}
             renderPageAction={(page, label) => (
               <Link

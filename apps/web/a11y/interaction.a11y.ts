@@ -1,6 +1,25 @@
+import { scanWcag22AaViolations } from '@davidvornholt/a11y-testing/axe';
 import { expect, test } from '@playwright/test';
+import { assertNoAccessibilityViolations } from './a11y-assertions';
 
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
+
+const deletePendingImageName = /Aufnahme English A2.*löschen/u;
+
+test('an open import can be confirmed and removed from the dashboard', async ({
+  page,
+}) => {
+  await page.goto('/?state=dashboard-pending');
+  await page.getByRole('button', { name: deletePendingImageName }).click();
+  await expect(
+    page.getByText('Das Foto und dieser offene Import werden gelöscht.'),
+  ).toBeVisible();
+  assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
+  await page.getByRole('button', { name: 'Endgültig löschen' }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Offene Importe' }),
+  ).toHaveCount(0);
+});
 
 const actionIsRejected = async (action: Promise<unknown>): Promise<boolean> =>
   action.then(

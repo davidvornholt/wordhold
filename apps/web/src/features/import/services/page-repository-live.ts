@@ -109,4 +109,11 @@ export const pageRepositoryLive = (sql: Database) => ({
       Effect.asVoid,
       Effect.mapError((cause) => failure('insert page', cause)),
     ),
+  deletePendingPage: (pageId: string) =>
+    sql<{
+      imagePath: string;
+    }>`delete from pages where id = ${pageId} and status = 'awaiting_verification' returning image_path as "imagePath"`.pipe(
+      Effect.map((rows) => rows[0]?.imagePath),
+      Effect.mapError((cause) => failure('delete pending page', cause)),
+    ),
 });

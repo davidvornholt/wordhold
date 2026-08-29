@@ -1,4 +1,9 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
+import {
+  createFileRoute,
+  Link,
+  useNavigate,
+  useRouter,
+} from '@tanstack/react-router';
 import type { ExtractionResult } from '@wordhold/ai/extraction';
 import { useState } from 'react';
 import { importPage } from '../../../features/import/import-fn';
@@ -11,6 +16,7 @@ import {
 import { AudioRecovery } from '../../../features/import/ui/audio-recovery';
 import type { DraftEntry } from '../../../features/import/ui/entry-row';
 import { ExtractionRecovery } from '../../../features/import/ui/extraction-recovery';
+import { returnToFreshOverview } from '../../../features/import/ui/overview-navigation';
 import { VerificationImage } from '../../../features/import/ui/verification-image';
 import { VerifyForm } from '../../../features/import/ui/verify-form';
 import { germanLabels } from '../../../shared/languages';
@@ -41,6 +47,7 @@ const toPayloadEntry = (
 const VerifyScreen = () => {
   const { page, course, units } = Route.useLoaderData();
   const navigate = useNavigate();
+  const router = useRouter();
   const [extraction, setExtraction] = useState(page.extraction);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,6 +71,14 @@ const VerifyScreen = () => {
   };
 
   const targetLabel = germanLabels[course.targetLanguage];
+  const goToOverview = () =>
+    returnToFreshOverview({
+      clearOverviewCache: () =>
+        router.clearCache({
+          filter: (match) => match.routeId === '/',
+        }),
+      navigate: () => navigate({ to: '/' }),
+    });
 
   return (
     <main className="verification-screen">
@@ -93,7 +108,7 @@ const VerifyScreen = () => {
                 run(async () => {
                   const result = await retryAudio({ data: page.id });
                   if (result.pending === 0) {
-                    await navigate({ to: '/' });
+                    await goToOverview();
                     return;
                   }
                   setCompleted((current) =>
@@ -133,7 +148,7 @@ const VerifyScreen = () => {
                     },
                   });
                   if (result.audio.pending === 0) {
-                    await navigate({ to: '/' });
+                    await goToOverview();
                     return;
                   }
                   setCompleted({
