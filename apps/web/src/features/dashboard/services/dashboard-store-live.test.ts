@@ -5,7 +5,9 @@ import {
   withMigratedTestDatabase,
 } from '@wordhold/db/testing/postgres-test-database';
 import { Effect, Layer } from 'effect';
+import { ratings } from '../../../shared/grading/rating';
 import {
+  dueEntryId,
   fixtureCourseId,
   fixtureNow,
   seedIntroducedCardFixture,
@@ -99,6 +101,65 @@ describe('DashboardStore introduction contract', () => {
             from cards order by id
           `;
           expect(after).toEqual(before);
+        }).pipe(
+          Effect.provide(
+            DashboardStore.live.pipe(Layer.provide(databaseLayer)),
+          ),
+          Effect.provide(databaseLayer),
+        );
+      }),
+    );
+  });
+});
+
+describe('DashboardStore fragile-entry contract', () => {
+  it('hides fragile entries when all failures are in disabled directions', async () => {
+    await Effect.runPromise(
+      withMigratedTestDatabase((database) => {
+        const databaseLayer = testDatabaseLayer(database.url);
+        return Effect.gen(function* () {
+          yield* seedIntroducedCardFixture;
+          const sql = yield* Database;
+          const store = yield* DashboardStore;
+          const targetCard = yield* sql<{ readonly id: string }>`
+            select c.id
+            from cards c
+            join entries e on e.id = c.entry_id
+            where e.id = ${dueEntryId} and c.direction = 'to_target'
+          `;
+          const card = targetCard.at(0);
+          if (card === undefined) {
+            throw new Error('Expected the seeded target card.');
+          }
+          yield* sql`
+            insert into reviews
+              (card_id, reviewed_at, rating, mode, answer_text)
+            values
+              (${card.id}, ${fixtureNow}, ${ratings.again}, 'scheduled', 'falsch'),
+              (${card.id}, ${fixtureNow}, ${ratings.again}, 'scheduled', 'immer noch falsch')
+          `;
+
+          expect(yield* store.fragileEntries()).toContainEqual(
+            expect.objectContaining({ entryId: dueEntryId, failures: 2 }),
+          );
+
+          yield* sql`
+            update courses
+            set directions = '{to_native}'::answer_direction[]
+            where id = ${fixtureCourseId}
+          `;
+          expect(yield* store.fragileEntries()).not.toContainEqual(
+            expect.objectContaining({ entryId: dueEntryId }),
+          );
+
+          yield* sql`
+            update courses
+            set directions = '{to_target,to_native}'::answer_direction[]
+            where id = ${fixtureCourseId}
+          `;
+          expect(yield* store.fragileEntries()).toContainEqual(
+            expect.objectContaining({ entryId: dueEntryId, failures: 2 }),
+          );
         }).pipe(
           Effect.provide(
             DashboardStore.live.pipe(Layer.provide(databaseLayer)),

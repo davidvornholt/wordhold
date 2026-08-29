@@ -154,6 +154,7 @@ export class DashboardStore extends Context.Tag('wordhold/DashboardStore')<
           join entries e on e.id = c.entry_id
           join courses co on co.id = e.course_id
           where r.rating = ${ratings.again}
+            and c.direction = any(co.directions)
             and r.reviewed_at >= now() - make_interval(days => ${fragileWindowDays})
           group by e.id, e.target_text, e.native_text, co.name
           having count(*) >= ${fragileMinFailures}
