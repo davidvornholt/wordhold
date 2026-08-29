@@ -11,11 +11,13 @@ const marker = '<!-- wordhold-pr-preview -->';
 
 type ReconciliationScenario = {
   readonly comments?: ReadonlyArray<Record<string, unknown>>;
+  readonly hostOutcome?: 'failure' | 'success';
   readonly operation: 'deploy' | 'destroy';
 };
 
 const runReconciliation = ({
   comments = [],
+  hostOutcome = 'success',
   operation,
 }: ReconciliationScenario) => {
   const harness = `
@@ -50,7 +52,7 @@ exit "$status"
       ['GH_TOKEN', 'test-token'],
       ['HEAD_SHA', '1'.repeat(headShaLength)],
       ['HOST_IN_SCOPE', 'true'],
-      ['HOST_OUTCOME', 'success'],
+      ['HOST_OUTCOME', hostOutcome],
       ['OPERATION', operation],
       ['PR_NUMBER', '35'],
       ['REPOSITORY', 'davidvornholt/wordhold'],
@@ -97,6 +99,18 @@ describe('preview status comment reconciliation', () => {
     expect(result.exitCode).toBe(0);
     expect(result.calls).toBe(
       'PATCH repos/davidvornholt/wordhold/issues/comments/123',
+    );
+  });
+
+  it('reports a failed cleanup even when no preview status exists', () => {
+    const result = runReconciliation({
+      hostOutcome: 'failure',
+      operation: 'destroy',
+    });
+
+    expect(result.exitCode).toBe(0);
+    expect(result.calls).toBe(
+      'POST repos/davidvornholt/wordhold/issues/35/comments',
     );
   });
 });

@@ -857,7 +857,7 @@ jobs:
           if [ "$count" -gt 1 ]; then
             echo "::error::More than one Wordhold preview status comment exists"
             exit 1
-          elif [ "$OPERATION" != deploy ] && [ "$count" -eq 0 ]; then
+          elif [ "$HOST_OUTCOME" = success ] && [ "$OPERATION" != deploy ] && [ "$count" -eq 0 ]; then
             echo "::notice::Cleanup found no preview status to update"
             exit 0
           fi
