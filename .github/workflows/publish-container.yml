@@ -22,6 +22,13 @@ jobs:
   container-smoke:
     if: >-
       github.event_name == 'pull_request' &&
+      github.event.pull_request.state == 'open' &&
+      !github.event.pull_request.draft &&
+      github.event.pull_request.base.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'main' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      contains(github.event.pull_request.labels.*.name, 'pr-preview') &&
+      (github.event.action != 'labeled' || github.event.label.name == 'pr-preview') &&
       (github.event.action != 'edited' || github.event.changes.base != null)
     runs-on: ubuntu-latest
     timeout-minutes: 90
@@ -59,33 +66,20 @@ jobs:
           [[ "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]
           test "$(git rev-parse HEAD)" = "$HEAD_SHA"
 
-      - name: Select eligibility from the pull request event
-        id: eligibility
-        env:
-          ELIGIBLE: ${{ github.event.pull_request.state == 'open' && !github.event.pull_request.draft && github.event.pull_request.base.repo.full_name == github.repository && github.event.pull_request.base.ref == 'main' && github.event.pull_request.head.repo.full_name == github.repository && contains(github.event.pull_request.labels.*.name, 'pr-preview') }}
-        run: |
-          set -euo pipefail
-          [[ "$ELIGIBLE" =~ ^(true|false)$ ]]
-          echo "eligible=$ELIGIBLE" >>"$GITHUB_OUTPUT"
-
       - name: Set up Bun for the exact-head gate
-        if: steps.eligibility.outputs.eligible == 'true'
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.3.14
 
       - name: Install just for the exact-head gate
-        if: steps.eligibility.outputs.eligible == 'true'
         uses: extractions/setup-just@v4
         with:
           just-version: "1.57.0"
 
       - name: Install exact-head dependencies
-        if: steps.eligibility.outputs.eligible == 'true'
         run: bun install --frozen-lockfile
 
       - name: Install exact-head Playwright Chromium
-        if: steps.eligibility.outputs.eligible == 'true'
         run: |
           set -euo pipefail
           playwright=$(find . -path '*/node_modules/.bin/playwright' -print -quit)
@@ -94,7 +88,6 @@ jobs:
 
       - name: Run the full exact-head repository gate
         id: exact_head_gate
-        if: steps.eligibility.outputs.eligible == 'true'
         env:
           DATABASE_URL: postgresql://app:app@127.0.0.1:5432/app
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
