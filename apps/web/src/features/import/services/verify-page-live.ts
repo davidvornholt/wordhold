@@ -131,7 +131,7 @@ export const verifyPageLive = (
       commitVerifiedPage({
         claimPage: sql<{
           id: string;
-        }>`update pages set status = 'verified', label = ${payload.label ?? null}, verified_at = now() where id = ${payload.pageId} and status = 'awaiting_verification' returning id`.pipe(
+        }>`update pages set status = 'verified', verified_at = now() where id = ${payload.pageId} and status = 'awaiting_verification' returning id`.pipe(
           Effect.map((claimed) => claimed.length > 0),
         ),
         insertEntries,

@@ -3,7 +3,6 @@ import type { ReactNode } from 'react';
 type PendingPage = {
   readonly id: string;
   readonly courseName: string;
-  readonly label: string | null;
   readonly capturedAt: Date;
 };
 
@@ -25,9 +24,9 @@ export const PendingPages = ({
     ) : (
       <ul className="flex flex-col gap-2">
         {pages.map((page) => {
-          const label = `${page.courseName}${
-            page.label === null ? '' : ` – ${page.label}`
-          } (${new Date(page.capturedAt).toLocaleDateString('de-DE')})`;
+          const label = `${page.courseName} (${new Date(
+            page.capturedAt,
+          ).toLocaleDateString('de-DE')})`;
           return <li key={page.id}>{renderPageAction(page, label)}</li>;
         })}
       </ul>

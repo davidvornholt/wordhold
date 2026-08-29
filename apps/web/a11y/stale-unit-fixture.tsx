@@ -34,7 +34,7 @@ export const StaleUnitVerificationFixture = () => {
       <VerifyForm
         busy={busy}
         initialEntries={entries}
-        initialLabel="Unit 3"
+        initialUnitName="Unit 3"
         onSubmit={() => {
           setBusy(true);
           setError(null);

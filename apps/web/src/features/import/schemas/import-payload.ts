@@ -3,12 +3,10 @@ import {
   maximumEntriesPerPage,
   maximumEntryTextLength,
   maximumExampleLength,
-  maximumLabelLength,
+  maximumUnitNameLength,
 } from '@wordhold/ai/extraction/schema';
 import { Schema } from 'effect';
 import { ImportPayloadValidationError } from '../errors/import-payload-validation-error';
-
-export const maximumUnitNameLength = 80;
 
 // Vocabulary entries are filed into a chapter of the textbook, either one that already
 // exists or one being started with this page. The tag keeps the two apart at
@@ -50,9 +48,6 @@ export type VerifiedEntryData = typeof VerifiedEntry.Type;
 
 export const ImportPayload = Schema.Struct({
   pageId: Schema.UUID,
-  label: Schema.optional(
-    Schema.Trim.pipe(Schema.maxLength(maximumLabelLength)),
-  ),
   entries: Schema.Array(VerifiedEntry).pipe(
     Schema.minItems(1),
     Schema.maxItems(maximumEntriesPerPage),

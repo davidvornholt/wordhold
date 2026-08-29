@@ -22,7 +22,6 @@ const recoveryPage = {
   id: pageId,
   courseId,
   courseName: 'Französisch',
-  label: 'Unité 3',
   missingAudio: 1,
   verifiedAt: new Date(1),
 };
@@ -99,7 +98,6 @@ describe('audioRecoveryPages', () => {
       provide(
         importVerifiedPage({
           pageId,
-          label: 'Unité 3',
           entries: [
             {
               unit: { kind: 'new', name: 'Unité 3' },

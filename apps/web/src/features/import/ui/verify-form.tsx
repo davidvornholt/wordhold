@@ -1,13 +1,11 @@
-import {
-  maximumEntriesPerPage,
-  maximumLabelLength,
-} from '@wordhold/ai/extraction/schema';
+import { maximumEntriesPerPage } from '@wordhold/ai/extraction/schema';
 import { useState } from 'react';
 import type { UnitSelectionData } from '../schemas/import-payload';
 import type { Unit } from '../services/repository';
 import { BulkUnitAssignment } from './bulk-unit-assignment';
 import { type DraftEntry, EntryRow } from './entry-row';
 import { EntryUnitAssignment } from './entry-unit-assignment';
+import { initialUnitSelection } from './initial-unit-selection';
 
 const emptyEntry: DraftEntry = {
   targetText: '',
@@ -17,12 +15,11 @@ const emptyEntry: DraftEntry = {
 
 type VerifyFormProps = {
   readonly initialEntries: ReadonlyArray<DraftEntry>;
-  readonly initialLabel: string;
+  readonly initialUnitName: string | undefined;
   readonly targetLabel: string;
   readonly units: ReadonlyArray<Unit>;
   readonly busy: boolean;
   readonly onSubmit: (
-    label: string,
     verifiedEntries: ReadonlyArray<VerificationEntry>,
   ) => void;
 };
@@ -37,36 +34,23 @@ const entryIsComplete = (entry: DraftEntry): boolean =>
 const unitSelectionIsComplete = (selection: UnitSelectionData): boolean =>
   selection.kind === 'existing' || selection.name.trim() !== '';
 
-// The unit a course is currently working through is the last one started, so
-// that is what the picker opens on. A course with no units yet has nothing to
-// choose from and starts naming one straight away.
-const initialUnitSelection = (
-  units: ReadonlyArray<Unit>,
-): UnitSelectionData => {
-  const latestRealUnit = units.findLast((unit) => !unit.isHolding);
-  return latestRealUnit === undefined
-    ? { kind: 'new', name: '' }
-    : { kind: 'existing', unitId: latestRealUnit.id };
-};
-
 export const VerifyForm = ({
   initialEntries,
-  initialLabel,
+  initialUnitName,
   targetLabel,
   units,
   busy,
   onSubmit,
 }: VerifyFormProps) => {
-  const [label, setLabel] = useState(initialLabel);
   const [bulkUnit, setBulkUnit] = useState<UnitSelectionData>(() =>
-    initialUnitSelection(units),
+    initialUnitSelection(units, initialUnitName),
   );
   const [draftEntries, setDraftEntries] = useState<
     ReadonlyArray<VerificationEntry>
   >(() =>
     initialEntries.map((entry) => ({
       ...entry,
-      unit: initialUnitSelection(units),
+      unit: initialUnitSelection(units, initialUnitName),
     })),
   );
 
@@ -84,20 +68,9 @@ export const VerifyForm = ({
         if (busy || complete.length === 0 || !unitsNamed) {
           return;
         }
-        onSubmit(label, complete);
+        onSubmit(complete);
       }}
     >
-      <label className="flex flex-col gap-1 text-sm">
-        Seitenbezeichnung
-        <input
-          className="border border-input bg-card px-2 py-1.5"
-          disabled={busy}
-          maxLength={maximumLabelLength}
-          onChange={(event) => setLabel(event.target.value)}
-          placeholder="z. B. Unité 3, Seite 42"
-          value={label}
-        />
-      </label>
       <BulkUnitAssignment
         canApply={draftEntries.length > 0 && unitSelectionIsComplete(bulkUnit)}
         disabled={busy}
@@ -167,7 +140,9 @@ export const VerifyForm = ({
               ...current,
               {
                 ...emptyEntry,
-                unit: current.at(-1)?.unit ?? initialUnitSelection(units),
+                unit:
+                  current.at(-1)?.unit ??
+                  initialUnitSelection(units, initialUnitName),
               },
             ])
           }
