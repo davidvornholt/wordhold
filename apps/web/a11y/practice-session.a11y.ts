@@ -26,7 +26,7 @@ test('a missed card returns later and a double click advances only once', async 
     name: 'Ferien',
   });
   await expect(holidayHeading).toBeVisible();
-  await expect(holidayHeading).toBeFocused();
+  await expect(answer).toBeFocused();
 
   await answer.fill('holiday');
   await check.click();
@@ -39,7 +39,7 @@ test('a missed card returns later and a double click advances only once', async 
     name: 'Erinnerung',
   });
   await expect(repeatedHeading).toBeVisible();
-  await expect(repeatedHeading).toBeFocused();
+  await expect(answer).toBeFocused();
   await expect(page.getByText('Noch einmal')).toBeVisible();
   await expect(page.getByLabel('Submitted revision')).toHaveText('1');
 
@@ -76,7 +76,7 @@ test('a first-attempt grading failure keeps its stored state in the final summar
     name: 'Ferien',
   });
   await expect(holidayHeading).toBeVisible();
-  await expect(holidayHeading).toBeFocused();
+  await expect(answer).toBeFocused();
 
   await answer.fill('holiday');
   await check.click();
@@ -114,7 +114,8 @@ test('a repeated-card grading failure keeps its stored state in the final summar
     name: 'Erinnerung',
   });
   await expect(page.getByText('Noch einmal')).toBeVisible();
-  await expect(repeatedHeading).toBeFocused();
+  await expect(repeatedHeading).toBeVisible();
+  await expect(answer).toBeFocused();
 
   await answer.fill('ungraded');
   await check.click();
