@@ -10,7 +10,7 @@ import { ImportPayloadValidationError } from '../errors/import-payload-validatio
 
 export const maximumUnitNameLength = 80;
 
-// Words are filed into a chapter of the textbook, either one that already
+// Vocabulary entries are filed into a chapter of the textbook, either one that already
 // exists or one being started with this page. The tag keeps the two apart at
 // the boundary, so the server never has to guess whether a name means "find
 // this" or "create this".
@@ -33,7 +33,6 @@ export type UnitSelectionData = typeof UnitSelection.Type;
 // Confidence is dropped: after verification the human is the authority.
 export const VerifiedEntry = Schema.Struct({
   unit: UnitSelection,
-  type: Schema.Literal('word', 'expression', 'sentence'),
   targetText: Schema.Trim.pipe(
     Schema.minLength(1),
     Schema.maxLength(maximumEntryTextLength),

@@ -18,7 +18,7 @@ export class DashboardService extends Effect.Service<DashboardService>()(
           const [perCourse, fragile, reviewsToday] = yield* Effect.all(
             [
               store.courseCounts(now),
-              store.fragileWords(),
+              store.fragileEntries(),
               store.reviewsBetween(startInclusive, endExclusive),
             ] as const,
             { concurrency: 'unbounded' },

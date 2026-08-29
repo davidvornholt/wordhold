@@ -16,7 +16,6 @@ const verification = Effect.gen(function* () {
     prompt: 'Er sagte: „Café \\"München\\" ☕“.',
     expectedAnswers: ['He said, “Café \\"Munich\\" ☕.”'],
     givenAnswer: 'He said: "Café \\"Munich\\" ☕."',
-    entryType: 'sentence',
   });
   yield* sentences.generate({
     targetText: '„Café \\"München\\" ☕“',

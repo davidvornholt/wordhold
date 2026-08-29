@@ -1,7 +1,6 @@
 import type { JudgeVerdictData } from '@wordhold/ai/judge/schema';
 import type { LanguageCode } from '@wordhold/db/schema/courses';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
-import type { EntryType } from '@wordhold/db/schema/entries';
 import type { cards, ReviewMode } from '@wordhold/db/schema/practice';
 import type {
   DerivedRating,
@@ -13,7 +12,6 @@ export type PracticeItem = {
   readonly revision: number;
   readonly direction: AnswerDirection;
   readonly entryId: string;
-  readonly entryType: EntryType;
   readonly targetText: string;
   readonly nativeText: string;
   readonly hasAudio: boolean;
@@ -24,7 +22,6 @@ export type SubmissionRecord = {
   readonly card: typeof cards.$inferSelect;
   readonly entry: {
     readonly id: string;
-    readonly type: EntryType;
     readonly targetText: string;
     readonly nativeText: string;
   };

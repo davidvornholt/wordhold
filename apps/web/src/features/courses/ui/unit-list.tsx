@@ -9,12 +9,12 @@ type UnitListProps = {
 };
 
 const unitProgress = (unit: CourseUnit): string => {
-  if (unit.words === 0) {
-    return 'Noch keine Wörter';
+  if (unit.entries === 0) {
+    return 'Noch keine Vokabeln';
   }
   return unit.unlearned === 0
-    ? `${unit.words} Wörter · alle gelernt`
-    : `${unit.words} Wörter · ${unit.unlearned} noch nicht gelernt`;
+    ? `${unit.entries} Vokabeln · alle gelernt`
+    : `${unit.entries} Vokabeln · ${unit.unlearned} noch nicht gelernt`;
 };
 
 export const UnitList = ({ units, renderUnitLink }: UnitListProps) =>

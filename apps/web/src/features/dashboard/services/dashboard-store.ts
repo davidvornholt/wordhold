@@ -2,7 +2,7 @@ import { Database } from '@wordhold/db/client';
 import { Context, Effect, Layer } from 'effect';
 import { ratings } from '../../../shared/grading/rating';
 import { DashboardDatabaseError } from '../errors/dashboard-errors';
-import type { CourseStats, FragileWord } from '../schemas/dashboard-models';
+import type { CourseStats, FragileEntry } from '../schemas/dashboard-models';
 
 const fragileWindowDays = 30;
 const fragileMinFailures = 2;
@@ -13,7 +13,7 @@ type MutableCourseStats = {
   due: number;
   fresh: number;
   unlearned: number;
-  words: number;
+  entries: number;
 };
 
 const databaseError = (cause: unknown) =>
@@ -28,8 +28,8 @@ export class DashboardStore extends Context.Tag('wordhold/DashboardStore')<
     readonly courseCounts: (
       now: Date,
     ) => Effect.Effect<ReadonlyArray<CourseStats>, DashboardDatabaseError>;
-    readonly fragileWords: () => Effect.Effect<
-      ReadonlyArray<FragileWord>,
+    readonly fragileEntries: () => Effect.Effect<
+      ReadonlyArray<FragileEntry>,
       DashboardDatabaseError
     >;
     readonly reviewsBetween: (
@@ -65,29 +65,29 @@ export class DashboardStore extends Context.Tag('wordhold/DashboardStore')<
                 and c.direction = any(co.directions)
               group by e.course_id
             `,
-            // Counted per word, not per card: the learning pass introduces
-            // both directions of a word together, and "12 zu lernen" means
-            // twelve words to work through.
+            // Counted per entry, not per card: the learning pass introduces
+            // both directions of an entry together, and "12 zu lernen" means
+            // twelve entries to work through.
             unlearned: sql<CountRow>`
               select e.course_id as "courseId", count(distinct e.id)::int as count
               from cards c join entries e on e.id = c.entry_id
               where c.introduced_at is null group by e.course_id
             `,
-            words: sql<CountRow>`
+            entries: sql<CountRow>`
               select course_id as "courseId", count(*)::int as count
               from entries group by course_id
             `,
           },
           { concurrency: 'unbounded' },
         ).pipe(
-          Effect.map(({ due, fresh, unlearned, words }) => {
+          Effect.map(({ due, fresh, unlearned, entries }) => {
             const counts = new Map<string, MutableCourseStats>();
             const slot = (courseId: string) => {
               const existing = counts.get(courseId);
               if (existing !== undefined) {
                 return existing;
               }
-              const created = { due: 0, fresh: 0, unlearned: 0, words: 0 };
+              const created = { due: 0, fresh: 0, unlearned: 0, entries: 0 };
               counts.set(courseId, created);
               return created;
             };
@@ -100,8 +100,8 @@ export class DashboardStore extends Context.Tag('wordhold/DashboardStore')<
             for (const row of unlearned) {
               slot(row.courseId).unlearned = row.count;
             }
-            for (const row of words) {
-              slot(row.courseId).words = row.count;
+            for (const row of entries) {
+              slot(row.courseId).entries = row.count;
             }
             return [...counts].map(([courseId, value]) => ({
               courseId,
@@ -110,8 +110,8 @@ export class DashboardStore extends Context.Tag('wordhold/DashboardStore')<
           }),
           Effect.mapError(databaseError),
         );
-      const fragileWords = () =>
-        sql<FragileWord>`
+      const fragileEntries = () =>
+        sql<FragileEntry>`
           select e.id as "entryId", e.target_text as "targetText",
             e.native_text as "nativeText", co.name as "courseName",
             count(*)::int as failures
@@ -133,7 +133,7 @@ export class DashboardStore extends Context.Tag('wordhold/DashboardStore')<
           Effect.map((rows) => rows[0]?.count ?? 0),
           Effect.mapError(databaseError),
         );
-      return { courseCounts, fragileWords, reviewsBetween } as const;
+      return { courseCounts, fragileEntries, reviewsBetween } as const;
     }),
   );
 }

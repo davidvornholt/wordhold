@@ -10,7 +10,6 @@ describe('judgePrompt', () => {
       prompt: 'die Erinnerung',
       expectedAnswers: ['le souvenir'],
       givenAnswer: 'la mémoire',
-      entryType: 'word',
     } as const;
     expect(judgePrompt({ ...base, direction: 'to_target' })).toContain(
       'into French',
@@ -27,7 +26,6 @@ describe('judgePrompt', () => {
       prompt: 'die Freiheit',
       expectedAnswers: ['freedom', 'liberty'],
       givenAnswer: 'fredom',
-      entryType: 'word',
     });
     expect(prompt).toContain('"freedom", "liberty"');
     expect(prompt).toContain('"fredom"');

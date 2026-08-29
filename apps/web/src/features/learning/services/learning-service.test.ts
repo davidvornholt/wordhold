@@ -31,8 +31,8 @@ describe('LearningService', () => {
     expect(failure?._tag).toBe('LearningUnitNotFoundError');
   });
 
-  // The timestamp answers "has this person ever met this word", so it comes
-  // from the clock at the moment the word is learned rather than from the
+  // The timestamp answers "has this person ever met this entry", so it comes
+  // from the clock at the moment the entry is learned rather than from the
   // browser that reported it.
   it('stamps the introduction with the current time', async () => {
     const introduced: Array<{ entryId: string; at: Date }> = [];
@@ -57,7 +57,7 @@ describe('LearningService', () => {
     expect(introduced[0]?.at.getTime()).toBe(0);
   });
 
-  it('reports a stale word instead of accepting a mismatched entry', async () => {
+  it('reports a stale entry instead of accepting a mismatched entry', async () => {
     const result = await Effect.runPromise(
       Effect.flatMap(LearningService, (service) =>
         service.introduce(courseId, unitId, entryId),

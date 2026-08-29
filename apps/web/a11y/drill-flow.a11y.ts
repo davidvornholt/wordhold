@@ -5,7 +5,7 @@ const drillActionPattern = /üben$/u;
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
 // The night-before path: the course page leads into a unit, the unit shows its
-// words and offers to drill the ones already learned.
+// entries and offers to drill the ones already learned.
 test('the drill reaches a unit sitting through the course page', async ({
   page,
 }) => {
@@ -32,7 +32,7 @@ test('the drill reaches a unit sitting through the course page', async ({
 
 // A drill of a unit nobody has met would have no card to ask, so the unit
 // offers only the learning pass.
-test('a unit without learned words offers nothing to drill', async ({
+test('a unit without learned entries offers nothing to drill', async ({
   page,
 }) => {
   await page.goto('/?state=unit-fresh');

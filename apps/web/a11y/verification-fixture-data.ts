@@ -2,7 +2,6 @@ import type { DraftEntry } from '../src/features/import/ui/entry-row';
 
 export const verificationEntries: ReadonlyArray<DraftEntry> = [
   {
-    type: 'word',
     targetText: 'journey',
     nativeText: 'Reise',
     example: 'The journey takes three hours.',
@@ -10,7 +9,6 @@ export const verificationEntries: ReadonlyArray<DraftEntry> = [
     confidence: 0.98,
   },
   {
-    type: 'word',
     targetText: 'luggage',
     nativeText: 'Gepäck',
     example: 'Leave your luggage at reception.',
@@ -18,7 +16,6 @@ export const verificationEntries: ReadonlyArray<DraftEntry> = [
     confidence: 0.96,
   },
   {
-    type: 'expression',
     targetText: 'to set off',
     nativeText: 'aufbrechen',
     example: 'We set off before sunrise.',
@@ -26,7 +23,6 @@ export const verificationEntries: ReadonlyArray<DraftEntry> = [
     confidence: 0.91,
   },
   {
-    type: 'word',
     targetText: 'accommodation',
     nativeText: 'Unterkunft',
     example: '',
@@ -34,35 +30,30 @@ export const verificationEntries: ReadonlyArray<DraftEntry> = [
     confidence: 0.64,
   },
   {
-    type: 'expression',
     targetText: 'booked up',
     nativeText: 'ausgebucht',
     example: 'The guest house is booked up.',
     confidence: 0.87,
   },
   {
-    type: 'word',
     targetText: 'sightseeing',
     nativeText: 'Besichtigung',
     example: 'We went sightseeing in York.',
     confidence: 0.93,
   },
   {
-    type: 'expression',
     targetText: 'to miss the train',
     nativeText: 'den Zug verpassen',
     example: 'Hurry up or we will miss the train.',
     confidence: 0.89,
   },
   {
-    type: 'sentence',
     targetText: 'How long are you staying?',
     nativeText: 'Wie lange bleibst du?',
     example: '',
     confidence: 0.97,
   },
   {
-    type: 'word',
     targetText: 'scenic',
     nativeText: 'malerisch',
     example: 'We took the scenic route along the coast.',
@@ -74,7 +65,6 @@ export const verificationEntries: ReadonlyArray<DraftEntry> = [
     confidence: 0.85,
   },
   {
-    type: 'word',
     targetText: 'youth hostel',
     nativeText: 'Jugendherberge',
     example: 'The youth hostel has a shared kitchen.',
@@ -82,7 +72,6 @@ export const verificationEntries: ReadonlyArray<DraftEntry> = [
     confidence: 0.94,
   },
   {
-    type: 'word',
     targetText: 'abroad',
     nativeText: 'im Ausland',
     example: 'She is studying abroad this year.',
@@ -90,7 +79,6 @@ export const verificationEntries: ReadonlyArray<DraftEntry> = [
     confidence: 0.9,
   },
   {
-    type: 'word',
     targetText: 'souvenir',
     nativeText: 'Andenken',
     example: 'I bought a small souvenir at the museum.',

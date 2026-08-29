@@ -19,7 +19,6 @@ const card = (index: number, target: string, native: string) => ({
   revision: 0,
   direction: 'to_target' as const,
   entryId: `0000000-0000-0000-0000-00000000010${index}`,
-  entryType: 'word' as const,
   targetText: target,
   nativeText: native,
   hasAudio: false,

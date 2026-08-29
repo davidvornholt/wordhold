@@ -13,7 +13,6 @@ const pageId = 'd9428888-122b-41e1-b85c-61cd3cbb3210';
 const unit = { kind: 'new', name: 'Unité 3' } as const;
 const validEntry = {
   unit,
-  type: 'word',
   targetText: 'souvenir',
   nativeText: 'Erinnerung',
 } as const;

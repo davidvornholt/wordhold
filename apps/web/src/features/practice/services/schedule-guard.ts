@@ -9,7 +9,7 @@ type ScheduledCard = {
 //
 // The server decides from the stored card, never from the client-reported
 // sitting mode. A review card that is not due has nothing to prove. Writing a
-// new interval from a crammed answer would push a word the learner barely
+// new interval from a crammed answer would push an entry the learner barely
 // knows weeks out.
 //
 // A card still working through FSRS's learning or relearning steps is the

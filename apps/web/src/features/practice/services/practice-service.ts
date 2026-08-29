@@ -90,7 +90,6 @@ const gradeAnswer = ({
           : row.entry.targetText,
       expectedAnswers,
       givenAnswer: data.answer,
-      entryType: row.entry.type,
     },
   }).pipe(
     Effect.map((verdict): GradeOutcome => ({ method: 'judge', verdict })),

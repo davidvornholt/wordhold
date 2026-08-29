@@ -14,7 +14,9 @@ export const LearnDone = ({ learned, practiceControl }: LearnDoneProps) => (
         : 'Einheit gelernt!'}
     </ManagedFocusHeading>
     {learned === 0 ? null : (
-      <p className="text-sm">{learned} Wörter zählen ab jetzt beim Üben mit.</p>
+      <p className="text-sm">
+        {learned} Vokabeln zählen ab jetzt beim Üben mit.
+      </p>
     )}
     {practiceControl}
   </div>

@@ -1,5 +1,5 @@
-import type { UnitWord } from '../src/features/courses/schemas/course-units';
-import { learnedWords } from '../src/features/courses/schemas/course-units';
+import type { UnitEntry } from '../src/features/courses/schemas/course-units';
+import { learnedEntries } from '../src/features/courses/schemas/course-units';
 import { CourseLayout } from '../src/features/courses/ui/course-layout';
 import { CourseOverview } from '../src/features/courses/ui/course-overview';
 import { UnitDetail } from '../src/features/courses/ui/unit-detail';
@@ -8,32 +8,32 @@ import { type FixtureState, navigateToFixture } from './fixture-state';
 const mixedUnit = {
   id: '00000000-0000-0000-0000-000000000003',
   name: 'Unit 3 – Holidays',
-  words: 18,
+  entries: 18,
   unlearned: 2,
 };
 
 const freshUnit = {
   id: '00000000-0000-0000-0000-000000000004',
   name: 'Unit 4 – Sport',
-  words: 12,
+  entries: 12,
   unlearned: 12,
 };
 
 const finishedUnit = {
   id: '00000000-0000-0000-0000-000000000002',
   name: 'Unit 2 – School',
-  words: 16,
+  entries: 16,
   unlearned: 0,
 };
 
 const emptyUnit = {
   id: '00000000-0000-0000-0000-000000000005',
   name: 'Unit 5 – Empty',
-  words: 0,
+  entries: 0,
   unlearned: 0,
 };
 
-const mixedWords: ReadonlyArray<UnitWord> = [
+const mixedEntries: ReadonlyArray<UnitEntry> = [
   {
     id: '00000000-0000-0000-0000-000000000011',
     targetText: 'memory',
@@ -48,7 +48,7 @@ const mixedWords: ReadonlyArray<UnitWord> = [
   },
 ];
 
-const freshWords: ReadonlyArray<UnitWord> = [
+const freshEntries: ReadonlyArray<UnitEntry> = [
   {
     id: '00000000-0000-0000-0000-000000000013',
     targetText: 'the referee',
@@ -98,31 +98,31 @@ const unitsByState = {
   empty: emptyUnit,
 } as const;
 
-const wordsByState: Record<
+const entriesByState: Record<
   NonNullable<UnitFixtureProps['state']>,
-  ReadonlyArray<UnitWord>
+  ReadonlyArray<UnitEntry>
 > = {
-  mixed: mixedWords,
-  fresh: freshWords,
+  mixed: mixedEntries,
+  fresh: freshEntries,
   empty: [],
 };
 
-// A fresh unit has words to learn and nothing to drill. An empty one offers
+// A fresh unit has entries to learn and nothing to drill. An empty one offers
 // neither action.
 export const UnitFixture = ({ state = 'mixed' }: UnitFixtureProps) => {
   const unit = unitsByState[state];
-  const words = wordsByState[state];
+  const entries = entriesByState[state];
   return (
     <CourseLayout
       backControl={control('← English A2', 'course')}
       title={unit.name}
     >
       <UnitDetail
-        drillAction={control(`${learnedWords(unit)} üben`, 'drill-start')}
+        drillAction={control(`${learnedEntries(unit)} üben`, 'drill-start')}
         learnAction={control(`${unit.unlearned} lernen`, 'learn')}
         targetLanguage="en"
         unit={unit}
-        words={words}
+        entries={entries}
       />
     </CourseLayout>
   );

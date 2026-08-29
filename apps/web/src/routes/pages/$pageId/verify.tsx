@@ -21,7 +21,6 @@ const draftsFromExtraction = (
   extraction === null
     ? []
     : extraction.page.entries.map((entry) => ({
-        type: entry.type,
         targetText: entry.targetText,
         nativeText: entry.nativeText,
         example: entry.example ?? '',
@@ -33,7 +32,6 @@ const toPayloadEntry = (
   draft: DraftEntry & { readonly unit: UnitSelectionData },
 ) => ({
   unit: draft.unit,
-  type: draft.type,
   targetText: draft.targetText,
   nativeText: draft.nativeText,
   ...(draft.grammar === undefined ? {} : { grammar: draft.grammar }),

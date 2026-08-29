@@ -20,11 +20,11 @@ export const seedIntroducedCardFixture = Effect.gen(function* () {
   `;
   yield* sql`
     insert into entries (
-      id, course_id, unit_id, type, target_text, native_text
+      id, course_id, unit_id, target_text, native_text
     ) values
-      (${unlearnedEntryId}, ${fixtureCourseId}, ${fixtureUnitId}, 'word', 'neuf', 'neu'),
-      (${freshEntryId}, ${fixtureCourseId}, ${fixtureUnitId}, 'word', 'livre', 'Buch'),
-      (${dueEntryId}, ${fixtureCourseId}, ${fixtureUnitId}, 'word', 'mémoire', 'Erinnerung')
+      (${unlearnedEntryId}, ${fixtureCourseId}, ${fixtureUnitId}, 'neuf', 'neu'),
+      (${freshEntryId}, ${fixtureCourseId}, ${fixtureUnitId}, 'livre', 'Buch'),
+      (${dueEntryId}, ${fixtureCourseId}, ${fixtureUnitId}, 'mémoire', 'Erinnerung')
   `;
   yield* sql`
     insert into cards (

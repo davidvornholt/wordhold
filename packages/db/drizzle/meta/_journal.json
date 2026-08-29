@@ -71,6 +71,13 @@
       "when": 1787788937780,
       "tag": "0009_thick_odin",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1787996924012,
+      "tag": "0010_dashing_mephistopheles",
+      "breakpoints": true
     }
   ]
 }

@@ -3,26 +3,26 @@ import type { LearnItem } from '../schemas/learning-models';
 import { matchesLearnItem } from '../services/learn-check';
 import { ManagedFocusHeading } from './managed-focus-heading';
 
-type LearnWordProps = {
+type LearnEntryProps = {
   readonly item: LearnItem;
   readonly position: number;
   readonly total: number;
   readonly targetLabel: string;
-  // Records that this word has been met. Only called once the learner has
-  // written it correctly, and the next word waits until it has been stored.
+  // Records that this entry has been met. Only called once the learner has
+  // written it correctly, and the next entry waits until it has been stored.
   readonly onLearned: () => Promise<void>;
 };
 
-// One word of the learning pass. The word is on screen the whole time: this is
+// One entry of the learning pass. The entry is on screen the whole time: this is
 // where you meet it, so there is nothing to recall and nothing to grade. Being
 // wrong only asks again.
-export const LearnWord = ({
+export const LearnEntry = ({
   item,
   position,
   total,
   targetLabel,
   onLearned,
-}: LearnWordProps) => {
+}: LearnEntryProps) => {
   const [typed, setTyped] = useState('');
   const [missed, setMissed] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -36,7 +36,7 @@ export const LearnWord = ({
     }
   };
 
-  // Hearing the word is half of meeting it, so it plays on arrival. A browser
+  // Hearing the entry is half of meeting it, so it plays on arrival. A browser
   // that blocks unprompted audio leaves the button as the way in.
   useEffect(() => {
     if (audioUrl === null) {
@@ -90,7 +90,7 @@ export const LearnWord = ({
   return (
     <>
       <p className="text-muted-foreground text-sm">
-        Wort {position} von {total}
+        Vokabel {position} von {total}
       </p>
       <div className="flex flex-col gap-2 border border-border bg-card p-6">
         <p className="text-lg">{item.nativeText}</p>
@@ -114,7 +114,7 @@ export const LearnWord = ({
         onSubmit={onSubmit}
       >
         <input
-          aria-label="Schreib das Wort ab"
+          aria-label="Schreib die Vokabel ab"
           autoCapitalize="off"
           autoComplete="off"
           autoCorrect="off"
@@ -124,7 +124,7 @@ export const LearnWord = ({
             setTyped(event.target.value);
             setSaveFailed(false);
           }}
-          placeholder="Schreib das Wort ab"
+          placeholder="Schreib die Vokabel ab"
           ref={inputRef}
           value={typed}
         />
@@ -138,11 +138,11 @@ export const LearnWord = ({
         </button>
       </form>
       <p aria-live="polite" className="text-sm">
-        {missed ? 'Noch nicht ganz. Schreib das Wort genau so ab.' : null}
+        {missed ? 'Noch nicht ganz. Schreib die Vokabel genau so ab.' : null}
       </p>
       {saveFailed ? (
         <p className="text-destructive text-sm" role="alert">
-          Das Wort wurde nicht gespeichert. Versuch es noch einmal.
+          Die Vokabel wurde nicht gespeichert. Versuch es noch einmal.
         </p>
       ) : null}
     </>

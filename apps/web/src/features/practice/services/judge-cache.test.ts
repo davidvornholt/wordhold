@@ -30,7 +30,6 @@ const request = {
     prompt: 'richtig',
     expectedAnswers: ['correct'],
     givenAnswer: 'wrong',
-    entryType: 'word' as const,
   },
 };
 

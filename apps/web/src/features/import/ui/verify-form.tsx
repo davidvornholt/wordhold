@@ -5,11 +5,11 @@ import {
 import { useState } from 'react';
 import type { UnitSelectionData } from '../schemas/import-payload';
 import type { Unit } from '../services/repository';
+import { BulkUnitAssignment } from './bulk-unit-assignment';
 import { type DraftEntry, EntryRow } from './entry-row';
-import { UnitPicker } from './unit-picker';
+import { EntryUnitAssignment } from './entry-unit-assignment';
 
 const emptyEntry: DraftEntry = {
-  type: 'word',
   targetText: '',
   nativeText: '',
   example: '',
@@ -34,6 +34,9 @@ export type VerificationEntry = DraftEntry & {
 const entryIsComplete = (entry: DraftEntry): boolean =>
   entry.targetText.trim() !== '' && entry.nativeText.trim() !== '';
 
+const unitSelectionIsComplete = (selection: UnitSelectionData): boolean =>
+  selection.kind === 'existing' || selection.name.trim() !== '';
+
 // The unit a course is currently working through is the last one started, so
 // that is what the picker opens on. A course with no units yet has nothing to
 // choose from and starts naming one straight away.
@@ -55,6 +58,9 @@ export const VerifyForm = ({
   onSubmit,
 }: VerifyFormProps) => {
   const [label, setLabel] = useState(initialLabel);
+  const [bulkUnit, setBulkUnit] = useState<UnitSelectionData>(() =>
+    initialUnitSelection(units),
+  );
   const [draftEntries, setDraftEntries] = useState<
     ReadonlyArray<VerificationEntry>
   >(() =>
@@ -65,8 +71,8 @@ export const VerifyForm = ({
   );
 
   const complete = draftEntries.filter(entryIsComplete);
-  const unitsNamed = complete.every(
-    (entry) => entry.unit.kind === 'existing' || entry.unit.name.trim() !== '',
+  const unitsNamed = complete.every((entry) =>
+    unitSelectionIsComplete(entry.unit),
   );
 
   return (
@@ -92,6 +98,18 @@ export const VerifyForm = ({
           value={label}
         />
       </label>
+      <BulkUnitAssignment
+        canApply={draftEntries.length > 0 && unitSelectionIsComplete(bulkUnit)}
+        disabled={busy}
+        onApply={() =>
+          setDraftEntries((current) =>
+            current.map((entry) => ({ ...entry, unit: bulkUnit })),
+          )
+        }
+        onChange={setBulkUnit}
+        selection={bulkUnit}
+        units={units}
+      />
       <ul className="flex flex-col gap-3">
         {draftEntries.map((entry, index) => (
           <EntryRow
@@ -100,23 +118,34 @@ export const VerifyForm = ({
             // biome-ignore lint/suspicious/noArrayIndexKey: rows are positional edits of one page
             key={index}
             onChange={(next) =>
-              setDraftEntries(
-                draftEntries.map((current, i) =>
+              setDraftEntries((currentEntries) =>
+                currentEntries.map((current, i) =>
                   i === index ? { ...next, unit: current.unit } : current,
                 ),
               )
             }
             onRemove={() =>
-              setDraftEntries(draftEntries.filter((_, i) => i !== index))
+              setDraftEntries((current) =>
+                current.filter((_, i) => i !== index),
+              )
             }
             targetLabel={targetLabel}
             unitControl={
-              <UnitPicker
+              <EntryUnitAssignment
+                canApplyFollowing={unitSelectionIsComplete(entry.unit)}
                 disabled={busy}
-                label={`Einheit für Eintrag ${index + 1}`}
+                entryNumber={index + 1}
+                hasFollowing={index < draftEntries.length - 1}
+                onApplyFollowing={() =>
+                  setDraftEntries((currentEntries) =>
+                    currentEntries.map((current, i) =>
+                      i >= index ? { ...current, unit: entry.unit } : current,
+                    ),
+                  )
+                }
                 onChange={(unit) =>
-                  setDraftEntries(
-                    draftEntries.map((current, i) =>
+                  setDraftEntries((currentEntries) =>
+                    currentEntries.map((current, i) =>
                       i === index ? { ...current, unit } : current,
                     ),
                   )
@@ -134,9 +163,12 @@ export const VerifyForm = ({
           className="border border-input px-3 py-1.5 text-sm"
           disabled={busy || draftEntries.length >= maximumEntriesPerPage}
           onClick={() =>
-            setDraftEntries([
-              ...draftEntries,
-              { ...emptyEntry, unit: initialUnitSelection(units) },
+            setDraftEntries((current) => [
+              ...current,
+              {
+                ...emptyEntry,
+                unit: current.at(-1)?.unit ?? initialUnitSelection(units),
+              },
             ])
           }
           type="button"

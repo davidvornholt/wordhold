@@ -15,7 +15,6 @@ const item = {
   revision: 0,
   direction: 'to_target' as const,
   entryId: '00000000-0000-0000-0000-000000000002',
-  entryType: 'word' as const,
   targetText: 'memory',
   nativeText: 'Erinnerung',
   hasAudio: false,

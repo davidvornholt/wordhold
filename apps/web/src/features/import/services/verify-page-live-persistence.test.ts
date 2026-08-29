@@ -15,7 +15,6 @@ const unitThreeEntryCount = 3;
 
 const entry = (name: string, targetText: string) => ({
   unit: { kind: 'new' as const, name },
-  type: 'word' as const,
   targetText,
   nativeText: `Deutsch ${targetText}`,
 });
