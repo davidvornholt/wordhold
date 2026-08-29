@@ -849,6 +849,19 @@ jobs:
             exit 0
           fi
           marker='<!-- wordhold-pr-preview -->'
+          comments=$(gh api --paginate "repos/$REPOSITORY/issues/$PR_NUMBER/comments?per_page=100" | jq -sc 'add')
+          matches=$(jq -c --arg marker "$marker" \
+            '[.[] | select(.user.login == "github-actions[bot]" and (.body | contains($marker)))]' \
+            <<<"$comments")
+          count=$(jq -er length <<<"$matches")
+          if [ "$count" -gt 1 ]; then
+            echo "::error::More than one Wordhold preview status comment exists"
+            exit 1
+          elif [ "$HOST_OUTCOME" = success ] && [ "$OPERATION" != deploy ] && [ "$count" -eq 0 ]; then
+            echo "::notice::Cleanup found no preview status to update"
+            exit 0
+          fi
+
           if [ "$HOST_OUTCOME" = success ] && [ "$OPERATION" = deploy ]; then
             body=$(printf '%s\n\nPreview: https://%s.pr.wordhold.vornholt.online\n\nSource: %s\n\nState: deployed and healthy' \
               "$marker" "$PR_NUMBER" "$HEAD_SHA")
@@ -860,15 +873,7 @@ jobs:
             body=$(printf '%s\n\nState: removal failed' "$marker")
           fi
 
-          comments=$(gh api --paginate "repos/$REPOSITORY/issues/$PR_NUMBER/comments?per_page=100" | jq -sc 'add')
-          matches=$(jq -c --arg marker "$marker" \
-            '[.[] | select(.user.login == "github-actions[bot]" and (.body | contains($marker)))]' \
-            <<<"$comments")
-          count=$(jq -er length <<<"$matches")
-          if [ "$count" -gt 1 ]; then
-            echo "::error::More than one Wordhold preview status comment exists"
-            exit 1
-          elif [ "$count" -eq 1 ]; then
+          if [ "$count" -eq 1 ]; then
             comment_id=$(jq -er '.[0].id' <<<"$matches")
             gh api --method PATCH "repos/$REPOSITORY/issues/comments/$comment_id" -f body="$body" >/dev/null
           else
