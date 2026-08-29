@@ -1,3 +1,4 @@
+import type { LanguageCode } from '@wordhold/db/schema/courses';
 import { type ReactNode, useState } from 'react';
 import { ProgressMeter } from '../../../shared/ui/progress-meter';
 import type { LearnItem } from '../schemas/learning-models';
@@ -6,6 +7,7 @@ import { LearnEntry } from './learn-entry';
 
 type LearnPassProps = {
   readonly items: ReadonlyArray<LearnItem>;
+  readonly targetLanguage: LanguageCode;
   readonly targetLabel: string;
   readonly onIntroduce: (entryId: string) => Promise<void>;
   readonly practiceControl: ReactNode;
@@ -16,6 +18,7 @@ type LearnPassProps = {
 // keeps what was learned and coming back resumes with the rest.
 export const LearnPass = ({
   items,
+  targetLanguage,
   targetLabel,
   onIntroduce,
   practiceControl,
@@ -44,6 +47,7 @@ export const LearnPass = ({
             await onIntroduce(item.entryId);
             setIndex(index + 1);
           }}
+          targetLanguage={targetLanguage}
           targetLabel={targetLabel}
         />
       )}

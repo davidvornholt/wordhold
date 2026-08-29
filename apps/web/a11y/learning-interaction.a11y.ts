@@ -14,8 +14,23 @@ test('the learning pass asks again for a wrong copy and records only the correct
   const progress = page.getByText('von 2 Vokabeln gelernt');
   await expect(progress).toHaveText('0 von 2 Vokabeln gelernt');
   await expect(
-    page.getByRole('heading', { level: 2, name: 'memory' }),
+    page.getByRole('heading', { level: 2, name: 'die Erinnerung' }),
   ).toBeFocused();
+  await expect(field).toHaveAttribute('placeholder', 'memory');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'de');
+  const answerHint = page.locator('span.sr-only', {
+    has: page.locator('[lang="en"]', { hasText: 'memory' }),
+  });
+  await expect(answerHint).not.toHaveAttribute('lang');
+  await expect(field).toHaveAttribute(
+    'aria-describedby',
+    (await answerHint.getAttribute('id')) ?? 'missing-answer-hint',
+  );
+  await expect(answerHint).toHaveText('Vorlage: memory');
+
+  await field.fill('r');
+  await expect(field).not.toHaveAttribute('aria-describedby');
+  await expect(answerHint).toHaveCount(0);
 
   await field.fill('remember');
   await advance.click();
@@ -32,8 +47,9 @@ test('the learning pass asks again for a wrong copy and records only the correct
   await advance.click();
   await expect(progress).toHaveText('1 von 2 Vokabeln gelernt');
   await expect(
-    page.getByRole('heading', { level: 2, name: 'to look (at)' }),
+    page.getByRole('heading', { level: 2, name: 'ansehen' }),
   ).toBeFocused();
+  await expect(field).toHaveAttribute('placeholder', 'to look (at)');
   await expect(page.getByLabel('Introduced entries')).toHaveText('1');
 
   await page.getByLabel('Schreib die Vokabel ab').fill('to look at');
@@ -65,7 +81,7 @@ test('the learning pass announces a persistence failure and retries the same ent
   await retry.click();
   await expect(page.getByText('1 von 2 Vokabeln gelernt')).toBeVisible();
   await expect(
-    page.getByRole('heading', { level: 2, name: 'to look (at)' }),
+    page.getByRole('heading', { level: 2, name: 'ansehen' }),
   ).toBeFocused();
   await expect(page.getByLabel('Introduced entries')).toHaveText('1');
   await expect(page.getByLabel('Introduction attempts')).toHaveText('2');

@@ -45,6 +45,7 @@ const LearnUnitScreen = () => {
           </Link>
         }
         targetLabel={germanLabels[course.targetLanguage]}
+        targetLanguage={course.targetLanguage}
       />
     </LearningLayout>
   );

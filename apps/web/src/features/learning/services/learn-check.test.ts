@@ -11,7 +11,7 @@ const item: LearnItem = {
 };
 
 describe('matchesLearnItem', () => {
-  it('accepts the spelling shown on screen', () => {
+  it('accepts the prompted spelling', () => {
     expect(matchesLearnItem(item, 'To Look (at)')).toBe(true);
   });
 
@@ -28,7 +28,7 @@ describe('matchesLearnItem', () => {
     ).toBe(true);
   });
 
-  it('accepts the displayed spelling but not an unproven overflow reading', () => {
+  it('accepts the prompted spelling but not an unproven overflow reading', () => {
     const overflow = 'aa/bb cc/dd ee/ff gg/hh ii/jj';
     const overflowItem = {
       ...item,
