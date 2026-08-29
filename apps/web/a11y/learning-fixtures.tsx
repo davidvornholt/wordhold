@@ -64,6 +64,7 @@ export const LearnFixture = ({
         }}
         practiceControl={practiceControl}
         targetLabel="Englisch"
+        targetLanguage="en"
       />
       <output aria-label="Introduced entries">{introduced.length}</output>
       <output aria-label="Introduction attempts">{attempts}</output>

@@ -2,11 +2,11 @@ import { normalizeAnswer } from '../../../shared/grading/normalize';
 import { answerVariants } from '../../../shared/grading/variants';
 import type { LearnItem } from '../schemas/learning-models';
 
-// The learning pass is copying practice, not recall practice: the entry is on
-// screen while it is typed. So the check is deterministic and local — the same
-// normalization the graded path uses, against the spelling shown plus every
-// accepted answer of that direction, and never the judge. Nothing is billed
-// and nothing is scheduled by getting this right or wrong.
+// The learning pass introduces an entry without grading or scheduling it. The
+// target starts as the input placeholder and screen-reader hint, then disappears
+// once the learner types so they finish from memory. The local check uses the
+// graded path's normalization against that target plus every accepted answer for
+// the direction. It never calls the judge or incurs model cost.
 export const matchesLearnItem = (item: LearnItem, typed: string): boolean => {
   const normalized = normalizeAnswer(typed);
   if (normalized === '') {
