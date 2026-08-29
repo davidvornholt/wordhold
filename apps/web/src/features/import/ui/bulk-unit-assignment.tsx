@@ -30,6 +30,15 @@ export const BulkUnitAssignment = ({
     <UnitPicker
       disabled={disabled}
       label="Einheit für alle Vokabeln"
+      onNewUnitNameKeyDown={(event) => {
+        if (event.key !== 'Enter') {
+          return;
+        }
+        event.preventDefault();
+        if (!disabled && canApply) {
+          onApply();
+        }
+      }}
       onChange={onChange}
       required={false}
       selection={selection}
