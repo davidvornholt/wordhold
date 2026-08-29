@@ -27,6 +27,11 @@ const pendingPage = {
   courseName: course.name,
   capturedAt: new Date('2026-08-24T13:00:00Z'),
 };
+const secondPendingPage = {
+  id: '00000000-0000-0000-0000-000000000005',
+  courseName: course.name,
+  capturedAt: new Date('2026-08-25T13:00:00Z'),
+};
 
 const action = (
   label: string,
@@ -57,7 +62,7 @@ export const DashboardFixture = ({
   pending = false,
 }) => {
   const [pendingPages, setPendingPages] = useState(
-    pending ? [pendingPage] : [],
+    pending ? [pendingPage, secondPendingPage] : [],
   );
 
   return (

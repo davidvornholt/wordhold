@@ -17,6 +17,7 @@ import { AudioRecovery } from '../../../features/import/ui/audio-recovery';
 import type { DraftEntry } from '../../../features/import/ui/entry-row';
 import { ExtractionRecovery } from '../../../features/import/ui/extraction-recovery';
 import {
+  refreshOverviewAfterMutation,
   retireOverviewCache,
   returnToFreshOverview,
 } from '../../../features/import/ui/overview-navigation';
@@ -80,6 +81,8 @@ const VerifyScreen = () => {
     });
   const retireCachedOverview = () =>
     retireOverviewCache({ clearOverviewCache });
+  const refreshOverview = () =>
+    refreshOverviewAfterMutation((options) => router.invalidate(options));
   const goToOverview = () =>
     returnToFreshOverview({
       clearOverviewCache,
@@ -117,6 +120,7 @@ const VerifyScreen = () => {
               onRetry={() =>
                 run(async () => {
                   const result = await retryAudio({ data: page.id });
+                  await refreshOverview();
                   if (result.pending === 0) {
                     await goToOverview();
                     return;
@@ -156,7 +160,7 @@ const VerifyScreen = () => {
                       entries: verified.map(toPayloadEntry),
                     },
                   });
-                  retireCachedOverview();
+                  await refreshOverview();
                   if (result.audio.pending === 0) {
                     await goToOverview();
                     return;
