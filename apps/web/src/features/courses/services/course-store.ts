@@ -5,7 +5,7 @@ import {
   type CourseDirectionsData,
   decodeStoredDirections,
 } from '../schemas/course-directions';
-import type { CourseUnit, UnitWord } from '../schemas/course-units';
+import type { CourseUnit, UnitEntry } from '../schemas/course-units';
 
 const databaseError = (operation: string, cause: unknown) =>
   new CourseDatabaseError({
@@ -28,9 +28,9 @@ export class CourseStore extends Context.Tag('wordhold/CourseStore')<
     readonly listUnits: (
       courseId: string,
     ) => Effect.Effect<ReadonlyArray<CourseUnit>, CourseDatabaseError>;
-    readonly listWords: (
+    readonly listEntries: (
       unitId: string,
-    ) => Effect.Effect<ReadonlyArray<UnitWord>, CourseDatabaseError>;
+    ) => Effect.Effect<ReadonlyArray<UnitEntry>, CourseDatabaseError>;
   }
 >() {
   static readonly live = Layer.effect(
@@ -81,11 +81,11 @@ export class CourseStore extends Context.Tag('wordhold/CourseStore')<
             databaseError('write course directions', cause),
           ),
         );
-      // A word remains unlearned until every card behind it is introduced.
+      // An entry remains unlearned until every card behind it is introduced.
       const listUnits = (courseId: string) =>
         sql<CourseUnit>`
           select u.id, u.name,
-            count(distinct e.id)::int as words,
+            count(distinct e.id)::int as entries,
             count(distinct e.id) filter (
               where not coalesce(c.learned, false)
             )::int as unlearned
@@ -101,11 +101,11 @@ export class CourseStore extends Context.Tag('wordhold/CourseStore')<
           group by u.id
           order by u.position, u.name, u.id
         `.pipe(Effect.mapError((cause) => databaseError('list units', cause)));
-      // A word counts as learned only once both of its cards have been
+      // An entry counts as learned only once both of its cards have been
       // introduced, which is how the learning pass stamps them. An entry
       // without cards has met nobody, so the missing aggregate reads false.
-      const listWords = (unitId: string) =>
-        sql<UnitWord>`
+      const listEntries = (unitId: string) =>
+        sql<UnitEntry>`
           select e.id,
             e.target_text as "targetText",
             e.native_text as "nativeText",
@@ -119,8 +119,15 @@ export class CourseStore extends Context.Tag('wordhold/CourseStore')<
           where e.unit_id = ${unitId}
           group by e.id
           order by e.created_at, e.target_text, e.id
-        `.pipe(Effect.mapError((cause) => databaseError('list words', cause)));
-      return { readDirections, writeDirections, listUnits, listWords } as const;
+        `.pipe(
+          Effect.mapError((cause) => databaseError('list entries', cause)),
+        );
+      return {
+        readDirections,
+        writeDirections,
+        listUnits,
+        listEntries,
+      } as const;
     }),
   );
 }

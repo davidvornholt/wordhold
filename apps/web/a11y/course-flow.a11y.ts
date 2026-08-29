@@ -29,11 +29,11 @@ test('empty units do not claim to be learned or offer work', async ({
   const emptyUnit = page
     .getByRole('listitem')
     .filter({ hasText: 'Unit 5 – Empty' });
-  await expect(emptyUnit.getByText('Noch keine Wörter')).toBeVisible();
+  await expect(emptyUnit.getByText('Noch keine Vokabeln')).toBeVisible();
   await expect(emptyUnit.getByText('alle gelernt')).toHaveCount(0);
 
   await page.goto('/?state=unit-empty');
-  await expect(page.getByText('Noch keine Wörter')).toBeVisible();
+  await expect(page.getByText('Noch keine Vokabeln')).toBeVisible();
   await expect(page.getByText('alle gelernt')).toHaveCount(0);
   await expect(
     page.getByRole('button', { name: unitActionPattern }),

@@ -14,10 +14,6 @@ import { answerDirectionEnum } from './directions';
 import { pages } from './pages';
 import { units } from './units';
 
-export const entryTypes = ['word', 'expression', 'sentence'] as const;
-export type EntryType = (typeof entryTypes)[number];
-export const entryTypeEnum = pgEnum('entry_type', entryTypes);
-
 // A structured vocabulary entry, not a flashcard. `grammar` stays a flexible
 // per-language shape (validated by Effect Schema unions in the app) holding
 // only what the textbook page actually shows.
@@ -30,12 +26,11 @@ export const entries = pgTable(
       .references(() => courses.id, { onDelete: 'cascade' }),
     // A unit outlives the photo it was captured from, so deleting a page only
     // clears provenance. Deleting a unit that still holds vocabulary is refused
-    // rather than silently taking the words with it.
+    // rather than silently taking the vocabulary entries with it.
     unitId: uuid('unit_id').notNull(),
     pageId: uuid('page_id').references(() => pages.id, {
       onDelete: 'set null',
     }),
-    type: entryTypeEnum('type').notNull(),
     targetText: text('target_text').notNull(),
     nativeText: text('native_text').notNull(),
     grammar: jsonb('grammar'),

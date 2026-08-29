@@ -7,7 +7,6 @@ const item = (index: number): PracticeItem => ({
   revision: 0,
   direction: 'to_target',
   entryId: `entry-${index}`,
-  entryType: 'word',
   targetText: `word-${index}`,
   nativeText: `Wort-${index}`,
   hasAudio: false,

@@ -103,7 +103,6 @@ describe('audioRecoveryPages', () => {
           entries: [
             {
               unit: { kind: 'new', name: 'Unité 3' },
-              type: 'word',
               targetText: 'mémoire',
               nativeText: 'Erinnerung',
             },

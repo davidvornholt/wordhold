@@ -35,7 +35,7 @@ export const getLearnPass = createServerFn()
     );
   });
 
-export const introduceWord = createServerFn({ method: 'POST' })
+export const introduceEntry = createServerFn({ method: 'POST' })
   .validator(decodeIntroductionRequest)
   .handler(async ({ data }) => {
     await authRuntime.runPromise(requireSession(getRequest().headers));

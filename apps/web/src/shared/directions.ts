@@ -15,5 +15,5 @@ export const directionDescription = (
   targetLabel: string,
 ): string =>
   direction === 'to_target'
-    ? `Du siehst das deutsche Wort und schreibst es auf ${targetLabel}.`
-    : 'Du siehst das fremde Wort und schreibst es auf Deutsch.';
+    ? `Du siehst die deutsche Vokabel und schreibst sie auf ${targetLabel}.`
+    : 'Du siehst die fremdsprachige Vokabel und schreibst sie auf Deutsch.';

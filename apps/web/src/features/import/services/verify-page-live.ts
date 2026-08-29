@@ -69,7 +69,6 @@ export const verifyPageLive = (
         courseId,
         unitId: unitIds[index],
         pageId: payload.pageId,
-        type: entry.type,
         targetText: entry.targetText,
         nativeText: entry.nativeText,
         grammar: entry.grammar ?? null,

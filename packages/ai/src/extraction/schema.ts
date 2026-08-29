@@ -11,7 +11,7 @@ const GrammarText = Schema.String.pipe(
   Schema.maxLength(maximumGrammarFieldLength),
 );
 
-// Flexible per-word-class grammar, discriminated on `kind`. Stored as JSONB
+// Flexible part-of-speech grammar, discriminated on `kind`. Stored as JSONB
 // on entries; every language uses the subset of fields that applies.
 const NounGrammar = Schema.TaggedStruct('noun', {
   gender: Schema.optional(Schema.Literal('masculine', 'feminine', 'neuter')),
@@ -43,7 +43,6 @@ export const Grammar = Schema.Union(
 export type GrammarInfo = typeof Grammar.Type;
 
 export const ExtractedEntry = Schema.Struct({
-  type: Schema.Literal('word', 'expression', 'sentence'),
   targetText: Schema.String.pipe(Schema.maxLength(maximumEntryTextLength)),
   nativeText: Schema.String.pipe(Schema.maxLength(maximumEntryTextLength)),
   grammar: Schema.optional(Grammar),

@@ -23,7 +23,6 @@ const backControl = (
 
 const deferredEntries: ReadonlyArray<DraftEntry> = [
   {
-    type: 'word',
     targetText: 'memory',
     nativeText: 'Erinnerung',
     example: 'A lasting memory.',

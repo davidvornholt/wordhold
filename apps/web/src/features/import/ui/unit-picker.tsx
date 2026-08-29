@@ -1,3 +1,4 @@
+import type { KeyboardEventHandler } from 'react';
 import { useId } from 'react';
 import {
   maximumUnitNameLength,
@@ -13,6 +14,7 @@ type UnitPickerProps = {
   readonly label: string;
   readonly required: boolean;
   readonly disabled: boolean;
+  readonly onNewUnitNameKeyDown?: KeyboardEventHandler<HTMLInputElement>;
   readonly onChange: (selection: UnitSelectionData) => void;
 };
 
@@ -22,6 +24,7 @@ export const UnitPicker = ({
   label,
   required,
   disabled,
+  onNewUnitNameKeyDown,
   onChange,
 }: UnitPickerProps) => {
   const selectId = useId();
@@ -49,7 +52,7 @@ export const UnitPicker = ({
           <option value={newUnitValue}>Neue Einheit …</option>
           {units.map((unit) => (
             <option key={unit.id} value={unit.id}>
-              {unit.name} ({unit.entryCount} Wörter)
+              {unit.name} ({unit.entryCount} Vokabeln)
             </option>
           ))}
         </select>
@@ -65,6 +68,7 @@ export const UnitPicker = ({
             onChange={(event) =>
               onChange({ kind: 'new', name: event.target.value })
             }
+            onKeyDown={onNewUnitNameKeyDown}
             placeholder="z. B. Unité 3"
             required={required}
             value={selection.name}

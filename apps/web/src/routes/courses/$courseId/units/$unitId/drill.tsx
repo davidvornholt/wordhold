@@ -76,7 +76,7 @@ const DrillScreen = () => {
       ) : (
         <SessionRunner
           backControl={backToUnit('Zurück zur Einheit')}
-          emptyMessage="In dieser Einheit ist noch kein Wort gelernt."
+          emptyMessage="In dieser Einheit ist noch keine Vokabel gelernt."
           key={direction}
           mode="drill"
           session={drill}

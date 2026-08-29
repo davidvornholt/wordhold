@@ -13,7 +13,7 @@ import {
 import { DashboardStore } from './dashboard-store';
 
 describe('DashboardStore introduction contract', () => {
-  it('separates unseen words from introduced fresh and due cards', async () => {
+  it('separates unseen entries from introduced fresh and due cards', async () => {
     await Effect.runPromise(
       withMigratedTestDatabase((database) => {
         const databaseLayer = testDatabaseLayer(database.url);
@@ -26,7 +26,7 @@ describe('DashboardStore introduction contract', () => {
             due: 1,
             fresh: 2,
             unlearned: 1,
-            words: 3,
+            entries: 3,
           });
         }).pipe(
           Effect.provide(
@@ -69,7 +69,7 @@ describe('DashboardStore introduction contract', () => {
             due: 0,
             fresh: 1,
             unlearned: 1,
-            words: 3,
+            entries: 3,
           });
 
           yield* sql`
@@ -82,7 +82,7 @@ describe('DashboardStore introduction contract', () => {
             due: 1,
             fresh: 2,
             unlearned: 1,
-            words: 3,
+            entries: 3,
           });
           const after = yield* sql<(typeof before)[number]>`
             select id, direction, revision, state,

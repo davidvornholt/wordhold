@@ -30,7 +30,7 @@ export class CourseService extends Effect.Service<CourseService>()(
         );
       // Switching a direction off only stops it being asked, counted and
       // scheduled. Its cards keep their schedule, so switching it back on
-      // resumes where it left off instead of starting the words over.
+      // resumes where it left off instead of starting the entries over.
       const setDirections = ({
         courseId,
         directions,
@@ -41,8 +41,8 @@ export class CourseService extends Effect.Service<CourseService>()(
             updated ? Effect.succeed(directions) : Effect.fail(notFound),
         );
       const listUnits = (courseId: string) => store.listUnits(courseId);
-      const listWords = (unitId: string) => store.listWords(unitId);
-      return { getDirections, setDirections, listUnits, listWords } as const;
+      const listEntries = (unitId: string) => store.listEntries(unitId);
+      return { getDirections, setDirections, listUnits, listEntries } as const;
     }),
   },
 ) {}

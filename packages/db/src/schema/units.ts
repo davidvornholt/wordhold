@@ -11,7 +11,7 @@ import { courses } from './courses';
 
 // A unit is one chapter of a textbook: the grouping a teacher names when
 // setting homework, and the grouping a learner works through before being
-// tested on it. Pages record which photo a word came from; units record which
+// tested on it. Pages record which photo an entry came from; units record which
 // part of the book it belongs to, and one unit usually spans several photos.
 export const units = pgTable(
   'units',

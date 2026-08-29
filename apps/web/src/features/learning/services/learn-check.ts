@@ -2,7 +2,7 @@ import { normalizeAnswer } from '../../../shared/grading/normalize';
 import { answerVariants } from '../../../shared/grading/variants';
 import type { LearnItem } from '../schemas/learning-models';
 
-// The learning pass is copying practice, not recall practice: the word is on
+// The learning pass is copying practice, not recall practice: the entry is on
 // screen while it is typed. So the check is deterministic and local — the same
 // normalization the graded path uses, against the spelling shown plus every
 // accepted answer of that direction, and never the judge. Nothing is billed

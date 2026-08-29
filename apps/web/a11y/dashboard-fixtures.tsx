@@ -14,7 +14,7 @@ const fixtureReviewsToday = 7;
 const fixtureDue = 4;
 const fixtureFresh = 2;
 const fixtureUnlearned = 6;
-const fixtureWords = 18;
+const fixtureEntries = 18;
 const recoveryPage = {
   id: '00000000-0000-0000-0000-000000000003',
   courseName: course.name,
@@ -66,12 +66,12 @@ export const DashboardFixture = ({ empty = false, audioRecovery = false }) => (
           due: empty ? 0 : fixtureDue,
           fresh: empty ? 0 : fixtureFresh,
           unlearned: empty ? 0 : fixtureUnlearned,
-          words: empty ? 0 : fixtureWords,
+          entries: empty ? 0 : fixtureEntries,
         },
       ]}
     />
     <FragileList
-      words={
+      entries={
         empty
           ? []
           : [

@@ -27,10 +27,10 @@ export const cards = pgTable(
       .notNull()
       .references(() => entries.id, { onDelete: 'cascade' }),
     direction: answerDirectionEnum('direction').notNull(),
-    // When the learner first met this word in the learning pass, null until
+    // When the learner first met this entry in the learning pass, null until
     // then. Deliberately not folded into `state`: `state` says where the card
     // stands in the FSRS state machine, this says whether the person has ever
-    // seen the word at all. A card that has not been introduced is never
+    // seen the entry at all. A card that has not been introduced is never
     // scheduled, never counted, and never asked.
     introducedAt: timestamp('introduced_at', { withTimezone: true }),
     state: cardStateEnum('state').notNull().default('new'),
@@ -51,14 +51,14 @@ export const cards = pgTable(
 
 // Where an answer came from. `scheduled` is the ordinary session queue;
 // `drill` is a unit drilled on purpose, which is worth practising but is not
-// evidence that the schedule asked for the word. Statistics have to be able
+// evidence that the schedule asked for the entry. Statistics have to be able
 // to tell them apart.
 export const reviewModes = ['scheduled', 'drill'] as const;
 export type ReviewMode = (typeof reviewModes)[number];
 export const reviewModeEnum = pgEnum('review_mode', reviewModes);
 
-// Full review log: FSRS parameter fitting and the dashboard's fragile-words
-// view both need per-review history, not just current card state.
+// Full review log: FSRS parameter fitting and the dashboard's fragile-entry
+// list both need per-review history, not just current card state.
 export const reviews = pgTable('reviews', {
   id: uuid('id').primaryKey().defaultRandom(),
   cardId: uuid('card_id')

@@ -7,9 +7,9 @@ import type { SessionDirection } from '../schemas/session-request';
 const newCardsPerSession = 10;
 
 // Every query below requires `introduced_at`: a card is only asked once the
-// word behind it has been through the learning pass. Asking about a word the
+// entry behind it has been through the learning pass. Asking about an entry the
 // learner has never seen produces a failure that says nothing about memory,
-// and FSRS would schedule the word on that failure.
+// and FSRS would schedule the entry on that failure.
 //
 // They all require the direction to be one the course still practises
 // (`co.directions`) as well as the one picked for this sitting. "Both" is
@@ -60,7 +60,7 @@ export class PracticeSessionStore extends Context.Tag(
           {
             due: sql<ItemRow>`
               select c.id as "cardId", c.revision, c.direction,
-                e.id as "entryId", e.type as "entryType",
+                e.id as "entryId",
                 e.target_text as "targetText", e.native_text as "nativeText",
                 exists(select 1 from entry_audio a where a.entry_id = e.id) as "hasAudio"
               from cards c
@@ -78,7 +78,7 @@ export class PracticeSessionStore extends Context.Tag(
             `,
             fresh: sql<ItemRow>`
               select c.id as "cardId", c.revision, c.direction,
-                e.id as "entryId", e.type as "entryType",
+                e.id as "entryId",
                 e.target_text as "targetText", e.native_text as "nativeText",
                 exists(select 1 from entry_audio a where a.entry_id = e.id) as "hasAudio"
               from cards c
@@ -110,7 +110,7 @@ export class PracticeSessionStore extends Context.Tag(
         const only = chosenDirection(direction);
         return sql<ItemRow>`
           select c.id as "cardId", c.revision, c.direction,
-            e.id as "entryId", e.type as "entryType",
+            e.id as "entryId",
             e.target_text as "targetText", e.native_text as "nativeText",
             exists(select 1 from entry_audio a where a.entry_id = e.id) as "hasAudio"
           from cards c

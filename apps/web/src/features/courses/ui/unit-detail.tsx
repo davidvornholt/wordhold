@@ -2,32 +2,32 @@ import type { LanguageCode } from '@wordhold/db/schema/courses';
 import type { ReactNode } from 'react';
 import {
   type CourseUnit,
-  learnedWords,
-  type UnitWord,
+  learnedEntries,
+  type UnitEntry,
   unitOffers,
 } from '../schemas/course-units';
-import { WordList } from './word-list';
+import { EntryList } from './entry-list';
 
 type UnitDetailProps = {
   readonly unit: CourseUnit;
-  readonly words: ReadonlyArray<UnitWord>;
+  readonly entries: ReadonlyArray<UnitEntry>;
   readonly targetLanguage: LanguageCode;
   readonly learnAction: ReactNode;
   readonly drillAction: ReactNode;
 };
 
 const unitSummary = (unit: CourseUnit): string => {
-  if (unit.words === 0) {
-    return 'Noch keine Wörter';
+  if (unit.entries === 0) {
+    return 'Noch keine Vokabeln';
   }
   return unit.unlearned === 0
-    ? `${unit.words} Wörter · alle gelernt`
-    : `${unit.words} Wörter · ${learnedWords(unit)} gelernt · ${unit.unlearned} noch nicht gelernt`;
+    ? `${unit.entries} Vokabeln · alle gelernt`
+    : `${unit.entries} Vokabeln · ${learnedEntries(unit)} gelernt · ${unit.unlearned} noch nicht gelernt`;
 };
 
 export const UnitDetail = ({
   unit,
-  words,
+  entries,
   targetLanguage,
   learnAction,
   drillAction,
@@ -40,7 +40,7 @@ export const UnitDetail = ({
         {offers.learn ? learnAction : null}
         {offers.drill ? drillAction : null}
       </div>
-      <WordList targetLanguage={targetLanguage} words={words} />
+      <EntryList targetLanguage={targetLanguage} entries={entries} />
     </>
   );
 };

@@ -53,5 +53,4 @@ export type JudgeInput = {
   readonly prompt: string;
   readonly expectedAnswers: ReadonlyArray<string>;
   readonly givenAnswer: string;
-  readonly entryType: 'word' | 'expression' | 'sentence';
 };

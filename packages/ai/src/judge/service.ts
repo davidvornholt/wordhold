@@ -22,7 +22,7 @@ export const judgePrompt = (input: JudgeInput): string => {
     input.direction === 'to_target' ? input.targetLanguage : 'German';
   return [
     'You are a strict but fair language teacher grading a vocabulary answer.',
-    `The learner translates a ${input.entryType} into ${answerLanguage}.`,
+    `The learner translates a vocabulary entry into ${answerLanguage}.`,
     `Task shown to the learner: "${input.prompt}"`,
     `Expected answers: ${input.expectedAnswers.map((a) => `"${a}"`).join(', ')}`,
     `The learner answered: "${input.givenAnswer}"`,
