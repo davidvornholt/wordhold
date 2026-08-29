@@ -4,6 +4,80 @@ import { assertNoAccessibilityViolations } from './a11y-assertions';
 
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
+const unitTwoId = '11111111-1111-4111-8111-111111111111';
+const unitThreeId = '22222222-2222-4222-8222-222222222222';
+const boundaryIndex = 6;
+
+test('VerifyForm assigns one unit to every entry or from one entry onward', async ({
+  page,
+}) => {
+  await page.goto('/?state=verification');
+  const rows = page.locator('form > ul > li');
+  const unitPickers = rows.locator('select');
+
+  await page.getByLabel('Einheit für alle Vokabeln').selectOption(unitTwoId);
+  await page.getByRole('button', { name: 'Auf alle anwenden' }).click();
+  const initialEntryCount = await rows.count();
+  await expect(unitPickers).toHaveCount(initialEntryCount);
+  expect(
+    await unitPickers.evaluateAll((pickers) =>
+      pickers.map((picker) => (picker as HTMLSelectElement).value),
+    ),
+  ).toEqual(Array.from({ length: initialEntryCount }, () => unitTwoId));
+
+  const boundaryPosition = boundaryIndex + 1;
+  await page
+    .getByLabel(`Einheit für Eintrag ${boundaryPosition}`)
+    .selectOption(unitThreeId);
+  await page
+    .getByRole('button', {
+      name: `Einheit ab Vokabel ${boundaryPosition} anwenden`,
+    })
+    .click();
+
+  expect(
+    await unitPickers.evaluateAll((pickers) =>
+      pickers.map((picker) => (picker as HTMLSelectElement).value),
+    ),
+  ).toEqual(
+    Array.from({ length: initialEntryCount }, (_, index) =>
+      index < boundaryIndex ? unitTwoId : unitThreeId,
+    ),
+  );
+
+  await page.getByRole('button', { name: 'Eintrag hinzufügen' }).click();
+  await expect(
+    page.getByLabel(`Einheit für Eintrag ${(await rows.count()).toString()}`),
+  ).toHaveValue(unitThreeId);
+  assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
+});
+
+test('VerifyForm applies a named new unit to every entry', async ({ page }) => {
+  await page.goto('/?state=verification');
+  const bulkAssignment = page.getByRole('group', {
+    name: 'Mehrere Vokabeln zuordnen',
+  });
+  await bulkAssignment
+    .getByLabel('Einheit für alle Vokabeln')
+    .selectOption('new');
+  const apply = bulkAssignment.getByRole('button', {
+    name: 'Auf alle anwenden',
+  });
+  await expect(apply).toBeDisabled();
+  await bulkAssignment.getByLabel('Name der Einheit').fill('Unit 4');
+  await apply.click();
+
+  const rows = page.locator('form > ul > li');
+  expect(
+    await rows
+      .getByLabel('Name der Einheit')
+      .evaluateAll((names) =>
+        names.map((name) => (name as HTMLInputElement).value),
+      ),
+  ).toEqual(Array.from({ length: await rows.count() }, () => 'Unit 4'));
+  assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
+});
+
 test('VerifyForm defaults to the latest real unit and routes entries independently', async ({
   page,
 }) => {
@@ -95,8 +169,12 @@ test('VerifyForm remains usable in its existing and new-unit mobile states', asy
 }) => {
   await page.setViewportSize({ width: 320, height: 720 });
   await page.goto('/?state=verification');
+  await expect(
+    page.getByRole('group', { name: 'Mehrere Vokabeln zuordnen' }),
+  ).toBeInViewport();
   const firstRow = page.locator('form > ul > li').first();
   const firstUnit = firstRow.getByLabel('Einheit für Eintrag 1');
+  await firstUnit.scrollIntoViewIfNeeded();
   await expect(firstUnit).toBeInViewport();
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
   await firstUnit.selectOption('new');
