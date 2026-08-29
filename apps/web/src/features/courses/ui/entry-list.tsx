@@ -1,8 +1,9 @@
 import type { LanguageCode } from '@wordhold/db/schema/courses';
-import type { UnitEntry } from '../schemas/course-units';
+import type { VocabularyEntry } from '../schemas/course-units';
+import { VocabularySchedule } from './vocabulary-schedule';
 
 type EntryListProps = {
-  readonly entries: ReadonlyArray<UnitEntry>;
+  readonly entries: ReadonlyArray<VocabularyEntry>;
   readonly targetLanguage: LanguageCode;
 };
 
@@ -16,20 +17,20 @@ export const EntryList = ({ entries, targetLanguage }: EntryListProps) =>
     // in that language instead of reading it as German.
     <ul className="divide-y divide-border border border-border bg-card">
       {entries.map((entry) => (
-        <li className="flex flex-col gap-1 px-4 py-3" key={entry.id}>
-          <span className="flex items-baseline justify-between gap-3">
+        <li
+          className="grid gap-2 px-4 py-3 sm:grid-cols-2 sm:items-start"
+          key={entry.id}
+        >
+          <p>
             <span className="font-medium" lang={targetLanguage}>
               {entry.targetText}
             </span>
-            {entry.learned ? null : (
-              <span className="whitespace-nowrap text-muted-foreground text-xs">
-                noch nicht gelernt
-              </span>
-            )}
-          </span>
-          <span className="text-muted-foreground text-sm">
-            {entry.nativeText}
-          </span>
+            <span className="text-muted-foreground text-sm">
+              {' '}
+              · {entry.nativeText}
+            </span>
+          </p>
+          <VocabularySchedule entry={entry} targetLanguage={targetLanguage} />
         </li>
       ))}
     </ul>

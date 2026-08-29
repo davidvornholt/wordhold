@@ -18,14 +18,22 @@ export type SessionRequestData = typeof SessionRequest.Type;
 
 export const decodeSessionRequest = Schema.decodeUnknownSync(SessionRequest);
 
-export const DrillRequest = Schema.Struct({
-  unitId: Schema.UUID,
+const StudySelection = Schema.Union(
+  Schema.Struct({ unitId: Schema.UUID }),
+  Schema.Struct({
+    entryIds: Schema.Array(Schema.UUID).pipe(Schema.minItems(1)),
+  }),
+);
+
+export const StudyRequest = Schema.Struct({
+  courseId: Schema.UUID,
   direction: SessionDirectionSchema,
+  selection: StudySelection,
 });
 
-export type DrillRequestData = typeof DrillRequest.Type;
+export type StudyRequestData = typeof StudyRequest.Type;
 
-export const decodeDrillRequest = Schema.decodeUnknownSync(DrillRequest);
+export const decodeStudyRequest = Schema.decodeUnknownSync(StudyRequest);
 
 const PracticeSearch = Schema.Struct({
   direction: Schema.optional(SessionDirectionSchema),
@@ -39,3 +47,23 @@ const decodeSearch = Schema.decodeUnknownOption(PracticeSearch);
 // direction falls back to none chosen, which is the start screen.
 export const parsePracticeSearch = (input: unknown): PracticeSearchData =>
   Option.getOrElse(decodeSearch(input), (): PracticeSearchData => ({}));
+
+const StudySearch = Schema.Struct({
+  direction: Schema.optional(SessionDirectionSchema),
+  unit: Schema.optional(Schema.UUID),
+  entries: Schema.optional(Schema.String),
+});
+
+export type StudySearchData = typeof StudySearch.Type;
+
+const decodeStudySearch = Schema.decodeUnknownOption(StudySearch);
+
+export const parseStudySearch = (input: unknown): StudySearchData =>
+  Option.getOrElse(decodeStudySearch(input), (): StudySearchData => ({}));
+
+export const selectedEntryIds = (
+  entries: string | undefined,
+): ReadonlyArray<string> =>
+  entries === undefined
+    ? []
+    : entries.split(',').filter((entryId) => Schema.is(Schema.UUID)(entryId));

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import type { CourseUnit } from '../schemas/course-units';
+import { unitPracticeStatus } from './unit-status';
 
 type UnitListProps = {
   readonly units: ReadonlyArray<CourseUnit>;
@@ -12,9 +13,11 @@ const unitProgress = (unit: CourseUnit): string => {
   if (unit.entries === 0) {
     return 'Noch keine Vokabeln';
   }
-  return unit.unlearned === 0
-    ? `${unit.entries} Vokabeln · alle gelernt`
-    : `${unit.entries} Vokabeln · ${unit.unlearned} noch nicht gelernt`;
+  const progress =
+    unit.unintroduced === 0
+      ? `${unit.entries} Vokabeln · alle kennengelernt`
+      : `${unit.entries} Vokabeln · ${unit.unintroduced} noch kennenlernen`;
+  return `${progress} · ${unitPracticeStatus(unit)}`;
 };
 
 export const UnitList = ({ units, renderUnitLink }: UnitListProps) =>

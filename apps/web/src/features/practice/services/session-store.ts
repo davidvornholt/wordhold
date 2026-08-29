@@ -1,10 +1,15 @@
 import { Database } from '@wordhold/db/client';
 import { Context, Effect, Layer } from 'effect';
+import {
+  practiceSectionSize,
+  readyCardsInNextSection,
+} from '../../../shared/practice/session-policy';
 import { PracticeDatabaseError } from '../errors/practice-errors';
 import type { PracticeItem } from '../schemas/practice-models';
-import type { SessionDirection } from '../schemas/session-request';
-
-const newCardsPerSession = 10;
+import type {
+  SessionDirection,
+  StudyRequestData,
+} from '../schemas/session-request';
 
 // Every query below requires `introduced_at`: a card is only asked once the
 // entry behind it has been through the learning pass. Asking about an entry the
@@ -19,6 +24,12 @@ const newCardsPerSession = 10;
 
 type ItemRow = Omit<PracticeItem, 'prompt'>;
 
+type AvailabilityRow = {
+  readonly due: number;
+  readonly firstReviews: number;
+  readonly nextDueAt: Date | null;
+};
+
 const chosenDirection = (direction: SessionDirection) =>
   direction === 'both' ? null : direction;
 
@@ -27,22 +38,24 @@ export class PracticeSessionStore extends Context.Tag(
 )<
   PracticeSessionStore,
   {
-    readonly load: (
+    readonly loadScheduled: (
       courseId: string,
       direction: SessionDirection,
       now: Date,
     ) => Effect.Effect<
       {
-        readonly due: ReadonlyArray<ItemRow>;
-        readonly fresh: ReadonlyArray<ItemRow>;
+        readonly items: ReadonlyArray<ItemRow>;
+        readonly availability: {
+          readonly due: number;
+          readonly firstReviews: number;
+          readonly ready: number;
+          readonly nextDueAt: Date | null;
+        };
       },
       PracticeDatabaseError
     >;
-    // Every learned card of one unit, due or not. Drilling is deliberate, so
-    // it does not ask what the schedule wants.
-    readonly loadUnit: (
-      unitId: string,
-      direction: SessionDirection,
+    readonly loadSelection: (
+      request: StudyRequestData,
     ) => Effect.Effect<ReadonlyArray<ItemRow>, PracticeDatabaseError>;
   }
 >() {
@@ -50,7 +63,7 @@ export class PracticeSessionStore extends Context.Tag(
     PracticeSessionStore,
     Effect.gen(function* () {
       const sql = yield* Database;
-      const load = (
+      const loadScheduled = (
         courseId: string,
         direction: SessionDirection,
         now: Date,
@@ -58,7 +71,7 @@ export class PracticeSessionStore extends Context.Tag(
         const only = chosenDirection(direction);
         return Effect.all(
           {
-            due: sql<ItemRow>`
+            items: sql<ItemRow>`
               select c.id as "cardId", c.revision, c.direction,
                 e.id as "entryId",
                 e.target_text as "targetText", e.native_text as "nativeText",
@@ -71,16 +84,22 @@ export class PracticeSessionStore extends Context.Tag(
                 and c.direction = any(co.directions)
                 and (${only}::answer_direction is null
                   or c.direction = ${only}::answer_direction)
-                and c.state <> 'new'
-                and c.due_at is not null
-                and c.due_at <= ${now}
-              order by c.due_at asc
+                and (
+                  c.state = 'new'
+                  or (c.due_at is not null and c.due_at <= ${now})
+                )
+              order by (c.state = 'new') asc, c.due_at asc nulls last,
+                e.created_at asc, c.direction asc
+              limit ${practiceSectionSize}
             `,
-            fresh: sql<ItemRow>`
-              select c.id as "cardId", c.revision, c.direction,
-                e.id as "entryId",
-                e.target_text as "targetText", e.native_text as "nativeText",
-                exists(select 1 from entry_audio a where a.entry_id = e.id) as "hasAudio"
+            availability: sql<AvailabilityRow>`
+              select
+                count(*) filter (
+                  where c.state <> 'new' and c.due_at is not null
+                    and c.due_at <= ${now}
+                )::int as due,
+                count(*) filter (where c.state = 'new')::int as "firstReviews",
+                min(c.due_at) filter (where c.due_at > ${now}) as "nextDueAt"
               from cards c
               join entries e on e.id = c.entry_id
               join courses co on co.id = e.course_id
@@ -89,13 +108,25 @@ export class PracticeSessionStore extends Context.Tag(
                 and c.direction = any(co.directions)
                 and (${only}::answer_direction is null
                   or c.direction = ${only}::answer_direction)
-                and c.state = 'new'
-              order by e.created_at asc, c.direction asc
-              limit ${newCardsPerSession}
+              group by e.course_id
             `,
           },
           { concurrency: 'unbounded' },
         ).pipe(
+          Effect.map(({ items, availability }) => {
+            const counts = availability.at(0) ?? {
+              due: 0,
+              firstReviews: 0,
+              nextDueAt: null,
+            };
+            return {
+              items,
+              availability: {
+                ...counts,
+                ready: readyCardsInNextSection(counts.due, counts.firstReviews),
+              },
+            };
+          }),
           Effect.mapError(
             (cause) =>
               new PracticeDatabaseError({
@@ -106,8 +137,16 @@ export class PracticeSessionStore extends Context.Tag(
           ),
         );
       };
-      const loadUnit = (unitId: string, direction: SessionDirection) => {
+      const loadSelection = ({
+        courseId,
+        direction,
+        selection,
+      }: StudyRequestData) => {
         const only = chosenDirection(direction);
+        const selectionClause =
+          'unitId' in selection
+            ? sql`e.unit_id = ${selection.unitId}`
+            : sql`e.id = any(${`{${selection.entryIds.join(',')}}`}::uuid[])`;
         return sql<ItemRow>`
           select c.id as "cardId", c.revision, c.direction,
             e.id as "entryId",
@@ -115,10 +154,9 @@ export class PracticeSessionStore extends Context.Tag(
             exists(select 1 from entry_audio a where a.entry_id = e.id) as "hasAudio"
           from cards c
           join entries e on e.id = c.entry_id
-          join courses co on co.id = e.course_id
-          where e.unit_id = ${unitId}
+          where e.course_id = ${courseId}
+            and ${selectionClause}
             and c.introduced_at is not null
-            and c.direction = any(co.directions)
             and (${only}::answer_direction is null
               or c.direction = ${only}::answer_direction)
           order by c.due_at asc nulls last, e.created_at asc, c.direction asc
@@ -126,14 +164,15 @@ export class PracticeSessionStore extends Context.Tag(
           Effect.mapError(
             (cause) =>
               new PracticeDatabaseError({
-                operation: 'load unit drill',
+                operation: 'load selected practice',
                 cause,
-                message: 'Die Einheit konnte nicht geladen werden.',
+                message:
+                  'Die ausgewählten Vokabeln konnten nicht geladen werden.',
               }),
           ),
         );
       };
-      return { load, loadUnit } as const;
+      return { loadScheduled, loadSelection } as const;
     }),
   );
 }

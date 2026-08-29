@@ -12,9 +12,10 @@ const course = {
   targetLanguage: 'en' as const,
 };
 const fixtureReviewsToday = 7;
-const fixtureDue = 4;
-const fixtureFresh = 2;
-const fixtureUnlearned = 6;
+const fixtureCardsToday = 5;
+const fixtureDue = 0;
+const fixtureFirstReviews = 6;
+const fixtureUnintroduced = 6;
 const fixtureEntries = 18;
 const recoveryPage = {
   id: '00000000-0000-0000-0000-000000000003',
@@ -33,12 +34,22 @@ const secondPendingPage = {
   capturedAt: new Date('2026-08-25T13:00:00Z'),
 };
 
+const actionClass = (destination: 'course' | 'import' | 'practice') => {
+  if (destination === 'practice') {
+    return 'inline-flex min-h-11 items-center bg-primary px-4 py-2 font-medium text-primary-foreground text-sm';
+  }
+  if (destination === 'import') {
+    return 'min-h-11 border border-input px-4 py-2 text-sm underline-offset-4 hover:underline';
+  }
+  return 'font-medium underline';
+};
+
 const action = (
   label: string,
   destination: 'course' | 'import' | 'practice',
 ) => (
   <button
-    className="text-sm underline"
+    className={actionClass(destination)}
     onClick={() => navigateToFixture(destination)}
     type="button"
   >
@@ -55,6 +66,27 @@ export const SignedOutFixture = () => (
     {null}
   </HomeShell>
 );
+
+const dashboardStats = (empty: boolean) => [
+  {
+    courseId: course.id,
+    due: empty ? 0 : fixtureDue,
+    firstReviews: empty ? 0 : fixtureFirstReviews,
+    ready: empty ? 0 : fixtureDue + fixtureFirstReviews,
+    unintroduced: empty ? 0 : fixtureUnintroduced,
+    entries: empty ? 0 : fixtureEntries,
+    nextDueAt: empty ? null : new Date('2026-08-30T10:40:00Z'),
+    directions: [
+      {
+        direction: 'to_target' as const,
+        due: empty ? 0 : fixtureDue,
+        firstReviews: empty ? 0 : fixtureFirstReviews,
+        ready: empty ? 0 : fixtureDue + fixtureFirstReviews,
+        nextDueAt: empty ? null : new Date('2026-08-30T10:40:00Z'),
+      },
+    ],
+  },
+];
 
 export const DashboardFixture = ({
   empty = false,
@@ -77,17 +109,10 @@ export const DashboardFixture = ({
         renderImportAction={() =>
           action('fotografiere die erste Seite', 'import')
         }
-        renderPracticeAction={() => action('Üben', 'practice')}
+        renderPracticeAction={() => action('6 Karten üben', 'practice')}
         reviewsToday={empty ? 0 : fixtureReviewsToday}
-        stats={[
-          {
-            courseId: course.id,
-            due: empty ? 0 : fixtureDue,
-            fresh: empty ? 0 : fixtureFresh,
-            unlearned: empty ? 0 : fixtureUnlearned,
-            entries: empty ? 0 : fixtureEntries,
-          },
-        ]}
+        cardsToday={empty ? 0 : fixtureCardsToday}
+        stats={dashboardStats(empty)}
       />
       <FragileList
         entries={
@@ -96,6 +121,7 @@ export const DashboardFixture = ({
             : [
                 {
                   entryId: '00000000-0000-0000-0000-000000000002',
+                  courseId: course.id,
                   targetText: 'memory',
                   nativeText: 'Erinnerung',
                   courseName: 'English A2',
@@ -103,6 +129,14 @@ export const DashboardFixture = ({
                 },
               ]
         }
+        renderEntryAction={(entry) => (
+          <button
+            onClick={() => navigateToFixture('vocabulary-difficult')}
+            type="button"
+          >
+            {entry.targetText} · {entry.nativeText}
+          </button>
+        )}
       />
       <AudioRecoveryPages
         pages={

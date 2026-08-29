@@ -7,34 +7,36 @@ type CourseOverviewProps = {
   // print the same entry twice under its own heading.
   readonly languageLabel: string | null;
   readonly units: ReadonlyArray<CourseUnit>;
-  readonly practiceAvailable: boolean;
-  readonly practiceAction: ReactNode;
+  readonly primaryAction: ReactNode | null;
   readonly importAction: ReactNode;
   readonly settingsAction: ReactNode;
+  readonly vocabularyAction: ReactNode;
   readonly renderUnitLink: (unit: CourseUnit) => ReactNode;
 };
 
 const courseSummary = (
   languageLabel: string | null,
-  totals: { readonly entries: number; readonly unlearned: number },
+  totals: { readonly entries: number; readonly unintroduced: number },
 ): string =>
   [
     languageLabel,
     `${totals.entries} Vokabeln`,
-    totals.unlearned === 0 ? null : `${totals.unlearned} noch nicht gelernt`,
+    totals.unintroduced === 0
+      ? null
+      : `${totals.unintroduced} noch kennenlernen`,
   ]
     .filter((part): part is string => part !== null)
     .join(' · ');
 
-// Learning and drilling start from a unit, not from here: both ask about one
-// unit's entries, and picking the unit is what the list below is for.
+// Learning and free practice start from a unit, not from here: both ask about
+// one unit's entries, and picking the unit is what the list below is for.
 export const CourseOverview = ({
   languageLabel,
   units,
-  practiceAvailable,
-  practiceAction,
+  primaryAction,
   importAction,
   settingsAction,
+  vocabularyAction,
   renderUnitLink,
 }: CourseOverviewProps) => {
   const totals = courseTotals(units);
@@ -43,8 +45,11 @@ export const CourseOverview = ({
       <p className="text-muted-foreground text-sm">
         {courseSummary(languageLabel, totals)}
       </p>
-      <div className="flex flex-wrap gap-4">
-        {practiceAvailable ? practiceAction : null}
+      <div className="flex flex-wrap items-center gap-4">
+        {primaryAction ?? (
+          <p className="min-h-11 content-center text-sm">Für jetzt geschafft</p>
+        )}
+        {vocabularyAction}
         {importAction}
         {settingsAction}
       </div>

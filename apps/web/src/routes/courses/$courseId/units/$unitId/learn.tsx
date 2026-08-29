@@ -22,7 +22,7 @@ const LearnUnitScreen = () => {
           ← {pass.unit.name}
         </Link>
       }
-      title={`${pass.unit.name} lernen`}
+      title={`${pass.unit.name} kennenlernen`}
     >
       <LearnPass
         items={pass.items}
@@ -37,11 +37,11 @@ const LearnUnitScreen = () => {
         }}
         practiceControl={
           <Link
-            className="w-fit font-medium text-sm underline"
+            className="inline-flex min-h-11 w-fit items-center bg-primary px-4 py-2 font-medium text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
             params={{ courseId: course.id }}
             to="/courses/$courseId/practice"
           >
-            Jetzt üben
+            Erste Abfrage starten
           </Link>
         }
         targetLabel={germanLabels[course.targetLanguage]}

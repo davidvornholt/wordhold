@@ -75,12 +75,22 @@ export const DirectionSettings = ({
 
   return (
     <section className="flex flex-col gap-3">
+      <div className="flex flex-col gap-1">
+        <h2 className="font-display text-xl">
+          Welche Richtungen sollen regelmäßig eingeplant werden?
+        </h2>
+        <p className="text-muted-foreground text-sm">
+          Eine ausgeschaltete Richtung erscheint nicht in deinem Lernplan. Ihr
+          bisheriger Stand bleibt erhalten und kann beim Einschalten wieder
+          fällig sein. In freien Übungen kannst du sie trotzdem wählen.
+        </p>
+      </div>
       <fieldset
         aria-busy={saving}
         className="flex flex-col gap-4 border border-border bg-card p-4"
         disabled={saving}
       >
-        <legend className="px-1 font-medium">Abfragerichtungen</legend>
+        <legend className="sr-only">Regelmäßige Abfragerichtungen</legend>
         {answerDirections.map((direction) => (
           <div className="flex items-start gap-3 text-sm" key={direction}>
             <input

@@ -2,62 +2,41 @@ import { expect, test } from '@playwright/test';
 
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
-// A missed card has to come back inside the session. If it leaves instead, it
-// sits on FSRS's one-minute relearning step and the dashboard says "Üben" again
-// a minute after the session was finished.
-test('a missed card returns later and a double click advances only once', async ({
+test('a missed card returns in the FSRS-aware after-round', async ({
   page,
 }) => {
   await page.goto('/?state=practice-session');
   const answer = page.getByLabel('Deine Antwort');
-  const progress = page.getByText('von 2 Karten bearbeitet');
-  const check = page.getByRole('button', { name: 'Prüfen' });
-  const next = page.getByRole('button', { name: 'Weiter' });
-  await expect(progress).toHaveText('0 von 2 Karten bearbeitet');
+  await expect(page.getByText('0 von 2 Karten bearbeitet')).toBeVisible();
 
   await answer.fill('wrong');
-  await check.click();
-  await expect(progress).toHaveText('0 von 2 Karten bearbeitet');
-  await expect(page.getByText('Erwartet:')).toBeVisible();
-  await next.dblclick();
-  await expect(progress).toHaveText('0 von 2 Karten bearbeitet');
-  const holidayHeading = page.getByRole('heading', {
-    level: 2,
-    name: 'Ferien',
-  });
-  await expect(holidayHeading).toBeVisible();
+  await page.getByRole('button', { name: 'Prüfen' }).click();
+  await expect(page.getByText('Noch nicht sicher')).toBeVisible();
+  await page.getByRole('button', { name: 'Weiter' }).dblclick();
+  await expect(page.getByText('1 von 2 Karten bearbeitet')).toBeVisible();
   await expect(answer).toBeFocused();
 
   await answer.fill('holiday');
-  await check.click();
-  await expect(progress).toHaveText('1 von 2 Karten bearbeitet');
-  await expect(page.getByText('Erwartet:')).toHaveCount(0);
-  await next.click();
-  await expect(progress).toHaveText('1 von 2 Karten bearbeitet');
-  const repeatedHeading = page.getByRole('heading', {
-    level: 2,
-    name: 'Erinnerung',
-  });
-  await expect(repeatedHeading).toBeVisible();
+  await page.getByRole('button', { name: 'Prüfen' }).click();
+  await page.getByRole('button', { name: 'Weiter' }).click();
+
+  await expect(page.getByText('Nachrunde', { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { level: 2, name: 'Erinnerung' }),
+  ).toBeVisible();
   await expect(answer).toBeFocused();
-  await expect(page.getByText('Noch einmal')).toBeVisible();
-  await expect(page.getByLabel('Submitted revision')).toHaveText('1');
+  await expect(
+    page.getByText('Übersetze ins Englische · Noch einmal'),
+  ).toBeVisible();
 
   await answer.fill('memory');
-  await check.click();
-  await expect(progress).toHaveText('2 von 2 Karten bearbeitet');
-  await expect(page.getByText('Erwartet:')).toHaveCount(0);
-  await next.click();
-  await expect(progress).toHaveText('2 von 2 Karten bearbeitet');
-  const completeHeading = page.getByRole('heading', {
-    level: 2,
-    name: 'Sitzung abgeschlossen!',
-  });
-  await expect(completeHeading).toBeVisible();
-  await expect(completeHeading).toBeFocused();
+  await page.getByRole('button', { name: 'Prüfen' }).click();
+  await page.getByRole('button', { name: 'Weiter' }).click();
   await expect(
-    page.getByText('1 von 2 Karten auf Anhieb richtig, 1 noch einmal geübt.'),
-  ).toBeVisible();
+    page.getByRole('heading', { level: 2, name: 'Für jetzt geschafft' }),
+  ).toBeFocused();
+  await expect(page.getByText('2 von 2 Karten')).toBeVisible();
+  await expect(page.getByText('In der Nachrunde richtig')).toBeVisible();
 });
 
 test('a rejected typo can be stored as Hard without teaching it as an answer', async ({
@@ -68,7 +47,7 @@ test('a rejected typo can be stored as Hard without teaching it as an answer', a
 
   await answer.fill('memroy');
   await page.getByRole('button', { name: 'Prüfen' }).click();
-  await expect(page.getByText('Leider falsch.')).toBeVisible();
+  await expect(page.getByText('Noch nicht sicher')).toBeVisible();
   await expect(
     page.getByText('wird aber nicht als Lösung gespeichert', { exact: false }),
   ).toBeVisible();
@@ -81,98 +60,48 @@ test('a rejected typo can be stored as Hard without teaching it as an answer', a
   await expect(answer).toBeFocused();
 });
 
-test('a first-attempt grading failure keeps its stored state in the final summary', async ({
+test('an unavailable judge leaves schedule and summary intact', async ({
   page,
 }) => {
   await page.goto('/?state=practice-session');
-  const answer = page.getByLabel('Deine Antwort');
-  const check = page.getByRole('button', { name: 'Prüfen' });
-  const next = page.getByRole('button', { name: 'Weiter' });
-
-  await answer.fill('ungraded');
-  await check.click();
-  await next.click();
-  const holidayHeading = page.getByRole('heading', {
-    level: 2,
-    name: 'Ferien',
-  });
-  await expect(holidayHeading).toBeVisible();
-  await expect(answer).toBeFocused();
-
-  await answer.fill('holiday');
-  await check.click();
-  await next.click();
-  const endedHeading = page.getByRole('heading', {
-    level: 2,
-    name: 'Sitzung beendet.',
-  });
-  await expect(endedHeading).toBeVisible();
-  await expect(endedHeading).toBeFocused();
-  await expect(page.getByText('2 von 2 Karten bearbeitet')).toBeVisible();
-  await expect(
-    page.getByText(
-      '1 Karte konnte nicht bewertet werden. Lernstand und Termin blieben unverändert.',
-    ),
-  ).toBeVisible();
-});
-
-test('a repeated-card grading failure keeps its stored state in the final summary', async ({
-  page,
-}) => {
-  await page.goto('/?state=practice-session');
-  const answer = page.getByLabel('Deine Antwort');
-  const check = page.getByRole('button', { name: 'Prüfen' });
-  const next = page.getByRole('button', { name: 'Weiter' });
-
-  await answer.fill('wrong');
-  await check.click();
-  await next.click();
-  await answer.fill('holiday');
-  await check.click();
-  await next.click();
-  const repeatedHeading = page.getByRole('heading', {
-    level: 2,
-    name: 'Erinnerung',
-  });
-  await expect(page.getByText('Noch einmal')).toBeVisible();
-  await expect(repeatedHeading).toBeVisible();
-  await expect(answer).toBeFocused();
-
-  await answer.fill('ungraded');
-  await check.click();
-  await next.click();
-  const endedHeading = page.getByRole('heading', {
-    level: 2,
-    name: 'Sitzung beendet.',
-  });
-  await expect(endedHeading).toBeVisible();
-  await expect(endedHeading).toBeFocused();
-  await expect(page.getByText('2 von 2 Karten bearbeitet')).toBeVisible();
-  await expect(
-    page.getByText('1 von 2 Karten auf Anhieb richtig.'),
-  ).toBeVisible();
-  await expect(
-    page.getByText(
-      '1 Karte konnte nicht bewertet werden. Lernstand und Termin blieben unverändert.',
-    ),
-  ).toBeVisible();
-});
-
-test('an ungraded future drill card keeps its existing date in the summary', async ({
-  page,
-}) => {
-  await page.goto('/?state=drill-session');
   await page.getByLabel('Deine Antwort').fill('ungraded');
   await page.getByRole('button', { name: 'Prüfen' }).click();
   await page.getByRole('button', { name: 'Weiter' }).click();
-
-  await expect(page.getByText('Sitzung beendet.')).toBeVisible();
+  await page.getByLabel('Deine Antwort').fill('holiday');
+  await page.getByRole('button', { name: 'Prüfen' }).click();
+  await page.getByRole('button', { name: 'Weiter' }).click();
+  await expect(page.getByText('2 von 2 Karten')).toBeVisible();
   await expect(
     page.getByText(
       '1 Karte konnte nicht bewertet werden. Lernstand und Termin blieben unverändert.',
     ),
   ).toBeVisible();
+});
+
+test('an ungraded future free-practice card keeps its existing date', async ({
+  page,
+}) => {
+  await page.goto('/?state=study-session');
+  await page.getByLabel('Deine Antwort').fill('ungraded');
+  await page.getByRole('button', { name: 'Prüfen' }).click();
+  await page.getByRole('button', { name: 'Weiter' }).click();
+  await expect(page.getByText('Für jetzt geschafft')).toBeVisible();
   await expect(
-    page.getByText('1 Karte konnte nicht bewertet werden und bleibt fällig.'),
-  ).toHaveCount(0);
+    page.getByText(
+      '1 Karte konnte nicht bewertet werden. Lernstand und Termin blieben unverändert.',
+    ),
+  ).toBeVisible();
+});
+
+test('one-card progress and summary use the singular label', async ({
+  page,
+}) => {
+  await page.goto('/?state=practice');
+  await expect(page.getByText('0 von 1 Karte bearbeitet')).toBeVisible();
+
+  await page.goto('/?state=practice-complete-one-card');
+  await expect(page.getByText('1 von 1 Karte')).toBeVisible();
+
+  await page.goto('/?state=practice-ungraded-one-card');
+  await expect(page.getByText('1 von 1 Karte')).toBeVisible();
 });

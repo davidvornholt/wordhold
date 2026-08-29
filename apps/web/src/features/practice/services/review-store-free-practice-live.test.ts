@@ -39,13 +39,13 @@ const readCardSchedule = (cardId: string) =>
     ),
   );
 
-describe('PracticeReviewStore held schedule', () => {
+describe('PracticeReviewStore free-practice schedule', () => {
   it('persists both review modes through the PostgreSQL enum', async () => {
     await runReviewTest(
       Effect.gen(function* () {
         const store = yield* PracticeReviewStore;
         const sql = yield* Database;
-        const drill = yield* makeReviewInput({
+        const freePractice = yield* makeReviewInput({
           entryId: dueEntryId,
           direction: 'to_target',
           answer: 'souvenir',
@@ -56,7 +56,7 @@ describe('PracticeReviewStore held schedule', () => {
           direction: 'to_native',
           answer: 'Erinnerung',
         });
-        yield* store.commit(drill);
+        yield* store.commit(freePractice);
         yield* store.commit(scheduled);
 
         const labels = yield* sql<{ readonly label: string }>`
@@ -68,7 +68,7 @@ describe('PracticeReviewStore held schedule', () => {
         const reviews = yield* sql<{ readonly mode: string }>`
           select mode::text from reviews order by reviewed_at, card_id
         `;
-        const dueAfter = yield* readCardSchedule(drill.card.id);
+        const dueAfter = yield* readCardSchedule(freePractice.card.id);
         expect(labels.map(({ label }) => label)).toEqual([
           'scheduled',
           'drill',
@@ -77,9 +77,9 @@ describe('PracticeReviewStore held schedule', () => {
           'drill',
           'scheduled',
         ]);
-        // A client-reported drill cannot suppress a genuinely due update.
+        // Client-reported provenance cannot suppress a genuinely due update.
         expect(dueAfter.revision).toBe(1);
-        expect(dueAfter.lastReviewedAt).toEqual(drill.reviewedAt);
+        expect(dueAfter.lastReviewedAt).toEqual(freePractice.reviewedAt);
       }),
     );
   });
@@ -97,9 +97,43 @@ describe('PracticeReviewStore held schedule', () => {
           mode: 'scheduled',
         });
         const before = yield* readCardSchedule(input.card.id);
-        expect(yield* store.commit(input)).toBe(1);
+        expect(yield* store.commit(input)).toMatchObject({
+          revision: 1,
+          schedule: { advanced: false },
+        });
         const after = yield* readCardSchedule(input.card.id);
         expect(after).toEqual({ ...before, revision: 1 });
+      }),
+    );
+  });
+});
+
+describe('PracticeReviewStore free-practice failure handling', () => {
+  it('starts relearning after a wrong answer before the planned date', async () => {
+    await runReviewTest(
+      Effect.gen(function* () {
+        const store = yield* PracticeReviewStore;
+        const input = yield* makeReviewInput({
+          entryId: dueEntryId,
+          direction: 'to_native',
+          answer: 'falsch',
+          mode: 'drill',
+          correct: false,
+        });
+        const before = yield* readCardSchedule(input.card.id);
+        const result = yield* store.commit(input);
+        const after = yield* readCardSchedule(input.card.id);
+
+        expect(result).toMatchObject({
+          revision: 1,
+          schedule: { advanced: true },
+        });
+        expect(after.state).toBe('relearning');
+        expect(after.lapses).toBe(before.lapses + 1);
+        expect(after.lastReviewedAt).toEqual(input.reviewedAt);
+        expect(after.dueAt?.getTime()).toBeLessThan(
+          before.dueAt?.getTime() ?? Number.POSITIVE_INFINITY,
+        );
       }),
     );
   });

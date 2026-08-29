@@ -1,85 +1,117 @@
-import type { PracticeItem } from '../schemas/practice-models';
+import { practiceSectionSize } from '../../../shared/practice/session-policy';
+import type {
+  PracticeItem,
+  ResolvedSubmitResult,
+} from '../schemas/practice-models';
 
-// How many other cards come between a missed card and its repeat. Far enough
-// that the answer is no longer on screen, close enough that the session still
-// ends.
-const repeatGap = 3;
+type QueuePhase = 'main' | 'after-round' | 'checkpoint' | 'complete';
 
 type QueuedCard = PracticeItem & {
-  // Whether this card has already been missed in this session. A card is only
-  // ever counted once, however often it comes back.
   readonly repeated: boolean;
+};
+
+type DeferredCard = QueuedCard & {
+  readonly dueAt: Date | null;
+};
+
+type ScheduledCard = {
+  readonly cardId: string;
+  readonly dueAt: Date | null;
 };
 
 export type SessionQueue = {
   readonly pending: ReadonlyArray<QueuedCard>;
-  readonly settled: number;
+  readonly remaining: ReadonlyArray<PracticeItem>;
+  readonly deferred: ReadonlyArray<DeferredCard>;
+  readonly scheduled: ReadonlyArray<ScheduledCard>;
+  readonly phase: QueuePhase;
+  readonly section: number;
+  readonly sectionTotal: number;
+  readonly sectionProcessed: number;
   readonly total: number;
-  readonly correct: number;
-  readonly wrong: number;
-  readonly ungraded: number;
+  readonly firstTryCorrect: number;
+  readonly afterRoundCorrect: number;
+  readonly missedCardIds: ReadonlyArray<string>;
+  readonly ungradedCardIds: ReadonlyArray<string>;
+  readonly processedCardIds: ReadonlyArray<string>;
 };
 
 export type ExpectedCard = Pick<PracticeItem, 'cardId' | 'revision'>;
 
-export type AnswerOutcome =
-  | { readonly graded: false }
-  | {
-      readonly graded: true;
-      readonly correct: boolean;
-      readonly revision: number;
-    };
-
-export const createSessionQueue = (
-  items: ReadonlyArray<PracticeItem>,
-): SessionQueue => ({
-  pending: items.map((item) => ({ ...item, repeated: false })),
-  settled: 0,
-  total: items.length,
-  correct: 0,
-  wrong: 0,
-  ungraded: 0,
-});
-
-const settleCorrect = (
-  queue: SessionQueue,
-  card: QueuedCard,
-): SessionQueue => ({
-  ...queue,
-  pending: queue.pending.slice(1),
-  settled: queue.settled + 1,
-  correct: card.repeated ? queue.correct : queue.correct + 1,
-});
-
-const requeue = (
-  queue: SessionQueue,
-  card: QueuedCard,
-  revision: number,
+const beginSection = (
+  queue: Omit<SessionQueue, 'pending' | 'sectionTotal'>,
 ): SessionQueue => {
-  const rest = queue.pending.slice(1);
-  const position = Math.min(repeatGap, rest.length);
+  const items = queue.remaining.slice(0, practiceSectionSize);
   return {
     ...queue,
-    // The card was answered, so its revision moved on; the repeat has to carry
-    // the new one or the server rejects it as a stale submission.
-    pending: [
-      ...rest.slice(0, position),
-      { ...card, revision, repeated: true },
-      ...rest.slice(position),
-    ],
-    wrong: card.repeated ? queue.wrong : queue.wrong + 1,
+    pending: items.map((item) => ({ ...item, repeated: false })),
+    remaining: queue.remaining.slice(items.length),
+    sectionTotal: items.length,
   };
 };
 
-// Moves the session on by one answer. A missed card goes back into the queue
-// instead of leaving the session, which is what keeps FSRS's one-minute
-// relearning step from turning into "Üben" lighting up again two minutes after
-// you finished. `settled` counts distinct cards done with, so the progress it
-// feeds only ever moves forward.
+export const createSessionQueue = (
+  items: ReadonlyArray<PracticeItem>,
+): SessionQueue =>
+  beginSection({
+    remaining: items,
+    deferred: [],
+    scheduled: [],
+    phase: items.length === 0 ? 'complete' : 'main',
+    section: items.length === 0 ? 0 : 1,
+    sectionProcessed: 0,
+    total: items.length,
+    firstTryCorrect: 0,
+    afterRoundCorrect: 0,
+    missedCardIds: [],
+    ungradedCardIds: [],
+    processedCardIds: [],
+  });
+
+const rememberSchedule = (
+  scheduled: ReadonlyArray<ScheduledCard>,
+  cardId: string,
+  dueAt: Date | null,
+) => [...scheduled.filter((item) => item.cardId !== cardId), { cardId, dueAt }];
+
+const finishCheckpoint = (queue: SessionQueue, now: Date): SessionQueue => {
+  if (queue.pending.length > 0) {
+    return queue;
+  }
+  if (queue.phase === 'main') {
+    const ready = queue.deferred.filter(
+      (card) => card.dueAt !== null && card.dueAt <= now,
+    );
+    if (ready.length > 0) {
+      return { ...queue, phase: 'after-round', pending: ready };
+    }
+  }
+  if (queue.remaining.length > 0) {
+    return { ...queue, phase: 'checkpoint' };
+  }
+  return { ...queue, phase: 'complete' };
+};
+
+export const continueQueue = (queue: SessionQueue): SessionQueue =>
+  queue.phase === 'checkpoint'
+    ? beginSection({
+        ...queue,
+        phase: 'main',
+        section: queue.section + 1,
+        sectionProcessed: 0,
+      })
+    : queue;
+
+export const endSession = (queue: SessionQueue): SessionQueue =>
+  queue.phase === 'checkpoint'
+    ? { ...queue, phase: 'complete', remaining: [] }
+    : queue;
+
 export const advanceQueue = (
   queue: SessionQueue,
   expected: ExpectedCard,
-  outcome: AnswerOutcome,
+  result: ResolvedSubmitResult,
+  now = new Date(),
 ): SessionQueue => {
   const card = queue.pending.at(0);
   if (
@@ -89,18 +121,77 @@ export const advanceQueue = (
   ) {
     return queue;
   }
-  if (!outcome.graded) {
-    // The judge was unreachable and the card was left untouched. Asking again
-    // in this session would only reach the same outage.
-    return {
-      ...queue,
-      pending: queue.pending.slice(1),
-      settled: queue.settled + 1,
-      wrong: card.repeated ? queue.wrong - 1 : queue.wrong,
-      ungraded: queue.ungraded + 1,
-    };
+
+  const withoutHead = { ...queue, pending: queue.pending.slice(1) };
+  const processed =
+    queue.phase === 'main'
+      ? {
+          ...withoutHead,
+          sectionProcessed: queue.sectionProcessed + 1,
+          processedCardIds: [...queue.processedCardIds, card.cardId],
+        }
+      : withoutHead;
+  if (!result.graded) {
+    return finishCheckpoint(
+      {
+        ...processed,
+        ungradedCardIds: queue.ungradedCardIds.includes(card.cardId)
+          ? queue.ungradedCardIds
+          : [...queue.ungradedCardIds, card.cardId],
+      },
+      now,
+    );
   }
-  return outcome.correct
-    ? settleCorrect(queue, card)
-    : requeue(queue, card, outcome.revision);
+
+  const withSchedule = {
+    ...processed,
+    scheduled: rememberSchedule(
+      queue.scheduled,
+      card.cardId,
+      result.schedule.dueAt,
+    ),
+  };
+  if (result.correct) {
+    return finishCheckpoint(
+      queue.phase === 'after-round'
+        ? {
+            ...withSchedule,
+            afterRoundCorrect: queue.afterRoundCorrect + 1,
+            deferred: queue.deferred.filter(
+              (item) => item.cardId !== card.cardId,
+            ),
+          }
+        : { ...withSchedule, firstTryCorrect: queue.firstTryCorrect + 1 },
+      now,
+    );
+  }
+
+  const deferred = {
+    ...card,
+    revision: result.revision,
+    repeated: true,
+    dueAt: result.schedule.dueAt,
+  };
+  return finishCheckpoint(
+    {
+      ...withSchedule,
+      deferred: [
+        ...queue.deferred.filter((item) => item.cardId !== card.cardId),
+        deferred,
+      ],
+      missedCardIds: queue.missedCardIds.includes(card.cardId)
+        ? queue.missedCardIds
+        : [...queue.missedCardIds, card.cardId],
+    },
+    now,
+  );
 };
+
+export const earliestScheduledReview = (queue: SessionQueue): Date | null =>
+  queue.scheduled.reduce<Date | null>(
+    (earliest, item) =>
+      item.dueAt !== null && (earliest === null || item.dueAt < earliest)
+        ? item.dueAt
+        : earliest,
+    null,
+  );

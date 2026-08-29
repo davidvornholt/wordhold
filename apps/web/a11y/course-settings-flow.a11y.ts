@@ -2,6 +2,21 @@ import { expect, test } from '@playwright/test';
 
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
+const reverseDirectionPattern = /Englisch → Deutsch/u;
+
+test('the session picker remembers the last temporary direction', async ({
+  page,
+}) => {
+  await page.goto('/?state=practice-start');
+  const reverse = page.getByRole('radio', {
+    name: reverseDirectionPattern,
+  });
+  await reverse.check();
+  await page.getByRole('button', { name: '8 Karten starten' }).click();
+  await page.goto('/?state=practice-start');
+  await expect(reverse).toBeChecked();
+});
+
 const pageColumnClass = /page-column/u;
 
 // A course with no direction left would schedule nothing and offer nothing,

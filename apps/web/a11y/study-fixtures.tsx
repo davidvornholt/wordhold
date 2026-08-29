@@ -3,7 +3,7 @@ import { PracticeLayout } from '../src/features/practice/ui/practice-layout';
 import { SessionStart } from '../src/features/practice/ui/session-start';
 import { navigateToFixture } from './fixture-state';
 
-export const DrillStartFixture = () => (
+export const StudyStartFixture = () => (
   <PracticeLayout
     backControl={
       <button
@@ -17,14 +17,22 @@ export const DrillStartFixture = () => (
     title="Unit 3 – Holidays üben"
   >
     <SessionStart
-      options={sessionOptions(['to_target', 'to_native'], 'Englisch')}
-      renderStartAction={(option) => (
+      options={sessionOptions(['to_target', 'to_native'], 'Englisch', [
+        { direction: 'to_target', ready: 16 },
+        { direction: 'to_native', ready: 16 },
+        { direction: 'both', ready: 32 },
+      ])}
+      preferenceKey="english-a2-study"
+      renderStartAction={(option, rememberDirection) => (
         <button
-          className="w-fit font-medium underline"
-          onClick={() => navigateToFixture('drill-session')}
+          className="min-h-11 w-fit bg-primary px-4 py-2 font-medium text-primary-foreground text-sm"
+          onClick={() => {
+            rememberDirection();
+            navigateToFixture('study-session');
+          }}
           type="button"
         >
-          {option.label}
+          {option.cards} Karten starten
         </button>
       )}
     />

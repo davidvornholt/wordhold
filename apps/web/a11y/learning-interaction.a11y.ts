@@ -56,7 +56,7 @@ test('the learning pass asks again for a wrong copy and records only the correct
   await page.getByRole('button', { name: 'Weiter' }).click();
   await expect(progress).toHaveText('2 von 2 Vokabeln gelernt');
   await expect(
-    page.getByRole('heading', { level: 2, name: 'Einheit gelernt!' }),
+    page.getByRole('heading', { level: 2, name: '2 Vokabeln kennengelernt' }),
   ).toBeFocused();
   await expect(page.getByLabel('Introduced entries')).toHaveText('2');
 });

@@ -10,12 +10,12 @@ export const LearnDone = ({ learned, practiceControl }: LearnDoneProps) => (
   <div className="flex flex-col gap-3 border border-border bg-card p-6">
     <ManagedFocusHeading className="font-display text-xl">
       {learned === 0
-        ? 'In dieser Einheit gibt es nichts mehr zu lernen.'
-        : 'Einheit gelernt!'}
+        ? 'In dieser Einheit gibt es nichts mehr kennenzulernen.'
+        : `${learned} Vokabeln kennengelernt`}
     </ManagedFocusHeading>
     {learned === 0 ? null : (
       <p className="text-sm">
-        {learned} Vokabeln zählen ab jetzt beim Üben mit.
+        Die Vokabeln sind jetzt für ihre erste Abfrage bereit.
       </p>
     )}
     {practiceControl}

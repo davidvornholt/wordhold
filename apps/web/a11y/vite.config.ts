@@ -5,4 +5,5 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   root: 'a11y',
   plugins: [viteReact(), tailwindcss()],
+  server: { allowedHosts: true },
 });

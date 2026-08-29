@@ -50,7 +50,10 @@ export const LearnFixture = ({
   const [introduced, setIntroduced] = useState<ReadonlyArray<string>>([]);
   const [attempts, setAttempts] = useState(0);
   return (
-    <LearningLayout backControl={backControl} title="Unit 3 – Holidays lernen">
+    <LearningLayout
+      backControl={backControl}
+      title="Unit 3: Holidays kennenlernen"
+    >
       <LearnPass
         items={items}
         onIntroduce={(entryId) => {
@@ -73,7 +76,10 @@ export const LearnFixture = ({
 };
 
 export const LearnDoneFixture = () => (
-  <LearningLayout backControl={backControl} title="Unit 3 – Holidays lernen">
+  <LearningLayout
+    backControl={backControl}
+    title="Unit 3: Holidays kennenlernen"
+  >
     <LearnDone learned={items.length} practiceControl={practiceControl} />
   </LearningLayout>
 );

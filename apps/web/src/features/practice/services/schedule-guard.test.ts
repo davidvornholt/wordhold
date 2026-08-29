@@ -9,24 +9,34 @@ describe('advancesSchedule', () => {
   // A client can mislabel the sitting. Only stored card state decides whether
   // FSRS advances, so a future review can never be pushed out early.
   it('holds a review card that is not due yet', () => {
-    expect(advancesSchedule({ state: 'review', dueAt: inThreeDays }, now)).toBe(
+    expect(
+      advancesSchedule({ state: 'review', dueAt: inThreeDays }, now, true),
+    ).toBe(false);
+    expect(advancesSchedule({ state: 'review', dueAt: null }, now, true)).toBe(
       false,
     );
-    expect(advancesSchedule({ state: 'review', dueAt: null }, now)).toBe(false);
   });
 
   it('advances a review card that was genuinely due', () => {
-    expect(advancesSchedule({ state: 'review', dueAt: yesterday }, now)).toBe(
+    expect(
+      advancesSchedule({ state: 'review', dueAt: yesterday }, now, true),
+    ).toBe(true);
+  });
+
+  // Learning and relearning steps are minutes apart and exist to be answered
+  // again, so a repeat inside free practice still counts.
+  it('advances a card that is still on a learning step', () => {
+    expect(
+      advancesSchedule({ state: 'relearning', dueAt: inThreeDays }, now, true),
+    ).toBe(true);
+    expect(advancesSchedule({ state: 'new', dueAt: null }, now, true)).toBe(
       true,
     );
   });
 
-  // Learning and relearning steps are minutes apart and exist to be answered
-  // again, so a repeat inside the drill still counts.
-  it('advances a card that is still on a learning step', () => {
+  it('starts relearning after a wrong early answer', () => {
     expect(
-      advancesSchedule({ state: 'relearning', dueAt: inThreeDays }, now),
+      advancesSchedule({ state: 'review', dueAt: inThreeDays }, now, false),
     ).toBe(true);
-    expect(advancesSchedule({ state: 'new', dueAt: null }, now)).toBe(true);
   });
 });

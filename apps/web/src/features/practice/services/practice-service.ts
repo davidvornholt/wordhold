@@ -1,8 +1,8 @@
 import { Clock, Effect } from 'effect';
-import type { PracticeItem } from '../schemas/practice-models';
+import type { PracticeItem, PracticeSession } from '../schemas/practice-models';
 import type {
-  DrillRequestData,
   SessionRequestData,
+  StudyRequestData,
 } from '../schemas/session-request';
 import type { SubmitPayloadData } from '../schemas/submission-schema';
 import { resolveAnswerSubmission } from './answer-submission';
@@ -11,14 +11,6 @@ import { PracticeJudge } from './practice-judge';
 import { PracticeReviewStore } from './review-store';
 import { PracticeSessionStore } from './session-store';
 
-export type PracticeSession = {
-  readonly items: ReadonlyArray<PracticeItem>;
-};
-
-export type { ResolvedSubmitResult, SubmitResult } from './answer-submission';
-
-// The side of the card the learner sees. Stored rows carry both texts; which
-// one is the question depends on the direction the card is asked in.
 const withPrompt = (item: Omit<PracticeItem, 'prompt'>): PracticeItem => ({
   ...item,
   prompt: item.direction === 'to_target' ? item.nativeText : item.targetText,
@@ -35,19 +27,32 @@ export class PracticeService extends Effect.Service<PracticeService>()(
       const getSession = ({ courseId, direction }: SessionRequestData) =>
         Effect.gen(function* () {
           const now = new Date(yield* Clock.currentTimeMillis);
-          const { due, fresh } = yield* sessions.load(courseId, direction, now);
+          const { items, availability } = yield* sessions.loadScheduled(
+            courseId,
+            direction,
+            now,
+          );
           return {
-            items: [...due, ...fresh].map(withPrompt),
+            items: items.map(withPrompt),
+            available: availability,
           } satisfies PracticeSession;
         });
-      const getDrill = ({ unitId, direction }: DrillRequestData) =>
+      const getStudySession = (data: StudyRequestData) =>
         Effect.map(
-          sessions.loadUnit(unitId, direction),
-          (items): PracticeSession => ({ items: items.map(withPrompt) }),
+          sessions.loadSelection(data),
+          (items): PracticeSession => ({
+            items: items.map(withPrompt),
+            available: {
+              due: 0,
+              firstReviews: items.length,
+              ready: items.length,
+              nextDueAt: null,
+            },
+          }),
         );
       const submit = (data: SubmitPayloadData) =>
         resolveAnswerSubmission(data, { reviews, cache, judge });
-      return { getSession, getDrill, submit } as const;
+      return { getSession, getStudySession, submit } as const;
     }),
   },
 ) {}

@@ -8,7 +8,7 @@ import {
 import { Effect, Layer } from 'effect';
 import {
   dueEntryId,
-  freshEntryId,
+  firstReviewEntryId,
   seedIntroducedCardFixture,
 } from '../../../shared/testing/introduced-card-fixture';
 import { StaleAnswerSubmissionError } from '../errors/practice-errors';
@@ -83,7 +83,7 @@ describe('PracticeReviewStore PostgreSQL transaction', () => {
         const store = yield* PracticeReviewStore;
         const sql = yield* Database;
         const input = yield* makeInput(dueEntryId, 'to_target', 'souvenir');
-        expect(yield* store.commit(input)).toBe(1);
+        expect(yield* store.commit(input)).toMatchObject({ revision: 1 });
         const rows = yield* sql<{
           readonly revision: number;
           readonly reviews: number;
@@ -104,7 +104,11 @@ describe('PracticeReviewStore PostgreSQL transaction', () => {
       Effect.gen(function* () {
         const store = yield* PracticeReviewStore;
         const sql = yield* Database;
-        const input = yield* makeInput(freshEntryId, 'to_target', 'ouvrage');
+        const input = yield* makeInput(
+          firstReviewEntryId,
+          'to_target',
+          'ouvrage',
+        );
         const results = yield* Effect.all(
           [
             store.commit(input).pipe(Effect.either),
@@ -117,7 +121,7 @@ describe('PracticeReviewStore PostgreSQL transaction', () => {
         expect(accepted).toHaveLength(1);
         expect(
           accepted.at(0)?._tag === 'Right' ? accepted[0].right : null,
-        ).toBe(1);
+        ).toMatchObject({ revision: 1 });
         expect(rejected).toHaveLength(1);
         expect(
           rejected.at(0)?._tag === 'Left' ? rejected[0].left : null,
@@ -147,7 +151,7 @@ describe('PracticeReviewStore PostgreSQL transaction', () => {
           check (answer_text <> 'force rollback')
         `;
         const input = yield* makeInput(
-          freshEntryId,
+          firstReviewEntryId,
           'to_native',
           'force rollback',
         );

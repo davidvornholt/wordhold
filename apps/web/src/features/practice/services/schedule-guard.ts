@@ -14,7 +14,12 @@ type ScheduledCard = {
 //
 // A card still working through FSRS's learning or relearning steps is the
 // exception. Those steps exist to be answered again within minutes, and that
-// includes the repeat of a card missed moments ago in the same drill.
-export const advancesSchedule = (card: ScheduledCard, now: Date): boolean =>
+// includes the repeat of a card missed moments ago in the same free practice.
+export const advancesSchedule = (
+  card: ScheduledCard,
+  now: Date,
+  correct: boolean,
+): boolean =>
+  !correct ||
   card.state !== 'review' ||
   (card.dueAt !== null && card.dueAt.getTime() <= now.getTime());

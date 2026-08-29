@@ -7,6 +7,7 @@ import {
   isCorrect,
 } from '../../../shared/grading/rating';
 import { StaleAnswerSubmissionError } from '../errors/practice-errors';
+import type { SubmitResult } from '../schemas/practice-models';
 import type { SubmitPayloadData } from '../schemas/submission-schema';
 import {
   type AssessedAnswer,
@@ -16,37 +17,6 @@ import {
 import type { JudgeCacheStore } from './judge-cache-store';
 import type { PracticeJudge } from './practice-judge';
 import type { PracticeReviewStore } from './review-store';
-
-export type SubmitResult =
-  | {
-      readonly graded: false;
-      readonly expectedAnswers: ReadonlyArray<string>;
-      readonly message: string;
-    }
-  | {
-      readonly graded: true;
-      readonly correct: false;
-      readonly stored: false;
-      readonly expectedAnswers: ReadonlyArray<string>;
-      readonly explanation: string | null;
-      readonly acceptedAsAlternative: false;
-      readonly assessmentId: string;
-    }
-  | {
-      readonly graded: true;
-      readonly correct: boolean;
-      readonly stored: true;
-      readonly revision: number;
-      readonly rating: number;
-      readonly expectedAnswers: ReadonlyArray<string>;
-      readonly explanation: string | null;
-      readonly acceptedAsAlternative: boolean;
-    };
-
-export type ResolvedSubmitResult = Exclude<
-  SubmitResult,
-  { readonly graded: true; readonly stored: false }
->;
 
 type SubmissionDependencies = {
   readonly reviews: PracticeReviewStore['Type'];
@@ -122,7 +92,7 @@ export const resolveAnswerSubmission = (
     const elapsedMs = data.elapsedMs ?? null;
     const rating = deriveRating(outcome, elapsedMs);
     const reviewedAt = new Date(yield* Clock.currentTimeMillis);
-    const revision = yield* reviews.commit({
+    const persisted = yield* reviews.commit({
       card: row.card,
       expectedRevision: data.revision,
       rating,
@@ -139,12 +109,13 @@ export const resolveAnswerSubmission = (
       graded: true as const,
       correct: isCorrect(outcome),
       stored: true as const,
-      revision,
+      revision: persisted.revision,
       rating,
       expectedAnswers,
       explanation:
         assessed.method === 'judge' ? assessed.verdict.explanation : null,
       acceptedAsAlternative:
         assessed.method === 'judge' && isAcceptedAlternative(assessed.verdict),
+      schedule: persisted.schedule,
     };
   });

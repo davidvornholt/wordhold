@@ -55,7 +55,7 @@ test('authenticated routes remain reachable through their user transitions', asy
   await expect(page.locator('body')).toHaveAttribute('data-fixture', 'course');
   await page.getByRole('button', { name: 'Unit 3 – Holidays' }).click();
   await expect(page.locator('body')).toHaveAttribute('data-fixture', 'unit');
-  await page.getByRole('button', { name: '2 lernen' }).click();
+  await page.getByRole('button', { name: '2 kennenlernen' }).click();
   await expect(page.locator('body')).toHaveAttribute('data-fixture', 'learn');
   await page.getByRole('button', { name: 'Unit 3 – Holidays' }).click();
   await expect(page.locator('body')).toHaveAttribute('data-fixture', 'unit');
@@ -67,7 +67,7 @@ test('authenticated routes remain reachable through their user transitions', asy
     'dashboard',
   );
 
-  await page.getByRole('button', { name: 'Üben' }).click();
+  await page.getByRole('button', { name: '6 Karten üben' }).click();
   await page.getByLabel('Deine Antwort').fill('wrong');
   await page.getByRole('button', { name: 'Prüfen' }).click();
   await expect(page.locator('body')).toHaveAttribute(

@@ -1,14 +1,14 @@
 import type { ReviewMode } from '@wordhold/db/schema/practice';
 import { type SubmitEvent, useEffect, useId, useRef, useState } from 'react';
 import type {
-  SubmitPayloadData,
-  WrongAnswerResolution,
-} from '../schemas/submission-schema';
-import type {
   PracticeSession,
   ResolvedSubmitResult,
   SubmitResult,
-} from '../services/practice-service';
+} from '../schemas/practice-models';
+import type {
+  SubmitPayloadData,
+  WrongAnswerResolution,
+} from '../schemas/submission-schema';
 import { FeedbackPanel } from './feedback-panel';
 import { PracticeAnswerForm } from './practice-answer-form';
 
@@ -22,47 +22,23 @@ const practiceInstruction = (
     ? `Übersetze ins ${targetLabel}e`
     : 'Übersetze ins Deutsche';
 
-const ErrorMessage = ({ message }: { readonly message: string | null }) =>
-  message === null ? null : (
-    <p className="text-destructive text-sm">{message}</p>
-  );
-
-const reportResolvedResult = (
-  result: SubmitResult,
-  report: (result: ResolvedSubmitResult) => void,
-) => {
-  if (!result.graded || result.stored) {
-    report(result);
-  }
-};
-
 type CardPracticeProps = {
   readonly item: SessionItem;
-  // Whether this card was already missed earlier in the same session.
   readonly repeated: boolean;
   readonly targetLabel: string;
-  // Which sitting produced the answer. The server stores this as provenance
-  // only. Stored card state and due date decide whether scheduling advances.
   readonly mode: ReviewMode;
   readonly submit: (input: {
     readonly data: SubmitPayloadData;
   }) => Promise<SubmitResult>;
-  // Reports a resolved result while this card's feedback remains on screen.
-  readonly onResult: (result: ResolvedSubmitResult) => void;
-  // Hands the graded result to the session, which decides whether the card is
-  // done with or comes back later.
   readonly onNext: (result: ResolvedSubmitResult) => void;
 };
 
-// One card's answer round-trip. Mounted with a key that changes per attempt so
-// answer state and the elapsed-time clock reset each time the card is asked.
 export const CardPractice = ({
   item,
   repeated,
   targetLabel,
   mode,
   submit,
-  onResult,
   onNext,
 }: CardPracticeProps) => {
   const answerInput = useRef<HTMLInputElement>(null);
@@ -106,11 +82,8 @@ export const CardPractice = ({
     setBusy(true);
     setError(null);
     try {
-      const submitted = await submit({
-        data,
-      });
+      const submitted = await submit({ data });
       setResult(submitted);
-      reportResolvedResult(submitted, onResult);
       if (audioUrl !== null) {
         await new Audio(audioUrl).play().catch(() => undefined);
       }
@@ -149,7 +122,6 @@ export const CardPractice = ({
         throw new Error('Die Antwort wurde noch nicht gespeichert.');
       }
       setResult(submitted);
-      onResult(submitted);
       onNext(submitted);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
@@ -180,7 +152,9 @@ export const CardPractice = ({
         promptId={promptId}
         submittedAnswer={submittedData?.answer ?? null}
       />
-      <ErrorMessage message={error} />
+      {error === null ? null : (
+        <p className="text-destructive text-sm">{error}</p>
+      )}
       {result === null || submittedData === null ? null : (
         <FeedbackPanel
           audioUrl={audioUrl}
@@ -190,6 +164,7 @@ export const CardPractice = ({
             }
           }}
           onResolveWrong={resolveWrongAnswer}
+          repeated={repeated}
           resolution={resolution}
           result={result}
           submittedAnswer={submittedData.answer}

@@ -53,3 +53,14 @@ export const listUnitEntries = createServerFn()
       Effect.flatMap(CourseService, (service) => service.listEntries(unitId)),
     );
   });
+
+export const listCourseVocabulary = createServerFn()
+  .validator(decodeId)
+  .handler(async ({ data: courseId }) => {
+    await authRuntime.runPromise(requireSession(getRequest().headers));
+    return courseRuntime.runPromise(
+      Effect.flatMap(CourseService, (service) =>
+        service.listVocabulary(courseId),
+      ),
+    );
+  });

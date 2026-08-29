@@ -10,7 +10,6 @@ import {
   DeferredCourseSettingsFixture,
   PracticeStartFixture,
 } from './direction-fixtures';
-import { DrillStartFixture } from './drill-fixtures';
 import { navigateToFixture, readFixtureState } from './fixture-state';
 import {
   DeferredVerificationFixture,
@@ -26,10 +25,12 @@ import {
   PracticeOneCardSummaryFixture,
 } from './practice-fixtures';
 import {
-  FutureDrillSessionFixture,
+  FutureStudySessionFixture,
   PracticeSessionFixture,
 } from './practice-session-fixtures';
 import { StaleUnitVerificationFixture } from './stale-unit-fixture';
+import { StudyStartFixture } from './study-fixtures';
+import { VocabularyFixture } from './vocabulary-fixtures';
 
 export const FixtureApp = () => {
   const state = readFixtureState();
@@ -66,8 +67,8 @@ export const FixtureApp = () => {
       return <CourseFixture practiceAvailable={false} />;
     case 'unit':
       return <UnitFixture />;
-    case 'unit-fresh':
-      return <UnitFixture state="fresh" />;
+    case 'unit-unintroduced':
+      return <UnitFixture state="unintroduced" />;
     case 'unit-empty':
       return <UnitFixture state="empty" />;
     case 'learn':
@@ -78,8 +79,12 @@ export const FixtureApp = () => {
       return <LearnDoneFixture />;
     case 'course-settings':
       return <CourseSettingsFixture />;
-    case 'drill-start':
-      return <DrillStartFixture />;
+    case 'vocabulary':
+      return <VocabularyFixture />;
+    case 'vocabulary-difficult':
+      return <VocabularyFixture difficult={true} />;
+    case 'study-start':
+      return <StudyStartFixture />;
     case 'course-settings-deferred':
       return <DeferredCourseSettingsFixture />;
     case 'practice':
@@ -88,8 +93,8 @@ export const FixtureApp = () => {
       return <PracticeStartFixture />;
     case 'practice-session':
       return <PracticeSessionFixture />;
-    case 'drill-session':
-      return <FutureDrillSessionFixture />;
+    case 'study-session':
+      return <FutureStudySessionFixture />;
     case 'practice-feedback':
       return <PracticeFeedbackFixture />;
     case 'practice-empty':

@@ -7,6 +7,7 @@ import {
 import { Effect, Layer } from 'effect';
 import {
   fixtureCourseId,
+  fixtureNow,
   fixtureUnitId,
   seedIntroducedCardFixture,
 } from '../../../shared/testing/introduced-card-fixture';
@@ -43,27 +44,36 @@ describe('CourseStore PostgreSQL course contents', () => {
             ('99999999-9999-4999-8999-999999999999', ${fixtureCourseId}, 'Unit 2', 1)
         `;
 
-        expect(yield* store.listUnits(fixtureCourseId)).toEqual([
+        expect(yield* store.listUnits(fixtureCourseId, fixtureNow)).toEqual([
           {
             id: fixtureUnitId,
             name: 'Unit 1',
             entries: 3,
-            unlearned: 1,
+            unintroduced: 1,
+            due: 1,
+            firstReviews: 2,
+            nextDueAt: new Date('2026-08-21T12:00:00.000Z'),
           },
           {
             id: '99999999-9999-4999-8999-999999999999',
             name: 'Unit 2',
             entries: 0,
-            unlearned: 0,
+            unintroduced: 0,
+            due: 0,
+            firstReviews: 0,
+            nextDueAt: null,
           },
           {
             id: 'ffffffff-ffff-4fff-8fff-ffffffffffff',
             name: 'Unit 3',
             entries: 0,
-            unlearned: 0,
+            unintroduced: 0,
+            due: 0,
+            firstReviews: 0,
+            nextDueAt: null,
           },
         ]);
-        expect(yield* store.listUnits(missingCourseId)).toEqual([]);
+        expect(yield* store.listUnits(missingCourseId, fixtureNow)).toEqual([]);
       }),
     );
   });
@@ -83,32 +93,44 @@ describe('CourseStore PostgreSQL entry contents', () => {
             and direction = 'to_target'
         `;
 
-        expect(yield* store.listEntries(fixtureUnitId)).toEqual([
+        const listed = yield* store.listEntries(fixtureUnitId);
+        expect(listed.map(({ cards: _cards, ...entry }) => entry)).toEqual([
           {
             id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
             targetText: 'livre',
             nativeText: 'Buch',
-            learned: true,
+            introduced: true,
+            unitId: fixtureUnitId,
+            unitName: 'Unit 1',
           },
           {
             id: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
             targetText: 'mémoire',
             nativeText: 'Erinnerung',
-            learned: true,
+            introduced: true,
+            unitId: fixtureUnitId,
+            unitName: 'Unit 1',
           },
           {
             id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
             targetText: 'neuf',
             nativeText: 'neu',
-            learned: false,
+            introduced: false,
+            unitId: fixtureUnitId,
+            unitName: 'Unit 1',
           },
         ]);
         expect(yield* store.listEntries(missingUnitId)).toEqual([]);
-        expect(yield* store.listUnits(fixtureCourseId)).toContainEqual({
+        expect(
+          yield* store.listUnits(fixtureCourseId, fixtureNow),
+        ).toContainEqual({
           id: fixtureUnitId,
           name: 'Unit 1',
           entries: 3,
-          unlearned: 1,
+          unintroduced: 1,
+          due: 1,
+          firstReviews: 3,
+          nextDueAt: new Date('2026-08-21T12:00:00.000Z'),
         });
 
         yield* sql`
@@ -120,13 +142,21 @@ describe('CourseStore PostgreSQL entry contents', () => {
           id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
           targetText: 'neuf',
           nativeText: 'neu',
-          learned: false,
+          introduced: false,
+          unitId: fixtureUnitId,
+          unitName: 'Unit 1',
+          cards: expect.any(Array),
         });
-        expect(yield* store.listUnits(fixtureCourseId)).toContainEqual({
+        expect(
+          yield* store.listUnits(fixtureCourseId, fixtureNow),
+        ).toContainEqual({
           id: fixtureUnitId,
           name: 'Unit 1',
           entries: 3,
-          unlearned: 1,
+          unintroduced: 1,
+          due: 1,
+          firstReviews: 3,
+          nextDueAt: new Date('2026-08-21T12:00:00.000Z'),
         });
       }),
     );
@@ -141,7 +171,7 @@ describe('CourseStore PostgreSQL course content errors', () => {
         const store = yield* CourseStore;
         yield* sql`drop table entries cascade`;
         const units = yield* store
-          .listUnits(fixtureCourseId)
+          .listUnits(fixtureCourseId, fixtureNow)
           .pipe(Effect.either);
         const entries = yield* store
           .listEntries(fixtureUnitId)
@@ -153,7 +183,7 @@ describe('CourseStore PostgreSQL course content errors', () => {
         expect(unitsError).toBeInstanceOf(CourseDatabaseError);
         expect(entriesError).toBeInstanceOf(CourseDatabaseError);
         expect(unitsError?.operation).toBe('list units');
-        expect(entriesError?.operation).toBe('list entries');
+        expect(entriesError?.operation).toBe('list vocabulary');
       }),
     );
   });

@@ -13,7 +13,7 @@ import {
 import { DashboardStore } from './dashboard-store';
 
 describe('DashboardStore introduction contract', () => {
-  it('separates unseen entries from introduced fresh and due cards', async () => {
+  it('separates unintroduced entries from first reviews and due cards', async () => {
     await Effect.runPromise(
       withMigratedTestDatabase((database) => {
         const databaseLayer = testDatabaseLayer(database.url);
@@ -24,9 +24,12 @@ describe('DashboardStore introduction contract', () => {
           expect(counts).toContainEqual({
             courseId: fixtureCourseId,
             due: 1,
-            fresh: 2,
-            unlearned: 1,
+            firstReviews: 2,
+            ready: 3,
+            unintroduced: 1,
             entries: 3,
+            nextDueAt: new Date('2026-08-21T12:00:00.000Z'),
+            directions: expect.any(Array),
           });
         }).pipe(
           Effect.provide(
@@ -67,9 +70,12 @@ describe('DashboardStore introduction contract', () => {
           expect(yield* store.courseCounts(fixtureNow)).toContainEqual({
             courseId: fixtureCourseId,
             due: 0,
-            fresh: 1,
-            unlearned: 1,
+            firstReviews: 1,
+            ready: 1,
+            unintroduced: 1,
             entries: 3,
+            nextDueAt: new Date('2026-08-21T12:00:00.000Z'),
+            directions: expect.any(Array),
           });
 
           yield* sql`
@@ -80,9 +86,12 @@ describe('DashboardStore introduction contract', () => {
           expect(yield* store.courseCounts(fixtureNow)).toContainEqual({
             courseId: fixtureCourseId,
             due: 1,
-            fresh: 2,
-            unlearned: 1,
+            firstReviews: 2,
+            ready: 3,
+            unintroduced: 1,
             entries: 3,
+            nextDueAt: new Date('2026-08-21T12:00:00.000Z'),
+            directions: expect.any(Array),
           });
           const after = yield* sql<(typeof before)[number]>`
             select id, direction, revision, state,
