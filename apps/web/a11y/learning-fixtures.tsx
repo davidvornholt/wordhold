@@ -7,6 +7,8 @@ import { navigateToFixture } from './fixture-state';
 
 const items: ReadonlyArray<LearnItem> = [
   {
+    cardId: '00000000-0000-0000-0000-000000000011',
+    direction: 'to_target',
     entryId: '00000000-0000-0000-0000-000000000001',
     targetText: 'memory',
     nativeText: 'die Erinnerung',
@@ -14,6 +16,8 @@ const items: ReadonlyArray<LearnItem> = [
     textbookAnswers: ['memory'],
   },
   {
+    cardId: '00000000-0000-0000-0000-000000000012',
+    direction: 'to_native',
     entryId: '00000000-0000-0000-0000-000000000002',
     targetText: 'to look (at)',
     nativeText: 'ansehen',
@@ -50,30 +54,40 @@ export const LearnFixture = ({
   const [introduced, setIntroduced] = useState<ReadonlyArray<string>>([]);
   const [attempts, setAttempts] = useState(0);
   return (
-    <LearningLayout backControl={backControl} title="Unit 3 – Holidays lernen">
+    <LearningLayout
+      backControl={backControl}
+      title="Unit 3: Holidays kennenlernen"
+    >
       <LearnPass
         items={items}
-        onIntroduce={(entryId) => {
+        onIntroduce={(cardId) => {
           const attempt = attempts + 1;
           setAttempts(attempt);
           if (failFirst && attempt === 1) {
             return Promise.reject(new Error('Fixture persistence failure'));
           }
-          setIntroduced((current) => [...current, entryId]);
+          setIntroduced((current) => [...current, cardId]);
           return Promise.resolve();
         }}
         practiceControl={practiceControl}
         targetLabel="Englisch"
         targetLanguage="en"
       />
-      <output aria-label="Introduced entries">{introduced.length}</output>
-      <output aria-label="Introduction attempts">{attempts}</output>
+      <output aria-label="Introduced directions" className="sr-only">
+        {introduced.length}
+      </output>
+      <output aria-label="Introduction attempts" className="sr-only">
+        {attempts}
+      </output>
     </LearningLayout>
   );
 };
 
 export const LearnDoneFixture = () => (
-  <LearningLayout backControl={backControl} title="Unit 3 – Holidays lernen">
+  <LearningLayout
+    backControl={backControl}
+    title="Unit 3: Holidays kennenlernen"
+  >
     <LearnDone learned={items.length} practiceControl={practiceControl} />
   </LearningLayout>
 );

@@ -1,8 +1,13 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute, Link, useRouter } from '@tanstack/react-router';
+import { useState } from 'react';
 import { getCourseDirections } from '../../../features/courses/services/server-fns';
+import { getDashboard } from '../../../features/dashboard/services/server-fns';
 import { getCourse } from '../../../features/import/server-fns';
 import { parsePracticeSearch } from '../../../features/practice/schemas/session-request';
-import { getPracticeSession } from '../../../features/practice/services/server-fns';
+import {
+  getPracticeSession,
+  submitAnswer,
+} from '../../../features/practice/services/server-fns';
 import {
   resolveSessionDirection,
   sessionOptions,
@@ -13,7 +18,10 @@ import { SessionStart } from '../../../features/practice/ui/session-start';
 import { germanLabels } from '../../../shared/languages';
 
 const PracticeScreen = () => {
-  const { course, directions, direction, session } = Route.useLoaderData();
+  const { course, directions, direction, session, stats } =
+    Route.useLoaderData();
+  const router = useRouter();
+  const [sessionGeneration, setSessionGeneration] = useState(0);
   const targetLabel = germanLabels[course.targetLanguage];
 
   return (
@@ -27,15 +35,20 @@ const PracticeScreen = () => {
     >
       {session === null ? (
         <SessionStart
-          options={sessionOptions(directions, targetLabel)}
-          renderStartAction={(option) => (
+          options={sessionOptions(directions, targetLabel, [
+            ...(stats?.directions ?? []),
+            { direction: 'both', ready: stats?.ready ?? 0 },
+          ])}
+          preferenceKey={course.id}
+          renderStartAction={(option, rememberDirection) => (
             <Link
-              className="w-fit font-medium underline"
+              className="inline-flex min-h-11 w-fit items-center bg-primary px-4 py-2 font-medium text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
+              onClick={rememberDirection}
               params={{ courseId: course.id }}
               search={{ direction: option.value }}
               to="/courses/$courseId/practice"
             >
-              {option.label}
+              {option.cards} {option.cards === 1 ? 'Karte' : 'Karten'} starten
             </Link>
           )}
         />
@@ -46,10 +59,25 @@ const PracticeScreen = () => {
               Zurück zur Übersicht
             </Link>
           }
-          emptyMessage="Gerade ist nichts fällig."
-          key={direction}
+          continueControl={
+            <button
+              className="min-h-11 bg-primary px-4 py-2 font-medium text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
+              onClick={async () => {
+                await router.invalidate();
+                setSessionGeneration((current) => current + 1);
+              }}
+              type="button"
+            >
+              Weitere 20 üben
+            </button>
+          }
+          emptyMessage="Für jetzt geschafft"
+          key={`${direction}-${sessionGeneration}-${session.items
+            .map((item) => `${item.cardId}-${item.revision}`)
+            .join('|')}`}
           mode="scheduled"
           session={session}
+          submit={submitAnswer}
           targetLabel={targetLabel}
         />
       )}
@@ -61,9 +89,10 @@ export const Route = createFileRoute('/courses/$courseId/practice')({
   validateSearch: parsePracticeSearch,
   loaderDeps: ({ search }) => ({ direction: search.direction }),
   loader: async ({ params, deps }) => {
-    const [course, directions] = await Promise.all([
+    const [course, directions, dashboard] = await Promise.all([
       getCourse({ data: params.courseId }),
       getCourseDirections({ data: params.courseId }),
+      getDashboard(),
     ]);
     const direction = resolveSessionDirection(deps.direction, directions);
     const session =
@@ -72,7 +101,15 @@ export const Route = createFileRoute('/courses/$courseId/practice')({
         : await getPracticeSession({
             data: { courseId: params.courseId, direction },
           });
-    return { course, directions, direction, session };
+    return {
+      course,
+      directions,
+      direction,
+      session,
+      stats: dashboard.perCourse.find(
+        (courseStats) => courseStats.courseId === course.id,
+      ),
+    };
   },
   component: PracticeScreen,
 });

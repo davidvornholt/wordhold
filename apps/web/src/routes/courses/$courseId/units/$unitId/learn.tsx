@@ -2,7 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { getCourse } from '../../../../../features/import/server-fns';
 import {
   getLearnPass,
-  introduceEntry,
+  introduceCard,
 } from '../../../../../features/learning/services/server-fns';
 import { LearnPass } from '../../../../../features/learning/ui/learn-pass';
 import { LearningLayout } from '../../../../../features/learning/ui/learning-layout';
@@ -22,26 +22,26 @@ const LearnUnitScreen = () => {
           ← {pass.unit.name}
         </Link>
       }
-      title={`${pass.unit.name} lernen`}
+      title={`${pass.unit.name} kennenlernen`}
     >
       <LearnPass
         items={pass.items}
-        onIntroduce={async (entryId) => {
-          await introduceEntry({
+        onIntroduce={async (cardId) => {
+          await introduceCard({
             data: {
               courseId: course.id,
               unitId: pass.unit.id,
-              entryId,
+              cardId,
             },
           });
         }}
         practiceControl={
           <Link
-            className="w-fit font-medium text-sm underline"
+            className="inline-flex min-h-11 w-fit items-center bg-primary px-4 py-2 font-medium text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
             params={{ courseId: course.id }}
             to="/courses/$courseId/practice"
           >
-            Jetzt üben
+            Erste Abfrage starten
           </Link>
         }
         targetLabel={germanLabels[course.targetLanguage]}

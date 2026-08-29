@@ -1,13 +1,15 @@
 import { useRef, useState } from 'react';
+import type { SubmitResult } from '../src/features/practice/schemas/practice-models';
 import type { SubmitPayloadData } from '../src/features/practice/schemas/submission-schema';
-import type { SubmitResult } from '../src/features/practice/services/practice-service';
+import {
+  advanceQueue,
+  createSessionQueue,
+} from '../src/features/practice/services/session-queue';
 import { CardPractice } from '../src/features/practice/ui/card-practice';
 import { FeedbackPanel } from '../src/features/practice/ui/feedback-panel';
-import {
-  PracticeEmpty,
-  PracticeLayout,
-} from '../src/features/practice/ui/practice-layout';
-import { ProgressMeter } from '../src/shared/ui/progress-meter';
+import { PracticeLayout } from '../src/features/practice/ui/practice-layout';
+import { SessionProgress } from '../src/features/practice/ui/session-progress';
+import { SessionSummary } from '../src/features/practice/ui/session-summary';
 import { navigateToFixture } from './fixture-state';
 
 const item = {
@@ -43,17 +45,17 @@ const backControl = (
 
 export const PracticeFixture = () => (
   <PracticeLayout backControl={backControl} title="English A2: Üben">
-    <ProgressMeter
-      accessibleName="Fortschritt"
-      description="0 von 1 Karte bearbeitet"
+    <SessionProgress
+      phase="main"
+      processed={0}
+      repeatCount={0}
+      section={1}
       total={1}
-      value={0}
     />
     <CardPractice
       item={item}
       mode="scheduled"
       onNext={() => undefined}
-      onResult={() => undefined}
       repeated={true}
       submit={() => {
         navigateToFixture('practice-feedback');
@@ -71,6 +73,7 @@ export const PracticeFeedbackFixture = () => (
       onNext={() => navigateToFixture('practice-empty')}
       onResolveWrong={() => navigateToFixture('practice-empty')}
       resolution={null}
+      repeated={false}
       result={result}
       submittedAnswer="wrong"
     />
@@ -79,7 +82,7 @@ export const PracticeFeedbackFixture = () => (
 
 export const PracticeEmptyFixture = () => (
   <PracticeLayout backControl={backControl} title="English A2: Üben">
-    <PracticeEmpty
+    <SessionSummary
       backControl={
         <button
           className="w-fit text-sm underline"
@@ -89,11 +92,9 @@ export const PracticeEmptyFixture = () => (
           Zurück zur Übersicht
         </button>
       }
-      correct={0}
-      emptyMessage="Gerade ist nichts fällig."
-      total={0}
-      ungraded={0}
-      wrong={0}
+      emptyMessage="Für jetzt geschafft"
+      queue={createSessionQueue([])}
+      remainingReady={0}
     />
   </PracticeLayout>
 );
@@ -104,18 +105,43 @@ type PracticeOneCardSummaryFixtureProps = {
 
 export const PracticeOneCardSummaryFixture = ({
   ungraded,
-}: PracticeOneCardSummaryFixtureProps) => (
-  <PracticeLayout backControl={backControl} title="English A2: Üben">
-    <PracticeEmpty
-      backControl={backControl}
-      correct={ungraded ? 0 : 1}
-      emptyMessage="Gerade ist nichts fällig."
-      total={1}
-      ungraded={ungraded ? 1 : 0}
-      wrong={0}
-    />
-  </PracticeLayout>
-);
+}: PracticeOneCardSummaryFixtureProps) => {
+  const correctResult: SubmitResult = {
+    graded: true,
+    correct: true,
+    stored: true,
+    revision: 1,
+    rating: 3,
+    expectedAnswers: ['memory'],
+    explanation: null,
+    acceptedAsAlternative: false,
+    schedule: {
+      advanced: true,
+      state: 'review',
+      dueAt: new Date('2026-08-30T12:00:00Z'),
+    },
+  };
+  const unavailable: SubmitResult = {
+    graded: false,
+    expectedAnswers: ['memory'],
+    message: 'Der KI-Prüfer ist gerade nicht erreichbar.',
+  };
+  const queue = advanceQueue(
+    createSessionQueue([item]),
+    item,
+    ungraded ? unavailable : correctResult,
+  );
+  return (
+    <PracticeLayout backControl={backControl} title="English A2: Üben">
+      <SessionSummary
+        backControl={backControl}
+        emptyMessage="Für jetzt geschafft"
+        queue={queue}
+        remainingReady={0}
+      />
+    </PracticeLayout>
+  );
+};
 
 type DeferredResult = {
   readonly promise: Promise<SubmitResult>;
@@ -150,7 +176,6 @@ export const DeferredPracticeFixture = () => {
         item={item}
         mode="scheduled"
         onNext={() => undefined}
-        onResult={() => undefined}
         repeated={false}
         submit={submit}
         targetLabel="Englisch"

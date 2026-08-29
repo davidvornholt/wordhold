@@ -85,6 +85,21 @@ describe('answerVariants', () => {
     });
   });
 
+  it('expands each non-empty semicolon-separated textbook answer', () => {
+    expect(answerVariants('lingua franca; Verkehrssprache')).toEqual({
+      _tag: 'Expanded',
+      readings: ['lingua franca', 'verkehrssprache'],
+    });
+    expect(answerVariants('to intend (to); plan to')).toEqual({
+      _tag: 'Expanded',
+      readings: ['to intend to', 'to intend', 'plan to'],
+    });
+    expect(answerVariants('keep;')).toEqual({
+      _tag: 'Expanded',
+      readings: ['keep'],
+    });
+  });
+
   it('combines optional parts with alternatives', () => {
     expect(answerVariants('to be/get used to (sth.)')).toEqual({
       _tag: 'Expanded',

@@ -18,6 +18,56 @@ export type PracticeItem = {
   readonly prompt: string;
 };
 
+export type PracticeAvailability = {
+  readonly due: number;
+  readonly firstReviews: number;
+  readonly ready: number;
+  readonly nextDueAt: Date | null;
+};
+
+export type CardSchedule = {
+  readonly advanced: boolean;
+  readonly state: (typeof cards.$inferSelect)['state'];
+  readonly dueAt: Date | null;
+};
+
+export type PracticeSession = {
+  readonly items: ReadonlyArray<PracticeItem>;
+  readonly available: PracticeAvailability;
+};
+
+export type SubmitResult =
+  | {
+      readonly graded: false;
+      readonly expectedAnswers: ReadonlyArray<string>;
+      readonly message: string;
+    }
+  | {
+      readonly graded: true;
+      readonly correct: false;
+      readonly stored: false;
+      readonly expectedAnswers: ReadonlyArray<string>;
+      readonly explanation: string | null;
+      readonly acceptedAsAlternative: false;
+      readonly assessmentId: string;
+    }
+  | {
+      readonly graded: true;
+      readonly correct: boolean;
+      readonly stored: true;
+      readonly revision: number;
+      readonly rating: number;
+      readonly expectedAnswers: ReadonlyArray<string>;
+      readonly explanation: string | null;
+      readonly acceptedAsAlternative: boolean;
+      readonly schedule: CardSchedule;
+    };
+
+export type ResolvedSubmitResult = Exclude<
+  SubmitResult,
+  { readonly graded: true; readonly stored: false }
+>;
+
 export type SubmissionRecord = {
   readonly card: typeof cards.$inferSelect;
   readonly entry: {
@@ -40,6 +90,11 @@ export type PersistReviewInput = {
   readonly direction: AnswerDirection;
   readonly normalizedAnswer: string;
   readonly mode: ReviewMode;
+};
+
+export type PersistedReview = {
+  readonly revision: number;
+  readonly schedule: CardSchedule;
 };
 
 export type CachedJudgeVerdict = {

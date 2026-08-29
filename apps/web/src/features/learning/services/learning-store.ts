@@ -5,8 +5,12 @@ import type { LearnItem, LearnPass } from '../schemas/learning-models';
 
 type UnitRow = { readonly id: string; readonly name: string };
 type ItemRow = Omit<LearnItem, 'textbookAnswers'>;
-type AnswerRow = { readonly entryId: string; readonly text: string };
-type EntryMatchRow = { readonly found: boolean };
+type AnswerRow = {
+  readonly entryId: string;
+  readonly direction: LearnItem['direction'];
+  readonly text: string;
+};
+type CardMatchRow = { readonly found: boolean };
 
 const databaseError = (operation: string, cause: unknown) =>
   new LearningDatabaseError({
@@ -25,7 +29,7 @@ export class LearningStore extends Context.Tag('wordhold/LearningStore')<
     readonly introduce: (
       courseId: string,
       unitId: string,
-      entryId: string,
+      cardId: string,
       at: Date,
     ) => Effect.Effect<boolean, LearningDatabaseError>;
   }
@@ -42,38 +46,40 @@ export class LearningStore extends Context.Tag('wordhold/LearningStore')<
               where id = ${unitId} and course_id = ${courseId}
             `,
             items: sql<ItemRow>`
-              select e.id as "entryId", e.target_text as "targetText",
+              select c.id as "cardId", c.direction,
+                e.id as "entryId", e.target_text as "targetText",
                 e.native_text as "nativeText",
                 exists(
                   select 1 from entry_audio a where a.entry_id = e.id
                 ) as "hasAudio"
               from entries e
               join units u on u.id = e.unit_id and u.course_id = e.course_id
+              join courses co on co.id = e.course_id
+              join cards c on c.entry_id = e.id
               where u.id = ${unitId} and u.course_id = ${courseId}
-                and exists(
-                  select 1 from cards c
-                  where c.entry_id = e.id and c.introduced_at is null
-                )
-              order by e.created_at asc, e.id asc
+                and c.direction = any(co.directions)
+                and c.introduced_at is null
+              order by e.created_at asc, e.id asc, c.direction asc
             `,
             answers: sql<AnswerRow>`
-              select a.entry_id as "entryId", a.text
+              select a.entry_id as "entryId", a.direction, a.text
               from accepted_answers a
               join entries e on e.id = a.entry_id
               join units u on u.id = e.unit_id and u.course_id = e.course_id
               where u.id = ${unitId} and u.course_id = ${courseId}
-                and a.direction = 'to_target' and a.source = 'textbook'
+                and a.source = 'textbook'
             `,
           },
           { concurrency: 'unbounded' },
         ).pipe(
           Effect.map(({ units, items, answers }) => {
             const unit = units.at(0);
-            const byEntry = new Map<string, Array<string>>();
+            const byCard = new Map<string, Array<string>>();
             for (const answer of answers) {
-              const existing = byEntry.get(answer.entryId);
+              const key = `${answer.entryId}:${answer.direction}`;
+              const existing = byCard.get(key);
               if (existing === undefined) {
-                byEntry.set(answer.entryId, [answer.text]);
+                byCard.set(key, [answer.text]);
               } else {
                 existing.push(answer.text);
               }
@@ -84,7 +90,8 @@ export class LearningStore extends Context.Tag('wordhold/LearningStore')<
                   unit,
                   items: items.map((item) => ({
                     ...item,
-                    textbookAnswers: byEntry.get(item.entryId) ?? [],
+                    textbookAnswers:
+                      byCard.get(`${item.entryId}:${item.direction}`) ?? [],
                   })),
                 } satisfies LearnPass);
           }),
@@ -92,32 +99,34 @@ export class LearningStore extends Context.Tag('wordhold/LearningStore')<
             databaseError('load learning pass', cause),
           ),
         );
-      // Both directions of an entry are introduced together: the pass teaches the
-      // entry, not one way of asking about it. Already introduced cards keep
-      // their original timestamp, so replaying a pass costs nothing.
+      // Introduction is card-scoped: enabling a second direction later must
+      // teach that direction before regular practice can ask it.
       const introduce = (
         courseId: string,
         unitId: string,
-        entryId: string,
+        cardId: string,
         at: Date,
       ) =>
-        sql<EntryMatchRow>`
-          with matching_entry as (
-            select e.id
-            from entries e
+        sql<CardMatchRow>`
+          with matching_card as (
+            select c.id
+            from cards c
+            join entries e on e.id = c.entry_id
             join units u on u.id = e.unit_id and u.course_id = e.course_id
-            where e.id = ${entryId} and u.id = ${unitId}
+            join courses co on co.id = e.course_id
+            where c.id = ${cardId} and u.id = ${unitId}
               and u.course_id = ${courseId}
+              and c.direction = any(co.directions)
           ), updated as (
             update cards set introduced_at = ${at}
-            where entry_id in (select id from matching_entry)
+            where id in (select id from matching_card)
               and introduced_at is null
             returning id
           )
-          select exists(select 1 from matching_entry) as found
+          select exists(select 1 from matching_card) as found
         `.pipe(
           Effect.map((rows) => rows[0]?.found ?? false),
-          Effect.mapError((cause) => databaseError('introduce entry', cause)),
+          Effect.mapError((cause) => databaseError('introduce card', cause)),
         );
       return { loadPass, introduce } as const;
     }),

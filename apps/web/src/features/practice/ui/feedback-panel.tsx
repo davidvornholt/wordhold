@@ -1,7 +1,8 @@
 import { useEffect, useId, useRef } from 'react';
+import { formatLearningDate } from '../../../shared/dates/learning-date';
 import { normalizeAnswer } from '../../../shared/grading/normalize';
+import type { SubmitResult } from '../schemas/practice-models';
 import type { WrongAnswerResolution } from '../schemas/submission-schema';
-import type { SubmitResult } from '../services/practice-service';
 
 const panelTone = (result: SubmitResult) => {
   if (!result.graded) {
@@ -20,8 +21,69 @@ type FeedbackPanelProps = {
   readonly onResolveWrong: (
     resolution: Exclude<WrongAnswerResolution, 'defer'>,
   ) => void;
+  readonly repeated: boolean;
   readonly resolution: Exclude<WrongAnswerResolution, 'defer'> | null;
 };
+
+const feedbackHeading = (result: SubmitResult, repeated: boolean): string => {
+  if (!result.graded) {
+    return result.message;
+  }
+  if (!result.correct) {
+    return 'Noch nicht sicher';
+  }
+  return repeated ? 'Diesmal richtig' : 'Richtig';
+};
+
+const scheduleLead = (
+  result: Extract<
+    SubmitResult,
+    { readonly graded: true; readonly stored: true }
+  >,
+  repeated: boolean,
+) => {
+  if (!result.correct) {
+    return 'Erneut festigen ';
+  }
+  if (!result.schedule.advanced) {
+    return 'Zusätzliche Übung. Lernplan unverändert. Reguläre Wiederholung ';
+  }
+  return repeated
+    ? 'In dieser Sitzung gefestigt. Nächste Wiederholung '
+    : 'Nächste Wiederholung ';
+};
+
+const ScheduleNote = ({
+  result,
+  repeated,
+}: {
+  readonly result: Extract<
+    SubmitResult,
+    { readonly graded: true; readonly stored: true }
+  >;
+  readonly repeated: boolean;
+}) => (
+  <aside className="border-foreground/30 border-l bg-card/50 p-3">
+    <p className="text-muted-foreground text-xs uppercase tracking-wide">
+      So geht es weiter
+    </p>
+    <p className="text-sm">
+      {result.schedule.dueAt === null ? (
+        'Noch kein weiterer Termin.'
+      ) : (
+        <>
+          {scheduleLead(result, repeated)}
+          <time dateTime={result.schedule.dueAt.toISOString()}>
+            {formatLearningDate(result.schedule.dueAt).toLocaleLowerCase(
+              'de-DE',
+            )}
+          </time>
+          .
+        </>
+      )}
+    </p>
+  </aside>
+);
 
 export const FeedbackPanel = ({
   result,
@@ -29,6 +91,7 @@ export const FeedbackPanel = ({
   audioUrl,
   onNext,
   onResolveWrong,
+  repeated,
   resolution,
 }: FeedbackPanelProps) => {
   const normalizedSubmission = normalizeAnswer(submittedAnswer);
@@ -55,13 +118,7 @@ export const FeedbackPanel = ({
         id={feedbackDescriptionId}
         role="status"
       >
-        {result.graded ? (
-          <p className="font-medium">
-            {result.correct ? 'Richtig!' : 'Leider falsch.'}
-          </p>
-        ) : (
-          <p className="font-medium">{result.message}</p>
-        )}
+        <p className="font-medium">{feedbackHeading(result, repeated)}</p>
         {repeatsSubmittedAnswer ? null : (
           <p className="text-sm">
             Erwartet:{' '}
@@ -85,11 +142,14 @@ export const FeedbackPanel = ({
             gespeichert.
           </p>
         ) : null}
+        {result.graded && result.stored ? (
+          <ScheduleNote repeated={repeated} result={result} />
+        ) : null}
       </div>
       <div className="flex flex-wrap items-center gap-3">
         {audioUrl === null ? null : (
           <button
-            className="border border-input px-3 py-1.5 text-sm"
+            className="min-h-11 border border-input px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
             onClick={async () => {
               await new Audio(audioUrl).play().catch(() => undefined);
             }}
@@ -100,7 +160,7 @@ export const FeedbackPanel = ({
         )}
         {pendingWrong ? (
           <button
-            className="border border-input px-3 py-1.5 text-sm disabled:opacity-50"
+            className="min-h-11 border border-input px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50"
             disabled={resolution !== null}
             onClick={() => onResolveWrong('hard')}
             type="button"
@@ -111,8 +171,8 @@ export const FeedbackPanel = ({
           </button>
         ) : null}
         <button
-          className="bg-primary px-4 py-1.5 text-primary-foreground text-sm disabled:opacity-50"
           aria-describedby={feedbackDescriptionId}
+          className="min-h-11 bg-primary px-4 py-2 text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50"
           disabled={resolution !== null}
           onClick={() => {
             if (pendingWrong) {

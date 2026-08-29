@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
+import type { ReactNode } from 'react';
 import { listCourseUnits } from '../../../features/courses/services/server-fns';
 import { CourseLayout } from '../../../features/courses/ui/course-layout';
 import { CourseOverview } from '../../../features/courses/ui/course-overview';
@@ -8,7 +9,30 @@ import { getCourse } from '../../../features/import/server-fns';
 import { languageSubtitle } from '../../../shared/languages';
 
 const CourseScreen = () => {
-  const { course, units, practiceAvailable } = Route.useLoaderData();
+  const { course, units, stats } = Route.useLoaderData();
+  const nextUnit = units.find((unit) => unit.unintroduced > 0);
+  let primaryAction: ReactNode = null;
+  if (hasAvailablePractice(stats)) {
+    primaryAction = (
+      <Link
+        className="inline-flex min-h-11 items-center bg-primary px-4 py-2 font-medium text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
+        params={{ courseId: course.id }}
+        to="/courses/$courseId/practice"
+      >
+        {stats?.ready ?? 0} Karten üben
+      </Link>
+    );
+  } else if (nextUnit !== undefined) {
+    primaryAction = (
+      <Link
+        className="inline-flex min-h-11 items-center bg-primary px-4 py-2 font-medium text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
+        params={{ courseId: course.id, unitId: nextUnit.id }}
+        to="/courses/$courseId/units/$unitId/learn"
+      >
+        {nextUnit.unintroduced} Vokabeln kennenlernen
+      </Link>
+    );
+  }
 
   return (
     <CourseLayout
@@ -30,16 +54,7 @@ const CourseScreen = () => {
           </Link>
         }
         languageLabel={languageSubtitle(course.name, course.targetLanguage)}
-        practiceAvailable={practiceAvailable}
-        practiceAction={
-          <Link
-            className="font-medium text-sm underline"
-            params={{ courseId: course.id }}
-            to="/courses/$courseId/practice"
-          >
-            Üben
-          </Link>
-        }
+        primaryAction={primaryAction}
         renderUnitLink={(unit) => (
           <Link
             className="w-fit font-medium underline"
@@ -58,6 +73,16 @@ const CourseScreen = () => {
             Einstellungen
           </Link>
         }
+        vocabularyAction={
+          <Link
+            className="min-h-11 content-center text-sm underline underline-offset-4"
+            params={{ courseId: course.id }}
+            search={{ filter: 'all' }}
+            to="/courses/$courseId/vocabulary"
+          >
+            Vokabelliste
+          </Link>
+        }
         units={units}
       />
     </CourseLayout>
@@ -74,9 +99,7 @@ export const Route = createFileRoute('/courses/$courseId/')({
     return {
       course,
       units,
-      practiceAvailable: hasAvailablePractice(
-        dashboard.perCourse.find((stats) => stats.courseId === course.id),
-      ),
+      stats: dashboard.perCourse.find((stats) => stats.courseId === course.id),
     };
   },
   component: CourseScreen,

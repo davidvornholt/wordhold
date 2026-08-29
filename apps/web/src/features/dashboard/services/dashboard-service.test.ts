@@ -13,7 +13,7 @@ describe('DashboardService', () => {
     const store = Layer.succeed(DashboardStore, {
       courseCounts: () => Effect.fail(failure),
       fragileEntries: () => Effect.fail(failure),
-      reviewsBetween: () => Effect.fail(failure),
+      activityBetween: () => Effect.fail(failure),
     });
     const result = await Effect.runPromise(
       Effect.flatMap(DashboardService, (service) =>

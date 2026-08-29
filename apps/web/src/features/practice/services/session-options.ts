@@ -10,7 +10,20 @@ export type SessionOption = {
   readonly value: SessionDirection;
   readonly label: string;
   readonly description: string;
+  readonly cards: number;
 };
+
+type DirectionCount = {
+  readonly direction: SessionDirection;
+  readonly ready: number;
+};
+
+export const directionsWithCards = (
+  cards: ReadonlyArray<{ readonly direction: AnswerDirection }>,
+): ReadonlyArray<AnswerDirection> =>
+  answerDirections.filter((direction) =>
+    cards.some((card) => card.direction === direction),
+  );
 
 // What the start screen offers. Only directions the course still practises
 // appear, in the fixed order the settings screen uses. "Gemischt" comes last
@@ -18,6 +31,7 @@ export type SessionOption = {
 export const sessionOptions = (
   enabled: ReadonlyArray<AnswerDirection>,
   targetLabel: string,
+  counts: ReadonlyArray<DirectionCount>,
 ): ReadonlyArray<SessionOption> => {
   const singles = answerDirections
     .filter((direction) => enabled.includes(direction))
@@ -25,6 +39,7 @@ export const sessionOptions = (
       value: direction,
       label: directionLabel(direction, targetLabel),
       description: directionDescription(direction, targetLabel),
+      cards: counts.find((count) => count.direction === direction)?.ready ?? 0,
     }));
   return singles.length > 1
     ? [
@@ -33,6 +48,7 @@ export const sessionOptions = (
           value: 'both' as const,
           label: 'Gemischt',
           description: 'Beide Richtungen in einer Sitzung.',
+          cards: counts.find((count) => count.direction === 'both')?.ready ?? 0,
         },
       ]
     : singles;

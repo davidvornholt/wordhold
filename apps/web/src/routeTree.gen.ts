@@ -17,11 +17,12 @@ import { Route as CoursesCourseIdIndexRouteImport } from './routes/courses/$cour
 import { Route as CoursesCourseIdImportRouteImport } from './routes/courses/$courseId/import'
 import { Route as CoursesCourseIdPracticeRouteImport } from './routes/courses/$courseId/practice'
 import { Route as CoursesCourseIdSettingsRouteImport } from './routes/courses/$courseId/settings'
+import { Route as CoursesCourseIdStudyRouteImport } from './routes/courses/$courseId/study'
+import { Route as CoursesCourseIdVocabularyRouteImport } from './routes/courses/$courseId/vocabulary'
 import { Route as PagesPageIdVerifyRouteImport } from './routes/pages/$pageId/verify'
 import { Route as ApiEntriesEntryIdAudioRouteImport } from './routes/api/entries/$entryId/audio'
 import { Route as ApiPagesPageIdImageRouteImport } from './routes/api/pages/$pageId/image'
 import { Route as CoursesCourseIdUnitsUnitIdIndexRouteImport } from './routes/courses/$courseId/units/$unitId/index'
-import { Route as CoursesCourseIdUnitsUnitIdDrillRouteImport } from './routes/courses/$courseId/units/$unitId/drill'
 import { Route as CoursesCourseIdUnitsUnitIdLearnRouteImport } from './routes/courses/$courseId/units/$unitId/learn'
 
 const IndexRoute = IndexRouteImport.update({
@@ -64,6 +65,17 @@ const CoursesCourseIdSettingsRoute = CoursesCourseIdSettingsRouteImport.update({
   path: '/courses/$courseId/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CoursesCourseIdStudyRoute = CoursesCourseIdStudyRouteImport.update({
+  id: '/courses/$courseId/study',
+  path: '/courses/$courseId/study',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CoursesCourseIdVocabularyRoute =
+  CoursesCourseIdVocabularyRouteImport.update({
+    id: '/courses/$courseId/vocabulary',
+    path: '/courses/$courseId/vocabulary',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const PagesPageIdVerifyRoute = PagesPageIdVerifyRouteImport.update({
   id: '/pages/$pageId/verify',
   path: '/pages/$pageId/verify',
@@ -85,12 +97,6 @@ const CoursesCourseIdUnitsUnitIdIndexRoute =
     path: '/courses/$courseId/units/$unitId/',
     getParentRoute: () => rootRouteImport,
   } as any)
-const CoursesCourseIdUnitsUnitIdDrillRoute =
-  CoursesCourseIdUnitsUnitIdDrillRouteImport.update({
-    id: '/courses/$courseId/units/$unitId/drill',
-    path: '/courses/$courseId/units/$unitId/drill',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 const CoursesCourseIdUnitsUnitIdLearnRoute =
   CoursesCourseIdUnitsUnitIdLearnRouteImport.update({
     id: '/courses/$courseId/units/$unitId/learn',
@@ -106,11 +112,12 @@ export interface FileRoutesByFullPath {
   '/courses/$courseId/import': typeof CoursesCourseIdImportRoute
   '/courses/$courseId/practice': typeof CoursesCourseIdPracticeRoute
   '/courses/$courseId/settings': typeof CoursesCourseIdSettingsRoute
+  '/courses/$courseId/study': typeof CoursesCourseIdStudyRoute
+  '/courses/$courseId/vocabulary': typeof CoursesCourseIdVocabularyRoute
   '/pages/$pageId/verify': typeof PagesPageIdVerifyRoute
   '/courses/$courseId/': typeof CoursesCourseIdIndexRoute
   '/api/entries/$entryId/audio': typeof ApiEntriesEntryIdAudioRoute
   '/api/pages/$pageId/image': typeof ApiPagesPageIdImageRoute
-  '/courses/$courseId/units/$unitId/drill': typeof CoursesCourseIdUnitsUnitIdDrillRoute
   '/courses/$courseId/units/$unitId/learn': typeof CoursesCourseIdUnitsUnitIdLearnRoute
   '/courses/$courseId/units/$unitId/': typeof CoursesCourseIdUnitsUnitIdIndexRoute
 }
@@ -122,11 +129,12 @@ export interface FileRoutesByTo {
   '/courses/$courseId/import': typeof CoursesCourseIdImportRoute
   '/courses/$courseId/practice': typeof CoursesCourseIdPracticeRoute
   '/courses/$courseId/settings': typeof CoursesCourseIdSettingsRoute
+  '/courses/$courseId/study': typeof CoursesCourseIdStudyRoute
+  '/courses/$courseId/vocabulary': typeof CoursesCourseIdVocabularyRoute
   '/pages/$pageId/verify': typeof PagesPageIdVerifyRoute
   '/courses/$courseId': typeof CoursesCourseIdIndexRoute
   '/api/entries/$entryId/audio': typeof ApiEntriesEntryIdAudioRoute
   '/api/pages/$pageId/image': typeof ApiPagesPageIdImageRoute
-  '/courses/$courseId/units/$unitId/drill': typeof CoursesCourseIdUnitsUnitIdDrillRoute
   '/courses/$courseId/units/$unitId/learn': typeof CoursesCourseIdUnitsUnitIdLearnRoute
   '/courses/$courseId/units/$unitId': typeof CoursesCourseIdUnitsUnitIdIndexRoute
 }
@@ -139,11 +147,12 @@ export interface FileRoutesById {
   '/courses/$courseId/import': typeof CoursesCourseIdImportRoute
   '/courses/$courseId/practice': typeof CoursesCourseIdPracticeRoute
   '/courses/$courseId/settings': typeof CoursesCourseIdSettingsRoute
+  '/courses/$courseId/study': typeof CoursesCourseIdStudyRoute
+  '/courses/$courseId/vocabulary': typeof CoursesCourseIdVocabularyRoute
   '/pages/$pageId/verify': typeof PagesPageIdVerifyRoute
   '/courses/$courseId/': typeof CoursesCourseIdIndexRoute
   '/api/entries/$entryId/audio': typeof ApiEntriesEntryIdAudioRoute
   '/api/pages/$pageId/image': typeof ApiPagesPageIdImageRoute
-  '/courses/$courseId/units/$unitId/drill': typeof CoursesCourseIdUnitsUnitIdDrillRoute
   '/courses/$courseId/units/$unitId/learn': typeof CoursesCourseIdUnitsUnitIdLearnRoute
   '/courses/$courseId/units/$unitId/': typeof CoursesCourseIdUnitsUnitIdIndexRoute
 }
@@ -157,11 +166,12 @@ export interface FileRouteTypes {
     | '/courses/$courseId/import'
     | '/courses/$courseId/practice'
     | '/courses/$courseId/settings'
+    | '/courses/$courseId/study'
+    | '/courses/$courseId/vocabulary'
     | '/pages/$pageId/verify'
     | '/courses/$courseId/'
     | '/api/entries/$entryId/audio'
     | '/api/pages/$pageId/image'
-    | '/courses/$courseId/units/$unitId/drill'
     | '/courses/$courseId/units/$unitId/learn'
     | '/courses/$courseId/units/$unitId/'
   fileRoutesByTo: FileRoutesByTo
@@ -173,11 +183,12 @@ export interface FileRouteTypes {
     | '/courses/$courseId/import'
     | '/courses/$courseId/practice'
     | '/courses/$courseId/settings'
+    | '/courses/$courseId/study'
+    | '/courses/$courseId/vocabulary'
     | '/pages/$pageId/verify'
     | '/courses/$courseId'
     | '/api/entries/$entryId/audio'
     | '/api/pages/$pageId/image'
-    | '/courses/$courseId/units/$unitId/drill'
     | '/courses/$courseId/units/$unitId/learn'
     | '/courses/$courseId/units/$unitId'
   id:
@@ -189,11 +200,12 @@ export interface FileRouteTypes {
     | '/courses/$courseId/import'
     | '/courses/$courseId/practice'
     | '/courses/$courseId/settings'
+    | '/courses/$courseId/study'
+    | '/courses/$courseId/vocabulary'
     | '/pages/$pageId/verify'
     | '/courses/$courseId/'
     | '/api/entries/$entryId/audio'
     | '/api/pages/$pageId/image'
-    | '/courses/$courseId/units/$unitId/drill'
     | '/courses/$courseId/units/$unitId/learn'
     | '/courses/$courseId/units/$unitId/'
   fileRoutesById: FileRoutesById
@@ -206,10 +218,11 @@ export interface RootRouteChildren {
   CoursesCourseIdImportRoute: typeof CoursesCourseIdImportRoute
   CoursesCourseIdPracticeRoute: typeof CoursesCourseIdPracticeRoute
   CoursesCourseIdSettingsRoute: typeof CoursesCourseIdSettingsRoute
+  CoursesCourseIdStudyRoute: typeof CoursesCourseIdStudyRoute
+  CoursesCourseIdVocabularyRoute: typeof CoursesCourseIdVocabularyRoute
   PagesPageIdVerifyRoute: typeof PagesPageIdVerifyRoute
   CoursesCourseIdIndexRoute: typeof CoursesCourseIdIndexRoute
   ApiEntriesEntryIdAudioRoute: typeof ApiEntriesEntryIdAudioRoute
-  CoursesCourseIdUnitsUnitIdDrillRoute: typeof CoursesCourseIdUnitsUnitIdDrillRoute
   CoursesCourseIdUnitsUnitIdLearnRoute: typeof CoursesCourseIdUnitsUnitIdLearnRoute
   CoursesCourseIdUnitsUnitIdIndexRoute: typeof CoursesCourseIdUnitsUnitIdIndexRoute
 }
@@ -272,6 +285,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CoursesCourseIdSettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/courses/$courseId/study': {
+      id: '/courses/$courseId/study'
+      path: '/courses/$courseId/study'
+      fullPath: '/courses/$courseId/study'
+      preLoaderRoute: typeof CoursesCourseIdStudyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/courses/$courseId/vocabulary': {
+      id: '/courses/$courseId/vocabulary'
+      path: '/courses/$courseId/vocabulary'
+      fullPath: '/courses/$courseId/vocabulary'
+      preLoaderRoute: typeof CoursesCourseIdVocabularyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pages/$pageId/verify': {
       id: '/pages/$pageId/verify'
       path: '/pages/$pageId/verify'
@@ -298,13 +325,6 @@ declare module '@tanstack/react-router' {
       path: '/courses/$courseId/units/$unitId'
       fullPath: '/courses/$courseId/units/$unitId/'
       preLoaderRoute: typeof CoursesCourseIdUnitsUnitIdIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/courses/$courseId/units/$unitId/drill': {
-      id: '/courses/$courseId/units/$unitId/drill'
-      path: '/courses/$courseId/units/$unitId/drill'
-      fullPath: '/courses/$courseId/units/$unitId/drill'
-      preLoaderRoute: typeof CoursesCourseIdUnitsUnitIdDrillRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/courses/$courseId/units/$unitId/learn': {
@@ -337,10 +357,11 @@ const rootRouteChildren: RootRouteChildren = {
   CoursesCourseIdImportRoute: CoursesCourseIdImportRoute,
   CoursesCourseIdPracticeRoute: CoursesCourseIdPracticeRoute,
   CoursesCourseIdSettingsRoute: CoursesCourseIdSettingsRoute,
+  CoursesCourseIdStudyRoute: CoursesCourseIdStudyRoute,
+  CoursesCourseIdVocabularyRoute: CoursesCourseIdVocabularyRoute,
   PagesPageIdVerifyRoute: PagesPageIdVerifyRoute,
   CoursesCourseIdIndexRoute: CoursesCourseIdIndexRoute,
   ApiEntriesEntryIdAudioRoute: ApiEntriesEntryIdAudioRoute,
-  CoursesCourseIdUnitsUnitIdDrillRoute: CoursesCourseIdUnitsUnitIdDrillRoute,
   CoursesCourseIdUnitsUnitIdLearnRoute: CoursesCourseIdUnitsUnitIdLearnRoute,
   CoursesCourseIdUnitsUnitIdIndexRoute: CoursesCourseIdUnitsUnitIdIndexRoute,
 }

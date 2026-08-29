@@ -48,27 +48,42 @@ const Home = () => {
             )}
             renderImportAction={(course) => (
               <Link
-                className="underline"
+                className="border border-input px-4 py-3 text-sm underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
                 params={{ courseId: course.id }}
                 to="/courses/$courseId/import"
               >
-                fotografiere die erste Seite
+                Erste Seite fotografieren
               </Link>
             )}
             renderPracticeAction={(course) => (
               <Link
-                className="font-medium text-sm underline"
+                className="inline-flex min-h-11 items-center bg-primary px-4 py-2 font-medium text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
                 params={{ courseId: course.id }}
                 to="/courses/$courseId/practice"
               >
-                Üben
+                {dashboard.perCourse.find((item) => item.courseId === course.id)
+                  ?.ready ?? 0}{' '}
+                Karten üben
               </Link>
             )}
             reviewsToday={dashboard.reviewsToday}
+            cardsToday={dashboard.cardsToday}
             stats={dashboard.perCourse}
           />
 
-          <FragileList entries={dashboard.fragile} />
+          <FragileList
+            entries={dashboard.fragile}
+            renderEntryAction={(entry) => (
+              <Link
+                className="font-medium underline underline-offset-4"
+                params={{ courseId: entry.courseId }}
+                search={{ filter: 'difficult' }}
+                to="/courses/$courseId/vocabulary"
+              >
+                {entry.targetText} · {entry.nativeText}
+              </Link>
+            )}
+          />
 
           <AudioRecoveryPages
             pages={audioRecovery}

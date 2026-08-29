@@ -6,7 +6,7 @@ import {
 } from '@wordhold/db/testing/postgres-test-database';
 import { Effect, Layer } from 'effect';
 import {
-  freshEntryId,
+  firstReviewEntryId,
   seedIntroducedCardFixture,
 } from '../../../shared/testing/introduced-card-fixture';
 import { JudgeCacheStore } from './judge-cache-store';
@@ -34,7 +34,7 @@ describe('JudgeCacheStore assessment identity', () => {
           yield* seedIntroducedCardFixture;
           const cache = yield* JudgeCacheStore;
           const key = {
-            entryId: freshEntryId,
+            entryId: firstReviewEntryId,
             direction: 'to_target' as const,
             normalizedAnswer: 'livr',
           };

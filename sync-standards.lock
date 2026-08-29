@@ -1,6 +1,6 @@
 {
   "upstream": "github:davidvornholt/standards",
-  "sha": "f8cd9d0023be6a44a7b5ac587edcdd12c5edbb84",
+  "sha": "1303f8d7ad5835d6298a5d9ed047d81a38102f8e",
   "files": {
     ".agents/skills/ci-pipelines/SKILL.md": "173500b1274bc8eae4cedbb1b10c5ad048cb75c6ac7a70d995e3cd6642074ca1",
     ".agents/skills/database/agents/openai.yaml": "4c9f47df24219d5b195c88eef374431f64b453ed1ba057f50d4c11e4549343c1",
@@ -9,7 +9,7 @@
     ".agents/skills/declarative-infra/references/bootstrap.md": "c58fbf33207d471364ab1ffe4aae870d0a6a9285f0a1160137cccf3ee5dd6f47",
     ".agents/skills/declarative-infra/references/image-promotion-contracts.md": "127b73ede1e3210e59cf8ac90c3a14b2401a486e32d0ee70f02ad08cc305b121",
     ".agents/skills/declarative-infra/references/image-promotion.md": "7b363f5f4b360cab3ea5f8366581e8b4bafdd33ef16284b9ef8ddea38517429f",
-    ".agents/skills/declarative-infra/references/pr-previews.md": "e302f3a09151af979556579774a06d464102e56805d51432623f09c465dda6c4",
+    ".agents/skills/declarative-infra/references/pr-previews.md": "d9b4a5be18e459fa284568a48948a7d8d3608ad3c7d8c729d8aee460dc20eb60",
     ".agents/skills/declarative-infra/references/secrets.md": "0c7f0a6c2a4243fc58a4568d426071720a58ae07f29cada1e63ac49b5026ef3f",
     ".agents/skills/declarative-infra/SKILL.md": "62070be343bf6f88b230545c430c36c552d4c81cbe7a023c09e58ab62517e780",
     ".agents/skills/frontend-design/LICENSE.txt": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594",

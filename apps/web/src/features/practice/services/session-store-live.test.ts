@@ -5,12 +5,13 @@ import {
   withMigratedTestDatabase,
 } from '@wordhold/db/testing/postgres-test-database';
 import { Effect, Layer } from 'effect';
+import { practiceSectionSize } from '../../../shared/practice/session-policy';
 import {
   dueEntryId,
+  firstReviewEntryId,
   fixtureCourseId,
   fixtureNow,
   fixtureUnitId,
-  freshEntryId,
   seedIntroducedCardFixture,
 } from '../../../shared/testing/introduced-card-fixture';
 import { PracticeSessionStore } from './session-store';
@@ -23,16 +24,22 @@ describe('PracticeSessionStore introduction contract', () => {
         return Effect.gen(function* () {
           yield* seedIntroducedCardFixture;
           const store = yield* PracticeSessionStore;
-          const session = yield* store.load(
+          const session = yield* store.loadScheduled(
             fixtureCourseId,
             'both',
             fixtureNow,
           );
-          expect(session.due.map((item) => item.entryId)).toEqual([dueEntryId]);
-          expect(session.fresh.map((item) => item.entryId)).toEqual([
-            freshEntryId,
-            freshEntryId,
+          expect(session.items.map((item) => item.entryId)).toEqual([
+            dueEntryId,
+            firstReviewEntryId,
+            firstReviewEntryId,
           ]);
+          expect(session.availability).toEqual({
+            due: 1,
+            firstReviews: 2,
+            ready: 3,
+            nextDueAt: new Date('2026-08-21T12:00:00.000Z'),
+          });
         }).pipe(
           Effect.provide(
             PracticeSessionStore.live.pipe(Layer.provide(databaseLayer)),
@@ -57,17 +64,21 @@ describe('PracticeSessionStore introduction contract', () => {
             where id = ${fixtureCourseId}
           `;
 
-          const mixed = yield* store.load(fixtureCourseId, 'both', fixtureNow);
-          expect(mixed.due).toEqual([]);
-          expect(mixed.fresh.map((item) => item.direction)).toEqual([
+          const mixed = yield* store.loadScheduled(
+            fixtureCourseId,
+            'both',
+            fixtureNow,
+          );
+          expect(mixed.items.map((item) => item.direction)).toEqual([
             'to_native',
           ]);
-          const disabled = yield* store.load(
+          const disabled = yield* store.loadScheduled(
             fixtureCourseId,
             'to_target',
             fixtureNow,
           );
-          expect(disabled).toEqual({ due: [], fresh: [] });
+          expect(disabled.items).toEqual([]);
+          expect(disabled.availability.ready).toBe(0);
         }).pipe(
           Effect.provide(
             PracticeSessionStore.live.pipe(Layer.provide(databaseLayer)),
@@ -78,7 +89,60 @@ describe('PracticeSessionStore introduction contract', () => {
     );
   });
 
-  it('loads every introduced card in one unit and respects directions', async () => {
+  it('caps a section at twenty and never displaces overdue reviews with first reviews', async () => {
+    await Effect.runPromise(
+      withMigratedTestDatabase((database) => {
+        const databaseLayer = testDatabaseLayer(database.url);
+        return Effect.gen(function* () {
+          yield* seedIntroducedCardFixture;
+          const sql = yield* Database;
+          const store = yield* PracticeSessionStore;
+          yield* sql`
+            insert into entries (
+              course_id, unit_id, target_text, native_text
+            )
+            select ${fixtureCourseId}, ${fixtureUnitId},
+              'overdue-' || number, 'überfällig-' || number
+            from generate_series(1, 25) as number
+          `;
+          yield* sql`
+            insert into cards (
+              entry_id, direction, introduced_at, state, due_at,
+              stability, difficulty, reps, scheduled_days, last_reviewed_at
+            )
+            select id, 'to_target', ${fixtureNow}, 'review',
+              ${fixtureNow}::timestamptz - interval '1 day', 10, 5, 4, 10,
+              ${fixtureNow}::timestamptz - interval '11 days'
+            from entries where target_text like 'overdue-%'
+          `;
+
+          const session = yield* store.loadScheduled(
+            fixtureCourseId,
+            'both',
+            fixtureNow,
+          );
+          expect(session.items).toHaveLength(practiceSectionSize);
+          expect(
+            session.items.some((item) => item.entryId === firstReviewEntryId),
+          ).toBe(false);
+          expect(session.availability).toMatchObject({
+            due: 26,
+            firstReviews: 2,
+            ready: practiceSectionSize,
+          });
+        }).pipe(
+          Effect.provide(
+            PracticeSessionStore.live.pipe(Layer.provide(databaseLayer)),
+          ),
+          Effect.provide(databaseLayer),
+        );
+      }),
+    );
+  });
+});
+
+describe('PracticeSessionStore selected practice', () => {
+  it('loads selected cards and permits a direction outside the regular plan', async () => {
     await Effect.runPromise(
       withMigratedTestDatabase((database) => {
         const databaseLayer = testDatabaseLayer(database.url);
@@ -87,7 +151,11 @@ describe('PracticeSessionStore introduction contract', () => {
           const sql = yield* Database;
           const store = yield* PracticeSessionStore;
 
-          const mixed = yield* store.loadUnit(fixtureUnitId, 'both');
+          const mixed = yield* store.loadSelection({
+            courseId: fixtureCourseId,
+            direction: 'both',
+            selection: { unitId: fixtureUnitId },
+          });
           expect(
             mixed
               .map(({ entryId, direction }) => `${entryId}:${direction}`)
@@ -96,11 +164,15 @@ describe('PracticeSessionStore introduction contract', () => {
             [
               `${dueEntryId}:to_native`,
               `${dueEntryId}:to_target`,
-              `${freshEntryId}:to_native`,
-              `${freshEntryId}:to_target`,
+              `${firstReviewEntryId}:to_native`,
+              `${firstReviewEntryId}:to_target`,
             ].sort(),
           );
-          const target = yield* store.loadUnit(fixtureUnitId, 'to_target');
+          const target = yield* store.loadSelection({
+            courseId: fixtureCourseId,
+            direction: 'to_target',
+            selection: { unitId: fixtureUnitId },
+          });
           expect(target.map(({ direction }) => direction)).toEqual([
             'to_target',
             'to_target',
@@ -111,7 +183,13 @@ describe('PracticeSessionStore introduction contract', () => {
             set directions = '{to_native}'::answer_direction[]
             where id = ${fixtureCourseId}
           `;
-          expect(yield* store.loadUnit(fixtureUnitId, 'to_target')).toEqual([]);
+          expect(
+            yield* store.loadSelection({
+              courseId: fixtureCourseId,
+              direction: 'to_target',
+              selection: { unitId: fixtureUnitId },
+            }),
+          ).toHaveLength(2);
         }).pipe(
           Effect.provide(
             PracticeSessionStore.live.pipe(Layer.provide(databaseLayer)),

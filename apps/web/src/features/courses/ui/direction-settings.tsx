@@ -17,10 +17,10 @@ type DirectionSettingsProps = {
 };
 
 // Which directions this course practises at all. Switching one off hides its
-// cards; it never destroys them, so switching it back on carries on where it
-// stopped. Each change saves on its own, which is why there is no save button.
-// The controls stay locked until that save settles, so the server can never
-// receive two snapshots in an order the screen no longer represents.
+// cards without destroying them. Switching it back on resumes learned cards and
+// sends untouched ones through the learning pass first. Each change saves on its
+// own, which is why there is no save button. The controls stay locked until that
+// save settles, so the server cannot receive snapshots out of order.
 export const DirectionSettings = ({
   initial,
   targetLabel,
@@ -75,12 +75,23 @@ export const DirectionSettings = ({
 
   return (
     <section className="flex flex-col gap-3">
+      <div className="flex flex-col gap-1">
+        <h2 className="font-display text-xl">
+          Welche Richtungen sollen regelmäßig eingeplant werden?
+        </h2>
+        <p className="text-muted-foreground text-sm">
+          Eine ausgeschaltete Richtung erscheint nicht in deinem Lernplan. Ihr
+          bisheriger Stand bleibt erhalten. Beim Einschalten lernst du neue
+          Karten dieser Richtung zuerst kennen; bereits gelernte Karten setzen
+          ihren Lernplan fort und bleiben für freie Übungen verfügbar.
+        </p>
+      </div>
       <fieldset
         aria-busy={saving}
         className="flex flex-col gap-4 border border-border bg-card p-4"
         disabled={saving}
       >
-        <legend className="px-1 font-medium">Abfragerichtungen</legend>
+        <legend className="sr-only">Regelmäßige Abfragerichtungen</legend>
         {answerDirections.map((direction) => (
           <div className="flex items-start gap-3 text-sm" key={direction}>
             <input

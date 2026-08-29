@@ -3,41 +3,57 @@ import { courseTotals, unitOffers } from './course-units';
 
 // A unit part-way through the learning pass, and one that is finished with it.
 const mixedEntries = 18;
-const mixedUnlearned = 2;
-const learnedEntries = 16;
-const bothUnits = mixedEntries + learnedEntries;
+const mixedUnintroduced = 2;
+const introducedEntries = 16;
+const bothUnits = mixedEntries + introducedEntries;
 
-const unit = (entries: number, unlearned: number) => ({
+const unit = (entries: number, introduced: number, unintroduced: number) => ({
   id: '00000000-0000-0000-0000-000000000001',
   name: 'Unit 3 – Holidays',
   entries,
-  unlearned,
+  introduced,
+  unintroduced,
+  due: 0,
+  firstReviews: 0,
+  nextDueAt: null,
 });
 
 describe('unitOffers', () => {
   it('offers both when the unit holds met and unmet entries', () => {
-    expect(unitOffers(unit(mixedEntries, mixedUnlearned))).toEqual({
+    expect(
+      unitOffers(unit(mixedEntries, introducedEntries, mixedUnintroduced)),
+    ).toEqual({
       learn: true,
-      drill: true,
+      practice: true,
     });
   });
 
   it('offers only learning while no entry has been met', () => {
-    expect(unitOffers(unit(learnedEntries, learnedEntries))).toEqual({
+    expect(unitOffers(unit(introducedEntries, 0, introducedEntries))).toEqual({
       learn: true,
-      drill: false,
+      practice: false,
     });
   });
 
-  it('offers only drilling once every entry has been met', () => {
-    expect(unitOffers(unit(learnedEntries, 0))).toEqual({
+  it('offers only practice once every entry has been met', () => {
+    expect(unitOffers(unit(introducedEntries, introducedEntries, 0))).toEqual({
       learn: false,
-      drill: true,
+      practice: true,
+    });
+  });
+
+  it('keeps free practice available while learned entries gain a new direction', () => {
+    expect(unitOffers(unit(mixedEntries, mixedEntries, 2))).toEqual({
+      learn: true,
+      practice: true,
     });
   });
 
   it('offers nothing for a unit without entries', () => {
-    expect(unitOffers(unit(0, 0))).toEqual({ learn: false, drill: false });
+    expect(unitOffers(unit(0, 0, 0))).toEqual({
+      learn: false,
+      practice: false,
+    });
   });
 });
 
@@ -45,13 +61,13 @@ describe('courseTotals', () => {
   it('sums the units of the course', () => {
     expect(
       courseTotals([
-        unit(mixedEntries, mixedUnlearned),
-        unit(learnedEntries, 0),
+        unit(mixedEntries, introducedEntries, mixedUnintroduced),
+        unit(introducedEntries, introducedEntries, 0),
       ]),
-    ).toEqual({ entries: bothUnits, unlearned: mixedUnlearned });
+    ).toEqual({ entries: bothUnits, unintroduced: mixedUnintroduced });
   });
 
   it('reports zero for a course without units', () => {
-    expect(courseTotals([])).toEqual({ entries: 0, unlearned: 0 });
+    expect(courseTotals([])).toEqual({ entries: 0, unintroduced: 0 });
   });
 });

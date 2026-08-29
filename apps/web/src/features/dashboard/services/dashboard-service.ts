@@ -15,18 +15,19 @@ export class DashboardService extends Effect.Service<DashboardService>()(
             now,
             timeZone,
           );
-          const [perCourse, fragile, reviewsToday] = yield* Effect.all(
+          const [perCourse, fragile, activity] = yield* Effect.all(
             [
               store.courseCounts(now),
               store.fragileEntries(),
-              store.reviewsBetween(startInclusive, endExclusive),
+              store.activityBetween(startInclusive, endExclusive),
             ] as const,
             { concurrency: 'unbounded' },
           );
           return {
             perCourse,
             fragile,
-            reviewsToday,
+            reviewsToday: activity.answers,
+            cardsToday: activity.cards,
           } satisfies DashboardData;
         });
       return { load } as const;

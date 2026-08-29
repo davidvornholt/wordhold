@@ -1,9 +1,12 @@
+import type { ReactNode } from 'react';
 import type { FragileEntry } from '../schemas/dashboard-models';
 
 export const FragileList = ({
   entries,
+  renderEntryAction,
 }: {
   readonly entries: ReadonlyArray<FragileEntry>;
+  readonly renderEntryAction: (entry: FragileEntry) => ReactNode;
 }) =>
   entries.length === 0 ? null : (
     <section className="flex flex-col gap-3">
@@ -17,10 +20,7 @@ export const FragileList = ({
             className="flex flex-wrap items-baseline justify-between gap-2 px-1 py-2 text-sm"
             key={entry.entryId}
           >
-            <span>
-              <span className="font-medium">{entry.targetText}</span> –{' '}
-              {entry.nativeText}
-            </span>
+            {renderEntryAction(entry)}
             <span className="text-muted-foreground text-xs">
               {entry.courseName} · {entry.failures}× daneben
             </span>

@@ -4,11 +4,13 @@ import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import type { AnswerSource } from '@wordhold/db/schema/entries';
 import type { cards } from '@wordhold/db/schema/practice';
 import { Context, Effect, Layer } from 'effect';
+import { ratings } from '../../../shared/grading/rating';
 import {
   PracticeDatabaseError,
   type StaleAnswerSubmissionError,
 } from '../errors/practice-errors';
 import type {
+  PersistedReview,
   PersistReviewInput,
   SubmissionRecord,
 } from '../schemas/practice-models';
@@ -43,12 +45,10 @@ export class PracticeReviewStore extends Context.Tag(
       entryId: string,
       direction: AnswerDirection,
     ) => Effect.Effect<ReadonlyArray<AcceptedAnswer>, PracticeDatabaseError>;
-    // Resolves with the card's revision after the review, which the practice
-    // session needs to answer the same card again.
     readonly commit: (
       input: PersistReviewInput,
     ) => Effect.Effect<
-      number,
+      PersistedReview,
       PracticeDatabaseError | StaleAnswerSubmissionError
     >;
   }
@@ -162,13 +162,30 @@ export class PracticeReviewStore extends Context.Tag(
                 Effect.fail(mapCommitError(cause)),
               ),
             );
-        // The review is always written. A future review card still claims its
-        // revision, but its FSRS fields stay unchanged. The client mode labels
-        // provenance only and cannot alter this server-owned decision.
+        const scheduleAdvances = advancesSchedule(
+          input.card,
+          input.reviewedAt,
+          input.rating !== ratings.again,
+        );
         return commitGradedAnswer(
           runTransaction,
           input.outcome.method === 'judge' ? input.outcome.verdict : null,
-          advancesSchedule(input.card, input.reviewedAt),
+          scheduleAdvances,
+        ).pipe(
+          Effect.map((revision) => ({
+            revision,
+            schedule: scheduleAdvances
+              ? {
+                  advanced: true,
+                  state: next.state,
+                  dueAt: next.dueAt,
+                }
+              : {
+                  advanced: false,
+                  state: input.card.state,
+                  dueAt: input.card.dueAt,
+                },
+          })),
         );
       };
       return { findSubmission, listAcceptedAnswers, commit } as const;

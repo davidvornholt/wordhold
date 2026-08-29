@@ -28,7 +28,7 @@ export const PracticeAnswerForm = ({
       autoCapitalize="off"
       autoComplete="off"
       autoCorrect="off"
-      className="border border-input bg-card px-3 py-2"
+      className="min-h-11 border border-input bg-card px-3 py-2 focus-visible:outline-2 focus-visible:outline-offset-2"
       disabled={busy || disabled}
       onChange={(event) => onAnswerChange(event.target.value)}
       placeholder="Deine Antwort"
@@ -37,7 +37,7 @@ export const PracticeAnswerForm = ({
     />
     {disabled ? null : (
       <button
-        className="bg-primary px-4 py-2 text-primary-foreground text-sm disabled:opacity-50"
+        className="min-h-11 bg-primary px-4 py-2 text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50"
         disabled={busy || answer.trim() === ''}
         type="submit"
       >

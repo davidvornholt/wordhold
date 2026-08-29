@@ -1,6 +1,6 @@
 import { Clock, Effect } from 'effect';
 import {
-  LearningEntryNotFoundError,
+  LearningCardNotFoundError,
   LearningUnitNotFoundError,
 } from '../errors/learning-errors';
 import { LearningStore } from './learning-store';
@@ -19,14 +19,14 @@ export class LearningService extends Effect.Service<LearningService>()(
               })
             : pass;
         });
-      const introduce = (courseId: string, unitId: string, entryId: string) =>
+      const introduce = (courseId: string, unitId: string, cardId: string) =>
         Effect.gen(function* () {
           const at = new Date(yield* Clock.currentTimeMillis);
-          const found = yield* store.introduce(courseId, unitId, entryId, at);
+          const found = yield* store.introduce(courseId, unitId, cardId, at);
           if (!found) {
-            return yield* new LearningEntryNotFoundError({
+            return yield* new LearningCardNotFoundError({
               message:
-                'Die Vokabel gehört nicht mehr zu dieser Einheit. Lade die Seite neu.',
+                'Diese Abfragerichtung gehört nicht mehr zu der Einheit. Lade die Seite neu.',
             });
           }
         });

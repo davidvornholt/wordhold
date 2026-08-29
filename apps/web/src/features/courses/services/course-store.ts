@@ -5,7 +5,11 @@ import {
   type CourseDirectionsData,
   decodeStoredDirections,
 } from '../schemas/course-directions';
-import type { CourseUnit, UnitEntry } from '../schemas/course-units';
+import type { CourseUnit, VocabularyEntry } from '../schemas/course-units';
+import {
+  groupVocabularyRows,
+  type VocabularyRow,
+} from '../schemas/vocabulary-rows';
 
 const databaseError = (operation: string, cause: unknown) =>
   new CourseDatabaseError({
@@ -27,10 +31,11 @@ export class CourseStore extends Context.Tag('wordhold/CourseStore')<
     ) => Effect.Effect<boolean, CourseDatabaseError>;
     readonly listUnits: (
       courseId: string,
+      now: Date,
     ) => Effect.Effect<ReadonlyArray<CourseUnit>, CourseDatabaseError>;
-    readonly listEntries: (
-      unitId: string,
-    ) => Effect.Effect<ReadonlyArray<UnitEntry>, CourseDatabaseError>;
+    readonly listVocabulary: (
+      courseId: string,
+    ) => Effect.Effect<ReadonlyArray<VocabularyEntry>, CourseDatabaseError>;
   }
 >() {
   static readonly live = Layer.effect(
@@ -81,52 +86,73 @@ export class CourseStore extends Context.Tag('wordhold/CourseStore')<
             databaseError('write course directions', cause),
           ),
         );
-      // An entry remains unlearned until every card behind it is introduced.
-      const listUnits = (courseId: string) =>
+      // An entry remains unintroduced while one of the course's enabled
+      // directions has not been introduced. A disabled direction stays out of
+      // the learner's way until it is enabled again.
+      const listUnits = (courseId: string, now: Date) =>
         sql<CourseUnit>`
           select u.id, u.name,
             count(distinct e.id)::int as entries,
             count(distinct e.id) filter (
-              where not coalesce(c.learned, false)
-            )::int as unlearned
+              where exists (
+                select 1 from cards met
+                where met.entry_id = e.id
+                  and met.introduced_at is not null
+              )
+            )::int as introduced,
+            count(distinct e.id) filter (
+              where exists (
+                select 1 from cards pending
+                where pending.entry_id = e.id
+                  and pending.direction = any(co.directions)
+                  and pending.introduced_at is null
+              )
+            )::int as unintroduced,
+            count(cards.id) filter (
+              where cards.introduced_at is not null
+                and cards.direction = any(co.directions)
+                and cards.state <> 'new' and cards.due_at <= ${now}
+            )::int as due,
+            count(cards.id) filter (
+              where cards.introduced_at is not null
+                and cards.direction = any(co.directions)
+                and cards.state = 'new'
+            )::int as "firstReviews",
+            min(cards.due_at) filter (
+              where cards.introduced_at is not null
+                and cards.direction = any(co.directions)
+                and cards.due_at > ${now}
+            ) as "nextDueAt"
           from units u
+          join courses co on co.id = u.course_id
           left join entries e on e.unit_id = u.id
-          left join (
-            select entry_id,
-              count(*) = cardinality(enum_range(null::answer_direction))
-                and bool_and(introduced_at is not null) as learned
-            from cards group by entry_id
-          ) c on c.entry_id = e.id
+          left join cards on cards.entry_id = e.id
           where u.course_id = ${courseId}
-          group by u.id
+          group by u.id, co.directions
           order by u.position, u.name, u.id
         `.pipe(Effect.mapError((cause) => databaseError('list units', cause)));
-      // An entry counts as learned only once both of its cards have been
-      // introduced, which is how the learning pass stamps them. An entry
-      // without cards has met nobody, so the missing aggregate reads false.
-      const listEntries = (unitId: string) =>
-        sql<UnitEntry>`
-          select e.id,
-            e.target_text as "targetText",
-            e.native_text as "nativeText",
-            coalesce(
-              count(c.id) = cardinality(enum_range(null::answer_direction))
-                and bool_and(c.introduced_at is not null),
-              false
-            ) as learned
+      const listVocabulary = (courseId: string) =>
+        sql<VocabularyRow>`
+          select e.id, e.unit_id as "unitId", u.name as "unitName",
+            e.target_text as "targetText", e.native_text as "nativeText",
+            c.id as "cardId", c.direction, c.state,
+            c.due_at as "dueAt", c.introduced_at as "introducedAt",
+            (select count(*)::int from reviews r
+              where r.card_id = c.id and r.rating = 1) as failures
           from entries e
-          left join cards c on c.entry_id = e.id
-          where e.unit_id = ${unitId}
-          group by e.id
-          order by e.created_at, e.target_text, e.id
+          join units u on u.id = e.unit_id
+          join cards c on c.entry_id = e.id
+          where e.course_id = ${courseId}
+          order by u.position, e.created_at, e.target_text, c.direction
         `.pipe(
-          Effect.mapError((cause) => databaseError('list entries', cause)),
+          Effect.map(groupVocabularyRows),
+          Effect.mapError((cause) => databaseError('list vocabulary', cause)),
         );
       return {
         readDirections,
         writeDirections,
         listUnits,
-        listEntries,
+        listVocabulary,
       } as const;
     }),
   );

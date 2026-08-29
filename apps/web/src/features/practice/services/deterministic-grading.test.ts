@@ -26,6 +26,11 @@ describe('isDeterministicMatch', () => {
     expect(isDeterministicMatch('sportive', [answer('sportif/ive')])).toBe(
       true,
     );
+    expect(
+      isDeterministicMatch('Verkehrssprache', [
+        answer('lingua franca; Verkehrssprache'),
+      ]),
+    ).toBe(true);
   });
 
   it('rejects compact suffix fragments and invented forms', () => {

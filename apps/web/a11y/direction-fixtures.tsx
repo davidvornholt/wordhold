@@ -20,14 +20,22 @@ const backControl = (
 export const PracticeStartFixture = () => (
   <PracticeLayout backControl={backControl} title="English A2: Üben">
     <SessionStart
-      options={sessionOptions(['to_target', 'to_native'], 'Englisch')}
-      renderStartAction={(option) => (
+      options={sessionOptions(['to_target', 'to_native'], 'Englisch', [
+        { direction: 'to_target', ready: 12 },
+        { direction: 'to_native', ready: 8 },
+        { direction: 'both', ready: 20 },
+      ])}
+      preferenceKey="english-a2"
+      renderStartAction={(option, rememberDirection) => (
         <button
-          className="w-fit font-medium underline"
-          onClick={() => navigateToFixture('practice-session')}
+          className="min-h-11 w-fit bg-primary px-4 py-2 font-medium text-primary-foreground text-sm"
+          onClick={() => {
+            rememberDirection();
+            navigateToFixture('practice-session');
+          }}
           type="button"
         >
-          {option.label}
+          {option.cards} Karten starten
         </button>
       )}
     />

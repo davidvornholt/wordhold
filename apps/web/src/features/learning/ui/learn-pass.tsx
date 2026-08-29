@@ -9,7 +9,7 @@ type LearnPassProps = {
   readonly items: ReadonlyArray<LearnItem>;
   readonly targetLanguage: LanguageCode;
   readonly targetLabel: string;
-  readonly onIntroduce: (entryId: string) => Promise<void>;
+  readonly onIntroduce: (cardId: string) => Promise<void>;
   readonly practiceControl: ReactNode;
 };
 
@@ -25,14 +25,15 @@ export const LearnPass = ({
 }: LearnPassProps) => {
   const [index, setIndex] = useState(0);
   const item = items.at(index);
-  const vocabularyLabel = items.length === 1 ? 'Vokabel' : 'Vokabeln';
+  const directionLabel =
+    items.length === 1 ? 'Abfragerichtung' : 'Abfragerichtungen';
 
   return (
     <>
       {items.length === 0 ? null : (
         <ProgressMeter
           accessibleName="Lernfortschritt"
-          description={`${index} von ${items.length} ${vocabularyLabel} gelernt`}
+          description={`${index} von ${items.length} ${directionLabel} kennengelernt`}
           total={items.length}
           value={index}
         />
@@ -42,9 +43,9 @@ export const LearnPass = ({
       ) : (
         <LearnEntry
           item={item}
-          key={item.entryId}
+          key={item.cardId}
           onLearned={async () => {
-            await onIntroduce(item.entryId);
+            await onIntroduce(item.cardId);
             setIndex(index + 1);
           }}
           targetLanguage={targetLanguage}

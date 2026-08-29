@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
-const incorrectFeedbackDescription = /Leider falsch.*Erwartet: memory/u;
+const incorrectFeedbackDescription = /Noch nicht sicher.*Erwartet: memory/u;
 
 test('keyboard focus follows the practice loop', async ({ page }) => {
   await page.goto('/?state=practice-session');

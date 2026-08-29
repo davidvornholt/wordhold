@@ -10,6 +10,7 @@ import type { WrongAnswerResolution } from '../schemas/submission-schema';
 import { JudgeCacheStore } from './judge-cache-store';
 import { PracticeJudge } from './practice-judge';
 import { PracticeService } from './practice-service';
+import { persistedReview } from './practice-service-test-support';
 import { PracticeReviewStore } from './review-store';
 import { PracticeSessionStore } from './session-store';
 
@@ -48,7 +49,6 @@ const rejectedTypo = {
 } as const;
 
 const assessmentId = '00000000-0000-0000-0000-000000000003';
-
 const runSubmit = (
   commit: PracticeReviewStore['Type']['commit'],
   wrongAnswerResolution: WrongAnswerResolution,
@@ -61,8 +61,17 @@ const runSubmit = (
   };
   const stores = Layer.mergeAll(
     Layer.succeed(PracticeSessionStore, {
-      load: () => Effect.succeed({ due: [], fresh: [] }),
-      loadUnit: () => Effect.succeed([]),
+      loadScheduled: () =>
+        Effect.succeed({
+          items: [],
+          availability: {
+            due: 0,
+            firstReviews: 0,
+            ready: 0,
+            nextDueAt: null,
+          },
+        }),
+      loadSelection: () => Effect.succeed([]),
     }),
     Layer.succeed(JudgeCacheStore, {
       read: (_key, selector) =>
@@ -128,7 +137,7 @@ describe('PracticeService learner correction', () => {
       () =>
         Effect.sync(() => {
           commits += 1;
-          return commits;
+          return persistedReview;
         }),
       'defer',
     );
@@ -144,7 +153,7 @@ describe('PracticeService learner correction', () => {
       () =>
         Effect.sync(() => {
           commits += 1;
-          return commits;
+          return persistedReview;
         }),
       'again',
     );
@@ -163,7 +172,7 @@ describe('PracticeService learner correction', () => {
       (input) =>
         Effect.sync(() => {
           committed = input;
-          return 1;
+          return persistedReview;
         }),
       'hard',
       'corect',

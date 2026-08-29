@@ -7,6 +7,7 @@ import {
   withMigratedTestDatabase,
 } from '@wordhold/db/testing/postgres-test-database';
 import { Effect, Layer } from 'effect';
+import { ratings } from '../../../shared/grading/rating';
 import { seedIntroducedCardFixture } from '../../../shared/testing/introduced-card-fixture';
 import type { PersistReviewInput } from '../schemas/practice-models';
 import { PracticeReviewStore } from './review-store';
@@ -28,6 +29,7 @@ type MakeReviewInputOptions = {
   readonly answer: string;
   readonly mode?: ReviewMode;
   readonly reviewedAt?: Date;
+  readonly correct?: boolean;
 };
 
 export const makeReviewInput = ({
@@ -36,6 +38,7 @@ export const makeReviewInput = ({
   answer,
   mode = 'scheduled',
   reviewedAt = new Date('2026-08-20T12:01:00.000Z'),
+  correct = true,
 }: MakeReviewInputOptions) =>
   Effect.gen(function* () {
     const sql = yield* Database;
@@ -55,9 +58,20 @@ export const makeReviewInput = ({
     return {
       card: submission.card,
       expectedRevision: 0,
-      rating: 3,
+      rating: correct ? ratings.good : ratings.again,
       reviewedAt,
-      outcome: { method: 'judge', verdict: acceptedVerdict },
+      outcome: {
+        method: 'judge',
+        verdict: correct
+          ? acceptedVerdict
+          : {
+              ...acceptedVerdict,
+              correct: false,
+              acceptAsAlternative: false,
+              meaning: { ok: false, note: 'Falsche Bedeutung.' },
+              explanation: 'Die Bedeutung passt nicht.',
+            },
+      },
       answer,
       elapsedMs: 750,
       entryId,

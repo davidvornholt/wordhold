@@ -67,7 +67,7 @@ test('CardPractice freezes the submitted answer and ignores resubmission', async
   await expect(answer).toHaveValue('first answer');
 
   await page.getByRole('button', { name: 'Resolve submission' }).click();
-  await expect(page.getByText('Leider falsch.')).toBeVisible();
+  await expect(page.getByText('Noch nicht sicher')).toBeVisible();
 });
 
 test('CardPractice unlocks a rejected answer for a new submission', async ({
@@ -89,7 +89,7 @@ test('CardPractice unlocks a rejected answer for a new submission', async ({
   );
 
   await page.getByRole('button', { name: 'Resolve submission' }).click();
-  await expect(page.getByText('Leider falsch.')).toBeVisible();
+  await expect(page.getByText('Noch nicht sicher')).toBeVisible();
 });
 
 test('VerifyForm freezes every control and ignores resubmission', async ({

@@ -1,4 +1,4 @@
-import { Effect } from 'effect';
+import { Clock, Effect } from 'effect';
 import { CourseSettingsNotFoundError } from '../errors/courses-errors';
 import type {
   CourseDirectionsData,
@@ -40,9 +40,18 @@ export class CourseService extends Effect.Service<CourseService>()(
           (updated) =>
             updated ? Effect.succeed(directions) : Effect.fail(notFound),
         );
-      const listUnits = (courseId: string) => store.listUnits(courseId);
-      const listEntries = (unitId: string) => store.listEntries(unitId);
-      return { getDirections, setDirections, listUnits, listEntries } as const;
+      const listUnits = (courseId: string) =>
+        Effect.flatMap(Clock.currentTimeMillis, (now) =>
+          store.listUnits(courseId, new Date(now)),
+        );
+      const listVocabulary = (courseId: string) =>
+        store.listVocabulary(courseId);
+      return {
+        getDirections,
+        setDirections,
+        listUnits,
+        listVocabulary,
+      } as const;
     }),
   },
 ) {}
