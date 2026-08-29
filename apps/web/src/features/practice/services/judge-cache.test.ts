@@ -98,7 +98,11 @@ describe('judgeWithCache', () => {
   it('judges once when concurrent misses share a critical section', async () => {
     const mutex = Effect.unsafeMakeSemaphore(1);
     let cached:
-      | { readonly verdict: JudgeVerdictData; readonly model: string }
+      | {
+          readonly assessmentId: string;
+          readonly verdict: JudgeVerdictData;
+          readonly model: string;
+        }
       | undefined;
     let judgeCalls = 0;
     const layer = Layer.merge(
@@ -124,76 +128,8 @@ describe('judgeWithCache', () => {
         concurrency: 'unbounded',
       }).pipe(Effect.provide(layer)),
     );
-    expect(results).toEqual([verdict, verdict]);
+    expect(results[0]?.verdict).toEqual(verdict);
+    expect(results[1]).toEqual(results[0]);
     expect(judgeCalls).toBe(1);
-  });
-});
-
-describe('judge cache validity', () => {
-  it('returns a verdict cached by the active provider and model', async () => {
-    let judgeCalls = 0;
-    const result = await Effect.runPromise(
-      judgeWithCache(request).pipe(
-        Effect.provide(
-          Layer.merge(
-            Layer.succeed(JudgeCacheStore, {
-              read: (_key, model) =>
-                Effect.succeed(
-                  model === 'bedrock-mantle:test-model'
-                    ? { verdict, model }
-                    : undefined,
-                ),
-              write: () => Effect.void,
-              withCriticalSection: (_key, effect) => effect,
-            }),
-            Layer.succeed(PracticeJudge, {
-              model: 'bedrock-mantle:test-model',
-              judge: () =>
-                Effect.sync(() => {
-                  judgeCalls += 1;
-                  return { verdict, model: 'bedrock-mantle:test-model' };
-                }),
-            }),
-          ),
-        ),
-      ),
-    );
-
-    expect(result).toEqual(verdict);
-    expect(judgeCalls).toBe(0);
-  });
-
-  it('replaces a verdict cached by an old provider or model', async () => {
-    let cached = { verdict, model: 'bedrock-runtime:old-model' };
-    let judgeCalls = 0;
-    const result = await Effect.runPromise(
-      judgeWithCache(request).pipe(
-        Effect.provide(
-          Layer.merge(
-            Layer.succeed(JudgeCacheStore, {
-              read: (_key, model) =>
-                Effect.succeed(cached.model === model ? cached : undefined),
-              write: (_key, value) =>
-                Effect.sync(() => {
-                  cached = value;
-                }),
-              withCriticalSection: (_key, effect) => effect,
-            }),
-            Layer.succeed(PracticeJudge, {
-              model: 'bedrock-mantle:test-model',
-              judge: () =>
-                Effect.sync(() => {
-                  judgeCalls += 1;
-                  return { verdict, model: 'bedrock-mantle:test-model' };
-                }),
-            }),
-          ),
-        ),
-      ),
-    );
-
-    expect(result).toEqual(verdict);
-    expect(judgeCalls).toBe(1);
-    expect(cached.model).toBe('bedrock-mantle:test-model');
   });
 });

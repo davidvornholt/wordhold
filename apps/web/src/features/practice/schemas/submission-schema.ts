@@ -12,6 +12,9 @@ export const maximumElapsedMs =
   hoursPerDay * minutesPerHour * secondsPerMinute * millisecondsPerSecond;
 export const maximumSubmittedAnswerLength = maximumEntryTextLength;
 
+export const wrongAnswerResolutions = ['defer', 'again', 'hard'] as const;
+export type WrongAnswerResolution = (typeof wrongAnswerResolutions)[number];
+
 const ElapsedMilliseconds = Schema.Number.pipe(
   Schema.finite(),
   Schema.int(),
@@ -25,7 +28,7 @@ const CardRevision = Schema.Number.pipe(
   Schema.lessThanOrEqualTo(maximumIncrementablePostgresInteger),
 );
 
-export const SubmitPayload = Schema.Struct({
+const SubmitPayloadBase = Schema.Struct({
   cardId: Schema.UUID,
   revision: CardRevision,
   answer: Schema.String.pipe(Schema.maxLength(maximumSubmittedAnswerLength)),
@@ -34,6 +37,20 @@ export const SubmitPayload = Schema.Struct({
   // log. Scheduling is derived from the server-owned card state.
   mode: Schema.Literal(...reviewModes),
 });
+
+export const SubmitPayload = Schema.Union(
+  Schema.Struct({
+    ...SubmitPayloadBase.fields,
+    wrongAnswerResolution: Schema.Literal('defer'),
+  }),
+  Schema.Struct({
+    ...SubmitPayloadBase.fields,
+    // A resolution must point to the exact rejected server assessment shown
+    // to the learner. Re-grading here could change what gets committed.
+    wrongAnswerResolution: Schema.Literal('again', 'hard'),
+    assessmentId: Schema.UUID,
+  }),
+);
 
 export type SubmitPayloadData = typeof SubmitPayload.Type;
 

@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef } from 'react';
 import { normalizeAnswer } from '../../../shared/grading/normalize';
+import type { WrongAnswerResolution } from '../schemas/submission-schema';
 import type { SubmitResult } from '../services/practice-service';
 
 const panelTone = (result: SubmitResult) => {
@@ -16,6 +17,10 @@ type FeedbackPanelProps = {
   readonly submittedAnswer: string;
   readonly audioUrl: string | null;
   readonly onNext: () => void;
+  readonly onResolveWrong: (
+    resolution: Exclude<WrongAnswerResolution, 'defer'>,
+  ) => void;
+  readonly resolution: Exclude<WrongAnswerResolution, 'defer'> | null;
 };
 
 export const FeedbackPanel = ({
@@ -23,6 +28,8 @@ export const FeedbackPanel = ({
   submittedAnswer,
   audioUrl,
   onNext,
+  onResolveWrong,
+  resolution,
 }: FeedbackPanelProps) => {
   const normalizedSubmission = normalizeAnswer(submittedAnswer);
   const repeatsSubmittedAnswer = result.expectedAnswers.some(
@@ -31,13 +38,17 @@ export const FeedbackPanel = ({
   );
   const nextButton = useRef<HTMLButtonElement>(null);
   const feedbackDescriptionId = useId();
+  const pendingWrong = result.graded && !result.stored;
 
   useEffect(() => {
     nextButton.current?.focus();
   }, []);
 
   return (
-    <div className={`flex flex-col gap-3 border-l-4 p-4 ${panelTone(result)}`}>
+    <div
+      aria-busy={resolution !== null}
+      className={`flex flex-col gap-3 border-l-4 p-4 ${panelTone(result)}`}
+    >
       <div
         aria-live="polite"
         className="flex flex-col gap-3"
@@ -67,8 +78,15 @@ export const FeedbackPanel = ({
             Deine Antwort wurde als gültige Alternative gespeichert.
           </p>
         ) : null}
+        {pendingWrong ? (
+          <p className="text-sm">
+            Vertippt oder falsch bewertet? Du kannst die Antwort als richtig
+            werten. Sie zählt dann als schwer, wird aber nicht als Lösung
+            gespeichert.
+          </p>
+        ) : null}
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         {audioUrl === null ? null : (
           <button
             className="border border-input px-3 py-1.5 text-sm"
@@ -80,14 +98,33 @@ export const FeedbackPanel = ({
             Aussprache anhören
           </button>
         )}
+        {pendingWrong ? (
+          <button
+            className="border border-input px-3 py-1.5 text-sm disabled:opacity-50"
+            disabled={resolution !== null}
+            onClick={() => onResolveWrong('hard')}
+            type="button"
+          >
+            {resolution === 'hard'
+              ? 'Wird gespeichert …'
+              : 'Als richtig werten'}
+          </button>
+        ) : null}
         <button
-          className="bg-primary px-4 py-1.5 text-primary-foreground text-sm"
+          className="bg-primary px-4 py-1.5 text-primary-foreground text-sm disabled:opacity-50"
           aria-describedby={feedbackDescriptionId}
-          onClick={onNext}
+          disabled={resolution !== null}
+          onClick={() => {
+            if (pendingWrong) {
+              onResolveWrong('again');
+            } else {
+              onNext();
+            }
+          }}
           ref={nextButton}
           type="button"
         >
-          Weiter
+          {resolution === 'again' ? 'Wird gespeichert …' : 'Weiter'}
         </button>
       </div>
     </div>

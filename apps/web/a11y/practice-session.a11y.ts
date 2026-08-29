@@ -60,6 +60,27 @@ test('a missed card returns later and a double click advances only once', async 
   ).toBeVisible();
 });
 
+test('a rejected typo can be stored as Hard without teaching it as an answer', async ({
+  page,
+}) => {
+  await page.goto('/?state=practice-session');
+  const answer = page.getByLabel('Deine Antwort');
+
+  await answer.fill('memroy');
+  await page.getByRole('button', { name: 'Prüfen' }).click();
+  await expect(page.getByText('Leider falsch.')).toBeVisible();
+  await expect(
+    page.getByText('wird aber nicht als Lösung gespeichert', { exact: false }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Als richtig werten' }).click();
+
+  await expect(
+    page.getByRole('heading', { level: 2, name: 'Ferien' }),
+  ).toBeVisible();
+  await expect(page.getByText('1 von 2 Karten bearbeitet')).toBeVisible();
+  await expect(answer).toBeFocused();
+});
+
 test('a first-attempt grading failure keeps its stored state in the final summary', async ({
   page,
 }) => {

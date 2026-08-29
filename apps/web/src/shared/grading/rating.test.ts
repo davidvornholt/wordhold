@@ -52,6 +52,19 @@ describe('deriveRating', () => {
       ratings.again,
     );
   });
+
+  it('rates a learner correction Hard', () => {
+    const assessed = {
+      method: 'judge',
+      verdict: verdict({
+        correct: false,
+        spelling: { ok: false, note: 'Tippfehler' },
+      }),
+    } as const;
+    expect(
+      deriveRating({ method: 'learner-correction', assessed }, fastMs),
+    ).toBe(ratings.hard);
+  });
 });
 
 describe('isCorrect', () => {
@@ -63,5 +76,17 @@ describe('isCorrect', () => {
     expect(
       isCorrect({ method: 'judge', verdict: verdict({ correct: false }) }),
     ).toBe(false);
+  });
+
+  it('treats a learner correction as correct', () => {
+    expect(
+      isCorrect({
+        method: 'learner-correction',
+        assessed: {
+          method: 'judge',
+          verdict: verdict({ correct: false }),
+        },
+      }),
+    ).toBe(true);
   });
 });
