@@ -2,7 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { getCourse } from '../../../../../features/import/server-fns';
 import {
   getLearnPass,
-  introduceEntry,
+  introduceCard,
 } from '../../../../../features/learning/services/server-fns';
 import { LearnPass } from '../../../../../features/learning/ui/learn-pass';
 import { LearningLayout } from '../../../../../features/learning/ui/learning-layout';
@@ -26,12 +26,12 @@ const LearnUnitScreen = () => {
     >
       <LearnPass
         items={pass.items}
-        onIntroduce={async (entryId) => {
-          await introduceEntry({
+        onIntroduce={async (cardId) => {
+          await introduceCard({
             data: {
               courseId: course.id,
               unitId: pass.unit.id,
-              entryId,
+              cardId,
             },
           });
         }}

@@ -40,7 +40,7 @@ export const SessionSummary = ({
         {heading}
       </ManagedStepHeading>
       {queue.total === 0 ? null : (
-        <dl className="grid gap-2 text-sm sm:grid-cols-2">
+        <dl className="grid gap-2 text-sm sm:grid-cols-3">
           <div>
             <dt className="text-muted-foreground">Bearbeitet</dt>
             <dd className="font-medium">
@@ -52,12 +52,8 @@ export const SessionSummary = ({
             <dd className="font-medium">{queue.firstTryCorrect}</dd>
           </div>
           <div>
-            <dt className="text-muted-foreground">In der Nachrunde richtig</dt>
+            <dt className="text-muted-foreground">Nach Fehlern richtig</dt>
             <dd className="font-medium">{queue.afterRoundCorrect}</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Weiterhin unsicher</dt>
-            <dd className="font-medium">{queue.deferred.length}</dd>
           </div>
         </dl>
       )}
@@ -70,7 +66,9 @@ export const SessionSummary = ({
       {nextDueAt === null ? null : (
         <aside className="border-primary border-l-4 bg-accent p-4">
           <p className="text-muted-foreground text-xs uppercase tracking-wide">
-            Nächster Lerntermin
+            {nextDueAt <= new Date()
+              ? 'Reguläre Wiederholung fällig'
+              : 'Nächster Lerntermin'}
           </p>
           <p className="font-display text-lg">
             <time dateTime={nextDueAt.toISOString()}>
@@ -110,9 +108,6 @@ export const SectionCheckpoint = ({
     </ManagedStepHeading>
     <p className="text-sm">
       Noch {queue.remaining.length} Karten in dieser Auswahl.
-      {queue.deferred.length > 0
-        ? ` ${queue.deferred.length} unsichere Karten bleiben im Lernplan.`
-        : ''}
     </p>
     <div className="flex flex-wrap gap-3">
       <button

@@ -6,10 +6,14 @@ test('the vocabulary library exposes per-direction dates and cross-unit selectio
   page,
 }) => {
   await page.goto('/?state=vocabulary');
+  await expect(page.getByText('1 von 2 Richtungen geübt')).toBeVisible();
   await page.locator('summary').first().click();
   await expect(page.getByText('Deutsch → Englisch').first()).toBeVisible();
   await expect(page.getByText('Englisch → Deutsch').first()).toBeVisible();
   await expect(page.getByText('nicht gewusst').first()).toBeVisible();
+  await expect(
+    page.getByText('Noch nicht kennengelernt').first(),
+  ).toBeVisible();
 
   await page.getByLabel('memory auswählen').check();
   await page.getByLabel('the referee auswählen').check();

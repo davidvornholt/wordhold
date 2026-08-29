@@ -10,10 +10,6 @@ type QueuedCard = PracticeItem & {
   readonly repeated: boolean;
 };
 
-type DeferredCard = QueuedCard & {
-  readonly dueAt: Date | null;
-};
-
 type ScheduledCard = {
   readonly cardId: string;
   readonly dueAt: Date | null;
@@ -22,7 +18,7 @@ type ScheduledCard = {
 export type SessionQueue = {
   readonly pending: ReadonlyArray<QueuedCard>;
   readonly remaining: ReadonlyArray<PracticeItem>;
-  readonly deferred: ReadonlyArray<DeferredCard>;
+  readonly repeatCards: ReadonlyArray<QueuedCard>;
   readonly scheduled: ReadonlyArray<ScheduledCard>;
   readonly phase: QueuePhase;
   readonly section: number;
@@ -55,7 +51,7 @@ export const createSessionQueue = (
 ): SessionQueue =>
   beginSection({
     remaining: items,
-    deferred: [],
+    repeatCards: [],
     scheduled: [],
     phase: items.length === 0 ? 'complete' : 'main',
     section: items.length === 0 ? 0 : 1,
@@ -74,17 +70,12 @@ const rememberSchedule = (
   dueAt: Date | null,
 ) => [...scheduled.filter((item) => item.cardId !== cardId), { cardId, dueAt }];
 
-const finishCheckpoint = (queue: SessionQueue, now: Date): SessionQueue => {
+const finishCheckpoint = (queue: SessionQueue): SessionQueue => {
   if (queue.pending.length > 0) {
     return queue;
   }
-  if (queue.phase === 'main') {
-    const ready = queue.deferred.filter(
-      (card) => card.dueAt !== null && card.dueAt <= now,
-    );
-    if (ready.length > 0) {
-      return { ...queue, phase: 'after-round', pending: ready };
-    }
+  if (queue.repeatCards.length > 0) {
+    return { ...queue, phase: 'after-round', pending: queue.repeatCards };
   }
   if (queue.remaining.length > 0) {
     return { ...queue, phase: 'checkpoint' };
@@ -111,7 +102,6 @@ export const advanceQueue = (
   queue: SessionQueue,
   expected: ExpectedCard,
   result: ResolvedSubmitResult,
-  now = new Date(),
 ): SessionQueue => {
   const card = queue.pending.at(0);
   if (
@@ -132,15 +122,12 @@ export const advanceQueue = (
         }
       : withoutHead;
   if (!result.graded) {
-    return finishCheckpoint(
-      {
-        ...processed,
-        ungradedCardIds: queue.ungradedCardIds.includes(card.cardId)
-          ? queue.ungradedCardIds
-          : [...queue.ungradedCardIds, card.cardId],
-      },
-      now,
-    );
+    return finishCheckpoint({
+      ...processed,
+      ungradedCardIds: queue.ungradedCardIds.includes(card.cardId)
+        ? queue.ungradedCardIds
+        : [...queue.ungradedCardIds, card.cardId],
+    });
   }
 
   const withSchedule = {
@@ -157,34 +144,29 @@ export const advanceQueue = (
         ? {
             ...withSchedule,
             afterRoundCorrect: queue.afterRoundCorrect + 1,
-            deferred: queue.deferred.filter(
+            repeatCards: queue.repeatCards.filter(
               (item) => item.cardId !== card.cardId,
             ),
           }
         : { ...withSchedule, firstTryCorrect: queue.firstTryCorrect + 1 },
-      now,
     );
   }
 
-  const deferred = {
+  const repeatCard = {
     ...card,
     revision: result.revision,
     repeated: true,
-    dueAt: result.schedule.dueAt,
   };
-  return finishCheckpoint(
-    {
-      ...withSchedule,
-      deferred: [
-        ...queue.deferred.filter((item) => item.cardId !== card.cardId),
-        deferred,
-      ],
-      missedCardIds: queue.missedCardIds.includes(card.cardId)
-        ? queue.missedCardIds
-        : [...queue.missedCardIds, card.cardId],
-    },
-    now,
-  );
+  return finishCheckpoint({
+    ...withSchedule,
+    repeatCards: [
+      ...queue.repeatCards.filter((item) => item.cardId !== card.cardId),
+      repeatCard,
+    ],
+    missedCardIds: queue.missedCardIds.includes(card.cardId)
+      ? queue.missedCardIds
+      : [...queue.missedCardIds, card.cardId],
+  });
 };
 
 export const earliestScheduledReview = (queue: SessionQueue): Date | null =>

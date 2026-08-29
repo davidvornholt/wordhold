@@ -4,6 +4,7 @@ test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
 const unitActionPattern = /kennenlernen$|üben$/u;
 const coursePracticePattern = /Karten üben$/u;
+const unitPracticePattern = /Vokabeln üben$/u;
 
 test('the course offers practice when its queue has work', async ({ page }) => {
   await page.goto('/?state=course');
@@ -25,6 +26,24 @@ test('the course hides practice when its queue has no work', async ({
   await expect(
     page.getByRole('button', { name: 'Einstellungen' }),
   ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: '2 Vokabeln kennenlernen' }),
+  ).toBeVisible();
+});
+
+test('an untouched unit leads with learning and links to its filtered vocabulary', async ({
+  page,
+}) => {
+  await page.goto('/?state=unit-unintroduced');
+  await expect(
+    page.getByRole('button', { name: '12 kennenlernen' }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Vokabelliste dieser Einheit' }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: unitPracticePattern }),
+  ).toHaveCount(0);
 });
 
 test('empty units do not claim to be learned or offer work', async ({

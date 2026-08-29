@@ -20,7 +20,7 @@ const decodeIntroductionRequest = Schema.decodeUnknownSync(
   Schema.Struct({
     courseId: Schema.UUID,
     unitId: Schema.UUID,
-    entryId: Schema.UUID,
+    cardId: Schema.UUID,
   }),
 );
 
@@ -35,13 +35,13 @@ export const getLearnPass = createServerFn()
     );
   });
 
-export const introduceEntry = createServerFn({ method: 'POST' })
+export const introduceCard = createServerFn({ method: 'POST' })
   .validator(decodeIntroductionRequest)
   .handler(async ({ data }) => {
     await authRuntime.runPromise(requireSession(getRequest().headers));
     return learningRuntime.runPromise(
       Effect.flatMap(LearningService, (service) =>
-        service.introduce(data.courseId, data.unitId, data.entryId),
+        service.introduce(data.courseId, data.unitId, data.cardId),
       ),
     );
   });

@@ -1,13 +1,14 @@
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import type { CardState } from '@wordhold/db/schema/practice';
 
-// A unit as the course page lists it. The two counts are what every screen
-// about a unit needs: how much is in it, and how much of that the learner has
-// never met.
+// A unit as the course page lists it. Introduced entries can be freely practised;
+// unintroduced entries still have at least one enabled direction to learn. The
+// sets may overlap after another direction is enabled.
 export type CourseUnit = {
   readonly id: string;
   readonly name: string;
   readonly entries: number;
+  readonly introduced: number;
   readonly unintroduced: number;
   readonly due: number;
   readonly firstReviews: number;
@@ -20,12 +21,7 @@ export type VocabularyCard = {
   readonly state: CardState;
   readonly dueAt: Date | null;
   readonly introducedAt: Date | null;
-  readonly lastReviewedAt: Date | null;
   readonly failures: number;
-  readonly recentReviews: ReadonlyArray<{
-    readonly reviewedAt: string;
-    readonly rating: number;
-  }>;
 };
 
 export type VocabularyEntry = {
@@ -40,8 +36,7 @@ export type VocabularyEntry = {
 
 // How many of the unit's entries have been through the learning pass, which is
 // what a free practice session for the unit would ask about.
-export const introducedEntries = (unit: CourseUnit): number =>
-  unit.entries - unit.unintroduced;
+export const introducedEntries = (unit: CourseUnit): number => unit.introduced;
 
 // What can be done with a unit. Learning needs entries the learner has not met;
 // Free practice needs entries already met. A unit in the middle offers both,

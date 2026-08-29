@@ -45,13 +45,13 @@ export const VocabularyFilters = ({
       </select>
     </label>
     <label className="flex flex-col gap-1 text-sm">
-      <span className="font-medium">Unit</span>
+      <span className="font-medium">Einheit</span>
       <select
         className="min-h-11 border border-input bg-background px-3 focus-visible:outline-2 focus-visible:outline-offset-2"
         onChange={(event) => onUnitChange(event.target.value)}
         value={unitFilter}
       >
-        <option value="all">Alle Units</option>
+        <option value="all">Alle Einheiten</option>
         {unitOptions.map(([unitId, unitName]) => (
           <option key={unitId} value={unitId}>
             {unitName}

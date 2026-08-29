@@ -5,8 +5,9 @@ const forwardDirectionPattern = /Deutsch → Englisch/u;
 
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
-// The night-before path: the course page leads into a unit, the unit shows its
-// entries and offers free practice for the ones already introduced.
+// The night-before path: the course page leads into a unit action page, which
+// offers free practice for entries already introduced without duplicating the
+// vocabulary inventory.
 test('selected practice reaches a unit sitting through the course page', async ({
   page,
 }) => {
@@ -16,8 +17,10 @@ test('selected practice reaches a unit sitting through the course page', async (
 
   await page.getByRole('button', { name: 'Unit 3 – Holidays' }).click();
   await expect(page.locator('body')).toHaveAttribute('data-fixture', 'unit');
-  await expect(page.getByText('to look (at)')).toBeVisible();
-  await expect(page.getByText('ansehen')).toBeVisible();
+  await expect(page.getByText('to look (at)')).toHaveCount(0);
+  await expect(
+    page.getByRole('button', { name: 'Vokabelliste dieser Einheit' }),
+  ).toBeVisible();
 
   await page.getByRole('button', { name: '16 Vokabeln üben' }).click();
   await expect(page.locator('body')).toHaveAttribute(

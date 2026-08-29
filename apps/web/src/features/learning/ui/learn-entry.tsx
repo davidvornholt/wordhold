@@ -1,19 +1,23 @@
 import type { LanguageCode } from '@wordhold/db/schema/courses';
 import { type SubmitEvent, useEffect, useId, useRef, useState } from 'react';
-import type { LearnItem } from '../schemas/learning-models';
+import { directionLabel } from '../../../shared/directions';
+import {
+  type LearnItem,
+  learnAnswer,
+  learnPrompt,
+} from '../schemas/learning-models';
 import { matchesLearnItem } from '../services/learn-check';
-import { ManagedFocusHeading } from './managed-focus-heading';
 
 type LearnEntryProps = {
   readonly item: LearnItem;
   readonly targetLanguage: LanguageCode;
   readonly targetLabel: string;
-  // Records that this entry has been met. Only called once the learner has
-  // written it correctly, and the next entry waits until it has been stored.
+  // Records that this direction has been met. Only called once the learner has
+  // written it correctly, and the next direction waits until it has been stored.
   readonly onLearned: () => Promise<void>;
 };
 
-// One entry of the learning pass. The answer starts as the field's prompt, then
+// One direction of the learning pass. The answer starts as the field's prompt, then
 // disappears once typing begins so the learner has to hold it in memory. Being
 // wrong only asks again.
 export const LearnEntry = ({
@@ -28,8 +32,11 @@ export const LearnEntry = ({
   const [saveFailed, setSaveFailed] = useState(false);
   const answerHintId = useId();
   const inputId = useId();
+  const promptId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
-  const actionRef = useRef<HTMLButtonElement>(null);
+  const answer = learnAnswer(item);
+  const prompt = learnPrompt(item);
+  const answerLanguage = item.direction === 'to_target' ? targetLanguage : 'de';
   const audioUrl = item.hasAudio ? `/api/entries/${item.entryId}/audio` : null;
   const play = async () => {
     if (audioUrl !== null) {
@@ -47,16 +54,12 @@ export const LearnEntry = ({
   }, [audioUrl]);
 
   useEffect(() => {
-    if (saveFailed && !busy) {
-      actionRef.current?.focus();
+    if (busy) {
+      return;
     }
-  }, [busy, saveFailed]);
-
-  useEffect(() => {
-    if (missed && typed === '') {
-      inputRef.current?.focus();
-    }
-  }, [missed, typed]);
+    const focusTask = globalThis.setTimeout(() => inputRef.current?.focus());
+    return () => globalThis.clearTimeout(focusTask);
+  }, [busy]);
 
   let actionLabel = 'Weiter';
   if (busy) {
@@ -74,6 +77,7 @@ export const LearnEntry = ({
       setSaveFailed(false);
       setMissed(true);
       setTyped('');
+      inputRef.current?.focus();
       return;
     }
     setMissed(false);
@@ -91,10 +95,12 @@ export const LearnEntry = ({
   return (
     <>
       <div className="flex flex-col gap-2 border border-border bg-card p-6">
-        <ManagedFocusHeading className="font-display text-xl">
-          {item.nativeText}
-        </ManagedFocusHeading>
-        <p className="text-muted-foreground text-sm">{targetLabel}</p>
+        <h2 className="font-display text-xl" id={promptId}>
+          {prompt}
+        </h2>
+        <p className="text-muted-foreground text-sm">
+          {directionLabel(item.direction, targetLabel)}
+        </p>
         {audioUrl === null ? null : (
           <button
             className="w-fit text-sm underline"
@@ -111,33 +117,34 @@ export const LearnEntry = ({
         onSubmit={onSubmit}
       >
         <label className="sr-only" htmlFor={inputId}>
-          Schreib die Vokabel ab
+          Schreib die Antwort
         </label>
         {typed === '' ? (
           <span className="sr-only" id={answerHintId}>
-            Vorlage: <span lang={targetLanguage}>{item.targetText}</span>
+            Vorlage: <span lang={answerLanguage}>{answer}</span>
           </span>
         ) : null}
         <input
-          aria-describedby={typed === '' ? answerHintId : undefined}
+          aria-describedby={
+            typed === '' ? `${promptId} ${answerHintId}` : promptId
+          }
           autoCapitalize="off"
           autoComplete="off"
           autoCorrect="off"
-          className="border border-input bg-card px-3 py-2"
+          className="min-h-11 border border-input bg-card px-3 py-2 focus-visible:outline-2 focus-visible:outline-offset-2"
           disabled={busy}
           id={inputId}
           onChange={(event) => {
             setTyped(event.target.value);
             setSaveFailed(false);
           }}
-          placeholder={item.targetText}
+          placeholder={answer}
           ref={inputRef}
           value={typed}
         />
         <button
-          className="bg-primary px-4 py-2 text-primary-foreground text-sm disabled:opacity-50"
+          className="min-h-11 bg-primary px-4 py-2 text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50"
           disabled={busy || typed.trim() === ''}
-          ref={actionRef}
           type="submit"
         >
           {actionLabel}

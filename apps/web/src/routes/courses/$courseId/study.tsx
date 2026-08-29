@@ -14,6 +14,7 @@ import {
   submitAnswer,
 } from '../../../features/practice/services/server-fns';
 import {
+  directionsWithCards,
   resolveSessionDirection,
   sessionOptions,
 } from '../../../features/practice/services/session-options';
@@ -23,8 +24,15 @@ import { SessionStart } from '../../../features/practice/ui/session-start';
 import { germanLabels } from '../../../shared/languages';
 
 const StudyScreen = () => {
-  const { course, direction, preview, selection, session, unit } =
-    Route.useLoaderData();
+  const {
+    availableDirections,
+    course,
+    direction,
+    preview,
+    selection,
+    session,
+    unit,
+  } = Route.useLoaderData();
   const targetLabel = germanLabels[course.targetLanguage];
   const backControl =
     unit === undefined ? (
@@ -64,7 +72,7 @@ const StudyScreen = () => {
           Eine falsche Antwort wird dagegen früher erneut eingeplant.
         </p>
         <SessionStart
-          options={sessionOptions(answerDirections, targetLabel, [
+          options={sessionOptions(availableDirections, targetLabel, [
             ...answerDirections.map((candidate) => ({
               direction: candidate,
               ready: preview.items.filter(
@@ -134,6 +142,7 @@ export const Route = createFileRoute('/courses/$courseId/study')({
     if (selection === null) {
       return {
         course,
+        availableDirections: [],
         direction: undefined,
         preview: { items: [] },
         selection,
@@ -141,10 +150,14 @@ export const Route = createFileRoute('/courses/$courseId/study')({
         unit,
       };
     }
-    const direction = resolveSessionDirection(deps.direction, answerDirections);
     const preview = await getStudySession({
       data: { courseId: course.id, direction: 'both', selection },
     });
+    const availableDirections = directionsWithCards(preview.items);
+    const direction = resolveSessionDirection(
+      deps.direction,
+      availableDirections,
+    );
     let session: PracticeSession | null = null;
     if (direction === 'both') {
       session = preview;
@@ -153,7 +166,15 @@ export const Route = createFileRoute('/courses/$courseId/study')({
         data: { courseId: course.id, direction, selection },
       });
     }
-    return { course, direction, preview, selection, session, unit };
+    return {
+      availableDirections,
+      course,
+      direction,
+      preview,
+      selection,
+      session,
+      unit,
+    };
   },
   component: StudyScreen,
 });

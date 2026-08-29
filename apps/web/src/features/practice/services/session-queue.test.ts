@@ -11,8 +11,8 @@ import {
   createSessionQueue,
 } from './session-queue';
 
-const baseTime = new Date('2026-08-29T10:00:00Z');
 const minuteLater = new Date('2026-08-29T10:01:00Z');
+const thirdRevision = 3;
 
 const item = (index: number): PracticeItem => ({
   cardId: `card-${index}`,
@@ -65,8 +65,7 @@ const head = (queue: ReturnType<typeof createSessionQueue>) => {
 const answerHead = (
   queue: ReturnType<typeof createSessionQueue>,
   answer: ResolvedSubmitResult,
-  now = baseTime,
-) => advanceQueue(queue, head(queue), answer, now);
+) => advanceQueue(queue, head(queue), answer);
 
 describe('session queue', () => {
   it('finishes a correct card and remembers its next review', () => {
@@ -82,21 +81,19 @@ describe('session queue', () => {
     expect(queue.scheduled).toEqual([{ cardId: 'card-0', dueAt: minuteLater }]);
   });
 
-  it('leaves a recently missed final card for its FSRS time', () => {
+  it('moves a missed final card into the after-round', () => {
     const queue = answerHead(
       createSessionQueue(items(1)),
       result(false, minuteLater),
     );
-    expect(queue).toMatchObject({ phase: 'complete' });
-    expect(queue.pending).toEqual([]);
-    expect(queue.deferred.at(0)).toMatchObject({
+    expect(queue).toMatchObject({ phase: 'after-round' });
+    expect(queue.pending.at(0)).toMatchObject({
       cardId: 'card-0',
       revision: 1,
-      dueAt: minuteLater,
     });
   });
 
-  it('starts a named after-round when a missed card is due at the checkpoint', () => {
+  it('starts a named after-round at the checkpoint even before the FSRS time', () => {
     const missed = answerHead(
       createSessionQueue(items(2)),
       result(false, minuteLater),
@@ -104,7 +101,6 @@ describe('session queue', () => {
     const checkpoint = answerHead(
       missed,
       result(true, new Date('2026-08-30T10:00:00Z')),
-      new Date('2026-08-29T10:02:00Z'),
     );
     expect(checkpoint.phase).toBe('after-round');
     expect(head(checkpoint)).toMatchObject({
@@ -120,7 +116,27 @@ describe('session queue', () => {
       phase: 'complete',
       firstTryCorrect: 1,
       afterRoundCorrect: 1,
-      deferred: [],
+      repeatCards: [],
+    });
+  });
+
+  it('keeps a card in the after-round until it is answered correctly', () => {
+    const firstMiss = answerHead(
+      createSessionQueue(items(1)),
+      result(false, minuteLater),
+    );
+    const secondMiss = answerHead(firstMiss, result(false, minuteLater, 2));
+    expect(secondMiss).toMatchObject({ phase: 'after-round' });
+    expect(head(secondMiss)).toMatchObject({ cardId: 'card-0', revision: 2 });
+
+    const recovered = answerHead(
+      secondMiss,
+      result(true, new Date('2026-08-30T10:00:00Z'), thirdRevision),
+    );
+    expect(recovered).toMatchObject({
+      phase: 'complete',
+      afterRoundCorrect: 1,
+      repeatCards: [],
     });
   });
 

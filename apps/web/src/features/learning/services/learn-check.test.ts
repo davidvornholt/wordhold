@@ -3,6 +3,8 @@ import type { LearnItem } from '../schemas/learning-models';
 import { matchesLearnItem } from './learn-check';
 
 const item: LearnItem = {
+  cardId: '00000000-0000-0000-0000-000000000011',
+  direction: 'to_target',
   entryId: '00000000-0000-0000-0000-000000000001',
   targetText: 'to look (at)',
   nativeText: 'ansehen',
@@ -15,6 +17,29 @@ describe('matchesLearnItem', () => {
     expect(matchesLearnItem(item, 'To Look (at)')).toBe(true);
   });
 
+  it('checks the native answer when learning the reverse direction', () => {
+    expect(
+      matchesLearnItem(
+        {
+          ...item,
+          direction: 'to_native',
+          textbookAnswers: ['ansehen'],
+        },
+        'Ansehen',
+      ),
+    ).toBe(true);
+    expect(
+      matchesLearnItem(
+        {
+          ...item,
+          direction: 'to_native',
+          textbookAnswers: ['ansehen'],
+        },
+        'to look at',
+      ),
+    ).toBe(false);
+  });
+
   it('accepts a bounded reading of textbook notation', () => {
     expect(matchesLearnItem(item, 'to look at')).toBe(true);
   });
@@ -24,6 +49,16 @@ describe('matchesLearnItem', () => {
       matchesLearnItem(
         { ...item, targetText: 'amigo/a', textbookAnswers: ['amigo/a'] },
         'amiga',
+      ),
+    ).toBe(true);
+    expect(
+      matchesLearnItem(
+        {
+          ...item,
+          targetText: 'lingua franca; Verkehrssprache',
+          textbookAnswers: ['lingua franca; Verkehrssprache'],
+        },
+        'Verkehrssprache',
       ),
     ).toBe(true);
   });
@@ -48,7 +83,7 @@ describe('matchesLearnItem', () => {
   });
 
   // Nothing on screen has been copied yet, and normalization strips trailing
-  // punctuation, so whitespace alone must not open the next entry.
+  // punctuation, so whitespace alone must not open the next direction.
   it('rejects an empty answer', () => {
     expect(matchesLearnItem(item, '  ')).toBe(false);
   });

@@ -1,4 +1,5 @@
 import type { LanguageCode } from '@wordhold/db/schema/courses';
+import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
 import type { VocabularyEntry } from '../schemas/course-units';
@@ -6,9 +7,14 @@ import type { VocabularyFilter } from '../schemas/vocabulary-search';
 import { VocabularyFilters } from './vocabulary-filters';
 import { VocabularySchedule } from './vocabulary-schedule';
 
-const isDue = (entry: VocabularyEntry, now: Date) =>
+const isDue = (
+  entry: VocabularyEntry,
+  enabledDirections: ReadonlyArray<AnswerDirection>,
+  now: Date,
+) =>
   entry.cards.some(
     (card) =>
+      enabledDirections.includes(card.direction) &&
       card.introducedAt !== null &&
       card.state !== 'new' &&
       card.dueAt !== null &&
@@ -17,39 +23,52 @@ const isDue = (entry: VocabularyEntry, now: Date) =>
 
 const matchesFilter = (
   entry: VocabularyEntry,
+  enabledDirections: ReadonlyArray<AnswerDirection>,
   filter: VocabularyFilter,
   now: Date,
 ) => {
   if (filter === 'due') {
-    return isDue(entry, now);
+    return isDue(entry, enabledDirections, now);
   }
   if (filter === 'first-reviews') {
     return entry.cards.some(
-      (card) => card.introducedAt !== null && card.state === 'new',
+      (card) =>
+        enabledDirections.includes(card.direction) &&
+        card.introducedAt !== null &&
+        card.state === 'new',
     );
   }
   if (filter === 'difficult') {
-    return entry.cards.some((card) => card.failures >= 2);
+    return entry.cards.some(
+      (card) =>
+        enabledDirections.includes(card.direction) && card.failures >= 2,
+    );
   }
   return true;
 };
 
 type VocabularyLibraryProps = {
+  readonly enabledDirections: ReadonlyArray<AnswerDirection>;
   readonly entries: ReadonlyArray<VocabularyEntry>;
   readonly initialFilter: VocabularyFilter;
+  readonly initialUnitId?: string;
   readonly targetLanguage: LanguageCode;
   readonly renderStudyAction: (entryIds: ReadonlyArray<string>) => ReactNode;
 };
 
 export const VocabularyLibrary = ({
+  enabledDirections,
   entries,
   initialFilter,
+  initialUnitId,
   targetLanguage,
   renderStudyAction,
 }: VocabularyLibraryProps) => {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<VocabularyFilter>(initialFilter);
-  const [unitFilter, setUnitFilter] = useState('all');
+  const [unitFilter, setUnitFilter] = useState(
+    entries.find((entry) => entry.unitId === initialUnitId)?.unitId ?? 'all',
+  );
   const [selected, setSelected] = useState<ReadonlyArray<string>>([]);
   const now = useMemo(() => new Date(), []);
   const visible = entries.filter((entry) => {
@@ -59,7 +78,11 @@ export const VocabularyLibrary = ({
       entry.targetText.toLocaleLowerCase('de-DE').includes(needle) ||
       entry.nativeText.toLocaleLowerCase('de-DE').includes(needle);
     const matchesUnit = unitFilter === 'all' || entry.unitId === unitFilter;
-    return matchesQuery && matchesUnit && matchesFilter(entry, filter, now);
+    return (
+      matchesQuery &&
+      matchesUnit &&
+      matchesFilter(entry, enabledDirections, filter, now)
+    );
   });
   const units = Map.groupBy(visible, (entry) => entry.unitName);
   const unitOptions = [
@@ -152,6 +175,7 @@ export const VocabularyLibrary = ({
                       </span>
                     </p>
                     <VocabularySchedule
+                      enabledDirections={enabledDirections}
                       entry={entry}
                       now={now}
                       targetLanguage={targetLanguage}

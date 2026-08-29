@@ -3,8 +3,6 @@ import { CourseLayout } from '../src/features/courses/ui/course-layout';
 import { VocabularyLibrary } from '../src/features/courses/ui/vocabulary-library';
 import { navigateToFixture } from './fixture-state';
 
-const reviewedAt = '2026-08-28T10:00:00.000Z';
-
 const entries: ReadonlyArray<VocabularyEntry> = [
   {
     id: '00000000-0000-0000-0000-000000000011',
@@ -20,19 +18,15 @@ const entries: ReadonlyArray<VocabularyEntry> = [
         state: 'review',
         dueAt: new Date('2026-08-28T10:00:00Z'),
         introducedAt: new Date('2026-08-20T10:00:00Z'),
-        lastReviewedAt: new Date(reviewedAt),
         failures: 2,
-        recentReviews: [{ reviewedAt, rating: 1 }],
       },
       {
         cardId: '00000000-0000-0000-0000-000000000022',
         direction: 'to_native',
-        state: 'review',
-        dueAt: new Date('2026-08-30T10:40:00Z'),
-        introducedAt: new Date('2026-08-20T10:00:00Z'),
-        lastReviewedAt: new Date(reviewedAt),
+        state: 'new',
+        dueAt: null,
+        introducedAt: null,
         failures: 0,
-        recentReviews: [{ reviewedAt, rating: 3 }],
       },
     ],
   },
@@ -50,9 +44,7 @@ const entries: ReadonlyArray<VocabularyEntry> = [
         state: 'new',
         dueAt: null,
         introducedAt: new Date('2026-08-29T08:00:00Z'),
-        lastReviewedAt: null,
         failures: 0,
-        recentReviews: [],
       },
       {
         cardId: '00000000-0000-0000-0000-000000000024',
@@ -60,9 +52,7 @@ const entries: ReadonlyArray<VocabularyEntry> = [
         state: 'new',
         dueAt: null,
         introducedAt: new Date('2026-08-29T08:00:00Z'),
-        lastReviewedAt: null,
         failures: 0,
-        recentReviews: [],
       },
     ],
   },
@@ -85,6 +75,7 @@ export const VocabularyFixture = ({
       Termine gelten pro Abfragerichtung. Wähle Vokabeln aus beliebigen Units.
     </p>
     <VocabularyLibrary
+      enabledDirections={['to_target', 'to_native']}
       entries={entries}
       initialFilter={difficult ? 'difficult' : 'all'}
       renderStudyAction={() => (

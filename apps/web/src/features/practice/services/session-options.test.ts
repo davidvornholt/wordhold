@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'bun:test';
-import { resolveSessionDirection, sessionOptions } from './session-options';
+import {
+  directionsWithCards,
+  resolveSessionDirection,
+  sessionOptions,
+} from './session-options';
 
 const counts = [
   { direction: 'to_target' as const, ready: 12 },
@@ -9,6 +13,17 @@ const counts = [
 const targetCards = counts[0].ready;
 const nativeCards = counts[1].ready;
 const mixedCards = counts[2].ready;
+
+describe('directionsWithCards', () => {
+  it('offers only directions that have already been introduced into the selection', () => {
+    expect(
+      directionsWithCards([
+        { direction: 'to_target' },
+        { direction: 'to_target' },
+      ]),
+    ).toEqual(['to_target']);
+  });
+});
 
 describe('sessionOptions', () => {
   it('offers a mixed sitting only when both directions are practised', () => {

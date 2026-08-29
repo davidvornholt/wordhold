@@ -85,7 +85,7 @@ export const SessionRunner = ({
           processed={queue.sectionProcessed}
           section={queue.section}
           total={queue.sectionTotal}
-          uncertain={queue.deferred.length}
+          repeatCount={queue.repeatCards.length}
         />
       )}
       {content}

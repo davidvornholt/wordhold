@@ -48,9 +48,9 @@ export const PracticeFixture = () => (
     <SessionProgress
       phase="main"
       processed={0}
+      repeatCount={0}
       section={1}
       total={1}
-      uncertain={0}
     />
     <CardPractice
       item={item}

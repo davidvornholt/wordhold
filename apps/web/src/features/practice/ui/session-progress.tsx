@@ -1,7 +1,7 @@
 type SessionProgressProps = {
   readonly processed: number;
   readonly total: number;
-  readonly uncertain: number;
+  readonly repeatCount: number;
   readonly phase: 'main' | 'after-round' | 'checkpoint';
   readonly section: number;
 };
@@ -12,7 +12,7 @@ type SessionProgressProps = {
 export const SessionProgress = ({
   processed,
   total,
-  uncertain,
+  repeatCount,
   phase,
   section,
 }: SessionProgressProps) => {
@@ -30,7 +30,7 @@ export const SessionProgress = ({
       />
       <p className="text-muted-foreground text-sm">
         {processed} von {total} {cardLabel} bearbeitet
-        {uncertain > 0 ? ` · ${uncertain} noch unsicher` : ''}
+        {repeatCount > 0 ? ` · ${repeatCount} für die Nachrunde` : ''}
       </p>
     </div>
   );

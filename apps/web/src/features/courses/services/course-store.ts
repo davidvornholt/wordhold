@@ -33,9 +33,6 @@ export class CourseStore extends Context.Tag('wordhold/CourseStore')<
       courseId: string,
       now: Date,
     ) => Effect.Effect<ReadonlyArray<CourseUnit>, CourseDatabaseError>;
-    readonly listEntries: (
-      unitId: string,
-    ) => Effect.Effect<ReadonlyArray<VocabularyEntry>, CourseDatabaseError>;
     readonly listVocabulary: (
       courseId: string,
     ) => Effect.Effect<ReadonlyArray<VocabularyEntry>, CourseDatabaseError>;
@@ -89,13 +86,27 @@ export class CourseStore extends Context.Tag('wordhold/CourseStore')<
             databaseError('write course directions', cause),
           ),
         );
-      // An entry remains unintroduced until every card behind it is introduced.
+      // An entry remains unintroduced while one of the course's enabled
+      // directions has not been introduced. A disabled direction stays out of
+      // the learner's way until it is enabled again.
       const listUnits = (courseId: string, now: Date) =>
         sql<CourseUnit>`
           select u.id, u.name,
             count(distinct e.id)::int as entries,
             count(distinct e.id) filter (
-              where not coalesce(c.learned, false)
+              where exists (
+                select 1 from cards met
+                where met.entry_id = e.id
+                  and met.introduced_at is not null
+              )
+            )::int as introduced,
+            count(distinct e.id) filter (
+              where exists (
+                select 1 from cards pending
+                where pending.entry_id = e.id
+                  and pending.direction = any(co.directions)
+                  and pending.introduced_at is null
+              )
             )::int as unintroduced,
             count(cards.id) filter (
               where cards.introduced_at is not null
@@ -115,57 +126,32 @@ export class CourseStore extends Context.Tag('wordhold/CourseStore')<
           from units u
           join courses co on co.id = u.course_id
           left join entries e on e.unit_id = u.id
-          left join (
-            select entry_id,
-              count(*) = cardinality(enum_range(null::answer_direction))
-                and bool_and(introduced_at is not null) as learned
-            from cards group by entry_id
-          ) c on c.entry_id = e.id
           left join cards on cards.entry_id = e.id
           where u.course_id = ${courseId}
           group by u.id, co.directions
           order by u.position, u.name, u.id
         `.pipe(Effect.mapError((cause) => databaseError('list units', cause)));
-      const listVocabularyRows = (
-        courseId: string | null,
-        unitId: string | null,
-      ) =>
+      const listVocabulary = (courseId: string) =>
         sql<VocabularyRow>`
           select e.id, e.unit_id as "unitId", u.name as "unitName",
             e.target_text as "targetText", e.native_text as "nativeText",
             c.id as "cardId", c.direction, c.state,
             c.due_at as "dueAt", c.introduced_at as "introducedAt",
-            c.last_reviewed_at as "lastReviewedAt",
             (select count(*)::int from reviews r
-              where r.card_id = c.id and r.rating = 1) as failures,
-            coalesce((
-              select jsonb_agg(recent)
-              from (
-                select r.reviewed_at as "reviewedAt", r.rating
-                from reviews r where r.card_id = c.id
-                order by r.reviewed_at desc limit 3
-              ) recent
-            ), '[]'::jsonb) as "recentReviews"
+              where r.card_id = c.id and r.rating = 1) as failures
           from entries e
           join units u on u.id = e.unit_id
           join cards c on c.entry_id = e.id
-          where (${courseId}::uuid is null or e.course_id = ${courseId}::uuid)
-            and (${unitId}::uuid is null or e.unit_id = ${unitId}::uuid)
+          where e.course_id = ${courseId}
           order by u.position, e.created_at, e.target_text, c.direction
         `.pipe(
-          Effect.mapError((cause) => databaseError('list vocabulary', cause)),
-        );
-      const listEntries = (unitId: string) =>
-        listVocabularyRows(null, unitId).pipe(Effect.map(groupVocabularyRows));
-      const listVocabulary = (courseId: string) =>
-        listVocabularyRows(courseId, null).pipe(
           Effect.map(groupVocabularyRows),
+          Effect.mapError((cause) => databaseError('list vocabulary', cause)),
         );
       return {
         readDirections,
         writeDirections,
         listUnits,
-        listEntries,
         listVocabulary,
       } as const;
     }),

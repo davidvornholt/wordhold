@@ -32,6 +32,25 @@ const renderFeedback = (submittedAnswer: string) =>
     />,
   );
 
+const renderHeldFeedback = () =>
+  renderToStaticMarkup(
+    <FeedbackPanel
+      audioUrl={null}
+      onNext={() => undefined}
+      onResolveWrong={() => undefined}
+      repeated={false}
+      resolution={null}
+      result={{
+        ...result,
+        schedule: {
+          ...result.schedule,
+          advanced: false,
+        },
+      }}
+      submittedAnswer="waiter"
+    />,
+  );
+
 describe('answer feedback', () => {
   it('does not repeat an expected answer that matches the submission', () => {
     expect(renderFeedback('  Waiter. ')).not.toContain('Erwartet:');
@@ -39,5 +58,10 @@ describe('answer feedback', () => {
 
   it('shows the textbook answer for a different accepted answer', () => {
     expect(renderFeedback('server')).toContain('Erwartet:');
+  });
+
+  it('distinguishes an early free exercise from a regular review', () => {
+    expect(renderHeldFeedback()).toContain('Zusätzliche Übung.');
+    expect(renderHeldFeedback()).toContain('Lernplan unverändert.');
   });
 });

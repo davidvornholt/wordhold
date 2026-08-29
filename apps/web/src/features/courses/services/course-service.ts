@@ -44,14 +44,12 @@ export class CourseService extends Effect.Service<CourseService>()(
         Effect.flatMap(Clock.currentTimeMillis, (now) =>
           store.listUnits(courseId, new Date(now)),
         );
-      const listEntries = (unitId: string) => store.listEntries(unitId);
       const listVocabulary = (courseId: string) =>
         store.listVocabulary(courseId);
       return {
         getDirections,
         setDirections,
         listUnits,
-        listEntries,
         listVocabulary,
       } as const;
     }),

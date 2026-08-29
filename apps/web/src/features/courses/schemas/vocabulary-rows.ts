@@ -13,12 +13,7 @@ export type VocabularyRow = {
   readonly state: CardState;
   readonly dueAt: Date | null;
   readonly introducedAt: Date | null;
-  readonly lastReviewedAt: Date | null;
   readonly failures: number;
-  readonly recentReviews: ReadonlyArray<{
-    readonly reviewedAt: string;
-    readonly rating: number;
-  }>;
 };
 
 export const groupVocabularyRows = (
@@ -32,9 +27,7 @@ export const groupVocabularyRows = (
       state: row.state,
       dueAt: row.dueAt,
       introducedAt: row.introducedAt,
-      lastReviewedAt: row.lastReviewedAt,
       failures: row.failures,
-      recentReviews: row.recentReviews,
     };
     const entry = entries.get(row.id);
     if (entry === undefined) {
@@ -50,15 +43,10 @@ export const groupVocabularyRows = (
     } else {
       entries.set(row.id, {
         ...entry,
-        introduced: entry.introduced && row.introducedAt !== null,
+        introduced: entry.introduced || row.introducedAt !== null,
         cards: [...entry.cards, card],
       });
     }
   }
-  return [...entries.values()].map((entry) => ({
-    ...entry,
-    introduced:
-      entry.cards.length === 2 &&
-      entry.cards.every((card) => card.introducedAt !== null),
-  }));
+  return [...entries.values()];
 };

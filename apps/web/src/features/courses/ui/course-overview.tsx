@@ -28,8 +28,8 @@ const courseSummary = (
     .filter((part): part is string => part !== null)
     .join(' · ');
 
-// Learning and free practice start from a unit, not from here: both ask about
-// one unit's entries, and picking the unit is what the list below is for.
+// The primary action leads to the most useful scheduled work. Unit-specific
+// learning and free practice remain in the list below.
 export const CourseOverview = ({
   languageLabel,
   units,

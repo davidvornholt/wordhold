@@ -7,10 +7,11 @@ const mixedUnintroduced = 2;
 const introducedEntries = 16;
 const bothUnits = mixedEntries + introducedEntries;
 
-const unit = (entries: number, unintroduced: number) => ({
+const unit = (entries: number, introduced: number, unintroduced: number) => ({
   id: '00000000-0000-0000-0000-000000000001',
   name: 'Unit 3 – Holidays',
   entries,
+  introduced,
   unintroduced,
   due: 0,
   firstReviews: 0,
@@ -19,28 +20,40 @@ const unit = (entries: number, unintroduced: number) => ({
 
 describe('unitOffers', () => {
   it('offers both when the unit holds met and unmet entries', () => {
-    expect(unitOffers(unit(mixedEntries, mixedUnintroduced))).toEqual({
+    expect(
+      unitOffers(unit(mixedEntries, introducedEntries, mixedUnintroduced)),
+    ).toEqual({
       learn: true,
       practice: true,
     });
   });
 
   it('offers only learning while no entry has been met', () => {
-    expect(unitOffers(unit(introducedEntries, introducedEntries))).toEqual({
+    expect(unitOffers(unit(introducedEntries, 0, introducedEntries))).toEqual({
       learn: true,
       practice: false,
     });
   });
 
   it('offers only practice once every entry has been met', () => {
-    expect(unitOffers(unit(introducedEntries, 0))).toEqual({
+    expect(unitOffers(unit(introducedEntries, introducedEntries, 0))).toEqual({
       learn: false,
       practice: true,
     });
   });
 
+  it('keeps free practice available while learned entries gain a new direction', () => {
+    expect(unitOffers(unit(mixedEntries, mixedEntries, 2))).toEqual({
+      learn: true,
+      practice: true,
+    });
+  });
+
   it('offers nothing for a unit without entries', () => {
-    expect(unitOffers(unit(0, 0))).toEqual({ learn: false, practice: false });
+    expect(unitOffers(unit(0, 0, 0))).toEqual({
+      learn: false,
+      practice: false,
+    });
   });
 });
 
@@ -48,8 +61,8 @@ describe('courseTotals', () => {
   it('sums the units of the course', () => {
     expect(
       courseTotals([
-        unit(mixedEntries, mixedUnintroduced),
-        unit(introducedEntries, 0),
+        unit(mixedEntries, introducedEntries, mixedUnintroduced),
+        unit(introducedEntries, introducedEntries, 0),
       ]),
     ).toEqual({ entries: bothUnits, unintroduced: mixedUnintroduced });
   });

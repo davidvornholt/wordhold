@@ -18,6 +18,13 @@ type DirectionCount = {
   readonly ready: number;
 };
 
+export const directionsWithCards = (
+  cards: ReadonlyArray<{ readonly direction: AnswerDirection }>,
+): ReadonlyArray<AnswerDirection> =>
+  answerDirections.filter((direction) =>
+    cards.some((card) => card.direction === direction),
+  );
+
 // What the start screen offers. Only directions the course still practises
 // appear, in the fixed order the settings screen uses. "Gemischt" comes last
 // and only when there is more than one direction to mix.

@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
-test('a missed card returns in the FSRS-aware after-round', async ({
+test('a missed card returns in the end-of-section after-round', async ({
   page,
 }) => {
   await page.goto('/?state=practice-session');
@@ -36,7 +36,8 @@ test('a missed card returns in the FSRS-aware after-round', async ({
     page.getByRole('heading', { level: 2, name: 'Für jetzt geschafft' }),
   ).toBeFocused();
   await expect(page.getByText('2 von 2 Karten')).toBeVisible();
-  await expect(page.getByText('In der Nachrunde richtig')).toBeVisible();
+  await expect(page.getByText('Nach Fehlern richtig')).toBeVisible();
+  await expect(page.getByText('Weiterhin unsicher')).toHaveCount(0);
 });
 
 test('a rejected typo can be stored as Hard without teaching it as an answer', async ({

@@ -74,13 +74,20 @@ export class DashboardStore extends Context.Tag('wordhold/DashboardStore')<
                 and c.introduced_at is not null
               group by co.id, d.direction
             `,
-            // Counted per entry, not per card: the learning pass introduces
-            // both directions of an entry together, and "12 kennenlernen" means
-            // twelve entries to work through.
+            // Counted per entry for the CTA, but only across enabled card
+            // directions. Enabling a direction later makes its untouched
+            // entries available for a new learning pass.
             unintroduced: sql<CountRow>`
               select e.course_id as "courseId", count(distinct e.id)::int as count
-              from cards c join entries e on e.id = c.entry_id
-              where c.introduced_at is null group by e.course_id
+              from entries e
+              join courses co on co.id = e.course_id
+              where exists (
+                select 1 from cards c
+                where c.entry_id = e.id
+                  and c.direction = any(co.directions)
+                  and c.introduced_at is null
+              )
+              group by e.course_id
             `,
             entries: sql<CountRow>`
               select course_id as "courseId", count(*)::int as count

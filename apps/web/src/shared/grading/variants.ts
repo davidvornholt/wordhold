@@ -1,21 +1,15 @@
-import { normalizeAnswer } from './normalize';
-
-export const maximumAnswerVariants = 24;
-
-export type AnswerVariantExpansion =
-  | {
-      readonly _tag: 'Expanded';
-      readonly readings: ReadonlyArray<string>;
-    }
-  | { readonly _tag: 'Overflow' };
-
-type ExpansionState =
-  | { readonly _tag: 'Values'; readonly values: ReadonlyArray<string> }
-  | { readonly _tag: 'Overflow' };
+import {
+  type AnswerVariantExpansion,
+  type ExpansionState,
+  flatMapBounded,
+  maximumAnswerVariants,
+  normalizeReadings,
+} from './bounded-variant-expansion';
 
 const optionalGroup = /\((?<inner>[^()]*)\)/u;
 const whitespace = /\s+/u;
 const spacedPhraseSeparator = /\s+\/\s+/u;
+const semicolonSeparator = /\s*;\s*/u;
 const lowercaseWord = /^\p{Ll}+$/u;
 const uppercaseStart = /^\p{Lu}/u;
 
@@ -31,22 +25,6 @@ const compactSuffixReplacements: ReadonlyArray<{
 ];
 
 const compactWordAlternatives = new Set(['be/get', 'der/die']);
-const flatMapBounded = (
-  values: ReadonlyArray<string>,
-  expand: (value: string) => ReadonlyArray<string>,
-): ExpansionState => {
-  const expanded: Array<string> = [];
-  for (const value of values) {
-    for (const part of expand(value)) {
-      if (expanded.length === maximumAnswerVariants) {
-        return { _tag: 'Overflow' };
-      }
-      expanded.push(part);
-    }
-  }
-  return { _tag: 'Values', values: expanded };
-};
-
 const hasSimpleParentheses = (text: string): boolean => {
   let depth = 0;
   for (const character of text) {
@@ -89,6 +67,10 @@ const expandOptionalGroups = (text: string): ExpansionState => {
 };
 
 const splitPhraseAlternatives = (text: string): ReadonlyArray<string> => {
+  const semicolon = text.split(semicolonSeparator);
+  if (semicolon.length > 1 && semicolon.every((part) => part !== '')) {
+    return semicolon;
+  }
   const spaced = text.split(spacedPhraseSeparator);
   if (spaced.length > 1 && spaced.every((part) => part.trim() !== '')) {
     return spaced;
@@ -159,28 +141,6 @@ const expandWordAlternatives = (text: string): ExpansionState => {
   return state;
 };
 
-const normalizeReadings = (
-  phrases: ReadonlyArray<string>,
-): AnswerVariantExpansion => {
-  const readings: Array<string> = [];
-  for (const phrase of phrases) {
-    const alternatives = expandWordAlternatives(phrase);
-    if (alternatives._tag === 'Overflow') {
-      return alternatives;
-    }
-    for (const reading of alternatives.values) {
-      const normalized = normalizeAnswer(reading);
-      if (normalized !== '' && !readings.includes(normalized)) {
-        if (readings.length === maximumAnswerVariants) {
-          return { _tag: 'Overflow' };
-        }
-        readings.push(normalized);
-      }
-    }
-  }
-  return { _tag: 'Expanded', readings };
-};
-
 export const answerVariants = (text: string): AnswerVariantExpansion => {
   const phrases: Array<string> = [];
   for (const phrase of splitPhraseAlternatives(text)) {
@@ -193,5 +153,5 @@ export const answerVariants = (text: string): AnswerVariantExpansion => {
     }
     phrases.push(...optional.values);
   }
-  return normalizeReadings(phrases);
+  return normalizeReadings(phrases, expandWordAlternatives);
 };

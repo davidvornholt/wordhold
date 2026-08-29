@@ -3,7 +3,7 @@ import { Effect, Layer, TestContext } from 'effect';
 import { LearningService } from './learning-service';
 import { LearningStore } from './learning-store';
 
-const entryId = '00000000-0000-0000-0000-000000000001';
+const cardId = '00000000-0000-0000-0000-000000000001';
 const courseId = '00000000-0000-0000-0000-000000000002';
 const unitId = '00000000-0000-0000-0000-000000000003';
 
@@ -35,16 +35,16 @@ describe('LearningService', () => {
   // from the clock at the moment the entry is learned rather than from the
   // browser that reported it.
   it('stamps the introduction with the current time', async () => {
-    const introduced: Array<{ entryId: string; at: Date }> = [];
+    const introduced: Array<{ cardId: string; at: Date }> = [];
     await Effect.runPromise(
       Effect.flatMap(LearningService, (service) =>
-        service.introduce(courseId, unitId, entryId),
+        service.introduce(courseId, unitId, cardId),
       ).pipe(
         Effect.provide(
           storeWith({
             introduce: (_courseId, _unitId, id, at) =>
               Effect.sync(() => {
-                introduced.push({ entryId: id, at });
+                introduced.push({ cardId: id, at });
               }).pipe(Effect.as(true)),
           }),
         ),
@@ -53,14 +53,14 @@ describe('LearningService', () => {
     );
 
     expect(introduced).toHaveLength(1);
-    expect(introduced[0]?.entryId).toBe(entryId);
+    expect(introduced[0]?.cardId).toBe(cardId);
     expect(introduced[0]?.at.getTime()).toBe(0);
   });
 
   it('reports a stale entry instead of accepting a mismatched entry', async () => {
     const result = await Effect.runPromise(
       Effect.flatMap(LearningService, (service) =>
-        service.introduce(courseId, unitId, entryId),
+        service.introduce(courseId, unitId, cardId),
       ).pipe(
         Effect.provide(storeWith({ introduce: () => Effect.succeed(false) })),
         Effect.provide(TestContext.TestContext),
@@ -70,6 +70,6 @@ describe('LearningService', () => {
 
     expect(result._tag).toBe('Left');
     const failure = result._tag === 'Left' ? result.left : undefined;
-    expect(failure?._tag).toBe('LearningEntryNotFoundError');
+    expect(failure?._tag).toBe('LearningCardNotFoundError');
   });
 });

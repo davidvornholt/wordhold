@@ -46,7 +46,7 @@ const scheduleLead = (
     return 'Erneut festigen ';
   }
   if (!result.schedule.advanced) {
-    return 'Lernplan unverändert. Reguläre Wiederholung ';
+    return 'Zusätzliche Übung. Lernplan unverändert. Reguläre Wiederholung ';
   }
   return repeated
     ? 'In dieser Sitzung gefestigt. Nächste Wiederholung '
