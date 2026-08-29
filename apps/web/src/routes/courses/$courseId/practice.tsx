@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router';
+import { useState } from 'react';
 import { getCourseDirections } from '../../../features/courses/services/server-fns';
 import { getDashboard } from '../../../features/dashboard/services/server-fns';
 import { getCourse } from '../../../features/import/server-fns';
@@ -20,6 +21,7 @@ const PracticeScreen = () => {
   const { course, directions, direction, session, stats } =
     Route.useLoaderData();
   const router = useRouter();
+  const [sessionGeneration, setSessionGeneration] = useState(0);
   const targetLabel = germanLabels[course.targetLanguage];
 
   return (
@@ -60,14 +62,19 @@ const PracticeScreen = () => {
           continueControl={
             <button
               className="min-h-11 bg-primary px-4 py-2 font-medium text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
-              onClick={() => router.invalidate()}
+              onClick={async () => {
+                await router.invalidate();
+                setSessionGeneration((current) => current + 1);
+              }}
               type="button"
             >
               Weitere 20 üben
             </button>
           }
           emptyMessage="Für jetzt geschafft"
-          key={`${direction}-${session.items.at(0)?.cardId ?? 'empty'}`}
+          key={`${direction}-${sessionGeneration}-${session.items
+            .map((item) => `${item.cardId}-${item.revision}`)
+            .join('|')}`}
           mode="scheduled"
           session={session}
           submit={submitAnswer}
