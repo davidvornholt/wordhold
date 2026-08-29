@@ -1,10 +1,9 @@
 import type { ReactNode } from 'react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 type PendingPage = {
   readonly id: string;
   readonly courseName: string;
-  readonly label: string | null;
   readonly capturedAt: Date;
 };
 
@@ -22,6 +21,21 @@ export const PendingPages = ({
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [discardingId, setDiscardingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const confirmationActionRef = useRef<HTMLButtonElement>(null);
+  const discardActionRefs = useRef(new Map<string, HTMLButtonElement>());
+  const restoreFocusIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (confirmingId !== null) {
+      confirmationActionRef.current?.focus();
+      return;
+    }
+    const restoreFocusId = restoreFocusIdRef.current;
+    if (restoreFocusId !== null) {
+      discardActionRefs.current.get(restoreFocusId)?.focus();
+      restoreFocusIdRef.current = null;
+    }
+  }, [confirmingId]);
 
   if (pages.length === 0) {
     return null;
@@ -35,9 +49,9 @@ export const PendingPages = ({
       </p>
       <ul className="flex flex-col gap-2">
         {pages.map((page) => {
-          const label = `${page.courseName}${
-            page.label === null ? '' : ` – ${page.label}`
-          } (${new Date(page.capturedAt).toLocaleDateString('de-DE')})`;
+          const label = `${page.courseName} (${new Date(
+            page.capturedAt,
+          ).toLocaleDateString('de-DE')})`;
           const confirming = confirmingId === page.id;
           const discarding = discardingId === page.id;
           return (
@@ -53,6 +67,13 @@ export const PendingPages = ({
                       setError(null);
                       setConfirmingId(page.id);
                     }}
+                    ref={(element) => {
+                      if (element === null) {
+                        discardActionRefs.current.delete(page.id);
+                        return;
+                      }
+                      discardActionRefs.current.set(page.id, element);
+                    }}
                     type="button"
                   >
                     Löschen
@@ -60,8 +81,10 @@ export const PendingPages = ({
                 )}
               </div>
               {confirming ? (
-                <div className="flex flex-col gap-2 border-border border-l-4 pl-3 text-sm">
-                  <p>Das Foto und dieser offene Import werden gelöscht.</p>
+                <fieldset className="flex flex-col gap-2 border-border border-l-4 pl-3 text-sm">
+                  <legend>
+                    Das Foto und dieser offene Import werden gelöscht.
+                  </legend>
                   <div className="flex flex-wrap gap-2">
                     <button
                       className="border border-input px-2 py-1"
@@ -81,6 +104,7 @@ export const PendingPages = ({
                           setDiscardingId(null);
                         }
                       }}
+                      ref={confirmationActionRef}
                       type="button"
                     >
                       {discarding ? 'Wird gelöscht …' : 'Endgültig löschen'}
@@ -88,13 +112,16 @@ export const PendingPages = ({
                     <button
                       className="px-2 py-1 underline"
                       disabled={discarding}
-                      onClick={() => setConfirmingId(null)}
+                      onClick={() => {
+                        restoreFocusIdRef.current = page.id;
+                        setConfirmingId(null);
+                      }}
                       type="button"
                     >
                       Behalten
                     </button>
                   </div>
-                </div>
+                </fieldset>
               ) : null}
             </li>
           );

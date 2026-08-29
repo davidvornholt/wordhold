@@ -19,14 +19,12 @@ const fixtureEntries = 18;
 const recoveryPage = {
   id: '00000000-0000-0000-0000-000000000003',
   courseName: course.name,
-  label: 'Unit 3',
   missingAudio: 1,
   verifiedAt: new Date('2026-08-24T12:00:00Z'),
 };
 const pendingPage = {
   id: '00000000-0000-0000-0000-000000000004',
   courseName: course.name,
-  label: 'Unit 4, Seite 73',
   capturedAt: new Date('2026-08-24T13:00:00Z'),
 };
 

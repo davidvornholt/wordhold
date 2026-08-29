@@ -124,7 +124,7 @@ export const VerificationFixture = ({
           <VerifyForm
             busy={false}
             initialEntries={verificationEntries}
-            initialLabel="Unit 3"
+            initialUnitName={noUnits ? undefined : '  UNIT   2  '}
             onSubmit={() => navigateToFixture('dashboard')}
             targetLabel="Englisch"
             units={noUnits ? [] : units}
@@ -163,13 +163,13 @@ export const DeferredVerificationFixture = () => {
       <VerifyForm
         busy={busy}
         initialEntries={deferredEntries}
-        initialLabel="Unit 3"
-        onSubmit={(label, entries) => {
+        initialUnitName={undefined}
+        onSubmit={(entries) => {
           const pending = makeDeferred();
           deferred.current = pending;
           setBusy(true);
           setCalls((count) => count + 1);
-          setSnapshot(JSON.stringify({ label, entries }));
+          setSnapshot(JSON.stringify({ entries }));
           setStatus('pending');
           pending.promise
             .then(() => setStatus('resolved'))

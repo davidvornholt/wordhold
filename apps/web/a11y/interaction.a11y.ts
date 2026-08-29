@@ -10,11 +10,22 @@ test('an open import can be confirmed and removed from the dashboard', async ({
   page,
 }) => {
   await page.goto('/?state=dashboard-pending');
-  await page.getByRole('button', { name: deletePendingImageName }).click();
+  const deleteAction = page.getByRole('button', {
+    name: deletePendingImageName,
+  });
+  await deleteAction.focus();
+  await page.keyboard.press('Enter');
   await expect(
     page.getByText('Das Foto und dieser offene Import werden gelöscht.'),
   ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Endgültig löschen' }),
+  ).toBeFocused();
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Enter');
+  await expect(deleteAction).toBeFocused();
+  await page.keyboard.press('Enter');
   await page.getByRole('button', { name: 'Endgültig löschen' }).click();
   await expect(
     page.getByRole('heading', { name: 'Offene Importe' }),
@@ -79,7 +90,6 @@ test('VerifyForm freezes every control and ignores resubmission', async ({
   page,
 }) => {
   await page.goto('/?state=verification-deferred');
-  const label = page.getByLabel('Seitenbezeichnung');
   const target = page.getByLabel('Englisch');
   const add = page.getByRole('button', { name: 'Eintrag hinzufügen' });
   const remove = page.getByRole('button', { name: 'Entfernen' });
@@ -88,18 +98,14 @@ test('VerifyForm freezes every control and ignores resubmission', async ({
   const applyToAll = page.getByRole('button', {
     name: 'Auf alle anwenden',
   });
-  await label.fill('First label');
   await target.fill('first target');
   await page.getByRole('button', { name: '1 Einträge importieren' }).click();
 
   await Promise.all(
-    [label, target, unit, bulkUnit, applyToAll, add, remove].map((control) =>
+    [target, unit, bulkUnit, applyToAll, add, remove].map((control) =>
       expect(control).toBeDisabled(),
     ),
   );
-  expect(
-    await actionIsRejected(label.fill('Changed label', { timeout: 250 })),
-  ).toBe(true);
   expect(
     await actionIsRejected(target.fill('changed target', { timeout: 250 })),
   ).toBe(true);
@@ -110,9 +116,6 @@ test('VerifyForm freezes every control and ignores resubmission', async ({
     form.requestSubmit();
   });
   await expect(page.getByLabel('Verification calls')).toHaveText('1');
-  await expect(page.getByLabel('Verification snapshot')).toContainText(
-    '"label":"First label"',
-  );
   await expect(page.getByLabel('Verification snapshot')).toContainText(
     '"targetText":"first target"',
   );
@@ -125,16 +128,12 @@ test('VerifyForm unlocks a rejected payload for a new submission', async ({
   page,
 }) => {
   await page.goto('/?state=verification-deferred');
-  const label = page.getByLabel('Seitenbezeichnung');
   const target = page.getByLabel('Englisch');
-  await label.fill('First label');
   await target.fill('first target');
   await page.getByRole('button', { name: '1 Einträge importieren' }).click();
   await page.getByRole('button', { name: 'Reject verification' }).click();
 
   await expect(page.getByLabel('Verification status')).toHaveText('rejected');
-  await expect(label).toBeEnabled();
-  await label.fill('Recovered label');
   await target.fill('recovered target');
   await page.getByRole('button', { name: 'Eintrag hinzufügen' }).click();
   await expect(page.getByRole('button', { name: 'Entfernen' })).toHaveCount(2);
@@ -142,9 +141,6 @@ test('VerifyForm unlocks a rejected payload for a new submission', async ({
   await page.getByRole('button', { name: '1 Einträge importieren' }).click();
 
   await expect(page.getByLabel('Verification calls')).toHaveText('2');
-  await expect(page.getByLabel('Verification snapshot')).toContainText(
-    '"label":"Recovered label"',
-  );
   await expect(page.getByLabel('Verification snapshot')).toContainText(
     '"targetText":"recovered target"',
   );

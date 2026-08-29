@@ -16,7 +16,10 @@ import {
 import { AudioRecovery } from '../../../features/import/ui/audio-recovery';
 import type { DraftEntry } from '../../../features/import/ui/entry-row';
 import { ExtractionRecovery } from '../../../features/import/ui/extraction-recovery';
-import { returnToFreshOverview } from '../../../features/import/ui/overview-navigation';
+import {
+  retireOverviewCache,
+  returnToFreshOverview,
+} from '../../../features/import/ui/overview-navigation';
 import { VerificationImage } from '../../../features/import/ui/verification-image';
 import { VerifyForm } from '../../../features/import/ui/verify-form';
 import { germanLabels } from '../../../shared/languages';
@@ -71,19 +74,26 @@ const VerifyScreen = () => {
   };
 
   const targetLabel = germanLabels[course.targetLanguage];
+  const clearOverviewCache = () =>
+    router.clearCache({
+      filter: (match) => match.routeId === '/',
+    });
+  const retireCachedOverview = () =>
+    retireOverviewCache({ clearOverviewCache });
   const goToOverview = () =>
     returnToFreshOverview({
-      clearOverviewCache: () =>
-        router.clearCache({
-          filter: (match) => match.routeId === '/',
-        }),
+      clearOverviewCache,
       navigate: () => navigate({ to: '/' }),
     });
 
   return (
     <main className="verification-screen">
       <div className="verification-header">
-        <Link className="text-muted-foreground text-sm underline" to="/">
+        <Link
+          className="text-muted-foreground text-sm underline"
+          onClick={retireCachedOverview}
+          to="/"
+        >
           ← Übersicht
         </Link>
         <h1 className="font-display font-semibold text-2xl">
@@ -136,17 +146,17 @@ const VerifyScreen = () => {
             <VerifyForm
               busy={busy}
               initialEntries={draftsFromExtraction(extraction)}
-              initialLabel={page.label ?? extraction.page.pageLabel ?? ''}
+              initialUnitName={extraction.page.unitName}
               key={extraction.modelId + String(extraction.page.entries.length)}
-              onSubmit={(label, verified) =>
+              onSubmit={(verified) =>
                 run(async () => {
                   const result = await importPage({
                     data: {
                       pageId: page.id,
-                      ...(label.trim() === '' ? {} : { label: label.trim() }),
                       entries: verified.map(toPayloadEntry),
                     },
                   });
+                  retireCachedOverview();
                   if (result.audio.pending === 0) {
                     await goToOverview();
                     return;

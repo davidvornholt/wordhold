@@ -26,7 +26,6 @@ export type Unit = {
 export type Page = {
   readonly id: string;
   readonly courseId: string;
-  readonly label: string | null;
   readonly imagePath: string;
   readonly extraction: unknown;
   readonly status: 'awaiting_verification' | 'verified';
@@ -38,7 +37,6 @@ export type PendingPage = {
   readonly id: string;
   readonly courseId: string;
   readonly courseName: string;
-  readonly label: string | null;
   readonly capturedAt: Date;
 };
 
@@ -48,7 +46,6 @@ export type AudioRecoveryPage = {
   readonly id: string;
   readonly courseId: string;
   readonly courseName: string;
-  readonly label: string | null;
   readonly missingAudio: number;
   readonly verifiedAt: Date;
 };

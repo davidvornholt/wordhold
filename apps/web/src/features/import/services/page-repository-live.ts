@@ -20,16 +20,14 @@ export const pageRepositoryLive = (sql: Database) => ({
     id: string;
     courseId: string;
     courseName: string;
-    label: string | null;
     capturedAt: Date;
-  }>`select pages.id, pages.course_id as "courseId", courses.name as "courseName", pages.label, pages.captured_at as "capturedAt" from pages inner join courses on pages.course_id = courses.id where pages.status = 'awaiting_verification' order by pages.captured_at`.pipe(
+  }>`select pages.id, pages.course_id as "courseId", courses.name as "courseName", pages.captured_at as "capturedAt" from pages inner join courses on pages.course_id = courses.id where pages.status = 'awaiting_verification' order by pages.captured_at`.pipe(
     Effect.mapError((cause) => failure('list pending pages', cause)),
   ),
   listAudioRecoveryPages: sql<AudioRecoveryPage>`
     select pages.id,
       pages.course_id as "courseId",
       courses.name as "courseName",
-      pages.label,
       count(entries.id)::integer as "missingAudio",
       pages.verified_at as "verifiedAt"
     from pages
@@ -50,7 +48,6 @@ export const pageRepositoryLive = (sql: Database) => ({
     sql<{
       pageId: string;
       courseId: string;
-      label: string | null;
       imagePath: string;
       extraction: unknown;
       status: 'awaiting_verification' | 'verified';
@@ -60,7 +57,7 @@ export const pageRepositoryLive = (sql: Database) => ({
       targetLanguage: 'de' | 'en' | 'es' | 'fr';
       nativeLanguage: 'de' | 'en' | 'es' | 'fr';
       courseCreatedAt: Date;
-    }>`select pages.id as "pageId", pages.course_id as "courseId", pages.label, pages.image_path as "imagePath", pages.extraction, pages.status, pages.captured_at as "capturedAt", pages.verified_at as "verifiedAt", courses.name as "courseName", courses.target_language as "targetLanguage", courses.native_language as "nativeLanguage", courses.created_at as "courseCreatedAt" from pages inner join courses on pages.course_id = courses.id where pages.id = ${pageId} limit 1`.pipe(
+    }>`select pages.id as "pageId", pages.course_id as "courseId", pages.image_path as "imagePath", pages.extraction, pages.status, pages.captured_at as "capturedAt", pages.verified_at as "verifiedAt", courses.name as "courseName", courses.target_language as "targetLanguage", courses.native_language as "nativeLanguage", courses.created_at as "courseCreatedAt" from pages inner join courses on pages.course_id = courses.id where pages.id = ${pageId} limit 1`.pipe(
       Effect.map((rows) => {
         const [row] = rows;
         return row === undefined
@@ -69,7 +66,6 @@ export const pageRepositoryLive = (sql: Database) => ({
               page: {
                 id: row.pageId,
                 courseId: row.courseId,
-                label: row.label,
                 imagePath: row.imagePath,
                 extraction: row.extraction,
                 status: row.status,
@@ -96,7 +92,7 @@ export const pageRepositoryLive = (sql: Database) => ({
       Effect.mapError((cause) => failure('load pending extraction', cause)),
     ),
   saveExtractionIfPending: (pageId: string, extraction: ExtractionResult) =>
-    sql<Page>`update pages set extraction = ${JSON.stringify(extraction)}::jsonb, label = coalesce(label, ${extraction.page.pageLabel ?? null}) where id = ${pageId} and status = 'awaiting_verification' returning id, course_id as "courseId", label, image_path as "imagePath", extraction, status, captured_at as "capturedAt", verified_at as "verifiedAt"`.pipe(
+    sql<Page>`update pages set extraction = ${JSON.stringify(extraction)}::jsonb where id = ${pageId} and status = 'awaiting_verification' returning id, course_id as "courseId", image_path as "imagePath", extraction, status, captured_at as "capturedAt", verified_at as "verifiedAt"`.pipe(
       Effect.map((rows) => rows[0]),
       Effect.mapError((cause) => failure('save pending extraction', cause)),
     ),
