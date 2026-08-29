@@ -1,5 +1,5 @@
 import type { ReviewMode } from '@wordhold/db/schema/practice';
-import { type SubmitEvent, useEffect, useRef, useState } from 'react';
+import { type SubmitEvent, useEffect, useId, useRef, useState } from 'react';
 import type { SubmitPayloadData } from '../schemas/submission-schema';
 import type {
   PracticeSession,
@@ -36,6 +36,7 @@ export const CardPractice = ({
   onNext,
 }: CardPracticeProps) => {
   const answerInput = useRef<HTMLInputElement>(null);
+  const promptId = useId();
   const [answer, setAnswer] = useState('');
   const [submittedAnswer, setSubmittedAnswer] = useState<string | null>(null);
   const [startedAt] = useState(() => performance.now());
@@ -92,7 +93,9 @@ export const CardPractice = ({
         {repeated ? ' · Noch einmal' : null}
       </p>
       <div className="border border-border bg-card p-6">
-        <h2 className="font-display text-xl">{item.prompt}</h2>
+        <h2 className="font-display text-xl" id={promptId}>
+          {item.prompt}
+        </h2>
       </div>
       <form
         aria-busy={busy}
@@ -105,6 +108,7 @@ export const CardPractice = ({
           autoComplete="off"
           autoCorrect="off"
           className="border border-input bg-card px-3 py-2"
+          aria-describedby={promptId}
           disabled={busy || result !== null}
           onChange={(event) => setAnswer(event.target.value)}
           placeholder="Deine Antwort"

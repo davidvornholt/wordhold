@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import type { SubmitResult } from '../services/practice-service';
 
 const panelTone = (result: SubmitResult) => {
@@ -22,6 +22,7 @@ export const FeedbackPanel = ({
   onNext,
 }: FeedbackPanelProps) => {
   const nextButton = useRef<HTMLButtonElement>(null);
+  const feedbackDescriptionId = useId();
 
   useEffect(() => {
     nextButton.current?.focus();
@@ -29,27 +30,34 @@ export const FeedbackPanel = ({
 
   return (
     <div className={`flex flex-col gap-3 border-l-4 p-4 ${panelTone(result)}`}>
-      {result.graded ? (
-        <p className="font-medium">
-          {result.correct ? 'Richtig!' : 'Leider falsch.'}
+      <div
+        aria-live="polite"
+        className="flex flex-col gap-3"
+        id={feedbackDescriptionId}
+        role="status"
+      >
+        {result.graded ? (
+          <p className="font-medium">
+            {result.correct ? 'Richtig!' : 'Leider falsch.'}
+          </p>
+        ) : (
+          <p className="font-medium">{result.message}</p>
+        )}
+        <p className="text-sm">
+          Erwartet:{' '}
+          <span className="font-medium">
+            {result.expectedAnswers.join(' / ')}
+          </span>
         </p>
-      ) : (
-        <p className="font-medium">{result.message}</p>
-      )}
-      <p className="text-sm">
-        Erwartet:{' '}
-        <span className="font-medium">
-          {result.expectedAnswers.join(' / ')}
-        </span>
-      </p>
-      {result.graded && result.explanation !== null ? (
-        <p className="text-sm">{result.explanation}</p>
-      ) : null}
-      {result.graded && result.acceptedAsAlternative ? (
-        <p className="text-accent-foreground text-sm">
-          Deine Antwort wurde als gültige Alternative gespeichert.
-        </p>
-      ) : null}
+        {result.graded && result.explanation !== null ? (
+          <p className="text-sm">{result.explanation}</p>
+        ) : null}
+        {result.graded && result.acceptedAsAlternative ? (
+          <p className="text-accent-foreground text-sm">
+            Deine Antwort wurde als gültige Alternative gespeichert.
+          </p>
+        ) : null}
+      </div>
       <div className="flex items-center gap-3">
         {audioUrl === null ? null : (
           <button
@@ -64,6 +72,7 @@ export const FeedbackPanel = ({
         )}
         <button
           className="bg-primary px-4 py-1.5 text-primary-foreground text-sm"
+          aria-describedby={feedbackDescriptionId}
           onClick={onNext}
           ref={nextButton}
           type="button"
