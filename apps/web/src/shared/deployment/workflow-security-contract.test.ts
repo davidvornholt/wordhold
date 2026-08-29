@@ -54,12 +54,28 @@ describe('preview producer trust boundary', () => {
     expect(consumer).not.toContain('online.vornholt.wordhold.preview');
   });
 
-  it('runs base-branch edits only when the payload reports a base change', () => {
+  it('starts the expensive build only for an eligible preview request', () => {
     expect(producer).toContain('      - edited');
+    expect(pullRequestJob).toContain(
+      "github.event.pull_request.state == 'open'",
+    );
+    expect(pullRequestJob).toContain('!github.event.pull_request.draft');
+    expect(pullRequestJob).toContain(
+      "github.event.pull_request.base.ref == 'main'",
+    );
+    expect(pullRequestJob).toContain(
+      'github.event.pull_request.head.repo.full_name == github.repository',
+    );
+    expect(pullRequestJob).toContain(
+      "contains(github.event.pull_request.labels.*.name, 'pr-preview')",
+    );
+    expect(pullRequestJob).toContain(
+      "github.event.action != 'labeled' || github.event.label.name == 'pr-preview'",
+    );
     expect(pullRequestJob).toContain(
       "github.event.action != 'edited' || github.event.changes.base != null",
     );
-    expect(pullRequestJob).toContain(
+    expect(pullRequestJob).not.toContain(
       'Select eligibility from the pull request event',
     );
   });
