@@ -167,6 +167,17 @@ describe('session queue', () => {
     expect(queue.ungradedCardIds).toEqual(['card-0']);
   });
 
+  it('ignores a stale transition after the expected card moved on', () => {
+    const initial = createSessionQueue(items(2));
+    const expected = head(initial);
+    const advanced = advanceQueue(initial, expected, result(true, minuteLater));
+    expect(advanceQueue(advanced, expected, result(true, minuteLater))).toEqual(
+      advanced,
+    );
+  });
+});
+
+describe('session queue unavailable answers', () => {
   it('does not loop when a repeated card cannot be graded', () => {
     const missed = answerHead(
       createSessionQueue(items(1)),
@@ -180,14 +191,5 @@ describe('session queue', () => {
       scheduled: [{ cardId: 'card-0', dueAt: minuteLater }],
     });
     expect(unavailable.ungradedCardIds).toEqual(['card-0']);
-  });
-
-  it('ignores a stale transition after the expected card moved on', () => {
-    const initial = createSessionQueue(items(2));
-    const expected = head(initial);
-    const advanced = advanceQueue(initial, expected, result(true, minuteLater));
-    expect(advanceQueue(advanced, expected, result(true, minuteLater))).toEqual(
-      advanced,
-    );
   });
 });
