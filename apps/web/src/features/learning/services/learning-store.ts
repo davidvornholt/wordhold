@@ -92,7 +92,7 @@ export class LearningStore extends Context.Tag('wordhold/LearningStore')<
             databaseError('load learning pass', cause),
           ),
         );
-      // Both directions of a entry are introduced together: the pass teaches the
+      // Both directions of an entry are introduced together: the pass teaches the
       // entry, not one way of asking about it. Already introduced cards keep
       // their original timestamp, so replaying a pass costs nothing.
       const introduce = (

@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
 // Nothing in the learning pass is graded, but it does decide which entries the
-// scheduler is allowed to ask about, so a entry must not count as met until it
+// scheduler is allowed to ask about, so an entry must not count as met until it
 // has actually been written correctly.
 test('the learning pass asks again for a wrong copy and records only the correct ones', async ({
   page,
