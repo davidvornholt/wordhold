@@ -42,6 +42,8 @@ export const FixtureApp = () => {
       return <DashboardFixture empty={true} />;
     case 'dashboard-audio-recovery':
       return <DashboardFixture audioRecovery={true} />;
+    case 'dashboard-pending':
+      return <DashboardFixture pending={true} />;
     case 'import':
       return <ImportFixture />;
     case 'import-error':

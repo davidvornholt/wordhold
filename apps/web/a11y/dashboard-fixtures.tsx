@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { HomeShell } from '../src/app/home-shell';
 import { CourseGrid } from '../src/features/dashboard/ui/course-grid';
 import { FragileList } from '../src/features/dashboard/ui/fragile-list';
@@ -20,6 +21,16 @@ const recoveryPage = {
   courseName: course.name,
   missingAudio: 1,
   verifiedAt: new Date('2026-08-24T12:00:00Z'),
+};
+const pendingPage = {
+  id: '00000000-0000-0000-0000-000000000004',
+  courseName: course.name,
+  capturedAt: new Date('2026-08-24T13:00:00Z'),
+};
+const secondPendingPage = {
+  id: '00000000-0000-0000-0000-000000000005',
+  courseName: course.name,
+  capturedAt: new Date('2026-08-25T13:00:00Z'),
 };
 
 const action = (
@@ -45,56 +56,80 @@ export const SignedOutFixture = () => (
   </HomeShell>
 );
 
-export const DashboardFixture = ({ empty = false, audioRecovery = false }) => (
-  <HomeShell
-    onSignIn={() => undefined}
-    onSignOut={() => navigateToFixture('signed-out')}
-    signedIn={true}
-  >
-    <CourseGrid
-      courses={[course]}
-      renderCourseLink={() => action(course.name, 'course')}
-      renderImportAction={() =>
-        action('fotografiere die erste Seite', 'import')
-      }
-      renderPracticeAction={() => action('Üben', 'practice')}
-      reviewsToday={empty ? 0 : fixtureReviewsToday}
-      stats={[
-        {
-          courseId: course.id,
-          due: empty ? 0 : fixtureDue,
-          fresh: empty ? 0 : fixtureFresh,
-          unlearned: empty ? 0 : fixtureUnlearned,
-          entries: empty ? 0 : fixtureEntries,
-        },
-      ]}
-    />
-    <FragileList
-      entries={
-        empty
-          ? []
-          : [
-              {
-                entryId: '00000000-0000-0000-0000-000000000002',
-                targetText: 'memory',
-                nativeText: 'Erinnerung',
-                courseName: 'English A2',
-                failures: 2,
-              },
-            ]
-      }
-    />
-    <AudioRecoveryPages
-      pages={audioRecovery && !audioRecoveryIsComplete() ? [recoveryPage] : []}
-      renderPageAction={(_page, label) => (
-        <a
-          className="text-sm underline"
-          href="/?state=verification-audio-recovery"
-        >
-          {label}
-        </a>
-      )}
-    />
-    <PendingPages pages={[]} renderPageAction={() => null} />
-  </HomeShell>
-);
+export const DashboardFixture = ({
+  empty = false,
+  audioRecovery = false,
+  pending = false,
+}) => {
+  const [pendingPages, setPendingPages] = useState(
+    pending ? [pendingPage, secondPendingPage] : [],
+  );
+
+  return (
+    <HomeShell
+      onSignIn={() => undefined}
+      onSignOut={() => navigateToFixture('signed-out')}
+      signedIn={true}
+    >
+      <CourseGrid
+        courses={[course]}
+        renderCourseLink={() => action(course.name, 'course')}
+        renderImportAction={() =>
+          action('fotografiere die erste Seite', 'import')
+        }
+        renderPracticeAction={() => action('Üben', 'practice')}
+        reviewsToday={empty ? 0 : fixtureReviewsToday}
+        stats={[
+          {
+            courseId: course.id,
+            due: empty ? 0 : fixtureDue,
+            fresh: empty ? 0 : fixtureFresh,
+            unlearned: empty ? 0 : fixtureUnlearned,
+            entries: empty ? 0 : fixtureEntries,
+          },
+        ]}
+      />
+      <FragileList
+        entries={
+          empty
+            ? []
+            : [
+                {
+                  entryId: '00000000-0000-0000-0000-000000000002',
+                  targetText: 'memory',
+                  nativeText: 'Erinnerung',
+                  courseName: 'English A2',
+                  failures: 2,
+                },
+              ]
+        }
+      />
+      <AudioRecoveryPages
+        pages={
+          audioRecovery && !audioRecoveryIsComplete() ? [recoveryPage] : []
+        }
+        renderPageAction={(_page, label) => (
+          <a
+            className="text-sm underline"
+            href="/?state=verification-audio-recovery"
+          >
+            {label}
+          </a>
+        )}
+      />
+      <PendingPages
+        onDiscard={async (page) =>
+          setPendingPages((current) =>
+            current.filter((candidate) => candidate.id !== page.id),
+          )
+        }
+        pages={pendingPages}
+        renderPageAction={(_page, label) => (
+          <button className="text-sm underline" type="button">
+            {label}
+          </button>
+        )}
+      />
+    </HomeShell>
+  );
+};

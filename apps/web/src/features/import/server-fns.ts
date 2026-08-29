@@ -12,6 +12,7 @@ import {
   serializableAudioReport,
 } from './services/audio-generation';
 import { audioRecoveryPages } from './services/audio-recovery-query';
+import { discardPendingPage } from './services/discard-page';
 import { retryPendingExtraction } from './services/extraction-retry';
 import { ImportRepository } from './services/repository';
 
@@ -61,6 +62,12 @@ export const listPendingPages = createServerFn().handler(() =>
 export const listAudioRecoveryPages = createServerFn().handler(() =>
   importRuntime.runPromise(authenticated(audioRecoveryPages)),
 );
+
+export const discardPage = createServerFn({ method: 'POST' })
+  .validator(requireString)
+  .handler(({ data }) =>
+    importRuntime.runPromise(authenticated(discardPendingPage(data))),
+  );
 
 export const getPage = createServerFn()
   .validator(requireString)
