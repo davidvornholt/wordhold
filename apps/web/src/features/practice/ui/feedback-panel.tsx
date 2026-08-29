@@ -1,5 +1,5 @@
-import { normalizeAnswer } from '../../../shared/grading/normalize';
 import { useEffect, useId, useRef } from 'react';
+import { normalizeAnswer } from '../../../shared/grading/normalize';
 import type { SubmitResult } from '../services/practice-service';
 
 const panelTone = (result: SubmitResult) => {
