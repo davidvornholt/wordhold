@@ -1,4 +1,4 @@
-import { type SubmitEvent, useEffect, useRef, useState } from 'react';
+import { type SubmitEvent, useEffect, useId, useRef, useState } from 'react';
 import type { LearnItem } from '../schemas/learning-models';
 import { matchesLearnItem } from '../services/learn-check';
 import { ManagedFocusHeading } from './managed-focus-heading';
@@ -13,8 +13,8 @@ type LearnEntryProps = {
   readonly onLearned: () => Promise<void>;
 };
 
-// One entry of the learning pass. The entry is on screen the whole time: this is
-// where you meet it, so there is nothing to recall and nothing to grade. Being
+// One entry of the learning pass. The answer starts as the field's prompt, then
+// disappears once typing begins so the learner has to hold it in memory. Being
 // wrong only asks again.
 export const LearnEntry = ({
   item,
@@ -27,6 +27,8 @@ export const LearnEntry = ({
   const [missed, setMissed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [saveFailed, setSaveFailed] = useState(false);
+  const answerHintId = useId();
+  const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const actionRef = useRef<HTMLButtonElement>(null);
   const audioUrl = item.hasAudio ? `/api/entries/${item.entryId}/audio` : null;
@@ -93,9 +95,8 @@ export const LearnEntry = ({
         Vokabel {position} von {total}
       </p>
       <div className="flex flex-col gap-2 border border-border bg-card p-6">
-        <p className="text-lg">{item.nativeText}</p>
         <ManagedFocusHeading className="font-display text-xl">
-          {item.targetText}
+          {item.nativeText}
         </ManagedFocusHeading>
         <p className="text-muted-foreground text-sm">{targetLabel}</p>
         {audioUrl === null ? null : (
@@ -113,18 +114,25 @@ export const LearnEntry = ({
         className="flex flex-col gap-3"
         onSubmit={onSubmit}
       >
+        <label className="sr-only" htmlFor={inputId}>
+          Schreib die Vokabel ab
+        </label>
+        <span className="sr-only" id={answerHintId}>
+          Vorlage: {item.targetText}
+        </span>
         <input
-          aria-label="Schreib die Vokabel ab"
+          aria-describedby={answerHintId}
           autoCapitalize="off"
           autoComplete="off"
           autoCorrect="off"
           className="border border-input bg-card px-3 py-2"
           disabled={busy}
+          id={inputId}
           onChange={(event) => {
             setTyped(event.target.value);
             setSaveFailed(false);
           }}
-          placeholder="Schreib die Vokabel ab"
+          placeholder={item.targetText}
           ref={inputRef}
           value={typed}
         />

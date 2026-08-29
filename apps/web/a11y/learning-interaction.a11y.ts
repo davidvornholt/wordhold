@@ -13,8 +13,10 @@ test('the learning pass asks again for a wrong copy and records only the correct
   const advance = page.getByRole('button', { name: 'Weiter' });
   await expect(page.getByText('Vokabel 1 von 2')).toBeVisible();
   await expect(
-    page.getByRole('heading', { level: 2, name: 'memory' }),
+    page.getByRole('heading', { level: 2, name: 'die Erinnerung' }),
   ).toBeFocused();
+  await expect(field).toHaveAttribute('placeholder', 'memory');
+  await expect(page.getByText('memory', { exact: true })).toHaveCount(0);
 
   await field.fill('remember');
   await advance.click();
@@ -31,8 +33,9 @@ test('the learning pass asks again for a wrong copy and records only the correct
   await advance.click();
   await expect(page.getByText('Vokabel 2 von 2')).toBeVisible();
   await expect(
-    page.getByRole('heading', { level: 2, name: 'to look (at)' }),
+    page.getByRole('heading', { level: 2, name: 'ansehen' }),
   ).toBeFocused();
+  await expect(field).toHaveAttribute('placeholder', 'to look (at)');
   await expect(page.getByLabel('Introduced entries')).toHaveText('1');
 
   await page.getByLabel('Schreib die Vokabel ab').fill('to look at');
@@ -63,7 +66,7 @@ test('the learning pass announces a persistence failure and retries the same ent
   await retry.click();
   await expect(page.getByText('Vokabel 2 von 2')).toBeVisible();
   await expect(
-    page.getByRole('heading', { level: 2, name: 'to look (at)' }),
+    page.getByRole('heading', { level: 2, name: 'ansehen' }),
   ).toBeFocused();
   await expect(page.getByLabel('Introduced entries')).toHaveText('1');
   await expect(page.getByLabel('Introduction attempts')).toHaveText('2');
