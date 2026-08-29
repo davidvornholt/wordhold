@@ -12,6 +12,9 @@ export const maximumElapsedMs =
   hoursPerDay * minutesPerHour * secondsPerMinute * millisecondsPerSecond;
 export const maximumSubmittedAnswerLength = maximumEntryTextLength;
 
+export const wrongAnswerResolutions = ['defer', 'again', 'hard'] as const;
+export type WrongAnswerResolution = (typeof wrongAnswerResolutions)[number];
+
 const ElapsedMilliseconds = Schema.Number.pipe(
   Schema.finite(),
   Schema.int(),
@@ -30,6 +33,9 @@ export const SubmitPayload = Schema.Struct({
   revision: CardRevision,
   answer: Schema.String.pipe(Schema.maxLength(maximumSubmittedAnswerLength)),
   elapsedMs: Schema.optional(ElapsedMilliseconds),
+  // A rejected answer stays pending until the learner either accepts Again or
+  // corrects a typo or grading mistake to Hard.
+  wrongAnswerResolution: Schema.Literal(...wrongAnswerResolutions),
   // Which sitting the answer came from. This is provenance for the review
   // log. Scheduling is derived from the server-owned card state.
   mode: Schema.Literal(...reviewModes),

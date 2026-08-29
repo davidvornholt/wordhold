@@ -3,7 +3,7 @@ import { type ReactNode, useState } from 'react';
 import { ProgressMeter } from '../../../shared/ui/progress-meter';
 import type {
   PracticeSession,
-  SubmitResult,
+  ResolvedSubmitResult,
 } from '../services/practice-service';
 import { submitAnswer } from '../services/server-fns';
 import { advanceQueue, createSessionQueue } from '../services/session-queue';
@@ -31,7 +31,8 @@ export const SessionRunner = ({
   backControl,
 }: SessionRunnerProps) => {
   const [queue, setQueue] = useState(() => createSessionQueue(session.items));
-  const [visibleResult, setVisibleResult] = useState<SubmitResult | null>(null);
+  const [visibleResult, setVisibleResult] =
+    useState<ResolvedSubmitResult | null>(null);
   const card = queue.pending.at(0);
   const visibleQueue =
     card === undefined || visibleResult === null

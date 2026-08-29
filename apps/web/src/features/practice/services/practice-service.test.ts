@@ -75,6 +75,7 @@ const runSubmit = (
         cardId: card.id,
         revision: card.revision,
         answer,
+        wrongAnswerResolution: 'defer',
         mode: 'scheduled',
       }),
     ).pipe(

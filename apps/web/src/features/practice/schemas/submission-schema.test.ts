@@ -13,6 +13,7 @@ const validPayload = {
   revision: 0,
   answer: 'souvenir',
   elapsedMs: ordinaryElapsedMs,
+  wrongAnswerResolution: 'defer',
   mode: 'scheduled',
 } as const;
 
@@ -50,6 +51,15 @@ describe('decodeSubmitPayload', () => {
       decodeSubmitPayload({
         ...validPayload,
         answer: 'a'.repeat(maximumSubmittedAnswerLength + 1),
+      }),
+    ).toThrow();
+  });
+
+  it('rejects an unknown wrong-answer resolution', () => {
+    expect(() =>
+      decodeSubmitPayload({
+        ...validPayload,
+        wrongAnswerResolution: 'easy',
       }),
     ).toThrow();
   });

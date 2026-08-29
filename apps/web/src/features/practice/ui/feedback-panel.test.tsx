@@ -6,6 +6,7 @@ import { FeedbackPanel } from './feedback-panel';
 const result: SubmitResult = {
   graded: true,
   correct: true,
+  stored: true,
   revision: 1,
   rating: 3,
   expectedAnswers: ['waiter'],
@@ -18,6 +19,8 @@ const renderFeedback = (submittedAnswer: string) =>
     <FeedbackPanel
       audioUrl={null}
       onNext={() => undefined}
+      onResolveWrong={() => undefined}
+      resolution={null}
       result={result}
       submittedAnswer={submittedAnswer}
     />,

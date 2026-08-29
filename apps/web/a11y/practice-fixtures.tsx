@@ -24,8 +24,7 @@ const item = {
 const result: SubmitResult = {
   graded: true,
   correct: false,
-  revision: 1,
-  rating: 1,
+  stored: false,
   expectedAnswers: ['memory'],
   explanation: 'Das bedeutet etwas anderes.',
   acceptedAsAlternative: false,
@@ -69,6 +68,8 @@ export const PracticeFeedbackFixture = () => (
     <FeedbackPanel
       audioUrl={null}
       onNext={() => navigateToFixture('practice-empty')}
+      onResolveWrong={() => navigateToFixture('practice-empty')}
+      resolution={null}
       result={result}
       submittedAnswer="wrong"
     />

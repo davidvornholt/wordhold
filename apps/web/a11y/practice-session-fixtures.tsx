@@ -1,7 +1,10 @@
 import type { ReviewMode } from '@wordhold/db/schema/practice';
 import { useState } from 'react';
 import type { SubmitPayloadData } from '../src/features/practice/schemas/submission-schema';
-import type { SubmitResult } from '../src/features/practice/services/practice-service';
+import type {
+  ResolvedSubmitResult,
+  SubmitResult,
+} from '../src/features/practice/services/practice-service';
 import {
   advanceQueue,
   createSessionQueue,
@@ -26,7 +29,15 @@ const card = (index: number, target: string, native: string) => ({
 });
 
 const goodRating = 3;
+const hardRating = 2;
 const againRating = 1;
+
+const resolvedRating = (correct: boolean, corrected: boolean) => {
+  if (correct) {
+    return goodRating;
+  }
+  return corrected ? hardRating : againRating;
+};
 
 const items = [
   card(1, 'memory', 'Erinnerung'),
@@ -49,11 +60,23 @@ const grade = (
     });
   }
   const correct = data.answer === expected;
+  if (!correct && data.wrongAnswerResolution === 'defer') {
+    return Promise.resolve<SubmitResult>({
+      graded: true,
+      correct: false,
+      stored: false,
+      expectedAnswers: [expected],
+      explanation: null,
+      acceptedAsAlternative: false,
+    });
+  }
+  const corrected = !correct && data.wrongAnswerResolution === 'hard';
   return Promise.resolve<SubmitResult>({
     graded: true,
-    correct,
+    correct: correct || corrected,
+    stored: true,
     revision: data.revision + 1,
-    rating: correct ? goodRating : againRating,
+    rating: resolvedRating(correct, corrected),
     expectedAnswers: [expected],
     explanation: null,
     acceptedAsAlternative: false,
@@ -74,7 +97,8 @@ export const PracticeSessionFixture = ({
   title = 'English A2: Üben',
 }: PracticeSessionFixtureProps) => {
   const [queue, setQueue] = useState(() => createSessionQueue(sessionItems));
-  const [visibleResult, setVisibleResult] = useState<SubmitResult | null>(null);
+  const [visibleResult, setVisibleResult] =
+    useState<ResolvedSubmitResult | null>(null);
   const pending = queue.pending.at(0);
   const visibleQueue =
     pending === undefined || visibleResult === null

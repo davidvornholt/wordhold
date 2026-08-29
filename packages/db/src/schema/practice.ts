@@ -17,8 +17,8 @@ export const cardStates = ['new', 'learning', 'review', 'relearning'] as const;
 export type CardState = (typeof cardStates)[number];
 export const cardStateEnum = pgEnum('card_state', cardStates);
 
-// One FSRS-scheduled card per (entry, direction). Ratings are derived from
-// grading outcomes, never self-reported.
+// One FSRS-scheduled card per (entry, direction). The server derives each FSRS
+// value from a grading outcome; the client never supplies the number.
 export const cards = pgTable(
   'cards',
   {

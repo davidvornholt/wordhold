@@ -1,0 +1,192 @@
+import { isAcceptedAlternative } from '@wordhold/ai/judge/schema';
+import { Clock, Effect } from 'effect';
+import { normalizeAnswer } from '../../../shared/grading/normalize';
+import {
+  type AssessedGradeOutcome,
+  deriveRating,
+  type GradeOutcome,
+  isCorrect,
+} from '../../../shared/grading/rating';
+import { englishNames } from '../../../shared/languages';
+import { StaleAnswerSubmissionError } from '../errors/practice-errors';
+import type { SubmissionRecord } from '../schemas/practice-models';
+import type { SubmitPayloadData } from '../schemas/submission-schema';
+import {
+  type AcceptedAnswer,
+  isDeterministicMatch,
+} from './deterministic-grading';
+import { judgeWithCache } from './judge-cache';
+import { JudgeCacheStore } from './judge-cache-store';
+import { PracticeJudge } from './practice-judge';
+import type { PracticeReviewStore } from './review-store';
+
+export type SubmitResult =
+  | {
+      readonly graded: false;
+      readonly expectedAnswers: ReadonlyArray<string>;
+      readonly message: string;
+    }
+  | {
+      readonly graded: true;
+      readonly correct: false;
+      readonly stored: false;
+      readonly expectedAnswers: ReadonlyArray<string>;
+      readonly explanation: string | null;
+      readonly acceptedAsAlternative: false;
+    }
+  | {
+      readonly graded: true;
+      readonly correct: boolean;
+      readonly stored: true;
+      readonly revision: number;
+      readonly rating: number;
+      readonly expectedAnswers: ReadonlyArray<string>;
+      readonly explanation: string | null;
+      readonly acceptedAsAlternative: boolean;
+    };
+
+export type ResolvedSubmitResult = Exclude<
+  SubmitResult,
+  { readonly graded: true; readonly stored: false }
+>;
+
+type GradeAnswerInput = {
+  readonly row: SubmissionRecord;
+  readonly accepted: ReadonlyArray<AcceptedAnswer>;
+  readonly data: SubmitPayloadData;
+  readonly normalized: string;
+  readonly cache: JudgeCacheStore['Type'];
+  readonly judge: PracticeJudge['Type'];
+};
+
+const gradeAnswer = ({
+  row,
+  accepted,
+  data,
+  normalized,
+  cache,
+  judge,
+}: GradeAnswerInput) => {
+  if (isDeterministicMatch(data.answer, accepted)) {
+    return Effect.succeed<AssessedGradeOutcome>({ method: 'exact' });
+  }
+  return judgeWithCache({
+    entryId: row.entry.id,
+    direction: row.card.direction,
+    normalizedAnswer: normalized,
+    input: {
+      direction: row.card.direction,
+      targetLanguage: englishNames[row.targetLanguage],
+      prompt:
+        row.card.direction === 'to_target'
+          ? row.entry.nativeText
+          : row.entry.targetText,
+      expectedAnswers: accepted.map((answer) => answer.text),
+      givenAnswer: data.answer,
+    },
+  }).pipe(
+    Effect.map(
+      (verdict): AssessedGradeOutcome => ({ method: 'judge', verdict }),
+    ),
+    Effect.provideService(JudgeCacheStore, cache),
+    Effect.provideService(PracticeJudge, judge),
+    Effect.catchTag('PracticeJudgeError', () => Effect.succeed(null)),
+  );
+};
+
+type SubmissionDependencies = {
+  readonly reviews: PracticeReviewStore['Type'];
+  readonly cache: JudgeCacheStore['Type'];
+  readonly judge: PracticeJudge['Type'];
+};
+
+const pendingRejectedResult = (
+  assessed: AssessedGradeOutcome,
+  data: SubmitPayloadData,
+  expectedAnswers: ReadonlyArray<string>,
+): SubmitResult | null => {
+  if (isCorrect(assessed) || data.wrongAnswerResolution !== 'defer') {
+    return null;
+  }
+  return {
+    graded: true,
+    correct: false,
+    stored: false,
+    expectedAnswers,
+    explanation:
+      assessed.method === 'judge' ? assessed.verdict.explanation : null,
+    acceptedAsAlternative: false,
+  };
+};
+
+export const resolveAnswerSubmission = (
+  data: SubmitPayloadData,
+  { reviews, cache, judge }: SubmissionDependencies,
+) =>
+  Effect.gen(function* () {
+    const row = yield* reviews.findSubmission(data.cardId, data.revision);
+    if (row === undefined) {
+      return yield* new StaleAnswerSubmissionError({
+        message: 'Diese Karte wurde bereits beantwortet. Lade die Übung neu.',
+      });
+    }
+    const accepted = yield* reviews.listAcceptedAnswers(
+      row.entry.id,
+      row.card.direction,
+    );
+    const normalized = normalizeAnswer(data.answer);
+    const expectedAnswers = accepted.map((answer) => answer.text);
+    const assessed = yield* gradeAnswer({
+      row,
+      accepted,
+      data,
+      normalized,
+      cache,
+      judge,
+    });
+    if (assessed === null) {
+      return {
+        graded: false as const,
+        expectedAnswers,
+        message:
+          'Der KI-Prüfer ist gerade nicht erreichbar; die Antwort wurde nicht gewertet.',
+      };
+    }
+    const pending = pendingRejectedResult(assessed, data, expectedAnswers);
+    if (pending !== null) {
+      return pending;
+    }
+    const assessedCorrect = isCorrect(assessed);
+    const outcome: GradeOutcome =
+      !assessedCorrect && data.wrongAnswerResolution === 'hard'
+        ? { method: 'learner-correction', assessed }
+        : assessed;
+    const elapsedMs = data.elapsedMs ?? null;
+    const rating = deriveRating(outcome, elapsedMs);
+    const reviewedAt = new Date(yield* Clock.currentTimeMillis);
+    const revision = yield* reviews.commit({
+      card: row.card,
+      expectedRevision: data.revision,
+      rating,
+      reviewedAt,
+      outcome,
+      answer: data.answer,
+      elapsedMs,
+      entryId: row.entry.id,
+      direction: row.card.direction,
+      normalizedAnswer: normalized,
+      mode: data.mode,
+    });
+    return {
+      graded: true as const,
+      correct: isCorrect(outcome),
+      stored: true as const,
+      revision,
+      rating,
+      expectedAnswers,
+      explanation:
+        assessed.method === 'judge' ? assessed.verdict.explanation : null,
+      acceptedAsAlternative:
+        assessed.method === 'judge' && isAcceptedAlternative(assessed.verdict),
+    };
+  });
