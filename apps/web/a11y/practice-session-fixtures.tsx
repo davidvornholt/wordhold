@@ -11,7 +11,7 @@ import {
   PracticeEmpty,
   PracticeLayout,
 } from '../src/features/practice/ui/practice-layout';
-import { SessionProgress } from '../src/features/practice/ui/session-progress';
+import { ProgressMeter } from '../src/shared/ui/progress-meter';
 import { navigateToFixture } from './fixture-state';
 
 const card = (index: number, target: string, native: string) => ({
@@ -74,7 +74,13 @@ export const PracticeSessionFixture = ({
   title = 'English A2: Üben',
 }: PracticeSessionFixtureProps) => {
   const [queue, setQueue] = useState(() => createSessionQueue(sessionItems));
+  const [visibleResult, setVisibleResult] = useState<SubmitResult | null>(null);
   const pending = queue.pending.at(0);
+  const visibleQueue =
+    pending === undefined || visibleResult === null
+      ? queue
+      : advanceQueue(queue, pending, visibleResult);
+  const cardLabel = queue.total === 1 ? 'Karte' : 'Karten';
   return (
     <PracticeLayout
       backControl={
@@ -88,7 +94,12 @@ export const PracticeSessionFixture = ({
       }
       title={title}
     >
-      <SessionProgress settled={queue.settled} total={queue.total} />
+      <ProgressMeter
+        accessibleName="Fortschritt"
+        description={`${visibleQueue.settled} von ${queue.total} ${cardLabel} bearbeitet`}
+        total={queue.total}
+        value={visibleQueue.settled}
+      />
       {pending === undefined ? (
         <PracticeEmpty
           backControl={
@@ -111,9 +122,11 @@ export const PracticeSessionFixture = ({
           item={pending}
           key={`${pending.cardId}-${pending.revision}`}
           mode={mode}
-          onNext={(result) =>
-            setQueue((current) => advanceQueue(current, pending, result))
-          }
+          onNext={(result) => {
+            setQueue((current) => advanceQueue(current, pending, result));
+            setVisibleResult(null);
+          }}
+          onResult={setVisibleResult}
           repeated={pending.repeated}
           submit={(input) => grade(sessionItems, input)}
           targetLabel="Englisch"

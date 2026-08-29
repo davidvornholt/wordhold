@@ -7,7 +7,7 @@ import {
   PracticeEmpty,
   PracticeLayout,
 } from '../src/features/practice/ui/practice-layout';
-import { SessionProgress } from '../src/features/practice/ui/session-progress';
+import { ProgressMeter } from '../src/shared/ui/progress-meter';
 import { navigateToFixture } from './fixture-state';
 
 const item = {
@@ -43,11 +43,17 @@ const backControl = (
 
 export const PracticeFixture = () => (
   <PracticeLayout backControl={backControl} title="English A2: Üben">
-    <SessionProgress settled={0} total={1} />
+    <ProgressMeter
+      accessibleName="Fortschritt"
+      description="0 von 1 Karte bearbeitet"
+      total={1}
+      value={0}
+    />
     <CardPractice
       item={item}
       mode="scheduled"
       onNext={() => undefined}
+      onResult={() => undefined}
       repeated={true}
       submit={() => {
         navigateToFixture('practice-feedback');
@@ -64,6 +70,7 @@ export const PracticeFeedbackFixture = () => (
       audioUrl={null}
       onNext={() => navigateToFixture('practice-empty')}
       result={result}
+      submittedAnswer="wrong"
     />
   </PracticeLayout>
 );
@@ -141,6 +148,7 @@ export const DeferredPracticeFixture = () => {
         item={item}
         mode="scheduled"
         onNext={() => undefined}
+        onResult={() => undefined}
         repeated={false}
         submit={submit}
         targetLabel="Englisch"

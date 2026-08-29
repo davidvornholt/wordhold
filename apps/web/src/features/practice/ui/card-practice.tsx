@@ -21,6 +21,8 @@ type CardPracticeProps = {
   readonly submit: (input: {
     readonly data: SubmitPayloadData;
   }) => Promise<SubmitResult>;
+  // Reports a stored result while this card's feedback remains on screen.
+  readonly onResult: (result: SubmitResult) => void;
   // Hands the graded result to the session, which decides whether the card is
   // done with or comes back later.
   readonly onNext: (result: SubmitResult) => void;
@@ -34,6 +36,7 @@ export const CardPractice = ({
   targetLabel,
   mode,
   submit,
+  onResult,
   onNext,
 }: CardPracticeProps) => {
   const [answer, setAnswer] = useState('');
@@ -64,6 +67,7 @@ export const CardPractice = ({
         },
       });
       setResult(submitted);
+      onResult(submitted);
       if (audioUrl !== null) {
         await new Audio(audioUrl).play().catch(() => undefined);
       }
@@ -117,11 +121,12 @@ export const CardPractice = ({
       {error === null ? null : (
         <p className="text-destructive text-sm">{error}</p>
       )}
-      {result === null ? null : (
+      {result === null || submittedAnswer === null ? null : (
         <FeedbackPanel
           audioUrl={audioUrl}
           onNext={() => onNext(result)}
           result={result}
+          submittedAnswer={submittedAnswer}
         />
       )}
     </>

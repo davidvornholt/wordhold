@@ -1,4 +1,5 @@
 import { type ReactNode, useState } from 'react';
+import { ProgressMeter } from '../../../shared/ui/progress-meter';
 import type { LearnItem } from '../schemas/learning-models';
 import { LearnDone } from './learn-done';
 import { LearnEntry } from './learn-entry';
@@ -21,20 +22,31 @@ export const LearnPass = ({
 }: LearnPassProps) => {
   const [index, setIndex] = useState(0);
   const item = items.at(index);
+  const vocabularyLabel = items.length === 1 ? 'Vokabel' : 'Vokabeln';
 
-  return item === undefined ? (
-    <LearnDone learned={index} practiceControl={practiceControl} />
-  ) : (
-    <LearnEntry
-      item={item}
-      key={item.entryId}
-      onLearned={async () => {
-        await onIntroduce(item.entryId);
-        setIndex(index + 1);
-      }}
-      position={index + 1}
-      targetLabel={targetLabel}
-      total={items.length}
-    />
+  return (
+    <>
+      {items.length === 0 ? null : (
+        <ProgressMeter
+          accessibleName="Lernfortschritt"
+          description={`${index} von ${items.length} ${vocabularyLabel} gelernt`}
+          total={items.length}
+          value={index}
+        />
+      )}
+      {item === undefined ? (
+        <LearnDone learned={index} practiceControl={practiceControl} />
+      ) : (
+        <LearnEntry
+          item={item}
+          key={item.entryId}
+          onLearned={async () => {
+            await onIntroduce(item.entryId);
+            setIndex(index + 1);
+          }}
+          targetLabel={targetLabel}
+        />
+      )}
+    </>
   );
 };
