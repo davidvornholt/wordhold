@@ -43,9 +43,12 @@ export type PersistReviewInput = {
 };
 
 export type CachedJudgeVerdict = {
+  readonly assessmentId: string;
   readonly verdict: JudgeVerdictData;
   readonly model: string;
 };
+
+export type JudgeVerdict = Omit<CachedJudgeVerdict, 'assessmentId'>;
 
 export type JudgeCacheKey = {
   readonly entryId: string;

@@ -1,13 +1,40 @@
 import type { ReviewMode } from '@wordhold/db/schema/practice';
 import { type SubmitEvent, useEffect, useId, useRef, useState } from 'react';
-import type { SubmitPayloadData } from '../schemas/submission-schema';
+import type {
+  SubmitPayloadData,
+  WrongAnswerResolution,
+} from '../schemas/submission-schema';
 import type {
   PracticeSession,
+  ResolvedSubmitResult,
   SubmitResult,
 } from '../services/practice-service';
 import { FeedbackPanel } from './feedback-panel';
+import { PracticeAnswerForm } from './practice-answer-form';
 
 type SessionItem = PracticeSession['items'][number];
+
+const practiceInstruction = (
+  direction: SessionItem['direction'],
+  targetLabel: string,
+) =>
+  direction === 'to_target'
+    ? `Übersetze ins ${targetLabel}e`
+    : 'Übersetze ins Deutsche';
+
+const ErrorMessage = ({ message }: { readonly message: string | null }) =>
+  message === null ? null : (
+    <p className="text-destructive text-sm">{message}</p>
+  );
+
+const reportResolvedResult = (
+  result: SubmitResult,
+  report: (result: ResolvedSubmitResult) => void,
+) => {
+  if (!result.graded || result.stored) {
+    report(result);
+  }
+};
 
 type CardPracticeProps = {
   readonly item: SessionItem;
@@ -20,11 +47,11 @@ type CardPracticeProps = {
   readonly submit: (input: {
     readonly data: SubmitPayloadData;
   }) => Promise<SubmitResult>;
-  // Reports a stored result while this card's feedback remains on screen.
-  readonly onResult: (result: SubmitResult) => void;
+  // Reports a resolved result while this card's feedback remains on screen.
+  readonly onResult: (result: ResolvedSubmitResult) => void;
   // Hands the graded result to the session, which decides whether the card is
   // done with or comes back later.
-  readonly onNext: (result: SubmitResult) => void;
+  readonly onNext: (result: ResolvedSubmitResult) => void;
 };
 
 // One card's answer round-trip. Mounted with a key that changes per attempt so
@@ -41,10 +68,16 @@ export const CardPractice = ({
   const answerInput = useRef<HTMLInputElement>(null);
   const promptId = useId();
   const [answer, setAnswer] = useState('');
-  const [submittedAnswer, setSubmittedAnswer] = useState<string | null>(null);
+  const [submittedData, setSubmittedData] = useState<SubmitPayloadData | null>(
+    null,
+  );
   const [startedAt] = useState(() => performance.now());
   const [result, setResult] = useState<SubmitResult | null>(null);
   const [busy, setBusy] = useState(false);
+  const [resolution, setResolution] = useState<Exclude<
+    WrongAnswerResolution,
+    'defer'
+  > | null>(null);
   const [error, setError] = useState<string | null>(null);
   const audioUrl = item.hasAudio ? `/api/entries/${item.entryId}/audio` : null;
 
@@ -61,39 +94,75 @@ export const CardPractice = ({
     if (busy || result !== null) {
       return;
     }
-    const answerSnapshot = answer;
-    setSubmittedAnswer(answerSnapshot);
+    const data: SubmitPayloadData = {
+      cardId: item.cardId,
+      revision: item.revision,
+      answer,
+      elapsedMs: Math.floor(performance.now() - startedAt),
+      wrongAnswerResolution: 'defer',
+      mode,
+    };
+    setSubmittedData(data);
     setBusy(true);
     setError(null);
     try {
       const submitted = await submit({
-        data: {
-          cardId: item.cardId,
-          revision: item.revision,
-          answer: answerSnapshot,
-          elapsedMs: Math.floor(performance.now() - startedAt),
-          mode,
-        },
+        data,
       });
       setResult(submitted);
-      onResult(submitted);
+      reportResolvedResult(submitted, onResult);
       if (audioUrl !== null) {
         await new Audio(audioUrl).play().catch(() => undefined);
       }
     } catch (cause) {
-      setSubmittedAnswer(null);
+      setSubmittedData(null);
       setError(cause instanceof Error ? cause.message : String(cause));
     } finally {
       setBusy(false);
     }
   };
 
+  const resolveWrongAnswer = async (
+    wrongAnswerResolution: Exclude<WrongAnswerResolution, 'defer'>,
+  ) => {
+    if (
+      busy ||
+      submittedData === null ||
+      result === null ||
+      !result.graded ||
+      result.stored
+    ) {
+      return;
+    }
+    setBusy(true);
+    setResolution(wrongAnswerResolution);
+    setError(null);
+    try {
+      const submitted = await submit({
+        data: {
+          ...submittedData,
+          wrongAnswerResolution,
+          assessmentId: result.assessmentId,
+        },
+      });
+      if (submitted.graded && !submitted.stored) {
+        throw new Error('Die Antwort wurde noch nicht gespeichert.');
+      }
+      setResult(submitted);
+      onResult(submitted);
+      onNext(submitted);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setBusy(false);
+      setResolution(null);
+    }
+  };
+
   return (
     <>
       <p className="text-muted-foreground text-sm">
-        {item.direction === 'to_target'
-          ? `Übersetze ins ${targetLabel}e`
-          : 'Übersetze ins Deutsche'}
+        {practiceInstruction(item.direction, targetLabel)}
         {repeated ? ' · Noch einmal' : null}
       </p>
       <div className="border border-border bg-card p-6">
@@ -101,43 +170,29 @@ export const CardPractice = ({
           {item.prompt}
         </h2>
       </div>
-      <form
-        aria-busy={busy}
-        className="flex flex-col gap-3"
+      <PracticeAnswerForm
+        answer={answer}
+        busy={busy}
+        disabled={result !== null}
+        inputRef={answerInput}
+        onAnswerChange={setAnswer}
         onSubmit={onSubmit}
-      >
-        <input
-          aria-label="Deine Antwort"
-          autoCapitalize="off"
-          autoComplete="off"
-          autoCorrect="off"
-          className="border border-input bg-card px-3 py-2"
-          aria-describedby={promptId}
-          disabled={busy || result !== null}
-          onChange={(event) => setAnswer(event.target.value)}
-          placeholder="Deine Antwort"
-          ref={answerInput}
-          value={submittedAnswer ?? answer}
-        />
-        {result === null ? (
-          <button
-            className="bg-primary px-4 py-2 text-primary-foreground text-sm disabled:opacity-50"
-            disabled={busy || answer.trim() === ''}
-            type="submit"
-          >
-            {busy ? 'Wird geprüft …' : 'Prüfen'}
-          </button>
-        ) : null}
-      </form>
-      {error === null ? null : (
-        <p className="text-destructive text-sm">{error}</p>
-      )}
-      {result === null || submittedAnswer === null ? null : (
+        promptId={promptId}
+        submittedAnswer={submittedData?.answer ?? null}
+      />
+      <ErrorMessage message={error} />
+      {result === null || submittedData === null ? null : (
         <FeedbackPanel
           audioUrl={audioUrl}
-          onNext={() => onNext(result)}
+          onNext={() => {
+            if (!result.graded || result.stored) {
+              onNext(result);
+            }
+          }}
+          onResolveWrong={resolveWrongAnswer}
+          resolution={resolution}
           result={result}
-          submittedAnswer={submittedAnswer}
+          submittedAnswer={submittedData.answer}
         />
       )}
     </>

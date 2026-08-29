@@ -13,6 +13,7 @@ const validPayload = {
   revision: 0,
   answer: 'souvenir',
   elapsedMs: ordinaryElapsedMs,
+  wrongAnswerResolution: 'defer',
   mode: 'scheduled',
 } as const;
 
@@ -52,5 +53,30 @@ describe('decodeSubmitPayload', () => {
         answer: 'a'.repeat(maximumSubmittedAnswerLength + 1),
       }),
     ).toThrow();
+  });
+
+  it('rejects an unknown wrong-answer resolution', () => {
+    expect(() =>
+      decodeSubmitPayload({
+        ...validPayload,
+        wrongAnswerResolution: 'easy',
+      }),
+    ).toThrow();
+  });
+
+  it('requires the rejected assessment when resolving a wrong answer', () => {
+    expect(() =>
+      decodeSubmitPayload({
+        ...validPayload,
+        wrongAnswerResolution: 'hard',
+      }),
+    ).toThrow();
+    expect(
+      decodeSubmitPayload({
+        ...validPayload,
+        wrongAnswerResolution: 'hard',
+        assessmentId: '42db2e83-fcc5-49f1-80cf-44efac70ec00',
+      }),
+    ).toMatchObject({ wrongAnswerResolution: 'hard' });
   });
 });
