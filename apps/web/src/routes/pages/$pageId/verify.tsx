@@ -1,4 +1,9 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
+import {
+  createFileRoute,
+  Link,
+  useNavigate,
+  useRouter,
+} from '@tanstack/react-router';
 import type { ExtractionResult } from '@wordhold/ai/extraction';
 import { useState } from 'react';
 import { importPage } from '../../../features/import/import-fn';
@@ -11,6 +16,11 @@ import {
 import { AudioRecovery } from '../../../features/import/ui/audio-recovery';
 import type { DraftEntry } from '../../../features/import/ui/entry-row';
 import { ExtractionRecovery } from '../../../features/import/ui/extraction-recovery';
+import {
+  refreshOverviewAfterMutation,
+  retireOverviewCache,
+  returnToFreshOverview,
+} from '../../../features/import/ui/overview-navigation';
 import { VerificationImage } from '../../../features/import/ui/verification-image';
 import { VerifyForm } from '../../../features/import/ui/verify-form';
 import { germanLabels } from '../../../shared/languages';
@@ -41,6 +51,7 @@ const toPayloadEntry = (
 const VerifyScreen = () => {
   const { page, course, units } = Route.useLoaderData();
   const navigate = useNavigate();
+  const router = useRouter();
   const [extraction, setExtraction] = useState(page.extraction);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,11 +75,28 @@ const VerifyScreen = () => {
   };
 
   const targetLabel = germanLabels[course.targetLanguage];
+  const clearOverviewCache = () =>
+    router.clearCache({
+      filter: (match) => match.routeId === '/',
+    });
+  const retireCachedOverview = () =>
+    retireOverviewCache({ clearOverviewCache });
+  const refreshOverview = () =>
+    refreshOverviewAfterMutation((options) => router.invalidate(options));
+  const goToOverview = () =>
+    returnToFreshOverview({
+      clearOverviewCache,
+      navigate: () => navigate({ to: '/' }),
+    });
 
   return (
     <main className="verification-screen">
       <div className="verification-header">
-        <Link className="text-muted-foreground text-sm underline" to="/">
+        <Link
+          className="text-muted-foreground text-sm underline"
+          onClick={retireCachedOverview}
+          to="/"
+        >
           ← Übersicht
         </Link>
         <h1 className="font-display font-semibold text-2xl">
@@ -92,8 +120,9 @@ const VerifyScreen = () => {
               onRetry={() =>
                 run(async () => {
                   const result = await retryAudio({ data: page.id });
+                  await refreshOverview();
                   if (result.pending === 0) {
-                    await navigate({ to: '/' });
+                    await goToOverview();
                     return;
                   }
                   setCompleted((current) =>
@@ -131,8 +160,9 @@ const VerifyScreen = () => {
                       entries: verified.map(toPayloadEntry),
                     },
                   });
+                  await refreshOverview();
                   if (result.audio.pending === 0) {
-                    await navigate({ to: '/' });
+                    await goToOverview();
                     return;
                   }
                   setCompleted({

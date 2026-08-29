@@ -3,6 +3,7 @@ export const fixtureStates = [
   'dashboard',
   'dashboard-empty',
   'dashboard-audio-recovery',
+  'dashboard-pending',
   'import',
   'import-error',
   'verification',

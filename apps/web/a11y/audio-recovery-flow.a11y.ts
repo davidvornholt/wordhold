@@ -19,6 +19,9 @@ test('a failed import stays reachable until audio retry succeeds', async ({
   await expect(
     page.getByRole('heading', { name: 'Fehlendes Audio' }),
   ).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Offene Importe' }),
+  ).toHaveCount(0);
   const recoveryLink = page.getByRole('link', {
     name: 'Audio für English A2 (24.8.2026) ergänzen',
   });

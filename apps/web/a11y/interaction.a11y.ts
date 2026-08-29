@@ -1,6 +1,42 @@
+import { scanWcag22AaViolations } from '@davidvornholt/a11y-testing/axe';
 import { expect, test } from '@playwright/test';
+import { assertNoAccessibilityViolations } from './a11y-assertions';
 
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
+
+const firstDeleteName = 'Aufnahme English A2 (24.8.2026) löschen';
+const secondDeleteName = 'Aufnahme English A2 (25.8.2026) löschen';
+
+test('an open import can be confirmed and removed from the dashboard', async ({
+  page,
+}) => {
+  await page.goto('/?state=dashboard-pending');
+  const firstDeleteAction = page.getByRole('button', { name: firstDeleteName });
+  const secondDeleteAction = page.getByRole('button', {
+    name: secondDeleteName,
+  });
+  await firstDeleteAction.focus();
+  await page.keyboard.press('Enter');
+  await expect(
+    page.getByText('Das Foto und dieser offene Import werden gelöscht.'),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Endgültig löschen' }),
+  ).toBeFocused();
+  assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Enter');
+  await expect(firstDeleteAction).toBeFocused();
+  await page.keyboard.press('Enter');
+  await page.getByRole('button', { name: 'Endgültig löschen' }).press('Enter');
+  await expect(secondDeleteAction).toBeFocused();
+  await page.keyboard.press('Enter');
+  await page.getByRole('button', { name: 'Endgültig löschen' }).press('Enter');
+  await expect(
+    page.getByRole('heading', { name: 'Offene Importe' }),
+  ).toBeFocused();
+  await expect(page.getByText('Keine offenen Importe.')).toBeVisible();
+});
 
 const actionIsRejected = async (action: Promise<unknown>): Promise<boolean> =>
   action.then(
