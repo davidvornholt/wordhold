@@ -3,7 +3,6 @@ import type { ReactNode } from 'react';
 type AudioRecoveryPage = {
   readonly id: string;
   readonly courseName: string;
-  readonly label: string | null;
   readonly missingAudio: number;
   readonly verifiedAt: Date;
 };
@@ -17,9 +16,8 @@ type AudioRecoveryPagesProps = {
 };
 
 const pageTitle = (page: AudioRecoveryPage) => {
-  const label = page.label === null ? '' : ` – ${page.label}`;
   const date = new Date(page.verifiedAt).toLocaleDateString('de-DE');
-  return `${page.courseName}${label} (${date})`;
+  return `${page.courseName} (${date})`;
 };
 
 export const AudioRecoveryPages = ({
