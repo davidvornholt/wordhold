@@ -6,8 +6,6 @@ import { ManagedFocusHeading } from './managed-focus-heading';
 
 type LearnEntryProps = {
   readonly item: LearnItem;
-  readonly position: number;
-  readonly total: number;
   readonly targetLanguage: LanguageCode;
   readonly targetLabel: string;
   // Records that this entry has been met. Only called once the learner has
@@ -20,8 +18,6 @@ type LearnEntryProps = {
 // wrong only asks again.
 export const LearnEntry = ({
   item,
-  position,
-  total,
   targetLanguage,
   targetLabel,
   onLearned,
@@ -94,9 +90,6 @@ export const LearnEntry = ({
 
   return (
     <>
-      <p className="text-muted-foreground text-sm">
-        Vokabel {position} von {total}
-      </p>
       <div className="flex flex-col gap-2 border border-border bg-card p-6">
         <ManagedFocusHeading className="font-display text-xl">
           {item.nativeText}

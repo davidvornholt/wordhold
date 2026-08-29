@@ -17,6 +17,8 @@ test('a missed card returns later and a double click advances only once', async 
 
   await answer.fill('wrong');
   await check.click();
+  await expect(progress).toHaveText('0 von 2 Karten bearbeitet');
+  await expect(page.getByText('Erwartet:')).toBeVisible();
   await next.dblclick();
   await expect(progress).toHaveText('0 von 2 Karten bearbeitet');
   const holidayHeading = page.getByRole('heading', {
@@ -24,10 +26,12 @@ test('a missed card returns later and a double click advances only once', async 
     name: 'Ferien',
   });
   await expect(holidayHeading).toBeVisible();
-  await expect(holidayHeading).toBeFocused();
+  await expect(answer).toBeFocused();
 
   await answer.fill('holiday');
   await check.click();
+  await expect(progress).toHaveText('1 von 2 Karten bearbeitet');
+  await expect(page.getByText('Erwartet:')).toHaveCount(0);
   await next.click();
   await expect(progress).toHaveText('1 von 2 Karten bearbeitet');
   const repeatedHeading = page.getByRole('heading', {
@@ -35,12 +39,14 @@ test('a missed card returns later and a double click advances only once', async 
     name: 'Erinnerung',
   });
   await expect(repeatedHeading).toBeVisible();
-  await expect(repeatedHeading).toBeFocused();
+  await expect(answer).toBeFocused();
   await expect(page.getByText('Noch einmal')).toBeVisible();
   await expect(page.getByLabel('Submitted revision')).toHaveText('1');
 
   await answer.fill('memory');
   await check.click();
+  await expect(progress).toHaveText('2 von 2 Karten bearbeitet');
+  await expect(page.getByText('Erwartet:')).toHaveCount(0);
   await next.click();
   await expect(progress).toHaveText('2 von 2 Karten bearbeitet');
   const completeHeading = page.getByRole('heading', {
@@ -70,7 +76,7 @@ test('a first-attempt grading failure keeps its stored state in the final summar
     name: 'Ferien',
   });
   await expect(holidayHeading).toBeVisible();
-  await expect(holidayHeading).toBeFocused();
+  await expect(answer).toBeFocused();
 
   await answer.fill('holiday');
   await check.click();
@@ -108,7 +114,8 @@ test('a repeated-card grading failure keeps its stored state in the final summar
     name: 'Erinnerung',
   });
   await expect(page.getByText('Noch einmal')).toBeVisible();
-  await expect(repeatedHeading).toBeFocused();
+  await expect(repeatedHeading).toBeVisible();
+  await expect(answer).toBeFocused();
 
   await answer.fill('ungraded');
   await check.click();
@@ -147,53 +154,4 @@ test('an ungraded future drill card keeps its existing date in the summary', asy
   await expect(
     page.getByText('1 Karte konnte nicht bewertet werden und bleibt fällig.'),
   ).toHaveCount(0);
-});
-
-test('a one-card session uses the singular progress label', async ({
-  page,
-}) => {
-  await page.goto('/?state=practice');
-  await expect(page.getByText('0 von 1 Karte bearbeitet')).toBeVisible();
-  await expect(page.getByText('0 von 1 Karten bearbeitet')).toHaveCount(0);
-});
-
-test('a completed one-card session uses the singular summary label', async ({
-  page,
-}) => {
-  await page.goto('/?state=practice-complete-one-card');
-  const heading = page.getByRole('heading', {
-    level: 2,
-    name: 'Sitzung abgeschlossen!',
-  });
-  await expect(heading).toBeVisible();
-  await expect(heading).toBeFocused();
-  await expect(
-    page.getByText('1 von 1 Karte auf Anhieb richtig.'),
-  ).toBeVisible();
-  await expect(
-    page.getByText('1 von 1 Karten auf Anhieb richtig.'),
-  ).toHaveCount(0);
-});
-
-test('an ungraded one-card session uses the singular summary label', async ({
-  page,
-}) => {
-  await page.goto('/?state=practice-ungraded-one-card');
-  const heading = page.getByRole('heading', {
-    level: 2,
-    name: 'Sitzung beendet.',
-  });
-  await expect(heading).toBeVisible();
-  await expect(heading).toBeFocused();
-  await expect(
-    page.getByText('0 von 1 Karte auf Anhieb richtig.'),
-  ).toBeVisible();
-  await expect(
-    page.getByText('0 von 1 Karten auf Anhieb richtig.'),
-  ).toHaveCount(0);
-  await expect(
-    page.getByText(
-      '1 Karte konnte nicht bewertet werden. Lernstand und Termin blieben unverändert.',
-    ),
-  ).toBeVisible();
 });

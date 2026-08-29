@@ -174,7 +174,6 @@ describe('retryPendingExtraction guards', () => {
           return Effect.succeed({
             id: 'page',
             courseId: 'course',
-            label: null,
             imagePath: 'pages/page.png',
             extraction: result,
             status: 'awaiting_verification',

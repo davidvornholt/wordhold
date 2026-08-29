@@ -1,11 +1,14 @@
 import type { ReviewMode } from '@wordhold/db/schema/practice';
 import { type ReactNode, useState } from 'react';
-import type { PracticeSession } from '../services/practice-service';
+import { ProgressMeter } from '../../../shared/ui/progress-meter';
+import type {
+  PracticeSession,
+  SubmitResult,
+} from '../services/practice-service';
 import { submitAnswer } from '../services/server-fns';
 import { advanceQueue, createSessionQueue } from '../services/session-queue';
 import { CardPractice } from './card-practice';
 import { PracticeEmpty } from './practice-layout';
-import { SessionProgress } from './session-progress';
 
 type SessionRunnerProps = {
   readonly session: PracticeSession;
@@ -28,12 +31,23 @@ export const SessionRunner = ({
   backControl,
 }: SessionRunnerProps) => {
   const [queue, setQueue] = useState(() => createSessionQueue(session.items));
+  const [visibleResult, setVisibleResult] = useState<SubmitResult | null>(null);
   const card = queue.pending.at(0);
+  const visibleQueue =
+    card === undefined || visibleResult === null
+      ? queue
+      : advanceQueue(queue, card, visibleResult);
+  const cardLabel = queue.total === 1 ? 'Karte' : 'Karten';
 
   return (
     <>
       {queue.total === 0 ? null : (
-        <SessionProgress settled={queue.settled} total={queue.total} />
+        <ProgressMeter
+          accessibleName="Fortschritt"
+          description={`${visibleQueue.settled} von ${queue.total} ${cardLabel} bearbeitet`}
+          total={queue.total}
+          value={visibleQueue.settled}
+        />
       )}
       {card === undefined ? (
         <PracticeEmpty
@@ -49,9 +63,11 @@ export const SessionRunner = ({
           item={card}
           key={`${card.cardId}-${card.revision}`}
           mode={mode}
-          onNext={(result) =>
-            setQueue((current) => advanceQueue(current, card, result))
-          }
+          onNext={(result) => {
+            setQueue((current) => advanceQueue(current, card, result));
+            setVisibleResult(null);
+          }}
+          onResult={setVisibleResult}
           repeated={card.repeated}
           submit={submitAnswer}
           targetLabel={targetLabel}

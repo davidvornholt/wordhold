@@ -20,7 +20,6 @@ export const pages = pgTable('pages', {
   courseId: uuid('course_id')
     .notNull()
     .references(() => courses.id, { onDelete: 'cascade' }),
-  label: text('label'),
   imagePath: text('image_path').notNull(),
   extraction: jsonb('extraction'),
   status: pageStatusEnum('status').notNull().default('awaiting_verification'),
