@@ -9,10 +9,7 @@ import { UnitBackfillError } from './unit-backfill-error';
 type DrizzleDatabase = ReturnType<typeof makeDrizzle>;
 type Transaction = Parameters<Parameters<DrizzleDatabase['transaction']>[0]>[0];
 
-const pageUnitName = (ordinal: number, label: string | null): string => {
-  const trimmedLabel = label?.trim();
-  return `Einheit ${ordinal}${trimmedLabel ? ` – ${trimmedLabel}` : ''}`;
-};
+const pageUnitName = (ordinal: number): string => `Einheit ${ordinal}`;
 
 const lockLegacyCourses = async (transaction: Transaction) => {
   const legacyCourses = await transaction
@@ -37,7 +34,6 @@ const filePageRows = async (
     .selectDistinct({
       id: pages.id,
       courseId: pages.courseId,
-      label: pages.label,
       capturedAt: pages.capturedAt,
     })
     .from(pages)
@@ -66,7 +62,7 @@ const filePageRows = async (
   for (const page of pageRows) {
     const ordinal = (ordinals.get(page.courseId) ?? 0) + 1;
     ordinals.set(page.courseId, ordinal);
-    const name = pageUnitName(ordinal, page.label);
+    const name = pageUnitName(ordinal);
     const position = nextPositions.get(page.courseId) ?? 0;
     nextPositions.set(page.courseId, position + 1);
     // biome-ignore lint/performance/noAwaitInLoops: each unit must exist before its page entries can reference it

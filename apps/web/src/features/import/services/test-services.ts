@@ -10,7 +10,6 @@ import { ImportRepository, type ImportRepositoryShape } from './repository';
 const page = {
   id: 'd9428888-122b-41e1-b85c-61cd3cbb3210',
   courseId: 'd9428888-122b-41e1-b85c-61cd3cbb3211',
-  label: null,
   imagePath: 'pages/page.png',
   extraction: null,
   status: 'awaiting_verification' as const,

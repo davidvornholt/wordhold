@@ -5,9 +5,9 @@ import {
   maximumExampleLength,
   maximumGrammarFieldLength,
   maximumIrregularForms,
-  maximumLabelLength,
+  maximumUnitNameLength,
 } from '@wordhold/ai/extraction/schema';
-import { decodeImportPayload, maximumUnitNameLength } from './import-payload';
+import { decodeImportPayload } from './import-payload';
 
 const pageId = 'd9428888-122b-41e1-b85c-61cd3cbb3210';
 const unit = { kind: 'new', name: 'Unité 3' } as const;
@@ -20,7 +20,6 @@ const over = (maximum: number): string => 'x'.repeat(maximum + 1);
 
 describe('decodeImportPayload', () => {
   it.each([
-    { pageId, label: over(maximumLabelLength), entries: [validEntry] },
     {
       pageId,
       entries: [{ ...validEntry, targetText: over(maximumEntryTextLength) }],

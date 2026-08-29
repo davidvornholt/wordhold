@@ -121,14 +121,13 @@ const VerifyScreen = () => {
             <VerifyForm
               busy={busy}
               initialEntries={draftsFromExtraction(extraction)}
-              initialLabel={page.label ?? extraction.page.pageLabel ?? ''}
+              initialUnitName={extraction.page.unitName}
               key={extraction.modelId + String(extraction.page.entries.length)}
-              onSubmit={(label, verified) =>
+              onSubmit={(verified) =>
                 run(async () => {
                   const result = await importPage({
                     data: {
                       pageId: page.id,
-                      ...(label.trim() === '' ? {} : { label: label.trim() }),
                       entries: verified.map(toPayloadEntry),
                     },
                   });

@@ -4,6 +4,7 @@ import {
   ExtractedPage,
   maximumEntriesPerPage,
   maximumEntryTextLength,
+  maximumUnitNameLength,
 } from './schema';
 
 const decode = Schema.decodeUnknownSync(ExtractedPage);
@@ -12,7 +13,7 @@ const mixedVocabularyEntryCount = 3;
 describe('ExtractedPage', () => {
   it('decodes words, expressions, and sentences as vocabulary entries', () => {
     const page = decode({
-      pageLabel: 'Unité 3, p. 87',
+      unitName: 'Unité 3',
       overallConfidence: 0.95,
       entries: [
         {
@@ -37,6 +38,7 @@ describe('ExtractedPage', () => {
     });
     expect(page.entries).toHaveLength(mixedVocabularyEntryCount);
     expect(page.entries[0]?.grammar?._tag).toBe('noun');
+    expect(page.unitName).toBe('Unité 3');
   });
 
   it('rejects confidence outside [0, 1]', () => {
@@ -67,6 +69,16 @@ describe('ExtractedPage', () => {
             confidence: 1,
           },
         ],
+      }),
+    ).toThrow();
+  });
+
+  it('rejects a unit name that the import flow cannot accept', () => {
+    expect(() =>
+      decode({
+        unitName: 'x'.repeat(maximumUnitNameLength + 1),
+        overallConfidence: 1,
+        entries: [],
       }),
     ).toThrow();
   });
