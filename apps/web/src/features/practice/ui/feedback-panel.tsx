@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef } from 'react';
+import { normalizeAnswer } from '../../../shared/grading/normalize';
 import type { SubmitResult } from '../services/practice-service';
 
 const panelTone = (result: SubmitResult) => {
@@ -12,15 +13,22 @@ const panelTone = (result: SubmitResult) => {
 
 type FeedbackPanelProps = {
   readonly result: SubmitResult;
+  readonly submittedAnswer: string;
   readonly audioUrl: string | null;
   readonly onNext: () => void;
 };
 
 export const FeedbackPanel = ({
   result,
+  submittedAnswer,
   audioUrl,
   onNext,
 }: FeedbackPanelProps) => {
+  const normalizedSubmission = normalizeAnswer(submittedAnswer);
+  const repeatsSubmittedAnswer = result.expectedAnswers.some(
+    (expectedAnswer) =>
+      normalizeAnswer(expectedAnswer) === normalizedSubmission,
+  );
   const nextButton = useRef<HTMLButtonElement>(null);
   const feedbackDescriptionId = useId();
 
@@ -43,12 +51,14 @@ export const FeedbackPanel = ({
         ) : (
           <p className="font-medium">{result.message}</p>
         )}
-        <p className="text-sm">
-          Erwartet:{' '}
-          <span className="font-medium">
-            {result.expectedAnswers.join(' / ')}
-          </span>
-        </p>
+        {repeatsSubmittedAnswer ? null : (
+          <p className="text-sm">
+            Erwartet:{' '}
+            <span className="font-medium">
+              {result.expectedAnswers.join(' / ')}
+            </span>
+          </p>
+        )}
         {result.graded && result.explanation !== null ? (
           <p className="text-sm">{result.explanation}</p>
         ) : null}
