@@ -3,7 +3,7 @@ import { Schema } from 'effect';
 export const maximumEntriesPerPage = 100;
 export const maximumEntryTextLength = 500;
 export const maximumExampleLength = 1000;
-export const maximumLabelLength = 200;
+export const maximumUnitNameLength = 80;
 export const maximumGrammarFieldLength = 200;
 export const maximumIrregularForms = 20;
 
@@ -54,8 +54,8 @@ export const ExtractedEntry = Schema.Struct({
 export type ExtractedEntryData = typeof ExtractedEntry.Type;
 
 export const ExtractedPage = Schema.Struct({
-  pageLabel: Schema.optional(
-    Schema.String.pipe(Schema.maxLength(maximumLabelLength)),
+  unitName: Schema.optional(
+    Schema.String.pipe(Schema.maxLength(maximumUnitNameLength)),
   ),
   entries: Schema.Array(ExtractedEntry).pipe(
     Schema.maxItems(maximumEntriesPerPage),

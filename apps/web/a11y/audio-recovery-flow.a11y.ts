@@ -20,7 +20,7 @@ test('a failed import stays reachable until audio retry succeeds', async ({
     page.getByRole('heading', { name: 'Fehlendes Audio' }),
   ).toBeVisible();
   const recoveryLink = page.getByRole('link', {
-    name: 'Audio für English A2 – Unit 3 (24.8.2026) ergänzen',
+    name: 'Audio für English A2 (24.8.2026) ergänzen',
   });
   await expect(recoveryLink).toBeVisible();
   await recoveryLink.click();

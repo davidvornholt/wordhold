@@ -23,8 +23,9 @@ export const extractionPrompt = (targetLanguage: string): string =>
     'forms), and the printed',
     'example sentence if there is one. Copy text exactly as printed,',
     'including accents. Report a confidence between 0 and 1 per entry and',
-    'overall; lower it whenever print is unclear or cropped. If the page has',
-    'a visible label (page number or unit heading), report it as pageLabel.',
+    'overall; lower it whenever print is unclear or cropped. If a visible',
+    'unit heading clearly applies to this vocabulary, report only its unit',
+    'name as unitName. Do not report a page number.',
   ].join('\n');
 
 export type ExtractionResult = {

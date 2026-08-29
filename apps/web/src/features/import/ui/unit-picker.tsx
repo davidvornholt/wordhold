@@ -1,9 +1,7 @@
+import { maximumUnitNameLength } from '@wordhold/ai/extraction/schema';
 import type { KeyboardEventHandler } from 'react';
 import { useId } from 'react';
-import {
-  maximumUnitNameLength,
-  type UnitSelectionData,
-} from '../schemas/import-payload';
+import type { UnitSelectionData } from '../schemas/import-payload';
 import type { Unit } from '../services/repository';
 
 const newUnitValue = 'new';

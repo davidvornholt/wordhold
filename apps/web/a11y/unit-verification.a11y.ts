@@ -8,6 +8,18 @@ const unitTwoId = '11111111-1111-4111-8111-111111111111';
 const unitThreeId = '22222222-2222-4222-8222-222222222222';
 const boundaryIndex = 6;
 
+test('VerifyForm selects the unit detected from the photographed page', async ({
+  page,
+}) => {
+  await page.goto('/?state=verification');
+  await expect(page.getByLabel('Einheit für alle Vokabeln')).toHaveValue(
+    unitTwoId,
+  );
+  await expect(
+    page.locator('form > ul > li').first().getByLabel('Einheit für Eintrag 1'),
+  ).toHaveValue(unitTwoId);
+});
+
 test('VerifyForm assigns one unit to every entry or from one entry onward', async ({
   page,
 }) => {
@@ -94,7 +106,7 @@ test('VerifyForm defaults to the latest real unit and routes entries independent
   await page
     .getByLabel('Einheit für Eintrag 2')
     .selectOption('22222222-2222-4222-8222-222222222222');
-  await page.getByLabel('Seitenbezeichnung').press('Enter');
+  await page.getByRole('button', { name: '2 Einträge importieren' }).click();
 
   await expect(page.getByLabel('Verification calls')).toHaveText('1');
   await expect(page.getByLabel('Verification snapshot')).toContainText(
