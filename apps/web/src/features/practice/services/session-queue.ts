@@ -124,6 +124,9 @@ export const advanceQueue = (
   if (!result.graded) {
     return finishCheckpoint({
       ...processed,
+      repeatCards: queue.repeatCards.filter(
+        (item) => item.cardId !== card.cardId,
+      ),
       ungradedCardIds: queue.ungradedCardIds.includes(card.cardId)
         ? queue.ungradedCardIds
         : [...queue.ungradedCardIds, card.cardId],
