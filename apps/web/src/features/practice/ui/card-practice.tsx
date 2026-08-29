@@ -14,6 +14,19 @@ import { PracticeAnswerForm } from './practice-answer-form';
 
 type SessionItem = PracticeSession['items'][number];
 
+const practiceInstruction = (
+  direction: SessionItem['direction'],
+  targetLabel: string,
+) =>
+  direction === 'to_target'
+    ? `Übersetze ins ${targetLabel}e`
+    : 'Übersetze ins Deutsche';
+
+const ErrorMessage = ({ message }: { readonly message: string | null }) =>
+  message === null ? null : (
+    <p className="text-destructive text-sm">{message}</p>
+  );
+
 const reportResolvedResult = (
   result: SubmitResult,
   report: (result: ResolvedSubmitResult) => void,
@@ -126,7 +139,11 @@ export const CardPractice = ({
     setError(null);
     try {
       const submitted = await submit({
-        data: { ...submittedData, wrongAnswerResolution },
+        data: {
+          ...submittedData,
+          wrongAnswerResolution,
+          assessmentId: result.assessmentId,
+        },
       });
       if (submitted.graded && !submitted.stored) {
         throw new Error('Die Antwort wurde noch nicht gespeichert.');
@@ -145,9 +162,7 @@ export const CardPractice = ({
   return (
     <>
       <p className="text-muted-foreground text-sm">
-        {item.direction === 'to_target'
-          ? `Übersetze ins ${targetLabel}e`
-          : 'Übersetze ins Deutsche'}
+        {practiceInstruction(item.direction, targetLabel)}
         {repeated ? ' · Noch einmal' : null}
       </p>
       <div className="border border-border bg-card p-6">
@@ -165,9 +180,7 @@ export const CardPractice = ({
         promptId={promptId}
         submittedAnswer={submittedData?.answer ?? null}
       />
-      {error === null ? null : (
-        <p className="text-destructive text-sm">{error}</p>
-      )}
+      <ErrorMessage message={error} />
       {result === null || submittedData === null ? null : (
         <FeedbackPanel
           audioUrl={audioUrl}

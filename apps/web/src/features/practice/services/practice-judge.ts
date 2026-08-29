@@ -2,7 +2,7 @@ import { Judge } from '@wordhold/ai/judge';
 import type { JudgeInput, JudgeVerdictData } from '@wordhold/ai/judge/schema';
 import { Context, Effect, Layer } from 'effect';
 import { PracticeJudgeError } from '../errors/practice-errors';
-import type { CachedJudgeVerdict } from '../schemas/practice-models';
+import type { JudgeVerdict } from '../schemas/practice-models';
 
 export class PracticeJudge extends Context.Tag('wordhold/PracticeJudge')<
   PracticeJudge,
@@ -10,7 +10,7 @@ export class PracticeJudge extends Context.Tag('wordhold/PracticeJudge')<
     readonly model: string;
     readonly judge: (
       input: JudgeInput,
-    ) => Effect.Effect<CachedJudgeVerdict, PracticeJudgeError>;
+    ) => Effect.Effect<JudgeVerdict, PracticeJudgeError>;
   }
 >() {
   static readonly live = Layer.effect(

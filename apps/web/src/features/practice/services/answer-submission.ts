@@ -2,22 +2,19 @@ import { isAcceptedAlternative } from '@wordhold/ai/judge/schema';
 import { Clock, Effect } from 'effect';
 import { normalizeAnswer } from '../../../shared/grading/normalize';
 import {
-  type AssessedGradeOutcome,
   deriveRating,
   type GradeOutcome,
   isCorrect,
 } from '../../../shared/grading/rating';
-import { englishNames } from '../../../shared/languages';
 import { StaleAnswerSubmissionError } from '../errors/practice-errors';
-import type { SubmissionRecord } from '../schemas/practice-models';
 import type { SubmitPayloadData } from '../schemas/submission-schema';
 import {
-  type AcceptedAnswer,
-  isDeterministicMatch,
-} from './deterministic-grading';
-import { judgeWithCache } from './judge-cache';
-import { JudgeCacheStore } from './judge-cache-store';
-import { PracticeJudge } from './practice-judge';
+  type AssessedAnswer,
+  gradeAnswer,
+  loadRejectedAssessment,
+} from './answer-assessment';
+import type { JudgeCacheStore } from './judge-cache-store';
+import type { PracticeJudge } from './practice-judge';
 import type { PracticeReviewStore } from './review-store';
 
 export type SubmitResult =
@@ -33,6 +30,7 @@ export type SubmitResult =
       readonly expectedAnswers: ReadonlyArray<string>;
       readonly explanation: string | null;
       readonly acceptedAsAlternative: false;
+      readonly assessmentId: string;
     }
   | {
       readonly graded: true;
@@ -50,50 +48,6 @@ export type ResolvedSubmitResult = Exclude<
   { readonly graded: true; readonly stored: false }
 >;
 
-type GradeAnswerInput = {
-  readonly row: SubmissionRecord;
-  readonly accepted: ReadonlyArray<AcceptedAnswer>;
-  readonly data: SubmitPayloadData;
-  readonly normalized: string;
-  readonly cache: JudgeCacheStore['Type'];
-  readonly judge: PracticeJudge['Type'];
-};
-
-const gradeAnswer = ({
-  row,
-  accepted,
-  data,
-  normalized,
-  cache,
-  judge,
-}: GradeAnswerInput) => {
-  if (isDeterministicMatch(data.answer, accepted)) {
-    return Effect.succeed<AssessedGradeOutcome>({ method: 'exact' });
-  }
-  return judgeWithCache({
-    entryId: row.entry.id,
-    direction: row.card.direction,
-    normalizedAnswer: normalized,
-    input: {
-      direction: row.card.direction,
-      targetLanguage: englishNames[row.targetLanguage],
-      prompt:
-        row.card.direction === 'to_target'
-          ? row.entry.nativeText
-          : row.entry.targetText,
-      expectedAnswers: accepted.map((answer) => answer.text),
-      givenAnswer: data.answer,
-    },
-  }).pipe(
-    Effect.map(
-      (verdict): AssessedGradeOutcome => ({ method: 'judge', verdict }),
-    ),
-    Effect.provideService(JudgeCacheStore, cache),
-    Effect.provideService(PracticeJudge, judge),
-    Effect.catchTag('PracticeJudgeError', () => Effect.succeed(null)),
-  );
-};
-
 type SubmissionDependencies = {
   readonly reviews: PracticeReviewStore['Type'];
   readonly cache: JudgeCacheStore['Type'];
@@ -101,11 +55,14 @@ type SubmissionDependencies = {
 };
 
 const pendingRejectedResult = (
-  assessed: AssessedGradeOutcome,
+  assessed: AssessedAnswer,
   data: SubmitPayloadData,
   expectedAnswers: ReadonlyArray<string>,
 ): SubmitResult | null => {
-  if (isCorrect(assessed) || data.wrongAnswerResolution !== 'defer') {
+  if (isCorrect(assessed.outcome) || data.wrongAnswerResolution !== 'defer') {
+    return null;
+  }
+  if (assessed.assessmentId === null || assessed.outcome.method !== 'judge') {
     return null;
   }
   return {
@@ -113,9 +70,9 @@ const pendingRejectedResult = (
     correct: false,
     stored: false,
     expectedAnswers,
-    explanation:
-      assessed.method === 'judge' ? assessed.verdict.explanation : null,
+    explanation: assessed.outcome.verdict.explanation,
     acceptedAsAlternative: false,
+    assessmentId: assessed.assessmentId,
   };
 };
 
@@ -136,15 +93,15 @@ export const resolveAnswerSubmission = (
     );
     const normalized = normalizeAnswer(data.answer);
     const expectedAnswers = accepted.map((answer) => answer.text);
-    const assessed = yield* gradeAnswer({
-      row,
-      accepted,
-      data,
-      normalized,
-      cache,
-      judge,
-    });
-    if (assessed === null) {
+    const assessment = yield* data.wrongAnswerResolution === 'defer'
+      ? gradeAnswer({ row, accepted, data, normalized, cache, judge })
+      : loadRejectedAssessment({
+          row,
+          normalized,
+          assessmentId: data.assessmentId,
+          cache,
+        });
+    if (assessment === null) {
       return {
         graded: false as const,
         expectedAnswers,
@@ -152,10 +109,11 @@ export const resolveAnswerSubmission = (
           'Der KI-Prüfer ist gerade nicht erreichbar; die Antwort wurde nicht gewertet.',
       };
     }
-    const pending = pendingRejectedResult(assessed, data, expectedAnswers);
+    const pending = pendingRejectedResult(assessment, data, expectedAnswers);
     if (pending !== null) {
       return pending;
     }
+    const assessed = assessment.outcome;
     const assessedCorrect = isCorrect(assessed);
     const outcome: GradeOutcome =
       !assessedCorrect && data.wrongAnswerResolution === 'hard'

@@ -63,4 +63,20 @@ describe('decodeSubmitPayload', () => {
       }),
     ).toThrow();
   });
+
+  it('requires the rejected assessment when resolving a wrong answer', () => {
+    expect(() =>
+      decodeSubmitPayload({
+        ...validPayload,
+        wrongAnswerResolution: 'hard',
+      }),
+    ).toThrow();
+    expect(
+      decodeSubmitPayload({
+        ...validPayload,
+        wrongAnswerResolution: 'hard',
+        assessmentId: '42db2e83-fcc5-49f1-80cf-44efac70ec00',
+      }),
+    ).toMatchObject({ wrongAnswerResolution: 'hard' });
+  });
 });

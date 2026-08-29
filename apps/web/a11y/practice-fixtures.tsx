@@ -28,6 +28,7 @@ const result: SubmitResult = {
   expectedAnswers: ['memory'],
   explanation: 'Das bedeutet etwas anderes.',
   acceptedAsAlternative: false,
+  assessmentId: '00000000-0000-0000-0000-000000000003',
 };
 
 const backControl = (

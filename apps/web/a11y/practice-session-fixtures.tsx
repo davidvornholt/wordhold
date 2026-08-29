@@ -68,6 +68,7 @@ const grade = (
       expectedAnswers: [expected],
       explanation: null,
       acceptedAsAlternative: false,
+      assessmentId: '00000000-0000-0000-0000-000000000003',
     });
   }
   const corrected = !correct && data.wrongAnswerResolution === 'hard';

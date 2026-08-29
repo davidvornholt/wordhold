@@ -47,17 +47,32 @@ const rejectedTypo = {
   explanation: 'Tippfehler.',
 } as const;
 
+const assessmentId = '00000000-0000-0000-0000-000000000003';
+
 const runSubmit = (
   commit: PracticeReviewStore['Type']['commit'],
   wrongAnswerResolution: WrongAnswerResolution,
+  acceptedText = 'correct',
 ) => {
+  const cachedAssessment = {
+    assessmentId,
+    verdict: rejectedTypo,
+    model: 'bedrock-mantle:test-model',
+  };
   const stores = Layer.mergeAll(
     Layer.succeed(PracticeSessionStore, {
       load: () => Effect.succeed({ due: [], fresh: [] }),
       loadUnit: () => Effect.succeed([]),
     }),
     Layer.succeed(JudgeCacheStore, {
-      read: () => Effect.succeed(undefined),
+      read: (_key, selector) =>
+        Effect.succeed(
+          ('assessmentId' in selector &&
+            selector.assessmentId === assessmentId) ||
+            ('model' in selector && selector.model === cachedAssessment.model)
+            ? cachedAssessment
+            : undefined,
+        ),
       write: () => Effect.void,
       withCriticalSection: (_key, effect) => effect,
     }),
@@ -65,7 +80,11 @@ const runSubmit = (
       findSubmission: () => Effect.succeed(submission),
       listAcceptedAnswers: () =>
         Effect.succeed([
-          { text: 'correct', normalized: 'correct', source: 'textbook' },
+          {
+            text: acceptedText,
+            normalized: acceptedText,
+            source: 'textbook',
+          },
         ]),
       commit,
     }),
@@ -78,16 +97,27 @@ const runSubmit = (
         }),
     }),
   );
+  const data =
+    wrongAnswerResolution === 'defer'
+      ? {
+          cardId: card.id,
+          revision: 0,
+          answer: 'corect',
+          wrongAnswerResolution,
+          mode: 'scheduled' as const,
+        }
+      : {
+          cardId: card.id,
+          revision: 0,
+          answer: 'corect',
+          wrongAnswerResolution,
+          assessmentId,
+          mode: 'scheduled' as const,
+        };
   return Effect.runPromise(
-    Effect.flatMap(PracticeService, (service) =>
-      service.submit({
-        cardId: card.id,
-        revision: 0,
-        answer: 'corect',
-        wrongAnswerResolution,
-        mode: 'scheduled',
-      }),
-    ).pipe(Effect.provide(PracticeService.Default.pipe(Layer.provide(stores)))),
+    Effect.flatMap(PracticeService, (service) => service.submit(data)).pipe(
+      Effect.provide(PracticeService.Default.pipe(Layer.provide(stores))),
+    ),
   );
 };
 
@@ -106,6 +136,7 @@ describe('PracticeService learner correction', () => {
       graded: true,
       correct: false,
       stored: false,
+      assessmentId,
     });
     expect(commits).toBe(0);
 
@@ -126,7 +157,7 @@ describe('PracticeService learner correction', () => {
     expect(commits).toBe(1);
   });
 
-  it('stores a correction as Hard without accepting the typo', async () => {
+  it('stores the original rejected assessment as Hard when accepted answers change', async () => {
     let committed: PersistReviewInput | undefined;
     const result = await runSubmit(
       (input) =>
@@ -135,6 +166,7 @@ describe('PracticeService learner correction', () => {
           return 1;
         }),
       'hard',
+      'corect',
     );
     expect(result).toMatchObject({
       graded: true,
@@ -147,6 +179,10 @@ describe('PracticeService learner correction', () => {
       rating: ratings.hard,
       answer: 'corect',
       outcome: { method: 'learner-correction' },
+    });
+    expect(committed?.outcome).toEqual({
+      method: 'learner-correction',
+      assessed: { method: 'judge', verdict: rejectedTypo },
     });
   });
 });
