@@ -1,6 +1,6 @@
-// One entry of a learning pass. The target text is on screen while the learner
-// types it, so the answers travel with the item and the match happens without
-// a round trip; nothing here is graded and nothing is hidden.
+// One entry of a learning pass. The target text starts as the input placeholder
+// and screen-reader hint; both disappear once the learner types. The accepted
+// answers travel with the item, so matching needs no round trip or grading.
 export type LearnItem = {
   readonly entryId: string;
   readonly targetText: string;

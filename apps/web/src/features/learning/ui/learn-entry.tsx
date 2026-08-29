@@ -1,3 +1,4 @@
+import type { LanguageCode } from '@wordhold/db/schema/courses';
 import { type SubmitEvent, useEffect, useId, useRef, useState } from 'react';
 import type { LearnItem } from '../schemas/learning-models';
 import { matchesLearnItem } from '../services/learn-check';
@@ -7,6 +8,7 @@ type LearnEntryProps = {
   readonly item: LearnItem;
   readonly position: number;
   readonly total: number;
+  readonly targetLanguage: LanguageCode;
   readonly targetLabel: string;
   // Records that this entry has been met. Only called once the learner has
   // written it correctly, and the next entry waits until it has been stored.
@@ -20,6 +22,7 @@ export const LearnEntry = ({
   item,
   position,
   total,
+  targetLanguage,
   targetLabel,
   onLearned,
 }: LearnEntryProps) => {
@@ -117,11 +120,13 @@ export const LearnEntry = ({
         <label className="sr-only" htmlFor={inputId}>
           Schreib die Vokabel ab
         </label>
-        <span className="sr-only" id={answerHintId}>
-          Vorlage: {item.targetText}
-        </span>
+        {typed === '' ? (
+          <span className="sr-only" id={answerHintId}>
+            Vorlage: <span lang={targetLanguage}>{item.targetText}</span>
+          </span>
+        ) : null}
         <input
-          aria-describedby={answerHintId}
+          aria-describedby={typed === '' ? answerHintId : undefined}
           autoCapitalize="off"
           autoComplete="off"
           autoCorrect="off"

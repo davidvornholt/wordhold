@@ -16,7 +16,20 @@ test('the learning pass asks again for a wrong copy and records only the correct
     page.getByRole('heading', { level: 2, name: 'die Erinnerung' }),
   ).toBeFocused();
   await expect(field).toHaveAttribute('placeholder', 'memory');
-  await expect(page.getByText('memory', { exact: true })).toHaveCount(0);
+  await expect(page.locator('html')).toHaveAttribute('lang', 'de');
+  const answerHint = page.locator('span.sr-only', {
+    has: page.locator('[lang="en"]', { hasText: 'memory' }),
+  });
+  await expect(answerHint).not.toHaveAttribute('lang');
+  await expect(field).toHaveAttribute(
+    'aria-describedby',
+    (await answerHint.getAttribute('id')) ?? 'missing-answer-hint',
+  );
+  await expect(answerHint).toHaveText('Vorlage: memory');
+
+  await field.fill('r');
+  await expect(field).not.toHaveAttribute('aria-describedby');
+  await expect(answerHint).toHaveCount(0);
 
   await field.fill('remember');
   await advance.click();
