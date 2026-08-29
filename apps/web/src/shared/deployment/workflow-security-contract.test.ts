@@ -17,6 +17,8 @@ describe('preview producer trust boundary', () => {
     producer.indexOf('  container-smoke:'),
     producer.indexOf('  gate:'),
   );
+  const pullRequestJobHeader =
+    pullRequestJob.split('    runs-on:', 1)[0] ?? '';
 
   it('grants untrusted pull request code only repository read access', () => {
     expect(pullRequestJob).toContain('    permissions:\n      contents: read');
@@ -56,23 +58,26 @@ describe('preview producer trust boundary', () => {
 
   it('starts the expensive build only for an eligible preview request', () => {
     expect(producer).toContain('      - edited');
-    expect(pullRequestJob).toContain(
+    expect(pullRequestJobHeader).toContain(
       "github.event.pull_request.state == 'open'",
     );
-    expect(pullRequestJob).toContain('!github.event.pull_request.draft');
-    expect(pullRequestJob).toContain(
+    expect(pullRequestJobHeader).toContain('!github.event.pull_request.draft');
+    expect(pullRequestJobHeader).toContain(
+      'github.event.pull_request.base.repo.full_name == github.repository',
+    );
+    expect(pullRequestJobHeader).toContain(
       "github.event.pull_request.base.ref == 'main'",
     );
-    expect(pullRequestJob).toContain(
+    expect(pullRequestJobHeader).toContain(
       'github.event.pull_request.head.repo.full_name == github.repository',
     );
-    expect(pullRequestJob).toContain(
+    expect(pullRequestJobHeader).toContain(
       "contains(github.event.pull_request.labels.*.name, 'pr-preview')",
     );
-    expect(pullRequestJob).toContain(
+    expect(pullRequestJobHeader).toContain(
       "github.event.action != 'labeled' || github.event.label.name == 'pr-preview'",
     );
-    expect(pullRequestJob).toContain(
+    expect(pullRequestJobHeader).toContain(
       "github.event.action != 'edited' || github.event.changes.base != null",
     );
     expect(pullRequestJob).not.toContain(
