@@ -1,12 +1,11 @@
 import type { ReviewMode } from '@wordhold/db/schema/practice';
-import { type SubmitEvent, useState } from 'react';
+import { type SubmitEvent, useEffect, useId, useRef, useState } from 'react';
 import type { SubmitPayloadData } from '../schemas/submission-schema';
 import type {
   PracticeSession,
   SubmitResult,
 } from '../services/practice-service';
 import { FeedbackPanel } from './feedback-panel';
-import { ManagedStepHeading } from './managed-step-heading';
 
 type SessionItem = PracticeSession['items'][number];
 
@@ -36,6 +35,8 @@ export const CardPractice = ({
   submit,
   onNext,
 }: CardPracticeProps) => {
+  const answerInput = useRef<HTMLInputElement>(null);
+  const promptId = useId();
   const [answer, setAnswer] = useState('');
   const [submittedAnswer, setSubmittedAnswer] = useState<string | null>(null);
   const [startedAt] = useState(() => performance.now());
@@ -43,6 +44,14 @@ export const CardPractice = ({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const audioUrl = item.hasAudio ? `/api/entries/${item.entryId}/audio` : null;
+
+  useEffect(() => {
+    if (busy || result !== null) {
+      return;
+    }
+    const focusTask = globalThis.setTimeout(() => answerInput.current?.focus());
+    return () => globalThis.clearTimeout(focusTask);
+  }, [busy, result]);
 
   const onSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -84,9 +93,9 @@ export const CardPractice = ({
         {repeated ? ' · Noch einmal' : null}
       </p>
       <div className="border border-border bg-card p-6">
-        <ManagedStepHeading className="font-display text-xl">
+        <h2 className="font-display text-xl" id={promptId}>
           {item.prompt}
-        </ManagedStepHeading>
+        </h2>
       </div>
       <form
         aria-busy={busy}
@@ -99,9 +108,11 @@ export const CardPractice = ({
           autoComplete="off"
           autoCorrect="off"
           className="border border-input bg-card px-3 py-2"
+          aria-describedby={promptId}
           disabled={busy || result !== null}
           onChange={(event) => setAnswer(event.target.value)}
           placeholder="Deine Antwort"
+          ref={answerInput}
           value={submittedAnswer ?? answer}
         />
         {result === null ? (
