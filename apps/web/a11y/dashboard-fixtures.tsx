@@ -25,6 +25,7 @@ const recoveryPage = {
 };
 const pendingImportSession = {
   id: '00000000-0000-0000-0000-000000000004',
+  courseId: course.id,
   courseName: course.name,
   capturedAt: new Date('2026-08-24T13:00:00Z'),
   pageCount: 3,

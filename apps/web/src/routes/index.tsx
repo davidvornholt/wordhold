@@ -9,6 +9,7 @@ import {
   listCourses,
   listPendingImportSessions,
 } from '../features/import/server-fns';
+import { clearUploadQueueIfSession } from '../features/import/services/upload-queue-persistence';
 import { AudioRecoveryPages } from '../features/import/ui/audio-recovery-pages';
 import { PendingImportSessions } from '../features/import/ui/pending-import-sessions';
 import { authClient } from '../shared/auth/client';
@@ -101,6 +102,7 @@ const Home = () => {
           <PendingImportSessions
             onDiscard={async (session) => {
               await discardImportSession({ data: session.id });
+              await clearUploadQueueIfSession(session.courseId, session.id);
               await router.invalidate({ sync: true });
             }}
             renderSessionAction={(session, label) =>

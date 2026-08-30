@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 
 type PendingImportSession = {
   readonly id: string;
+  readonly courseId: string;
   readonly courseName: string;
   readonly capturedAt: Date;
   readonly pageCount: number;

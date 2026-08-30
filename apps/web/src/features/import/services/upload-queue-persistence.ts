@@ -48,6 +48,15 @@ const requestResult = <T>(request: IDBRequest<T>): Promise<T> =>
     request.onsuccess = () => resolve(request.result);
   });
 
+const transactionResult = (transaction: IDBTransaction): Promise<void> =>
+  new Promise((resolve, reject) => {
+    transaction.onerror = () =>
+      reject(transaction.error ?? new Error('IndexedDB transaction failed.'));
+    transaction.onabort = () =>
+      reject(transaction.error ?? new Error('IndexedDB transaction aborted.'));
+    transaction.oncomplete = () => resolve();
+  });
+
 export const loadUploadQueue = async (
   courseId: string,
 ): Promise<PersistedUploadQueue | undefined> => {
@@ -70,13 +79,7 @@ export const saveUploadQueue = async (
   try {
     const transaction = database.transaction(objectStoreName, 'readwrite');
     transaction.objectStore(objectStoreName).put(queue, courseId);
-    await new Promise<void>((resolve, reject) => {
-      transaction.onerror = () =>
-        reject(transaction.error ?? new Error('IndexedDB write failed.'));
-      transaction.onabort = () =>
-        reject(transaction.error ?? new Error('IndexedDB write aborted.'));
-      transaction.oncomplete = () => resolve();
-    });
+    await transactionResult(transaction);
   } finally {
     database.close();
   }
@@ -87,13 +90,33 @@ export const clearUploadQueue = async (courseId: string): Promise<void> => {
   try {
     const transaction = database.transaction(objectStoreName, 'readwrite');
     transaction.objectStore(objectStoreName).delete(courseId);
-    await new Promise<void>((resolve, reject) => {
-      transaction.onerror = () =>
-        reject(transaction.error ?? new Error('IndexedDB delete failed.'));
-      transaction.onabort = () =>
-        reject(transaction.error ?? new Error('IndexedDB delete aborted.'));
-      transaction.oncomplete = () => resolve();
-    });
+    await transactionResult(transaction);
+  } finally {
+    database.close();
+  }
+};
+
+export const uploadQueueMatchesSession = (
+  queue: Pick<PersistedUploadQueue, 'importSessionId'> | undefined,
+  importSessionId: string,
+): boolean => queue?.importSessionId === importSessionId;
+
+export const clearUploadQueueIfSession = async (
+  courseId: string,
+  importSessionId: string,
+): Promise<void> => {
+  const database = await openDatabase();
+  try {
+    const transaction = database.transaction(objectStoreName, 'readwrite');
+    const store = transaction.objectStore(objectStoreName);
+    const request = store.get(courseId);
+    request.onsuccess = () => {
+      const queue = request.result as PersistedUploadQueue | undefined;
+      if (uploadQueueMatchesSession(queue, importSessionId)) {
+        store.delete(courseId);
+      }
+    };
+    await transactionResult(transaction);
   } finally {
     database.close();
   }

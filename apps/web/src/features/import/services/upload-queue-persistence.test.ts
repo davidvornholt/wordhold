@@ -3,6 +3,7 @@ import type { QueuedPage } from './upload-queue';
 import {
   restoreUploadQueue,
   serializeUploadQueue,
+  uploadQueueMatchesSession,
 } from './upload-queue-persistence';
 
 const expectedLastModified = 1234;
@@ -84,5 +85,16 @@ describe('upload queue persistence', () => {
     for (const restoredPage of restored) {
       URL.revokeObjectURL(restoredPage.previewUrl);
     }
+  });
+
+  it('matches a mixed queue to the session that owns it before clearing', () => {
+    const serialized = serializeUploadQueue('course-id', 'session-id', true, [
+      page('ready', 0, 'ready'),
+      page('failed', 1, 'failed'),
+    ]);
+
+    expect(uploadQueueMatchesSession(serialized, 'session-id')).toBe(true);
+    expect(uploadQueueMatchesSession(serialized, 'other-session')).toBe(false);
+    expect(uploadQueueMatchesSession(undefined, 'session-id')).toBe(false);
   });
 });
