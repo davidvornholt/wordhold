@@ -20,6 +20,7 @@ it('invalidates the active and cached overview after an import mutation', async 
 
   expect(options?.sync).toBe(true);
   expect(options?.filter({ routeId: '/' })).toBe(true);
+  expect(options?.filter({ routeId: '/imports/$sessionId' })).toBe(true);
   expect(options?.filter({ routeId: '/pages/$pageId/verify' })).toBe(false);
 });
 

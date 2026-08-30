@@ -22,6 +22,7 @@ type VerifyFormProps = {
   readonly onSubmit: (
     verifiedEntries: ReadonlyArray<VerificationEntry>,
   ) => void;
+  readonly submitLabel?: (entryCount: number) => string;
 };
 
 export type VerificationEntry = DraftEntry & {
@@ -41,6 +42,7 @@ export const VerifyForm = ({
   units,
   busy,
   onSubmit,
+  submitLabel = (entryCount) => `${entryCount} Einträge importieren`,
 }: VerifyFormProps) => {
   const [bulkUnit, setBulkUnit] = useState<UnitSelectionData>(() =>
     initialUnitSelection(units, initialUnitName),
@@ -155,7 +157,7 @@ export const VerifyForm = ({
           disabled={busy || complete.length === 0 || !unitsNamed}
           type="submit"
         >
-          {busy ? 'Importiere …' : `${complete.length} Einträge importieren`}
+          {busy ? 'Importiere …' : submitLabel(complete.length)}
         </button>
       </div>
     </form>

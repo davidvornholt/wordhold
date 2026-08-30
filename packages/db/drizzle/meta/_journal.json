@@ -85,6 +85,34 @@
       "when": 1788019697420,
       "tag": "0011_slow_bug",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1788099404546,
+      "tag": "0012_hot_lenny_balinger",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1788107140079,
+      "tag": "0013_lumpy_carmella_unuscione",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1788108677951,
+      "tag": "0014_tan_bromley",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1788110459917,
+      "tag": "0015_thin_proteus",
+      "breakpoints": true
     }
   ]
 }

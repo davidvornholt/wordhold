@@ -5,7 +5,9 @@ type SessionUser = {
 };
 
 const isOwnerRoute = (pathname: string): boolean =>
-  pathname.startsWith('/courses/') || pathname.startsWith('/pages/');
+  pathname.startsWith('/courses/') ||
+  pathname.startsWith('/imports/') ||
+  pathname.startsWith('/pages/');
 
 export const redirectExpiredOwnerRoute = async (
   pathname: string,

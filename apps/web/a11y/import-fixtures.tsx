@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react';
 import { AudioRecovery } from '../src/features/import/ui/audio-recovery';
-import { CaptureScreen } from '../src/features/import/ui/capture-screen';
 import type { DraftEntry } from '../src/features/import/ui/entry-row';
 import { ExtractionRecovery } from '../src/features/import/ui/extraction-recovery';
 import { VerificationImage } from '../src/features/import/ui/verification-image';
@@ -9,6 +8,7 @@ import { completeAudioRecovery, navigateToFixture } from './fixture-state';
 import {
   photographedPage,
   verificationEntries,
+  verificationUnits,
 } from './verification-fixture-data';
 
 const backControl = (
@@ -28,47 +28,6 @@ const deferredEntries: ReadonlyArray<DraftEntry> = [
     example: 'A lasting memory.',
   },
 ];
-
-const units = [
-  {
-    id: '11111111-1111-4111-8111-111111111111',
-    name: 'Unit 2',
-    position: 0,
-    isHolding: false,
-    entryCount: 18,
-  },
-  {
-    id: '22222222-2222-4222-8222-222222222222',
-    name: 'Unit 3',
-    position: 1,
-    isHolding: false,
-    entryCount: 12,
-  },
-  {
-    id: '33333333-3333-4333-8333-333333333333',
-    name: 'Ohne Einheit',
-    position: 2,
-    isHolding: true,
-    entryCount: 2,
-  },
-];
-
-export const ImportFixture = ({ error = false }) => (
-  <CaptureScreen
-    backControl={backControl}
-    busy={false}
-    courseName="English A2"
-    error={
-      error
-        ? 'Das Foto konnte nicht gelesen werden. Wähle eine andere Datei.'
-        : null
-    }
-    onSubmit={(event) => {
-      event.preventDefault();
-      navigateToFixture('verification');
-    }}
-  />
-);
 
 type VerificationFixtureProps = {
   readonly empty?: boolean;
@@ -127,7 +86,7 @@ export const VerificationFixture = ({
             initialUnitName={noUnits ? undefined : '  UNIT   2  '}
             onSubmit={() => navigateToFixture('dashboard')}
             targetLabel="Englisch"
-            units={noUnits ? [] : units}
+            units={noUnits ? [] : verificationUnits}
           />
         )}
       </div>
@@ -177,7 +136,7 @@ export const DeferredVerificationFixture = () => {
             .finally(() => setBusy(false));
         }}
         targetLabel="Englisch"
-        units={units}
+        units={verificationUnits}
       />
       <output aria-label="Verification calls">{calls}</output>
       <output aria-label="Verification snapshot">{snapshot}</output>

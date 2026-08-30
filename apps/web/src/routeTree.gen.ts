@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiPagesRouteImport } from './routes/api/pages'
+import { Route as ImportsSessionIdRouteImport } from './routes/imports/$sessionId'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as CoursesCourseIdIndexRouteImport } from './routes/courses/$courseId/index'
 import { Route as CoursesCourseIdImportRouteImport } from './routes/courses/$courseId/import'
@@ -38,6 +39,11 @@ const ApiHealthRoute = ApiHealthRouteImport.update({
 const ApiPagesRoute = ApiPagesRouteImport.update({
   id: '/api/pages',
   path: '/api/pages',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ImportsSessionIdRoute = ImportsSessionIdRouteImport.update({
+  id: '/imports/$sessionId',
+  path: '/imports/$sessionId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
@@ -108,6 +114,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/api/health': typeof ApiHealthRoute
   '/api/pages': typeof ApiPagesRouteWithChildren
+  '/imports/$sessionId': typeof ImportsSessionIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/courses/$courseId/import': typeof CoursesCourseIdImportRoute
   '/courses/$courseId/practice': typeof CoursesCourseIdPracticeRoute
@@ -125,6 +132,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/api/health': typeof ApiHealthRoute
   '/api/pages': typeof ApiPagesRouteWithChildren
+  '/imports/$sessionId': typeof ImportsSessionIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/courses/$courseId/import': typeof CoursesCourseIdImportRoute
   '/courses/$courseId/practice': typeof CoursesCourseIdPracticeRoute
@@ -143,6 +151,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/api/health': typeof ApiHealthRoute
   '/api/pages': typeof ApiPagesRouteWithChildren
+  '/imports/$sessionId': typeof ImportsSessionIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/courses/$courseId/import': typeof CoursesCourseIdImportRoute
   '/courses/$courseId/practice': typeof CoursesCourseIdPracticeRoute
@@ -162,6 +171,7 @@ export interface FileRouteTypes {
     | '/'
     | '/api/health'
     | '/api/pages'
+    | '/imports/$sessionId'
     | '/api/auth/$'
     | '/courses/$courseId/import'
     | '/courses/$courseId/practice'
@@ -179,6 +189,7 @@ export interface FileRouteTypes {
     | '/'
     | '/api/health'
     | '/api/pages'
+    | '/imports/$sessionId'
     | '/api/auth/$'
     | '/courses/$courseId/import'
     | '/courses/$courseId/practice'
@@ -196,6 +207,7 @@ export interface FileRouteTypes {
     | '/'
     | '/api/health'
     | '/api/pages'
+    | '/imports/$sessionId'
     | '/api/auth/$'
     | '/courses/$courseId/import'
     | '/courses/$courseId/practice'
@@ -214,6 +226,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ApiHealthRoute: typeof ApiHealthRoute
   ApiPagesRoute: typeof ApiPagesRouteWithChildren
+  ImportsSessionIdRoute: typeof ImportsSessionIdRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   CoursesCourseIdImportRoute: typeof CoursesCourseIdImportRoute
   CoursesCourseIdPracticeRoute: typeof CoursesCourseIdPracticeRoute
@@ -248,6 +261,13 @@ declare module '@tanstack/react-router' {
       path: '/api/pages'
       fullPath: '/api/pages'
       preLoaderRoute: typeof ApiPagesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/imports/$sessionId': {
+      id: '/imports/$sessionId'
+      path: '/imports/$sessionId'
+      fullPath: '/imports/$sessionId'
+      preLoaderRoute: typeof ImportsSessionIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/auth/$': {
@@ -353,6 +373,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ApiHealthRoute: ApiHealthRoute,
   ApiPagesRoute: ApiPagesRouteWithChildren,
+  ImportsSessionIdRoute: ImportsSessionIdRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   CoursesCourseIdImportRoute: CoursesCourseIdImportRoute,
   CoursesCourseIdPracticeRoute: CoursesCourseIdPracticeRoute,

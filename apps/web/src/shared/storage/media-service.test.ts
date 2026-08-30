@@ -20,6 +20,7 @@ const repository = (
 
 const storage = (overrides: Partial<StorageShape> = {}): StorageShape => ({
   write: () => Effect.void,
+  writeIfAbsent: () => Effect.void,
   read: () => Effect.succeed(new Uint8Array([1])),
   remove: () => Effect.void,
   reconcile: () => Effect.succeed([]),

@@ -16,6 +16,7 @@ import {
   entryAudio,
   entryExamples,
 } from './schema/entries';
+import { importSessionTombstones } from './schema/import-sessions';
 import { pages } from './schema/pages';
 import { cards, judgeCache, reviews } from './schema/practice';
 import { units } from './schema/units';
@@ -29,6 +30,7 @@ export const schema = {
   sessionRelations,
   accountRelations,
   courses,
+  importSessionTombstones,
   pages,
   units,
   entries,

@@ -10,6 +10,8 @@ import { ImportRepository, type ImportRepositoryShape } from './repository';
 const page = {
   id: 'd9428888-122b-41e1-b85c-61cd3cbb3210',
   courseId: 'd9428888-122b-41e1-b85c-61cd3cbb3211',
+  importSessionId: 'd9428888-122b-41e1-b85c-61cd3cbb3213',
+  importPosition: 0,
   imagePath: 'pages/page.png',
   extraction: null,
   status: 'awaiting_verification' as const,
@@ -39,16 +41,34 @@ export const makeImportRepository = (
   ImportRepository.of({
     listOrSeedCourses: Effect.succeed([course]),
     getCourse: () => Effect.succeed(course),
-    listPendingPages: Effect.succeed([]),
+    listPendingImportSessions: Effect.succeed([]),
+    getImportSession: () =>
+      Effect.succeed({
+        id: page.importSessionId,
+        courseId: page.courseId,
+        courseName: course.name,
+        capturedAt: page.capturedAt,
+        expectedPageCount: 1,
+        isComplete: true,
+        pages: [
+          {
+            id: page.id,
+            position: page.importPosition,
+            status: page.status,
+            extractionReady: page.extraction !== null,
+          },
+        ],
+      }),
     listAudioRecoveryPages: Effect.succeed([]),
     getPage: () => Effect.succeed({ page, course }),
+    getPageUpload: () => Effect.succeed(undefined),
     listUnits: () => Effect.succeed([unit]),
     loadPendingExtraction: () =>
       Effect.succeed({ imagePath: page.imagePath, language: 'fr' }),
     saveExtractionIfPending: (_pageId, extraction: ExtractionResult) =>
       Effect.succeed({ ...page, extraction }),
     insertPage: () => Effect.void,
-    deletePendingPage: () => Effect.succeed(page.imagePath),
+    deletePendingImportSession: () => Effect.succeed([page.imagePath]),
     verifyPage: () => Effect.succeed([]),
     referencedPaths: Effect.succeed(new Set()),
     ...overrides,
@@ -57,6 +77,7 @@ export const makeImportRepository = (
 export const makeStorage = (overrides: Partial<StorageShape> = {}) =>
   Storage.of({
     write: () => Effect.void,
+    writeIfAbsent: () => Effect.void,
     read: () => Effect.succeed(new Uint8Array()),
     remove: () => Effect.void,
     reconcile: () => Effect.succeed([]),

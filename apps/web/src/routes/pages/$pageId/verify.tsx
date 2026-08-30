@@ -1,28 +1,19 @@
-import {
-  createFileRoute,
-  Link,
-  useNavigate,
-  useRouter,
-} from '@tanstack/react-router';
+import { createFileRoute, Link, redirect } from '@tanstack/react-router';
 import type { ExtractionResult } from '@wordhold/ai/extraction';
-import { useState } from 'react';
-import { importPage } from '../../../features/import/import-fn';
-import type { UnitSelectionData } from '../../../features/import/schemas/import-payload';
 import {
-  getPage,
-  retryAudio,
-  retryExtraction,
-} from '../../../features/import/server-fns';
-import { AudioRecovery } from '../../../features/import/ui/audio-recovery';
+  type BatchReviewSearchData,
+  batchReviewSearchFor,
+  parseBatchReviewSearch,
+} from '../../../features/import/schemas/batch-review-search';
+import { getImportSession, getPage } from '../../../features/import/server-fns';
+import type {
+  Course,
+  Unit,
+} from '../../../features/import/services/repository';
+import { BatchReviewComplete } from '../../../features/import/ui/batch-review-complete';
 import type { DraftEntry } from '../../../features/import/ui/entry-row';
-import { ExtractionRecovery } from '../../../features/import/ui/extraction-recovery';
-import {
-  refreshOverviewAfterMutation,
-  retireOverviewCache,
-  returnToFreshOverview,
-} from '../../../features/import/ui/overview-navigation';
-import { VerificationImage } from '../../../features/import/ui/verification-image';
-import { VerifyForm } from '../../../features/import/ui/verify-form';
+import { useVerificationFlow } from '../../../features/import/ui/use-verification-flow';
+import { VerificationWorkbench } from '../../../features/import/ui/verification-workbench';
 import { germanLabels } from '../../../shared/languages';
 
 const draftsFromExtraction = (
@@ -38,150 +29,128 @@ const draftsFromExtraction = (
         confidence: entry.confidence,
       }));
 
-const toPayloadEntry = (
-  draft: DraftEntry & { readonly unit: UnitSelectionData },
-) => ({
-  unit: draft.unit,
-  targetText: draft.targetText,
-  nativeText: draft.nativeText,
-  ...(draft.grammar === undefined ? {} : { grammar: draft.grammar }),
-  ...(draft.example.trim() === '' ? {} : { example: draft.example.trim() }),
-});
-
-const VerifyScreen = () => {
-  const { page, course, units } = Route.useLoaderData();
-  const navigate = useNavigate();
-  const router = useRouter();
-  const [extraction, setExtraction] = useState(page.extraction);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [completed, setCompleted] = useState<{
-    readonly imported: number | null;
-    readonly pending: number | null;
-  } | null>(
-    page.status === 'verified' ? { imported: null, pending: null } : null,
-  );
-
-  const run = async (action: () => Promise<void>) => {
-    setBusy(true);
-    setError(null);
-    try {
-      await action();
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
-    } finally {
-      setBusy(false);
-    }
+type VerificationPageScreenProps = {
+  readonly course: Pick<Course, 'name' | 'targetLanguage'>;
+  readonly page: {
+    readonly extraction: ExtractionResult | null;
+    readonly id: string;
+    readonly importSessionId: string;
+    readonly status: 'awaiting_verification' | 'verified';
   };
+  readonly search: BatchReviewSearchData;
+  readonly units: ReadonlyArray<Unit>;
+};
 
+const VerificationPageScreen = ({
+  course,
+  page,
+  search,
+  units,
+}: VerificationPageScreenProps) => {
+  const flow = useVerificationFlow(page, search);
   const targetLabel = germanLabels[course.targetLanguage];
-  const clearOverviewCache = () =>
-    router.clearCache({
-      filter: (match) => match.routeId === '/',
-    });
-  const retireCachedOverview = () =>
-    retireOverviewCache({ clearOverviewCache });
-  const refreshOverview = () =>
-    refreshOverviewAfterMutation((options) => router.invalidate(options));
-  const goToOverview = () =>
-    returnToFreshOverview({
-      clearOverviewCache,
-      navigate: () => navigate({ to: '/' }),
-    });
 
   return (
     <main className="verification-screen">
       <div className="verification-header">
         <Link
           className="text-muted-foreground text-sm underline"
-          onClick={retireCachedOverview}
-          to="/"
+          params={{ sessionId: page.importSessionId }}
+          to="/imports/$sessionId"
         >
-          ← Übersicht
+          ← Zum Seitenstapel
         </Link>
         <h1 className="font-display font-semibold text-2xl">
-          {course.name}: Seite überprüfen
+          {course.name}:{' '}
+          {flow.batchSummary === null ? 'Seite überprüfen' : 'Seiten geprüft'}
         </h1>
-        {error === null ? null : (
+        {flow.error === null ? null : (
           <p className="text-destructive text-sm" role="alert">
-            {error}
+            {flow.error}
           </p>
         )}
       </div>
-      <div className="verification-workbench">
-        <div className="verification-image-pane">
-          <VerificationImage src={`/api/pages/${page.id}/image`} />
-        </div>
-        <div className="verification-form-pane">
-          {completed === null ? null : (
-            <AudioRecovery
-              busy={busy}
-              imported={completed.imported}
-              onRetry={() =>
-                run(async () => {
-                  const result = await retryAudio({ data: page.id });
-                  await refreshOverview();
-                  if (result.pending === 0) {
-                    await goToOverview();
-                    return;
-                  }
-                  setCompleted((current) =>
-                    current === null
-                      ? null
-                      : { ...current, pending: result.pending },
-                  );
-                })
-              }
-              pending={completed.pending}
-            />
-          )}
-          {completed === null && extraction === null ? (
-            <ExtractionRecovery
-              busy={busy}
-              onRetry={() =>
-                run(async () => {
-                  const updated = await retryExtraction({ data: page.id });
-                  setExtraction(updated.extraction);
-                })
-              }
-            />
-          ) : null}
-          {completed === null && extraction !== null ? (
-            <VerifyForm
-              busy={busy}
-              initialEntries={draftsFromExtraction(extraction)}
-              initialUnitName={extraction.page.unitName}
-              key={extraction.modelId + String(extraction.page.entries.length)}
-              onSubmit={(verified) =>
-                run(async () => {
-                  const result = await importPage({
-                    data: {
-                      pageId: page.id,
-                      entries: verified.map(toPayloadEntry),
-                    },
-                  });
-                  await refreshOverview();
-                  if (result.audio.pending === 0) {
-                    await goToOverview();
-                    return;
-                  }
-                  setCompleted({
-                    imported: result.imported,
-                    pending: result.audio.pending,
-                  });
-                })
-              }
-              targetLabel={targetLabel}
-              units={units}
-            />
-          ) : null}
-        </div>
-      </div>
+      {flow.batchSummary === null ? null : (
+        <BatchReviewComplete
+          overviewAction={
+            <Link
+              className="inline-flex min-h-11 items-center bg-primary px-4 py-2 text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
+              params={{ sessionId: page.importSessionId }}
+              to="/imports/$sessionId"
+            >
+              Zum Seitenstapel
+            </Link>
+          }
+          total={flow.batchSummary.total}
+        />
+      )}
+      {flow.batchSummary === null ? (
+        <VerificationWorkbench
+          batchIsLastPage={flow.batchIsLastPage}
+          batchSession={flow.batchSession}
+          busy={flow.busy}
+          completed={flow.completed}
+          extractionKey={
+            flow.extraction === null
+              ? null
+              : flow.extraction.modelId +
+                String(flow.extraction.page.entries.length)
+          }
+          initialEntries={draftsFromExtraction(flow.extraction)}
+          initialUnitName={flow.extraction?.page.unitName}
+          onExtractionRetry={flow.retryPageExtraction}
+          onRetryAudio={flow.retryPageAudio}
+          onSubmit={flow.submitPage}
+          pageImageSource={`/api/pages/${page.id}/image`}
+          targetLabel={targetLabel}
+          units={units}
+        />
+      ) : null}
     </main>
   );
 };
 
+const VerifyScreen = () => {
+  const { course, page, reviewSearch, units } = Route.useLoaderData();
+  const routeSearch = Route.useSearch();
+  const search = reviewSearch ?? routeSearch ?? {};
+  return (
+    <VerificationPageScreen
+      course={course}
+      key={page.id}
+      page={page}
+      search={search}
+      units={units}
+    />
+  );
+};
+
 export const Route = createFileRoute('/pages/$pageId/verify')({
-  loader: ({ params }) => getPage({ data: params.pageId }),
+  validateSearch: parseBatchReviewSearch,
+  loader: async ({ params }) => {
+    const page = await getPage({ data: params.pageId });
+    if (page.page.status !== 'awaiting_verification') {
+      return { ...page, reviewSearch: null };
+    }
+    const session = await getImportSession({
+      data: page.page.importSessionId,
+    });
+    const firstPendingPage = session.pages.find(
+      (candidate) => candidate.status === 'awaiting_verification',
+    );
+    if (!session.isComplete || firstPendingPage?.id !== page.page.id) {
+      throw redirect({
+        to: '/imports/$sessionId',
+        params: { sessionId: page.page.importSessionId },
+      });
+    }
+    return {
+      ...page,
+      reviewSearch: batchReviewSearchFor(
+        session.pages.map((candidate) => candidate.id),
+        firstPendingPage.id,
+      ),
+    };
+  },
   component: VerifyScreen,
 });

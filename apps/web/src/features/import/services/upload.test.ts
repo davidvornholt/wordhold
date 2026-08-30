@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'bun:test';
-import { Extraction } from '@wordhold/ai/extraction';
 import { Effect } from 'effect';
 import { Storage } from '../../../shared/storage/server';
 import { ImportDatabaseError } from '../errors/import-database-error';
@@ -11,10 +10,10 @@ import {
 import { ImportRepository } from './repository';
 import { makeImportRepository, makeStorage } from './test-services';
 import {
-  createUploadedPage,
   maximumImageBytes,
   maximumImageWidth,
   maximumMultipartBytes,
+  storeUploadedPage,
   validatePageImage,
 } from './upload';
 
@@ -33,19 +32,16 @@ const runUpload = (
   storage = makeStorage(),
 ) =>
   Effect.runPromise(
-    createUploadedPage('course', image).pipe(
+    storeUploadedPage({
+      courseId: 'course',
+      importSessionId: 'd9428888-122b-41e1-b85c-61cd3cbb3213',
+      importPosition: 0,
+      importExpectedCount: 1,
+      pageId: 'd9428888-122b-41e1-b85c-61cd3cbb3214',
+      image,
+    }).pipe(
       Effect.provideService(ImportRepository, repository),
       Effect.provideService(Storage, storage),
-      Effect.provideService(
-        Extraction,
-        Extraction.make({
-          extract: () =>
-            Effect.succeed({
-              modelId: 'test-model',
-              page: { entries: [], overallConfidence: 1 },
-            }),
-        }),
-      ),
     ),
   );
 
@@ -108,8 +104,8 @@ describe('validatePageImage', () => {
   });
 });
 
-describe('createUploadedPage', () => {
-  it('sends rejected bytes to neither storage nor extraction', async () => {
+describe('storeUploadedPage', () => {
+  it('does not store rejected bytes', async () => {
     const actions: Array<string> = [];
     const storage = makeStorage({
       write: () => Effect.sync(() => actions.push('write')),
@@ -148,5 +144,49 @@ describe('createUploadedPage', () => {
       runUpload(imageFile(pngBytes()), repository, storage),
     ).rejects.toThrow('insert failed');
     expect(actions).toEqual(['write', 'insert', 'remove']);
+  });
+
+  it('does not overwrite an existing page when a retry reuses its identity', async () => {
+    const actions: Array<string> = [];
+    const repository = makeImportRepository({
+      getPageUpload: () =>
+        Effect.succeed({
+          id: 'd9428888-122b-41e1-b85c-61cd3cbb3214',
+          courseId: 'course',
+          importSessionId: 'd9428888-122b-41e1-b85c-61cd3cbb3213',
+          importPosition: 0,
+          importExpectedCount: 1,
+          imagePath: 'pages/existing.png',
+        }),
+    });
+    const storage = makeStorage({
+      write: () => Effect.sync(() => actions.push('write')),
+      writeIfAbsent: () => Effect.sync(() => actions.push('write-if-absent')),
+    });
+    await runUpload(imageFile(pngBytes()), repository, storage);
+    expect(actions).toEqual(['write-if-absent']);
+  });
+
+  it('rejects a retry with a different page identity before writing', async () => {
+    const actions: Array<string> = [];
+    const repository = makeImportRepository({
+      getPageUpload: () =>
+        Effect.succeed({
+          id: 'd9428888-122b-41e1-b85c-61cd3cbb3214',
+          courseId: 'other-course',
+          importSessionId: 'd9428888-122b-41e1-b85c-61cd3cbb3213',
+          importPosition: 0,
+          importExpectedCount: 1,
+          imagePath: 'pages/existing.png',
+        }),
+    });
+    const storage = makeStorage({
+      write: () => Effect.sync(() => actions.push('write')),
+      writeIfAbsent: () => Effect.sync(() => actions.push('write-if-absent')),
+    });
+    await expect(
+      runUpload(imageFile(pngBytes()), repository, storage),
+    ).rejects.toThrow('identity');
+    expect(actions).toEqual([]);
   });
 });

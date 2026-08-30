@@ -24,6 +24,14 @@ describe('redirectExpiredOwnerRoute', () => {
     expect((failure as { options: { to: string } }).options.to).toBe('/');
   });
 
+  it('protects persisted import session routes', async () => {
+    await expect(
+      redirectExpiredOwnerRoute('/imports/session-1', () =>
+        Promise.resolve(null),
+      ),
+    ).rejects.toBeDefined();
+  });
+
   it('leaves the signed-out home route available', async () => {
     let checkedSession = false;
     await redirectExpiredOwnerRoute('/', () => {

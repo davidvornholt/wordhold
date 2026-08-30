@@ -1,4 +1,29 @@
+import type { Unit } from '../src/features/import/services/repository';
 import type { DraftEntry } from '../src/features/import/ui/entry-row';
+
+export const verificationUnits: ReadonlyArray<Unit> = [
+  {
+    id: '11111111-1111-4111-8111-111111111111',
+    name: 'Unit 2',
+    position: 0,
+    isHolding: false,
+    entryCount: 18,
+  },
+  {
+    id: '22222222-2222-4222-8222-222222222222',
+    name: 'Unit 3',
+    position: 1,
+    isHolding: false,
+    entryCount: 12,
+  },
+  {
+    id: '33333333-3333-4333-8333-333333333333',
+    name: 'Ohne Einheit',
+    position: 2,
+    isHolding: true,
+    entryCount: 2,
+  },
+];
 
 export const verificationEntries: ReadonlyArray<DraftEntry> = [
   {

@@ -5,6 +5,7 @@ import { Effect } from 'effect';
 import { requireSession } from '../../shared/auth/require-session';
 import { requireString } from '../../shared/validate/input';
 import { CourseNotFoundError } from './errors/course-not-found-error';
+import { ImportSessionNotFoundError } from './errors/import-session-not-found-error';
 import { PageNotFoundError } from './errors/page-not-found-error';
 import { importRuntime } from './runtime';
 import {
@@ -12,7 +13,7 @@ import {
   serializableAudioReport,
 } from './services/audio-generation';
 import { audioRecoveryPages } from './services/audio-recovery-query';
-import { discardPendingPage } from './services/discard-page';
+import { discardPendingImportSession } from './services/discard-page';
 import { retryPendingExtraction } from './services/extraction-retry';
 import { ImportRepository } from './services/repository';
 
@@ -48,25 +49,43 @@ export const getCourse = createServerFn()
     ),
   );
 
-export const listPendingPages = createServerFn().handler(() =>
+export const listPendingImportSessions = createServerFn().handler(() =>
   importRuntime.runPromise(
     authenticated(
       Effect.gen(function* () {
         const repository = yield* ImportRepository;
-        return yield* repository.listPendingPages;
+        return yield* repository.listPendingImportSessions;
       }),
     ),
   ),
 );
 
+export const getImportSession = createServerFn()
+  .validator(requireString)
+  .handler(({ data }) =>
+    importRuntime.runPromise(
+      authenticated(
+        Effect.gen(function* () {
+          const repository = yield* ImportRepository;
+          const session = yield* repository.getImportSession(data);
+          return session === undefined
+            ? yield* new ImportSessionNotFoundError({
+                message: 'Import nicht gefunden.',
+              })
+            : session;
+        }),
+      ),
+    ),
+  );
+
 export const listAudioRecoveryPages = createServerFn().handler(() =>
   importRuntime.runPromise(authenticated(audioRecoveryPages)),
 );
 
-export const discardPage = createServerFn({ method: 'POST' })
+export const discardImportSession = createServerFn({ method: 'POST' })
   .validator(requireString)
   .handler(({ data }) =>
-    importRuntime.runPromise(authenticated(discardPendingPage(data))),
+    importRuntime.runPromise(authenticated(discardPendingImportSession(data))),
   );
 
 export const getPage = createServerFn()

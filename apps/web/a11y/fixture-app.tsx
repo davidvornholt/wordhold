@@ -3,6 +3,11 @@ import {
   RootNotFound,
   RootPending,
 } from '../src/shared/routing/root-feedback';
+import {
+  BatchReviewCompleteFixture,
+  BatchReviewFixture,
+} from './batch-review-fixtures';
+import { ImportFixture } from './capture-fixtures';
 import { CourseFixture, UnitFixture } from './course-fixtures';
 import { DashboardFixture, SignedOutFixture } from './dashboard-fixtures';
 import {
@@ -10,12 +15,16 @@ import {
   DeferredCourseSettingsFixture,
   PracticeStartFixture,
 } from './direction-fixtures';
-import { navigateToFixture, readFixtureState } from './fixture-state';
+import {
+  type FixtureState,
+  navigateToFixture,
+  readFixtureState,
+} from './fixture-state';
 import {
   DeferredVerificationFixture,
-  ImportFixture,
   VerificationFixture,
 } from './import-fixtures';
+import { ImportSessionFixture } from './import-session-fixture';
 import { LearnDoneFixture, LearnFixture } from './learning-fixtures';
 import {
   DeferredPracticeFixture,
@@ -32,6 +41,26 @@ import { StaleUnitVerificationFixture } from './stale-unit-fixture';
 import { StudyStartFixture } from './study-fixtures';
 import { VocabularyFixture } from './vocabulary-fixtures';
 
+const batchReviewFixture = (state: FixtureState) => {
+  switch (state) {
+    case 'verification-batch-first':
+      return <BatchReviewFixture position={1} />;
+    case 'verification-batch-second':
+      return <BatchReviewFixture position={2} />;
+    case 'verification-batch-complete':
+      return <BatchReviewCompleteFixture />;
+    default:
+      return null;
+  }
+};
+
+const ErrorFixture = () => (
+  <RootError
+    error={new Error('Database unavailable')}
+    reset={() => navigateToFixture('dashboard')}
+  />
+);
+
 export const FixtureApp = () => {
   const state = readFixtureState();
   switch (state) {
@@ -47,10 +76,24 @@ export const FixtureApp = () => {
       return <DashboardFixture pending={true} />;
     case 'import':
       return <ImportFixture />;
+    case 'import-selected':
+      return <ImportFixture initialState="selected" />;
+    case 'import-progress':
+      return <ImportFixture initialState="progress" />;
+    case 'import-complete':
+      return <ImportFixture initialState="complete" />;
+    case 'import-failed':
+      return <ImportFixture initialState="failed" />;
     case 'import-error':
       return <ImportFixture error={true} />;
+    case 'import-session':
+      return <ImportSessionFixture />;
     case 'verification':
       return <VerificationFixture />;
+    case 'verification-batch-first':
+    case 'verification-batch-second':
+    case 'verification-batch-complete':
+      return batchReviewFixture(state);
     case 'verification-empty':
       return <VerificationFixture empty={true} />;
     case 'verification-no-units':
@@ -108,12 +151,7 @@ export const FixtureApp = () => {
     case 'loading':
       return <RootPending />;
     case 'error':
-      return (
-        <RootError
-          error={new Error('Database unavailable')}
-          reset={() => navigateToFixture('dashboard')}
-        />
-      );
+      return <ErrorFixture />;
     case 'not-found':
       return <RootNotFound />;
     default:
