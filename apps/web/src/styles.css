@@ -61,7 +61,7 @@
 }
 
 @utility verification-form-pane {
-  @apply w-full max-w-3xl justify-self-center xl:max-w-none;
+  @apply flex w-full max-w-3xl flex-col gap-4 justify-self-center xl:max-w-none;
 }
 
 .root-recovery {

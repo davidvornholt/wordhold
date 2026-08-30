@@ -52,12 +52,24 @@ test('authenticated routes remain reachable through their user transitions', asy
     .getByRole('button', { name: '2 Seiten hochladen und auslesen' })
     .click();
   await expect(page.getByText('2 von 2 Seiten verarbeitet')).toBeVisible();
-  await page.getByRole('button', { name: 'Seite prüfen' }).first().click();
+  await page.getByRole('button', { name: '2 Seiten prüfen' }).click();
   await expect(page.locator('body')).toHaveAttribute(
     'data-fixture',
-    'verification',
+    'verification-batch-first',
+  );
+  await page
+    .getByRole('button', { name: '12 Einträge importieren und weiter' })
+    .click();
+  await expect(page.locator('body')).toHaveAttribute(
+    'data-fixture',
+    'verification-batch-second',
   );
   await page.getByRole('button', { name: '12 Einträge importieren' }).click();
+  await expect(page.locator('body')).toHaveAttribute(
+    'data-fixture',
+    'verification-batch-complete',
+  );
+  await page.getByRole('button', { name: 'Zur Übersicht' }).click();
   await expect(page.locator('body')).toHaveAttribute(
     'data-fixture',
     'dashboard',
@@ -102,6 +114,25 @@ test('dependency-failure recovery returns to the authenticated dashboard', async
     'data-fixture',
     'dashboard',
   );
+});
+
+test('batch review can defer one page and reports it at completion', async ({
+  page,
+}) => {
+  await page.goto('/?state=verification-batch-first');
+  await page.getByRole('button', { name: 'Diese Seite später prüfen' }).click();
+  await expect(page.locator('body')).toHaveAttribute(
+    'data-fixture',
+    'verification-batch-second-deferred',
+  );
+  await page.getByRole('button', { name: '12 Einträge importieren' }).click();
+  await expect(page.locator('body')).toHaveAttribute(
+    'data-fixture',
+    'verification-batch-complete-deferred',
+  );
+  await expect(
+    page.getByText('1 Seite bleibt zur späteren Prüfung offen.'),
+  ).toBeVisible();
 });
 
 test('the gate rejects a real violation injected only for this scan', async ({

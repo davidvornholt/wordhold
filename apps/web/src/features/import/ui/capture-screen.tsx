@@ -17,6 +17,7 @@ type CaptureScreenProps = {
     page: Extract<QueuedPage, { readonly stage: 'failed' }>,
   ) => Promise<void> | void;
   readonly onSubmit: SubmitEventHandler<HTMLFormElement>;
+  readonly reviewAction: ReactNode;
   readonly renderVerifyAction: (
     page: Extract<QueuedPage, { readonly stage: 'ready' }>,
   ) => ReactNode;
@@ -41,6 +42,7 @@ export const CaptureScreen = ({
   onRemove,
   onRetry,
   onSubmit,
+  reviewAction,
   renderVerifyAction,
 }: CaptureScreenProps) => (
   <main className="page-column flex flex-col gap-4 p-6">
@@ -99,6 +101,7 @@ export const CaptureScreen = ({
         pages={pages}
         renderVerifyAction={renderVerifyAction}
       />
+      {reviewAction}
       {pages.some((page) => page.stage === 'waiting') ? (
         <button
           className="bg-primary px-4 py-2 text-primary-foreground text-sm disabled:opacity-50"

@@ -123,10 +123,21 @@ export const ImportFixture = ({
         );
       }}
       pages={pages}
+      reviewAction={
+        pages.some((page) => page.stage === 'ready') ? (
+          <button
+            className="bg-primary px-4 py-2 text-primary-foreground text-sm"
+            onClick={() => navigateToFixture('verification-batch-first')}
+            type="button"
+          >
+            {pages.length} Seiten prüfen
+          </button>
+        ) : null
+      }
       renderVerifyAction={() => (
         <button
           className="font-medium underline underline-offset-4"
-          onClick={() => navigateToFixture('verification')}
+          onClick={() => navigateToFixture('verification-batch-first')}
           type="button"
         >
           Seite prüfen

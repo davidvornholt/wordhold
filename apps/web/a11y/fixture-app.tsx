@@ -3,6 +3,10 @@ import {
   RootNotFound,
   RootPending,
 } from '../src/shared/routing/root-feedback';
+import {
+  BatchReviewCompleteFixture,
+  BatchReviewFixture,
+} from './batch-review-fixtures';
 import { ImportFixture } from './capture-fixtures';
 import { CourseFixture, UnitFixture } from './course-fixtures';
 import { DashboardFixture, SignedOutFixture } from './dashboard-fixtures';
@@ -11,7 +15,11 @@ import {
   DeferredCourseSettingsFixture,
   PracticeStartFixture,
 } from './direction-fixtures';
-import { navigateToFixture, readFixtureState } from './fixture-state';
+import {
+  type FixtureState,
+  navigateToFixture,
+  readFixtureState,
+} from './fixture-state';
 import {
   DeferredVerificationFixture,
   VerificationFixture,
@@ -31,6 +39,25 @@ import {
 import { StaleUnitVerificationFixture } from './stale-unit-fixture';
 import { StudyStartFixture } from './study-fixtures';
 import { VocabularyFixture } from './vocabulary-fixtures';
+
+const batchReviewFixture = (state: FixtureState) => {
+  switch (state) {
+    case 'verification-batch-first':
+      return <BatchReviewFixture position={1} />;
+    case 'verification-batch-second':
+      return <BatchReviewFixture position={2} />;
+    case 'verification-batch-second-deferred':
+      return <BatchReviewFixture position={2} skippedBefore={1} />;
+    case 'verification-batch-complete':
+      return <BatchReviewCompleteFixture />;
+    case 'verification-batch-complete-deferred':
+      return <BatchReviewCompleteFixture skipped={1} />;
+    case 'verification-batch-complete-all-deferred':
+      return <BatchReviewCompleteFixture skipped={2} />;
+    default:
+      return null;
+  }
+};
 
 export const FixtureApp = () => {
   const state = readFixtureState();
@@ -59,6 +86,13 @@ export const FixtureApp = () => {
       return <ImportFixture error={true} />;
     case 'verification':
       return <VerificationFixture />;
+    case 'verification-batch-first':
+    case 'verification-batch-second':
+    case 'verification-batch-second-deferred':
+    case 'verification-batch-complete':
+    case 'verification-batch-complete-deferred':
+    case 'verification-batch-complete-all-deferred':
+      return batchReviewFixture(state);
     case 'verification-empty':
       return <VerificationFixture empty={true} />;
     case 'verification-no-units':
