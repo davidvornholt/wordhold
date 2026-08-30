@@ -42,7 +42,21 @@ export const makeImportRepository = (
     listOrSeedCourses: Effect.succeed([course]),
     getCourse: () => Effect.succeed(course),
     listPendingImportSessions: Effect.succeed([]),
-    getImportSession: () => Effect.succeed(undefined),
+    getImportSession: () =>
+      Effect.succeed({
+        id: page.importSessionId,
+        courseId: page.courseId,
+        courseName: course.name,
+        capturedAt: page.capturedAt,
+        pages: [
+          {
+            id: page.id,
+            position: page.importPosition,
+            status: page.status,
+            extractionReady: page.extraction !== null,
+          },
+        ],
+      }),
     listAudioRecoveryPages: Effect.succeed([]),
     getPage: () => Effect.succeed({ page, course }),
     listUnits: () => Effect.succeed([unit]),

@@ -66,7 +66,7 @@ export const useVerificationFlow = (
       if (result.pending === 0) {
         await (navigation.batchSession === null
           ? navigation.goToOverview()
-          : navigation.advanceReview(false));
+          : navigation.advanceReview());
         return;
       }
       setCompleted((current) =>
@@ -83,7 +83,7 @@ export const useVerificationFlow = (
       });
       await navigation.refreshOverview();
       if (navigation.batchSession !== null) {
-        await navigation.advanceReview(false);
+        await navigation.advanceReview();
         return;
       }
       if (result.audio.pending === 0) {
@@ -101,8 +101,6 @@ export const useVerificationFlow = (
     ...navigation,
     completed,
     extraction,
-    deferOrContinue: () =>
-      actions.run(() => navigation.advanceReview(completed === null)),
     retryPageAudio,
     retryPageExtraction,
     submitPage,

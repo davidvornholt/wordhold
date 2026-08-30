@@ -37,22 +37,13 @@ export const ImportSessionFixture = () => (
     <ImportSessionStack
       pageImageSource={() => photographedPage}
       pages={pages}
-      renderPageAction={() => (
-        <button
-          className="font-medium text-sm underline underline-offset-4"
-          onClick={() => navigateToFixture('verification-batch-first')}
-          type="button"
-        >
-          Seite prüfen
-        </button>
-      )}
       reviewAction={
         <button
           className="inline-flex min-h-11 items-center bg-primary px-4 py-2 font-medium text-primary-foreground text-sm"
           onClick={() => navigateToFixture('verification-batch-first')}
           type="button"
         >
-          2 Seiten nacheinander prüfen
+          Mit Seite 1 beginnen
         </button>
       }
     />

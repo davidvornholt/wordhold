@@ -1,4 +1,4 @@
-import { type ReactNode, useId } from 'react';
+import { useId } from 'react';
 import {
   processedUploadCount,
   type QueuedPage,
@@ -11,9 +11,6 @@ type CaptureUploadQueueProps = {
   readonly onRetry: (
     page: Extract<QueuedPage, { readonly stage: 'failed' }>,
   ) => Promise<void> | void;
-  readonly renderVerifyAction: (
-    page: Extract<QueuedPage, { readonly stage: 'ready' }>,
-  ) => ReactNode;
 };
 
 const statusDetails = (
@@ -55,7 +52,6 @@ export const CaptureUploadQueue = ({
   pages,
   onRemove,
   onRetry,
-  renderVerifyAction,
 }: CaptureUploadQueueProps) => {
   const headingId = useId();
   if (pages.length === 0) {
@@ -109,7 +105,6 @@ export const CaptureUploadQueue = ({
                   </p>
                 ) : null}
                 <div className="mt-1 flex flex-wrap gap-3 text-sm">
-                  {page.stage === 'ready' ? renderVerifyAction(page) : null}
                   {page.stage === 'failed' ? (
                     <button
                       className="underline underline-offset-4 disabled:opacity-50"

@@ -138,15 +138,6 @@ export const ImportFixture = ({
           </button>
         ) : null
       }
-      renderVerifyAction={() => (
-        <button
-          className="font-medium underline underline-offset-4"
-          onClick={() => navigateToFixture('verification-batch-first')}
-          type="button"
-        >
-          Seite prüfen
-        </button>
-      )}
     />
   );
 };

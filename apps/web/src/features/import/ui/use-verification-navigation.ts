@@ -35,12 +35,12 @@ export const useVerificationNavigation = (
       clearOverviewCache,
       navigate: () => navigate({ to: '/' }),
     });
-  const advanceReview = async (skipCurrent: boolean): Promise<void> => {
+  const advanceReview = async (): Promise<void> => {
     if (batchSession === null) {
       await goToOverview();
       return;
     }
-    const next = advanceBatchReview(batchSession, skipCurrent);
+    const next = advanceBatchReview(batchSession);
     if ('pageId' in next) {
       await navigate({
         params: { pageId: next.pageId },

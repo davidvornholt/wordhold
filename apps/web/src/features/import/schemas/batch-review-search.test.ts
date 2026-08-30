@@ -11,16 +11,12 @@ const secondPageId = '22222222-2222-4222-8222-222222222222';
 const thirdPageId = '33333333-3333-4333-8333-333333333333';
 
 describe('batch review search', () => {
-  it('starts with a selected page and preserves every other page', () => {
+  it('starts with the first page and preserves upload order', () => {
     expect(
-      batchReviewSearchFor(
-        [firstPageId, secondPageId, thirdPageId],
-        secondPageId,
-      ),
+      batchReviewSearchFor([firstPageId, secondPageId, thirdPageId]),
     ).toEqual({
-      batch: [secondPageId, thirdPageId, firstPageId].join(','),
+      batch: [firstPageId, secondPageId, thirdPageId].join(','),
       step: 0,
-      skipped: 0,
     });
   });
 
@@ -30,7 +26,6 @@ describe('batch review search', () => {
         {
           batch: [firstPageId, secondPageId].join(','),
           step: 1,
-          skipped: 0,
         },
         firstPageId,
       ),
@@ -38,12 +33,11 @@ describe('batch review search', () => {
     expect(parseBatchReviewSearch({ step: 'broken' })).toEqual({});
   });
 
-  it('advances through imports and counts deferred pages at completion', () => {
+  it('advances through every page before completing', () => {
     const session = resolveBatchReviewSession(
       {
         batch: [firstPageId, secondPageId].join(','),
         step: 0,
-        skipped: 0,
       },
       firstPageId,
     );
@@ -51,13 +45,12 @@ describe('batch review search', () => {
     if (session === null) {
       return;
     }
-    const destination = advanceBatchReview(session, true);
+    const destination = advanceBatchReview(session);
     expect(destination).toEqual({
       pageId: secondPageId,
       search: {
         batch: [firstPageId, secondPageId].join(','),
         step: 1,
-        skipped: 1,
       },
     });
     if (!('pageId' in destination)) {
@@ -71,10 +64,6 @@ describe('batch review search', () => {
     if (finalSession === null) {
       throw new Error('Expected the second review page to resolve.');
     }
-    expect(advanceBatchReview(finalSession, false)).toEqual({
-      imported: 1,
-      skipped: 1,
-      total: 2,
-    });
+    expect(advanceBatchReview(finalSession)).toEqual({ total: 2 });
   });
 });

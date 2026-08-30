@@ -18,9 +18,6 @@ type CaptureScreenProps = {
   ) => Promise<void> | void;
   readonly onSubmit: SubmitEventHandler<HTMLFormElement>;
   readonly reviewAction: ReactNode;
-  readonly renderVerifyAction: (
-    page: Extract<QueuedPage, { readonly stage: 'ready' }>,
-  ) => ReactNode;
 };
 
 const fileSelectionHandler =
@@ -43,7 +40,6 @@ export const CaptureScreen = ({
   onRetry,
   onSubmit,
   reviewAction,
-  renderVerifyAction,
 }: CaptureScreenProps) => (
   <main className="page-column flex flex-col gap-4 p-6">
     {backControl}
@@ -99,7 +95,6 @@ export const CaptureScreen = ({
         onRemove={onRemove}
         onRetry={onRetry}
         pages={pages}
-        renderVerifyAction={renderVerifyAction}
       />
       {reviewAction}
       {pages.some((page) => page.stage === 'waiting') ? (

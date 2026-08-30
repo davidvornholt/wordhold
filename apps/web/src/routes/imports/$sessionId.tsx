@@ -8,7 +8,9 @@ const ImportSessionScreen = () => {
   const pendingPageIds = session.pages.flatMap((page) =>
     page.status === 'awaiting_verification' ? [page.id] : [],
   );
-  const [firstPendingPageId] = pendingPageIds;
+  const firstPendingPage = session.pages.find(
+    (page) => page.status === 'awaiting_verification',
+  );
 
   return (
     <main className="page-column flex flex-col gap-8 p-6">
@@ -29,31 +31,21 @@ const ImportSessionScreen = () => {
       <ImportSessionStack
         pageImageSource={(page) => `/api/pages/${page.id}/image`}
         pages={session.pages}
-        renderPageAction={(page) => (
-          <Link
-            className="font-medium text-sm underline underline-offset-4"
-            params={{ pageId: page.id }}
-            search={batchReviewSearchFor(pendingPageIds, page.id)}
-            to="/pages/$pageId/verify"
-          >
-            Seite prüfen
-          </Link>
-        )}
         reviewAction={
-          firstPendingPageId === undefined ? (
+          firstPendingPage === undefined ? (
             <Link className="text-sm underline underline-offset-4" to="/">
               Zur Übersicht
             </Link>
           ) : (
             <Link
               className="inline-flex min-h-11 items-center bg-primary px-4 py-2 font-medium text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
-              params={{ pageId: firstPendingPageId }}
-              search={batchReviewSearchFor(pendingPageIds, firstPendingPageId)}
+              params={{ pageId: firstPendingPage.id }}
+              search={batchReviewSearchFor(pendingPageIds)}
               to="/pages/$pageId/verify"
             >
-              {pendingPageIds.length === 1
-                ? 'Seite prüfen'
-                : `${pendingPageIds.length} Seiten nacheinander prüfen`}
+              {firstPendingPage.position === 0
+                ? 'Mit Seite 1 beginnen'
+                : `Mit Seite ${firstPendingPage.position + 1} fortfahren`}
             </Link>
           )
         }

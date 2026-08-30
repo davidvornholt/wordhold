@@ -1,5 +1,4 @@
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router';
-import { batchReviewSearchFor } from '../../../features/import/schemas/batch-review-search';
 import { getCourse } from '../../../features/import/server-fns';
 import { CaptureScreen as CaptureScreenView } from '../../../features/import/ui/capture-screen';
 import { useUploadQueue } from '../../../features/import/ui/use-upload-queue';
@@ -50,16 +49,6 @@ const CaptureScreen = () => {
           </Link>
         ) : null
       }
-      renderVerifyAction={(page) => (
-        <Link
-          className="font-medium underline underline-offset-4"
-          params={{ pageId: page.pageId }}
-          search={batchReviewSearchFor(storedPageIds, page.pageId)}
-          to="/pages/$pageId/verify"
-        >
-          Seite prüfen
-        </Link>
-      )}
     />
   );
 };

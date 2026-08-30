@@ -10,7 +10,6 @@ type ImportSessionPage = {
 type ImportSessionStackProps = {
   readonly pages: ReadonlyArray<ImportSessionPage>;
   readonly pageImageSource: (page: ImportSessionPage) => string;
-  readonly renderPageAction: (page: ImportSessionPage) => ReactNode;
   readonly reviewAction: ReactNode;
 };
 
@@ -33,7 +32,6 @@ const pendingPageLabel = (pendingCount: number) => {
 export const ImportSessionStack = ({
   pages,
   pageImageSource,
-  renderPageAction,
   reviewAction,
 }: ImportSessionStackProps) => {
   const pendingCount = pages.filter(
@@ -67,9 +65,6 @@ export const ImportSessionStack = ({
               <p className="text-muted-foreground text-sm">
                 {statusLabel(page)}
               </p>
-              {page.status === 'awaiting_verification' ? (
-                <div className="mt-auto pt-2">{renderPageAction(page)}</div>
-              ) : null}
             </div>
           </li>
         ))}

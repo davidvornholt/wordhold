@@ -5,24 +5,13 @@ type BatchReviewCompleteProps = BatchReviewSummary & {
   readonly overviewAction: ReactNode;
 };
 
-const importedCopy = (imported: number): string =>
-  imported === 1
+const importedCopy = (total: number): string =>
+  total === 1
     ? '1 Seite wurde importiert.'
-    : `${imported} Seiten wurden importiert.`;
-
-const skippedCopy = (skipped: number): string | null => {
-  if (skipped === 0) {
-    return null;
-  }
-  return skipped === 1
-    ? '1 Seite bleibt zur späteren Prüfung offen.'
-    : `${skipped} Seiten bleiben zur späteren Prüfung offen.`;
-};
+    : `${total} Seiten wurden importiert.`;
 
 export const BatchReviewComplete = ({
-  imported,
   overviewAction,
-  skipped,
   total,
 }: BatchReviewCompleteProps) => (
   <section
@@ -35,8 +24,7 @@ export const BatchReviewComplete = ({
       </p>
       <h2 className="font-display text-xl">Stapel geprüft</h2>
       <p className="mt-2 text-sm">
-        {importedCopy(imported)}{' '}
-        {skippedCopy(skipped) ?? 'Alle Seiten sind erledigt.'}
+        {importedCopy(total)} Alle Seiten sind erledigt.
       </p>
     </div>
     {overviewAction}

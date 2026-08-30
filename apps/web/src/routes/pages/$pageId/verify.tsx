@@ -71,7 +71,6 @@ const VerificationPageScreen = ({
       </div>
       {flow.batchSummary === null ? null : (
         <BatchReviewComplete
-          imported={flow.batchSummary.imported}
           overviewAction={
             <Link
               className="inline-flex min-h-11 items-center bg-primary px-4 py-2 text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
@@ -81,7 +80,6 @@ const VerificationPageScreen = ({
               Zum Seitenstapel
             </Link>
           }
-          skipped={flow.batchSummary.skipped}
           total={flow.batchSummary.total}
         />
       )}
@@ -99,7 +97,6 @@ const VerificationPageScreen = ({
           }
           initialEntries={draftsFromExtraction(flow.extraction)}
           initialUnitName={flow.extraction?.page.unitName}
-          onBatchAction={flow.deferOrContinue}
           onExtractionRetry={flow.retryPageExtraction}
           onRetryAudio={flow.retryPageAudio}
           onSubmit={flow.submitPage}

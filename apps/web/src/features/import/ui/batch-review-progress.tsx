@@ -1,17 +1,11 @@
 import { useId } from 'react';
 
 type BatchReviewProgressProps = {
-  readonly actionLabel: string;
-  readonly busy: boolean;
-  readonly onAction: () => void;
   readonly position: number;
   readonly total: number;
 };
 
 export const BatchReviewProgress = ({
-  actionLabel,
-  busy,
-  onAction,
   position,
   total,
 }: BatchReviewProgressProps) => {
@@ -41,16 +35,9 @@ export const BatchReviewProgress = ({
         value={position - 1}
       />
       <p className="text-muted-foreground text-sm">
-        Nach dem Import öffnet Wordhold die nächste Seite.
+        Prüfe die Seiten in ihrer Reihenfolge. Nach dem Import öffnet Wordhold
+        die nächste Seite.
       </p>
-      <button
-        className="w-fit text-sm underline underline-offset-4 disabled:opacity-50"
-        disabled={busy}
-        onClick={onAction}
-        type="button"
-      >
-        {actionLabel}
-      </button>
     </section>
   );
 };

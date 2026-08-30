@@ -47,14 +47,8 @@ const batchReviewFixture = (state: FixtureState) => {
       return <BatchReviewFixture position={1} />;
     case 'verification-batch-second':
       return <BatchReviewFixture position={2} />;
-    case 'verification-batch-second-deferred':
-      return <BatchReviewFixture position={2} skippedBefore={1} />;
     case 'verification-batch-complete':
       return <BatchReviewCompleteFixture />;
-    case 'verification-batch-complete-deferred':
-      return <BatchReviewCompleteFixture skipped={1} />;
-    case 'verification-batch-complete-all-deferred':
-      return <BatchReviewCompleteFixture skipped={2} />;
     default:
       return null;
   }
@@ -98,10 +92,7 @@ export const FixtureApp = () => {
       return <VerificationFixture />;
     case 'verification-batch-first':
     case 'verification-batch-second':
-    case 'verification-batch-second-deferred':
     case 'verification-batch-complete':
-    case 'verification-batch-complete-deferred':
-    case 'verification-batch-complete-all-deferred':
       return batchReviewFixture(state);
     case 'verification-empty':
       return <VerificationFixture empty={true} />;

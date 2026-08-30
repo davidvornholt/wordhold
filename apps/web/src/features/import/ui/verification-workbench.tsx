@@ -20,23 +20,12 @@ type VerificationWorkbenchProps = {
   readonly extractionKey: string | null;
   readonly initialEntries: ReadonlyArray<DraftEntry>;
   readonly initialUnitName: string | undefined;
-  readonly onBatchAction: () => void;
   readonly onExtractionRetry: () => void;
   readonly onRetryAudio: () => void;
   readonly onSubmit: (entries: ReadonlyArray<VerificationEntry>) => void;
   readonly pageImageSource: string;
   readonly targetLabel: string;
   readonly units: ReadonlyArray<Unit>;
-};
-
-const batchActionLabel = (
-  completed: CompletedPage | null,
-  lastPage: boolean,
-) => {
-  if (completed === null) {
-    return 'Diese Seite später prüfen';
-  }
-  return lastPage ? 'Stapel abschließen' : 'Nächste Seite prüfen';
 };
 
 const formSubmitLabel = (
@@ -56,7 +45,6 @@ export const VerificationWorkbench = ({
   extractionKey,
   initialEntries,
   initialUnitName,
-  onBatchAction,
   onExtractionRetry,
   onRetryAudio,
   onSubmit,
@@ -71,9 +59,6 @@ export const VerificationWorkbench = ({
     <div className="verification-form-pane">
       {batchSession === null ? null : (
         <BatchReviewProgress
-          actionLabel={batchActionLabel(completed, batchIsLastPage)}
-          busy={busy}
-          onAction={onBatchAction}
           position={batchSession.position + 1}
           total={batchSession.pageIds.length}
         />

@@ -57,9 +57,7 @@ test('authenticated routes remain reachable through their user transitions', asy
     'data-fixture',
     'import-session',
   );
-  await page
-    .getByRole('button', { name: '2 Seiten nacheinander prüfen' })
-    .click();
+  await page.getByRole('button', { name: 'Mit Seite 1 beginnen' }).click();
   await expect(page.locator('body')).toHaveAttribute(
     'data-fixture',
     'verification-batch-first',
@@ -130,23 +128,30 @@ test('dependency-failure recovery returns to the authenticated dashboard', async
   );
 });
 
-test('batch review can defer one page and reports it at completion', async ({
-  page,
-}) => {
+test('batch review requires every page in order', async ({ page }) => {
   await page.goto('/?state=verification-batch-first');
-  await page.getByRole('button', { name: 'Diese Seite später prüfen' }).click();
+  await expect(
+    page.getByRole('button', { name: 'Diese Seite später prüfen' }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole('heading', { name: 'Seite 1 von 2' }),
+  ).toBeVisible();
+  await page
+    .getByRole('button', { name: '12 Einträge importieren und weiter' })
+    .click();
   await expect(page.locator('body')).toHaveAttribute(
     'data-fixture',
-    'verification-batch-second-deferred',
+    'verification-batch-second',
   );
+  await expect(
+    page.getByRole('heading', { name: 'Seite 2 von 2' }),
+  ).toBeVisible();
   await page.getByRole('button', { name: '12 Einträge importieren' }).click();
   await expect(page.locator('body')).toHaveAttribute(
     'data-fixture',
-    'verification-batch-complete-deferred',
+    'verification-batch-complete',
   );
-  await expect(
-    page.getByText('1 Seite bleibt zur späteren Prüfung offen.'),
-  ).toBeVisible();
+  await expect(page.getByText('2 Seiten wurden importiert.')).toBeVisible();
 });
 
 test('leaving an individual page returns to its import stack', async ({
