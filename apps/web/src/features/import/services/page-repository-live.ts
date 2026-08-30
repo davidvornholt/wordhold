@@ -62,6 +62,7 @@ const getImportSession = (sql: Database, sessionId: string) =>
     position: number;
     expectedPageCount: number;
     reviewOrder: 'page_number' | 'scan' | null;
+    reviewPosition: number | null;
     status: 'awaiting_verification' | 'verified';
     extraction: unknown;
   }>`
@@ -73,6 +74,7 @@ const getImportSession = (sql: Database, sessionId: string) =>
       pages.import_position as position,
       pages.import_expected_count as "expectedPageCount",
       pages.review_order as "reviewOrder",
+      pages.review_position as "reviewPosition",
       pages.status,
       pages.extraction
     from pages

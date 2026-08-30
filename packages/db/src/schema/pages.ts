@@ -37,6 +37,7 @@ export const pages = pgTable(
     importPosition: integer('import_position').notNull().default(0),
     importExpectedCount: integer('import_expected_count').notNull().default(1),
     reviewOrder: pageReviewOrderEnum('review_order'),
+    reviewPosition: integer('review_position'),
     imagePath: text('image_path').notNull(),
     extraction: jsonb('extraction'),
     status: pageStatusEnum('status').notNull().default('awaiting_verification'),
@@ -58,9 +59,17 @@ export const pages = pgTable(
       'pages_import_position_within_expected_count',
       sql`${table.importPosition} < ${table.importExpectedCount}`,
     ),
+    check(
+      'pages_review_position_non_negative',
+      sql`${table.reviewPosition} is null or ${table.reviewPosition} >= 0`,
+    ),
     uniqueIndex('pages_import_session_position_unique').on(
       table.importSessionId,
       table.importPosition,
+    ),
+    uniqueIndex('pages_import_session_review_position_unique').on(
+      table.importSessionId,
+      table.reviewPosition,
     ),
   ],
 );

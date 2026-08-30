@@ -13,10 +13,13 @@ const courseId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const sessionId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const page48Id = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
 const page47Id = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
-const page46Id = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
-const page48Number = 48;
+const page46Id = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
+const page49Id = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
+const page49Number = 49;
 const page47Number = 47;
+const page48Number = 48;
 const page46Number = 46;
+const changedPage48Number = 99;
 
 const extraction = (pageNumber: number) =>
   JSON.stringify({
@@ -69,8 +72,9 @@ describe('verifyPageLive review order', () => {
               image_path,
               extraction
             ) values
-              (${page48Id}, ${courseId}, ${sessionId}, 0, 2, 'pages/48.png', ${extraction(page48Number)}::jsonb),
-              (${page47Id}, ${courseId}, ${sessionId}, 1, 2, 'pages/47.png', ${extraction(page47Number)}::jsonb)
+              (${page48Id}, ${courseId}, ${sessionId}, 0, 3, 'pages/48.png', ${extraction(page48Number)}::jsonb),
+              (${page47Id}, ${courseId}, ${sessionId}, 1, 3, 'pages/47.png', ${extraction(page47Number)}::jsonb),
+              (${page49Id}, ${courseId}, ${sessionId}, 2, 3, 'pages/49.png', ${extraction(page49Number)}::jsonb)
           `;
 
           const outOfOrder = yield* Effect.either(
@@ -83,19 +87,59 @@ describe('verifyPageLive review order', () => {
             }),
           );
 
-          const inserted = yield* verifyPageLive(
+          const firstInserted = yield* verifyPageLive(
             sql,
-            payload(page47Id),
+            payload(page47Id, 'first'),
             courseId,
           );
-          expect(inserted).toHaveLength(1);
+          expect(firstInserted).toHaveLength(1);
+
+          yield* sql`
+            update pages
+            set extraction = ${extraction(changedPage48Number)}::jsonb
+            where id = ${page48Id}
+              and status = 'awaiting_verification'
+          `;
+
+          const nextInserted = yield* verifyPageLive(
+            sql,
+            payload(page48Id, 'second'),
+            courseId,
+          );
+          expect(nextInserted).toHaveLength(1);
+
           const pages = yield* sql<{
             id: string;
+            reviewOrder: 'page_number' | 'scan' | null;
+            reviewPosition: number | null;
             status: 'awaiting_verification' | 'verified';
-          }>`select id, status from pages order by import_position`;
+          }>`
+            select id,
+              review_order as "reviewOrder",
+              review_position as "reviewPosition",
+              status
+            from pages
+            order by import_position
+          `;
           expect(pages).toEqual([
-            { id: page48Id, status: 'awaiting_verification' },
-            { id: page47Id, status: 'verified' },
+            {
+              id: page48Id,
+              reviewOrder: 'page_number',
+              reviewPosition: 1,
+              status: 'verified',
+            },
+            {
+              id: page47Id,
+              reviewOrder: 'page_number',
+              reviewPosition: 0,
+              status: 'verified',
+            },
+            {
+              id: page49Id,
+              reviewOrder: 'page_number',
+              reviewPosition: 2,
+              status: 'awaiting_verification',
+            },
           ]);
         }).pipe(Effect.provide(testDatabaseLayer(database.url))),
       ),

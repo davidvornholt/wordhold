@@ -36,6 +36,7 @@ type StoredReviewPage = {
   readonly extraction: unknown;
   readonly position: number;
   readonly reviewOrder?: PageReviewOrder | null;
+  readonly reviewPosition?: number | null;
   readonly status: 'awaiting_verification' | 'verified';
 };
 
@@ -61,7 +62,12 @@ export const orderPagesForReview = <Page extends StoredReviewPage>(
   pages: ReadonlyArray<Page>,
 ): {
   readonly order: PageReviewOrder;
-  readonly pages: ReadonlyArray<Page & { readonly pageNumber: number | null }>;
+  readonly pages: ReadonlyArray<
+    Page & {
+      readonly pageNumber: number | null;
+      readonly reviewPosition: number | null;
+    }
+  >;
 } => {
   const detectedPages = pages.map((page) => ({
     ...page,
@@ -85,12 +91,32 @@ export const orderPagesForReview = <Page extends StoredReviewPage>(
   const order =
     storedReviewOrder ??
     (pages.some((page) => page.status === 'verified') ? 'scan' : inferredOrder);
-  const sortedPages = detectedPages.sort((left, right) =>
-    order === 'page_number'
-      ? (left.detectedPageNumber?.value ?? 0) -
-        (right.detectedPageNumber?.value ?? 0)
-      : left.position - right.position,
+  const hasReviewPositions = pages.every(
+    (page) => page.reviewPosition !== undefined && page.reviewPosition !== null,
   );
+  const comparePages = (
+    left: (typeof detectedPages)[number],
+    right: (typeof detectedPages)[number],
+  ): number => {
+    const {
+      detectedPageNumber: leftPageNumber,
+      position: leftPosition,
+      reviewPosition: leftReviewPosition,
+    } = left;
+    const {
+      detectedPageNumber: rightPageNumber,
+      position: rightPosition,
+      reviewPosition: rightReviewPosition,
+    } = right;
+    if (hasReviewPositions) {
+      return (leftReviewPosition ?? 0) - (rightReviewPosition ?? 0);
+    }
+    if (order === 'page_number') {
+      return (leftPageNumber?.value ?? 0) - (rightPageNumber?.value ?? 0);
+    }
+    return leftPosition - rightPosition;
+  };
+  const sortedPages = detectedPages.sort(comparePages);
   return {
     order,
     pages: [
@@ -99,6 +125,7 @@ export const orderPagesForReview = <Page extends StoredReviewPage>(
     ].map((page) => ({
       ...page,
       pageNumber: page.detectedPageNumber?.value ?? null,
+      reviewPosition: page.reviewPosition ?? sortedPages.indexOf(page),
     })),
   };
 };
