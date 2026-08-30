@@ -64,6 +64,52 @@ describe('decodeSubmitPayload', () => {
     ).toThrow();
   });
 
+  it('accepts a skipped card without an answer', () => {
+    const {
+      answer: _answer,
+      wrongAnswerResolution: _resolution,
+      ...withoutAnswer
+    } = validPayload;
+    expect(
+      decodeSubmitPayload({ ...withoutAnswer, skipped: true }),
+    ).toMatchObject({ skipped: true });
+  });
+
+  it('rejects a submission that neither answers nor skips', () => {
+    const {
+      answer: _answer,
+      wrongAnswerResolution: _resolution,
+      ...withoutAnswer
+    } = validPayload;
+    expect(() => decodeSubmitPayload(withoutAnswer)).toThrow();
+    expect(() =>
+      decodeSubmitPayload({ ...withoutAnswer, skipped: false }),
+    ).toThrow();
+  });
+
+  it('rejects a payload that mixes skip and answer fields', () => {
+    const {
+      answer: _answer,
+      wrongAnswerResolution: _resolution,
+      ...withoutAnswer
+    } = validPayload;
+    expect(() =>
+      decodeSubmitPayload({
+        ...withoutAnswer,
+        answer: 'secret',
+        skipped: true,
+        wrongAnswerResolution: 'defer',
+      }),
+    ).toThrow();
+    expect(() =>
+      decodeSubmitPayload({
+        ...withoutAnswer,
+        skipped: true,
+        wrongAnswerResolution: 'defer',
+      }),
+    ).toThrow();
+  });
+
   it('requires the rejected assessment when resolving a wrong answer', () => {
     expect(() =>
       decodeSubmitPayload({

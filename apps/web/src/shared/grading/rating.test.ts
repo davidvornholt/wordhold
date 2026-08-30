@@ -53,6 +53,11 @@ describe('deriveRating', () => {
     );
   });
 
+  it('rates a skipped card Again regardless of timing', () => {
+    expect(deriveRating({ method: 'skip' }, fastMs)).toBe(ratings.again);
+    expect(deriveRating({ method: 'skip' }, null)).toBe(ratings.again);
+  });
+
   it('rates a learner correction Hard', () => {
     const assessed = {
       method: 'judge',
@@ -76,6 +81,10 @@ describe('isCorrect', () => {
     expect(
       isCorrect({ method: 'judge', verdict: verdict({ correct: false }) }),
     ).toBe(false);
+  });
+
+  it('treats a skipped card as not known', () => {
+    expect(isCorrect({ method: 'skip' })).toBe(false);
   });
 
   it('treats a learner correction as correct', () => {
