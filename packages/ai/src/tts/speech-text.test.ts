@@ -55,4 +55,39 @@ describe('prepareSpeechText', () => {
       voice: 'Lea',
     });
   });
+
+  it('removes XML-forbidden characters from SSML and plain text', () => {
+    const source =
+      'donner qc à qn.\u0000\u0008\u000B\u000C\u000E\u001F\uFFFE\uFFFF\uD800';
+    const ssml = prepareSpeechText(source, 'fr');
+    const plain = prepareSpeechText('mémoire\u0001\uFFFE\uDFFF', 'fr');
+
+    expect(ssml.text).toBe(
+      '<speak>donner <sub alias="quelque chose">qc</sub> à <sub alias="quelqu&apos;un">qn.</sub>         </speak>',
+    );
+    expect(plain).toEqual({
+      audioProfile: 'Lea',
+      text: 'mémoire   ',
+      textType: 'text',
+      voice: 'Lea',
+    });
+    expect(prepareSpeechText(source, 'fr').audioProfile).toBe(
+      ssml.audioProfile,
+    );
+  });
+
+  it('keeps a removed control from joining adjacent words into an abbreviation', () => {
+    expect(prepareSpeechText('s\u0001b', 'en')).toEqual({
+      audioProfile: 'Amy',
+      text: 's b',
+      textType: 'text',
+      voice: 'Amy',
+    });
+  });
+
+  it('preserves XML-allowed whitespace and supplementary characters', () => {
+    expect(prepareSpeechText('a\t b\n c\r 😀', 'fr').text).toBe(
+      'a\t b\n c\r 😀',
+    );
+  });
 });

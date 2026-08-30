@@ -1,5 +1,7 @@
 import type { ExtractionResult } from '@wordhold/ai/extraction';
+import { ttsAudioProfile } from '@wordhold/ai/tts/speech-text';
 import type { Database } from '@wordhold/db/client';
+import type { LanguageCode } from '@wordhold/db/schema/courses';
 import { Effect } from 'effect';
 import { insertPage } from './page-repository-insert';
 import {
@@ -97,29 +99,73 @@ const getImportSession = (sql: Database, sessionId: string) =>
     Effect.mapError((cause) => failure('get import session', cause)),
   );
 
-export const pageRepositoryLive = (sql: Database) => ({
-  listPendingImportSessions: listPendingImportSessions(sql),
-  getImportSession: (sessionId: string) => getImportSession(sql, sessionId),
-  listAudioRecoveryPages: sql<AudioRecoveryPage>`
+type AudioRecoveryRow = {
+  readonly id: string;
+  readonly courseId: string;
+  readonly courseName: string;
+  readonly targetText: string;
+  readonly language: LanguageCode;
+  readonly audioProfiles: ReadonlyArray<string>;
+  readonly verifiedAt: Date;
+};
+
+const listAudioRecoveryPages = (sql: Database) =>
+  sql<AudioRecoveryRow>`
     select pages.id,
       pages.course_id as "courseId",
       courses.name as "courseName",
-      count(entries.id)::integer as "missingAudio",
+      entries.target_text as "targetText",
+      courses.target_language as language,
+      coalesce(
+        array_agg(entry_audio.voice) filter (where entry_audio.voice is not null),
+        array[]::text[]
+      ) as "audioProfiles",
       pages.verified_at as "verifiedAt"
     from pages
     inner join courses on courses.id = pages.course_id
     inner join entries on entries.page_id = pages.id
+    left join entry_audio on entry_audio.entry_id = entries.id
     where pages.status = 'verified'
       and pages.verified_at is not null
-      and not exists(
-        select 1 from entry_audio where entry_audio.entry_id = entries.id
-      )
-    group by pages.id, courses.id
-    order by pages.verified_at, pages.id
-    limit ${maximumAudioRecoveryPages}
+    group by pages.id, pages.course_id, courses.id, courses.name,
+      entries.id, entries.target_text, courses.target_language,
+      pages.verified_at, entries.created_at
+    order by pages.verified_at, pages.id, entries.created_at, entries.id
   `.pipe(
+    Effect.map((rows) => {
+      const pages = new Map<string, AudioRecoveryPage>();
+      for (const row of rows) {
+        if (
+          !row.audioProfiles.includes(
+            ttsAudioProfile(row.targetText, row.language),
+          )
+        ) {
+          const page = pages.get(row.id);
+          if (page === undefined) {
+            pages.set(row.id, {
+              id: row.id,
+              courseId: row.courseId,
+              courseName: row.courseName,
+              missingAudio: 1,
+              verifiedAt: row.verifiedAt,
+            });
+          } else {
+            pages.set(row.id, {
+              ...page,
+              missingAudio: page.missingAudio + 1,
+            });
+          }
+        }
+      }
+      return [...pages.values()].slice(0, maximumAudioRecoveryPages);
+    }),
     Effect.mapError((cause) => failure('list pages missing audio', cause)),
-  ),
+  );
+
+export const pageRepositoryLive = (sql: Database) => ({
+  listPendingImportSessions: listPendingImportSessions(sql),
+  getImportSession: (sessionId: string) => getImportSession(sql, sessionId),
+  listAudioRecoveryPages: listAudioRecoveryPages(sql),
   getPage: (pageId: string) =>
     sql<{
       pageId: string;

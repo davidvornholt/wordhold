@@ -34,8 +34,33 @@ const abbreviationPattern = (writtenForm: string): string => {
   return `${leftBoundary}${escapeRegularExpression(writtenForm)}${rightBoundary}`;
 };
 
+const xml10Tab = 0x9;
+const xml10LineFeed = 0xa;
+const xml10CarriageReturn = 0xd;
+const xml10BasicPlaneStart = 0x20;
+const xml10BasicPlaneEnd = 0xd7_ff;
+const xml10PrivateUseStart = 0xe0_00;
+const xml10PrivateUseEnd = 0xff_fd;
+const xml10SupplementaryStart = 0x1_00_00;
+const xml10SupplementaryEnd = 0x10_ff_ff;
+
+const isAllowedXml10CodePoint = (codePoint: number): boolean =>
+  codePoint === xml10Tab ||
+  codePoint === xml10LineFeed ||
+  codePoint === xml10CarriageReturn ||
+  (codePoint >= xml10BasicPlaneStart && codePoint <= xml10BasicPlaneEnd) ||
+  (codePoint >= xml10PrivateUseStart && codePoint <= xml10PrivateUseEnd) ||
+  (codePoint >= xml10SupplementaryStart && codePoint <= xml10SupplementaryEnd);
+
+const removeForbiddenXml10Characters = (value: string): string =>
+  Array.from(value)
+    .map((character) =>
+      isAllowedXml10CodePoint(character.codePointAt(0) ?? 0) ? character : ' ',
+    )
+    .join('');
+
 const escapeSsml = (value: string): string =>
-  value
+  removeForbiddenXml10Characters(value)
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;')
@@ -88,15 +113,16 @@ export const prepareSpeechText = (
   text: string,
   language: TtsLanguage,
 ): PreparedSpeechText => {
+  const safeText = removeForbiddenXml10Characters(text);
   const aliases = aliasesByLanguage[language];
   const matcher = matchers[language];
   const parts: Array<string> = [];
   let cursor = 0;
-  for (const match of text.matchAll(matcher)) {
+  for (const match of safeText.matchAll(matcher)) {
     const [writtenForm] = match;
     const spokenForm = aliases.get(writtenForm.toLocaleLowerCase());
     if (match.index !== undefined && spokenForm !== undefined) {
-      parts.push(escapeSsml(text.slice(cursor, match.index)));
+      parts.push(escapeSsml(safeText.slice(cursor, match.index)));
       parts.push(
         `<sub alias="${escapeSsml(spokenForm)}">${escapeSsml(writtenForm)}</sub>`,
       );
@@ -105,9 +131,9 @@ export const prepareSpeechText = (
   }
   const voice = voices[language];
   if (parts.length === 0) {
-    return { audioProfile: voice, text, textType: 'text', voice };
+    return { audioProfile: voice, text: safeText, textType: 'text', voice };
   }
-  parts.push(escapeSsml(text.slice(cursor)));
+  parts.push(escapeSsml(safeText.slice(cursor)));
   return {
     audioProfile: `${voice}-pronunciation-${pronunciationRevision}`,
     text: `<speak>${parts.join('')}</speak>`,
