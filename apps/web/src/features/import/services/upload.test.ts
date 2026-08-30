@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'bun:test';
-import { Extraction } from '@wordhold/ai/extraction';
 import { Effect } from 'effect';
 import { Storage } from '../../../shared/storage/server';
 import { ImportDatabaseError } from '../errors/import-database-error';
@@ -11,10 +10,10 @@ import {
 import { ImportRepository } from './repository';
 import { makeImportRepository, makeStorage } from './test-services';
 import {
-  createUploadedPage,
   maximumImageBytes,
   maximumImageWidth,
   maximumMultipartBytes,
+  storeUploadedPage,
   validatePageImage,
 } from './upload';
 
@@ -33,19 +32,9 @@ const runUpload = (
   storage = makeStorage(),
 ) =>
   Effect.runPromise(
-    createUploadedPage('course', image).pipe(
+    storeUploadedPage('course', image).pipe(
       Effect.provideService(ImportRepository, repository),
       Effect.provideService(Storage, storage),
-      Effect.provideService(
-        Extraction,
-        Extraction.make({
-          extract: () =>
-            Effect.succeed({
-              modelId: 'test-model',
-              page: { entries: [], overallConfidence: 1 },
-            }),
-        }),
-      ),
     ),
   );
 
@@ -108,8 +97,8 @@ describe('validatePageImage', () => {
   });
 });
 
-describe('createUploadedPage', () => {
-  it('sends rejected bytes to neither storage nor extraction', async () => {
+describe('storeUploadedPage', () => {
+  it('does not store rejected bytes', async () => {
     const actions: Array<string> = [];
     const storage = makeStorage({
       write: () => Effect.sync(() => actions.push('write')),

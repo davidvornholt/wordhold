@@ -3,6 +3,7 @@ import {
   RootNotFound,
   RootPending,
 } from '../src/shared/routing/root-feedback';
+import { ImportFixture } from './capture-fixtures';
 import { CourseFixture, UnitFixture } from './course-fixtures';
 import { DashboardFixture, SignedOutFixture } from './dashboard-fixtures';
 import {
@@ -13,7 +14,6 @@ import {
 import { navigateToFixture, readFixtureState } from './fixture-state';
 import {
   DeferredVerificationFixture,
-  ImportFixture,
   VerificationFixture,
 } from './import-fixtures';
 import { LearnDoneFixture, LearnFixture } from './learning-fixtures';
@@ -47,6 +47,14 @@ export const FixtureApp = () => {
       return <DashboardFixture pending={true} />;
     case 'import':
       return <ImportFixture />;
+    case 'import-selected':
+      return <ImportFixture initialState="selected" />;
+    case 'import-progress':
+      return <ImportFixture initialState="progress" />;
+    case 'import-complete':
+      return <ImportFixture initialState="complete" />;
+    case 'import-failed':
+      return <ImportFixture initialState="failed" />;
     case 'import-error':
       return <ImportFixture error={true} />;
     case 'verification':

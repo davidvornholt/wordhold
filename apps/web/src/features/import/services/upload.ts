@@ -1,16 +1,10 @@
-import type { ExtractionResult } from '@wordhold/ai/extraction';
 import { Effect } from 'effect';
 import { imageDimensionsFromData } from 'image-dimensions';
 import { persistFileReference } from '../../../shared/storage/consistency';
-import {
-  pageImageRelativePath,
-  Storage,
-  toBase64,
-} from '../../../shared/storage/server';
+import { pageImageRelativePath, Storage } from '../../../shared/storage/server';
 import { CourseNotFoundError } from '../errors/course-not-found-error';
 import { UploadReadError } from '../errors/upload-read-error';
 import { UploadValidationError } from '../errors/upload-validation-error';
-import { extractPage } from './extract';
 import { reconcileStoredFiles } from './reconcile-stored-files';
 import { ImportRepository } from './repository';
 
@@ -108,15 +102,7 @@ export const validatePageImage = (
     };
   });
 
-const errorMessage = (error: unknown): string =>
-  typeof error === 'object' &&
-  error !== null &&
-  'message' in error &&
-  typeof error.message === 'string'
-    ? error.message
-    : String(error);
-
-export const createUploadedPage = (courseId: string, image: File) =>
+export const storeUploadedPage = (courseId: string, image: File) =>
   Effect.gen(function* () {
     const repository = yield* ImportRepository;
     const storage = yield* Storage;
@@ -140,30 +126,5 @@ export const createUploadedPage = (courseId: string, image: File) =>
       remove: storage.remove(imagePath),
     });
 
-    const extraction = yield* extractPage({
-      imageBase64: toBase64(validated.bytes),
-      mediaType: validated.mediaType,
-      language: course.targetLanguage,
-    }).pipe(
-      Effect.flatMap((result: ExtractionResult) =>
-        repository
-          .saveExtractionIfPending(pageId, result)
-          .pipe(
-            Effect.flatMap((updated) =>
-              updated === undefined
-                ? Effect.fail(
-                    new Error(
-                      'Die Seite wurde während des Auslesens bereits importiert.',
-                    ),
-                  )
-                : Effect.succeed(updated),
-            ),
-          ),
-      ),
-      Effect.match({
-        onFailure: (error) => errorMessage(error),
-        onSuccess: () => null,
-      }),
-    );
-    return { pageId, extractionError: extraction };
+    return { pageId };
   });

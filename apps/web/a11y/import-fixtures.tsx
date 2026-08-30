@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react';
 import { AudioRecovery } from '../src/features/import/ui/audio-recovery';
-import { CaptureScreen } from '../src/features/import/ui/capture-screen';
 import type { DraftEntry } from '../src/features/import/ui/entry-row';
 import { ExtractionRecovery } from '../src/features/import/ui/extraction-recovery';
 import { VerificationImage } from '../src/features/import/ui/verification-image';
@@ -52,23 +51,6 @@ const units = [
     entryCount: 2,
   },
 ];
-
-export const ImportFixture = ({ error = false }) => (
-  <CaptureScreen
-    backControl={backControl}
-    busy={false}
-    courseName="English A2"
-    error={
-      error
-        ? 'Das Foto konnte nicht gelesen werden. Wähle eine andere Datei.'
-        : null
-    }
-    onSubmit={(event) => {
-      event.preventDefault();
-      navigateToFixture('verification');
-    }}
-  />
-);
 
 type VerificationFixtureProps = {
   readonly empty?: boolean;

@@ -5,7 +5,7 @@ import { UploadReadError } from '../../features/import/errors/upload-read-error'
 import { UploadValidationError } from '../../features/import/errors/upload-validation-error';
 import { importRuntime } from '../../features/import/runtime';
 import { parseBoundedMultipartFormData } from '../../features/import/services/multipart';
-import { createUploadedPage } from '../../features/import/services/upload';
+import { storeUploadedPage } from '../../features/import/services/upload';
 import { requireSession } from '../../shared/auth/require-session';
 
 const invalidForm = () =>
@@ -23,7 +23,7 @@ const uploadResponse = (request: Request) =>
     if (typeof courseId !== 'string' || !(image instanceof File)) {
       return yield* invalidForm();
     }
-    return yield* createUploadedPage(courseId, image);
+    return yield* storeUploadedPage(courseId, image);
   }).pipe(
     Effect.match({
       onFailure: (error) => {

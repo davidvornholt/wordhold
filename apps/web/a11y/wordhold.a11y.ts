@@ -35,12 +35,24 @@ test('authenticated routes remain reachable through their user transitions', asy
   await expect(page.locator('body')).toHaveAttribute('data-fixture', 'course');
   await page.getByRole('button', { name: 'Seite fotografieren' }).click();
   await expect(page.locator('body')).toHaveAttribute('data-fixture', 'import');
-  await page.getByLabel('Foto der Vokabelseite').setInputFiles({
-    name: 'page.png',
-    mimeType: 'image/png',
-    buffer: Buffer.from('fixture'),
-  });
-  await page.getByRole('button', { name: 'Hochladen und auslesen' }).click();
+  await page.getByLabel('Fotos auswählen').setInputFiles([
+    {
+      name: 'page-1.png',
+      mimeType: 'image/png',
+      buffer: Buffer.from('fixture one'),
+    },
+    {
+      name: 'page-2.png',
+      mimeType: 'image/png',
+      buffer: Buffer.from('fixture two'),
+    },
+  ]);
+  await expect(page.getByText('2 Fotos ausgewählt')).toBeVisible();
+  await page
+    .getByRole('button', { name: '2 Seiten hochladen und auslesen' })
+    .click();
+  await expect(page.getByText('2 von 2 Seiten verarbeitet')).toBeVisible();
+  await page.getByRole('button', { name: 'Seite prüfen' }).first().click();
   await expect(page.locator('body')).toHaveAttribute(
     'data-fixture',
     'verification',
