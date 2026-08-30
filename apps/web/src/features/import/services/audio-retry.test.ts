@@ -33,7 +33,7 @@ const runRetry = (
           synthesize: () =>
             Effect.sync(() => {
               providerCall();
-              return { voice: 'Lea', audio: new Uint8Array([1]) };
+              return { audio: new Uint8Array([1]) };
             }),
         }),
       ),
