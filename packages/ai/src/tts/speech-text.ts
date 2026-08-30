@@ -118,11 +118,13 @@ export const prepareSpeechText = (
   const matcher = matchers[language];
   const parts: Array<string> = [];
   let cursor = 0;
-  for (const match of safeText.matchAll(matcher)) {
+  // Match the imported text before sanitizing it so forbidden characters cannot
+  // create a new abbreviation boundary.
+  for (const match of text.matchAll(matcher)) {
     const [writtenForm] = match;
     const spokenForm = aliases.get(writtenForm.toLocaleLowerCase());
     if (match.index !== undefined && spokenForm !== undefined) {
-      parts.push(escapeSsml(safeText.slice(cursor, match.index)));
+      parts.push(escapeSsml(text.slice(cursor, match.index)));
       parts.push(
         `<sub alias="${escapeSsml(spokenForm)}">${escapeSsml(writtenForm)}</sub>`,
       );
@@ -133,7 +135,7 @@ export const prepareSpeechText = (
   if (parts.length === 0) {
     return { audioProfile: voice, text: safeText, textType: 'text', voice };
   }
-  parts.push(escapeSsml(safeText.slice(cursor)));
+  parts.push(escapeSsml(text.slice(cursor)));
   return {
     audioProfile: `${voice}-pronunciation-${pronunciationRevision}`,
     text: `<speak>${parts.join('')}</speak>`,

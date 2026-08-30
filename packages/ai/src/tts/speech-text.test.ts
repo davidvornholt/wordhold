@@ -85,6 +85,21 @@ describe('prepareSpeechText', () => {
     });
   });
 
+  it('does not expand abbreviations split by a forbidden character', () => {
+    expect(prepareSpeechText('z.\u0001B.', 'de')).toEqual({
+      audioProfile: 'Vicki',
+      text: 'z. B.',
+      textType: 'text',
+      voice: 'Vicki',
+    });
+    expect(prepareSpeechText('p.\u0001ex.', 'fr')).toEqual({
+      audioProfile: 'Lea',
+      text: 'p. ex.',
+      textType: 'text',
+      voice: 'Lea',
+    });
+  });
+
   it('preserves XML-allowed whitespace and supplementary characters', () => {
     expect(prepareSpeechText('a\t b\n c\r 😀', 'fr').text).toBe(
       'a\t b\n c\r 😀',
