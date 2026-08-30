@@ -10,6 +10,10 @@ import {
 } from './page-repository-session';
 import { failure } from './page-repository-utils';
 import {
+  importSessionIsComplete,
+  orderPagesForReview,
+} from './page-review-order';
+import {
   type AudioRecoveryPage,
   type ImportPageInput,
   type ImportSession,
@@ -58,7 +62,7 @@ const getImportSession = (sql: Database, sessionId: string) =>
     position: number;
     expectedPageCount: number;
     status: 'awaiting_verification' | 'verified';
-    extractionReady: boolean;
+    extraction: unknown;
   }>`
     select pages.import_session_id as "sessionId",
       pages.course_id as "courseId",
@@ -68,7 +72,7 @@ const getImportSession = (sql: Database, sessionId: string) =>
       pages.import_position as position,
       pages.import_expected_count as "expectedPageCount",
       pages.status,
-      (pages.extraction is not null) as "extractionReady"
+      pages.extraction
     from pages
     inner join courses on pages.course_id = courses.id
     where pages.import_session_id = ${sessionId}
@@ -79,20 +83,21 @@ const getImportSession = (sql: Database, sessionId: string) =>
       if (first === undefined) {
         return undefined;
       }
+      const ordered = orderPagesForReview(rows);
       return {
         id: first.sessionId,
         courseId: first.courseId,
         courseName: first.courseName,
         capturedAt: first.capturedAt,
         expectedPageCount: first.expectedPageCount,
-        isComplete:
-          rows.length === first.expectedPageCount &&
-          rows.every((row, index) => row.position === index),
-        pages: rows.map((row) => ({
-          id: row.pageId,
-          position: row.position,
-          status: row.status,
-          extractionReady: row.extractionReady,
+        isComplete: importSessionIsComplete(rows),
+        reviewOrder: ordered.order,
+        pages: ordered.pages.map((page) => ({
+          id: page.pageId,
+          position: page.position,
+          status: page.status,
+          extractionReady: page.extraction !== null,
+          pageNumber: page.pageNumber,
         })),
       };
     }),

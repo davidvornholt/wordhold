@@ -58,11 +58,11 @@ describe('import sessions', () => {
             expect.objectContaining({
               id: sessionId,
               pages: [
+                expect.objectContaining({ position: 1, status: 'verified' }),
                 expect.objectContaining({
                   position: 0,
                   status: 'awaiting_verification',
                 }),
-                expect.objectContaining({ position: 1, status: 'verified' }),
               ],
             }),
           );
@@ -108,6 +108,79 @@ describe('import sessions', () => {
               ],
             }),
           );
+        }).pipe(
+          Effect.provide(ImportRepositoryLive),
+          Effect.provide(testDatabaseLayer(database.url)),
+        ),
+      ),
+    );
+  });
+});
+
+describe('import session review order', () => {
+  it('returns a reliably numbered stack in printed page order', async () => {
+    await Effect.runPromise(
+      withMigratedTestDatabase((database) =>
+        Effect.gen(function* () {
+          const sql = yield* Database;
+          yield* sql`
+            insert into courses (id, name, target_language)
+            values (${courseId}, 'Französisch', 'fr')
+          `;
+          const page48 = JSON.stringify({
+            modelId: 'test-model',
+            page: {
+              entries: [],
+              overallConfidence: 1,
+              pageNumber: 48,
+              pageNumberConfidence: 0.99,
+            },
+          });
+          const page47 = JSON.stringify({
+            modelId: 'test-model',
+            page: {
+              entries: [],
+              overallConfidence: 1,
+              pageNumber: 47,
+              pageNumberConfidence: 0.98,
+            },
+          });
+          yield* sql`
+            insert into pages (
+              id,
+              course_id,
+              import_session_id,
+              import_position,
+              import_expected_count,
+              image_path,
+              extraction
+            ) values
+              ('11111111-1111-4111-8111-111111111111', ${courseId}, ${sessionId}, 0, 2, 'pages/48.png', ${page48}::jsonb),
+              ('22222222-2222-4222-8222-222222222222', ${courseId}, ${sessionId}, 1, 2, 'pages/47.png', ${page47}::jsonb)
+          `;
+
+          const repository = yield* ImportRepository;
+          const session = yield* repository.getImportSession(sessionId);
+
+          expect(session?.reviewOrder).toBe('page_number');
+          expect(
+            session?.pages.map(({ id, pageNumber, position }) => ({
+              id,
+              pageNumber,
+              position,
+            })),
+          ).toEqual([
+            {
+              id: '22222222-2222-4222-8222-222222222222',
+              pageNumber: 47,
+              position: 1,
+            },
+            {
+              id: '11111111-1111-4111-8111-111111111111',
+              pageNumber: 48,
+              position: 0,
+            },
+          ]);
         }).pipe(
           Effect.provide(ImportRepositoryLive),
           Effect.provide(testDatabaseLayer(database.url)),

@@ -4,6 +4,7 @@ export const maximumEntriesPerPage = 100;
 export const maximumEntryTextLength = 500;
 export const maximumExampleLength = 1000;
 export const maximumUnitNameLength = 80;
+export const maximumPageNumber = 9999;
 export const maximumGrammarFieldLength = 200;
 export const maximumIrregularForms = 20;
 
@@ -56,6 +57,12 @@ export type ExtractedEntryData = typeof ExtractedEntry.Type;
 export const ExtractedPage = Schema.Struct({
   unitName: Schema.optional(
     Schema.String.pipe(Schema.maxLength(maximumUnitNameLength)),
+  ),
+  pageNumber: Schema.optional(
+    Schema.Number.pipe(Schema.int(), Schema.between(1, maximumPageNumber)),
+  ),
+  pageNumberConfidence: Schema.optional(
+    Schema.Number.pipe(Schema.between(0, 1)),
   ),
   entries: Schema.Array(ExtractedEntry).pipe(
     Schema.maxItems(maximumEntriesPerPage),
