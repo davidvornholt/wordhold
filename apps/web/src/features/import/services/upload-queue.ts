@@ -55,6 +55,14 @@ const queueBase = (page: QueuedPage): QueuedPageBase => ({
 
 export const uploadConcurrency = 3;
 
+export const nextUploadPosition = (usedPositions: ReadonlySet<number>) => {
+  let position = 0;
+  while (usedPositions.has(position)) {
+    position += 1;
+  }
+  return position;
+};
+
 export const processQueuedPages = <A, B, E, R>(
   pages: ReadonlyArray<A>,
   process: (page: A) => Effect.Effect<B, E, R>,

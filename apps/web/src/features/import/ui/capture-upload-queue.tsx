@@ -59,6 +59,9 @@ export const CaptureUploadQueue = ({
   }
 
   const processed = processedUploadCount(pages);
+  const hasStoredPage = pages.some(
+    (page) => 'pageId' in page && page.pageId !== null,
+  );
   return (
     <section aria-labelledby={headingId} className="flex flex-col gap-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -82,7 +85,7 @@ export const CaptureUploadQueue = ({
           const status = statusDetails(page);
           const removable =
             page.stage === 'waiting' ||
-            (page.stage === 'failed' && page.pageId === null);
+            (page.stage === 'failed' && page.pageId === null && !hasStoredPage);
           return (
             <li
               className={`flex gap-3 border border-border border-l-4 bg-card p-3 ${status.borderClass}`}

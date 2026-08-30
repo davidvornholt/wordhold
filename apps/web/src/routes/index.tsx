@@ -103,16 +103,22 @@ const Home = () => {
               await discardImportSession({ data: session.id });
               await router.invalidate({ sync: true });
             }}
-            renderSessionAction={(session, label) => (
-              <Link
-                aria-label={`${label} fortsetzen`}
-                className="inline-flex min-h-11 items-center bg-primary px-4 py-2 font-medium text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
-                params={{ sessionId: session.id }}
-                to="/imports/$sessionId"
-              >
-                Stapel fortsetzen
-              </Link>
-            )}
+            renderSessionAction={(session, label) =>
+              session.isComplete ? (
+                <Link
+                  aria-label={`${label} fortsetzen`}
+                  className="inline-flex min-h-11 items-center bg-primary px-4 py-2 font-medium text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
+                  params={{ sessionId: session.id }}
+                  to="/imports/$sessionId"
+                >
+                  Stapel fortsetzen
+                </Link>
+              ) : (
+                <span className="text-muted-foreground text-sm">
+                  Verarbeitung läuft …
+                </span>
+              )
+            }
             sessions={pendingImportSessions}
           />
         </>

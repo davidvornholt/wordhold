@@ -1,0 +1,2 @@
+ALTER TABLE "pages" ADD COLUMN "import_expected_count" integer DEFAULT 1 NOT NULL;--> statement-breakpoint
+ALTER TABLE "pages" ADD CONSTRAINT "pages_import_expected_count_valid" CHECK ("pages"."import_expected_count" between 1 and 10);

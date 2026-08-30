@@ -41,7 +41,10 @@ export type PendingImportSession = {
   readonly courseName: string;
   readonly capturedAt: Date;
   readonly pageCount: number;
+  readonly uploadedCount: number;
+  readonly verifiedCount: number;
   readonly pendingCount: number;
+  readonly isComplete: boolean;
 };
 
 export type ImportSessionPage = {
@@ -56,6 +59,8 @@ export type ImportSession = {
   readonly courseId: string;
   readonly courseName: string;
   readonly capturedAt: Date;
+  readonly expectedPageCount: number;
+  readonly isComplete: boolean;
   readonly pages: ReadonlyArray<ImportSessionPage>;
 };
 
@@ -72,6 +77,15 @@ export type AudioRecoveryPage = {
 export type PendingExtraction = {
   readonly imagePath: string;
   readonly language: LanguageCode;
+};
+
+export type ImportPageInput = {
+  readonly id: string;
+  readonly courseId: string;
+  readonly importSessionId: string;
+  readonly importPosition: number;
+  readonly importExpectedCount: number;
+  readonly imagePath: string;
 };
 
 export type InsertedEntry = {
@@ -116,13 +130,9 @@ export type ImportRepositoryShape = {
     pageId: string,
     extraction: ExtractionResult,
   ) => Effect.Effect<Page | undefined, ImportDatabaseError>;
-  readonly insertPage: (input: {
-    readonly id: string;
-    readonly courseId: string;
-    readonly importSessionId: string;
-    readonly importPosition: number;
-    readonly imagePath: string;
-  }) => Effect.Effect<void, ImportDatabaseError>;
+  readonly insertPage: (
+    input: ImportPageInput,
+  ) => Effect.Effect<void, ImportDatabaseError>;
   readonly deletePendingImportSession: (
     sessionId: string,
   ) => Effect.Effect<ReadonlyArray<string>, ImportDatabaseError>;

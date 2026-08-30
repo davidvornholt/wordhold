@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { Effect } from 'effect';
 import {
+  nextUploadPosition,
   type ProcessableQueuedPage,
   processQueuedPage,
   processQueuedPages,
@@ -11,6 +12,9 @@ import {
 const file = new File(['page'], 'page.jpg', { type: 'image/jpeg' });
 const pageAfterFirstWave = uploadConcurrency;
 const queuedPageIndexes = [0, 1, 2, pageAfterFirstWave];
+const firstPosition = 0;
+const holePosition = 2;
+const lastPosition = 3;
 const waitingPage: ProcessableQueuedPage = {
   id: 'page-1',
   file,
@@ -118,5 +122,12 @@ describe('processQueuedPage', () => {
     releaseFirstWave.resolve();
     await running;
     expect(peak).toBe(uploadConcurrency);
+  });
+});
+
+describe('nextUploadPosition', () => {
+  it('fills the first available slot after a queued page is removed', () => {
+    const usedPositions = new Set([firstPosition, holePosition, lastPosition]);
+    expect(nextUploadPosition(usedPositions)).toBe(firstPosition + 1);
   });
 });

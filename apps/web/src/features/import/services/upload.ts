@@ -102,36 +102,38 @@ export const validatePageImage = (
     };
   });
 
-export const storeUploadedPage = (
-  courseId: string,
-  importSessionId: string,
-  importPosition: number,
-  image: File,
-) =>
+export const storeUploadedPage = (input: {
+  readonly courseId: string;
+  readonly importSessionId: string;
+  readonly importPosition: number;
+  readonly importExpectedCount: number;
+  readonly pageId: string;
+  readonly image: File;
+}) =>
   Effect.gen(function* () {
     const repository = yield* ImportRepository;
     const storage = yield* Storage;
-    const validated = yield* validatePageImage(image);
-    const course = yield* repository.getCourse(courseId);
+    const validated = yield* validatePageImage(input.image);
+    const course = yield* repository.getCourse(input.courseId);
     if (course === undefined) {
       return yield* new CourseNotFoundError({
         message: 'Kurs nicht gefunden.',
       });
     }
     yield* reconcileStoredFiles;
-    const pageId = crypto.randomUUID();
-    const imagePath = pageImageRelativePath(pageId, validated.extension);
+    const imagePath = pageImageRelativePath(input.pageId, validated.extension);
     yield* persistFileReference({
       write: storage.write(imagePath, validated.bytes),
       persistReference: repository.insertPage({
-        id: pageId,
-        courseId,
-        importSessionId,
-        importPosition,
+        id: input.pageId,
+        courseId: input.courseId,
+        importSessionId: input.importSessionId,
+        importPosition: input.importPosition,
+        importExpectedCount: input.importExpectedCount,
         imagePath,
       }),
       remove: storage.remove(imagePath),
     });
 
-    return { pageId };
+    return { pageId: input.pageId };
   });

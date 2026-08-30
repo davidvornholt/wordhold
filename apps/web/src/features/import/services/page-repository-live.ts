@@ -1,20 +1,14 @@
 import type { ExtractionResult } from '@wordhold/ai/extraction';
 import type { Database } from '@wordhold/db/client';
 import { Effect } from 'effect';
-import { ImportDatabaseError } from '../errors/import-database-error';
+import { failure, insertPage } from './page-repository-insert';
 import {
   type AudioRecoveryPage,
+  type ImportPageInput,
   type ImportSession,
   maximumAudioRecoveryPages,
   type Page,
 } from './repository';
-
-const failure = (operation: string, cause: unknown) =>
-  new ImportDatabaseError({
-    operation,
-    cause,
-    message: `Database operation failed: ${operation}.`,
-  });
 
 const listPendingImportSessions = (sql: Database) =>
   sql<{
@@ -23,14 +17,21 @@ const listPendingImportSessions = (sql: Database) =>
     courseName: string;
     capturedAt: Date;
     pageCount: number;
+    uploadedCount: number;
+    verifiedCount: number;
     pendingCount: number;
+    isComplete: boolean;
   }>`
     select pages.import_session_id as id,
       pages.course_id as "courseId",
       courses.name as "courseName",
       min(pages.captured_at) as "capturedAt",
-      count(*)::integer as "pageCount",
-      count(*) filter(where pages.status = 'awaiting_verification')::integer as "pendingCount"
+      max(pages.import_expected_count)::integer as "pageCount",
+      count(*)::integer as "uploadedCount",
+      count(*) filter(where pages.status = 'verified')::integer as "verifiedCount",
+      count(*) filter(where pages.status = 'awaiting_verification')::integer as "pendingCount",
+      count(*)::integer = max(pages.import_expected_count)
+        and max(pages.import_position) = max(pages.import_expected_count) - 1 as "isComplete"
     from pages
     inner join courses on pages.course_id = courses.id
     group by pages.import_session_id, pages.course_id, courses.name
@@ -48,6 +49,7 @@ const getImportSession = (sql: Database, sessionId: string) =>
     capturedAt: Date;
     pageId: string;
     position: number;
+    expectedPageCount: number;
     status: 'awaiting_verification' | 'verified';
     extractionReady: boolean;
   }>`
@@ -57,6 +59,7 @@ const getImportSession = (sql: Database, sessionId: string) =>
       min(pages.captured_at) over(partition by pages.import_session_id) as "capturedAt",
       pages.id as "pageId",
       pages.import_position as position,
+      pages.import_expected_count as "expectedPageCount",
       pages.status,
       (pages.extraction is not null) as "extractionReady"
     from pages
@@ -74,6 +77,10 @@ const getImportSession = (sql: Database, sessionId: string) =>
         courseId: first.courseId,
         courseName: first.courseName,
         capturedAt: first.capturedAt,
+        expectedPageCount: first.expectedPageCount,
+        isComplete:
+          rows.length === first.expectedPageCount &&
+          rows.every((row, index) => row.position === index),
         pages: rows.map((row) => ({
           id: row.pageId,
           position: row.position,
@@ -164,17 +171,7 @@ export const pageRepositoryLive = (sql: Database) => ({
       Effect.map((rows) => rows[0]),
       Effect.mapError((cause) => failure('save pending extraction', cause)),
     ),
-  insertPage: (input: {
-    readonly id: string;
-    readonly courseId: string;
-    readonly importSessionId: string;
-    readonly importPosition: number;
-    readonly imagePath: string;
-  }) =>
-    sql`insert into pages (id, course_id, import_session_id, import_position, image_path) values (${input.id}, ${input.courseId}, ${input.importSessionId}, ${input.importPosition}, ${input.imagePath})`.pipe(
-      Effect.asVoid,
-      Effect.mapError((cause) => failure('insert page', cause)),
-    ),
+  insertPage: (input: ImportPageInput) => insertPage(sql, input),
   deletePendingImportSession: (sessionId: string) =>
     sql<{
       imagePath: string;

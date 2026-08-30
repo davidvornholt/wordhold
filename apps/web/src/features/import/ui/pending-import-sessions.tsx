@@ -6,7 +6,10 @@ type PendingImportSession = {
   readonly courseName: string;
   readonly capturedAt: Date;
   readonly pageCount: number;
+  readonly uploadedCount: number;
+  readonly verifiedCount: number;
   readonly pendingCount: number;
+  readonly isComplete: boolean;
 };
 
 type PendingImportSessionsProps = {
@@ -20,6 +23,20 @@ type PendingImportSessionsProps = {
 
 const pageCountLabel = (count: number): string =>
   `${count} ${count === 1 ? 'Seite' : 'Seiten'}`;
+
+const progressLabel = (
+  session: Pick<
+    PendingImportSession,
+    'isComplete' | 'pendingCount' | 'uploadedCount' | 'pageCount'
+  >,
+): string => {
+  if (!session.isComplete) {
+    return `${session.uploadedCount} von ${session.pageCount} Seiten verarbeitet`;
+  }
+  return session.pendingCount === 1
+    ? '1 Seite noch zu prüfen'
+    : `${session.pendingCount} Seiten noch zu prüfen`;
+};
 
 export const PendingImportSessions = ({
   sessions,
@@ -77,7 +94,6 @@ export const PendingImportSessions = ({
           const label = `${session.courseName}, ${pageCountLabel(
             session.pageCount,
           )}, ${new Date(session.capturedAt).toLocaleDateString('de-DE')}`;
-          const verifiedCount = session.pageCount - session.pendingCount;
           const confirming = confirmingId === session.id;
           const discarding = discardingId === session.id;
           return (
@@ -110,16 +126,12 @@ export const PendingImportSessions = ({
                   </span>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <p className="text-sm">
-                    {session.pendingCount === 1
-                      ? '1 Seite noch zu prüfen'
-                      : `${session.pendingCount} Seiten noch zu prüfen`}
-                  </p>
+                  <p className="text-sm">{progressLabel(session)}</p>
                   <progress
-                    aria-label={`${verifiedCount} von ${session.pageCount} Seiten geprüft`}
+                    aria-label={`${session.verifiedCount} von ${session.pageCount} Seiten geprüft`}
                     className="h-2 w-full accent-primary"
                     max={session.pageCount}
-                    value={verifiedCount}
+                    value={session.verifiedCount}
                   />
                 </div>
                 {confirming ? (

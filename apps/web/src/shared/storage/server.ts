@@ -77,6 +77,28 @@ const storedFiles = Effect.gen(function* () {
   return files;
 });
 
+export const removeIfPresent = async (
+  remove: () => Promise<void>,
+): Promise<void> => {
+  try {
+    await remove();
+  } catch (error) {
+    if (
+      typeof error !== 'object' ||
+      error === null ||
+      !('code' in error) ||
+      error.code !== 'ENOENT'
+    ) {
+      throw error;
+    }
+  }
+};
+
+const removeFile = (operation: string, relativePath: string) =>
+  tryStorage(operation, async () => {
+    await removeIfPresent(() => unlink(dataPath(relativePath)));
+  });
+
 export type StorageShape = {
   readonly write: (
     relativePath: string,
@@ -110,21 +132,7 @@ export const StorageLive = Layer.succeed(
         'read file',
         async () => new Uint8Array(await readFile(dataPath(relativePath))),
       ),
-    remove: (relativePath) =>
-      tryStorage('remove file', async () => {
-        try {
-          await unlink(dataPath(relativePath));
-        } catch (error) {
-          if (
-            typeof error !== 'object' ||
-            error === null ||
-            !('code' in error) ||
-            error.code !== 'ENOENT'
-          ) {
-            throw error;
-          }
-        }
-      }),
+    remove: (relativePath) => removeFile('remove file', relativePath),
     reconcile: (referencedPaths) =>
       storedFiles.pipe(
         Effect.flatMap((files) => {
@@ -135,10 +143,7 @@ export const StorageLive = Layer.succeed(
           );
           return Effect.forEach(
             orphaned,
-            (relativePath) =>
-              tryStorage('remove orphaned file', () =>
-                unlink(dataPath(relativePath)),
-              ),
+            (relativePath) => removeFile('remove orphaned file', relativePath),
             { concurrency: 1, discard: true },
           ).pipe(Effect.as(orphaned));
         }),

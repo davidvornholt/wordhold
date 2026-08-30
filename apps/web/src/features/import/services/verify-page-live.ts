@@ -131,7 +131,7 @@ export const verifyPageLive = (
       commitVerifiedPage({
         claimPage: sql<{
           id: string;
-        }>`update pages set status = 'verified', verified_at = now() where id = ${payload.pageId} and status = 'awaiting_verification' and not exists(select 1 from pages as earlier where earlier.import_session_id = pages.import_session_id and earlier.import_position < pages.import_position and earlier.status = 'awaiting_verification') returning id`.pipe(
+        }>`update pages set status = 'verified', verified_at = now() where id = ${payload.pageId} and status = 'awaiting_verification' and (select count(*) from pages as session_page where session_page.import_session_id = pages.import_session_id) = pages.import_expected_count and (select max(session_page.import_position) from pages as session_page where session_page.import_session_id = pages.import_session_id) = pages.import_expected_count - 1 and not exists(select 1 from pages as earlier where earlier.import_session_id = pages.import_session_id and earlier.import_position < pages.import_position and earlier.status = 'awaiting_verification') returning id`.pipe(
           Effect.map((claimed) => claimed.length > 0),
         ),
         insertEntries,

@@ -32,12 +32,14 @@ const runUpload = (
   storage = makeStorage(),
 ) =>
   Effect.runPromise(
-    storeUploadedPage(
-      'course',
-      'd9428888-122b-41e1-b85c-61cd3cbb3213',
-      0,
+    storeUploadedPage({
+      courseId: 'course',
+      importSessionId: 'd9428888-122b-41e1-b85c-61cd3cbb3213',
+      importPosition: 0,
+      importExpectedCount: 1,
+      pageId: 'd9428888-122b-41e1-b85c-61cd3cbb3214',
       image,
-    ).pipe(
+    }).pipe(
       Effect.provideService(ImportRepository, repository),
       Effect.provideService(Storage, storage),
     ),

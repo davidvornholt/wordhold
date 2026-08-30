@@ -37,9 +37,15 @@ type BatchReviewDestination = {
 
 export const batchReviewSearchFor = (
   pageIds: ReadonlyArray<string>,
+  firstPageId?: string,
 ): Required<BatchReviewSearchData> => {
   const validPageIds = uniquePageIds(pageIds);
-  return { batch: validPageIds.join(','), step: 0 };
+  const firstPosition =
+    firstPageId === undefined ? 0 : validPageIds.indexOf(firstPageId);
+  return {
+    batch: validPageIds.join(','),
+    step: Math.max(firstPosition, 0),
+  };
 };
 
 export const resolveBatchReviewSession = (

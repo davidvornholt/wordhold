@@ -48,6 +48,8 @@ export const makeImportRepository = (
         courseId: page.courseId,
         courseName: course.name,
         capturedAt: page.capturedAt,
+        expectedPageCount: 1,
+        isComplete: true,
         pages: [
           {
             id: page.id,

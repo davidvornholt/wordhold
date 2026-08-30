@@ -1,16 +1,42 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
+import type { ReactNode } from 'react';
 import { batchReviewSearchFor } from '../../features/import/schemas/batch-review-search';
 import { getImportSession } from '../../features/import/server-fns';
 import { ImportSessionStack } from '../../features/import/ui/import-session-stack';
 
 const ImportSessionScreen = () => {
   const session = Route.useLoaderData();
-  const pendingPageIds = session.pages.flatMap((page) =>
-    page.status === 'awaiting_verification' ? [page.id] : [],
-  );
+  const pageIds = session.pages.map((page) => page.id);
   const firstPendingPage = session.pages.find(
     (page) => page.status === 'awaiting_verification',
   );
+  let reviewAction: ReactNode;
+  if (!session.isComplete) {
+    reviewAction = (
+      <p className="text-muted-foreground text-sm" role="status">
+        Die restlichen Seiten werden noch verarbeitet.
+      </p>
+    );
+  } else if (firstPendingPage === undefined) {
+    reviewAction = (
+      <Link className="text-sm underline underline-offset-4" to="/">
+        Zur Übersicht
+      </Link>
+    );
+  } else {
+    reviewAction = (
+      <Link
+        className="inline-flex min-h-11 items-center bg-primary px-4 py-2 font-medium text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
+        params={{ pageId: firstPendingPage.id }}
+        search={batchReviewSearchFor(pageIds, firstPendingPage.id)}
+        to="/pages/$pageId/verify"
+      >
+        {firstPendingPage.position === 0
+          ? 'Mit Seite 1 beginnen'
+          : `Mit Seite ${firstPendingPage.position + 1} fortfahren`}
+      </Link>
+    );
+  }
 
   return (
     <main className="page-column flex flex-col gap-8 p-6">
@@ -31,24 +57,7 @@ const ImportSessionScreen = () => {
       <ImportSessionStack
         pageImageSource={(page) => `/api/pages/${page.id}/image`}
         pages={session.pages}
-        reviewAction={
-          firstPendingPage === undefined ? (
-            <Link className="text-sm underline underline-offset-4" to="/">
-              Zur Übersicht
-            </Link>
-          ) : (
-            <Link
-              className="inline-flex min-h-11 items-center bg-primary px-4 py-2 font-medium text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
-              params={{ pageId: firstPendingPage.id }}
-              search={batchReviewSearchFor(pendingPageIds)}
-              to="/pages/$pageId/verify"
-            >
-              {firstPendingPage.position === 0
-                ? 'Mit Seite 1 beginnen'
-                : `Mit Seite ${firstPendingPage.position + 1} fortfahren`}
-            </Link>
-          )
-        }
+        reviewAction={reviewAction}
       />
     </main>
   );

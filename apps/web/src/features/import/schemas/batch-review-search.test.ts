@@ -20,6 +20,18 @@ describe('batch review search', () => {
     });
   });
 
+  it('resumes at the first pending page without shrinking the stack', () => {
+    expect(
+      batchReviewSearchFor(
+        [firstPageId, secondPageId, thirdPageId],
+        secondPageId,
+      ),
+    ).toEqual({
+      batch: [firstPageId, secondPageId, thirdPageId].join(','),
+      step: 1,
+    });
+  });
+
   it('rejects stale or hand-edited session positions', () => {
     expect(
       resolveBatchReviewSession(

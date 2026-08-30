@@ -50,7 +50,7 @@ export const ImportSessionStack = ({
         {reviewAction}
       </div>
       <ol className="grid gap-4 sm:grid-cols-2">
-        {pages.map((page, index) => (
+        {pages.map((page) => (
           <li
             className="flex gap-3 border border-border bg-card p-3"
             key={page.id}
@@ -61,7 +61,7 @@ export const ImportSessionStack = ({
               src={pageImageSource(page)}
             />
             <div className="flex min-w-0 flex-col gap-1">
-              <p className="font-display text-lg">Seite {index + 1}</p>
+              <p className="font-display text-lg">Seite {page.position + 1}</p>
               <p className="text-muted-foreground text-sm">
                 {statusLabel(page)}
               </p>

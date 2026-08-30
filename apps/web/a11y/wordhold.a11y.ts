@@ -128,6 +128,18 @@ test('dependency-failure recovery returns to the authenticated dashboard', async
   );
 });
 
+test('capture keeps a batch open while a page upload has failed', async ({
+  page,
+}) => {
+  await page.goto('/?state=import-failed');
+  await expect(page.getByRole('button', { name: 'Stapel prüfen' })).toHaveCount(
+    0,
+  );
+  await expect(
+    page.getByRole('button', { name: 'Erneut versuchen' }),
+  ).toBeVisible();
+});
+
 test('batch review requires every page in order', async ({ page }) => {
   await page.goto('/?state=verification-batch-first');
   await expect(

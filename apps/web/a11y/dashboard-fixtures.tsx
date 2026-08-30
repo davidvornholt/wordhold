@@ -28,7 +28,10 @@ const pendingImportSession = {
   courseName: course.name,
   capturedAt: new Date('2026-08-24T13:00:00Z'),
   pageCount: 3,
+  uploadedCount: 3,
+  verifiedCount: 0,
   pendingCount: 3,
+  isComplete: true,
 };
 
 const actionClass = (destination: 'course' | 'import' | 'practice') => {
@@ -154,15 +157,21 @@ export const DashboardFixture = ({
             current.filter((candidate) => candidate.id !== session.id),
           )
         }
-        renderSessionAction={(_session, label) => (
-          <button
-            aria-label={`${label} fortsetzen`}
-            className="bg-primary px-4 py-2 text-primary-foreground text-sm"
-            type="button"
-          >
-            Stapel fortsetzen
-          </button>
-        )}
+        renderSessionAction={(session, label) =>
+          session.isComplete ? (
+            <button
+              aria-label={`${label} fortsetzen`}
+              className="bg-primary px-4 py-2 text-primary-foreground text-sm"
+              type="button"
+            >
+              Stapel fortsetzen
+            </button>
+          ) : (
+            <span className="text-muted-foreground text-sm">
+              Verarbeitung läuft …
+            </span>
+          )
+        }
         sessions={pendingImportSessions}
       />
     </HomeShell>

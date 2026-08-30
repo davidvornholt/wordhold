@@ -28,6 +28,7 @@ export const pages = pgTable(
       .references(() => courses.id, { onDelete: 'cascade' }),
     importSessionId: uuid('import_session_id').notNull().defaultRandom(),
     importPosition: integer('import_position').notNull().default(0),
+    importExpectedCount: integer('import_expected_count').notNull().default(1),
     imagePath: text('image_path').notNull(),
     extraction: jsonb('extraction'),
     status: pageStatusEnum('status').notNull().default('awaiting_verification'),
@@ -40,6 +41,10 @@ export const pages = pgTable(
     check(
       'pages_import_position_non_negative',
       sql`${table.importPosition} >= 0`,
+    ),
+    check(
+      'pages_import_expected_count_valid',
+      sql`${table.importExpectedCount} between 1 and 10`,
     ),
     uniqueIndex('pages_import_session_position_unique').on(
       table.importSessionId,

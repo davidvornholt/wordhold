@@ -25,6 +25,11 @@ export const importVerifiedPage = (payload: ImportPayloadData) =>
     const firstPendingPage = session?.pages.find(
       (page) => page.status === 'awaiting_verification',
     );
+    if (session === undefined || !session.isComplete) {
+      return yield* new PageReviewOrderError({
+        message: 'Warte, bis alle Seiten im Stapel verarbeitet sind.',
+      });
+    }
     if (firstPendingPage?.id !== row.page.id) {
       return yield* new PageReviewOrderError({
         message: 'Prüfe zuerst die vorherige Seite im Stapel.',

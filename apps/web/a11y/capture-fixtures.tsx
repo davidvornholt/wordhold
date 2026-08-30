@@ -47,8 +47,8 @@ const fixtureQueue = (state: ImportFixtureState): ReadonlyArray<QueuedPage> =>
       return {
         ...base,
         stage,
-        pageId: `failed-page-${index + 1}`,
-        error: 'Der Lesedienst ist gerade nicht erreichbar.',
+        pageId: null,
+        error: 'Das Foto konnte nicht gespeichert werden.',
       };
     }
     return { ...base, stage };
@@ -128,7 +128,7 @@ export const ImportFixture = ({
       }}
       pages={pages}
       reviewAction={
-        pages.some((page) => page.stage === 'ready') ? (
+        pages.length > 0 && pages.every((page) => page.stage === 'ready') ? (
           <button
             className="bg-primary px-4 py-2 text-primary-foreground text-sm"
             onClick={() => navigateToFixture('import-session')}

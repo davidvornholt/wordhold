@@ -12,8 +12,9 @@ const CaptureScreen = () => {
   );
   const reviewAvailable =
     !queue.busy &&
-    queue.pages.every((page) => page.stage !== 'waiting') &&
-    storedPageIds.length > 0;
+    queue.pages.length > 0 &&
+    queue.pages.every((page) => page.stage === 'ready') &&
+    storedPageIds.length === queue.pages.length;
 
   return (
     <CaptureScreenView

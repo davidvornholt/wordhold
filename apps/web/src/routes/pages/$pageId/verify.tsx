@@ -1,10 +1,11 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute, Link, redirect } from '@tanstack/react-router';
 import type { ExtractionResult } from '@wordhold/ai/extraction';
 import {
   type BatchReviewSearchData,
+  batchReviewSearchFor,
   parseBatchReviewSearch,
 } from '../../../features/import/schemas/batch-review-search';
-import { getPage } from '../../../features/import/server-fns';
+import { getImportSession, getPage } from '../../../features/import/server-fns';
 import type {
   Course,
   Unit,
@@ -110,8 +111,9 @@ const VerificationPageScreen = ({
 };
 
 const VerifyScreen = () => {
-  const { course, page, units } = Route.useLoaderData();
-  const search = Route.useSearch();
+  const { course, page, reviewSearch, units } = Route.useLoaderData();
+  const routeSearch = Route.useSearch();
+  const search = reviewSearch ?? routeSearch ?? {};
   return (
     <VerificationPageScreen
       course={course}
@@ -125,6 +127,30 @@ const VerifyScreen = () => {
 
 export const Route = createFileRoute('/pages/$pageId/verify')({
   validateSearch: parseBatchReviewSearch,
-  loader: ({ params }) => getPage({ data: params.pageId }),
+  loader: async ({ params }) => {
+    const page = await getPage({ data: params.pageId });
+    if (page.page.status !== 'awaiting_verification') {
+      return { ...page, reviewSearch: null };
+    }
+    const session = await getImportSession({
+      data: page.page.importSessionId,
+    });
+    const firstPendingPage = session.pages.find(
+      (candidate) => candidate.status === 'awaiting_verification',
+    );
+    if (!session.isComplete || firstPendingPage?.id !== page.page.id) {
+      throw redirect({
+        to: '/imports/$sessionId',
+        params: { sessionId: page.page.importSessionId },
+      });
+    }
+    return {
+      ...page,
+      reviewSearch: batchReviewSearchFor(
+        session.pages.map((candidate) => candidate.id),
+        firstPendingPage.id,
+      ),
+    };
+  },
   component: VerifyScreen,
 });

@@ -3,6 +3,7 @@ import { type SubmitEvent, useEffect, useRef, useState } from 'react';
 import { retryExtraction } from '../server-fns';
 import {
   maximumUploadBatchSize,
+  nextUploadPosition,
   type ProcessableQueuedPage,
   processQueuedPage,
   processQueuedPages,
@@ -22,14 +23,17 @@ const asError = (cause: unknown): Error =>
 const storePagePhoto = (
   courseId: string,
   importSessionId: string,
-  page: Pick<ProcessableQueuedPage, 'file' | 'position'>,
+  expectedPageCount: number,
+  page: Pick<ProcessableQueuedPage, 'file' | 'id' | 'position'>,
 ) =>
   Effect.tryPromise({
     try: async () => {
       const formData = new FormData();
       formData.set('courseId', courseId);
       formData.set('importSessionId', importSessionId);
+      formData.set('pageId', page.id);
       formData.set('importPosition', String(page.position));
+      formData.set('importExpectedCount', String(expectedPageCount));
       formData.set('image', page.file);
       const response = await fetch('/api/pages', {
         method: 'POST',
@@ -74,9 +78,13 @@ export const useUploadQueue = (courseId: string) => {
     );
   };
 
-  const processPage = (page: ProcessableQueuedPage) =>
+  const processPage = (
+    page: ProcessableQueuedPage,
+    expectedPageCount: number,
+  ) =>
     processQueuedPage(page, {
-      store: () => storePagePhoto(courseId, importSessionId, page),
+      store: () =>
+        storePagePhoto(courseId, importSessionId, expectedPageCount, page),
       extract: extractStoredPage,
       onStageChange: updatePage,
     }).pipe(Effect.tap((updated) => Effect.sync(() => updatePage(updated))));
@@ -86,7 +94,9 @@ export const useUploadQueue = (courseId: string) => {
   ): Promise<void> => {
     setBusy(true);
     setError(null);
-    await Effect.runPromise(processQueuedPages(selected, processPage));
+    await Effect.runPromise(
+      processQueuedPages(selected, (page) => processPage(page, pages.length)),
+    );
     setBusy(false);
   };
 
@@ -108,15 +118,16 @@ export const useUploadQueue = (courseId: string) => {
         ? `${accepted.length} von ${files.length} Fotos wurden hinzugefügt. Pro Durchgang sind höchstens ${maximumUploadBatchSize} möglich.`
         : null,
     );
-    const firstPosition =
-      pages.reduce((highest, page) => Math.max(highest, page.position), -1) + 1;
-    const added = accepted.map((file, offset): QueuedPage => {
+    const usedPositions = new Set(pages.map((page) => page.position));
+    const added = accepted.map((file): QueuedPage => {
+      const position = nextUploadPosition(usedPositions);
+      usedPositions.add(position);
       const previewUrl = URL.createObjectURL(file);
       previewUrls.current.add(previewUrl);
       return {
         id: crypto.randomUUID(),
         file,
-        position: firstPosition + offset,
+        position,
         previewUrl,
         stage: 'waiting',
       };
