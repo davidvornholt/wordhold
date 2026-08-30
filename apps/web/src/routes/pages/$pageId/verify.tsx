@@ -33,6 +33,7 @@ type VerificationPageScreenProps = {
   readonly page: {
     readonly extraction: ExtractionResult | null;
     readonly id: string;
+    readonly importSessionId: string;
     readonly status: 'awaiting_verification' | 'verified';
   };
   readonly search: BatchReviewSearchData;
@@ -53,10 +54,10 @@ const VerificationPageScreen = ({
       <div className="verification-header">
         <Link
           className="text-muted-foreground text-sm underline"
-          onClick={flow.retireCachedOverview}
-          to="/"
+          params={{ sessionId: page.importSessionId }}
+          to="/imports/$sessionId"
         >
-          ← Übersicht
+          ← Zum Seitenstapel
         </Link>
         <h1 className="font-display font-semibold text-2xl">
           {course.name}:{' '}
@@ -74,10 +75,10 @@ const VerificationPageScreen = ({
           overviewAction={
             <Link
               className="inline-flex min-h-11 items-center bg-primary px-4 py-2 text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
-              onClick={flow.retireCachedOverview}
-              to="/"
+              params={{ sessionId: page.importSessionId }}
+              to="/imports/$sessionId"
             >
-              Zur Übersicht
+              Zum Seitenstapel
             </Link>
           }
           skipped={flow.batchSummary.skipped}

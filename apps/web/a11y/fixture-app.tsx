@@ -24,6 +24,7 @@ import {
   DeferredVerificationFixture,
   VerificationFixture,
 } from './import-fixtures';
+import { ImportSessionFixture } from './import-session-fixture';
 import { LearnDoneFixture, LearnFixture } from './learning-fixtures';
 import {
   DeferredPracticeFixture,
@@ -59,6 +60,13 @@ const batchReviewFixture = (state: FixtureState) => {
   }
 };
 
+const ErrorFixture = () => (
+  <RootError
+    error={new Error('Database unavailable')}
+    reset={() => navigateToFixture('dashboard')}
+  />
+);
+
 export const FixtureApp = () => {
   const state = readFixtureState();
   switch (state) {
@@ -84,6 +92,8 @@ export const FixtureApp = () => {
       return <ImportFixture initialState="failed" />;
     case 'import-error':
       return <ImportFixture error={true} />;
+    case 'import-session':
+      return <ImportSessionFixture />;
     case 'verification':
       return <VerificationFixture />;
     case 'verification-batch-first':
@@ -150,12 +160,7 @@ export const FixtureApp = () => {
     case 'loading':
       return <RootPending />;
     case 'error':
-      return (
-        <RootError
-          error={new Error('Database unavailable')}
-          reset={() => navigateToFixture('dashboard')}
-        />
-      );
+      return <ErrorFixture />;
     case 'not-found':
       return <RootNotFound />;
     default:

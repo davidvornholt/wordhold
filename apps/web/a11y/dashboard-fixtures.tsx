@@ -3,7 +3,7 @@ import { HomeShell } from '../src/app/home-shell';
 import { CourseGrid } from '../src/features/dashboard/ui/course-grid';
 import { FragileList } from '../src/features/dashboard/ui/fragile-list';
 import { AudioRecoveryPages } from '../src/features/import/ui/audio-recovery-pages';
-import { PendingPages } from '../src/features/import/ui/pending-pages';
+import { PendingImportSessions } from '../src/features/import/ui/pending-import-sessions';
 import { audioRecoveryIsComplete, navigateToFixture } from './fixture-state';
 
 const course = {
@@ -23,15 +23,12 @@ const recoveryPage = {
   missingAudio: 1,
   verifiedAt: new Date('2026-08-24T12:00:00Z'),
 };
-const pendingPage = {
+const pendingImportSession = {
   id: '00000000-0000-0000-0000-000000000004',
   courseName: course.name,
   capturedAt: new Date('2026-08-24T13:00:00Z'),
-};
-const secondPendingPage = {
-  id: '00000000-0000-0000-0000-000000000005',
-  courseName: course.name,
-  capturedAt: new Date('2026-08-25T13:00:00Z'),
+  pageCount: 3,
+  pendingCount: 3,
 };
 
 const actionClass = (destination: 'course' | 'import' | 'practice') => {
@@ -93,8 +90,8 @@ export const DashboardFixture = ({
   audioRecovery = false,
   pending = false,
 }) => {
-  const [pendingPages, setPendingPages] = useState(
-    pending ? [pendingPage, secondPendingPage] : [],
+  const [pendingImportSessions, setPendingImportSessions] = useState(
+    pending ? [pendingImportSession] : [],
   );
 
   return (
@@ -151,18 +148,22 @@ export const DashboardFixture = ({
           </a>
         )}
       />
-      <PendingPages
-        onDiscard={async (page) =>
-          setPendingPages((current) =>
-            current.filter((candidate) => candidate.id !== page.id),
+      <PendingImportSessions
+        onDiscard={async (session) =>
+          setPendingImportSessions((current) =>
+            current.filter((candidate) => candidate.id !== session.id),
           )
         }
-        pages={pendingPages}
-        renderPageAction={(_page, label) => (
-          <button className="text-sm underline" type="button">
-            {label}
+        renderSessionAction={(_session, label) => (
+          <button
+            aria-label={`${label} fortsetzen`}
+            className="bg-primary px-4 py-2 text-primary-foreground text-sm"
+            type="button"
+          >
+            Stapel fortsetzen
           </button>
         )}
+        sessions={pendingImportSessions}
       />
     </HomeShell>
   );

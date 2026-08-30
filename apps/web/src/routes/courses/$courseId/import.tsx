@@ -43,12 +43,10 @@ const CaptureScreen = () => {
         reviewAvailable ? (
           <Link
             className="inline-flex min-h-11 items-center justify-center bg-primary px-4 py-2 text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
-            params={{ pageId: storedPageIds[0] }}
-            search={batchReviewSearchFor(storedPageIds, storedPageIds[0])}
-            to="/pages/$pageId/verify"
+            params={{ sessionId: queue.importSessionId }}
+            to="/imports/$sessionId"
           >
-            {storedPageIds.length}{' '}
-            {storedPageIds.length === 1 ? 'Seite' : 'Seiten'} prüfen
+            Stapel prüfen
           </Link>
         ) : null
       }

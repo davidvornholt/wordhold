@@ -32,7 +32,12 @@ const runUpload = (
   storage = makeStorage(),
 ) =>
   Effect.runPromise(
-    storeUploadedPage('course', image).pipe(
+    storeUploadedPage(
+      'course',
+      'd9428888-122b-41e1-b85c-61cd3cbb3213',
+      0,
+      image,
+    ).pipe(
       Effect.provideService(ImportRepository, repository),
       Effect.provideService(Storage, storage),
     ),

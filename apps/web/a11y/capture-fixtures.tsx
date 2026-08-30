@@ -34,6 +34,7 @@ const fixtureQueue = (state: ImportFixtureState): ReadonlyArray<QueuedPage> =>
     const base = {
       id: `fixture-page-${index + 1}`,
       file: fixtureFile(index + 1),
+      position: index,
       previewUrl: photographedPage,
     };
     if (stage === 'extracting') {
@@ -87,6 +88,7 @@ export const ImportFixture = ({
           files.map((file, index) => ({
             id: `selected-page-${index + 1}`,
             file,
+            position: index,
             previewUrl: photographedPage,
             stage: 'waiting',
           })),
@@ -102,6 +104,7 @@ export const ImportFixture = ({
               ? {
                   id: page.id,
                   file: page.file,
+                  position: page.position,
                   previewUrl: page.previewUrl,
                   stage: 'ready',
                   pageId: failed.pageId ?? 'retried-page',
@@ -116,6 +119,7 @@ export const ImportFixture = ({
           current.map((page, index) => ({
             id: page.id,
             file: page.file,
+            position: page.position,
             previewUrl: page.previewUrl,
             stage: 'ready',
             pageId: `ready-page-${index + 1}`,
@@ -127,10 +131,10 @@ export const ImportFixture = ({
         pages.some((page) => page.stage === 'ready') ? (
           <button
             className="bg-primary px-4 py-2 text-primary-foreground text-sm"
-            onClick={() => navigateToFixture('verification-batch-first')}
+            onClick={() => navigateToFixture('import-session')}
             type="button"
           >
-            {pages.length} Seiten prüfen
+            Stapel prüfen
           </button>
         ) : null
       }

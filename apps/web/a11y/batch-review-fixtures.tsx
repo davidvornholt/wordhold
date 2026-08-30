@@ -44,10 +44,10 @@ export const BatchReviewFixture = ({
     <div className="verification-header">
       <button
         className="text-muted-foreground text-sm underline"
-        onClick={() => navigateToFixture('dashboard')}
+        onClick={() => navigateToFixture('import-session')}
         type="button"
       >
-        ← Übersicht
+        ← Zum Seitenstapel
       </button>
       <h1 className="font-display font-semibold text-2xl">
         English A2: Seite überprüfen
@@ -96,10 +96,10 @@ export const BatchReviewCompleteFixture = ({
     <div className="verification-header">
       <button
         className="text-muted-foreground text-sm underline"
-        onClick={() => navigateToFixture('dashboard')}
+        onClick={() => navigateToFixture('import-session')}
         type="button"
       >
-        ← Übersicht
+        ← Zum Seitenstapel
       </button>
       <h1 className="font-display font-semibold text-2xl">
         English A2: Seiten geprüft
@@ -110,10 +110,10 @@ export const BatchReviewCompleteFixture = ({
       overviewAction={
         <button
           className="inline-flex min-h-11 items-center bg-primary px-4 py-2 text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
-          onClick={() => navigateToFixture('dashboard')}
+          onClick={() => navigateToFixture('import-session')}
           type="button"
         >
-          Zur Übersicht
+          Zum Seitenstapel
         </button>
       }
       skipped={skipped}

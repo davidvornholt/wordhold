@@ -5,6 +5,7 @@ export const maximumUploadBatchSize = 10;
 type QueuedPageBase = {
   readonly id: string;
   readonly file: File;
+  readonly position: number;
   readonly previewUrl: string;
 };
 
@@ -48,8 +49,20 @@ const reportStage = (
 const queueBase = (page: QueuedPage): QueuedPageBase => ({
   id: page.id,
   file: page.file,
+  position: page.position,
   previewUrl: page.previewUrl,
 });
+
+export const uploadConcurrency = 3;
+
+export const processQueuedPages = <A, B, E, R>(
+  pages: ReadonlyArray<A>,
+  process: (page: A) => Effect.Effect<B, E, R>,
+) =>
+  Effect.forEach(pages, process, {
+    concurrency: uploadConcurrency,
+    discard: true,
+  });
 
 export const processQueuedPage = (
   page: ProcessableQueuedPage,

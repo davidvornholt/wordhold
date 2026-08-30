@@ -2,40 +2,48 @@ import { scanWcag22AaViolations } from '@davidvornholt/a11y-testing/axe';
 import { expect, test } from '@playwright/test';
 import { assertNoAccessibilityViolations } from './a11y-assertions';
 
+const threePageStackAction = /3 Seiten.*fortsetzen/u;
+
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
-const firstDeleteName = 'Aufnahme English A2 (24.8.2026) löschen';
-const secondDeleteName = 'Aufnahme English A2 (25.8.2026) löschen';
+const deleteName = 'English A2, 3 Seiten, 24.8.2026 löschen';
+
+test('pages from one upload appear as one resumable stack', async ({
+  page,
+}) => {
+  await page.goto('/?state=dashboard-pending');
+  const openImports = page.getByTestId('open-imports');
+  await expect(openImports.getByRole('listitem')).toHaveCount(1);
+  await expect(openImports.getByText('3 Seiten · 24.8.2026')).toBeVisible();
+  await expect(
+    openImports.getByRole('button', { name: threePageStackAction }),
+  ).toBeVisible();
+});
 
 test('an open import can be confirmed and removed from the dashboard', async ({
   page,
 }) => {
   await page.goto('/?state=dashboard-pending');
-  const firstDeleteAction = page.getByRole('button', { name: firstDeleteName });
-  const secondDeleteAction = page.getByRole('button', {
-    name: secondDeleteName,
-  });
-  await firstDeleteAction.focus();
+  const deleteAction = page.getByRole('button', { name: deleteName });
+  await deleteAction.focus();
   await page.keyboard.press('Enter');
   await expect(
-    page.getByText('Das Foto und dieser offene Import werden gelöscht.'),
+    page.getByText('3 Seiten und die Fotos werden gelöscht.'),
   ).toBeVisible();
   await expect(
-    page.getByRole('button', { name: 'Endgültig löschen' }),
+    page.getByRole('button', { name: 'Stapel löschen', exact: true }),
   ).toBeFocused();
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
   await page.keyboard.press('Tab');
   await page.keyboard.press('Enter');
-  await expect(firstDeleteAction).toBeFocused();
+  await expect(deleteAction).toBeFocused();
   await page.keyboard.press('Enter');
-  await page.getByRole('button', { name: 'Endgültig löschen' }).press('Enter');
-  await expect(secondDeleteAction).toBeFocused();
-  await page.keyboard.press('Enter');
-  await page.getByRole('button', { name: 'Endgültig löschen' }).press('Enter');
+  await page
+    .getByRole('button', { name: 'Stapel löschen', exact: true })
+    .press('Enter');
   await expect(
     page.getByRole('heading', { name: 'Offene Importe' }),
-  ).toBeFocused();
-  await expect(page.getByText('Keine offenen Importe.')).toBeVisible();
+  ).toHaveCount(0);
 });
 
 const actionIsRejected = async (action: Promise<unknown>): Promise<boolean> =>

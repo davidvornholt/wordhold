@@ -4,18 +4,18 @@ import { getDashboard } from '../features/dashboard/services/server-fns';
 import { CourseGrid } from '../features/dashboard/ui/course-grid';
 import { FragileList } from '../features/dashboard/ui/fragile-list';
 import {
-  discardPage,
+  discardImportSession,
   listAudioRecoveryPages,
   listCourses,
-  listPendingPages,
+  listPendingImportSessions,
 } from '../features/import/server-fns';
 import { AudioRecoveryPages } from '../features/import/ui/audio-recovery-pages';
-import { PendingPages } from '../features/import/ui/pending-pages';
+import { PendingImportSessions } from '../features/import/ui/pending-import-sessions';
 import { authClient } from '../shared/auth/client';
 import { getSessionUser } from '../shared/auth/session-fn';
 
 const Home = () => {
-  const { user, courses, pending, audioRecovery, dashboard } =
+  const { user, courses, pendingImportSessions, audioRecovery, dashboard } =
     Route.useLoaderData();
   const router = useRouter();
 
@@ -98,21 +98,22 @@ const Home = () => {
             )}
           />
 
-          <PendingPages
-            onDiscard={async (page) => {
-              await discardPage({ data: page.id });
+          <PendingImportSessions
+            onDiscard={async (session) => {
+              await discardImportSession({ data: session.id });
               await router.invalidate({ sync: true });
             }}
-            pages={pending}
-            renderPageAction={(page, label) => (
+            renderSessionAction={(session, label) => (
               <Link
-                className="text-sm underline"
-                params={{ pageId: page.id }}
-                to="/pages/$pageId/verify"
+                aria-label={`${label} fortsetzen`}
+                className="inline-flex min-h-11 items-center bg-primary px-4 py-2 font-medium text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
+                params={{ sessionId: session.id }}
+                to="/imports/$sessionId"
               >
-                {label}
+                Stapel fortsetzen
               </Link>
             )}
+            sessions={pendingImportSessions}
           />
         </>
       )}
@@ -127,18 +128,25 @@ export const Route = createFileRoute('/')({
       return {
         user: null,
         courses: [],
-        pending: [],
+        pendingImportSessions: [],
         audioRecovery: [],
         dashboard: null,
       } as const;
     }
-    const [courses, pending, audioRecovery, dashboard] = await Promise.all([
-      listCourses(),
-      listPendingPages(),
-      listAudioRecoveryPages(),
-      getDashboard(),
-    ]);
-    return { user, courses, pending, audioRecovery, dashboard } as const;
+    const [courses, pendingImportSessions, audioRecovery, dashboard] =
+      await Promise.all([
+        listCourses(),
+        listPendingImportSessions(),
+        listAudioRecoveryPages(),
+        getDashboard(),
+      ]);
+    return {
+      user,
+      courses,
+      pendingImportSessions,
+      audioRecovery,
+      dashboard,
+    } as const;
   },
   component: Home,
 });

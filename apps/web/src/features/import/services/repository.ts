@@ -26,6 +26,8 @@ export type Unit = {
 export type Page = {
   readonly id: string;
   readonly courseId: string;
+  readonly importSessionId: string;
+  readonly importPosition: number;
   readonly imagePath: string;
   readonly extraction: unknown;
   readonly status: 'awaiting_verification' | 'verified';
@@ -33,11 +35,28 @@ export type Page = {
   readonly verifiedAt: Date | null;
 };
 
-export type PendingPage = {
+export type PendingImportSession = {
   readonly id: string;
   readonly courseId: string;
   readonly courseName: string;
   readonly capturedAt: Date;
+  readonly pageCount: number;
+  readonly pendingCount: number;
+};
+
+export type ImportSessionPage = {
+  readonly id: string;
+  readonly position: number;
+  readonly status: 'awaiting_verification' | 'verified';
+  readonly extractionReady: boolean;
+};
+
+export type ImportSession = {
+  readonly id: string;
+  readonly courseId: string;
+  readonly courseName: string;
+  readonly capturedAt: Date;
+  readonly pages: ReadonlyArray<ImportSessionPage>;
 };
 
 export const maximumAudioRecoveryPages = 50;
@@ -73,10 +92,13 @@ export type ImportRepositoryShape = {
   readonly listUnits: (
     courseId: string,
   ) => Effect.Effect<ReadonlyArray<Unit>, ImportDatabaseError>;
-  readonly listPendingPages: Effect.Effect<
-    ReadonlyArray<PendingPage>,
+  readonly listPendingImportSessions: Effect.Effect<
+    ReadonlyArray<PendingImportSession>,
     ImportDatabaseError
   >;
+  readonly getImportSession: (
+    sessionId: string,
+  ) => Effect.Effect<ImportSession | undefined, ImportDatabaseError>;
   readonly listAudioRecoveryPages: Effect.Effect<
     ReadonlyArray<AudioRecoveryPage>,
     ImportDatabaseError
@@ -97,11 +119,13 @@ export type ImportRepositoryShape = {
   readonly insertPage: (input: {
     readonly id: string;
     readonly courseId: string;
+    readonly importSessionId: string;
+    readonly importPosition: number;
     readonly imagePath: string;
   }) => Effect.Effect<void, ImportDatabaseError>;
-  readonly deletePendingPage: (
-    pageId: string,
-  ) => Effect.Effect<string | undefined, ImportDatabaseError>;
+  readonly deletePendingImportSession: (
+    sessionId: string,
+  ) => Effect.Effect<ReadonlyArray<string>, ImportDatabaseError>;
   readonly verifyPage: (
     payload: ImportPayloadData,
     courseId: string,

@@ -5,6 +5,7 @@ import {
   maximumUploadBatchSize,
   type ProcessableQueuedPage,
   processQueuedPage,
+  processQueuedPages,
   type QueuedPage,
 } from '../services/upload-queue';
 
@@ -18,12 +19,18 @@ const decodeUploadResponse = Schema.decodeUnknownSync(UploadResponse);
 const asError = (cause: unknown): Error =>
   cause instanceof Error ? cause : new Error(String(cause));
 
-const storePagePhoto = (courseId: string, file: File) =>
+const storePagePhoto = (
+  courseId: string,
+  importSessionId: string,
+  page: Pick<ProcessableQueuedPage, 'file' | 'position'>,
+) =>
   Effect.tryPromise({
     try: async () => {
       const formData = new FormData();
       formData.set('courseId', courseId);
-      formData.set('image', file);
+      formData.set('importSessionId', importSessionId);
+      formData.set('importPosition', String(page.position));
+      formData.set('image', page.file);
       const response = await fetch('/api/pages', {
         method: 'POST',
         body: formData,
@@ -46,6 +53,7 @@ const extractStoredPage = (pageId: string) =>
   });
 
 export const useUploadQueue = (courseId: string) => {
+  const [importSessionId] = useState(() => crypto.randomUUID());
   const previewUrls = useRef(new Set<string>());
   const [pages, setPages] = useState<ReadonlyArray<QueuedPage>>([]);
   const [busy, setBusy] = useState(false);
@@ -68,7 +76,7 @@ export const useUploadQueue = (courseId: string) => {
 
   const processPage = (page: ProcessableQueuedPage) =>
     processQueuedPage(page, {
-      store: (file) => storePagePhoto(courseId, file),
+      store: () => storePagePhoto(courseId, importSessionId, page),
       extract: extractStoredPage,
       onStageChange: updatePage,
     }).pipe(Effect.tap((updated) => Effect.sync(() => updatePage(updated))));
@@ -78,12 +86,7 @@ export const useUploadQueue = (courseId: string) => {
   ): Promise<void> => {
     setBusy(true);
     setError(null);
-    await Effect.runPromise(
-      Effect.forEach(selected, processPage, {
-        concurrency: 1,
-        discard: true,
-      }),
-    );
+    await Effect.runPromise(processQueuedPages(selected, processPage));
     setBusy(false);
   };
 
@@ -105,12 +108,15 @@ export const useUploadQueue = (courseId: string) => {
         ? `${accepted.length} von ${files.length} Fotos wurden hinzugefügt. Pro Durchgang sind höchstens ${maximumUploadBatchSize} möglich.`
         : null,
     );
-    const added = accepted.map((file): QueuedPage => {
+    const firstPosition =
+      pages.reduce((highest, page) => Math.max(highest, page.position), -1) + 1;
+    const added = accepted.map((file, offset): QueuedPage => {
       const previewUrl = URL.createObjectURL(file);
       previewUrls.current.add(previewUrl);
       return {
         id: crypto.randomUUID(),
         file,
+        position: firstPosition + offset,
         previewUrl,
         stage: 'waiting',
       };
@@ -132,6 +138,7 @@ export const useUploadQueue = (courseId: string) => {
   return {
     busy,
     error,
+    importSessionId,
     pages,
     addFiles,
     removePage,

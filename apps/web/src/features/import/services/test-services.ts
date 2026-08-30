@@ -10,6 +10,8 @@ import { ImportRepository, type ImportRepositoryShape } from './repository';
 const page = {
   id: 'd9428888-122b-41e1-b85c-61cd3cbb3210',
   courseId: 'd9428888-122b-41e1-b85c-61cd3cbb3211',
+  importSessionId: 'd9428888-122b-41e1-b85c-61cd3cbb3213',
+  importPosition: 0,
   imagePath: 'pages/page.png',
   extraction: null,
   status: 'awaiting_verification' as const,
@@ -39,7 +41,8 @@ export const makeImportRepository = (
   ImportRepository.of({
     listOrSeedCourses: Effect.succeed([course]),
     getCourse: () => Effect.succeed(course),
-    listPendingPages: Effect.succeed([]),
+    listPendingImportSessions: Effect.succeed([]),
+    getImportSession: () => Effect.succeed(undefined),
     listAudioRecoveryPages: Effect.succeed([]),
     getPage: () => Effect.succeed({ page, course }),
     listUnits: () => Effect.succeed([unit]),
@@ -48,7 +51,7 @@ export const makeImportRepository = (
     saveExtractionIfPending: (_pageId, extraction: ExtractionResult) =>
       Effect.succeed({ ...page, extraction }),
     insertPage: () => Effect.void,
-    deletePendingPage: () => Effect.succeed(page.imagePath),
+    deletePendingImportSession: () => Effect.succeed([page.imagePath]),
     verifyPage: () => Effect.succeed([]),
     referencedPaths: Effect.succeed(new Set()),
     ...overrides,

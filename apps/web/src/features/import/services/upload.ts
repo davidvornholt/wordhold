@@ -102,7 +102,12 @@ export const validatePageImage = (
     };
   });
 
-export const storeUploadedPage = (courseId: string, image: File) =>
+export const storeUploadedPage = (
+  courseId: string,
+  importSessionId: string,
+  importPosition: number,
+  image: File,
+) =>
   Effect.gen(function* () {
     const repository = yield* ImportRepository;
     const storage = yield* Storage;
@@ -121,6 +126,8 @@ export const storeUploadedPage = (courseId: string, image: File) =>
       persistReference: repository.insertPage({
         id: pageId,
         courseId,
+        importSessionId,
+        importPosition,
         imagePath,
       }),
       remove: storage.remove(imagePath),

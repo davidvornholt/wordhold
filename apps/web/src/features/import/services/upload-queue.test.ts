@@ -3,13 +3,18 @@ import { Effect } from 'effect';
 import {
   type ProcessableQueuedPage,
   processQueuedPage,
+  processQueuedPages,
   type QueuedPage,
+  uploadConcurrency,
 } from './upload-queue';
 
 const file = new File(['page'], 'page.jpg', { type: 'image/jpeg' });
+const pageAfterFirstWave = uploadConcurrency;
+const queuedPageIndexes = [0, 1, 2, pageAfterFirstWave];
 const waitingPage: ProcessableQueuedPage = {
   id: 'page-1',
   file,
+  position: 0,
   previewUrl: 'blob:page-1',
   stage: 'waiting',
 };
@@ -82,5 +87,36 @@ describe('processQueuedPage', () => {
       pageId: 'stored-page',
       error: 'Auslesen fehlgeschlagen.',
     });
+  });
+
+  it('processes at most three pages at once', async () => {
+    let active = 0;
+    let peak = 0;
+    const firstWaveStarted = Promise.withResolvers<void>();
+    const releaseFirstWave = Promise.withResolvers<void>();
+    const running = Effect.runPromise(
+      processQueuedPages(queuedPageIndexes, (page) =>
+        Effect.tryPromise({
+          try: async () => {
+            active += 1;
+            peak = Math.max(peak, active);
+            if (peak === uploadConcurrency) {
+              firstWaveStarted.resolve();
+            }
+            if (page < uploadConcurrency) {
+              await releaseFirstWave.promise;
+            }
+            active -= 1;
+          },
+          catch: () => new Error('queue failed'),
+        }),
+      ),
+    );
+
+    await firstWaveStarted.promise;
+    expect(peak).toBe(uploadConcurrency);
+    releaseFirstWave.resolve();
+    await running;
+    expect(peak).toBe(uploadConcurrency);
   });
 });

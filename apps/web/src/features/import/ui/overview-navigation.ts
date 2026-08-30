@@ -24,7 +24,8 @@ export const refreshOverviewAfterMutation = (
   invalidate: OverviewInvalidator,
 ): Promise<void> =>
   invalidate({
-    filter: (match) => match.routeId === '/',
+    filter: (match) =>
+      match.routeId === '/' || match.routeId === '/imports/$sessionId',
     sync: true,
   });
 
