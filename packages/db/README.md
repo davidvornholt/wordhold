@@ -16,7 +16,7 @@ Structure comes from Drizzle Kit only. Never handwrite structural or data statem
 
 ```sh
 bun run db:generate   # emit SQL from the schema source of truth
-bun run db:migrate    # apply generated structure
+bun run db:migrate    # apply generated structure and code-owned data repairs
 bun run db:migrate:production # apply committed migrations from an OCI image
 ```
 
@@ -26,3 +26,5 @@ After phase one is deployed, run `bun run db:backfill-units` once in each deploy
 
 Before deploying phase two, run `SELECT count(*) FROM entries WHERE unit_id IS NULL;` in every deployed database and record that it returns exactly `0`. The generated phase-two migration makes `entries.unit_id` required and PostgreSQL refuses to apply it while any legacy row remains unfiled.
 The learning-pass migration adds nullable `cards.introduced_at`. After applying it, run `bun run --cwd packages/db db:backfill-introductions` once in each deployed database. The command preserves the review timestamp for every card already answered, leaves untouched cards null so they enter the learning pass, supports safe retries, and fails through a typed Effect error if it cannot prove completion.
+
+The import-session migration also repairs batches created before the expected page count was persisted. `db:migrate` runs that idempotent repair after Drizzle migrations, so existing pages in one session receive their observed session count before the ordered review checks use it.

@@ -77,6 +77,7 @@ export const ImportFixture = ({
         </button>
       }
       busy={busy}
+      batchStarted={false}
       courseName="English A2"
       error={
         error

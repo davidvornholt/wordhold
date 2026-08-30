@@ -28,7 +28,13 @@ const UploadFields = Schema.Struct({
     Schema.int(),
     Schema.between(1, maximumUploadBatchSize),
   ),
-});
+}).pipe(
+  Schema.filter(
+    (fields) =>
+      fields.importPosition < fields.importExpectedCount ||
+      'Die Seitenposition muss innerhalb der erwarteten Stapelgröße liegen.',
+  ),
+);
 
 const decodeUploadFields = Schema.decodeUnknownOption(UploadFields);
 

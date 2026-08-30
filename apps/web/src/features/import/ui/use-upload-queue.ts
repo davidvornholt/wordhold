@@ -1,5 +1,5 @@
 import { Effect, Schema } from 'effect';
-import { type SubmitEvent, useEffect, useRef, useState } from 'react';
+import { type SubmitEvent, useRef, useState } from 'react';
 import { retryExtraction } from '../server-fns';
 import {
   hasStoredUpload,
@@ -10,6 +10,7 @@ import {
   processQueuedPages,
   type QueuedPage,
 } from '../services/upload-queue';
+import { useUploadQueuePersistence } from './use-upload-queue-persistence';
 
 const UploadResponse = Schema.Struct({
   pageId: Schema.optional(Schema.String),
@@ -58,20 +59,25 @@ const extractStoredPage = (pageId: string) =>
   });
 
 export const useUploadQueue = (courseId: string) => {
-  const [importSessionId] = useState(() => crypto.randomUUID());
+  const [importSessionId, setImportSessionId] = useState<string>(() =>
+    crypto.randomUUID(),
+  );
   const previewUrls = useRef(new Set<string>());
   const [pages, setPages] = useState<ReadonlyArray<QueuedPage>>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [processingStarted, setProcessingStarted] = useState(false);
 
-  useEffect(
-    () => () => {
-      for (const previewUrl of previewUrls.current) {
-        URL.revokeObjectURL(previewUrl);
-      }
-    },
-    [],
-  );
+  const { clearPersistedQueue, hydrated } = useUploadQueuePersistence({
+    courseId,
+    importSessionId,
+    pages,
+    previewUrls,
+    processingStarted,
+    setImportSessionId,
+    setPages,
+    setProcessingStarted,
+  });
 
   const updatePage = (updated: QueuedPage): void => {
     setPages((current) =>
@@ -93,6 +99,7 @@ export const useUploadQueue = (courseId: string) => {
   const runPages = async (
     selected: ReadonlyArray<ProcessableQueuedPage>,
   ): Promise<void> => {
+    setProcessingStarted(true);
     setBusy(true);
     setError(null);
     await Effect.runPromise(
@@ -112,9 +119,9 @@ export const useUploadQueue = (courseId: string) => {
   };
 
   const addFiles = (files: ReadonlyArray<File>): void => {
-    if (hasStoredUpload(pages)) {
+    if (!hydrated || processingStarted || hasStoredUpload(pages)) {
       setError(
-        'Die Stapelgröße ist bereits festgelegt. Versuche fehlgeschlagene Seiten erneut.',
+        'Die Fotoauswahl ist nach dem ersten Verarbeitungsversuch gesperrt. Versuche fehlgeschlagene Seiten erneut.',
       );
       return;
     }
@@ -154,10 +161,12 @@ export const useUploadQueue = (courseId: string) => {
   };
 
   return {
-    busy,
+    busy: busy || !hydrated,
+    clearPersistedQueue,
     error,
     importSessionId,
     pages,
+    processingStarted,
     addFiles,
     removePage,
     retryPage: (page: ProcessableQueuedPage) => runPages([page]),

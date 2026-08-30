@@ -46,6 +46,10 @@ export const pages = pgTable(
       'pages_import_expected_count_valid',
       sql`${table.importExpectedCount} between 1 and 10`,
     ),
+    check(
+      'pages_import_position_within_expected_count',
+      sql`${table.importPosition} < ${table.importExpectedCount}`,
+    ),
     uniqueIndex('pages_import_session_position_unique').on(
       table.importSessionId,
       table.importPosition,

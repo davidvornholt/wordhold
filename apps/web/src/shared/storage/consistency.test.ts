@@ -8,6 +8,8 @@ import {
 
 const nowMs = 2 * orphanGracePeriodMs;
 const pagePath = 'pages/d9428888-122b-41e1-b85c-61cd3cbb3210.jpg';
+const suffixedPagePath =
+  'pages/d9428888-122b-41e1-b85c-61cd3cbb3210-d9428888-122b-41e1-b85c-61cd3cbb3212.webp';
 const audioPath = 'audio/d9428888-122b-41e1-b85c-61cd3cbb3210-amy.mp3';
 
 describe('persistFileReference', () => {
@@ -34,20 +36,23 @@ describe('persistFileReference', () => {
 
 describe('orphanedDataFiles', () => {
   it('selects only old generated files without database references', () => {
-    expect(
-      orphanedDataFiles(
-        [
-          { relativePath: pagePath, modifiedAtMs: 0 },
-          { relativePath: audioPath, modifiedAtMs: 0 },
-          { relativePath: 'pages/notes.txt', modifiedAtMs: 0 },
-          {
-            relativePath: 'pages/d9428888-122b-41e1-b85c-61cd3cbb3211.png',
-            modifiedAtMs: nowMs,
-          },
-        ],
-        new Set([audioPath]),
-        nowMs,
-      ),
-    ).toEqual([pagePath]);
+    const orphaned = orphanedDataFiles(
+      [
+        { relativePath: pagePath, modifiedAtMs: 0 },
+        { relativePath: suffixedPagePath, modifiedAtMs: 0 },
+        { relativePath: audioPath, modifiedAtMs: 0 },
+        { relativePath: 'pages/notes.txt', modifiedAtMs: 0 },
+        {
+          relativePath: 'pages/d9428888-122b-41e1-b85c-61cd3cbb3211.png',
+          modifiedAtMs: nowMs,
+        },
+      ],
+      new Set([audioPath]),
+      nowMs,
+    );
+    expect(orphaned).toEqual(
+      expect.arrayContaining([pagePath, suffixedPagePath]),
+    );
+    expect(orphaned).toHaveLength(2);
   });
 });

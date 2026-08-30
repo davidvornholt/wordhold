@@ -10,6 +10,7 @@ type CaptureScreenProps = {
   readonly backControl: ReactNode;
   readonly courseName: string;
   readonly busy: boolean;
+  readonly batchStarted: boolean;
   readonly error: string | null;
   readonly pages: ReadonlyArray<QueuedPage>;
   readonly onFilesSelected: (files: ReadonlyArray<File>) => void;
@@ -34,6 +35,7 @@ export const CaptureScreen = ({
   backControl,
   courseName,
   busy,
+  batchStarted,
   error,
   pages,
   onFilesSelected,
@@ -42,7 +44,7 @@ export const CaptureScreen = ({
   onSubmit,
   reviewAction,
 }: CaptureScreenProps) => {
-  const batchLocked = hasStoredUpload(pages);
+  const batchLocked = batchStarted || hasStoredUpload(pages);
   return (
     <main className="page-column flex flex-col gap-4 p-6">
       {backControl}
@@ -101,7 +103,7 @@ export const CaptureScreen = ({
         </fieldset>
         {batchLocked ? (
           <p className="text-muted-foreground text-sm" role="status">
-            Die Stapelgröße ist festgelegt. Versuche fehlgeschlagene Seiten
+            Die Fotoauswahl ist gesperrt. Versuche fehlgeschlagene Seiten
             erneut.
           </p>
         ) : null}

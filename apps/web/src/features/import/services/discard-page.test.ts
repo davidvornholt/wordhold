@@ -29,10 +29,10 @@ it('deletes the open pages in one import session and keeps verified pages', asyn
           values (${courseId}, 'English', 'en')
         `;
         yield* sql`
-          insert into pages (id, course_id, import_session_id, import_position, image_path, status, verified_at)
+          insert into pages (id, course_id, import_session_id, import_position, import_expected_count, image_path, status, verified_at)
           values
-            (${pendingPageId}, ${courseId}, ${importSessionId}, 0, 'pages/pending.png', 'awaiting_verification', null),
-            (${verifiedPageId}, ${courseId}, ${importSessionId}, 1, 'pages/verified.png', 'verified', now())
+            (${pendingPageId}, ${courseId}, ${importSessionId}, 0, 2, 'pages/pending.png', 'awaiting_verification', null),
+            (${verifiedPageId}, ${courseId}, ${importSessionId}, 1, 2, 'pages/verified.png', 'verified', now())
         `;
 
         const removed: Array<string> = [];

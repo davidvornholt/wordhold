@@ -22,7 +22,7 @@
     "lint:fix": "biome check --write --error-on-warnings .",
     "test": "bun test",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "bun --env-file=.env.local drizzle-kit migrate",
+    "db:migrate": "bun --env-file=.env.local src/migrations/run.ts",
     "db:migrate:production": "bun src/migrations/run.ts",
     "db:backfill-units": "bun --env-file=.env.local src/migrations/backfill-units.ts",
     "db:backfill-introductions": "bun --env-file=.env.local src/migrations/backfill-introductions.ts"

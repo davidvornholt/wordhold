@@ -36,11 +36,12 @@ const CaptureScreen = () => {
         captureStatus === null ? (
           <Link
             className="text-muted-foreground text-sm underline"
-            onClick={() =>
+            onClick={() => {
+              queue.clearPersistedQueue();
               router.clearCache({
                 filter: (match) => match.routeId === '/',
-              })
-            }
+              });
+            }}
             to="/"
           >
             ← Übersicht
@@ -52,6 +53,7 @@ const CaptureScreen = () => {
         )
       }
       busy={queue.busy}
+      batchStarted={queue.processingStarted}
       courseName={course.name}
       error={queue.error}
       onFilesSelected={queue.addFiles}
@@ -63,6 +65,7 @@ const CaptureScreen = () => {
         reviewAvailable ? (
           <Link
             className="inline-flex min-h-11 items-center justify-center bg-primary px-4 py-2 text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
+            onClick={queue.clearPersistedQueue}
             params={{ sessionId: queue.importSessionId }}
             to="/imports/$sessionId"
           >
