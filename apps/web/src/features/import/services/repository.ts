@@ -88,6 +88,16 @@ export type ImportPageInput = {
   readonly imagePath: string;
 };
 
+export type PageUploadIdentity = Pick<
+  ImportPageInput,
+  | 'id'
+  | 'courseId'
+  | 'importSessionId'
+  | 'importPosition'
+  | 'importExpectedCount'
+  | 'imagePath'
+>;
+
 export type InsertedEntry = {
   readonly id: string;
   readonly targetText: string;
@@ -123,6 +133,9 @@ export type ImportRepositoryShape = {
     { readonly page: Page; readonly course: Course } | undefined,
     ImportDatabaseError
   >;
+  readonly getPageUpload: (
+    pageId: string,
+  ) => Effect.Effect<PageUploadIdentity | undefined, ImportDatabaseError>;
   readonly loadPendingExtraction: (
     pageId: string,
   ) => Effect.Effect<PendingExtraction | undefined, ImportDatabaseError>;

@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router';
 import { getCourse } from '../../../features/import/server-fns';
+import { hasStoredUpload } from '../../../features/import/services/upload-queue';
 import { CaptureScreen as CaptureScreenView } from '../../../features/import/ui/capture-screen';
 import { useUploadQueue } from '../../../features/import/ui/use-upload-queue';
 
@@ -15,21 +16,34 @@ const CaptureScreen = () => {
     queue.pages.length > 0 &&
     queue.pages.every((page) => page.stage === 'ready') &&
     storedPageIds.length === queue.pages.length;
+  const hasUnstoredPage = queue.pages.some(
+    (page) => !('pageId' in page) || page.pageId === null,
+  );
+  const keepCaptureOpen =
+    queue.busy || (hasStoredUpload(queue.pages) && hasUnstoredPage);
 
   return (
     <CaptureScreenView
       backControl={
-        <Link
-          className="text-muted-foreground text-sm underline"
-          onClick={() =>
-            router.clearCache({
-              filter: (match) => match.routeId === '/',
-            })
-          }
-          to="/"
-        >
-          ← Übersicht
-        </Link>
+        keepCaptureOpen ? (
+          <p className="text-muted-foreground text-sm" role="status">
+            {queue.busy
+              ? 'Bitte warte, bis alle Fotos verarbeitet sind.'
+              : 'Bitte wiederhole fehlgeschlagene Seiten, bevor du den Stapel verlässt.'}
+          </p>
+        ) : (
+          <Link
+            className="text-muted-foreground text-sm underline"
+            onClick={() =>
+              router.clearCache({
+                filter: (match) => match.routeId === '/',
+              })
+            }
+            to="/"
+          >
+            ← Übersicht
+          </Link>
+        )
       }
       busy={queue.busy}
       courseName={course.name}

@@ -1,5 +1,6 @@
 import { useId } from 'react';
 import {
+  hasStoredUpload,
   processedUploadCount,
   type QueuedPage,
 } from '../services/upload-queue';
@@ -59,9 +60,7 @@ export const CaptureUploadQueue = ({
   }
 
   const processed = processedUploadCount(pages);
-  const hasStoredPage = pages.some(
-    (page) => 'pageId' in page && page.pageId !== null,
-  );
+  const hasStoredPage = hasStoredUpload(pages);
   return (
     <section aria-labelledby={headingId} className="flex flex-col gap-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -84,8 +83,9 @@ export const CaptureUploadQueue = ({
         {pages.map((page, index) => {
           const status = statusDetails(page);
           const removable =
-            page.stage === 'waiting' ||
-            (page.stage === 'failed' && page.pageId === null && !hasStoredPage);
+            !hasStoredPage &&
+            (page.stage === 'waiting' ||
+              (page.stage === 'failed' && page.pageId === null));
           return (
             <li
               className={`flex gap-3 border border-border border-l-4 bg-card p-3 ${status.borderClass}`}

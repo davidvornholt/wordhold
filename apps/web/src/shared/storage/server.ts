@@ -35,7 +35,11 @@ const dataPath = (relativePath: string): string => {
 export const pageImageRelativePath = (
   pageId: string,
   extension: string,
-): string => `pages/${pageId}.${extension}`;
+  suffix?: string,
+): string =>
+  suffix === undefined
+    ? `pages/${pageId}.${extension}`
+    : `pages/${pageId}-${suffix}.${extension}`;
 
 export const audioRelativePath = (entryId: string, voice: string): string =>
   `audio/${entryId}-${voice.toLowerCase()}.mp3`;
@@ -99,8 +103,30 @@ const removeFile = (operation: string, relativePath: string) =>
     await removeIfPresent(() => unlink(dataPath(relativePath)));
   });
 
+const writeFileIfAbsent = (relativePath: string, bytes: Uint8Array) =>
+  tryStorage('write file if absent', async () => {
+    const path = dataPath(relativePath);
+    await mkdir(path.slice(0, path.lastIndexOf('/')), { recursive: true });
+    try {
+      await writeFile(path, bytes, { flag: 'wx' });
+    } catch (error) {
+      if (
+        typeof error !== 'object' ||
+        error === null ||
+        !('code' in error) ||
+        error.code !== 'EEXIST'
+      ) {
+        throw error;
+      }
+    }
+  });
+
 export type StorageShape = {
   readonly write: (
+    relativePath: string,
+    bytes: Uint8Array,
+  ) => Effect.Effect<void, StorageError>;
+  readonly writeIfAbsent: (
     relativePath: string,
     bytes: Uint8Array,
   ) => Effect.Effect<void, StorageError>;
@@ -127,6 +153,7 @@ export const StorageLive = Layer.succeed(
         await mkdir(path.slice(0, path.lastIndexOf('/')), { recursive: true });
         await writeFile(path, bytes);
       }),
+    writeIfAbsent: writeFileIfAbsent,
     read: (relativePath) =>
       tryStorage(
         'read file',

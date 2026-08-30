@@ -7,6 +7,7 @@ export default defineConfig({
     './src/schema/auth.ts',
     './src/schema/courses.ts',
     './src/schema/directions.ts',
+    './src/schema/import-sessions.ts',
     './src/schema/pages.ts',
     './src/schema/units.ts',
     './src/schema/entries.ts',

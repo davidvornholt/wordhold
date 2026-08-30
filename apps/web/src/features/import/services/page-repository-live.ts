@@ -1,7 +1,12 @@
 import type { ExtractionResult } from '@wordhold/ai/extraction';
 import type { Database } from '@wordhold/db/client';
 import { Effect } from 'effect';
-import { failure, insertPage } from './page-repository-insert';
+import { insertPage } from './page-repository-insert';
+import {
+  deletePendingImportSession,
+  getPageUpload,
+} from './page-repository-session';
+import { failure } from './page-repository-utils';
 import {
   type AudioRecoveryPage,
   type ImportPageInput,
@@ -158,6 +163,7 @@ export const pageRepositoryLive = (sql: Database) => ({
       }),
       Effect.mapError((cause) => failure('get page', cause)),
     ),
+  getPageUpload: (pageId: string) => getPageUpload(sql, pageId),
   loadPendingExtraction: (pageId: string) =>
     sql<{
       imagePath: string;
@@ -173,12 +179,5 @@ export const pageRepositoryLive = (sql: Database) => ({
     ),
   insertPage: (input: ImportPageInput) => insertPage(sql, input),
   deletePendingImportSession: (sessionId: string) =>
-    sql<{
-      imagePath: string;
-    }>`delete from pages where import_session_id = ${sessionId} and status = 'awaiting_verification' returning image_path as "imagePath"`.pipe(
-      Effect.map((rows) => rows.map((row) => row.imagePath)),
-      Effect.mapError((cause) =>
-        failure('delete pending import session', cause),
-      ),
-    ),
+    deletePendingImportSession(sql, sessionId),
 });

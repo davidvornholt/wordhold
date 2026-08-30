@@ -121,9 +121,30 @@ export const storeUploadedPage = (input: {
       });
     }
     yield* reconcileStoredFiles;
-    const imagePath = pageImageRelativePath(input.pageId, validated.extension);
+    const existingPage = yield* repository.getPageUpload(input.pageId);
+    if (
+      existingPage !== undefined &&
+      (existingPage.courseId !== input.courseId ||
+        existingPage.importSessionId !== input.importSessionId ||
+        existingPage.importPosition !== input.importPosition ||
+        existingPage.importExpectedCount !== input.importExpectedCount)
+    ) {
+      return yield* Effect.fail(
+        new Error('The upload page identity does not match.'),
+      );
+    }
+    const imagePath =
+      existingPage?.imagePath ??
+      pageImageRelativePath(
+        input.pageId,
+        validated.extension,
+        crypto.randomUUID(),
+      );
     yield* persistFileReference({
-      write: storage.write(imagePath, validated.bytes),
+      write:
+        existingPage === undefined
+          ? storage.write(imagePath, validated.bytes)
+          : storage.writeIfAbsent(imagePath, validated.bytes),
       persistReference: repository.insertPage({
         id: input.pageId,
         courseId: input.courseId,

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { Effect } from 'effect';
 import {
+  hasStoredUpload,
   nextUploadPosition,
   type ProcessableQueuedPage,
   processQueuedPage,
@@ -129,5 +130,21 @@ describe('nextUploadPosition', () => {
   it('fills the first available slot after a queued page is removed', () => {
     const usedPositions = new Set([firstPosition, holePosition, lastPosition]);
     expect(nextUploadPosition(usedPositions)).toBe(firstPosition + 1);
+  });
+});
+
+describe('hasStoredUpload', () => {
+  it('locks the batch once any page has been stored', () => {
+    expect(hasStoredUpload([waitingPage])).toBe(false);
+    expect(
+      hasStoredUpload([
+        {
+          ...waitingPage,
+          stage: 'failed',
+          pageId: 'stored-page',
+          error: 'Auslesen fehlgeschlagen.',
+        },
+      ]),
+    ).toBe(true);
   });
 });

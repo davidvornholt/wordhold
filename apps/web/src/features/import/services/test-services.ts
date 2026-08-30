@@ -61,6 +61,7 @@ export const makeImportRepository = (
       }),
     listAudioRecoveryPages: Effect.succeed([]),
     getPage: () => Effect.succeed({ page, course }),
+    getPageUpload: () => Effect.succeed(undefined),
     listUnits: () => Effect.succeed([unit]),
     loadPendingExtraction: () =>
       Effect.succeed({ imagePath: page.imagePath, language: 'fr' }),
@@ -76,6 +77,7 @@ export const makeImportRepository = (
 export const makeStorage = (overrides: Partial<StorageShape> = {}) =>
   Storage.of({
     write: () => Effect.void,
+    writeIfAbsent: () => Effect.void,
     read: () => Effect.succeed(new Uint8Array()),
     remove: () => Effect.void,
     reconcile: () => Effect.succeed([]),

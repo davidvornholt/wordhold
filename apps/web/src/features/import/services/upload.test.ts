@@ -145,4 +145,48 @@ describe('storeUploadedPage', () => {
     ).rejects.toThrow('insert failed');
     expect(actions).toEqual(['write', 'insert', 'remove']);
   });
+
+  it('does not overwrite an existing page when a retry reuses its identity', async () => {
+    const actions: Array<string> = [];
+    const repository = makeImportRepository({
+      getPageUpload: () =>
+        Effect.succeed({
+          id: 'd9428888-122b-41e1-b85c-61cd3cbb3214',
+          courseId: 'course',
+          importSessionId: 'd9428888-122b-41e1-b85c-61cd3cbb3213',
+          importPosition: 0,
+          importExpectedCount: 1,
+          imagePath: 'pages/existing.png',
+        }),
+    });
+    const storage = makeStorage({
+      write: () => Effect.sync(() => actions.push('write')),
+      writeIfAbsent: () => Effect.sync(() => actions.push('write-if-absent')),
+    });
+    await runUpload(imageFile(pngBytes()), repository, storage);
+    expect(actions).toEqual(['write-if-absent']);
+  });
+
+  it('rejects a retry with a different page identity before writing', async () => {
+    const actions: Array<string> = [];
+    const repository = makeImportRepository({
+      getPageUpload: () =>
+        Effect.succeed({
+          id: 'd9428888-122b-41e1-b85c-61cd3cbb3214',
+          courseId: 'other-course',
+          importSessionId: 'd9428888-122b-41e1-b85c-61cd3cbb3213',
+          importPosition: 0,
+          importExpectedCount: 1,
+          imagePath: 'pages/existing.png',
+        }),
+    });
+    const storage = makeStorage({
+      write: () => Effect.sync(() => actions.push('write')),
+      writeIfAbsent: () => Effect.sync(() => actions.push('write-if-absent')),
+    });
+    await expect(
+      runUpload(imageFile(pngBytes()), repository, storage),
+    ).rejects.toThrow('identity');
+    expect(actions).toEqual([]);
+  });
 });

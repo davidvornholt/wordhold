@@ -1,20 +1,21 @@
 import type { Database } from '@wordhold/db/client';
 import { Effect } from 'effect';
-import { ImportDatabaseError } from '../errors/import-database-error';
+import { failure, sessionLock } from './page-repository-utils';
 import type { ImportPageInput } from './repository';
-
-export const failure = (operation: string, cause: unknown) =>
-  new ImportDatabaseError({
-    operation,
-    cause,
-    message: `Database operation failed: ${operation}.`,
-  });
 
 export const insertPage = (sql: Database, input: ImportPageInput) =>
   sql
     .withTransaction(
       Effect.gen(function* () {
-        yield* sql`select pg_advisory_xact_lock(hashtextextended(${`wordhold:import-session:${input.importSessionId}`}, 0))`;
+        yield* sessionLock(sql, input.importSessionId);
+        const abandonedSession = yield* sql<{
+          id: string;
+        }>`select id from import_session_tombstones where id = ${input.importSessionId} limit 1`;
+        if (abandonedSession.length > 0) {
+          return yield* Effect.fail(
+            new Error('The upload session has already been discarded.'),
+          );
+        }
         const existingPage = yield* sql<{
           courseId: string;
           importSessionId: string;

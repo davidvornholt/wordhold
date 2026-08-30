@@ -2,6 +2,7 @@ import { Effect, Schema } from 'effect';
 import { type SubmitEvent, useEffect, useRef, useState } from 'react';
 import { retryExtraction } from '../server-fns';
 import {
+  hasStoredUpload,
   maximumUploadBatchSize,
   nextUploadPosition,
   type ProcessableQueuedPage,
@@ -111,6 +112,12 @@ export const useUploadQueue = (courseId: string) => {
   };
 
   const addFiles = (files: ReadonlyArray<File>): void => {
+    if (hasStoredUpload(pages)) {
+      setError(
+        'Die Stapelgröße ist bereits festgelegt. Versuche fehlgeschlagene Seiten erneut.',
+      );
+      return;
+    }
     const remaining = maximumUploadBatchSize - pages.length;
     const accepted = files.slice(0, remaining);
     setError(

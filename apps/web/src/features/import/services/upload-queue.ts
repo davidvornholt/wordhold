@@ -27,6 +27,9 @@ export type ProcessableQueuedPage = Extract<
   { readonly stage: 'waiting' | 'failed' }
 >;
 
+export const hasStoredUpload = (pages: ReadonlyArray<QueuedPage>): boolean =>
+  pages.some((page) => 'pageId' in page && page.pageId !== null);
+
 type UploadQueueOperations = {
   readonly store: (file: File) => Effect.Effect<string, unknown>;
   readonly extract: (pageId: string) => Effect.Effect<void, unknown>;

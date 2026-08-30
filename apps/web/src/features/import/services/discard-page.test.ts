@@ -9,6 +9,7 @@ import { Storage } from '../../../shared/storage/server';
 import { StorageError } from '../../../shared/storage/storage-error';
 import { PageNotPendingError } from '../errors/page-not-pending-error';
 import { discardPendingImportSession } from './discard-page';
+import { ImportRepository } from './repository';
 import { ImportRepositoryLive } from './repository-live';
 import { makeStorage } from './test-services';
 
@@ -22,6 +23,7 @@ it('deletes the open pages in one import session and keeps verified pages', asyn
     withMigratedTestDatabase((database) =>
       Effect.gen(function* () {
         const sql = yield* Database;
+        const repository = yield* ImportRepository;
         yield* sql`
           insert into courses (id, name, target_language)
           values (${courseId}, 'English', 'en')
@@ -74,7 +76,35 @@ it('deletes the open pages in one import session and keeps verified pages', asyn
           select id from pages order by id
         `;
         expect(remaining).toEqual([{ id: verifiedPageId }]);
-      }).pipe(Effect.provide(testDatabaseLayer(database.url))),
+
+        const tombstones = yield* sql<{ readonly id: string }>`
+          select id from import_session_tombstones
+          where id = ${importSessionId}
+        `;
+        expect(tombstones).toEqual([{ id: importSessionId }]);
+
+        const lateUpload = yield* Effect.either(
+          repository.insertPage({
+            id: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+            courseId,
+            importSessionId,
+            importPosition: 0,
+            importExpectedCount: 1,
+            imagePath: 'pages/late.png',
+          }),
+        );
+        expect(lateUpload).toEqual(
+          expect.objectContaining({
+            _tag: 'Left',
+            left: expect.objectContaining({
+              message: 'Database operation failed: insert page.',
+            }),
+          }),
+        );
+      }).pipe(
+        Effect.provide(ImportRepositoryLive),
+        Effect.provide(testDatabaseLayer(database.url)),
+      ),
     ),
   );
 });
