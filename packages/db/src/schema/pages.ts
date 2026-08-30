@@ -16,6 +16,13 @@ export const pageStatuses = ['awaiting_verification', 'verified'] as const;
 export type PageStatus = (typeof pageStatuses)[number];
 export const pageStatusEnum = pgEnum('page_status', pageStatuses);
 
+export const pageReviewOrders = ['page_number', 'scan'] as const;
+export type PageReviewOrder = (typeof pageReviewOrders)[number];
+export const pageReviewOrderEnum = pgEnum(
+  'page_review_order',
+  pageReviewOrders,
+);
+
 // A captured textbook page. The image is kept permanently as provenance;
 // `extraction` holds the raw model output between capture and human
 // verification, after which entries reference the page directly.
@@ -29,6 +36,7 @@ export const pages = pgTable(
     importSessionId: uuid('import_session_id').notNull().defaultRandom(),
     importPosition: integer('import_position').notNull().default(0),
     importExpectedCount: integer('import_expected_count').notNull().default(1),
+    reviewOrder: pageReviewOrderEnum('review_order'),
     imagePath: text('image_path').notNull(),
     extraction: jsonb('extraction'),
     status: pageStatusEnum('status').notNull().default('awaiting_verification'),

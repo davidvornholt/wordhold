@@ -8,7 +8,7 @@ import {
   deletePendingImportSession,
   getPageUpload,
 } from './page-repository-session';
-import { failure } from './page-repository-utils';
+import { failure, sessionLock } from './page-repository-utils';
 import {
   importSessionIsComplete,
   orderPagesForReview,
@@ -61,6 +61,7 @@ const getImportSession = (sql: Database, sessionId: string) =>
     pageId: string;
     position: number;
     expectedPageCount: number;
+    reviewOrder: 'page_number' | 'scan' | null;
     status: 'awaiting_verification' | 'verified';
     extraction: unknown;
   }>`
@@ -71,6 +72,7 @@ const getImportSession = (sql: Database, sessionId: string) =>
       pages.id as "pageId",
       pages.import_position as position,
       pages.import_expected_count as "expectedPageCount",
+      pages.review_order as "reviewOrder",
       pages.status,
       pages.extraction
     from pages
@@ -224,10 +226,25 @@ export const pageRepositoryLive = (sql: Database) => ({
       Effect.mapError((cause) => failure('load pending extraction', cause)),
     ),
   saveExtractionIfPending: (pageId: string, extraction: ExtractionResult) =>
-    sql<Page>`update pages set extraction = ${JSON.stringify(extraction)}::jsonb where id = ${pageId} and status = 'awaiting_verification' returning id, course_id as "courseId", import_session_id as "importSessionId", import_position as "importPosition", image_path as "imagePath", extraction, status, captured_at as "capturedAt", verified_at as "verifiedAt"`.pipe(
-      Effect.map((rows) => rows[0]),
-      Effect.mapError((cause) => failure('save pending extraction', cause)),
-    ),
+    sql
+      .withTransaction(
+        Effect.gen(function* () {
+          const pageRows = yield* sql<{
+            importSessionId: string;
+          }>`select import_session_id as "importSessionId" from pages where id = ${pageId} and status = 'awaiting_verification' limit 1`;
+          const [page] = pageRows;
+          if (page === undefined) {
+            return;
+          }
+          yield* sessionLock(sql, page.importSessionId);
+          const rows =
+            yield* sql<Page>`update pages set extraction = ${JSON.stringify(extraction)}::jsonb where id = ${pageId} and status = 'awaiting_verification' returning id, course_id as "courseId", import_session_id as "importSessionId", import_position as "importPosition", image_path as "imagePath", extraction, status, captured_at as "capturedAt", verified_at as "verifiedAt"`;
+          return rows[0];
+        }),
+      )
+      .pipe(
+        Effect.mapError((cause) => failure('save pending extraction', cause)),
+      ),
   insertPage: (input: ImportPageInput) => insertPage(sql, input),
   deletePendingImportSession: (sessionId: string) =>
     deletePendingImportSession(sql, sessionId),

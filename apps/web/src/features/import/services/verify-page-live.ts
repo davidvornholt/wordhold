@@ -38,8 +38,9 @@ const claimPageForReview = (sql: Database, pageId: string) =>
       extraction: unknown;
       expectedPageCount: number;
       position: number;
+      reviewOrder: 'page_number' | 'scan' | null;
       status: 'awaiting_verification' | 'verified';
-    }>`select id, extraction, import_expected_count as "expectedPageCount", import_position as position, status from pages where import_session_id = ${page.importSessionId} order by import_position, id`;
+    }>`select id, extraction, import_expected_count as "expectedPageCount", import_position as position, review_order as "reviewOrder", status from pages where import_session_id = ${page.importSessionId} order by import_position, id`;
     const ordered = orderPagesForReview(sessionPages);
     const firstPendingPage = ordered.pages.find(
       (sessionPage) => sessionPage.status === 'awaiting_verification',
@@ -50,6 +51,7 @@ const claimPageForReview = (sql: Database, pageId: string) =>
     ) {
       return false;
     }
+    yield* sql`update pages set review_order = ${ordered.order} where import_session_id = ${page.importSessionId}`;
     const claimed = yield* sql<{
       id: string;
     }>`update pages set status = 'verified', verified_at = now() where id = ${pageId} and status = 'awaiting_verification' returning id`;

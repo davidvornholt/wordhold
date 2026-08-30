@@ -35,6 +35,7 @@ export const detectedPageNumberFrom = (
 type StoredReviewPage = {
   readonly extraction: unknown;
   readonly position: number;
+  readonly reviewOrder?: PageReviewOrder | null;
   readonly status: 'awaiting_verification' | 'verified';
 };
 
@@ -66,6 +67,9 @@ export const orderPagesForReview = <Page extends StoredReviewPage>(
     ...page,
     detectedPageNumber: detectedPageNumberFrom(page.extraction),
   }));
+  const storedReviewOrder = pages.find(
+    (page) => page.reviewOrder !== undefined && page.reviewOrder !== null,
+  )?.reviewOrder;
   const reliableNumbers = detectedPages.flatMap((page) =>
     page.detectedPageNumber !== null &&
     page.detectedPageNumber.confidence >= minimumPageNumberConfidence
@@ -75,14 +79,20 @@ export const orderPagesForReview = <Page extends StoredReviewPage>(
   const sortByPageNumber =
     reliableNumbers.length === pages.length &&
     new Set(reliableNumbers).size === pages.length;
+  const inferredOrder: PageReviewOrder = sortByPageNumber
+    ? 'page_number'
+    : 'scan';
+  const order =
+    storedReviewOrder ??
+    (pages.some((page) => page.status === 'verified') ? 'scan' : inferredOrder);
   const sortedPages = detectedPages.sort((left, right) =>
-    sortByPageNumber
+    order === 'page_number'
       ? (left.detectedPageNumber?.value ?? 0) -
         (right.detectedPageNumber?.value ?? 0)
       : left.position - right.position,
   );
   return {
-    order: sortByPageNumber ? 'page_number' : 'scan',
+    order,
     pages: [
       ...sortedPages.filter((page) => page.status === 'verified'),
       ...sortedPages.filter((page) => page.status === 'awaiting_verification'),
