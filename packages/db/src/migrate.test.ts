@@ -7,6 +7,14 @@ import {
 import { Effect } from 'effect';
 import { DatabaseMigrationError, migrateDatabase } from './migrate';
 
+// Replay the final migrations from their pre-DDL state.
+const importPositionConstraintMigrationHash =
+  '18226dcef2d9e932168f3daed465b85680de2d9367e67ab5d0551bc6104954db';
+const reviewOrderMigrationHash =
+  '3b01f431635ab6d65034133670f39894f3ea9b7710520a3659c4f0e426a092d2';
+const reviewPositionMigrationHash =
+  '667da7736b64b0656bc94e13aa92a626ee11d920ef4a49b55660274959306df1';
+
 const getMigrationError = (url: string) =>
   Effect.runPromise(migrateDatabase(url).pipe(Effect.flip));
 
@@ -32,13 +40,17 @@ it('applies every migration and is safe to rerun', async () => {
           set import_expected_count = 1
           where import_session_id = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc'
         `;
+        yield* sql`alter table pages drop constraint pages_review_position_non_negative`;
+        yield* sql`drop index pages_import_session_review_position_unique`;
+        yield* sql`alter table pages drop column review_position`;
+        yield* sql`alter table pages drop column review_order`;
+        yield* sql`drop type page_review_order`;
         yield* sql`
           delete from drizzle.__drizzle_migrations
-          where id = (
-            select id
-            from drizzle.__drizzle_migrations
-            order by created_at desc
-            limit 1
+          where hash in (
+            ${importPositionConstraintMigrationHash},
+            ${reviewOrderMigrationHash},
+            ${reviewPositionMigrationHash}
           )
         `;
         yield* migrateDatabase(database.url);
