@@ -27,6 +27,7 @@ const CardRevision = Schema.Number.pipe(
   Schema.nonNegative(),
   Schema.lessThanOrEqualTo(maximumIncrementablePostgresInteger),
 );
+const ForbiddenField = Schema.optional(Schema.Never);
 
 const SubmitPayloadBase = Schema.Struct({
   cardId: Schema.UUID,
@@ -40,6 +41,7 @@ const SubmitPayloadBase = Schema.Struct({
 const AnsweredPayloadBase = Schema.Struct({
   ...SubmitPayloadBase.fields,
   answer: Schema.String.pipe(Schema.maxLength(maximumSubmittedAnswerLength)),
+  skipped: ForbiddenField,
 });
 
 export const SubmitPayload = Schema.Union(
@@ -58,6 +60,9 @@ export const SubmitPayload = Schema.Union(
   // all: the card is committed as a lapse and the solution is revealed.
   Schema.Struct({
     ...SubmitPayloadBase.fields,
+    answer: ForbiddenField,
+    wrongAnswerResolution: ForbiddenField,
+    assessmentId: ForbiddenField,
     skipped: Schema.Literal(true),
   }),
 );

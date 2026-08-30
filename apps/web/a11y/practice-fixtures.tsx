@@ -168,7 +168,7 @@ export const DeferredPracticeFixture = () => {
     const pending = makeDeferred();
     deferred.current = pending;
     setCalls((count) => count + 1);
-    setSubmittedAnswer('answer' in data ? data.answer : '(übersprungen)');
+    setSubmittedAnswer(data.skipped === true ? '(übersprungen)' : data.answer);
     return pending.promise;
   };
   return (

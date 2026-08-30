@@ -87,6 +87,29 @@ describe('decodeSubmitPayload', () => {
     ).toThrow();
   });
 
+  it('rejects a payload that mixes skip and answer fields', () => {
+    const {
+      answer: _answer,
+      wrongAnswerResolution: _resolution,
+      ...withoutAnswer
+    } = validPayload;
+    expect(() =>
+      decodeSubmitPayload({
+        ...withoutAnswer,
+        answer: 'secret',
+        skipped: true,
+        wrongAnswerResolution: 'defer',
+      }),
+    ).toThrow();
+    expect(() =>
+      decodeSubmitPayload({
+        ...withoutAnswer,
+        skipped: true,
+        wrongAnswerResolution: 'defer',
+      }),
+    ).toThrow();
+  });
+
   it('requires the rejected assessment when resolving a wrong answer', () => {
     expect(() =>
       decodeSubmitPayload({
