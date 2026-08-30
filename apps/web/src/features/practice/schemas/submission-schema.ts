@@ -27,31 +27,50 @@ const CardRevision = Schema.Number.pipe(
   Schema.nonNegative(),
   Schema.lessThanOrEqualTo(maximumIncrementablePostgresInteger),
 );
+const ForbiddenField = Schema.optional(Schema.Never);
 
 const SubmitPayloadBase = Schema.Struct({
   cardId: Schema.UUID,
   revision: CardRevision,
-  answer: Schema.String.pipe(Schema.maxLength(maximumSubmittedAnswerLength)),
-  elapsedMs: Schema.optional(ElapsedMilliseconds),
   // Which sitting the answer came from. This is provenance for the review
   // log. Scheduling is derived from the server-owned card state.
   mode: Schema.Literal(...reviewModes),
+  elapsedMs: Schema.optional(ElapsedMilliseconds),
+});
+
+const AnsweredPayloadBase = Schema.Struct({
+  ...SubmitPayloadBase.fields,
+  answer: Schema.String.pipe(Schema.maxLength(maximumSubmittedAnswerLength)),
+  skipped: ForbiddenField,
 });
 
 export const SubmitPayload = Schema.Union(
   Schema.Struct({
-    ...SubmitPayloadBase.fields,
+    ...AnsweredPayloadBase.fields,
     wrongAnswerResolution: Schema.Literal('defer'),
   }),
   Schema.Struct({
-    ...SubmitPayloadBase.fields,
+    ...AnsweredPayloadBase.fields,
     // A resolution must point to the exact rejected server assessment shown
     // to the learner. Re-grading here could change what gets committed.
     wrongAnswerResolution: Schema.Literal('again', 'hard'),
     assessmentId: Schema.UUID,
   }),
+  // The learner gave up without attempting an answer. No answer travels at
+  // all: the card is committed as a lapse and the solution is revealed.
+  Schema.Struct({
+    ...SubmitPayloadBase.fields,
+    answer: ForbiddenField,
+    wrongAnswerResolution: ForbiddenField,
+    assessmentId: ForbiddenField,
+    skipped: Schema.Literal(true),
+  }),
 );
 
 export type SubmitPayloadData = typeof SubmitPayload.Type;
+export type AnsweredSubmitData = Exclude<
+  SubmitPayloadData,
+  { readonly skipped: true }
+>;
 
 export const decodeSubmitPayload = Schema.decodeUnknownSync(SubmitPayload);

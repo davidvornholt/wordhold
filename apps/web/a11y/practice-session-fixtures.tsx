@@ -41,6 +41,23 @@ const grade = (
 ): Promise<SubmitResult> => {
   const expected =
     sessionItems.find((item) => item.cardId === data.cardId)?.targetText ?? '';
+  if ('skipped' in data) {
+    return Promise.resolve({
+      graded: true,
+      correct: false,
+      stored: true,
+      revision: data.revision + 1,
+      rating: ratings.again,
+      expectedAnswers: [expected],
+      explanation: null,
+      acceptedAsAlternative: false,
+      schedule: {
+        advanced: true,
+        state: 'relearning',
+        dueAt: new Date(Date.now() - millisecondsPerSecond),
+      },
+    });
+  }
   if (data.answer === 'ungraded') {
     return Promise.resolve({
       graded: false,

@@ -7,8 +7,14 @@ import {
   isCorrect,
 } from '../../../shared/grading/rating';
 import { StaleAnswerSubmissionError } from '../errors/practice-errors';
-import type { SubmitResult } from '../schemas/practice-models';
-import type { SubmitPayloadData } from '../schemas/submission-schema';
+import type {
+  SubmissionRecord,
+  SubmitResult,
+} from '../schemas/practice-models';
+import type {
+  AnsweredSubmitData,
+  SubmitPayloadData,
+} from '../schemas/submission-schema';
 import {
   type AssessedAnswer,
   gradeAnswer,
@@ -26,7 +32,7 @@ type SubmissionDependencies = {
 
 const pendingRejectedResult = (
   assessed: AssessedAnswer,
-  data: SubmitPayloadData,
+  data: AnsweredSubmitData,
   expectedAnswers: ReadonlyArray<string>,
 ): SubmitResult | null => {
   if (isCorrect(assessed.outcome) || data.wrongAnswerResolution !== 'defer') {
@@ -46,6 +52,59 @@ const pendingRejectedResult = (
   };
 };
 
+type CommitOutcomeInput = {
+  readonly reviews: PracticeReviewStore['Type'];
+  readonly row: SubmissionRecord;
+  readonly data: SubmitPayloadData;
+  readonly outcome: GradeOutcome;
+  readonly answer: string;
+  readonly normalizedAnswer: string;
+  readonly expectedAnswers: ReadonlyArray<string>;
+};
+
+const commitOutcome = ({
+  reviews,
+  row,
+  data,
+  outcome,
+  answer,
+  normalizedAnswer,
+  expectedAnswers,
+}: CommitOutcomeInput) =>
+  Effect.gen(function* () {
+    const elapsedMs = data.elapsedMs ?? null;
+    const rating = deriveRating(outcome, elapsedMs);
+    const reviewedAt = new Date(yield* Clock.currentTimeMillis);
+    const persisted = yield* reviews.commit({
+      card: row.card,
+      expectedRevision: data.revision,
+      rating,
+      reviewedAt,
+      outcome,
+      answer,
+      elapsedMs,
+      entryId: row.entry.id,
+      direction: row.card.direction,
+      normalizedAnswer,
+      mode: data.mode,
+    });
+    const assessed =
+      outcome.method === 'learner-correction' ? outcome.assessed : outcome;
+    return {
+      graded: true as const,
+      correct: isCorrect(outcome),
+      stored: true as const,
+      revision: persisted.revision,
+      rating,
+      expectedAnswers,
+      explanation:
+        assessed.method === 'judge' ? assessed.verdict.explanation : null,
+      acceptedAsAlternative:
+        assessed.method === 'judge' && isAcceptedAlternative(assessed.verdict),
+      schedule: persisted.schedule,
+    };
+  });
+
 export const resolveAnswerSubmission = (
   data: SubmitPayloadData,
   { reviews, cache, judge }: SubmissionDependencies,
@@ -61,8 +120,21 @@ export const resolveAnswerSubmission = (
       row.entry.id,
       row.card.direction,
     );
-    const normalized = normalizeAnswer(data.answer);
     const expectedAnswers = accepted.map((answer) => answer.text);
+    if ('skipped' in data) {
+      // A skip is never graded: it reveals the solution and commits a lapse
+      // without consulting the matcher or the judge.
+      return yield* commitOutcome({
+        reviews,
+        row,
+        data,
+        outcome: { method: 'skip' },
+        answer: '',
+        normalizedAnswer: '',
+        expectedAnswers,
+      });
+    }
+    const normalized = normalizeAnswer(data.answer);
     const assessment = yield* data.wrongAnswerResolution === 'defer'
       ? gradeAnswer({ row, accepted, data, normalized, cache, judge })
       : loadRejectedAssessment({
@@ -84,38 +156,17 @@ export const resolveAnswerSubmission = (
       return pending;
     }
     const assessed = assessment.outcome;
-    const assessedCorrect = isCorrect(assessed);
     const outcome: GradeOutcome =
-      !assessedCorrect && data.wrongAnswerResolution === 'hard'
+      !isCorrect(assessed) && data.wrongAnswerResolution === 'hard'
         ? { method: 'learner-correction', assessed }
         : assessed;
-    const elapsedMs = data.elapsedMs ?? null;
-    const rating = deriveRating(outcome, elapsedMs);
-    const reviewedAt = new Date(yield* Clock.currentTimeMillis);
-    const persisted = yield* reviews.commit({
-      card: row.card,
-      expectedRevision: data.revision,
-      rating,
-      reviewedAt,
+    return yield* commitOutcome({
+      reviews,
+      row,
+      data,
       outcome,
       answer: data.answer,
-      elapsedMs,
-      entryId: row.entry.id,
-      direction: row.card.direction,
       normalizedAnswer: normalized,
-      mode: data.mode,
-    });
-    return {
-      graded: true as const,
-      correct: isCorrect(outcome),
-      stored: true as const,
-      revision: persisted.revision,
-      rating,
       expectedAnswers,
-      explanation:
-        assessed.method === 'judge' ? assessed.verdict.explanation : null,
-      acceptedAsAlternative:
-        assessed.method === 'judge' && isAcceptedAlternative(assessed.verdict),
-      schedule: persisted.schedule,
-    };
+    });
   });

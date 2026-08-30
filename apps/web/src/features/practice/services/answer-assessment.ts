@@ -3,7 +3,7 @@ import type { AssessedGradeOutcome } from '../../../shared/grading/rating';
 import { englishNames } from '../../../shared/languages';
 import { StaleAnswerSubmissionError } from '../errors/practice-errors';
 import type { SubmissionRecord } from '../schemas/practice-models';
-import type { SubmitPayloadData } from '../schemas/submission-schema';
+import type { AnsweredSubmitData } from '../schemas/submission-schema';
 import {
   type AcceptedAnswer,
   isDeterministicMatch,
@@ -25,7 +25,7 @@ export type AssessedAnswer =
 type GradeAnswerInput = {
   readonly row: SubmissionRecord;
   readonly accepted: ReadonlyArray<AcceptedAnswer>;
-  readonly data: SubmitPayloadData;
+  readonly data: AnsweredSubmitData;
   readonly normalized: string;
   readonly cache: JudgeCacheStore['Type'];
   readonly judge: PracticeJudge['Type'];

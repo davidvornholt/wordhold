@@ -14,7 +14,9 @@ export type GradeOutcome =
   | {
       readonly method: 'learner-correction';
       readonly assessed: AssessedGradeOutcome;
-    };
+    }
+  // The learner revealed the answer without attempting one: always a lapse.
+  | { readonly method: 'skip' };
 
 const fastAnswerMs = 5000;
 
@@ -29,13 +31,13 @@ export const ratings = {
 export const isCorrect = (outcome: GradeOutcome): boolean =>
   outcome.method === 'exact' ||
   outcome.method === 'learner-correction' ||
-  outcome.verdict.correct;
+  (outcome.method === 'judge' && outcome.verdict.correct);
 
 export const deriveRating = (
   outcome: GradeOutcome,
   elapsedMs: number | null,
 ): DerivedRating => {
-  if (!isCorrect(outcome)) {
+  if (outcome.method === 'skip') {
     return ratings.again;
   }
   if (outcome.method === 'learner-correction') {
@@ -47,6 +49,9 @@ export const deriveRating = (
       : ratings.good;
   }
   const { verdict } = outcome;
+  if (!verdict.correct) {
+    return ratings.again;
+  }
   const flawless =
     verdict.meaning.ok &&
     verdict.grammar.ok &&
