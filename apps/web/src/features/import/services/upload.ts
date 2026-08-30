@@ -153,7 +153,8 @@ export const storeUploadedPage = (input: {
         importExpectedCount: input.importExpectedCount,
         imagePath,
       }),
-      remove: storage.remove(imagePath),
+      remove:
+        existingPage === undefined ? storage.remove(imagePath) : Effect.void,
     });
 
     return { pageId: input.pageId };

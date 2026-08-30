@@ -19,19 +19,21 @@ const CaptureScreen = () => {
   const hasUnstoredPage = queue.pages.some(
     (page) => !('pageId' in page) || page.pageId === null,
   );
-  const keepCaptureOpen =
-    queue.busy || (hasStoredUpload(queue.pages) && hasUnstoredPage);
+  let captureStatus: string | null = null;
+  if (queue.busy) {
+    captureStatus = 'Bitte warte, bis alle Fotos verarbeitet sind.';
+  } else if (hasUnstoredPage && hasStoredUpload(queue.pages)) {
+    captureStatus =
+      'Bitte wiederhole fehlgeschlagene Seiten, bevor du den Stapel verlässt.';
+  } else if (hasUnstoredPage) {
+    captureStatus =
+      'Verarbeite oder entferne die offenen Seiten, bevor du den Stapel verlässt.';
+  }
 
   return (
     <CaptureScreenView
       backControl={
-        keepCaptureOpen ? (
-          <p className="text-muted-foreground text-sm" role="status">
-            {queue.busy
-              ? 'Bitte warte, bis alle Fotos verarbeitet sind.'
-              : 'Bitte wiederhole fehlgeschlagene Seiten, bevor du den Stapel verlässt.'}
-          </p>
-        ) : (
+        captureStatus === null ? (
           <Link
             className="text-muted-foreground text-sm underline"
             onClick={() =>
@@ -43,6 +45,10 @@ const CaptureScreen = () => {
           >
             ← Übersicht
           </Link>
+        ) : (
+          <p className="text-muted-foreground text-sm" role="status">
+            {captureStatus}
+          </p>
         )
       }
       busy={queue.busy}
