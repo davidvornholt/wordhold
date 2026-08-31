@@ -50,9 +50,11 @@ export const makeImportRepository = (
         capturedAt: page.capturedAt,
         expectedPageCount: 1,
         isComplete: true,
+        reviewOrder: 'scan',
         pages: [
           {
             id: page.id,
+            pageNumber: null,
             position: page.importPosition,
             status: page.status,
             extractionReady: page.extraction !== null,

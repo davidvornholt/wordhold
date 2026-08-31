@@ -28,6 +28,7 @@ const renderFeedback = (submittedAnswer: string) =>
       repeated={false}
       resolution={null}
       result={result}
+      skipped={false}
       submittedAnswer={submittedAnswer}
     />,
   );
@@ -47,7 +48,31 @@ const renderHeldFeedback = () =>
           advanced: false,
         },
       }}
+      skipped={false}
       submittedAnswer="waiter"
+    />,
+  );
+
+const renderSkippedFeedback = () =>
+  renderToStaticMarkup(
+    <FeedbackPanel
+      audioUrl={null}
+      onNext={() => undefined}
+      onResolveWrong={() => undefined}
+      repeated={false}
+      resolution={null}
+      result={{
+        ...result,
+        correct: false,
+        rating: 1,
+        schedule: {
+          advanced: true,
+          state: 'relearning',
+          dueAt: new Date('2026-08-30T12:10:00Z'),
+        },
+      }}
+      skipped={true}
+      submittedAnswer=""
     />,
   );
 
@@ -63,5 +88,12 @@ describe('answer feedback', () => {
   it('distinguishes an early free exercise from a regular review', () => {
     expect(renderHeldFeedback()).toContain('Zusätzliche Übung.');
     expect(renderHeldFeedback()).toContain('Lernplan unverändert.');
+  });
+
+  it('reveals the solution of a skipped card without judging an attempt', () => {
+    const markup = renderSkippedFeedback();
+    expect(markup).toContain('Nicht gewusst');
+    expect(markup).toContain('Erwartet:');
+    expect(markup).not.toContain('Als richtig werten');
   });
 });

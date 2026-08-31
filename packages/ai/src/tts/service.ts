@@ -2,24 +2,15 @@ import { PollyClient, SynthesizeSpeechCommand } from '@aws-sdk/client-polly';
 import { Effect, Redacted } from 'effect';
 import { awsAccessKeyId, awsRegion, awsSecretAccessKey } from '../config';
 import { TtsError } from './error';
-
-// One neural voice per language; swapping the TTS provider later only means
-// replacing this service implementation.
-const voices: Record<string, string> = {
-  de: 'Vicki',
-  en: 'Amy',
-  es: 'Lucia',
-  fr: 'Lea',
-};
+import { prepareSpeechText, type TtsLanguage } from './speech-text';
 
 export type TtsRequest = {
   readonly text: string;
-  readonly language: 'de' | 'en' | 'es' | 'fr';
+  readonly language: TtsLanguage;
 };
 
 export type TtsResult = {
   readonly audio: Uint8Array;
-  readonly voice: string;
 };
 
 export class Tts extends Effect.Service<Tts>()('@wordhold/ai/Tts', {
@@ -36,20 +27,16 @@ export class Tts extends Effect.Service<Tts>()('@wordhold/ai/Tts', {
       request: TtsRequest,
     ): Effect.Effect<TtsResult, TtsError> =>
       Effect.gen(function* () {
-        const voice = voices[request.language];
-        if (voice === undefined) {
-          return yield* new TtsError({
-            cause: `No voice configured for language ${request.language}`,
-          });
-        }
+        const prepared = prepareSpeechText(request.text, request.language);
         const audio = yield* Effect.tryPromise({
           try: async () => {
             const response = await client.send(
               new SynthesizeSpeechCommand({
                 Engine: 'neural',
                 OutputFormat: 'mp3',
-                Text: request.text,
-                VoiceId: voice as never,
+                Text: prepared.text,
+                TextType: prepared.textType,
+                VoiceId: prepared.voice as never,
               }),
             );
             if (response.AudioStream === undefined) {
@@ -59,7 +46,7 @@ export class Tts extends Effect.Service<Tts>()('@wordhold/ai/Tts', {
           },
           catch: (cause) => new TtsError({ cause }),
         });
-        return { audio, voice };
+        return { audio };
       });
 
     return { synthesize } as const;

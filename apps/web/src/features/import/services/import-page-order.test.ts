@@ -27,15 +27,18 @@ describe('import page order', () => {
           capturedAt: new Date(0),
           expectedPageCount: 2,
           isComplete: true,
+          reviewOrder: 'scan',
           pages: [
             {
               id: earlierPageId,
+              pageNumber: null,
               position: 0,
               status: 'awaiting_verification',
               extractionReady: true,
             },
             {
               id: currentPageId,
+              pageNumber: null,
               position: 1,
               status: 'awaiting_verification',
               extractionReady: true,
@@ -88,9 +91,11 @@ describe('import page order', () => {
           capturedAt: new Date(0),
           expectedPageCount: 2,
           isComplete: false,
+          reviewOrder: 'scan',
           pages: [
             {
               id: currentPageId,
+              pageNumber: null,
               position: 0,
               status: 'awaiting_verification',
               extractionReady: true,

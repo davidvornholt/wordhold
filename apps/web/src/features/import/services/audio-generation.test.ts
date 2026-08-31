@@ -25,7 +25,7 @@ const runGeneration = (
   store = makeAudioGenerationStore(),
   storage = makeStorage(),
   synthesize: Tts['synthesize'] = () =>
-    Effect.succeed({ voice: 'Lea', audio: new Uint8Array([1]) }),
+    Effect.succeed({ audio: new Uint8Array([1]) }),
 ) =>
   Effect.runPromise(
     generateAudio(entries(count), 'fr').pipe(
@@ -45,7 +45,6 @@ describe('generateAudio', () => {
       () => {
         providerCalls += 1;
         return Effect.succeed({
-          voice: 'Lea',
           audio: new Uint8Array([1]),
         });
       },
@@ -125,5 +124,49 @@ describe('generateAudio', () => {
     const cause = report.failures[0]?.cause;
     expect(cause).toBeInstanceOf(FileReferenceError);
     expect(cause).toMatchObject({ persistenceError, cleanupError });
+  });
+});
+
+describe('pronunciation audio revisions', () => {
+  it('regenerates stale abbreviation audio without replacing current plain audio', async () => {
+    const insertedEntries = [
+      {
+        id: 'd9428888-122b-41e1-b85c-000000000100',
+        targetText: 'donner qc à qn.',
+      },
+      {
+        id: 'd9428888-122b-41e1-b85c-000000000101',
+        targetText: 'mémoire',
+      },
+    ];
+    const synthesized: Array<string> = [];
+    const report = await Effect.runPromise(
+      generateAudio(insertedEntries, 'fr').pipe(
+        Effect.provideService(
+          Tts,
+          Tts.make({
+            synthesize: (request) =>
+              Effect.sync(() => {
+                synthesized.push(request.text);
+                return {
+                  audio: new Uint8Array([1]),
+                };
+              }),
+          }),
+        ),
+        Effect.provideService(
+          AudioGenerationStore,
+          makeAudioGenerationStore({
+            hasReference: (_entryId, audioProfile) =>
+              Effect.succeed(audioProfile === 'Lea'),
+          }),
+        ),
+        Effect.provideService(Storage, makeStorage()),
+      ),
+    );
+
+    expect(synthesized).toEqual(['donner qc à qn.']);
+    expect(report.generated).toBe(1);
+    expect(report.alreadyAvailable).toBe(1);
   });
 });

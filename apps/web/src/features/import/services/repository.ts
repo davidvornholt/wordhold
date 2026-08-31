@@ -7,6 +7,7 @@ import type { ImportInvariantError } from '../errors/import-invariant-error';
 import type { PageAlreadyVerifiedError } from '../errors/page-already-verified-error';
 import type { UnitNotFoundError } from '../errors/unit-not-found-error';
 import type { ImportPayloadData } from '../schemas/import-payload';
+import type { PageReviewOrder } from './page-review-order';
 
 export type Course = {
   readonly id: string;
@@ -50,6 +51,7 @@ export type PendingImportSession = {
 
 export type ImportSessionPage = {
   readonly id: string;
+  readonly pageNumber: number | null;
   readonly position: number;
   readonly status: 'awaiting_verification' | 'verified';
   readonly extractionReady: boolean;
@@ -62,6 +64,7 @@ export type ImportSession = {
   readonly capturedAt: Date;
   readonly expectedPageCount: number;
   readonly isComplete: boolean;
+  readonly reviewOrder: PageReviewOrder;
   readonly pages: ReadonlyArray<ImportSessionPage>;
 };
 

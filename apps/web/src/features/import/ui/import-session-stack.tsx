@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 type ImportSessionPage = {
   readonly id: string;
+  readonly pageNumber: number | null;
   readonly position: number;
   readonly status: 'awaiting_verification' | 'verified';
   readonly extractionReady: boolean;
@@ -10,6 +11,7 @@ type ImportSessionPage = {
 type ImportSessionStackProps = {
   readonly pages: ReadonlyArray<ImportSessionPage>;
   readonly pageImageSource: (page: ImportSessionPage) => string;
+  readonly reviewOrder: 'page_number' | 'scan';
   readonly reviewAction: ReactNode;
 };
 
@@ -32,6 +34,7 @@ const pendingPageLabel = (pendingCount: number) => {
 export const ImportSessionStack = ({
   pages,
   pageImageSource,
+  reviewOrder,
   reviewAction,
 }: ImportSessionStackProps) => {
   const pendingCount = pages.filter(
@@ -45,6 +48,11 @@ export const ImportSessionStack = ({
           <h2 className="font-display text-xl">Seiten im Stapel</h2>
           <p className="text-muted-foreground text-sm">
             {pendingPageLabel(pendingCount)}
+          </p>
+          <p className="text-muted-foreground text-sm">
+            {reviewOrder === 'page_number'
+              ? 'Nach erkannten Buchseiten sortiert.'
+              : 'In Scanreihenfolge sortiert.'}
           </p>
         </div>
         {reviewAction}
@@ -61,7 +69,11 @@ export const ImportSessionStack = ({
               src={pageImageSource(page)}
             />
             <div className="flex min-w-0 flex-col gap-1">
-              <p className="font-display text-lg">Seite {page.position + 1}</p>
+              <p className="font-display text-lg">
+                {reviewOrder === 'page_number' && page.pageNumber !== null
+                  ? `Buchseite ${page.pageNumber}`
+                  : `Scan ${page.position + 1}`}
+              </p>
               <p className="text-muted-foreground text-sm">
                 {statusLabel(page)}
               </p>

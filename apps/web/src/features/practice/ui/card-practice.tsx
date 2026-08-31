@@ -1,16 +1,14 @@
 import type { ReviewMode } from '@wordhold/db/schema/practice';
-import { type SubmitEvent, useEffect, useId, useRef, useState } from 'react';
+import { type SubmitEvent, useEffect, useId, useRef } from 'react';
 import type {
   PracticeSession,
   ResolvedSubmitResult,
   SubmitResult,
 } from '../schemas/practice-models';
-import type {
-  SubmitPayloadData,
-  WrongAnswerResolution,
-} from '../schemas/submission-schema';
+import type { SubmitPayloadData } from '../schemas/submission-schema';
 import { FeedbackPanel } from './feedback-panel';
 import { PracticeAnswerForm } from './practice-answer-form';
+import { useCardSubmission } from './use-card-submission';
 
 type SessionItem = PracticeSession['items'][number];
 
@@ -43,19 +41,27 @@ export const CardPractice = ({
 }: CardPracticeProps) => {
   const answerInput = useRef<HTMLInputElement>(null);
   const promptId = useId();
-  const [answer, setAnswer] = useState('');
-  const [submittedData, setSubmittedData] = useState<SubmitPayloadData | null>(
-    null,
-  );
-  const [startedAt] = useState(() => performance.now());
-  const [result, setResult] = useState<SubmitResult | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [resolution, setResolution] = useState<Exclude<
-    WrongAnswerResolution,
-    'defer'
-  > | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const audioUrl = item.hasAudio ? `/api/entries/${item.entryId}/audio` : null;
+  const {
+    answer,
+    setAnswer,
+    submittedAnswer,
+    skipped,
+    result,
+    busy,
+    resolution,
+    error,
+    submitAnswer,
+    skipCard,
+    resolveWrongAnswer,
+  } = useCardSubmission({
+    cardId: item.cardId,
+    revision: item.revision,
+    mode,
+    audioUrl,
+    submit,
+    onNext,
+  });
 
   useEffect(() => {
     if (busy || result !== null) {
@@ -67,68 +73,7 @@ export const CardPractice = ({
 
   const onSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (busy || result !== null) {
-      return;
-    }
-    const data: SubmitPayloadData = {
-      cardId: item.cardId,
-      revision: item.revision,
-      answer,
-      elapsedMs: Math.floor(performance.now() - startedAt),
-      wrongAnswerResolution: 'defer',
-      mode,
-    };
-    setSubmittedData(data);
-    setBusy(true);
-    setError(null);
-    try {
-      const submitted = await submit({ data });
-      setResult(submitted);
-      if (audioUrl !== null) {
-        await new Audio(audioUrl).play().catch(() => undefined);
-      }
-    } catch (cause) {
-      setSubmittedData(null);
-      setError(cause instanceof Error ? cause.message : String(cause));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const resolveWrongAnswer = async (
-    wrongAnswerResolution: Exclude<WrongAnswerResolution, 'defer'>,
-  ) => {
-    if (
-      busy ||
-      submittedData === null ||
-      result === null ||
-      !result.graded ||
-      result.stored
-    ) {
-      return;
-    }
-    setBusy(true);
-    setResolution(wrongAnswerResolution);
-    setError(null);
-    try {
-      const submitted = await submit({
-        data: {
-          ...submittedData,
-          wrongAnswerResolution,
-          assessmentId: result.assessmentId,
-        },
-      });
-      if (submitted.graded && !submitted.stored) {
-        throw new Error('Die Antwort wurde noch nicht gespeichert.');
-      }
-      setResult(submitted);
-      onNext(submitted);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
-    } finally {
-      setBusy(false);
-      setResolution(null);
-    }
+    await submitAnswer();
   };
 
   return (
@@ -148,14 +93,16 @@ export const CardPractice = ({
         disabled={result !== null}
         inputRef={answerInput}
         onAnswerChange={setAnswer}
+        onSkip={skipCard}
         onSubmit={onSubmit}
         promptId={promptId}
-        submittedAnswer={submittedData?.answer ?? null}
+        skipping={busy && skipped}
+        submittedAnswer={submittedAnswer}
       />
       {error === null ? null : (
         <p className="text-destructive text-sm">{error}</p>
       )}
-      {result === null || submittedData === null ? null : (
+      {result === null ? null : (
         <FeedbackPanel
           audioUrl={audioUrl}
           onNext={() => {
@@ -167,7 +114,8 @@ export const CardPractice = ({
           repeated={repeated}
           resolution={resolution}
           result={result}
-          submittedAnswer={submittedData.answer}
+          skipped={skipped}
+          submittedAnswer={submittedAnswer ?? ''}
         />
       )}
     </>

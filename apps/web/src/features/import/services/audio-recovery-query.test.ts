@@ -113,8 +113,7 @@ describe('audioRecoveryPages', () => {
       recoveryPage,
     ]);
 
-    synthesize = () =>
-      Effect.succeed({ voice: 'Lea', audio: new Uint8Array([1]) });
+    synthesize = () => Effect.succeed({ audio: new Uint8Array([1]) });
     expect(
       (await Effect.runPromise(provide(retryPageAudio(pageId)))).pending,
     ).toBe(0);
