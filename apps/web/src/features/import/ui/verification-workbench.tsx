@@ -10,7 +10,6 @@ import { type VerificationEntry, VerifyForm } from './verify-form';
 
 type CompletedPage = {
   readonly imported: number | null;
-  readonly pending: number | null;
 };
 
 type VerificationWorkbenchProps = {
@@ -69,7 +68,6 @@ export const VerificationWorkbench = ({
           busy={busy}
           imported={completed.imported}
           onRetry={onRetryAudio}
-          pending={completed.pending}
         />
       )}
       {completed === null && extractionKey === null ? (

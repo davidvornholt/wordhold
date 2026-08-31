@@ -47,10 +47,7 @@ export const useVerificationFlow = (
   const [extraction, setExtraction] = useState(page.extraction);
   const [completed, setCompleted] = useState<{
     readonly imported: number | null;
-    readonly pending: number | null;
-  } | null>(
-    page.status === 'verified' ? { imported: null, pending: null } : null,
-  );
+  } | null>(page.status === 'verified' ? { imported: null } : null);
   const actions = useActionRunner();
   const navigation = useVerificationNavigation(page.id, search);
 
@@ -61,17 +58,11 @@ export const useVerificationFlow = (
     });
   const retryPageAudio = () =>
     actions.run(async () => {
-      const result = await retryAudio({ data: page.id });
+      await retryAudio({ data: page.id });
       await navigation.refreshOverview();
-      if (result.pending === 0) {
-        await (navigation.batchSession === null
-          ? navigation.goToOverview()
-          : navigation.advanceReview());
-        return;
-      }
-      setCompleted((current) =>
-        current === null ? null : { ...current, pending: result.pending },
-      );
+      await (navigation.batchSession === null
+        ? navigation.goToOverview()
+        : navigation.advanceReview());
     });
   const submitPage = (verified: ReadonlyArray<VerificationEntry>) =>
     actions.run(async () => {
@@ -92,7 +83,6 @@ export const useVerificationFlow = (
       }
       setCompleted({
         imported: result.imported,
-        pending: result.audio.pending,
       });
     });
 

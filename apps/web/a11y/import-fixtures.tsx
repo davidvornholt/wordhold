@@ -70,7 +70,6 @@ export const VerificationFixture = ({
               completeAudioRecovery();
               navigateToFixture('dashboard-audio-recovery');
             }}
-            pending={1}
           />
         ) : null}
         {!audioRecovery && empty ? (

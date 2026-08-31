@@ -18,7 +18,6 @@ export const fixtureStates = [
   'verification-empty',
   'verification-no-units',
   'verification-stale-unit',
-  'verification-audio-recovery',
   'verification-deferred',
   'course',
   'course-no-practice',
@@ -47,13 +46,16 @@ export const fixtureStates = [
   'not-found',
 ] as const;
 
-export type FixtureState = (typeof fixtureStates)[number];
+const transitionFixtureStates = ['verification-audio-recovery'] as const;
+const allFixtureStates = [...fixtureStates, ...transitionFixtureStates];
+
+export type FixtureState = (typeof allFixtureStates)[number];
 
 export const readFixtureState = (): FixtureState => {
   const requested = new URLSearchParams(globalThis.location.search).get(
     'state',
   );
-  if (fixtureStates.some((state) => state === requested)) {
+  if (allFixtureStates.some((state) => state === requested)) {
     return requested as FixtureState;
   }
   throw new Error(`Unknown accessibility fixture state: ${String(requested)}`);

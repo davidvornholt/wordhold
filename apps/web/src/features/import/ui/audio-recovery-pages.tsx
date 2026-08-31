@@ -1,61 +1,88 @@
-import type { ReactNode } from 'react';
+import { useEffect, useEffectEvent, useState } from 'react';
 import { countNoun } from '../../../shared/format/count';
+import { Callout } from '../../../shared/ui/callout';
 
 type AudioRecoveryPage = {
   readonly id: string;
-  readonly courseName: string;
   readonly missingAudio: number;
-  readonly verifiedAt: Date;
 };
 
 type AudioRecoveryPagesProps = {
   readonly pages: ReadonlyArray<AudioRecoveryPage>;
-  readonly renderPageAction: (
+  readonly onRecovered: () => Promise<void>;
+  readonly onRetry: (
     page: AudioRecoveryPage,
-    label: string,
-  ) => ReactNode;
+  ) => Promise<{ readonly pending: number }>;
 };
 
-const pageTitle = (page: AudioRecoveryPage) => {
-  const date = new Date(page.verifiedAt).toLocaleDateString('de-DE');
-  return `${page.courseName} (${date})`;
-};
+type RecoveryStatus = 'creating' | 'waiting';
 
 export const AudioRecoveryPages = ({
   pages,
-  renderPageAction,
+  onRecovered,
+  onRetry,
 }: AudioRecoveryPagesProps) => {
+  const [status, setStatus] = useState<RecoveryStatus>('creating');
+  const page = pages.at(0);
+  const recover = useEffectEvent(onRecovered);
+  const retry = useEffectEvent(onRetry);
+
+  useEffect(() => {
+    if (page === undefined) {
+      return;
+    }
+    let active = true;
+    retry(page)
+      .then(async (result) => {
+        if (!active) {
+          return;
+        }
+        if (result.pending === 0) {
+          await recover();
+          return;
+        }
+        setStatus('waiting');
+      })
+      .catch(() => {
+        if (active) {
+          setStatus('waiting');
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [page]);
+
   if (pages.length === 0) {
     return null;
   }
 
+  const missing = pages.reduce(
+    (total, candidate) => total + candidate.missingAudio,
+    0,
+  );
+
   return (
-    <section className="flex flex-col gap-3">
-      <div className="flex flex-col gap-1">
-        <h2 className="font-display text-xl">Fehlendes Audio</h2>
-        <p className="text-muted-foreground text-sm">
-          Bei diesen importierten Seiten fehlen Audiodateien.
+    <section aria-live="polite">
+      <Callout
+        aria-busy={status === 'creating'}
+        tone={status === 'creating' ? 'neutral' : 'warning'}
+      >
+        <h2 className="font-display text-xl">
+          {status === 'creating'
+            ? 'Aussprache wird erstellt'
+            : 'Aussprache folgt automatisch'}
+        </h2>
+        <p className="text-sm">
+          {status === 'creating'
+            ? `Wordhold erstellt gerade die Aussprache für ${countNoun(
+                missing,
+                'Vokabel',
+                'Vokabeln',
+              )}. Du kannst die Kurse bereits nutzen.`
+            : 'Die Aussprache ist gerade nicht verfügbar. Wordhold versucht es bei deinem nächsten Besuch erneut.'}
         </p>
-      </div>
-      <ul className="flex flex-col gap-2">
-        {pages.map((page) => {
-          const title = pageTitle(page);
-          return (
-            <li className="flex flex-wrap items-baseline gap-2" key={page.id}>
-              <span className="text-sm">
-                {title}:{' '}
-                {countNoun(
-                  page.missingAudio,
-                  'Audiodatei fehlt',
-                  'Audiodateien fehlen',
-                )}
-                .
-              </span>
-              {renderPageAction(page, `Audio für ${title} ergänzen`)}
-            </li>
-          );
-        })}
-      </ul>
+      </Callout>
     </section>
   );
 };

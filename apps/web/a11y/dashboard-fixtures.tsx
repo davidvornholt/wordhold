@@ -140,17 +140,11 @@ export const DashboardFixture = ({
         )}
       />
       <AudioRecoveryPages
+        onRecovered={async () => undefined}
+        onRetry={async () => ({ pending: 1 })}
         pages={
           audioRecovery && !audioRecoveryIsComplete() ? [recoveryPage] : []
         }
-        renderPageAction={(_page, label) => (
-          <a
-            className="text-sm underline"
-            href="/?state=verification-audio-recovery"
-          >
-            {label}
-          </a>
-        )}
       />
       <PendingImportSessions
         onDiscard={async (session) =>
