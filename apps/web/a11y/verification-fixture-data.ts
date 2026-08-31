@@ -1,4 +1,7 @@
-import type { Unit } from '../src/features/import/services/repository';
+import type {
+  Unit,
+  UnitEntry,
+} from '../src/features/import/services/repository';
 import type { DraftEntry } from '../src/features/import/ui/entry-row';
 
 export const verificationUnits: ReadonlyArray<Unit> = [
@@ -22,6 +25,23 @@ export const verificationUnits: ReadonlyArray<Unit> = [
     position: 2,
     isHolding: true,
     entryCount: 2,
+  },
+];
+
+// Vocabulary already stored in Unit 2 for the duplicate states: "journey" is
+// an exact duplicate of the first extracted entry (same casing, same
+// example), "Luggage!" only matches "luggage" after punctuation stripping and
+// differs in casing and example, so it is importable as an exception.
+export const verificationUnitEntries: ReadonlyArray<UnitEntry> = [
+  {
+    unitId: '11111111-1111-4111-8111-111111111111',
+    targetText: 'journey',
+    examples: ['The journey takes three hours.'],
+  },
+  {
+    unitId: '11111111-1111-4111-8111-111111111111',
+    targetText: 'Luggage!',
+    examples: ['Pack your luggage.'],
   },
 ];
 
@@ -111,6 +131,13 @@ export const verificationEntries: ReadonlyArray<DraftEntry> = [
     confidence: 0.92,
   },
 ];
+
+export const allDuplicateUnitEntries: ReadonlyArray<UnitEntry> =
+  verificationEntries.map((entry) => ({
+    unitId: '11111111-1111-4111-8111-111111111111',
+    targetText: entry.targetText,
+    examples: entry.example === '' ? [] : [entry.example],
+  }));
 
 const photographedPageMarkup = `
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 840">

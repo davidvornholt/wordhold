@@ -1,6 +1,7 @@
 import type { ExtractionResult } from '@wordhold/ai/extraction';
 import type { LanguageCode } from '@wordhold/db/schema/courses';
 import { Context, type Effect } from 'effect';
+import type { DuplicateEntryError } from '../errors/duplicate-entry-error';
 import type { ImportDatabaseError } from '../errors/import-database-error';
 import type { ImportInvariantError } from '../errors/import-invariant-error';
 import type { PageAlreadyVerifiedError } from '../errors/page-already-verified-error';
@@ -106,6 +107,14 @@ export type InsertedEntry = {
   readonly targetText: string;
 };
 
+// One stored word with its example sentences: what the verify screen needs
+// to flag a re-scanned page's entries as already present in their unit.
+export type UnitEntry = {
+  readonly unitId: string;
+  readonly targetText: string;
+  readonly examples: ReadonlyArray<string>;
+};
+
 type RepositoryFailure = ImportDatabaseError | ImportInvariantError;
 
 export type ImportRepositoryShape = {
@@ -119,6 +128,9 @@ export type ImportRepositoryShape = {
   readonly listUnits: (
     courseId: string,
   ) => Effect.Effect<ReadonlyArray<Unit>, ImportDatabaseError>;
+  readonly listUnitEntries: (
+    courseId: string,
+  ) => Effect.Effect<ReadonlyArray<UnitEntry>, ImportDatabaseError>;
   readonly listPendingImportSessions: Effect.Effect<
     ReadonlyArray<PendingImportSession>,
     ImportDatabaseError
@@ -157,7 +169,10 @@ export type ImportRepositoryShape = {
     courseId: string,
   ) => Effect.Effect<
     ReadonlyArray<InsertedEntry>,
-    RepositoryFailure | PageAlreadyVerifiedError | UnitNotFoundError
+    | RepositoryFailure
+    | PageAlreadyVerifiedError
+    | UnitNotFoundError
+    | DuplicateEntryError
   >;
   readonly referencedPaths: Effect.Effect<
     ReadonlySet<string>,

@@ -1,6 +1,6 @@
 import type { Database } from '@wordhold/db/client';
 import { Effect } from 'effect';
-import { normalizeAnswer } from '../../../shared/grading/normalize';
+import { DuplicateEntryError } from '../errors/duplicate-entry-error';
 import { ImportDatabaseError } from '../errors/import-database-error';
 import { ImportInvariantError } from '../errors/import-invariant-error';
 import { PageAlreadyVerifiedError } from '../errors/page-already-verified-error';
@@ -9,12 +9,14 @@ import type {
   ImportPayloadData,
   UnitSelectionData,
 } from '../schemas/import-payload';
+import { ensureNoDuplicateEntries } from './entry-duplicates';
 import { sessionLock } from './page-repository-utils';
 import {
   importSessionIsComplete,
   orderPagesForReview,
 } from './page-review-order';
 import { commitVerifiedPage } from './verification-commit';
+import { persistVerifiedEntries } from './verification-persistence';
 
 const databaseFailure = (cause: unknown) =>
   new ImportDatabaseError({
@@ -89,11 +91,12 @@ export const verifyPageLive = (
         );
 
   const insertEntries = Effect.gen(function* () {
-    // All position allocation for one course is serialized inside the
-    // transaction. The matching unique index remains the database invariant.
-    if (payload.entries.some((entry) => entry.unit.kind === 'new')) {
-      yield* sql`select pg_advisory_xact_lock(hashtextextended(${courseId}, 0))`;
-    }
+    // One per-course lock serializes everything that must see the rows of
+    // concurrent imports: position allocation for new units (whose unique
+    // index remains the database invariant) and duplicate detection, which
+    // has no index to fall back on because a duplicate's legality depends on
+    // casing and example sentences.
+    yield* sql`select pg_advisory_xact_lock(hashtextextended(${courseId}, 0))`;
     const unitIds = yield* Effect.forEach(
       payload.entries,
       (entry) =>
@@ -108,69 +111,16 @@ export const verifyPageLive = (
         }),
       { concurrency: 1 },
     );
-    const inserted = yield* sql<{
-      id: string;
-      targetText: string;
-    }>`insert into entries ${sql.insert(
-      payload.entries.map((entry, index) => ({
-        courseId,
-        unitId: unitIds[index],
-        pageId: payload.pageId,
-        targetText: entry.targetText,
-        nativeText: entry.nativeText,
-        grammar: entry.grammar ?? null,
-      })),
-    )} returning id, target_text as "targetText"`;
-    if (inserted.length !== payload.entries.length) {
-      return yield* new ImportInvariantError({
-        message: 'Not every verified entry was inserted.',
-      });
-    }
-    const examples = payload.entries.flatMap((entry, index) => {
-      const entryId = inserted[index]?.id;
-      return entryId === undefined ||
-        entry.example === undefined ||
-        entry.example === ''
-        ? []
-        : [
-            {
-              entryId,
-              targetText: entry.example,
-              source: 'textbook',
-            },
-          ];
-    });
-    if (examples.length > 0) {
-      yield* sql`insert into entry_examples ${sql.insert(examples)}`;
-    }
-    const answers = payload.entries.flatMap((entry, index) => {
-      const entryId = inserted[index]?.id;
-      return entryId === undefined
-        ? []
-        : [
-            {
-              entryId,
-              direction: 'to_target',
-              text: entry.targetText,
-              normalized: normalizeAnswer(entry.targetText),
-              source: 'textbook',
-            },
-            {
-              entryId,
-              direction: 'to_native',
-              text: entry.nativeText,
-              normalized: normalizeAnswer(entry.nativeText),
-              source: 'textbook',
-            },
-          ];
-    });
-    yield* sql`insert into accepted_answers ${sql.insert(answers)} on conflict do nothing`;
-    const cardRows = inserted.flatMap((entry) => [
-      { entryId: entry.id, direction: 'to_target' },
-      { entryId: entry.id, direction: 'to_native' },
-    ]);
-    yield* sql`insert into cards ${sql.insert(cardRows)}`;
-    return inserted;
+    yield* ensureNoDuplicateEntries(sql, courseId, payload, unitIds);
+    const entriesToInsert = payload.entries.flatMap((entry, index) =>
+      entry.skipDuplicate === true ? [] : [{ entry, unitId: unitIds[index] }],
+    );
+    return yield* persistVerifiedEntries(
+      sql,
+      courseId,
+      payload.pageId,
+      entriesToInsert,
+    );
   });
 
   return sql
@@ -184,7 +134,8 @@ export const verifyPageLive = (
       Effect.mapError((cause) =>
         cause instanceof PageAlreadyVerifiedError ||
         cause instanceof ImportInvariantError ||
-        cause instanceof UnitNotFoundError
+        cause instanceof UnitNotFoundError ||
+        cause instanceof DuplicateEntryError
           ? cause
           : databaseFailure(cause),
       ),

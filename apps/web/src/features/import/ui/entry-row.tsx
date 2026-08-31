@@ -4,6 +4,7 @@ import {
   maximumExampleLength,
 } from '@wordhold/ai/extraction/schema';
 import type { ReactNode } from 'react';
+import type { DuplicateVerdict } from '../services/entry-identity';
 
 export type DraftEntry = {
   readonly targetText: string;
@@ -41,7 +42,10 @@ type EntryRowProps = {
   readonly disabled: boolean;
   readonly targetLabel: string;
   readonly unitControl: ReactNode;
+  readonly duplicate: DuplicateVerdict;
+  readonly duplicateConfirmed: boolean;
   readonly onChange: (entry: DraftEntry) => void;
+  readonly onDuplicateConfirmedChange: (confirmed: boolean) => void;
   readonly onRemove: () => void;
 };
 
@@ -50,16 +54,20 @@ export const EntryRow = ({
   disabled,
   targetLabel,
   unitControl,
+  duplicate,
+  duplicateConfirmed,
   onChange,
+  onDuplicateConfirmedChange,
   onRemove,
 }: EntryRowProps) => {
   const uncertain =
     entry.confidence !== undefined && entry.confidence < lowConfidence;
+  const flagged = uncertain || duplicate !== 'none';
   const inputClass = 'w-full border border-input bg-card px-2 py-1.5 text-sm';
   return (
     <li
       className={`flex flex-col gap-2 border p-3 ${
-        uncertain
+        flagged
           ? 'border-warning-foreground/40 bg-warning'
           : 'border-border bg-card'
       }`}
@@ -70,6 +78,11 @@ export const EntryRow = ({
             unsicher gelesen
           </span>
         ) : null}
+        {duplicate === 'none' ? null : (
+          <span className="text-warning-foreground text-xs">
+            Schon in dieser Einheit
+          </span>
+        )}
         <button
           className="ml-auto text-muted-foreground text-sm underline"
           disabled={disabled}
@@ -120,6 +133,26 @@ export const EntryRow = ({
           {grammarSummary(entry.grammar)}
         </p>
       )}
+      {duplicate === 'exact' ? (
+        <p className="text-warning-foreground text-xs">
+          Wird nicht erneut importiert. Für eine Ausnahme ändere die
+          Schreibweise oder den Beispielsatz.
+        </p>
+      ) : null}
+      {duplicate === 'exception' ? (
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            checked={duplicateConfirmed}
+            className="size-4 accent-primary focus-visible:outline-2 focus-visible:outline-offset-2"
+            disabled={disabled}
+            onChange={(event) =>
+              onDuplicateConfirmedChange(event.target.checked)
+            }
+            type="checkbox"
+          />
+          Als Ausnahme importieren (andere Schreibweise oder anderes Beispiel)
+        </label>
+      ) : null}
     </li>
   );
 };

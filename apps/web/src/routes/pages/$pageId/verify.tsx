@@ -9,6 +9,7 @@ import { getImportSession, getPage } from '../../../features/import/server-fns';
 import type {
   Course,
   Unit,
+  UnitEntry,
 } from '../../../features/import/services/repository';
 import { BatchReviewComplete } from '../../../features/import/ui/batch-review-complete';
 import type { DraftEntry } from '../../../features/import/ui/entry-row';
@@ -39,6 +40,7 @@ type VerificationPageScreenProps = {
   };
   readonly search: BatchReviewSearchData;
   readonly units: ReadonlyArray<Unit>;
+  readonly unitEntries: ReadonlyArray<UnitEntry>;
 };
 
 const VerificationPageScreen = ({
@@ -46,6 +48,7 @@ const VerificationPageScreen = ({
   page,
   search,
   units,
+  unitEntries,
 }: VerificationPageScreenProps) => {
   const flow = useVerificationFlow(page, search);
   const targetLabel = germanLabels[course.targetLanguage];
@@ -90,6 +93,7 @@ const VerificationPageScreen = ({
           batchSession={flow.batchSession}
           busy={flow.busy}
           completed={flow.completed}
+          existingEntries={unitEntries}
           extractionKey={
             flow.extraction === null
               ? null
@@ -111,7 +115,8 @@ const VerificationPageScreen = ({
 };
 
 const VerifyScreen = () => {
-  const { course, page, reviewSearch, units } = Route.useLoaderData();
+  const { course, page, reviewSearch, units, unitEntries } =
+    Route.useLoaderData();
   const routeSearch = Route.useSearch();
   const search = reviewSearch ?? routeSearch ?? {};
   return (
@@ -120,6 +125,7 @@ const VerifyScreen = () => {
       key={page.id}
       page={page}
       search={search}
+      unitEntries={unitEntries}
       units={units}
     />
   );
