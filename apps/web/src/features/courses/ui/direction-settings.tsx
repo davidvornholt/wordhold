@@ -7,6 +7,7 @@ import {
   directionDescription,
   directionLabel,
 } from '../../../shared/directions';
+import { Checkbox } from '../../../shared/ui/selection-controls';
 import { cardCompactClass } from '../../../shared/ui/surface-styles';
 
 type DirectionSettingsProps = {
@@ -102,13 +103,12 @@ export const DirectionSettings = ({
         <legend className="sr-only">Regelmäßige Abfragerichtungen</legend>
         {answerDirections.map((direction) => (
           <div className="flex items-start gap-3 text-sm" key={direction}>
-            <input
+            <Checkbox
               aria-describedby={`${direction}-description`}
               checked={directions.includes(direction)}
-              className="mt-1 size-5 accent-primary focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
+              className="mt-1"
               id={direction}
               onChange={(event) => toggle(direction, event.currentTarget)}
-              type="checkbox"
             />
             <span className="flex flex-col gap-0.5">
               <label className="font-medium" htmlFor={direction}>

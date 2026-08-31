@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { useState, useSyncExternalStore } from 'react';
 import { countNoun } from '../../../shared/format/count';
+import { RadioButton } from '../../../shared/ui/selection-controls';
 import type { SessionDirection } from '../schemas/session-request';
 import type { SessionOption } from '../services/session-options';
 
@@ -49,16 +50,17 @@ export const SessionStart = ({
             className={`grid min-h-11 gap-2 border border-border bg-card p-4 sm:grid-cols-2 sm:items-center ${
               candidate.cards === 0 ? 'opacity-50' : 'cursor-pointer'
             }`}
+            htmlFor={`practice-direction-${candidate.value}`}
             key={candidate.value}
           >
             <span className="flex items-start gap-3">
-              <input
+              <RadioButton
                 checked={selected === candidate.value}
-                className="mt-1 size-5 accent-primary focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
+                className="mt-1"
                 disabled={candidate.cards === 0}
+                id={`practice-direction-${candidate.value}`}
                 name="practice-direction"
                 onChange={() => setChosen(candidate.value)}
-                type="radio"
               />
               <span className="flex flex-col gap-1">
                 <span className="font-medium">{candidate.label}</span>

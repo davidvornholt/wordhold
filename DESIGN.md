@@ -34,6 +34,7 @@ All interactive and stateful chrome composes the primitives in `apps/web/src/sha
 - Actions: `Button` and the router-typed `ActionLink` share `action-styles.ts` (variants `primary`, `outline`, `destructive`, `quiet`, `quiet-muted`; all `min-h-11` with the shared focus ring). `BackLink` is the one upper-left return control and always reads `← <destination name>`.
 - Layout: `PageLayout` renders the page column, back control, and `h1` for every screen. Surfaces come from `surface-styles.ts` (`cardClass`, `cardCompactClass`, `cardListClass`).
 - Fields: `field-styles.ts` (`fieldClass` on the page background, `fieldOnCardClass` on cards, `fieldCompactClass` for dense workbench rows). Inputs are `text-base` so mobile Safari never zooms.
+- Selection: `Checkbox` and `RadioButton` (`selection-controls.tsx`) redraw the native controls in the theme's square geometry — the checkbox fills `primary` with a `primary-foreground` check, the radio keeps a square box with a filled inner square, so the mark shape (check vs. fill) distinguishes multi- from single-select while the native input keeps its semantics.
 - State surfaces: `Callout` (`positive`, `warning`, `destructive`, `neutral`) carries the `border-l-4` edge treatment; `ProgressMeter` styles the native progress element explicitly because Chromium ignores `accent-color` on it; `ManagedHeading` moves focus to step headings.
 - Copy: counts always go through `countNoun` (`apps/web/src/shared/format/count.ts`) so singular/plural never drifts. The `eyebrow` utility (styles.css) sets small-caps kickers.
 

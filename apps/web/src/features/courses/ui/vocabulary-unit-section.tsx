@@ -1,5 +1,7 @@
 import type { LanguageCode } from '@wordhold/db/schema/courses';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
+import { useId } from 'react';
+import { Checkbox } from '../../../shared/ui/selection-controls';
 import { cardListClass } from '../../../shared/ui/surface-styles';
 import type { VocabularyEntry } from '../schemas/course-units';
 import { VocabularyEntryRow } from './vocabulary-entry-row';
@@ -37,24 +39,24 @@ export const VocabularyUnitSection = ({
   onToggleEntry,
   onToggleAll,
 }: VocabularyUnitSectionProps) => {
+  const selectAllId = useId();
   const selectable = entries.filter((entry) => entry.introduced);
   const allSelected =
     selectable.length > 0 &&
     selectable.every((entry) => selected.includes(entry.id));
   return (
     <section className="flex flex-col gap-2">
-      <label className={labelClasses[labelStyle]}>
-        <input
+      <label className={labelClasses[labelStyle]} htmlFor={selectAllId}>
+        <Checkbox
           checked={allSelected}
-          className="size-5 accent-primary focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
           disabled={selectable.length === 0}
+          id={selectAllId}
           onChange={() =>
             onToggleAll(
               selectable.map((entry) => entry.id),
               !allSelected,
             )
           }
-          type="checkbox"
         />
         {label}
       </label>
