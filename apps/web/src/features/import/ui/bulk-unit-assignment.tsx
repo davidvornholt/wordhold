@@ -21,12 +21,10 @@ export const BulkUnitAssignment = ({
   onApply,
 }: BulkUnitAssignmentProps) => (
   <fieldset className="flex flex-col gap-3 border border-border bg-card p-3">
-    <legend className="px-1 font-display text-xl">
-      Mehrere Vokabeln zuordnen
-    </legend>
+    <legend className="px-1 font-display text-xl">Einheit zuordnen</legend>
     <p className="text-muted-foreground text-sm">
-      Wähle eine Einheit für alle Vokabeln. Einzelne Zuordnungen kannst du
-      danach ändern.
+      Gilt für alle Vokabeln dieser Seite. Einzelne Einträge kannst du danach
+      direkt am Eintrag anders zuordnen.
     </p>
     <UnitPicker
       disabled={disabled}

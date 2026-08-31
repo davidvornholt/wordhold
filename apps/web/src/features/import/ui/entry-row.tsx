@@ -17,20 +17,44 @@ export type DraftEntry = {
 
 const lowConfidence = 0.8;
 
+const genderLabels = {
+  masculine: 'maskulin',
+  feminine: 'feminin',
+  neuter: 'neutrum',
+} as const;
+
+// The book's own annotations (gender, plural, verb forms), read from the scan
+// and stored with the entry. Rendered as dictionary-style fine print under the
+// word pair so the learner can check them against the photographed page.
 const grammarSummary = (grammar: GrammarInfo): string => {
   switch (grammar._tag) {
     case 'noun':
-      return ['Nomen', grammar.gender, grammar.plural]
+      return [
+        'Nomen',
+        grammar.gender === undefined ? undefined : genderLabels[grammar.gender],
+        grammar.plural === undefined ? undefined : `Plural: ${grammar.plural}`,
+      ]
         .filter(Boolean)
-        .join(', ');
+        .join(' · ');
     case 'verb':
-      return ['Verb', ...(grammar.irregularForms ?? []), grammar.note]
+      return [
+        'Verb',
+        grammar.irregularForms === undefined ||
+        grammar.irregularForms.length === 0
+          ? undefined
+          : `Formen: ${grammar.irregularForms.join(', ')}`,
+        grammar.note,
+      ]
+        .filter(Boolean)
+        .join(' · ');
+    case 'adjective': {
+      const comparison = [grammar.comparative, grammar.superlative]
         .filter(Boolean)
         .join(', ');
-    case 'adjective':
-      return ['Adjektiv', grammar.comparative, grammar.superlative]
-        .filter(Boolean)
-        .join(', ');
+      return comparison === ''
+        ? 'Adjektiv'
+        : `Adjektiv · Steigerung: ${comparison}`;
+    }
     case 'other':
       return grammar.note ?? '';
     default:
@@ -40,6 +64,7 @@ const grammarSummary = (grammar: GrammarInfo): string => {
 
 type EntryRowProps = {
   readonly entry: DraftEntry;
+  readonly entryNumber: number;
   readonly disabled: boolean;
   readonly targetLabel: string;
   readonly unitControl: ReactNode;
@@ -49,6 +74,7 @@ type EntryRowProps = {
 
 export const EntryRow = ({
   entry,
+  entryNumber,
   disabled,
   targetLabel,
   unitControl,
@@ -57,6 +83,8 @@ export const EntryRow = ({
 }: EntryRowProps) => {
   const uncertain =
     entry.confidence !== undefined && entry.confidence < lowConfidence;
+  const grammar =
+    entry.grammar === undefined ? '' : grammarSummary(entry.grammar);
   const inputClass = fieldCompactClass;
   return (
     <li
@@ -66,13 +94,15 @@ export const EntryRow = ({
           : 'border-border bg-card'
       }`}
     >
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
+        <span className="eyebrow">Eintrag {entryNumber}</span>
         {uncertain ? (
           <span className="font-medium text-warning-foreground text-xs">
             Unsicher gelesen – bitte prüfen
           </span>
         ) : null}
         <Button
+          aria-label={`Eintrag ${entryNumber} entfernen`}
           className="ml-auto"
           disabled={disabled}
           onClick={onRemove}
@@ -81,7 +111,6 @@ export const EntryRow = ({
           Entfernen
         </Button>
       </div>
-      {unitControl}
       <div className="grid gap-2 sm:grid-cols-2">
         <input
           aria-label={targetLabel}
@@ -117,11 +146,10 @@ export const EntryRow = ({
         placeholder="Beispielsatz (optional)"
         value={entry.example}
       />
-      {entry.grammar === undefined ? null : (
-        <p className="text-muted-foreground text-xs">
-          {grammarSummary(entry.grammar)}
-        </p>
+      {grammar === '' ? null : (
+        <p className="text-muted-foreground text-xs">{grammar}</p>
       )}
+      {unitControl}
     </li>
   );
 };

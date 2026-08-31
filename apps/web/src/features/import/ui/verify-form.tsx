@@ -93,6 +93,7 @@ export const VerifyForm = ({
           <EntryRow
             disabled={busy}
             entry={entry}
+            entryNumber={index + 1}
             // biome-ignore lint/suspicious/noArrayIndexKey: rows are positional edits of one page
             key={index}
             onChange={(next) =>
@@ -110,7 +111,6 @@ export const VerifyForm = ({
             targetLabel={targetLabel}
             unitControl={
               <EntryUnitAssignment
-                canApplyFollowing={unitSelectionIsComplete(entry.unit)}
                 disabled={busy}
                 entryNumber={index + 1}
                 hasFollowing={index < draftEntries.length - 1}
@@ -130,6 +130,7 @@ export const VerifyForm = ({
                 }
                 required={entryIsComplete(entry)}
                 selection={entry.unit}
+                selectionComplete={unitSelectionIsComplete(entry.unit)}
                 units={units}
               />
             }

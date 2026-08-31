@@ -109,6 +109,9 @@ test('VerifyForm freezes every control and ignores resubmission', async ({
   const target = page.getByLabel('Englisch');
   const add = page.getByRole('button', { name: 'Eintrag hinzufügen' });
   const remove = page.getByRole('button', { name: 'Entfernen' });
+  await page
+    .getByRole('button', { name: 'Einheit für Eintrag 1 ändern' })
+    .click();
   const unit = page.getByLabel('Einheit für Eintrag 1');
   const bulkUnit = page.getByLabel('Einheit für alle Vokabeln');
   const applyToAll = page.getByRole('button', {
