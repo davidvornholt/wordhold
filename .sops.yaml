@@ -17,6 +17,10 @@ creation_rules:
     key_groups:
       - age:
           - *david
+  - path_regex: secrets/assets\.yaml$
+    key_groups:
+      - age:
+          - *david
   - path_regex: secrets/ci\.yaml$
     key_groups:
       - age:
