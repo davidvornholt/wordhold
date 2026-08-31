@@ -21,6 +21,12 @@ bun run check:fix
 
 See [`apps/web/README.md`](apps/web/README.md) for the application configuration and production secret contract.
 
+## Pull request screenshots
+
+`config/screenshots.yaml` opts this repository into the shared personal R2 screenshot bucket. It declares the bucket, upload endpoint, public base URL, and the `assets:assets.screenshots_rw` credential reference consumed by `bun standards screenshots publish`. These values have no defaults.
+
+`secrets/assets.yaml` holds that brokered bucket-scoped S3 write pair. Publishing requires both `access_key_id` and `secret_access_key`; ordinary builds, tests, and deployments do not consume them. The broker owns rotation and revocation, and the command keeps decrypted values in memory only.
+
 ## Production releases
 
 A successful exact-`main` run of `Publish container` publishes `ghcr.io/davidvornholt/wordhold:main`, proves anonymous access to its digest, and sends that digest to `davidvornholt/personal-infra`. The infrastructure repository opens a promotion pull request that changes its committed Wordhold image pin. Production changes only after that pull request passes its own gates, merges, deploys, and reads back the exact healthy digest at `https://wordhold.vornholt.online`.
