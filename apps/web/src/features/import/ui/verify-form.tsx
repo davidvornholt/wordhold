@@ -17,7 +17,9 @@ import { type DraftEntry, EntryRow } from './entry-row';
 import { EntryUnitAssignment } from './entry-unit-assignment';
 import { initialUnitSelection } from './initial-unit-selection';
 import {
+  canCompleteWithoutImport,
   type DraftRow,
+  entriesForSubmission,
   entryIsComplete,
   selectImportableEntries,
   skippedSummary,
@@ -38,6 +40,17 @@ type VerifyFormProps = {
   readonly submitLabel?: (entryCount: number) => string;
 };
 
+const initialDraftRows = (
+  entries: ReadonlyArray<DraftEntry>,
+  units: ReadonlyArray<Unit>,
+  initialUnitName: string | undefined,
+): ReadonlyArray<DraftRow> =>
+  entries.map((entry) => ({
+    ...entry,
+    unit: initialUnitSelection(units, initialUnitName),
+    duplicateConfirmed: false,
+  }));
+
 export const VerifyForm = ({
   initialEntries,
   initialUnitName,
@@ -46,26 +59,32 @@ export const VerifyForm = ({
   units,
   busy,
   onSubmit,
-  submitLabel = (entryCount) => `${entryCount} Einträge importieren`,
+  submitLabel = (entryCount) =>
+    entryCount === 0
+      ? 'Seite abschließen'
+      : `${entryCount} Einträge importieren`,
 }: VerifyFormProps) => {
   const [bulkUnit, setBulkUnit] = useState<UnitSelectionData>(() =>
     initialUnitSelection(units, initialUnitName),
   );
   const [draftEntries, setDraftEntries] = useState<ReadonlyArray<DraftRow>>(
-    () =>
-      initialEntries.map((entry) => ({
-        ...entry,
-        unit: initialUnitSelection(units, initialUnitName),
-        duplicateConfirmed: false,
-      })),
+    () => initialDraftRows(initialEntries, units, initialUnitName),
   );
 
   const verdicts = assessDraftDuplicates(draftEntries, units, existingEntries);
   const selection = selectImportableEntries(draftEntries, verdicts);
-  const unitsNamed = selection.entries.every((entry) =>
+  const entriesToSubmit = entriesForSubmission(selection);
+  const unitsNamed = entriesToSubmit.every((entry) =>
     unitSelectionIsComplete(entry.unit),
   );
-  const submittable = !busy && selection.entries.length > 0 && unitsNamed;
+  const completionWithoutImport = canCompleteWithoutImport(
+    draftEntries,
+    selection,
+  );
+  const submittable =
+    !busy &&
+    unitsNamed &&
+    (selection.entries.length > 0 || completionWithoutImport);
 
   return (
     <form
@@ -76,7 +95,7 @@ export const VerifyForm = ({
         if (!submittable) {
           return;
         }
-        onSubmit(selection.entries);
+        onSubmit(entriesToSubmit);
       }}
     >
       <BulkUnitAssignment
@@ -160,7 +179,11 @@ export const VerifyForm = ({
           disabled={!submittable}
           type="submit"
         >
-          {busy ? 'Importiere …' : submitLabel(selection.entries.length)}
+          {busy
+            ? 'Importiere …'
+            : submitLabel(
+                completionWithoutImport ? 0 : selection.entries.length,
+              )}
         </button>
       </div>
     </form>

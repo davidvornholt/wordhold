@@ -5,6 +5,7 @@ import { assertNoAccessibilityViolations } from './a11y-assertions';
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
 const exceptionCheckbox = /Als Ausnahme importieren/u;
+const dashboardState = /state=dashboard/u;
 
 test('VerifyForm flags stored duplicates and skips them by default', async ({
   page,
@@ -22,6 +23,20 @@ test('VerifyForm flags stored duplicates and skips them by default', async ({
     page.getByText('2 Duplikate werden nicht importiert.'),
   ).toBeVisible();
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
+});
+
+test('VerifyForm completes a page containing only exact duplicates', async ({
+  page,
+}) => {
+  await page.goto('/?state=verification-all-duplicates');
+  await expect(
+    page.getByText('12 Duplikate werden nicht importiert.'),
+  ).toBeVisible();
+  const complete = page.getByRole('button', { name: 'Seite abschließen' });
+  await expect(complete).toBeEnabled();
+  assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
+  await complete.click();
+  await expect(page).toHaveURL(dashboardState);
 });
 
 test('VerifyForm imports a variant only after the exception is confirmed', async ({

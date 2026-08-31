@@ -132,6 +132,13 @@ export const verificationEntries: ReadonlyArray<DraftEntry> = [
   },
 ];
 
+export const allDuplicateUnitEntries: ReadonlyArray<UnitEntry> =
+  verificationEntries.map((entry) => ({
+    unitId: '11111111-1111-4111-8111-111111111111',
+    targetText: entry.targetText,
+    examples: entry.example === '' ? [] : [entry.example],
+  }));
+
 const photographedPageMarkup = `
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 840">
     <title>Unit 3 Holidays vocabulary page</title>

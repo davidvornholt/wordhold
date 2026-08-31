@@ -127,6 +127,15 @@ describe('decodeImportPayload', () => {
     expect(decoded.entries[0]?.duplicateException).toBe(true);
   });
 
+  it('carries an explicit duplicate skip through decoding', () => {
+    const decoded = decodeImportPayload({
+      pageId,
+      entries: [{ ...validEntry, skipDuplicate: true }],
+    });
+
+    expect(decoded.entries[0]?.skipDuplicate).toBe(true);
+  });
+
   it('refuses a duplicate exception that is not the literal true', () => {
     expect(() =>
       decodeImportPayload({

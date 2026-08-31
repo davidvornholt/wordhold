@@ -34,10 +34,16 @@ const formSubmitLabel = (
   entryCount: number,
   batchSession: BatchReviewSession | null,
   lastPage: boolean,
-): string =>
-  batchSession !== null && !lastPage
+): string => {
+  if (entryCount === 0) {
+    return batchSession !== null && !lastPage
+      ? 'Seite abschließen und weiter'
+      : 'Seite abschließen';
+  }
+  return batchSession !== null && !lastPage
     ? `${entryCount} Einträge importieren und weiter`
     : `${entryCount} Einträge importieren`;
+};
 
 export const VerificationWorkbench = ({
   batchIsLastPage,

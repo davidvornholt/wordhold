@@ -6,6 +6,7 @@ import { VerificationImage } from '../src/features/import/ui/verification-image'
 import { VerifyForm } from '../src/features/import/ui/verify-form';
 import { completeAudioRecovery, navigateToFixture } from './fixture-state';
 import {
+  allDuplicateUnitEntries,
   photographedPage,
   verificationEntries,
   verificationUnitEntries,
@@ -31,72 +32,90 @@ const deferredEntries: ReadonlyArray<DraftEntry> = [
 ];
 
 type VerificationFixtureProps = {
+  readonly allDuplicates?: boolean;
   readonly empty?: boolean;
   readonly audioRecovery?: boolean;
   readonly noUnits?: boolean;
   readonly duplicates?: boolean;
 };
 
+const entriesForVerification = (
+  allDuplicates: boolean,
+  duplicates: boolean,
+) => {
+  if (allDuplicates) {
+    return allDuplicateUnitEntries;
+  }
+  if (duplicates) {
+    return verificationUnitEntries;
+  }
+  return [];
+};
+
 export const VerificationFixture = ({
+  allDuplicates = false,
   empty = false,
   audioRecovery = false,
   noUnits = false,
   duplicates = false,
-}: VerificationFixtureProps) => (
-  <main className="verification-screen">
-    <div className="verification-header">
-      {audioRecovery ? (
-        <button
-          className="text-muted-foreground text-sm underline"
-          onClick={() => navigateToFixture('dashboard-audio-recovery')}
-          type="button"
-        >
-          ← Übersicht
-        </button>
-      ) : (
-        backControl
-      )}
-      <h1 className="font-display font-semibold text-2xl">
-        English A2: Seite überprüfen
-      </h1>
-    </div>
-    <div className="verification-workbench">
-      <div className="verification-image-pane">
-        <VerificationImage src={photographedPage} />
-      </div>
-      <div className="verification-form-pane">
+}: VerificationFixtureProps) => {
+  const existingEntries = entriesForVerification(allDuplicates, duplicates);
+  return (
+    <main className="verification-screen">
+      <div className="verification-header">
         {audioRecovery ? (
-          <AudioRecovery
-            busy={false}
-            imported={1}
-            onRetry={() => {
-              completeAudioRecovery();
-              navigateToFixture('dashboard-audio-recovery');
-            }}
-            pending={1}
-          />
-        ) : null}
-        {!audioRecovery && empty ? (
-          <ExtractionRecovery
-            busy={false}
-            onRetry={() => navigateToFixture('verification')}
-          />
-        ) : null}
-        {audioRecovery || empty ? null : (
-          <VerifyForm
-            busy={false}
-            existingEntries={duplicates ? verificationUnitEntries : []}
-            initialEntries={verificationEntries}
-            initialUnitName={noUnits ? undefined : '  UNIT   2  '}
-            onSubmit={() => navigateToFixture('dashboard')}
-            targetLabel="Englisch"
-            units={noUnits ? [] : verificationUnits}
-          />
+          <button
+            className="text-muted-foreground text-sm underline"
+            onClick={() => navigateToFixture('dashboard-audio-recovery')}
+            type="button"
+          >
+            ← Übersicht
+          </button>
+        ) : (
+          backControl
         )}
+        <h1 className="font-display font-semibold text-2xl">
+          English A2: Seite überprüfen
+        </h1>
       </div>
-    </div>
-  </main>
-);
+      <div className="verification-workbench">
+        <div className="verification-image-pane">
+          <VerificationImage src={photographedPage} />
+        </div>
+        <div className="verification-form-pane">
+          {audioRecovery ? (
+            <AudioRecovery
+              busy={false}
+              imported={1}
+              onRetry={() => {
+                completeAudioRecovery();
+                navigateToFixture('dashboard-audio-recovery');
+              }}
+              pending={1}
+            />
+          ) : null}
+          {!audioRecovery && empty ? (
+            <ExtractionRecovery
+              busy={false}
+              onRetry={() => navigateToFixture('verification')}
+            />
+          ) : null}
+          {audioRecovery || empty ? null : (
+            <VerifyForm
+              busy={false}
+              existingEntries={existingEntries}
+              initialEntries={verificationEntries}
+              initialUnitName={noUnits ? undefined : '  UNIT   2  '}
+              onSubmit={() => navigateToFixture('dashboard')}
+              targetLabel="Englisch"
+              units={noUnits ? [] : verificationUnits}
+            />
+          )}
+        </div>
+      </div>
+    </main>
+  );
+};
 
 type Deferred = {
   readonly promise: Promise<void>;

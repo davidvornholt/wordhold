@@ -31,19 +31,24 @@ export const rowWithUnit = (
   index: number,
   unit: UnitSelectionData,
 ): ReadonlyArray<DraftRow> =>
-  rows.map((row, i) => (i === index ? { ...row, unit } : row));
+  rows.map((row, i) =>
+    i === index ? { ...row, unit, duplicateConfirmed: false } : row,
+  );
 
 export const rowsWithUnitFrom = (
   rows: ReadonlyArray<DraftRow>,
   index: number,
   unit: UnitSelectionData,
 ): ReadonlyArray<DraftRow> =>
-  rows.map((row, i) => (i >= index ? { ...row, unit } : row));
+  rows.map((row, i) =>
+    i >= index ? { ...row, unit, duplicateConfirmed: false } : row,
+  );
 
 export const rowsWithUnit = (
   rows: ReadonlyArray<DraftRow>,
   unit: UnitSelectionData,
-): ReadonlyArray<DraftRow> => rows.map((row) => ({ ...row, unit }));
+): ReadonlyArray<DraftRow> =>
+  rows.map((row) => ({ ...row, unit, duplicateConfirmed: false }));
 
 export const withoutRow = (
   rows: ReadonlyArray<DraftRow>,

@@ -22,6 +22,7 @@ const toPayloadEntry = (
   ...(draft.grammar === undefined ? {} : { grammar: draft.grammar }),
   ...(draft.example.trim() === '' ? {} : { example: draft.example.trim() }),
   ...(draft.duplicateException === true ? { duplicateException: true } : {}),
+  ...(draft.skipDuplicate === true ? { skipDuplicate: true } : {}),
 });
 
 const useActionRunner = () => {

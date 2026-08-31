@@ -5,6 +5,7 @@ import type { DraftEntry } from './entry-row';
 export type VerificationEntry = DraftEntry & {
   readonly unit: UnitSelectionData;
   readonly duplicateException?: true;
+  readonly skipDuplicate?: true;
 };
 
 export type DraftRow = DraftEntry & {
@@ -32,8 +33,23 @@ const verificationEntry = ({
 
 export type ImportSelection = {
   readonly entries: ReadonlyArray<VerificationEntry>;
+  readonly submissionEntries: ReadonlyArray<VerificationEntry>;
+  readonly skippedDuplicates: ReadonlyArray<VerificationEntry>;
   readonly skipped: number;
 };
+
+export const entriesForSubmission = (
+  selection: ImportSelection,
+): ReadonlyArray<VerificationEntry> => selection.submissionEntries;
+
+export const canCompleteWithoutImport = (
+  drafts: ReadonlyArray<DraftRow>,
+  selection: ImportSelection,
+): boolean =>
+  selection.entries.length === 0 &&
+  selection.skipped === selection.skippedDuplicates.length &&
+  selection.skippedDuplicates.length > 0 &&
+  drafts.every(entryIsComplete);
 
 // A complete row is imported when it is no duplicate, or when it is a
 // confirmed exception (same word, different casing or example). Everything
@@ -43,14 +59,37 @@ export const selectImportableEntries = (
   verdicts: ReadonlyArray<DuplicateVerdict>,
 ): ImportSelection => {
   const completeCount = drafts.filter(entryIsComplete).length;
-  const importable = drafts.filter(
-    (entry, index) =>
-      entryIsComplete(entry) &&
-      (verdicts[index] === 'none' ||
-        (verdicts[index] === 'exception' && entry.duplicateConfirmed)),
+  const submissionEntries = drafts.flatMap((entry, index) => {
+    if (!entryIsComplete(entry)) {
+      return [];
+    }
+    const verdict = verdicts[index];
+    if (verdict === 'exact') {
+      return [
+        {
+          ...verificationEntry(entry),
+          skipDuplicate: true as const,
+        },
+      ];
+    }
+    if (
+      verdict === 'none' ||
+      (verdict === 'exception' && entry.duplicateConfirmed)
+    ) {
+      return [verificationEntry(entry)];
+    }
+    return [];
+  });
+  const importable = submissionEntries.filter(
+    (entry) => entry.skipDuplicate !== true,
+  );
+  const skippedDuplicates = submissionEntries.filter(
+    (entry) => entry.skipDuplicate === true,
   );
   return {
-    entries: importable.map(verificationEntry),
+    entries: importable,
+    submissionEntries,
+    skippedDuplicates,
     skipped: completeCount - importable.length,
   };
 };

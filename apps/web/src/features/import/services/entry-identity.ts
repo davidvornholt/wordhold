@@ -13,8 +13,11 @@ export const comparableEntryText = (text: string): string =>
     .replace(whitespace, ' ')
     .trim();
 
+const canonicalEntryText = (text: string): string =>
+  comparableEntryText(text).replace(whitespace, '');
+
 export const entryIdentityKey = (text: string): string =>
-  comparableEntryText(text).toLocaleLowerCase();
+  canonicalEntryText(text).toLocaleLowerCase();
 
 export type ExistingEntry = {
   readonly targetText: string;
@@ -43,11 +46,11 @@ export const duplicateVerdict = (
   if (sameWord.length === 0) {
     return 'none';
   }
-  const draftCasing = comparableEntryText(draft.targetText);
+  const draftCasing = canonicalEntryText(draft.targetText);
   const draftExample = entryIdentityKey(draft.example);
   return sameWord.some(
     (entry) =>
-      comparableEntryText(entry.targetText) === draftCasing &&
+      canonicalEntryText(entry.targetText) === draftCasing &&
       exampleKeys(entry.examples).includes(draftExample),
   )
     ? 'exact'

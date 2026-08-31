@@ -50,6 +50,10 @@ describe('duplicateVerdict', () => {
     );
   });
 
+  it('blocks punctuation or spacing inserted inside a word', () => {
+    expect(duplicateVerdict(draft('co-op'), [stored('coop')])).toBe('exact');
+  });
+
   it('allows an exception when the casing differs', () => {
     expect(duplicateVerdict(draft('Sie'), [stored('sie')])).toBe('exception');
   });
