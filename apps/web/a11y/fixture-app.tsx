@@ -90,6 +90,8 @@ export const FixtureApp = () => {
       return <ImportSessionFixture />;
     case 'verification':
       return <VerificationFixture />;
+    case 'verification-duplicates':
+      return <VerificationFixture duplicates={true} />;
     case 'verification-batch-first':
     case 'verification-batch-second':
     case 'verification-batch-complete':

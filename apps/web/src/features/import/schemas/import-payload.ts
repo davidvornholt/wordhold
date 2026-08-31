@@ -43,6 +43,11 @@ export const VerifiedEntry = Schema.Struct({
   example: Schema.optional(
     Schema.Trim.pipe(Schema.maxLength(maximumExampleLength)),
   ),
+  // Present only when the learner confirmed importing a word that already
+  // exists in the unit with a different casing or example sentence. The
+  // server refuses such an entry without this consent, so a stale verify
+  // screen cannot slip a duplicate through.
+  duplicateException: Schema.optional(Schema.Literal(true)),
 });
 export type VerifiedEntryData = typeof VerifiedEntry.Type;
 

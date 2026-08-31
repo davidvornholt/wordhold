@@ -8,6 +8,7 @@ import { completeAudioRecovery, navigateToFixture } from './fixture-state';
 import {
   photographedPage,
   verificationEntries,
+  verificationUnitEntries,
   verificationUnits,
 } from './verification-fixture-data';
 
@@ -33,12 +34,14 @@ type VerificationFixtureProps = {
   readonly empty?: boolean;
   readonly audioRecovery?: boolean;
   readonly noUnits?: boolean;
+  readonly duplicates?: boolean;
 };
 
 export const VerificationFixture = ({
   empty = false,
   audioRecovery = false,
   noUnits = false,
+  duplicates = false,
 }: VerificationFixtureProps) => (
   <main className="verification-screen">
     <div className="verification-header">
@@ -82,6 +85,7 @@ export const VerificationFixture = ({
         {audioRecovery || empty ? null : (
           <VerifyForm
             busy={false}
+            existingEntries={duplicates ? verificationUnitEntries : []}
             initialEntries={verificationEntries}
             initialUnitName={noUnits ? undefined : '  UNIT   2  '}
             onSubmit={() => navigateToFixture('dashboard')}
@@ -121,6 +125,7 @@ export const DeferredVerificationFixture = () => {
       <h1 className="font-semibold text-2xl">Seite überprüfen</h1>
       <VerifyForm
         busy={busy}
+        existingEntries={[]}
         initialEntries={deferredEntries}
         initialUnitName={undefined}
         onSubmit={(entries) => {

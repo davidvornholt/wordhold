@@ -1,11 +1,12 @@
 import type { BatchReviewSession } from '../schemas/batch-review-search';
-import type { Unit } from '../services/repository';
+import type { Unit, UnitEntry } from '../services/repository';
 import { AudioRecovery } from './audio-recovery';
 import { BatchReviewProgress } from './batch-review-progress';
 import type { DraftEntry } from './entry-row';
 import { ExtractionRecovery } from './extraction-recovery';
 import { VerificationImage } from './verification-image';
-import { type VerificationEntry, VerifyForm } from './verify-form';
+import { VerifyForm } from './verify-form';
+import type { VerificationEntry } from './verify-form-selection';
 
 type CompletedPage = {
   readonly imported: number | null;
@@ -17,6 +18,7 @@ type VerificationWorkbenchProps = {
   readonly batchSession: BatchReviewSession | null;
   readonly busy: boolean;
   readonly completed: CompletedPage | null;
+  readonly existingEntries: ReadonlyArray<UnitEntry>;
   readonly extractionKey: string | null;
   readonly initialEntries: ReadonlyArray<DraftEntry>;
   readonly initialUnitName: string | undefined;
@@ -42,6 +44,7 @@ export const VerificationWorkbench = ({
   batchSession,
   busy,
   completed,
+  existingEntries,
   extractionKey,
   initialEntries,
   initialUnitName,
@@ -77,6 +80,7 @@ export const VerificationWorkbench = ({
       {completed === null && extractionKey !== null ? (
         <VerifyForm
           busy={busy}
+          existingEntries={existingEntries}
           initialEntries={initialEntries}
           initialUnitName={initialUnitName}
           key={extractionKey}

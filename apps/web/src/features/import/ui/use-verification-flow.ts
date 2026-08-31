@@ -5,7 +5,7 @@ import type { BatchReviewSearchData } from '../schemas/batch-review-search';
 import type { UnitSelectionData } from '../schemas/import-payload';
 import { retryAudio, retryExtraction } from '../server-fns';
 import { useVerificationNavigation } from './use-verification-navigation';
-import type { VerificationEntry } from './verify-form';
+import type { VerificationEntry } from './verify-form-selection';
 
 type VerificationPage = {
   readonly extraction: ExtractionResult | null;
@@ -21,6 +21,7 @@ const toPayloadEntry = (
   nativeText: draft.nativeText,
   ...(draft.grammar === undefined ? {} : { grammar: draft.grammar }),
   ...(draft.example.trim() === '' ? {} : { example: draft.example.trim() }),
+  ...(draft.duplicateException === true ? { duplicateException: true } : {}),
 });
 
 const useActionRunner = () => {

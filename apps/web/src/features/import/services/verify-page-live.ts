@@ -1,6 +1,7 @@
 import type { Database } from '@wordhold/db/client';
 import { Effect } from 'effect';
 import { normalizeAnswer } from '../../../shared/grading/normalize';
+import { DuplicateEntryError } from '../errors/duplicate-entry-error';
 import { ImportDatabaseError } from '../errors/import-database-error';
 import { ImportInvariantError } from '../errors/import-invariant-error';
 import { PageAlreadyVerifiedError } from '../errors/page-already-verified-error';
@@ -9,6 +10,7 @@ import type {
   ImportPayloadData,
   UnitSelectionData,
 } from '../schemas/import-payload';
+import { ensureNoDuplicateEntries } from './entry-duplicates';
 import { sessionLock } from './page-repository-utils';
 import { commitVerifiedPage } from './verification-commit';
 
@@ -43,11 +45,12 @@ export const verifyPageLive = (
         );
 
   const insertEntries = Effect.gen(function* () {
-    // All position allocation for one course is serialized inside the
-    // transaction. The matching unique index remains the database invariant.
-    if (payload.entries.some((entry) => entry.unit.kind === 'new')) {
-      yield* sql`select pg_advisory_xact_lock(hashtextextended(${courseId}, 0))`;
-    }
+    // One per-course lock serializes everything that must see the rows of
+    // concurrent imports: position allocation for new units (whose unique
+    // index remains the database invariant) and duplicate detection, which
+    // has no index to fall back on because a duplicate's legality depends on
+    // casing and example sentences.
+    yield* sql`select pg_advisory_xact_lock(hashtextextended(${courseId}, 0))`;
     const unitIds = yield* Effect.forEach(
       payload.entries,
       (entry) =>
@@ -62,6 +65,7 @@ export const verifyPageLive = (
         }),
       { concurrency: 1 },
     );
+    yield* ensureNoDuplicateEntries(sql, courseId, payload, unitIds);
     const inserted = yield* sql<{
       id: string;
       targetText: string;
@@ -151,7 +155,8 @@ export const verifyPageLive = (
       Effect.mapError((cause) =>
         cause instanceof PageAlreadyVerifiedError ||
         cause instanceof ImportInvariantError ||
-        cause instanceof UnitNotFoundError
+        cause instanceof UnitNotFoundError ||
+        cause instanceof DuplicateEntryError
           ? cause
           : databaseFailure(cause),
       ),

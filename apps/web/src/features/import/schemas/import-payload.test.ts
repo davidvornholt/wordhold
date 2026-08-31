@@ -117,4 +117,22 @@ describe('decodeImportPayload', () => {
       }),
     ).toThrow();
   });
+
+  it('carries an explicit duplicate exception through decoding', () => {
+    const decoded = decodeImportPayload({
+      pageId,
+      entries: [{ ...validEntry, duplicateException: true }],
+    });
+
+    expect(decoded.entries[0]?.duplicateException).toBe(true);
+  });
+
+  it('refuses a duplicate exception that is not the literal true', () => {
+    expect(() =>
+      decodeImportPayload({
+        pageId,
+        entries: [{ ...validEntry, duplicateException: false }],
+      }),
+    ).toThrow();
+  });
 });
