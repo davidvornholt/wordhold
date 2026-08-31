@@ -82,6 +82,8 @@ export const CourseFixture = ({
   </PageLayout>
 );
 
+const unintroducedEntryIndex = 3;
+
 const unitEntry = (
   index: number,
   target: string,
@@ -124,7 +126,14 @@ const entriesByState: Record<
     unitEntry(1, 'memory', 'die Erinnerung', true),
     unitEntry(2, 'holiday', 'die Ferien', false),
   ],
-  unintroduced: [unitEntry(3, 'the referee', 'der Schiedsrichter', false)],
+  unintroduced: [
+    unitEntry(
+      unintroducedEntryIndex,
+      'the referee',
+      'der Schiedsrichter',
+      false,
+    ),
+  ],
   empty: [],
 };
 

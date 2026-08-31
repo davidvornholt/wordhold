@@ -54,7 +54,7 @@ export const SessionStart = ({
             <span className="flex items-start gap-3">
               <input
                 checked={selected === candidate.value}
-                className="mt-1 size-5 accent-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                className="mt-1 size-5 accent-primary focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
                 disabled={candidate.cards === 0}
                 name="practice-direction"
                 onChange={() => setChosen(candidate.value)}

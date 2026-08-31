@@ -60,9 +60,11 @@ export const useCardSubmission = ({
       if (audioUrl !== null) {
         await new Audio(audioUrl).play().catch(() => undefined);
       }
-    } catch (cause) {
+    } catch {
       rollback();
-      setError(cause instanceof Error ? cause.message : String(cause));
+      setError(
+        'Deine Antwort konnte nicht geprüft werden. Prüfe deine Verbindung und versuche es noch einmal.',
+      );
     } finally {
       setBusy(false);
     }
@@ -129,8 +131,10 @@ export const useCardSubmission = ({
       }
       setResult(submitted);
       onNext(submitted);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+    } catch {
+      setError(
+        'Die Bewertung konnte nicht gespeichert werden. Versuche es noch einmal.',
+      );
     } finally {
       setBusy(false);
       setResolution(null);

@@ -69,8 +69,7 @@ const PracticeScreen = () => {
               }}
             >
               Weitere{' '}
-              {Math.min(practiceSectionSize, remainingReadyCount(session))}{' '}
-              üben
+              {Math.min(practiceSectionSize, remainingReadyCount(session))} üben
             </Button>
           }
           emptyMessage="Für jetzt geschafft"

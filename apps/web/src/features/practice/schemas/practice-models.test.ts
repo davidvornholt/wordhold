@@ -21,14 +21,22 @@ const session = (
 
 describe('remainingReadyCount', () => {
   it('counts the ready cards beyond the loaded section', () => {
-    expect(remainingReadyCount(session(20, 25, 3))).toBe(8);
+    const loaded = 20;
+    const due = 25;
+    const firstReviews = 3;
+    expect(remainingReadyCount(session(loaded, due, firstReviews))).toBe(
+      due + firstReviews - loaded,
+    );
   });
 
   it('reports zero when the section covers everything', () => {
-    expect(remainingReadyCount(session(5, 4, 1))).toBe(0);
+    const loaded = 5;
+    const due = 4;
+    expect(remainingReadyCount(session(loaded, due, 1))).toBe(0);
   });
 
   it('never goes negative for selected sessions larger than the plan', () => {
-    expect(remainingReadyCount(session(6, 2, 0))).toBe(0);
+    const loaded = 6;
+    expect(remainingReadyCount(session(loaded, 2, 0))).toBe(0);
   });
 });

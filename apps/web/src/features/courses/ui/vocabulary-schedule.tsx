@@ -103,7 +103,7 @@ export const VocabularySchedule = ({
   const targetLabel = germanLabels[targetLanguage];
   return (
     <details className="group text-sm">
-      <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-1.5 text-muted-foreground underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring [&::-webkit-details-marker]:hidden">
+      <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-1.5 text-muted-foreground underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
         <span aria-hidden="true" className="group-open:rotate-90">
           ▸
         </span>

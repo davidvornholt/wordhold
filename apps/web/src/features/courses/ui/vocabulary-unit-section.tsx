@@ -46,7 +46,7 @@ export const VocabularyUnitSection = ({
       <label className={labelClasses[labelStyle]}>
         <input
           checked={allSelected}
-          className="size-5 accent-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          className="size-5 accent-primary focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
           disabled={selectable.length === 0}
           onChange={() =>
             onToggleAll(

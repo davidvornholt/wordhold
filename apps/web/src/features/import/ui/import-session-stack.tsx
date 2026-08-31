@@ -16,9 +16,7 @@ type ImportSessionStackProps = {
   readonly reviewAction: ReactNode;
 };
 
-const statusDetails = (
-  page: ImportSessionPage,
-): { readonly label: string; readonly borderClass: string } => {
+const statusDetails = (page: ImportSessionPage) => {
   if (page.status === 'verified') {
     return { label: 'Geprüft', borderClass: 'border-l-primary' };
   }

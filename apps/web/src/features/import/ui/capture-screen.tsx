@@ -49,7 +49,10 @@ export const CaptureScreen = ({
 }: CaptureScreenProps) => {
   const batchLocked = batchStarted || hasStoredUpload(pages);
   return (
-    <PageLayout backControl={backControl} title={`${courseName}: Seiten erfassen`}>
+    <PageLayout
+      backControl={backControl}
+      title={`${courseName}: Seiten erfassen`}
+    >
       <p className="text-muted-foreground text-sm">
         Fotografiere eine Vokabelseite oder wähle bis zu zehn vorhandene Fotos.
         Wordhold speichert und liest jede Seite einzeln. Danach prüfst du die

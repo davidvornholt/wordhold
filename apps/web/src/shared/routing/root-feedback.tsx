@@ -55,7 +55,10 @@ export const RootError = ({ error, reset }: ErrorComponentProps) => {
 };
 
 export const RootPending = () => (
-  <main aria-busy="true" className="page-column flex min-h-screen items-center p-6">
+  <main
+    aria-busy="true"
+    className="page-column flex min-h-screen items-center p-6"
+  >
     <p
       aria-live="polite"
       className="text-muted-foreground text-sm"

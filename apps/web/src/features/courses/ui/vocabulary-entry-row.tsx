@@ -24,7 +24,7 @@ export const VocabularyEntryRow = ({
     <input
       aria-label={`${entry.targetText} auswählen`}
       checked={selected}
-      className="mt-1 size-5 accent-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+      className="mt-1 size-5 accent-primary focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
       disabled={!entry.introduced}
       onChange={onToggle}
       type="checkbox"

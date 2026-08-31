@@ -42,7 +42,7 @@ const Home = () => {
             courses={courses}
             renderCourseLink={(course) => (
               <Link
-                className="font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                className="font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
                 params={{ courseId: course.id }}
                 to="/courses/$courseId"
               >
@@ -82,7 +82,7 @@ const Home = () => {
             entries={dashboard.fragile}
             renderEntryAction={(entry) => (
               <Link
-                className="font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                className="font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
                 params={{ courseId: entry.courseId }}
                 search={{ filter: 'difficult' }}
                 to="/courses/$courseId/vocabulary"

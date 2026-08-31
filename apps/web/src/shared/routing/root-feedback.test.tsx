@@ -1,6 +1,5 @@
 import { describe, expect, it, mock } from 'bun:test';
 import { renderToStaticMarkup } from 'react-dom/server';
-import '../../styles.css';
 import { RootError, RootNotFound, RootPending } from './root-feedback';
 import { retryRoute } from './root-feedback-state';
 

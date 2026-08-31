@@ -1,11 +1,11 @@
 import type { ReviewMode } from '@wordhold/db/schema/practice';
 import { type SubmitEvent, useEffect, useId, useRef } from 'react';
+import { cardClass } from '../../../shared/ui/surface-styles';
 import type {
   PracticeSession,
   ResolvedSubmitResult,
   SubmitResult,
 } from '../schemas/practice-models';
-import { cardClass } from '../../../shared/ui/surface-styles';
 import type { SubmitPayloadData } from '../schemas/submission-schema';
 import { FeedbackPanel } from './feedback-panel';
 import { PracticeAnswerForm } from './practice-answer-form';

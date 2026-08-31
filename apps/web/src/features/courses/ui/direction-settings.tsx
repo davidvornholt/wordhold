@@ -105,7 +105,7 @@ export const DirectionSettings = ({
             <input
               aria-describedby={`${direction}-description`}
               checked={directions.includes(direction)}
-              className="mt-1 size-5 accent-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              className="mt-1 size-5 accent-primary focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
               id={direction}
               onChange={(event) => toggle(direction, event.currentTarget)}
               type="checkbox"

@@ -40,7 +40,8 @@ export type PracticeSession = {
 export const remainingReadyCount = (session: PracticeSession): number =>
   Math.max(
     0,
-    session.available.due + session.available.firstReviews -
+    session.available.due +
+      session.available.firstReviews -
       session.items.length,
   );
 

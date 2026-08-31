@@ -66,7 +66,7 @@ const CourseScreen = () => {
         primaryAction={primaryAction}
         renderUnitLink={(unit) => (
           <Link
-            className="w-fit font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            className="w-fit font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
             params={{ courseId: course.id, unitId: unit.id }}
             to="/courses/$courseId/units/$unitId"
           >
