@@ -5,12 +5,14 @@ import { photographedPage } from './verification-fixture-data';
 const pages = [
   {
     id: 'page-1',
+    pageNumber: 46,
     position: 0,
     status: 'awaiting_verification' as const,
     extractionReady: true,
   },
   {
     id: 'page-2',
+    pageNumber: 47,
     position: 1,
     status: 'awaiting_verification' as const,
     extractionReady: true,
@@ -37,13 +39,14 @@ export const ImportSessionFixture = () => (
     <ImportSessionStack
       pageImageSource={() => photographedPage}
       pages={pages}
+      reviewOrder="page_number"
       reviewAction={
         <button
           className="inline-flex min-h-11 items-center bg-primary px-4 py-2 font-medium text-primary-foreground text-sm"
           onClick={() => navigateToFixture('verification-batch-first')}
           type="button"
         >
-          Mit Seite 1 beginnen
+          Prüfung beginnen
         </button>
       }
     />

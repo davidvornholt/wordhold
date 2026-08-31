@@ -57,7 +57,7 @@ test('authenticated routes remain reachable through their user transitions', asy
     'data-fixture',
     'import-session',
   );
-  await page.getByRole('button', { name: 'Mit Seite 1 beginnen' }).click();
+  await page.getByRole('button', { name: 'Prüfung beginnen' }).click();
   await expect(page.locator('body')).toHaveAttribute(
     'data-fixture',
     'verification-batch-first',

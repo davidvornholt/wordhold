@@ -1,4 +1,5 @@
 import { Tts } from '@wordhold/ai/tts';
+import { ttsAudioProfile } from '@wordhold/ai/tts/speech-text';
 import type { LanguageCode } from '@wordhold/db/schema/courses';
 import { Effect, Either } from 'effect';
 import { persistFileReference } from '../../../shared/storage/consistency';
@@ -39,17 +40,18 @@ const generateEntryAudio = (entry: AudioTarget) =>
     return yield* store.withCriticalSection(
       entry.id,
       Effect.gen(function* () {
-        if (yield* store.hasReference(entry.id)) {
+        const audioProfile = ttsAudioProfile(entry.targetText, entry.language);
+        if (yield* store.hasReference(entry.id, audioProfile)) {
           return 'already-available' as const;
         }
         const result = yield* tts.synthesize({
           text: entry.targetText,
           language: entry.language,
         });
-        const path = audioRelativePath(entry.id, result.voice);
+        const path = audioRelativePath(entry.id, audioProfile);
         yield* persistFileReference({
           write: storage.write(path, result.audio),
-          persistReference: store.upsertReference(entry.id, result.voice, path),
+          persistReference: store.upsertReference(entry.id, audioProfile, path),
           remove: storage.remove(path),
         });
         return 'generated' as const;

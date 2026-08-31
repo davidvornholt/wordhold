@@ -1,4 +1,6 @@
+import { scanWcag22AaViolations } from '@davidvornholt/a11y-testing/axe';
 import { expect, test } from '@playwright/test';
+import { assertNoAccessibilityViolations } from './a11y-assertions';
 
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
@@ -38,6 +40,30 @@ test('a missed card returns in the end-of-section after-round', async ({
   await expect(page.getByText('2 von 2 Karten')).toBeVisible();
   await expect(page.getByText('Nach Fehlern richtig')).toBeVisible();
   await expect(page.getByText('Weiterhin unsicher')).toHaveCount(0);
+});
+
+test('an unknown card reveals its solution and returns in the after-round', async ({
+  page,
+}) => {
+  await page.goto('/?state=practice-session');
+  const answer = page.getByLabel('Deine Antwort');
+  await expect(answer).toBeFocused();
+
+  await page.getByRole('button', { name: 'Weiß ich nicht' }).click();
+  await expect(page.getByText('Nicht gewusst')).toBeVisible();
+  await expect(page.getByText('Erwartet: memory')).toBeVisible();
+  assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
+  await page.getByRole('button', { name: 'Weiter' }).click();
+  await expect(page.getByText('1 von 2 Karten bearbeitet')).toBeVisible();
+
+  await answer.fill('holiday');
+  await page.getByRole('button', { name: 'Prüfen' }).click();
+  await page.getByRole('button', { name: 'Weiter' }).click();
+
+  await expect(page.getByText('Nachrunde', { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { level: 2, name: 'Erinnerung' }),
+  ).toBeVisible();
 });
 
 test('a rejected typo can be stored as Hard without teaching it as an answer', async ({

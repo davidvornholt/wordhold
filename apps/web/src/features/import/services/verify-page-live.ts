@@ -10,6 +10,10 @@ import type {
   UnitSelectionData,
 } from '../schemas/import-payload';
 import { sessionLock } from './page-repository-utils';
+import {
+  importSessionIsComplete,
+  orderPagesForReview,
+} from './page-review-order';
 import { commitVerifiedPage } from './verification-commit';
 
 const databaseFailure = (cause: unknown) =>
@@ -17,6 +21,48 @@ const databaseFailure = (cause: unknown) =>
     operation: 'verify page',
     cause,
     message: 'Database operation failed: verify page.',
+  });
+
+const claimPageForReview = (sql: Database, pageId: string) =>
+  Effect.gen(function* () {
+    const pageRows = yield* sql<{
+      importSessionId: string;
+    }>`select import_session_id as "importSessionId" from pages where id = ${pageId} limit 1`;
+    const [page] = pageRows;
+    if (page === undefined) {
+      return false;
+    }
+    yield* sessionLock(sql, page.importSessionId);
+    const sessionPages = yield* sql<{
+      id: string;
+      extraction: unknown;
+      expectedPageCount: number;
+      position: number;
+      reviewOrder: 'page_number' | 'scan' | null;
+      reviewPosition: number | null;
+      status: 'awaiting_verification' | 'verified';
+    }>`select id, extraction, import_expected_count as "expectedPageCount", import_position as position, review_order as "reviewOrder", review_position as "reviewPosition", status from pages where import_session_id = ${page.importSessionId} order by import_position, id`;
+    const ordered = orderPagesForReview(sessionPages);
+    const firstPendingPage = ordered.pages.find(
+      (sessionPage) => sessionPage.status === 'awaiting_verification',
+    );
+    if (
+      !importSessionIsComplete(sessionPages) ||
+      firstPendingPage?.id !== pageId
+    ) {
+      return false;
+    }
+    yield* sql`update pages set review_order = ${ordered.order} where import_session_id = ${page.importSessionId}`;
+    yield* Effect.forEach(
+      ordered.pages,
+      ({ id, reviewPosition }) =>
+        sql`update pages set review_position = ${reviewPosition} where id = ${id} and import_session_id = ${page.importSessionId}`,
+      { concurrency: 1 },
+    );
+    const claimed = yield* sql<{
+      id: string;
+    }>`update pages set status = 'verified', verified_at = now() where id = ${pageId} and status = 'awaiting_verification' returning id`;
+    return claimed.length > 0;
   });
 
 export const verifyPageLive = (
@@ -130,20 +176,7 @@ export const verifyPageLive = (
   return sql
     .withTransaction(
       commitVerifiedPage({
-        claimPage: Effect.gen(function* () {
-          const pageRows = yield* sql<{
-            importSessionId: string;
-          }>`select import_session_id as "importSessionId" from pages where id = ${payload.pageId} limit 1`;
-          const [page] = pageRows;
-          if (page === undefined) {
-            return false;
-          }
-          yield* sessionLock(sql, page.importSessionId);
-          const claimed = yield* sql<{
-            id: string;
-          }>`update pages set status = 'verified', verified_at = now() where id = ${payload.pageId} and status = 'awaiting_verification' and (select count(*) from pages as session_page where session_page.import_session_id = pages.import_session_id) = pages.import_expected_count and (select max(session_page.import_position) from pages as session_page where session_page.import_session_id = pages.import_session_id) = pages.import_expected_count - 1 and not exists(select 1 from pages as earlier where earlier.import_session_id = pages.import_session_id and earlier.import_position < pages.import_position and earlier.status = 'awaiting_verification') returning id`;
-          return claimed.length > 0;
-        }),
+        claimPage: claimPageForReview(sql, payload.pageId),
         insertEntries,
       }),
     )

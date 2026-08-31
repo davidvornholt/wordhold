@@ -13,6 +13,9 @@ const ImportSessionScreen = () => {
   const firstPendingPage = session.pages.find(
     (page) => page.status === 'awaiting_verification',
   );
+  const firstPendingIndex = session.pages.findIndex(
+    (page) => page.status === 'awaiting_verification',
+  );
   let reviewAction: ReactNode;
   if (!session.isComplete) {
     reviewAction = (
@@ -33,9 +36,7 @@ const ImportSessionScreen = () => {
         search={batchReviewSearchFor(pageIds, firstPendingPage.id)}
         to="/pages/$pageId/verify"
       >
-        {firstPendingPage.position === 0
-          ? 'Mit Seite 1 beginnen'
-          : `Mit Seite ${firstPendingPage.position + 1} fortfahren`}
+        {firstPendingIndex === 0 ? 'Prüfung beginnen' : 'Prüfung fortsetzen'}
       </ActionLink>
     );
   }
@@ -51,6 +52,7 @@ const ImportSessionScreen = () => {
       <ImportSessionStack
         pageImageSource={(page) => `/api/pages/${page.id}/image`}
         pages={session.pages}
+        reviewOrder={session.reviewOrder}
         reviewAction={reviewAction}
       />
     </PageLayout>

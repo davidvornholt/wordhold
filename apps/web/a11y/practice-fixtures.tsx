@@ -70,6 +70,7 @@ export const PracticeFeedbackFixture = () => (
       resolution={null}
       repeated={false}
       result={result}
+      skipped={false}
       submittedAnswer="wrong"
     />
   </PageLayout>
@@ -158,7 +159,7 @@ export const DeferredPracticeFixture = () => {
     const pending = makeDeferred();
     deferred.current = pending;
     setCalls((count) => count + 1);
-    setSubmittedAnswer(data.answer);
+    setSubmittedAnswer(data.skipped === true ? '(übersprungen)' : data.answer);
     return pending.promise;
   };
   return (

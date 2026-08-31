@@ -4,16 +4,21 @@ import {
   ExtractedPage,
   maximumEntriesPerPage,
   maximumEntryTextLength,
+  maximumPageNumber,
   maximumUnitNameLength,
 } from './schema';
 
 const decode = Schema.decodeUnknownSync(ExtractedPage);
 const mixedVocabularyEntryCount = 3;
+const printedPageNumber = 47;
+const nonIntegerPageNumber = 1.5;
 
 describe('ExtractedPage', () => {
   it('decodes words, expressions, and sentences as vocabulary entries', () => {
     const page = decode({
       unitName: 'Unité 3',
+      pageNumber: printedPageNumber,
+      pageNumberConfidence: 0.99,
       overallConfidence: 0.95,
       entries: [
         {
@@ -38,11 +43,28 @@ describe('ExtractedPage', () => {
     });
     expect(page.entries).toHaveLength(mixedVocabularyEntryCount);
     expect(page.entries[0]?.grammar?._tag).toBe('noun');
+    expect(page.pageNumber).toBe(printedPageNumber);
     expect(page.unitName).toBe('Unité 3');
   });
 
   it('rejects confidence outside [0, 1]', () => {
     expect(() => decode({ overallConfidence: 1.2, entries: [] })).toThrow();
+    expect(() =>
+      decode({
+        entries: [],
+        overallConfidence: 1,
+        pageNumber: printedPageNumber,
+        pageNumberConfidence: 1.1,
+      }),
+    ).toThrow();
+  });
+
+  it('rejects invalid printed page numbers', () => {
+    for (const pageNumber of [0, nonIntegerPageNumber, maximumPageNumber + 1]) {
+      expect(() =>
+        decode({ entries: [], overallConfidence: 1, pageNumber }),
+      ).toThrow();
+    }
   });
 
   it('rejects more entries than one verification page can accept', () => {

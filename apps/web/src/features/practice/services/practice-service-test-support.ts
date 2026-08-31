@@ -2,6 +2,7 @@ import type { cards } from '@wordhold/db/schema/practice';
 import { Effect, Layer } from 'effect';
 import { PracticeJudgeError } from '../errors/practice-errors';
 import type { SubmissionRecord } from '../schemas/practice-models';
+import type { SubmitPayloadData } from '../schemas/submission-schema';
 import { JudgeCacheStore } from './judge-cache-store';
 import { PracticeJudge } from './practice-judge';
 import { PracticeService } from './practice-service';
@@ -74,21 +75,13 @@ const cacheStore = Layer.succeed(JudgeCacheStore, {
   withCriticalSection: (_key, effect) => effect,
 });
 
-export const runSubmit = (
+export const runSubmitPayload = (
   reviewStore: PracticeReviewStore['Type'],
   judge: PracticeJudge['Type'],
-  answer = 'wrong',
+  payload: SubmitPayloadData,
 ) =>
   Effect.runPromise(
-    Effect.flatMap(PracticeService, (service) =>
-      service.submit({
-        cardId: testCard.id,
-        revision: testCard.revision,
-        answer,
-        wrongAnswerResolution: 'defer',
-        mode: 'scheduled',
-      }),
-    ).pipe(
+    Effect.flatMap(PracticeService, (service) => service.submit(payload)).pipe(
       Effect.provide(
         PracticeService.Default.pipe(
           Layer.provide(
@@ -104,3 +97,16 @@ export const runSubmit = (
       Effect.either,
     ),
   );
+
+export const runSubmit = (
+  reviewStore: PracticeReviewStore['Type'],
+  judge: PracticeJudge['Type'],
+  answer = 'wrong',
+) =>
+  runSubmitPayload(reviewStore, judge, {
+    cardId: testCard.id,
+    revision: testCard.revision,
+    answer,
+    wrongAnswerResolution: 'defer',
+    mode: 'scheduled',
+  });

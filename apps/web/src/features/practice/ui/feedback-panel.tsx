@@ -23,14 +23,19 @@ type FeedbackPanelProps = {
   ) => void;
   readonly repeated: boolean;
   readonly resolution: Exclude<WrongAnswerResolution, 'defer'> | null;
+  readonly skipped: boolean;
 };
 
-const feedbackHeading = (result: SubmitResult, repeated: boolean): string => {
+const feedbackHeading = (
+  result: SubmitResult,
+  repeated: boolean,
+  skipped: boolean,
+): string => {
   if (!result.graded) {
     return result.message;
   }
   if (!result.correct) {
-    return 'Noch nicht sicher';
+    return skipped ? 'Nicht gewusst' : 'Noch nicht sicher';
   }
   return repeated ? 'Diesmal richtig' : 'Richtig';
 };
@@ -91,6 +96,7 @@ export const FeedbackPanel = ({
   onResolveWrong,
   repeated,
   resolution,
+  skipped,
 }: FeedbackPanelProps) => {
   const normalizedSubmission = normalizeAnswer(submittedAnswer);
   const repeatsSubmittedAnswer = result.expectedAnswers.some(
@@ -113,7 +119,9 @@ export const FeedbackPanel = ({
         id={feedbackDescriptionId}
         role="status"
       >
-        <p className="font-medium">{feedbackHeading(result, repeated)}</p>
+        <p className="font-medium">
+          {feedbackHeading(result, repeated, skipped)}
+        </p>
         {repeatsSubmittedAnswer ? null : (
           <p className="text-sm">
             Erwartet:{' '}

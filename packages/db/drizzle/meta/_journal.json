@@ -113,6 +113,20 @@
       "when": 1788110459917,
       "tag": "0015_thin_proteus",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1788125767498,
+      "tag": "0016_exotic_rogue",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1788127018315,
+      "tag": "0017_sleepy_professor_monster",
+      "breakpoints": true
     }
   ]
 }

@@ -8,8 +8,10 @@ type PracticeAnswerFormProps = {
   readonly disabled: boolean;
   readonly inputRef: RefObject<HTMLInputElement | null>;
   readonly onAnswerChange: (answer: string) => void;
+  readonly onSkip: () => void;
   readonly onSubmit: SubmitEventHandler<HTMLFormElement>;
   readonly promptId: string;
+  readonly skipping: boolean;
   readonly submittedAnswer: string | null;
 };
 
@@ -19,8 +21,10 @@ export const PracticeAnswerForm = ({
   disabled,
   inputRef,
   onAnswerChange,
+  onSkip,
   onSubmit,
   promptId,
+  skipping,
   submittedAnswer,
 }: PracticeAnswerFormProps) => (
   <form aria-busy={busy} className="flex flex-col gap-3" onSubmit={onSubmit}>
@@ -38,9 +42,19 @@ export const PracticeAnswerForm = ({
       value={submittedAnswer ?? answer}
     />
     {disabled ? null : (
-      <Button disabled={busy || answer.trim() === ''} type="submit">
-        {busy ? 'Wird geprüft …' : 'Prüfen'}
-      </Button>
+      <>
+        <Button disabled={busy || answer.trim() === ''} type="submit">
+          {busy && !skipping ? 'Wird geprüft …' : 'Prüfen'}
+        </Button>
+        <Button
+          className="w-fit self-center px-3 py-2"
+          disabled={busy}
+          onClick={onSkip}
+          variant="quiet-muted"
+        >
+          {skipping ? 'Wird gespeichert …' : 'Weiß ich nicht'}
+        </Button>
+      </>
     )}
   </form>
 );

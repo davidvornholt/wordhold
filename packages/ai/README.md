@@ -11,6 +11,8 @@ changes.
 | `SentenceGen` | Bedrock OpenAI-compatible endpoint (`AI_SENTENCE_MODEL`) | Example-sentence generation for entries. |
 | `Tts` | Amazon Polly (neural voices) | Pronunciation audio, batch-generated at import time. |
 
+Before calling Polly, `Tts` replaces recognized German, English, Spanish, and French abbreviations with SSML pronunciation aliases while preserving the textbook spelling. Audio that uses the dictionary carries a pronunciation revision, so a changed dictionary can invalidate affected files without regenerating plain vocabulary.
+
 Structured outputs are validated with Effect Schema via the Standard Schema
 bridge (`Schema.standardSchemaV1`), so the AI SDK retries on shape mismatch
 and the app only ever sees decoded values.
