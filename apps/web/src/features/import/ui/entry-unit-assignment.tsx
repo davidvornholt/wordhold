@@ -1,3 +1,4 @@
+import { Button } from '../../../shared/ui/button';
 import type { UnitSelectionData } from '../schemas/import-payload';
 import type { Unit } from '../services/repository';
 import { UnitPicker } from './unit-picker';
@@ -35,15 +36,15 @@ export const EntryUnitAssignment = ({
       units={units}
     />
     {hasFollowing ? (
-      <button
+      <Button
         aria-label={`Einheit ab Vokabel ${entryNumber} anwenden`}
-        className="w-fit text-muted-foreground text-sm underline"
+        className="w-fit"
         disabled={disabled || !canApplyFollowing}
         onClick={onApplyFollowing}
-        type="button"
+        variant="quiet-muted"
       >
         Ab hier anwenden
-      </button>
+      </Button>
     ) : null}
   </div>
 );

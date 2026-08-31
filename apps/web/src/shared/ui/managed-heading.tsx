@@ -1,14 +1,17 @@
 import { type ReactNode, useEffect, useRef } from 'react';
 
-type ManagedStepHeadingProps = {
+type ManagedHeadingProps = {
   readonly children: ReactNode;
   readonly className: string;
 };
 
-export const ManagedStepHeading = ({
+// Moves keyboard and screen-reader focus to the heading of a newly revealed
+// step, so in-page transitions announce themselves like navigations. The
+// timeout defers focus until the new subtree has settled.
+export const ManagedHeading = ({
   children,
   className,
-}: ManagedStepHeadingProps) => {
+}: ManagedHeadingProps) => {
   const heading = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {

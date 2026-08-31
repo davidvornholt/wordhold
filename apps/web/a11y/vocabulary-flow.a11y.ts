@@ -17,7 +17,7 @@ test('the vocabulary library exposes per-direction dates and cross-unit selectio
 
   await page.getByLabel('memory auswählen').check();
   await page.getByLabel('the referee auswählen').check();
-  await expect(page.getByText('2 ausgewählt')).toBeVisible();
+  await expect(page.getByText('2 Vokabeln ausgewählt')).toBeVisible();
   await page.getByRole('button', { name: 'Frei üben' }).click();
   await expect(page.locator('body')).toHaveAttribute(
     'data-fixture',
@@ -32,5 +32,5 @@ test('difficult vocabulary can be selected as one practice set', async ({
   await page
     .getByRole('button', { name: 'Schwierige Vokabeln auswählen' })
     .click();
-  await expect(page.getByText('1 ausgewählt')).toBeVisible();
+  await expect(page.getByText('1 Vokabel ausgewählt')).toBeVisible();
 });

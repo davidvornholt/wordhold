@@ -1,5 +1,6 @@
 import type { LanguageCode } from '@wordhold/db/schema/courses';
 import type { ReactNode } from 'react';
+import { countNoun } from '../../../shared/format/count';
 import type { DirectionStats } from '../schemas/dashboard-models';
 import { CourseCard } from './course-card';
 
@@ -42,14 +43,17 @@ export const CourseGrid = ({
   <section className="flex flex-col gap-3">
     <div className="flex items-baseline justify-between">
       <h2 className="font-display text-xl">Kurse</h2>
-      {reviewsToday > 0 ? (
-        <p className="text-muted-foreground text-sm">
-          Heute {cardsToday} {cardsToday === 1 ? 'Karte' : 'Karten'} ·{' '}
-          {reviewsToday} Antworten
-        </p>
-      ) : null}
+      <p className="text-muted-foreground text-sm">
+        {reviewsToday > 0
+          ? `Heute ${countNoun(cardsToday, 'Karte', 'Karten')} · ${countNoun(
+              reviewsToday,
+              'Antwort',
+              'Antworten',
+            )}`
+          : 'Heute noch nichts geübt'}
+      </p>
     </div>
-    <ul className="grid gap-3 sm:grid-cols-3">
+    <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {courses.map((course) => (
         <CourseCard
           course={course}

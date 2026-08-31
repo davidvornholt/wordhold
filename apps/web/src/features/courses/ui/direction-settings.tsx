@@ -7,6 +7,7 @@ import {
   directionDescription,
   directionLabel,
 } from '../../../shared/directions';
+import { cardCompactClass } from '../../../shared/ui/surface-styles';
 
 type DirectionSettingsProps = {
   readonly initial: ReadonlyArray<AnswerDirection>;
@@ -31,6 +32,7 @@ export const DirectionSettings = ({
   const restoreFocus = useRef<HTMLInputElement | null>(null);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState('');
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     if (saving || restoreFocus.current === null) {
@@ -53,20 +55,23 @@ export const DirectionSettings = ({
           (value) => value === direction || directions.includes(value),
         );
     if (next.length === 0) {
+      setFailed(false);
       setStatus('Eine Richtung bleibt immer an, sonst gibt es nichts zu üben.');
       return;
     }
     restoreFocus.current = trigger;
     setDirections(next);
     setSaving(true);
+    setFailed(false);
     setStatus('Wird gespeichert …');
     try {
       await save(next);
       setStatus('Gespeichert.');
-    } catch (cause) {
+    } catch {
       setDirections(directions);
+      setFailed(true);
       setStatus(
-        `Speichern fehlgeschlagen: ${cause instanceof Error ? cause.message : String(cause)}`,
+        'Speichern fehlgeschlagen. Die Änderung wurde zurückgenommen – versuche es noch einmal.',
       );
     } finally {
       setSaving(false);
@@ -85,10 +90,13 @@ export const DirectionSettings = ({
           Karten dieser Richtung zuerst kennen; bereits gelernte Karten setzen
           ihren Lernplan fort und bleiben für freie Übungen verfügbar.
         </p>
+        <p className="text-muted-foreground text-sm">
+          Jede Änderung wird sofort gespeichert.
+        </p>
       </div>
       <fieldset
         aria-busy={saving}
-        className="flex flex-col gap-4 border border-border bg-card p-4"
+        className={`flex flex-col gap-4 ${cardCompactClass}`}
         disabled={saving}
       >
         <legend className="sr-only">Regelmäßige Abfragerichtungen</legend>
@@ -97,7 +105,7 @@ export const DirectionSettings = ({
             <input
               aria-describedby={`${direction}-description`}
               checked={directions.includes(direction)}
-              className="mt-1 accent-primary"
+              className="mt-1 size-5 accent-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
               id={direction}
               onChange={(event) => toggle(direction, event.currentTarget)}
               type="checkbox"
@@ -116,7 +124,10 @@ export const DirectionSettings = ({
           </div>
         ))}
       </fieldset>
-      <output aria-label="Speicherstatus" className="text-sm">
+      <output
+        aria-label="Speicherstatus"
+        className={failed ? 'text-destructive text-sm' : 'text-sm'}
+      >
         {status}
       </output>
     </section>

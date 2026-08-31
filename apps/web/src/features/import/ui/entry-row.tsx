@@ -4,6 +4,8 @@ import {
   maximumExampleLength,
 } from '@wordhold/ai/extraction/schema';
 import type { ReactNode } from 'react';
+import { Button } from '../../../shared/ui/button';
+import { fieldCompactClass } from '../../../shared/ui/field-styles';
 
 export type DraftEntry = {
   readonly targetText: string;
@@ -55,29 +57,29 @@ export const EntryRow = ({
 }: EntryRowProps) => {
   const uncertain =
     entry.confidence !== undefined && entry.confidence < lowConfidence;
-  const inputClass = 'w-full border border-input bg-card px-2 py-1.5 text-sm';
+  const inputClass = fieldCompactClass;
   return (
     <li
       className={`flex flex-col gap-2 border p-3 ${
         uncertain
-          ? 'border-warning-foreground/40 bg-warning'
+          ? 'border-warning-foreground/40 border-l-4 border-l-warning-foreground bg-warning'
           : 'border-border bg-card'
       }`}
     >
       <div className="flex items-center gap-2">
         {uncertain ? (
-          <span className="text-warning-foreground text-xs">
-            unsicher gelesen
+          <span className="font-medium text-warning-foreground text-xs">
+            Unsicher gelesen – bitte prüfen
           </span>
         ) : null}
-        <button
-          className="ml-auto text-muted-foreground text-sm underline"
+        <Button
+          className="ml-auto"
           disabled={disabled}
           onClick={onRemove}
-          type="button"
+          variant="quiet-muted"
         >
           Entfernen
-        </button>
+        </Button>
       </div>
       {unitControl}
       <div className="grid gap-2 sm:grid-cols-2">

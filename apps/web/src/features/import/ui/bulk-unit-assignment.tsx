@@ -1,3 +1,4 @@
+import { Button } from '../../../shared/ui/button';
 import type { UnitSelectionData } from '../schemas/import-payload';
 import type { Unit } from '../services/repository';
 import { UnitPicker } from './unit-picker';
@@ -44,13 +45,13 @@ export const BulkUnitAssignment = ({
       selection={selection}
       units={units}
     />
-    <button
-      className="w-fit border border-input px-3 py-1.5 text-sm disabled:opacity-50"
+    <Button
+      className="w-fit"
       disabled={disabled || !canApply}
       onClick={onApply}
-      type="button"
+      variant="outline"
     >
       Auf alle anwenden
-    </button>
+    </Button>
   </fieldset>
 );

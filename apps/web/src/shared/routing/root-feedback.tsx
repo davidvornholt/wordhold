@@ -1,4 +1,6 @@
 import type { ErrorComponentProps } from '@tanstack/react-router';
+import { actionClass } from '../ui/action-styles';
+import { Button } from '../ui/button';
 import { isMissingRecordError, retryRoute } from './root-feedback-state';
 
 type RecoveryPageProps = {
@@ -6,19 +8,23 @@ type RecoveryPageProps = {
 };
 
 const RecoveryPage = ({ children }: RecoveryPageProps) => (
-  <main className="root-recovery">
-    <p className="root-feedback-brand">Wordhold</p>
+  <main className="page-column flex min-h-screen flex-col justify-center gap-5 p-6">
+    <p className="font-semibold text-muted-foreground text-sm">Wordhold</p>
     {children}
   </main>
 );
 
+// Recovery pages render before the router is ready, so they use plain anchors
+// instead of typed router links.
 export const RootNotFound = () => (
   <RecoveryPage>
-    <h1 className="root-feedback-heading">Diese Seite wurde nicht gefunden.</h1>
-    <p className="root-feedback-copy">
+    <h1 className="font-display font-semibold text-2xl">
+      Diese Seite wurde nicht gefunden.
+    </h1>
+    <p className="text-muted-foreground text-sm">
       Der Link ist nicht mehr gültig oder die Seite wurde entfernt.
     </p>
-    <a className="root-feedback-link" href="/">
+    <a className={actionClass('quiet', 'w-fit')} href="/">
       Zur Übersicht
     </a>
   </RecoveryPage>
@@ -31,22 +37,16 @@ export const RootError = ({ error, reset }: ErrorComponentProps) => {
 
   return (
     <RecoveryPage>
-      <h1 className="root-feedback-heading">
+      <h1 className="font-display font-semibold text-2xl">
         Wordhold konnte diese Seite nicht laden.
       </h1>
-      <p className="root-feedback-copy">
+      <p className="text-muted-foreground text-sm">
         Versuche es erneut. Wenn deine Anmeldung abgelaufen ist, kehre zur
         Startseite zurück und melde dich neu an.
       </p>
-      <div className="root-feedback-actions">
-        <button
-          className="root-feedback-button"
-          onClick={() => retryRoute(reset)}
-          type="button"
-        >
-          Erneut versuchen
-        </button>
-        <a className="root-feedback-link" href="/">
+      <div className="flex flex-wrap items-center gap-4">
+        <Button onClick={() => retryRoute(reset)}>Erneut versuchen</Button>
+        <a className={actionClass('quiet')} href="/">
           Zur Startseite und Anmeldung
         </a>
       </div>
@@ -55,8 +55,12 @@ export const RootError = ({ error, reset }: ErrorComponentProps) => {
 };
 
 export const RootPending = () => (
-  <main aria-busy="true" className="root-pending">
-    <p aria-live="polite" className="root-feedback-copy" role="status">
+  <main aria-busy="true" className="page-column flex min-h-screen items-center p-6">
+    <p
+      aria-live="polite"
+      className="text-muted-foreground text-sm"
+      role="status"
+    >
       Seite wird geladen …
     </p>
   </main>

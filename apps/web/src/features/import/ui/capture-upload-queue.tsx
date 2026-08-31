@@ -1,4 +1,7 @@
 import { useId } from 'react';
+import { countNoun } from '../../../shared/format/count';
+import { Button } from '../../../shared/ui/button';
+import { ProgressMeter } from '../../../shared/ui/progress-meter';
 import {
   hasStoredUpload,
   processedUploadCount,
@@ -69,14 +72,13 @@ export const CaptureUploadQueue = ({
         </h2>
         <output aria-live="polite" className="text-muted-foreground text-sm">
           {processed === 0
-            ? `${pages.length} Fotos ausgewählt`
-            : `${processed} von ${pages.length} Seiten verarbeitet`}
+            ? `${countNoun(pages.length, 'Foto', 'Fotos')} ausgewählt`
+            : `${processed} von ${countNoun(pages.length, 'Seite', 'Seiten')} verarbeitet`}
         </output>
       </div>
-      <progress
-        aria-label="Verarbeitete Seiten"
-        className="h-2 w-full accent-primary"
-        max={pages.length}
+      <ProgressMeter
+        accessibleName="Verarbeitete Seiten"
+        total={pages.length}
         value={processed}
       />
       <ol className="flex flex-col gap-3">
@@ -107,27 +109,25 @@ export const CaptureUploadQueue = ({
                     {page.error}
                   </p>
                 ) : null}
-                <div className="mt-1 flex flex-wrap gap-3 text-sm">
+                <div className="mt-1 flex flex-wrap gap-3">
                   {page.stage === 'failed' ? (
-                    <button
-                      className="underline underline-offset-4 disabled:opacity-50"
+                    <Button
                       disabled={busy}
                       onClick={() => onRetry(page)}
-                      type="button"
+                      variant="quiet"
                     >
                       Erneut versuchen
-                    </button>
+                    </Button>
                   ) : null}
                   {removable ? (
-                    <button
+                    <Button
                       aria-label={`Seite ${index + 1} entfernen`}
-                      className="text-muted-foreground underline underline-offset-4 disabled:opacity-50"
                       disabled={busy}
                       onClick={() => onRemove(page.id)}
-                      type="button"
+                      variant="quiet-muted"
                     >
                       Entfernen
-                    </button>
+                    </Button>
                   ) : null}
                 </div>
               </div>

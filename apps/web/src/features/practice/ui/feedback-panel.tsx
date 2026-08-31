@@ -1,16 +1,16 @@
 import { useEffect, useId, useRef } from 'react';
 import { formatLearningDate } from '../../../shared/dates/learning-date';
 import { normalizeAnswer } from '../../../shared/grading/normalize';
+import { Button } from '../../../shared/ui/button';
+import { Callout } from '../../../shared/ui/callout';
 import type { SubmitResult } from '../schemas/practice-models';
 import type { WrongAnswerResolution } from '../schemas/submission-schema';
 
 const panelTone = (result: SubmitResult) => {
   if (!result.graded) {
-    return 'border-warning-foreground bg-warning';
+    return 'warning' as const;
   }
-  return result.correct
-    ? 'border-primary bg-accent'
-    : 'border-destructive bg-destructive/10';
+  return result.correct ? ('positive' as const) : ('destructive' as const);
 };
 
 type FeedbackPanelProps = {
@@ -63,10 +63,8 @@ const ScheduleNote = ({
   >;
   readonly repeated: boolean;
 }) => (
-  <aside className="border-foreground/30 border-l bg-card/50 p-3">
-    <p className="text-muted-foreground text-xs uppercase tracking-wide">
-      So geht es weiter
-    </p>
+  <Callout tone="neutral">
+    <p className="eyebrow">So geht es weiter</p>
     <p className="text-sm">
       {result.schedule.dueAt === null ? (
         'Noch kein weiterer Termin.'
@@ -82,7 +80,7 @@ const ScheduleNote = ({
         </>
       )}
     </p>
-  </aside>
+  </Callout>
 );
 
 export const FeedbackPanel = ({
@@ -108,10 +106,7 @@ export const FeedbackPanel = ({
   }, []);
 
   return (
-    <div
-      aria-busy={resolution !== null}
-      className={`flex flex-col gap-3 border-l-4 p-4 ${panelTone(result)}`}
-    >
+    <Callout aria-busy={resolution !== null} tone={panelTone(result)}>
       <div
         aria-live="polite"
         className="flex flex-col gap-3"
@@ -148,31 +143,28 @@ export const FeedbackPanel = ({
       </div>
       <div className="flex flex-wrap items-center gap-3">
         {audioUrl === null ? null : (
-          <button
-            className="min-h-11 border border-input px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
+          <Button
             onClick={async () => {
               await new Audio(audioUrl).play().catch(() => undefined);
             }}
-            type="button"
+            variant="outline"
           >
             Aussprache anhören
-          </button>
+          </Button>
         )}
         {pendingWrong ? (
-          <button
-            className="min-h-11 border border-input px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50"
+          <Button
             disabled={resolution !== null}
             onClick={() => onResolveWrong('hard')}
-            type="button"
+            variant="outline"
           >
             {resolution === 'hard'
               ? 'Wird gespeichert …'
               : 'Als richtig werten'}
-          </button>
+          </Button>
         ) : null}
-        <button
+        <Button
           aria-describedby={feedbackDescriptionId}
-          className="min-h-11 bg-primary px-4 py-2 text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50"
           disabled={resolution !== null}
           onClick={() => {
             if (pendingWrong) {
@@ -182,11 +174,10 @@ export const FeedbackPanel = ({
             }
           }}
           ref={nextButton}
-          type="button"
         >
           {resolution === 'again' ? 'Wird gespeichert …' : 'Weiter'}
-        </button>
+        </Button>
       </div>
-    </div>
+    </Callout>
   );
 };

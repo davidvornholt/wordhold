@@ -4,10 +4,10 @@ import type {
   SubmitResult,
 } from '../src/features/practice/schemas/practice-models';
 import type { SubmitPayloadData } from '../src/features/practice/schemas/submission-schema';
-import { PracticeLayout } from '../src/features/practice/ui/practice-layout';
 import { SessionRunner } from '../src/features/practice/ui/session-runner';
 import { ratings } from '../src/shared/grading/rating';
-import { navigateToFixture } from './fixture-state';
+import { PageLayout } from '../src/shared/ui/page-layout';
+import { fixtureBackControl, fixtureControl } from './fixture-controls';
 
 const millisecondsPerDay = 86_400_000;
 const millisecondsPerSecond = 1000;
@@ -102,17 +102,16 @@ export const PracticeSessionFixture = ({
       nextDueAt: null,
     },
   };
-  const backControl = (
-    <button
-      className="w-fit text-muted-foreground text-sm underline"
-      onClick={() => navigateToFixture('dashboard')}
-      type="button"
-    >
-      Zurück zur Übersicht
-    </button>
+  const backControl = fixtureControl(
+    'Zurück zur Übersicht',
+    'dashboard',
+    'quiet-muted',
   );
   return (
-    <PracticeLayout backControl={backControl} title={title}>
+    <PageLayout
+      backControl={fixtureBackControl('Übersicht', 'dashboard')}
+      title={title}
+    >
       <SessionRunner
         backControl={backControl}
         emptyMessage="Für jetzt geschafft"
@@ -121,7 +120,7 @@ export const PracticeSessionFixture = ({
         submit={(input) => grade(sessionItems, input)}
         targetLabel="Englisch"
       />
-    </PracticeLayout>
+    </PageLayout>
   );
 };
 

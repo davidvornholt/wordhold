@@ -1,3 +1,4 @@
+import { countNoun } from '../../../shared/format/count';
 import type { BatchReviewSession } from '../schemas/batch-review-search';
 import type { Unit } from '../services/repository';
 import { AudioRecovery } from './audio-recovery';
@@ -34,8 +35,8 @@ const formSubmitLabel = (
   lastPage: boolean,
 ): string =>
   batchSession !== null && !lastPage
-    ? `${entryCount} Einträge importieren und weiter`
-    : `${entryCount} Einträge importieren`;
+    ? `${countNoun(entryCount, 'Eintrag', 'Einträge')} importieren und weiter`
+    : `${countNoun(entryCount, 'Eintrag', 'Einträge')} importieren`;
 
 export const VerificationWorkbench = ({
   batchIsLastPage,

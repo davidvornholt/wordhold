@@ -26,7 +26,7 @@ test('a missed card returns in the end-of-section after-round', async ({
   ).toBeVisible();
   await expect(answer).toBeFocused();
   await expect(
-    page.getByText('Übersetze ins Englische · Noch einmal'),
+    page.getByText('Übersetze auf Englisch · Noch einmal'),
   ).toBeVisible();
 
   await answer.fill('memory');

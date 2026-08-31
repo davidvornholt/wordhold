@@ -7,9 +7,10 @@ import {
 } from '../src/features/practice/services/session-queue';
 import { CardPractice } from '../src/features/practice/ui/card-practice';
 import { FeedbackPanel } from '../src/features/practice/ui/feedback-panel';
-import { PracticeLayout } from '../src/features/practice/ui/practice-layout';
-import { SessionProgress } from '../src/features/practice/ui/session-progress';
 import { SessionSummary } from '../src/features/practice/ui/session-summary';
+import { PageLayout } from '../src/shared/ui/page-layout';
+import { ProgressMeter } from '../src/shared/ui/progress-meter';
+import { fixtureBackControl, fixtureControl } from './fixture-controls';
 import { navigateToFixture } from './fixture-state';
 
 const item = {
@@ -33,25 +34,19 @@ const result: SubmitResult = {
   assessmentId: '00000000-0000-0000-0000-000000000003',
 };
 
-const backControl = (
-  <button
-    className="w-fit text-muted-foreground text-sm underline"
-    onClick={() => navigateToFixture('dashboard')}
-    type="button"
-  >
-    ← Übersicht
-  </button>
-);
+const backControl = fixtureBackControl('Übersicht', 'dashboard');
 
 export const PracticeFixture = () => (
-  <PracticeLayout backControl={backControl} title="English A2: Üben">
-    <SessionProgress
-      phase="main"
-      processed={0}
-      repeatCount={0}
-      section={1}
-      total={1}
-    />
+  <PageLayout backControl={backControl} title="English A2: Üben">
+    <div className="flex flex-col gap-1.5">
+      <p className="font-medium text-sm">Abschnitt 1</p>
+      <ProgressMeter
+        accessibleName="Fortschritt"
+        description="0 von 1 Karte bearbeitet"
+        total={1}
+        value={0}
+      />
+    </div>
     <CardPractice
       item={item}
       mode="scheduled"
@@ -63,11 +58,11 @@ export const PracticeFixture = () => (
       }}
       targetLabel="Englisch"
     />
-  </PracticeLayout>
+  </PageLayout>
 );
 
 export const PracticeFeedbackFixture = () => (
-  <PracticeLayout backControl={backControl} title="English A2: Üben">
+  <PageLayout backControl={backControl} title="English A2: Üben">
     <FeedbackPanel
       audioUrl={null}
       onNext={() => navigateToFixture('practice-empty')}
@@ -77,26 +72,22 @@ export const PracticeFeedbackFixture = () => (
       result={result}
       submittedAnswer="wrong"
     />
-  </PracticeLayout>
+  </PageLayout>
 );
 
 export const PracticeEmptyFixture = () => (
-  <PracticeLayout backControl={backControl} title="English A2: Üben">
+  <PageLayout backControl={backControl} title="English A2: Üben">
     <SessionSummary
-      backControl={
-        <button
-          className="w-fit text-sm underline"
-          onClick={() => navigateToFixture('dashboard')}
-          type="button"
-        >
-          Zurück zur Übersicht
-        </button>
-      }
+      backControl={fixtureControl(
+        'Zurück zur Übersicht',
+        'dashboard',
+        'quiet-muted',
+      )}
       emptyMessage="Für jetzt geschafft"
       queue={createSessionQueue([])}
       remainingReady={0}
     />
-  </PracticeLayout>
+  </PageLayout>
 );
 
 type PracticeOneCardSummaryFixtureProps = {
@@ -132,14 +123,14 @@ export const PracticeOneCardSummaryFixture = ({
     ungraded ? unavailable : correctResult,
   );
   return (
-    <PracticeLayout backControl={backControl} title="English A2: Üben">
+    <PageLayout backControl={backControl} title="English A2: Üben">
       <SessionSummary
         backControl={backControl}
         emptyMessage="Für jetzt geschafft"
         queue={queue}
         remainingReady={0}
       />
-    </PracticeLayout>
+    </PageLayout>
   );
 };
 
@@ -171,7 +162,7 @@ export const DeferredPracticeFixture = () => {
     return pending.promise;
   };
   return (
-    <PracticeLayout backControl={backControl} title="English A2: Üben">
+    <PageLayout backControl={backControl} title="English A2: Üben">
       <CardPractice
         item={item}
         mode="scheduled"
@@ -194,6 +185,6 @@ export const DeferredPracticeFixture = () => {
           Reject submission
         </button>
       </fieldset>
-    </PracticeLayout>
+    </PageLayout>
   );
 };

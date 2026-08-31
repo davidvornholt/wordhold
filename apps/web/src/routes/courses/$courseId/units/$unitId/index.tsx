@@ -1,67 +1,88 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
-import { introducedEntries } from '../../../../../features/courses/schemas/course-units';
-import { listCourseUnits } from '../../../../../features/courses/services/server-fns';
-import { CourseLayout } from '../../../../../features/courses/ui/course-layout';
-import { UnitDetail } from '../../../../../features/courses/ui/unit-detail';
+import { createFileRoute } from '@tanstack/react-router';
+import {
+  introducedEntries,
+  unitOffers,
+} from '../../../../../features/courses/schemas/course-units';
+import {
+  getCourseDirections,
+  listCourseUnits,
+  listCourseVocabulary,
+} from '../../../../../features/courses/services/server-fns';
+import { unitProgressSummary } from '../../../../../features/courses/ui/unit-status';
+import { VocabularyLibrary } from '../../../../../features/courses/ui/vocabulary-library';
 import { getCourse } from '../../../../../features/import/server-fns';
+import { countNoun } from '../../../../../shared/format/count';
+import { ActionLink } from '../../../../../shared/ui/action-link';
+import { BackLink } from '../../../../../shared/ui/back-link';
+import { PageLayout } from '../../../../../shared/ui/page-layout';
+import { cardClass } from '../../../../../shared/ui/surface-styles';
 
+// One screen per unit: progress, the unit's actions, and its vocabulary as a
+// selectable list — no separate filtered Vokabelliste to jump to.
 const UnitScreen = () => {
-  const { course, unit } = Route.useLoaderData();
+  const { course, directions, unit, unitEntries } = Route.useLoaderData();
   const backControl = (
-    <Link
-      className="text-muted-foreground text-sm underline"
-      params={{ courseId: course.id }}
-      to="/courses/$courseId"
-    >
-      ← {course.name}
-    </Link>
+    <BackLink params={{ courseId: course.id }} to="/courses/$courseId">
+      {course.name}
+    </BackLink>
   );
 
   if (unit === undefined) {
     return (
-      <CourseLayout backControl={backControl} title={course.name}>
-        <p className="border border-border bg-card p-6 font-medium">
+      <PageLayout backControl={backControl} title={course.name}>
+        <p className={`${cardClass} font-medium`}>
           Diese Einheit gehört nicht zu diesem Kurs.
         </p>
-      </CourseLayout>
+      </PageLayout>
     );
   }
 
+  const offers = unitOffers(unit);
   return (
-    <CourseLayout backControl={backControl} title={unit.name}>
-      <UnitDetail
-        practiceAction={
-          <Link
-            className="inline-flex min-h-11 items-center border border-input px-4 py-2 text-sm underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
+    <PageLayout backControl={backControl} title={unit.name}>
+      <p className="text-muted-foreground text-sm">
+        {unitProgressSummary(unit)}
+      </p>
+      {offers.learn || offers.practice ? (
+        <div className="flex flex-wrap items-center gap-4">
+          {offers.learn ? (
+            <ActionLink
+              params={{ courseId: course.id, unitId: unit.id }}
+              to="/courses/$courseId/units/$unitId/learn"
+            >
+              {countNoun(unit.unintroduced, 'Vokabel', 'Vokabeln')} kennenlernen
+            </ActionLink>
+          ) : null}
+          {offers.practice ? (
+            <ActionLink
+              params={{ courseId: course.id }}
+              search={{ unit: unit.id }}
+              to="/courses/$courseId/study"
+              variant={offers.learn ? 'outline' : 'primary'}
+            >
+              {countNoun(introducedEntries(unit), 'Vokabel', 'Vokabeln')} üben
+            </ActionLink>
+          ) : null}
+        </div>
+      ) : null}
+      <h2 className="font-display text-xl">Vokabeln</h2>
+      <VocabularyLibrary
+        enabledDirections={directions}
+        entries={unitEntries}
+        initialFilter="all"
+        renderStudyAction={(entryIds) => (
+          <ActionLink
             params={{ courseId: course.id }}
-            search={{ unit: unit.id }}
+            search={{ entries: entryIds.join(',') }}
             to="/courses/$courseId/study"
           >
-            {introducedEntries(unit)} Vokabeln üben
-          </Link>
-        }
-        learnAction={
-          <Link
-            className="inline-flex min-h-11 items-center bg-primary px-4 py-2 font-medium text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
-            params={{ courseId: course.id, unitId: unit.id }}
-            to="/courses/$courseId/units/$unitId/learn"
-          >
-            {unit.unintroduced} kennenlernen
-          </Link>
-        }
-        unit={unit}
-        vocabularyAction={
-          <Link
-            className="min-h-11 content-center text-sm underline underline-offset-4"
-            params={{ courseId: course.id }}
-            search={{ filter: 'all', unit: unit.id }}
-            to="/courses/$courseId/vocabulary"
-          >
-            Vokabelliste dieser Einheit
-          </Link>
-        }
+            Frei üben
+          </ActionLink>
+        )}
+        scope="unit"
+        targetLanguage={course.targetLanguage}
       />
-    </CourseLayout>
+    </PageLayout>
   );
 };
 
@@ -69,12 +90,19 @@ export const Route = createFileRoute('/courses/$courseId/units/$unitId/')({
   // The unit comes from the course's own list, which is what confirms it
   // belongs to this course before its entries are read.
   loader: async ({ params }) => {
-    const [course, units] = await Promise.all([
+    const [course, units, directions, entries] = await Promise.all([
       getCourse({ data: params.courseId }),
       listCourseUnits({ data: params.courseId }),
+      getCourseDirections({ data: params.courseId }),
+      listCourseVocabulary({ data: params.courseId }),
     ]);
     const unit = units.find((candidate) => candidate.id === params.unitId);
-    return { course, unit };
+    return {
+      course,
+      directions,
+      unit,
+      unitEntries: entries.filter((entry) => entry.unitId === params.unitId),
+    };
   },
   component: UnitScreen,
 });

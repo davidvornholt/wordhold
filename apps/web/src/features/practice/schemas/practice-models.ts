@@ -36,6 +36,14 @@ export type PracticeSession = {
   readonly available: PracticeAvailability;
 };
 
+// Ready cards the sitting did not draw: what "Weitere X üben" would start.
+export const remainingReadyCount = (session: PracticeSession): number =>
+  Math.max(
+    0,
+    session.available.due + session.available.firstReviews -
+      session.items.length,
+  );
+
 export type SubmitResult =
   | {
       readonly graded: false;

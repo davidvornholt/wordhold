@@ -27,11 +27,21 @@ Rules:
 
 Every screen anchors its navigation and title to the same column: the `page-column` utility in `apps/web/src/styles.css` (`mx-auto w-full max-w-3xl`), plus `p-6` and whatever vertical rhythm the screen needs. Moving between the overview, a course, a unit, a sitting, or a page review never shifts those anchors sideways. A task that needs more room may widen only its workbench. The verification screen keeps its header in the shared column, stacks a centered photograph and form on narrower screens, then gives both panes equal room in a wider two-column workbench at the `xl` breakpoint.
 
+## Shared primitives
+
+All interactive and stateful chrome composes the primitives in `apps/web/src/shared/ui/` instead of restating utility strings:
+
+- Actions: `Button` and the router-typed `ActionLink` share `action-styles.ts` (variants `primary`, `outline`, `destructive`, `quiet`, `quiet-muted`; all `min-h-11` with the shared focus ring). `BackLink` is the one upper-left return control and always reads `← <destination name>`.
+- Layout: `PageLayout` renders the page column, back control, and `h1` for every screen. Surfaces come from `surface-styles.ts` (`cardClass`, `cardCompactClass`, `cardListClass`).
+- Fields: `field-styles.ts` (`fieldClass` on the page background, `fieldOnCardClass` on cards, `fieldCompactClass` for dense workbench rows). Inputs are `text-base` so mobile Safari never zooms.
+- State surfaces: `Callout` (`positive`, `warning`, `destructive`, `neutral`) carries the `border-l-4` edge treatment; `ProgressMeter` styles the native progress element explicitly because Chromium ignores `accent-color` on it; `ManagedHeading` moves focus to step headings.
+- Copy: counts always go through `countNoun` (`apps/web/src/shared/format/count.ts`) so singular/plural never drifts. The `eyebrow` utility (styles.css) sets small-caps kickers.
+
 ## Color semantics
 
 - `primary` (forest green) is the single strong color: primary buttons, correct-answer feedback border.
 - `accent` (pale green) backs positive feedback surfaces; `accent-foreground` for positive fine print.
-- `destructive` (brick red) means exactly one thing: a wrong answer or a failed operation. Never use it for emphasis.
+- `destructive` (brick red) means exactly one thing: a wrong answer, a failed operation, or a destructive action. Destructive confirmations use the `destructive` action variant with a distinct label (e.g. "Endgültig löschen"), never a primary button.
 - `warning` (pale amber) marks uncertainty, not failure: low-confidence extracted entries, an answer the judge could not grade. Feedback panels encode state with a `border-l-4` edge plus text, never color alone.
 
 ## Motion

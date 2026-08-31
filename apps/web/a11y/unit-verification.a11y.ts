@@ -127,7 +127,7 @@ test('VerifyForm requires a name when switching to a new unit', async ({
     .getByLabel('Einheit für Eintrag 1')
     .selectOption('new');
   const name = page.getByLabel('Name der Einheit');
-  const submit = page.getByRole('button', { name: '1 Einträge importieren' });
+  const submit = page.getByRole('button', { name: '1 Eintrag importieren' });
   await expect(name).toHaveAttribute('required', '');
   await expect(submit).toBeDisabled();
   await name.fill('Unit 4');
@@ -166,7 +166,7 @@ test('VerifyForm announces a stale unit failure and unlocks recovery', async ({
   page,
 }) => {
   await page.goto('/?state=verification-stale-unit');
-  await page.getByRole('button', { name: '1 Einträge importieren' }).click();
+  await page.getByRole('button', { name: '1 Eintrag importieren' }).click();
   await expect(page.getByRole('alert')).toHaveText(
     'Diese Einheit gibt es nicht mehr. Lade die Seite neu.',
   );

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { countNoun } from '../../../shared/format/count';
 import { type CourseUnit, courseTotals } from '../schemas/course-units';
 import { UnitList } from './unit-list';
 
@@ -8,7 +9,9 @@ type CourseOverviewProps = {
   readonly languageLabel: string | null;
   readonly units: ReadonlyArray<CourseUnit>;
   readonly primaryAction: ReactNode | null;
-  readonly importAction: ReactNode;
+  // Null when the empty course already leads with importing as its primary
+  // action, so the same link is not offered twice.
+  readonly importAction: ReactNode | null;
   readonly settingsAction: ReactNode;
   readonly vocabularyAction: ReactNode;
   readonly renderUnitLink: (unit: CourseUnit) => ReactNode;
@@ -20,7 +23,7 @@ const courseSummary = (
 ): string =>
   [
     languageLabel,
-    `${totals.entries} Vokabeln`,
+    countNoun(totals.entries, 'Vokabel', 'Vokabeln'),
     totals.unintroduced === 0
       ? null
       : `${totals.unintroduced} noch kennenlernen`,

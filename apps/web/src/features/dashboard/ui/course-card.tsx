@@ -1,7 +1,9 @@
 import type { LanguageCode } from '@wordhold/db/schema/courses';
 import type { ReactNode } from 'react';
 import { formatLearningDate } from '../../../shared/dates/learning-date';
+import { countNoun } from '../../../shared/format/count';
 import { languageSubtitle } from '../../../shared/languages';
+import { cardCompactClass } from '../../../shared/ui/surface-styles';
 import {
   type DirectionStats,
   hasAvailablePractice,
@@ -45,12 +47,12 @@ const CourseProgress = (stats: CourseProgressProps) => {
         <li>
           {stats.due === 0
             ? 'Keine Wiederholung fällig'
-            : `${stats.due} Wiederholungen offen`}
+            : `${countNoun(stats.due, 'Wiederholung', 'Wiederholungen')} offen`}
         </li>
         <li>
           {stats.firstReviews === 0
             ? 'Keine erste Abfrage offen'
-            : `${stats.firstReviews} erste Abfragen offen`}
+            : `${countNoun(stats.firstReviews, 'erste Abfrage', 'erste Abfragen')} offen`}
         </li>
         {stats.ready === 0 && nextDueAt !== null ? (
           <li>
@@ -60,10 +62,12 @@ const CourseProgress = (stats: CourseProgressProps) => {
         ) : null}
       </ul>
       <p className="text-muted-foreground text-xs">
-        {stats.entries} Vokabeln · {stats.directions.length}{' '}
-        {stats.directions.length === 1
-          ? 'Abfragerichtung'
-          : 'Abfragerichtungen'}
+        {countNoun(stats.entries, 'Vokabel', 'Vokabeln')} ·{' '}
+        {countNoun(
+          stats.directions.length,
+          'Abfragerichtung',
+          'Abfragerichtungen',
+        )}
         {stats.unintroduced > 0
           ? ` · ${stats.unintroduced} noch kennenlernen`
           : ''}
@@ -84,7 +88,7 @@ export const CourseCard = ({
 }: CourseCardProps) => {
   const subtitle = languageSubtitle(course.name, course.targetLanguage);
   return (
-    <li className="flex flex-col gap-4 border border-border bg-card p-5">
+    <li className={`flex flex-col gap-4 ${cardCompactClass}`}>
       <div>
         {courseLink}
         {subtitle === null ? null : (

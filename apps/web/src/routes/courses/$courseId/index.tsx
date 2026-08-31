@@ -1,63 +1,72 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { listCourseUnits } from '../../../features/courses/services/server-fns';
-import { CourseLayout } from '../../../features/courses/ui/course-layout';
 import { CourseOverview } from '../../../features/courses/ui/course-overview';
 import { hasAvailablePractice } from '../../../features/dashboard/schemas/dashboard-models';
 import { getDashboard } from '../../../features/dashboard/services/server-fns';
 import { getCourse } from '../../../features/import/server-fns';
+import { countNoun } from '../../../shared/format/count';
 import { languageSubtitle } from '../../../shared/languages';
+import { ActionLink } from '../../../shared/ui/action-link';
+import { BackLink } from '../../../shared/ui/back-link';
+import { PageLayout } from '../../../shared/ui/page-layout';
 
 const CourseScreen = () => {
   const { course, units, stats } = Route.useLoaderData();
   const nextUnit = units.find((unit) => unit.unintroduced > 0);
+  const isEmpty = units.length === 0;
   let primaryAction: ReactNode = null;
   if (hasAvailablePractice(stats)) {
     primaryAction = (
-      <Link
-        className="inline-flex min-h-11 items-center bg-primary px-4 py-2 font-medium text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
+      <ActionLink
         params={{ courseId: course.id }}
         to="/courses/$courseId/practice"
       >
-        {stats?.ready ?? 0} Karten üben
-      </Link>
+        {countNoun(stats?.ready ?? 0, 'Karte', 'Karten')} üben
+      </ActionLink>
     );
   } else if (nextUnit !== undefined) {
     primaryAction = (
-      <Link
-        className="inline-flex min-h-11 items-center bg-primary px-4 py-2 font-medium text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
+      <ActionLink
         params={{ courseId: course.id, unitId: nextUnit.id }}
         to="/courses/$courseId/units/$unitId/learn"
       >
-        {nextUnit.unintroduced} Vokabeln kennenlernen
-      </Link>
+        {countNoun(nextUnit.unintroduced, 'Vokabel', 'Vokabeln')} kennenlernen
+      </ActionLink>
+    );
+  } else if (isEmpty) {
+    primaryAction = (
+      <ActionLink
+        params={{ courseId: course.id }}
+        to="/courses/$courseId/import"
+      >
+        Seite fotografieren
+      </ActionLink>
     );
   }
 
   return (
-    <CourseLayout
-      backControl={
-        <Link className="text-muted-foreground text-sm underline" to="/">
-          ← Übersicht
-        </Link>
-      }
+    <PageLayout
+      backControl={<BackLink to="/">Übersicht</BackLink>}
       title={course.name}
     >
       <CourseOverview
         importAction={
-          <Link
-            className="text-sm underline"
-            params={{ courseId: course.id }}
-            to="/courses/$courseId/import"
-          >
-            Seite fotografieren
-          </Link>
+          isEmpty ? null : (
+            <ActionLink
+              params={{ courseId: course.id }}
+              to="/courses/$courseId/import"
+              variant="quiet"
+            >
+              Seite fotografieren
+            </ActionLink>
+          )
         }
         languageLabel={languageSubtitle(course.name, course.targetLanguage)}
         primaryAction={primaryAction}
         renderUnitLink={(unit) => (
           <Link
-            className="w-fit font-medium underline"
+            className="w-fit font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
             params={{ courseId: course.id, unitId: unit.id }}
             to="/courses/$courseId/units/$unitId"
           >
@@ -65,27 +74,27 @@ const CourseScreen = () => {
           </Link>
         )}
         settingsAction={
-          <Link
-            className="text-sm underline"
+          <ActionLink
             params={{ courseId: course.id }}
             to="/courses/$courseId/settings"
+            variant="quiet"
           >
             Einstellungen
-          </Link>
+          </ActionLink>
         }
         vocabularyAction={
-          <Link
-            className="min-h-11 content-center text-sm underline underline-offset-4"
+          <ActionLink
             params={{ courseId: course.id }}
             search={{ filter: 'all' }}
             to="/courses/$courseId/vocabulary"
+            variant="quiet"
           >
             Vokabelliste
-          </Link>
+          </ActionLink>
         }
         units={units}
       />
-    </CourseLayout>
+    </PageLayout>
   );
 };
 

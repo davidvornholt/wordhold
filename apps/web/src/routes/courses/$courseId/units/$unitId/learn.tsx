@@ -1,26 +1,27 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
 import { getCourse } from '../../../../../features/import/server-fns';
 import {
   getLearnPass,
   introduceCard,
 } from '../../../../../features/learning/services/server-fns';
 import { LearnPass } from '../../../../../features/learning/ui/learn-pass';
-import { LearningLayout } from '../../../../../features/learning/ui/learning-layout';
 import { germanLabels } from '../../../../../shared/languages';
+import { ActionLink } from '../../../../../shared/ui/action-link';
+import { BackLink } from '../../../../../shared/ui/back-link';
+import { PageLayout } from '../../../../../shared/ui/page-layout';
 
 const LearnUnitScreen = () => {
   const { course, pass } = Route.useLoaderData();
 
   return (
-    <LearningLayout
+    <PageLayout
       backControl={
-        <Link
-          className="text-muted-foreground text-sm underline"
+        <BackLink
           params={{ courseId: course.id, unitId: pass.unit.id }}
           to="/courses/$courseId/units/$unitId"
         >
-          ← {pass.unit.name}
-        </Link>
+          {pass.unit.name}
+        </BackLink>
       }
       title={`${pass.unit.name} kennenlernen`}
     >
@@ -36,18 +37,18 @@ const LearnUnitScreen = () => {
           });
         }}
         practiceControl={
-          <Link
-            className="inline-flex min-h-11 w-fit items-center bg-primary px-4 py-2 font-medium text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
+          <ActionLink
+            className="w-fit"
             params={{ courseId: course.id }}
             to="/courses/$courseId/practice"
           >
             Erste Abfrage starten
-          </Link>
+          </ActionLink>
         }
         targetLabel={germanLabels[course.targetLanguage]}
         targetLanguage={course.targetLanguage}
       />
-    </LearningLayout>
+    </PageLayout>
   );
 };
 

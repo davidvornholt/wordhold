@@ -1,6 +1,8 @@
 import type { VocabularyEntry } from '../src/features/courses/schemas/course-units';
-import { CourseLayout } from '../src/features/courses/ui/course-layout';
 import { VocabularyLibrary } from '../src/features/courses/ui/vocabulary-library';
+import { Button } from '../src/shared/ui/button';
+import { PageLayout } from '../src/shared/ui/page-layout';
+import { fixtureBackControl } from './fixture-controls';
 import { navigateToFixture } from './fixture-state';
 
 const entries: ReadonlyArray<VocabularyEntry> = [
@@ -63,31 +65,25 @@ export const VocabularyFixture = ({
 }: {
   readonly difficult?: boolean;
 }) => (
-  <CourseLayout
-    backControl={
-      <button onClick={() => navigateToFixture('course')} type="button">
-        ← English A2
-      </button>
-    }
-    title="English A2: Vokabelliste"
+  <PageLayout
+    backControl={fixtureBackControl('English A2', 'course')}
+    title="Vokabelliste"
   >
     <p className="text-muted-foreground text-sm">
-      Termine gelten pro Abfragerichtung. Wähle Vokabeln aus beliebigen Units.
+      Termine gelten pro Abfragerichtung. Wähle Vokabeln aus beliebigen
+      Einheiten.
     </p>
     <VocabularyLibrary
       enabledDirections={['to_target', 'to_native']}
       entries={entries}
       initialFilter={difficult ? 'difficult' : 'all'}
       renderStudyAction={() => (
-        <button
-          className="min-h-11 bg-primary px-4 py-2 text-primary-foreground"
-          onClick={() => navigateToFixture('study-start')}
-          type="button"
-        >
+        <Button onClick={() => navigateToFixture('study-start')}>
           Frei üben
-        </button>
+        </Button>
       )}
+      scope="course"
       targetLanguage="en"
     />
-  </CourseLayout>
+  </PageLayout>
 );

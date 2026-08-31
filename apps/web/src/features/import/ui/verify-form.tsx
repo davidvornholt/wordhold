@@ -1,5 +1,7 @@
 import { maximumEntriesPerPage } from '@wordhold/ai/extraction/schema';
 import { useState } from 'react';
+import { countNoun } from '../../../shared/format/count';
+import { Button } from '../../../shared/ui/button';
 import type { UnitSelectionData } from '../schemas/import-payload';
 import type { Unit } from '../services/repository';
 import { BulkUnitAssignment } from './bulk-unit-assignment';
@@ -42,7 +44,8 @@ export const VerifyForm = ({
   units,
   busy,
   onSubmit,
-  submitLabel = (entryCount) => `${entryCount} Einträge importieren`,
+  submitLabel = (entryCount) =>
+    `${countNoun(entryCount, 'Eintrag', 'Einträge')} importieren`,
 }: VerifyFormProps) => {
   const [bulkUnit, setBulkUnit] = useState<UnitSelectionData>(() =>
     initialUnitSelection(units, initialUnitName),
@@ -134,8 +137,7 @@ export const VerifyForm = ({
         ))}
       </ul>
       <div className="flex flex-wrap items-center gap-3">
-        <button
-          className="border border-input px-3 py-1.5 text-sm"
+        <Button
           disabled={busy || draftEntries.length >= maximumEntriesPerPage}
           onClick={() =>
             setDraftEntries((current) => [
@@ -148,17 +150,16 @@ export const VerifyForm = ({
               },
             ])
           }
-          type="button"
+          variant="outline"
         >
           Eintrag hinzufügen
-        </button>
-        <button
-          className="bg-primary px-4 py-1.5 text-primary-foreground text-sm disabled:opacity-50"
+        </Button>
+        <Button
           disabled={busy || complete.length === 0 || !unitsNamed}
           type="submit"
         >
           {busy ? 'Importiere …' : submitLabel(complete.length)}
-        </button>
+        </Button>
       </div>
     </form>
   );

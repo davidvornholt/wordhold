@@ -2,8 +2,8 @@ import { useState } from 'react';
 import type { LearnItem } from '../src/features/learning/schemas/learning-models';
 import { LearnDone } from '../src/features/learning/ui/learn-done';
 import { LearnPass } from '../src/features/learning/ui/learn-pass';
-import { LearningLayout } from '../src/features/learning/ui/learning-layout';
-import { navigateToFixture } from './fixture-state';
+import { PageLayout } from '../src/shared/ui/page-layout';
+import { fixtureBackControl, fixtureControl } from './fixture-controls';
 
 const items: ReadonlyArray<LearnItem> = [
   {
@@ -26,25 +26,9 @@ const items: ReadonlyArray<LearnItem> = [
   },
 ];
 
-const backControl = (
-  <button
-    className="w-fit text-muted-foreground text-sm underline"
-    onClick={() => navigateToFixture('unit')}
-    type="button"
-  >
-    ← Unit 3 – Holidays
-  </button>
-);
+const backControl = fixtureBackControl('Unit 3 – Holidays', 'unit');
 
-const practiceControl = (
-  <button
-    className="w-fit font-medium text-sm underline"
-    onClick={() => navigateToFixture('practice')}
-    type="button"
-  >
-    Jetzt üben
-  </button>
-);
+const practiceControl = fixtureControl('Jetzt üben', 'practice', 'quiet');
 
 export const LearnFixture = ({
   failFirst = false,
@@ -54,10 +38,7 @@ export const LearnFixture = ({
   const [introduced, setIntroduced] = useState<ReadonlyArray<string>>([]);
   const [attempts, setAttempts] = useState(0);
   return (
-    <LearningLayout
-      backControl={backControl}
-      title="Unit 3: Holidays kennenlernen"
-    >
+    <PageLayout backControl={backControl} title="Unit 3: Holidays kennenlernen">
       <LearnPass
         items={items}
         onIntroduce={(cardId) => {
@@ -79,15 +60,12 @@ export const LearnFixture = ({
       <output aria-label="Introduction attempts" className="sr-only">
         {attempts}
       </output>
-    </LearningLayout>
+    </PageLayout>
   );
 };
 
 export const LearnDoneFixture = () => (
-  <LearningLayout
-    backControl={backControl}
-    title="Unit 3: Holidays kennenlernen"
-  >
+  <PageLayout backControl={backControl} title="Unit 3: Holidays kennenlernen">
     <LearnDone learned={items.length} practiceControl={practiceControl} />
-  </LearningLayout>
+  </PageLayout>
 );

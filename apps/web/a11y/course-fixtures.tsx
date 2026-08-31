@@ -1,8 +1,13 @@
+import type { VocabularyEntry } from '../src/features/courses/schemas/course-units';
 import { introducedEntries } from '../src/features/courses/schemas/course-units';
-import { CourseLayout } from '../src/features/courses/ui/course-layout';
 import { CourseOverview } from '../src/features/courses/ui/course-overview';
-import { UnitDetail } from '../src/features/courses/ui/unit-detail';
-import { type FixtureState, navigateToFixture } from './fixture-state';
+import { unitProgressSummary } from '../src/features/courses/ui/unit-status';
+import { VocabularyLibrary } from '../src/features/courses/ui/vocabulary-library';
+import { countNoun } from '../src/shared/format/count';
+import { Button } from '../src/shared/ui/button';
+import { PageLayout } from '../src/shared/ui/page-layout';
+import { fixtureBackControl, fixtureControl } from './fixture-controls';
+import { navigateToFixture } from './fixture-state';
 
 const mixedUnit = {
   id: '00000000-0000-0000-0000-000000000003',
@@ -48,44 +53,58 @@ const emptyUnit = {
   nextDueAt: null,
 };
 
-const control = (label: string, destination: FixtureState) => (
-  <button
-    className={
-      destination === 'practice' || destination === 'learn'
-        ? 'inline-flex min-h-11 w-fit items-center bg-primary px-4 py-2 font-medium text-primary-foreground text-sm'
-        : 'w-fit font-medium text-sm underline'
-    }
-    onClick={() => navigateToFixture(destination)}
-    type="button"
-  >
-    {label}
-  </button>
-);
-
 export const CourseFixture = ({
   practiceAvailable = true,
 }: {
   readonly practiceAvailable?: boolean;
 }) => (
-  <CourseLayout
-    backControl={control('← Übersicht', 'dashboard')}
+  <PageLayout
+    backControl={fixtureBackControl('Übersicht', 'dashboard')}
     title="English A2"
   >
     <CourseOverview
-      importAction={control('Seite fotografieren', 'import')}
+      importAction={fixtureControl('Seite fotografieren', 'import', 'quiet')}
       languageLabel="Englisch"
       primaryAction={
         practiceAvailable
-          ? control('6 Karten üben', 'practice')
-          : control('2 Vokabeln kennenlernen', 'learn')
+          ? fixtureControl('6 Karten üben', 'practice', 'primary')
+          : fixtureControl('2 Vokabeln kennenlernen', 'learn', 'primary')
       }
-      renderUnitLink={(unit) => control(unit.name, 'unit')}
-      settingsAction={control('Einstellungen', 'course-settings')}
-      vocabularyAction={control('Vokabelliste', 'vocabulary')}
+      renderUnitLink={(unit) => fixtureControl(unit.name, 'unit', 'quiet')}
+      settingsAction={fixtureControl(
+        'Einstellungen',
+        'course-settings',
+        'quiet',
+      )}
+      vocabularyAction={fixtureControl('Vokabelliste', 'vocabulary', 'quiet')}
       units={[mixedUnit, unintroducedUnit, finishedUnit, emptyUnit]}
     />
-  </CourseLayout>
+  </PageLayout>
 );
+
+const unitEntry = (
+  index: number,
+  target: string,
+  native: string,
+  introduced: boolean,
+): VocabularyEntry => ({
+  id: `00000000-0000-0000-0000-00000000003${index}`,
+  unitId: mixedUnit.id,
+  unitName: mixedUnit.name,
+  targetText: target,
+  nativeText: native,
+  introduced,
+  cards: [
+    {
+      cardId: `00000000-0000-0000-0000-00000000004${index}`,
+      direction: 'to_target',
+      state: introduced ? 'review' : 'new',
+      dueAt: introduced ? new Date('2026-08-28T10:00:00Z') : null,
+      introducedAt: introduced ? new Date('2026-08-20T10:00:00Z') : null,
+      failures: 0,
+    },
+  ],
+});
 
 type UnitFixtureProps = {
   readonly state?: 'mixed' | 'unintroduced' | 'empty';
@@ -97,24 +116,62 @@ const unitsByState = {
   empty: emptyUnit,
 } as const;
 
-// An unintroduced unit only offers kennenlernen. An empty one offers neither
-// action.
+const entriesByState: Record<
+  NonNullable<UnitFixtureProps['state']>,
+  ReadonlyArray<VocabularyEntry>
+> = {
+  mixed: [
+    unitEntry(1, 'memory', 'die Erinnerung', true),
+    unitEntry(2, 'holiday', 'die Ferien', false),
+  ],
+  unintroduced: [unitEntry(3, 'the referee', 'der Schiedsrichter', false)],
+  empty: [],
+};
+
+// The merged unit screen: progress line, the unit's actions, and its
+// vocabulary as one selectable list. An unintroduced unit only offers
+// kennenlernen; an empty one offers neither action.
 export const UnitFixture = ({ state = 'mixed' }: UnitFixtureProps) => {
   const unit = unitsByState[state];
   return (
-    <CourseLayout
-      backControl={control('← English A2', 'course')}
+    <PageLayout
+      backControl={fixtureBackControl('English A2', 'course')}
       title={unit.name}
     >
-      <UnitDetail
-        practiceAction={control(
-          `${introducedEntries(unit)} Vokabeln üben`,
-          'study-start',
+      <p className="text-muted-foreground text-sm">
+        {unitProgressSummary(unit)}
+      </p>
+      {unit.unintroduced > 0 || introducedEntries(unit) > 0 ? (
+        <div className="flex flex-wrap items-center gap-4">
+          {unit.unintroduced > 0
+            ? fixtureControl(
+                `${countNoun(unit.unintroduced, 'Vokabel', 'Vokabeln')} kennenlernen`,
+                'learn',
+                'primary',
+              )
+            : null}
+          {introducedEntries(unit) > 0
+            ? fixtureControl(
+                `${countNoun(introducedEntries(unit), 'Vokabel', 'Vokabeln')} üben`,
+                'study-start',
+                unit.unintroduced > 0 ? 'outline' : 'primary',
+              )
+            : null}
+        </div>
+      ) : null}
+      <h2 className="font-display text-xl">Vokabeln</h2>
+      <VocabularyLibrary
+        enabledDirections={['to_target']}
+        entries={entriesByState[state]}
+        initialFilter="all"
+        renderStudyAction={() => (
+          <Button onClick={() => navigateToFixture('study-start')}>
+            Frei üben
+          </Button>
         )}
-        learnAction={control(`${unit.unintroduced} kennenlernen`, 'learn')}
-        unit={unit}
-        vocabularyAction={control('Vokabelliste dieser Einheit', 'vocabulary')}
+        scope="unit"
+        targetLanguage="en"
       />
-    </CourseLayout>
+    </PageLayout>
   );
 };

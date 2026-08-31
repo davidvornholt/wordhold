@@ -1,5 +1,8 @@
 import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
+import { countNoun } from '../../../shared/format/count';
+import { Button } from '../../../shared/ui/button';
+import { ProgressMeter } from '../../../shared/ui/progress-meter';
 
 type PendingImportSession = {
   readonly id: string;
@@ -22,22 +25,15 @@ type PendingImportSessionsProps = {
   readonly onDiscard: (session: PendingImportSession) => Promise<void>;
 };
 
-const pageCountLabel = (count: number): string =>
-  `${count} ${count === 1 ? 'Seite' : 'Seiten'}`;
-
 const progressLabel = (
   session: Pick<
     PendingImportSession,
     'isComplete' | 'pendingCount' | 'uploadedCount' | 'pageCount'
   >,
-): string => {
-  if (!session.isComplete) {
-    return `${session.uploadedCount} von ${session.pageCount} Seiten verarbeitet`;
-  }
-  return session.pendingCount === 1
-    ? '1 Seite noch zu prüfen'
-    : `${session.pendingCount} Seiten noch zu prüfen`;
-};
+): string =>
+  session.isComplete
+    ? `${countNoun(session.pendingCount, 'Seite', 'Seiten')} noch zu prüfen`
+    : `${session.uploadedCount} von ${countNoun(session.pageCount, 'Seite', 'Seiten')} verarbeitet`;
 
 export const PendingImportSessions = ({
   sessions,
@@ -75,8 +71,10 @@ export const PendingImportSessions = ({
     try {
       await onDiscard(session);
       setConfirmingId(null);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+    } catch {
+      setError(
+        'Der Stapel konnte nicht gelöscht werden. Versuche es noch einmal.',
+      );
     } finally {
       setDiscardingId(null);
     }
@@ -92,8 +90,10 @@ export const PendingImportSessions = ({
       </div>
       <ul className="grid gap-5 sm:grid-cols-2">
         {sessions.map((session) => {
-          const label = `${session.courseName}, ${pageCountLabel(
+          const label = `${session.courseName}, ${countNoun(
             session.pageCount,
+            'Seite',
+            'Seiten',
           )}, ${new Date(session.capturedAt).toLocaleDateString('de-DE')}`;
           const confirming = confirmingId === session.id;
           const discarding = discardingId === session.id;
@@ -108,68 +108,53 @@ export const PendingImportSessions = ({
                 className="pointer-events-none absolute -top-1 -left-1 h-full w-full border border-border bg-card"
               />
               <div className="relative flex flex-col gap-3 border border-border bg-card p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h3 className="font-display text-lg">
-                      {session.courseName}
-                    </h3>
-                    <p className="text-muted-foreground text-sm">
-                      {pageCountLabel(session.pageCount)} ·{' '}
-                      {new Date(session.capturedAt).toLocaleDateString('de-DE')}
-                    </p>
-                  </div>
-                  <span className="border border-border px-2 py-1 font-medium text-sm">
-                    {session.pageCount}
-                    <span className="sr-only">
-                      {' '}
-                      {session.pageCount === 1 ? 'Seite' : 'Seiten'}
-                    </span>
-                  </span>
+                <div>
+                  <h3 className="font-display text-lg">{session.courseName}</h3>
+                  <p className="text-muted-foreground text-sm">
+                    {countNoun(session.pageCount, 'Seite', 'Seiten')} ·{' '}
+                    {new Date(session.capturedAt).toLocaleDateString('de-DE')}
+                  </p>
                 </div>
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-1.5">
                   <p className="text-sm">{progressLabel(session)}</p>
-                  <progress
-                    aria-label={`${session.verifiedCount} von ${session.pageCount} Seiten geprüft`}
-                    className="h-2 w-full accent-primary"
-                    max={session.pageCount}
+                  <ProgressMeter
+                    accessibleName={`${session.verifiedCount} von ${session.pageCount} Seiten geprüft`}
+                    total={session.pageCount}
                     value={session.verifiedCount}
                   />
                 </div>
                 {confirming ? (
-                  <fieldset className="flex flex-col gap-2 border-border border-l-4 pl-3 text-sm">
-                    <legend>
-                      {pageCountLabel(session.pendingCount)} und die Fotos
-                      werden gelöscht.
+                  <fieldset className="flex flex-col gap-3 border-destructive border-l-4 bg-destructive/10 p-3 text-sm">
+                    <legend className="float-left">
+                      {countNoun(session.pendingCount, 'Seite', 'Seiten')} und
+                      die Fotos werden endgültig gelöscht.
                     </legend>
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        className="border border-input px-3 py-2"
+                    <div className="flex flex-wrap gap-3">
+                      <Button
                         disabled={discarding}
                         onClick={() => discardSession(session)}
                         ref={confirmationActionRef}
-                        type="button"
+                        variant="destructive"
                       >
-                        {discarding ? 'Wird gelöscht …' : 'Stapel löschen'}
-                      </button>
-                      <button
-                        className="px-3 py-2 underline underline-offset-4"
+                        {discarding ? 'Wird gelöscht …' : 'Endgültig löschen'}
+                      </Button>
+                      <Button
                         disabled={discarding}
                         onClick={() => {
                           restoreFocusIdRef.current = session.id;
                           setConfirmingId(null);
                         }}
-                        type="button"
+                        variant="quiet"
                       >
                         Behalten
-                      </button>
+                      </Button>
                     </div>
                   </fieldset>
                 ) : (
                   <div className="flex flex-wrap items-center gap-3">
                     {renderSessionAction(session, label)}
-                    <button
+                    <Button
                       aria-label={`${label} löschen`}
-                      className="text-muted-foreground text-sm underline underline-offset-4"
                       disabled={discardingId !== null}
                       onClick={() => {
                         setError(null);
@@ -182,10 +167,10 @@ export const PendingImportSessions = ({
                           discardActionRefs.current.set(session.id, element);
                         }
                       }}
-                      type="button"
+                      variant="quiet-muted"
                     >
                       Stapel löschen
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>

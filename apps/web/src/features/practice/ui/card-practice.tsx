@@ -5,6 +5,7 @@ import type {
   ResolvedSubmitResult,
   SubmitResult,
 } from '../schemas/practice-models';
+import { cardClass } from '../../../shared/ui/surface-styles';
 import type {
   SubmitPayloadData,
   WrongAnswerResolution,
@@ -14,13 +15,15 @@ import { PracticeAnswerForm } from './practice-answer-form';
 
 type SessionItem = PracticeSession['items'][number];
 
+// "auf" takes the plain language name, so every target language declines
+// correctly ("auf Französisch", "auf Latein" — never "ins Lateine").
 const practiceInstruction = (
   direction: SessionItem['direction'],
   targetLabel: string,
 ) =>
   direction === 'to_target'
-    ? `Übersetze ins ${targetLabel}e`
-    : 'Übersetze ins Deutsche';
+    ? `Übersetze auf ${targetLabel}`
+    : 'Übersetze auf Deutsch';
 
 type CardPracticeProps = {
   readonly item: SessionItem;
@@ -87,9 +90,11 @@ export const CardPractice = ({
       if (audioUrl !== null) {
         await new Audio(audioUrl).play().catch(() => undefined);
       }
-    } catch (cause) {
+    } catch {
       setSubmittedData(null);
-      setError(cause instanceof Error ? cause.message : String(cause));
+      setError(
+        'Deine Antwort konnte nicht geprüft werden. Prüfe deine Verbindung und versuche es noch einmal.',
+      );
     } finally {
       setBusy(false);
     }
@@ -123,8 +128,10 @@ export const CardPractice = ({
       }
       setResult(submitted);
       onNext(submitted);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+    } catch {
+      setError(
+        'Die Bewertung konnte nicht gespeichert werden. Versuche es noch einmal.',
+      );
     } finally {
       setBusy(false);
       setResolution(null);
@@ -137,7 +144,7 @@ export const CardPractice = ({
         {practiceInstruction(item.direction, targetLabel)}
         {repeated ? ' · Noch einmal' : null}
       </p>
-      <div className="border border-border bg-card p-6">
+      <div className={cardClass}>
         <h2 className="font-display text-xl" id={promptId}>
           {item.prompt}
         </h2>
@@ -153,7 +160,9 @@ export const CardPractice = ({
         submittedAnswer={submittedData?.answer ?? null}
       />
       {error === null ? null : (
-        <p className="text-destructive text-sm">{error}</p>
+        <p className="text-destructive text-sm" role="alert">
+          {error}
+        </p>
       )}
       {result === null || submittedData === null ? null : (
         <FeedbackPanel

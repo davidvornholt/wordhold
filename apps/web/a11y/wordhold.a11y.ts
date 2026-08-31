@@ -91,7 +91,7 @@ test('authenticated routes remain reachable through their user transitions', asy
   await expect(page.locator('body')).toHaveAttribute('data-fixture', 'course');
   await page.getByRole('button', { name: 'Unit 3 – Holidays' }).click();
   await expect(page.locator('body')).toHaveAttribute('data-fixture', 'unit');
-  await page.getByRole('button', { name: '2 kennenlernen' }).click();
+  await page.getByRole('button', { name: '2 Vokabeln kennenlernen' }).click();
   await expect(page.locator('body')).toHaveAttribute('data-fixture', 'learn');
   await page.getByRole('button', { name: 'Unit 3 – Holidays' }).click();
   await expect(page.locator('body')).toHaveAttribute('data-fixture', 'unit');

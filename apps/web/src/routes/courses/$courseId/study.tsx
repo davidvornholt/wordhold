@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
 import { answerDirections } from '@wordhold/db/schema/directions';
 import type { ReactNode } from 'react';
 import { listCourseUnits } from '../../../features/courses/services/server-fns';
@@ -18,10 +18,14 @@ import {
   resolveSessionDirection,
   sessionOptions,
 } from '../../../features/practice/services/session-options';
-import { PracticeLayout } from '../../../features/practice/ui/practice-layout';
 import { SessionRunner } from '../../../features/practice/ui/session-runner';
 import { SessionStart } from '../../../features/practice/ui/session-start';
+import { countNoun } from '../../../shared/format/count';
 import { germanLabels } from '../../../shared/languages';
+import { ActionLink } from '../../../shared/ui/action-link';
+import { BackLink } from '../../../shared/ui/back-link';
+import { PageLayout } from '../../../shared/ui/page-layout';
+import { cardClass } from '../../../shared/ui/surface-styles';
 
 const StudyScreen = () => {
   const {
@@ -36,29 +40,47 @@ const StudyScreen = () => {
   const targetLabel = germanLabels[course.targetLanguage];
   const backControl =
     unit === undefined ? (
-      <Link
-        className="text-muted-foreground text-sm underline underline-offset-4"
+      <BackLink
         params={{ courseId: course.id }}
         search={{ filter: 'all' }}
         to="/courses/$courseId/vocabulary"
       >
-        ← Vokabelliste
-      </Link>
+        Vokabelliste
+      </BackLink>
     ) : (
-      <Link
-        className="text-muted-foreground text-sm underline underline-offset-4"
+      <BackLink
         params={{ courseId: course.id, unitId: unit.id }}
         to="/courses/$courseId/units/$unitId"
       >
-        ← {unit.name}
-      </Link>
+        {unit.name}
+      </BackLink>
+    );
+  // In-session and summary control: back to where the selection was made.
+  const selectionControl =
+    unit === undefined ? (
+      <ActionLink
+        params={{ courseId: course.id }}
+        search={{ filter: 'all' }}
+        to="/courses/$courseId/vocabulary"
+        variant="quiet-muted"
+      >
+        Neue Auswahl treffen
+      </ActionLink>
+    ) : (
+      <ActionLink
+        params={{ courseId: course.id, unitId: unit.id }}
+        to="/courses/$courseId/units/$unitId"
+        variant="quiet-muted"
+      >
+        Neue Auswahl treffen
+      </ActionLink>
     );
   const title = unit === undefined ? 'Auswahl frei üben' : `${unit.name} üben`;
   let content: ReactNode;
   if (selection === null) {
     content = (
-      <p className="border border-border bg-card p-6 text-sm">
-        Wähle zuerst mindestens eine Vokabel oder eine Unit aus.
+      <p className={`${cardClass} text-sm`}>
+        Wähle zuerst mindestens eine Vokabel oder eine Einheit aus.
       </p>
     );
   } else if (session === null) {
@@ -81,10 +103,10 @@ const StudyScreen = () => {
             })),
             { direction: 'both', ready: preview.items.length },
           ])}
-          preferenceKey={course.id}
+          preferenceKey={`${course.id}:study`}
           renderStartAction={(option, rememberDirection) => (
-            <Link
-              className="inline-flex min-h-11 w-fit items-center bg-primary px-4 py-2 font-medium text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
+            <ActionLink
+              className="w-fit"
               onClick={rememberDirection}
               params={{ courseId: course.id }}
               search={{
@@ -94,8 +116,8 @@ const StudyScreen = () => {
               }}
               to="/courses/$courseId/study"
             >
-              {option.cards} {option.cards === 1 ? 'Karte' : 'Karten'} starten
-            </Link>
+              {countNoun(option.cards, 'Karte', 'Karten')} starten
+            </ActionLink>
           )}
         />
       </>
@@ -103,7 +125,7 @@ const StudyScreen = () => {
   } else {
     content = (
       <SessionRunner
-        backControl={backControl}
+        backControl={selectionControl}
         emptyMessage="Diese Auswahl enthält noch keine kennengelernte Vokabel."
         key={direction}
         mode="drill"
@@ -115,9 +137,9 @@ const StudyScreen = () => {
   }
 
   return (
-    <PracticeLayout backControl={backControl} title={title}>
+    <PageLayout backControl={backControl} title={title}>
       {content}
-    </PracticeLayout>
+    </PageLayout>
   );
 };
 

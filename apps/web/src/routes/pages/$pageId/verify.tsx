@@ -1,4 +1,4 @@
-import { createFileRoute, Link, redirect } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 import type { ExtractionResult } from '@wordhold/ai/extraction';
 import {
   type BatchReviewSearchData,
@@ -15,6 +15,8 @@ import type { DraftEntry } from '../../../features/import/ui/entry-row';
 import { useVerificationFlow } from '../../../features/import/ui/use-verification-flow';
 import { VerificationWorkbench } from '../../../features/import/ui/verification-workbench';
 import { germanLabels } from '../../../shared/languages';
+import { ActionLink } from '../../../shared/ui/action-link';
+import { BackLink } from '../../../shared/ui/back-link';
 
 const draftsFromExtraction = (
   extraction: ExtractionResult | null,
@@ -53,13 +55,12 @@ const VerificationPageScreen = ({
   return (
     <main className="verification-screen">
       <div className="verification-header">
-        <Link
-          className="text-muted-foreground text-sm underline"
+        <BackLink
           params={{ sessionId: page.importSessionId }}
           to="/imports/$sessionId"
         >
-          ← Zum Seitenstapel
-        </Link>
+          Seitenstapel
+        </BackLink>
         <h1 className="font-display font-semibold text-2xl">
           {course.name}:{' '}
           {flow.batchSummary === null ? 'Seite überprüfen' : 'Seiten geprüft'}
@@ -73,13 +74,12 @@ const VerificationPageScreen = ({
       {flow.batchSummary === null ? null : (
         <BatchReviewComplete
           overviewAction={
-            <Link
-              className="inline-flex min-h-11 items-center bg-primary px-4 py-2 text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
+            <ActionLink
               params={{ sessionId: page.importSessionId }}
               to="/imports/$sessionId"
             >
               Zum Seitenstapel
-            </Link>
+            </ActionLink>
           }
           total={flow.batchSummary.total}
         />

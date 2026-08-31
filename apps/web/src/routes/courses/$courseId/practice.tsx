@@ -1,8 +1,9 @@
-import { createFileRoute, Link, useRouter } from '@tanstack/react-router';
+import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { useState } from 'react';
 import { getCourseDirections } from '../../../features/courses/services/server-fns';
 import { getDashboard } from '../../../features/dashboard/services/server-fns';
 import { getCourse } from '../../../features/import/server-fns';
+import { remainingReadyCount } from '../../../features/practice/schemas/practice-models';
 import { parsePracticeSearch } from '../../../features/practice/schemas/session-request';
 import {
   getPracticeSession,
@@ -12,10 +13,15 @@ import {
   resolveSessionDirection,
   sessionOptions,
 } from '../../../features/practice/services/session-options';
-import { PracticeLayout } from '../../../features/practice/ui/practice-layout';
 import { SessionRunner } from '../../../features/practice/ui/session-runner';
 import { SessionStart } from '../../../features/practice/ui/session-start';
+import { countNoun } from '../../../shared/format/count';
 import { germanLabels } from '../../../shared/languages';
+import { practiceSectionSize } from '../../../shared/practice/session-policy';
+import { ActionLink } from '../../../shared/ui/action-link';
+import { BackLink } from '../../../shared/ui/back-link';
+import { Button } from '../../../shared/ui/button';
+import { PageLayout } from '../../../shared/ui/page-layout';
 
 const PracticeScreen = () => {
   const { course, directions, direction, session, stats } =
@@ -25,12 +31,8 @@ const PracticeScreen = () => {
   const targetLabel = germanLabels[course.targetLanguage];
 
   return (
-    <PracticeLayout
-      backControl={
-        <Link className="text-muted-foreground text-sm underline" to="/">
-          ← Übersicht
-        </Link>
-      }
+    <PageLayout
+      backControl={<BackLink to="/">Übersicht</BackLink>}
       title={`${course.name}: Üben`}
     >
       {session === null ? (
@@ -39,37 +41,37 @@ const PracticeScreen = () => {
             ...(stats?.directions ?? []),
             { direction: 'both', ready: stats?.ready ?? 0 },
           ])}
-          preferenceKey={course.id}
+          preferenceKey={`${course.id}:practice`}
           renderStartAction={(option, rememberDirection) => (
-            <Link
-              className="inline-flex min-h-11 w-fit items-center bg-primary px-4 py-2 font-medium text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
+            <ActionLink
+              className="w-fit"
               onClick={rememberDirection}
               params={{ courseId: course.id }}
               search={{ direction: option.value }}
               to="/courses/$courseId/practice"
             >
-              {option.cards} {option.cards === 1 ? 'Karte' : 'Karten'} starten
-            </Link>
+              {countNoun(option.cards, 'Karte', 'Karten')} starten
+            </ActionLink>
           )}
         />
       ) : (
         <SessionRunner
           backControl={
-            <Link className="text-sm underline" to="/">
+            <ActionLink to="/" variant="quiet-muted">
               Zurück zur Übersicht
-            </Link>
+            </ActionLink>
           }
           continueControl={
-            <button
-              className="min-h-11 bg-primary px-4 py-2 font-medium text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
+            <Button
               onClick={async () => {
                 await router.invalidate();
                 setSessionGeneration((current) => current + 1);
               }}
-              type="button"
             >
-              Weitere 20 üben
-            </button>
+              Weitere{' '}
+              {Math.min(practiceSectionSize, remainingReadyCount(session))}{' '}
+              üben
+            </Button>
           }
           emptyMessage="Für jetzt geschafft"
           key={`${direction}-${sessionGeneration}-${session.items
@@ -81,7 +83,7 @@ const PracticeScreen = () => {
           targetLabel={targetLabel}
         />
       )}
-    </PracticeLayout>
+    </PageLayout>
   );
 };
 

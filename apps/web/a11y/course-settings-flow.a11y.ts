@@ -90,7 +90,7 @@ test('a rejected direction save restores the last durable snapshot', async ({
   await toNative.uncheck();
   await page.getByRole('button', { name: 'Reject direction save' }).click();
   await expect(page.getByRole('status', { name: 'Speicherstatus' })).toHaveText(
-    'Speichern fehlgeschlagen: Test direction rejection',
+    'Speichern fehlgeschlagen. Die Änderung wurde zurückgenommen – versuche es noch einmal.',
   );
   await expect(toTarget).toBeEnabled();
   await expect(toNative).toBeEnabled();

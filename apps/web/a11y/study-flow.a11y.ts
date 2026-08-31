@@ -5,9 +5,8 @@ const forwardDirectionPattern = /Deutsch → Englisch/u;
 
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
-// The night-before path: the course page leads into a unit action page, which
-// offers free practice for entries already introduced without duplicating the
-// vocabulary inventory.
+// The night-before path: the course page leads into a unit page that carries
+// the unit's actions and its vocabulary as one selectable list.
 test('selected practice reaches a unit sitting through the course page', async ({
   page,
 }) => {
@@ -17,10 +16,8 @@ test('selected practice reaches a unit sitting through the course page', async (
 
   await page.getByRole('button', { name: 'Unit 3 – Holidays' }).click();
   await expect(page.locator('body')).toHaveAttribute('data-fixture', 'unit');
-  await expect(page.getByText('to look (at)')).toHaveCount(0);
-  await expect(
-    page.getByRole('button', { name: 'Vokabelliste dieser Einheit' }),
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Vokabeln' })).toBeVisible();
+  await expect(page.getByText('memory')).toBeVisible();
 
   await page.getByRole('button', { name: '16 Vokabeln üben' }).click();
   await expect(page.locator('body')).toHaveAttribute(
@@ -42,7 +39,7 @@ test('a unit without introduced entries offers only kennenlernen', async ({
 }) => {
   await page.goto('/?state=unit-unintroduced');
   await expect(
-    page.getByRole('button', { name: '12 kennenlernen' }),
+    page.getByRole('button', { name: '12 Vokabeln kennenlernen' }),
   ).toBeVisible();
   await expect(
     page.getByRole('button', { name: practiceActionPattern }),

@@ -31,16 +31,14 @@ test('the course hides practice when its queue has no work', async ({
   ).toBeVisible();
 });
 
-test('an untouched unit leads with learning and links to its filtered vocabulary', async ({
+test('an untouched unit leads with learning and shows its vocabulary inline', async ({
   page,
 }) => {
   await page.goto('/?state=unit-unintroduced');
   await expect(
-    page.getByRole('button', { name: '12 kennenlernen' }),
+    page.getByRole('button', { name: '12 Vokabeln kennenlernen' }),
   ).toBeVisible();
-  await expect(
-    page.getByRole('button', { name: 'Vokabelliste dieser Einheit' }),
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Vokabeln' })).toBeVisible();
   await expect(
     page.getByRole('button', { name: unitPracticePattern }),
   ).toHaveCount(0);

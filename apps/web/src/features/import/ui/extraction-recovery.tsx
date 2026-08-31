@@ -1,3 +1,5 @@
+import { Button } from '../../../shared/ui/button';
+
 type ExtractionRecoveryProps = {
   readonly busy: boolean;
   readonly onRetry: () => void;
@@ -12,13 +14,8 @@ export const ExtractionRecovery = ({
       Die Seite wurde noch nicht ausgelesen oder das Auslesen ist
       fehlgeschlagen.
     </p>
-    <button
-      className="bg-primary px-4 py-2 text-primary-foreground text-sm disabled:opacity-50"
-      disabled={busy}
-      onClick={onRetry}
-      type="button"
-    >
+    <Button disabled={busy} onClick={onRetry}>
       {busy ? 'Wird gelesen …' : 'Erneut auslesen'}
-    </button>
+    </Button>
   </div>
 );
