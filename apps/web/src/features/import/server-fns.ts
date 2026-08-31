@@ -108,6 +108,7 @@ export const getPage = createServerFn()
             },
             course: row.course,
             units: yield* repository.listUnits(row.page.courseId),
+            unitEntries: yield* repository.listUnitEntries(row.page.courseId),
           };
         }),
       ),

@@ -3,21 +3,36 @@ import { useState } from 'react';
 import { countNoun } from '../../../shared/format/count';
 import { Button } from '../../../shared/ui/button';
 import type { UnitSelectionData } from '../schemas/import-payload';
-import type { Unit } from '../services/repository';
+import type { Unit, UnitEntry } from '../services/repository';
 import { BulkUnitAssignment } from './bulk-unit-assignment';
+import { assessDraftDuplicates } from './draft-duplicates';
+import {
+  appendedRow,
+  rowsWithUnit,
+  rowsWithUnitFrom,
+  rowWithConfirmation,
+  rowWithEntry,
+  rowWithUnit,
+  withoutRow,
+} from './draft-rows';
 import { type DraftEntry, EntryRow } from './entry-row';
 import { EntryUnitAssignment } from './entry-unit-assignment';
 import { initialUnitSelection } from './initial-unit-selection';
-
-const emptyEntry: DraftEntry = {
-  targetText: '',
-  nativeText: '',
-  example: '',
-};
+import {
+  canCompleteWithoutImport,
+  type DraftRow,
+  entriesForSubmission,
+  entryIsComplete,
+  selectImportableEntries,
+  skippedSummary,
+  unitSelectionIsComplete,
+  type VerificationEntry,
+} from './verify-form-selection';
 
 type VerifyFormProps = {
   readonly initialEntries: ReadonlyArray<DraftEntry>;
   readonly initialUnitName: string | undefined;
+  readonly existingEntries: ReadonlyArray<UnitEntry>;
   readonly targetLabel: string;
   readonly units: ReadonlyArray<Unit>;
   readonly busy: boolean;
@@ -27,42 +42,51 @@ type VerifyFormProps = {
   readonly submitLabel?: (entryCount: number) => string;
 };
 
-export type VerificationEntry = DraftEntry & {
-  readonly unit: UnitSelectionData;
-};
-
-const entryIsComplete = (entry: DraftEntry): boolean =>
-  entry.targetText.trim() !== '' && entry.nativeText.trim() !== '';
-
-const unitSelectionIsComplete = (selection: UnitSelectionData): boolean =>
-  selection.kind === 'existing' || selection.name.trim() !== '';
+const initialDraftRows = (
+  entries: ReadonlyArray<DraftEntry>,
+  units: ReadonlyArray<Unit>,
+  initialUnitName: string | undefined,
+): ReadonlyArray<DraftRow> =>
+  entries.map((entry) => ({
+    ...entry,
+    unit: initialUnitSelection(units, initialUnitName),
+    duplicateConfirmed: false,
+  }));
 
 export const VerifyForm = ({
   initialEntries,
   initialUnitName,
+  existingEntries,
   targetLabel,
   units,
   busy,
   onSubmit,
   submitLabel = (entryCount) =>
-    `${countNoun(entryCount, 'Eintrag', 'Einträge')} importieren`,
+    entryCount === 0
+      ? 'Seite abschließen'
+      : `${countNoun(entryCount, 'Eintrag', 'Einträge')} importieren`,
 }: VerifyFormProps) => {
   const [bulkUnit, setBulkUnit] = useState<UnitSelectionData>(() =>
     initialUnitSelection(units, initialUnitName),
   );
-  const [draftEntries, setDraftEntries] = useState<
-    ReadonlyArray<VerificationEntry>
-  >(() =>
-    initialEntries.map((entry) => ({
-      ...entry,
-      unit: initialUnitSelection(units, initialUnitName),
-    })),
+  const [draftEntries, setDraftEntries] = useState<ReadonlyArray<DraftRow>>(
+    () => initialDraftRows(initialEntries, units, initialUnitName),
   );
 
-  const complete = draftEntries.filter(entryIsComplete);
-  const unitsNamed = complete.every((entry) =>
+  const verdicts = assessDraftDuplicates(draftEntries, units, existingEntries);
+  const selection = selectImportableEntries(draftEntries, verdicts);
+  const entriesToSubmit = entriesForSubmission(selection);
+  const unitsNamed = entriesToSubmit.every((entry) =>
     unitSelectionIsComplete(entry.unit),
   );
+  const completionWithoutImport = canCompleteWithoutImport(
+    draftEntries,
+    selection,
+  );
+  const submittable =
+    !busy &&
+    unitsNamed &&
+    (selection.entries.length > 0 || completionWithoutImport);
 
   return (
     <form
@@ -70,19 +94,17 @@ export const VerifyForm = ({
       className="flex flex-col gap-4"
       onSubmit={(event) => {
         event.preventDefault();
-        if (busy || complete.length === 0 || !unitsNamed) {
+        if (!submittable) {
           return;
         }
-        onSubmit(complete);
+        onSubmit(entriesToSubmit);
       }}
     >
       <BulkUnitAssignment
         canApply={draftEntries.length > 0 && unitSelectionIsComplete(bulkUnit)}
         disabled={busy}
         onApply={() =>
-          setDraftEntries((current) =>
-            current.map((entry) => ({ ...entry, unit: bulkUnit })),
-          )
+          setDraftEntries((current) => rowsWithUnit(current, bulkUnit))
         }
         onChange={setBulkUnit}
         selection={bulkUnit}
@@ -92,21 +114,22 @@ export const VerifyForm = ({
         {draftEntries.map((entry, index) => (
           <EntryRow
             disabled={busy}
+            duplicate={verdicts[index] ?? 'none'}
+            duplicateConfirmed={entry.duplicateConfirmed}
             entry={entry}
             entryNumber={index + 1}
             // biome-ignore lint/suspicious/noArrayIndexKey: rows are positional edits of one page
             key={index}
             onChange={(next) =>
-              setDraftEntries((currentEntries) =>
-                currentEntries.map((current, i) =>
-                  i === index ? { ...next, unit: current.unit } : current,
-                ),
+              setDraftEntries((current) => rowWithEntry(current, index, next))
+            }
+            onDuplicateConfirmedChange={(confirmed) =>
+              setDraftEntries((current) =>
+                rowWithConfirmation(current, index, confirmed),
               )
             }
             onRemove={() =>
-              setDraftEntries((current) =>
-                current.filter((_, i) => i !== index),
-              )
+              setDraftEntries((current) => withoutRow(current, index))
             }
             targetLabel={targetLabel}
             unitControl={
@@ -115,17 +138,13 @@ export const VerifyForm = ({
                 entryNumber={index + 1}
                 hasFollowing={index < draftEntries.length - 1}
                 onApplyFollowing={() =>
-                  setDraftEntries((currentEntries) =>
-                    currentEntries.map((current, i) =>
-                      i >= index ? { ...current, unit: entry.unit } : current,
-                    ),
+                  setDraftEntries((current) =>
+                    rowsWithUnitFrom(current, index, entry.unit),
                   )
                 }
                 onChange={(unit) =>
-                  setDraftEntries((currentEntries) =>
-                    currentEntries.map((current, i) =>
-                      i === index ? { ...current, unit } : current,
-                    ),
+                  setDraftEntries((current) =>
+                    rowWithUnit(current, index, unit),
                   )
                 }
                 required={entryIsComplete(entry)}
@@ -137,29 +156,35 @@ export const VerifyForm = ({
           />
         ))}
       </ul>
+      {selection.skipped > 0 ? (
+        <p className="text-muted-foreground text-sm">
+          {skippedSummary(selection.skipped)}
+        </p>
+      ) : null}
       <div className="flex flex-wrap items-center gap-3">
         <Button
           disabled={busy || draftEntries.length >= maximumEntriesPerPage}
           onClick={() =>
-            setDraftEntries((current) => [
-              ...current,
-              {
-                ...emptyEntry,
-                unit:
-                  current.at(-1)?.unit ??
-                  initialUnitSelection(units, initialUnitName),
-              },
-            ])
+            setDraftEntries((current) =>
+              appendedRow(
+                current,
+                initialUnitSelection(units, initialUnitName),
+              ),
+            )
           }
           variant="outline"
         >
           Eintrag hinzufügen
         </Button>
         <Button
-          disabled={busy || complete.length === 0 || !unitsNamed}
+          disabled={!submittable}
           type="submit"
         >
-          {busy ? 'Importiere …' : submitLabel(complete.length)}
+          {busy
+            ? 'Importiere …'
+            : submitLabel(
+                completionWithoutImport ? 0 : selection.entries.length,
+              )}
         </Button>
       </div>
     </form>

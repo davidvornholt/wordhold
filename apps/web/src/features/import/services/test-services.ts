@@ -65,6 +65,7 @@ export const makeImportRepository = (
     getPage: () => Effect.succeed({ page, course }),
     getPageUpload: () => Effect.succeed(undefined),
     listUnits: () => Effect.succeed([unit]),
+    listUnitEntries: () => Effect.succeed([]),
     loadPendingExtraction: () =>
       Effect.succeed({ imagePath: page.imagePath, language: 'fr' }),
     saveExtractionIfPending: (_pageId, extraction: ExtractionResult) =>

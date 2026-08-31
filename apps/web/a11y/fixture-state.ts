@@ -12,6 +12,8 @@ export const fixtureStates = [
   'import-error',
   'import-session',
   'verification',
+  'verification-duplicates',
+  'verification-all-duplicates',
   'verification-batch-first',
   'verification-batch-second',
   'verification-batch-complete',

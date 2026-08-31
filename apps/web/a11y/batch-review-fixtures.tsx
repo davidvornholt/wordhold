@@ -40,6 +40,7 @@ export const BatchReviewFixture = ({ position }: BatchReviewFixtureProps) => (
         <BatchReviewProgress position={position} total={2} />
         <VerifyForm
           busy={false}
+          existingEntries={[]}
           initialEntries={verificationEntries}
           initialUnitName="Unit 2"
           onSubmit={() => navigateToFixture(nextState(position))}

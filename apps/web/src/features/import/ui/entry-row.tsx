@@ -6,6 +6,8 @@ import {
 import type { ReactNode } from 'react';
 import { Button } from '../../../shared/ui/button';
 import { fieldCompactClass } from '../../../shared/ui/field-styles';
+import { Checkbox } from '../../../shared/ui/selection-controls';
+import type { DuplicateVerdict } from '../services/entry-identity';
 
 export type DraftEntry = {
   readonly targetText: string;
@@ -68,7 +70,10 @@ type EntryRowProps = {
   readonly disabled: boolean;
   readonly targetLabel: string;
   readonly unitControl: ReactNode;
+  readonly duplicate: DuplicateVerdict;
+  readonly duplicateConfirmed: boolean;
   readonly onChange: (entry: DraftEntry) => void;
+  readonly onDuplicateConfirmedChange: (confirmed: boolean) => void;
   readonly onRemove: () => void;
 };
 
@@ -78,18 +83,22 @@ export const EntryRow = ({
   disabled,
   targetLabel,
   unitControl,
+  duplicate,
+  duplicateConfirmed,
   onChange,
+  onDuplicateConfirmedChange,
   onRemove,
 }: EntryRowProps) => {
   const uncertain =
     entry.confidence !== undefined && entry.confidence < lowConfidence;
+  const flagged = uncertain || duplicate !== 'none';
   const grammar =
     entry.grammar === undefined ? '' : grammarSummary(entry.grammar);
   const inputClass = fieldCompactClass;
   return (
     <li
       className={`flex flex-col gap-2 border p-3 ${
-        uncertain
+        flagged
           ? 'border-warning-foreground/40 border-l-4 border-l-warning-foreground bg-warning'
           : 'border-border bg-card'
       }`}
@@ -101,6 +110,11 @@ export const EntryRow = ({
             Unsicher gelesen – bitte prüfen
           </span>
         ) : null}
+        {duplicate === 'none' ? null : (
+          <span className="font-medium text-warning-foreground text-xs">
+            Schon in dieser Einheit
+          </span>
+        )}
         <Button
           aria-label={`Eintrag ${entryNumber} entfernen`}
           className="ml-auto"
@@ -149,6 +163,24 @@ export const EntryRow = ({
       {grammar === '' ? null : (
         <p className="text-muted-foreground text-xs">{grammar}</p>
       )}
+      {duplicate === 'exact' ? (
+        <p className="text-warning-foreground text-xs">
+          Wird nicht erneut importiert. Für eine Ausnahme ändere die
+          Schreibweise oder den Beispielsatz.
+        </p>
+      ) : null}
+      {duplicate === 'exception' ? (
+        <label className="flex items-center gap-2 text-sm">
+          <Checkbox
+            checked={duplicateConfirmed}
+            disabled={disabled}
+            onChange={(event) =>
+              onDuplicateConfirmedChange(event.target.checked)
+            }
+          />
+          Als Ausnahme importieren (andere Schreibweise oder anderes Beispiel)
+        </label>
+      ) : null}
       {unitControl}
     </li>
   );
