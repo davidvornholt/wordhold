@@ -64,7 +64,7 @@ export const CardPractice = ({
   const sentenceAudioUrl = example?.hasAudio
     ? `/api/entries/${item.entryId}/example-audio`
     : null;
-  const playAudio = useAudioPlayback();
+  const { playAudio, playing: audioPlaying, stopAudio } = useAudioPlayback();
   const playSentence = useCallback(
     () => playAudio(sentenceAudioUrl),
     [playAudio, sentenceAudioUrl],
@@ -161,6 +161,7 @@ export const CardPractice = ({
       )}
       {result === null ? null : (
         <FeedbackPanel
+          audioPlaying={audioPlaying}
           busy={busy}
           example={example}
           onNext={() => {
@@ -177,6 +178,7 @@ export const CardPractice = ({
           skipped={skipped}
           submittedAnswer={submittedAnswer ?? ''}
           targetLanguage={targetLanguage}
+          stopAudio={stopAudio}
         />
       )}
     </>

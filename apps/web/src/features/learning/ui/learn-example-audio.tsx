@@ -21,7 +21,7 @@ export const LearnExampleAudio = ({
     ? `/api/entries/${item.entryId}/example-audio`
     : null;
   const automaticAudioUrl = sentenceAudioUrl ?? wordAudioUrl;
-  const playAudio = useAudioPlayback();
+  const { playAudio, playing, stopAudio } = useAudioPlayback();
   const playSentence = useCallback(
     () => playAudio(sentenceAudioUrl),
     [playAudio, sentenceAudioUrl],
@@ -43,9 +43,16 @@ export const LearnExampleAudio = ({
 
   if (item.example === null) {
     return wordAudioUrl === null ? null : (
-      <Button className="w-fit" onClick={playWord} variant="quiet">
-        Wort anhören
-      </Button>
+      <div className="flex flex-wrap gap-3">
+        <Button className="w-fit" onClick={playWord} variant="quiet">
+          Wort anhören
+        </Button>
+        {playing ? (
+          <Button onClick={stopAudio} variant="quiet-muted">
+            Audio stoppen
+          </Button>
+        ) : null}
+      </div>
     );
   }
 
@@ -64,6 +71,11 @@ export const LearnExampleAudio = ({
                 Wort anhören
               </Button>
             )}
+            {playing ? (
+              <Button onClick={stopAudio} variant="quiet-muted">
+                Audio stoppen
+              </Button>
+            ) : null}
           </div>
         )
       }

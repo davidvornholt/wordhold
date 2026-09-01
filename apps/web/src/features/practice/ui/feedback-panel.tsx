@@ -17,6 +17,7 @@ const panelTone = (result: SubmitResult) => {
 };
 
 type FeedbackPanelProps = {
+  readonly audioPlaying: boolean;
   readonly busy: boolean;
   readonly result: SubmitResult;
   readonly submittedAnswer: string;
@@ -30,6 +31,7 @@ type FeedbackPanelProps = {
   readonly repeated: boolean;
   readonly resolution: Exclude<WrongAnswerResolution, 'defer'> | null;
   readonly skipped: boolean;
+  readonly stopAudio: () => void;
   readonly targetLanguage: LanguageCode;
 };
 
@@ -115,6 +117,7 @@ const WordAudioFallback = ({
 };
 
 export const FeedbackPanel = ({
+  audioPlaying,
   busy,
   result,
   submittedAnswer,
@@ -126,6 +129,7 @@ export const FeedbackPanel = ({
   repeated,
   resolution,
   skipped,
+  stopAudio,
   targetLanguage,
 }: FeedbackPanelProps) => {
   const normalizedSubmission = normalizeAnswerForComparison(submittedAnswer);
@@ -193,6 +197,11 @@ export const FeedbackPanel = ({
         ) : null}
       </div>
       <div className="flex flex-wrap items-center gap-3">
+        {audioPlaying ? (
+          <Button onClick={stopAudio} variant="outline">
+            Audio stoppen
+          </Button>
+        ) : null}
         <WordAudioFallback
           example={example}
           graded={result.graded}

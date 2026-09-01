@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 export const useAudioPlayback = () => {
   const audio = useRef<HTMLAudioElement | null>(null);
+  const [playing, setPlaying] = useState(false);
 
   useEffect(
     () => () => {
@@ -11,18 +12,39 @@ export const useAudioPlayback = () => {
     [],
   );
 
-  return useCallback(async (audioUrl: string | null) => {
+  const stopAudio = useCallback(() => {
+    const current = audio.current;
+    audio.current = null;
+    current?.pause();
+    setPlaying(false);
+  }, []);
+
+  const playAudio = useCallback(async (audioUrl: string | null) => {
     if (audioUrl === null) {
       return;
     }
     audio.current?.pause();
     const current = new Audio(audioUrl);
     audio.current = current;
-    await current.play().catch(() => undefined);
+    current.onended = () => {
+      if (audio.current === current) {
+        audio.current = null;
+        setPlaying(false);
+      }
+    };
+    setPlaying(true);
+    await current.play().catch(() => {
+      if (audio.current === current) {
+        audio.current = null;
+        setPlaying(false);
+      }
+    });
   }, []);
+
+  return { playAudio, playing, stopAudio } as const;
 };
 
 export const usePronunciationAudio = (audioUrl: string | null) => {
-  const playAudio = useAudioPlayback();
+  const { playAudio } = useAudioPlayback();
   return useCallback(() => playAudio(audioUrl), [audioUrl, playAudio]);
 };

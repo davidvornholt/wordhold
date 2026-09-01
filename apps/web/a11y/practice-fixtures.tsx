@@ -76,6 +76,7 @@ export const PracticeFixture = () => (
 export const PracticeFeedbackFixture = () => (
   <PageLayout backControl={backControl} title="English A2: Üben">
     <FeedbackPanel
+      audioPlaying={false}
       busy={false}
       example={item.example}
       onNext={() => navigateToFixture('practice-empty')}
@@ -88,6 +89,7 @@ export const PracticeFeedbackFixture = () => (
       skipped={false}
       submittedAnswer="wrong"
       targetLanguage="en"
+      stopAudio={() => undefined}
     />
   </PageLayout>
 );
