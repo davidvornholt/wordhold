@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef } from 'react';
 import { formatLearningDate } from '../../../shared/dates/learning-date';
-import { normalizeAnswer } from '../../../shared/grading/normalize';
+import { normalizeAnswerForComparison } from '../../../shared/grading/normalize';
 import type { SubmitResult } from '../schemas/practice-models';
 import type { WrongAnswerResolution } from '../schemas/submission-schema';
 
@@ -100,10 +100,10 @@ export const FeedbackPanel = ({
   resolution,
   skipped,
 }: FeedbackPanelProps) => {
-  const normalizedSubmission = normalizeAnswer(submittedAnswer);
+  const normalizedSubmission = normalizeAnswerForComparison(submittedAnswer);
   const repeatsSubmittedAnswer = result.expectedAnswers.some(
     (expectedAnswer) =>
-      normalizeAnswer(expectedAnswer) === normalizedSubmission,
+      normalizeAnswerForComparison(expectedAnswer) === normalizedSubmission,
   );
   const nextButton = useRef<HTMLButtonElement>(null);
   const feedbackDescriptionId = useId();

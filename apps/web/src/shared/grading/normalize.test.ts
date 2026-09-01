@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { normalizeAnswer } from './normalize';
+import { normalizeAnswer, normalizeAnswerForComparison } from './normalize';
 
 describe('normalizeAnswer', () => {
   it('lowercases and trims', () => {
@@ -27,5 +27,18 @@ describe('normalizeAnswer', () => {
 
   it('keeps accents intact', () => {
     expect(normalizeAnswer('École')).toBe('école');
+  });
+});
+
+describe('normalizeAnswerForComparison', () => {
+  it('treats inner commas and their surrounding whitespace as spacing', () => {
+    expect(normalizeAnswerForComparison('hello,world')).toBe('hello world');
+    expect(normalizeAnswerForComparison('hello ,  world')).toBe('hello world');
+  });
+
+  it('keeps textbook notation for the variant parser', () => {
+    expect(normalizeAnswerForComparison('amigo/a; estudiante(s)')).toBe(
+      'amigo/a; estudiante(s)',
+    );
   });
 });
