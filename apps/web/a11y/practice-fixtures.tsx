@@ -7,10 +7,13 @@ import {
 } from '../src/features/practice/services/session-queue';
 import { CardPractice } from '../src/features/practice/ui/card-practice';
 import { FeedbackPanel } from '../src/features/practice/ui/feedback-panel';
-import { PracticeLayout } from '../src/features/practice/ui/practice-layout';
-import { SessionProgress } from '../src/features/practice/ui/session-progress';
 import { SessionSummary } from '../src/features/practice/ui/session-summary';
+import { PageLayout } from '../src/shared/ui/page-layout';
+import { ProgressMeter } from '../src/shared/ui/progress-meter';
+import { fixtureBackControl, fixtureControl } from './fixture-controls';
 import { navigateToFixture } from './fixture-state';
+
+const justDueAt = new Date();
 
 const item = {
   cardId: '00000000-0000-0000-0000-000000000001',
@@ -20,6 +23,12 @@ const item = {
   targetText: 'memory',
   nativeText: 'Erinnerung',
   hasAudio: false,
+  example: {
+    targetText: 'This memory still makes me smile.',
+    nativeText: 'Diese Erinnerung bringt mich noch immer zum Lächeln.',
+    source: 'textbook' as const,
+    hasAudio: true,
+  },
   prompt: 'Erinnerung',
 };
 
@@ -33,71 +42,71 @@ const result: SubmitResult = {
   assessmentId: '00000000-0000-0000-0000-000000000003',
 };
 
-const backControl = (
-  <button
-    className="w-fit text-muted-foreground text-sm underline"
-    onClick={() => navigateToFixture('dashboard')}
-    type="button"
-  >
-    ← Übersicht
-  </button>
-);
+const backControl = fixtureBackControl('Übersicht', 'dashboard');
+const prepareExamples = ({ data }: { readonly data: Array<string> }) =>
+  Promise.resolve(data.map((entryId) => ({ entryId, example: item.example })));
 
 export const PracticeFixture = () => (
-  <PracticeLayout backControl={backControl} title="English A2: Üben">
-    <SessionProgress
-      phase="main"
-      processed={0}
-      repeatCount={0}
-      section={1}
-      total={1}
-    />
+  <PageLayout backControl={backControl} title="English A2: Üben">
+    <div className="flex flex-col gap-1.5">
+      <p className="font-medium text-sm">Abschnitt 1</p>
+      <ProgressMeter
+        accessibleName="Fortschritt"
+        description="0 von 1 Karte bearbeitet"
+        total={1}
+        value={0}
+      />
+    </div>
     <CardPractice
       item={item}
       mode="scheduled"
       onNext={() => undefined}
+      prepareExamples={prepareExamples}
       repeated={true}
       submit={() => {
         navigateToFixture('practice-feedback');
         return Promise.resolve(result);
       }}
       targetLabel="Englisch"
+      targetLanguage="en"
     />
-  </PracticeLayout>
+  </PageLayout>
 );
 
 export const PracticeFeedbackFixture = () => (
-  <PracticeLayout backControl={backControl} title="English A2: Üben">
+  <PageLayout backControl={backControl} title="English A2: Üben">
     <FeedbackPanel
-      audioUrl={null}
+      audioPlaying={false}
+      busy={false}
+      example={item.example}
       onNext={() => navigateToFixture('practice-empty')}
       onResolveWrong={() => navigateToFixture('practice-empty')}
+      playSentence={null}
+      playWord={null}
       resolution={null}
       repeated={false}
       result={result}
       skipped={false}
       submittedAnswer="wrong"
+      targetLanguage="en"
+      stopAudio={() => undefined}
     />
-  </PracticeLayout>
+  </PageLayout>
 );
 
 export const PracticeEmptyFixture = () => (
-  <PracticeLayout backControl={backControl} title="English A2: Üben">
+  <PageLayout backControl={backControl} title="English A2: Üben">
     <SessionSummary
-      backControl={
-        <button
-          className="w-fit text-sm underline"
-          onClick={() => navigateToFixture('dashboard')}
-          type="button"
-        >
-          Zurück zur Übersicht
-        </button>
-      }
+      backControl={fixtureControl(
+        'Zurück zur Übersicht',
+        'dashboard',
+        'quiet-muted',
+      )}
       emptyMessage="Für jetzt geschafft"
       queue={createSessionQueue([])}
       remainingReady={0}
     />
-  </PracticeLayout>
+  </PageLayout>
 );
 
 type PracticeOneCardSummaryFixtureProps = {
@@ -119,7 +128,7 @@ export const PracticeOneCardSummaryFixture = ({
     schedule: {
       advanced: true,
       state: 'review',
-      dueAt: new Date('2026-08-30T12:00:00Z'),
+      dueAt: justDueAt,
     },
   };
   const unavailable: SubmitResult = {
@@ -133,14 +142,15 @@ export const PracticeOneCardSummaryFixture = ({
     ungraded ? unavailable : correctResult,
   );
   return (
-    <PracticeLayout backControl={backControl} title="English A2: Üben">
+    <PageLayout backControl={backControl} title="English A2: Üben">
       <SessionSummary
         backControl={backControl}
+        continueControl={fixtureControl('Weiter üben', 'practice', 'primary')}
         emptyMessage="Für jetzt geschafft"
         queue={queue}
         remainingReady={0}
       />
-    </PracticeLayout>
+    </PageLayout>
   );
 };
 
@@ -172,14 +182,16 @@ export const DeferredPracticeFixture = () => {
     return pending.promise;
   };
   return (
-    <PracticeLayout backControl={backControl} title="English A2: Üben">
+    <PageLayout backControl={backControl} title="English A2: Üben">
       <CardPractice
-        item={item}
+        item={{ ...item, hasAudio: true }}
         mode="scheduled"
         onNext={() => undefined}
+        prepareExamples={prepareExamples}
         repeated={false}
         submit={submit}
         targetLabel="Englisch"
+        targetLanguage="en"
       />
       <output aria-label="Submit calls">{calls}</output>
       <output aria-label="Submitted answer">{submittedAnswer}</output>
@@ -195,6 +207,6 @@ export const DeferredPracticeFixture = () => {
           Reject submission
         </button>
       </fieldset>
-    </PracticeLayout>
+    </PageLayout>
   );
 };

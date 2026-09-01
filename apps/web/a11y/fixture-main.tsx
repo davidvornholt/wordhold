@@ -10,4 +10,10 @@ if (root === null) {
 document.body.dataset.fixture =
   new URLSearchParams(location.search).get('state') ?? 'unknown';
 
-createRoot(root).render(<FixtureApp />);
+const strictModeOption = 'unstable_strictMode';
+const rootOptions: Parameters<typeof createRoot>[1] &
+  Readonly<Record<typeof strictModeOption, boolean>> = {
+  [strictModeOption]: document.body.dataset.fixture === 'learn-audio',
+};
+
+createRoot(root, rootOptions).render(<FixtureApp />);

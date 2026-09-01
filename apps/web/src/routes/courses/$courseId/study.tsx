@@ -1,33 +1,54 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
 import { answerDirections } from '@wordhold/db/schema/directions';
 import type { ReactNode } from 'react';
-import { listCourseUnits } from '../../../features/courses/services/server-fns';
-import { getCourse } from '../../../features/import/server-fns';
-import type { PracticeSession } from '../../../features/practice/schemas/practice-models';
-import {
-  parseStudySearch,
-  type StudyRequestData,
-  selectedEntryIds,
-} from '../../../features/practice/schemas/session-request';
-import {
-  getStudySession,
-  submitAnswer,
-} from '../../../features/practice/services/server-fns';
-import {
-  directionsWithCards,
-  resolveSessionDirection,
-  sessionOptions,
-} from '../../../features/practice/services/session-options';
-import { PracticeLayout } from '../../../features/practice/ui/practice-layout';
+import { prepareVocabularyExamples } from '../../../features/courses/services/server-fns';
+import { parseStudySearch } from '../../../features/practice/schemas/session-request';
+import { submitAnswer } from '../../../features/practice/services/server-fns';
+import { sessionOptions } from '../../../features/practice/services/session-options';
 import { SessionRunner } from '../../../features/practice/ui/session-runner';
 import { SessionStart } from '../../../features/practice/ui/session-start';
+import { countNoun } from '../../../shared/format/count';
 import { germanLabels } from '../../../shared/languages';
+import { ActionLink } from '../../../shared/ui/action-link';
+import { BackLink } from '../../../shared/ui/back-link';
+import { PageLayout } from '../../../shared/ui/page-layout';
+import { cardClass } from '../../../shared/ui/surface-styles';
+import { StudyLearning } from './-study-learning';
+import { loadStudyData } from './-study-loader';
+
+const StudySelectionControl = ({
+  courseId,
+  unit,
+}: {
+  readonly courseId: string;
+  readonly unit: { readonly id: string } | undefined;
+}) =>
+  unit === undefined ? (
+    <ActionLink
+      params={{ courseId }}
+      search={{ filter: 'all' }}
+      to="/courses/$courseId/vocabulary"
+      variant="quiet-muted"
+    >
+      Neue Auswahl treffen
+    </ActionLink>
+  ) : (
+    <ActionLink
+      params={{ courseId, unitId: unit.id }}
+      to="/courses/$courseId/units/$unitId"
+      variant="quiet-muted"
+    >
+      Neue Auswahl treffen
+    </ActionLink>
+  );
 
 const StudyScreen = () => {
   const {
     availableDirections,
     course,
     direction,
+    learningPass,
+    mode,
     preview,
     selection,
     session,
@@ -36,30 +57,40 @@ const StudyScreen = () => {
   const targetLabel = germanLabels[course.targetLanguage];
   const backControl =
     unit === undefined ? (
-      <Link
-        className="text-muted-foreground text-sm underline underline-offset-4"
+      <BackLink
         params={{ courseId: course.id }}
         search={{ filter: 'all' }}
         to="/courses/$courseId/vocabulary"
       >
-        ← Vokabelliste
-      </Link>
+        Vokabelliste
+      </BackLink>
     ) : (
-      <Link
-        className="text-muted-foreground text-sm underline underline-offset-4"
+      <BackLink
         params={{ courseId: course.id, unitId: unit.id }}
         to="/courses/$courseId/units/$unitId"
       >
-        ← {unit.name}
-      </Link>
+        {unit.name}
+      </BackLink>
     );
-  const title = unit === undefined ? 'Auswahl frei üben' : `${unit.name} üben`;
+  const titleSubject = unit === undefined ? 'Auswahl' : unit.name;
+  const title = `${titleSubject} ${mode === 'learn' ? 'kennenlernen' : 'üben'}`;
   let content: ReactNode;
   if (selection === null) {
     content = (
-      <p className="border border-border bg-card p-6 text-sm">
-        Wähle zuerst mindestens eine Vokabel oder eine Unit aus.
+      <p className={`${cardClass} text-sm`}>
+        Wähle zuerst mindestens eine Vokabel oder eine Einheit aus.
       </p>
+    );
+  } else if (mode === 'learn') {
+    content = (
+      <StudyLearning
+        courseId={course.id}
+        direction={direction}
+        pass={learningPass}
+        selection={selection}
+        targetLabel={targetLabel}
+        targetLanguage={course.targetLanguage}
+      />
     );
   } else if (session === null) {
     const entriesSearch =
@@ -72,6 +103,7 @@ const StudyScreen = () => {
           Eine falsche Antwort wird dagegen früher erneut eingeplant.
         </p>
         <SessionStart
+          itemNoun={{ singular: 'Karte', plural: 'Karten' }}
           options={sessionOptions(availableDirections, targetLabel, [
             ...answerDirections.map((candidate) => ({
               direction: candidate,
@@ -81,21 +113,22 @@ const StudyScreen = () => {
             })),
             { direction: 'both', ready: preview.items.length },
           ])}
-          preferenceKey={course.id}
+          preferenceKey={`${course.id}:study`}
           renderStartAction={(option, rememberDirection) => (
-            <Link
-              className="inline-flex min-h-11 w-fit items-center bg-primary px-4 py-2 font-medium text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
+            <ActionLink
+              className="w-fit"
               onClick={rememberDirection}
               params={{ courseId: course.id }}
               search={{
                 direction: option.value,
                 entries: entriesSearch,
+                mode: 'practice',
                 unit: unitSearch,
               }}
               to="/courses/$courseId/study"
             >
-              {option.cards} {option.cards === 1 ? 'Karte' : 'Karten'} starten
-            </Link>
+              {countNoun(option.cards, 'Karte', 'Karten')} starten
+            </ActionLink>
           )}
         />
       </>
@@ -103,78 +136,29 @@ const StudyScreen = () => {
   } else {
     content = (
       <SessionRunner
-        backControl={backControl}
-        emptyMessage="Diese Auswahl enthält noch keine kennengelernte Vokabel."
+        backControl={<StudySelectionControl courseId={course.id} unit={unit} />}
+        emptyMessage="Diese Auswahl enthält keine Vokabeln."
         key={direction}
         mode="drill"
+        prepareExamples={prepareVocabularyExamples}
         session={session}
         submit={submitAnswer}
         targetLabel={targetLabel}
+        targetLanguage={course.targetLanguage}
       />
     );
   }
 
   return (
-    <PracticeLayout backControl={backControl} title={title}>
+    <PageLayout backControl={backControl} title={title}>
       {content}
-    </PracticeLayout>
+    </PageLayout>
   );
 };
 
 export const Route = createFileRoute('/courses/$courseId/study')({
   validateSearch: parseStudySearch,
   loaderDeps: ({ search }) => search,
-  loader: async ({ params, deps }) => {
-    const [course, units] = await Promise.all([
-      getCourse({ data: params.courseId }),
-      listCourseUnits({ data: params.courseId }),
-    ]);
-    const unit = units.find((candidate) => candidate.id === deps.unit);
-    const entryIds = selectedEntryIds(deps.entries);
-    let selection: StudyRequestData['selection'] | null = null;
-    if (unit !== undefined) {
-      selection = { unitId: unit.id } as const;
-    } else if (entryIds.length > 0) {
-      selection = {
-        entryIds: [entryIds[0] as string, ...entryIds.slice(1)],
-      } as const;
-    }
-    if (selection === null) {
-      return {
-        course,
-        availableDirections: [],
-        direction: undefined,
-        preview: { items: [] },
-        selection,
-        session: null,
-        unit,
-      };
-    }
-    const preview = await getStudySession({
-      data: { courseId: course.id, direction: 'both', selection },
-    });
-    const availableDirections = directionsWithCards(preview.items);
-    const direction = resolveSessionDirection(
-      deps.direction,
-      availableDirections,
-    );
-    let session: PracticeSession | null = null;
-    if (direction === 'both') {
-      session = preview;
-    } else if (direction !== undefined) {
-      session = await getStudySession({
-        data: { courseId: course.id, direction, selection },
-      });
-    }
-    return {
-      availableDirections,
-      course,
-      direction,
-      preview,
-      selection,
-      session,
-      unit,
-    };
-  },
+  loader: ({ params, deps }) => loadStudyData(params.courseId, deps),
   component: StudyScreen,
 });

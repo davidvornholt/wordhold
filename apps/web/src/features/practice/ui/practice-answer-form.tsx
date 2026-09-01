@@ -1,4 +1,6 @@
 import type { RefObject, SubmitEventHandler } from 'react';
+import { Button } from '../../../shared/ui/button';
+import { fieldClass } from '../../../shared/ui/field-styles';
 
 type PracticeAnswerFormProps = {
   readonly answer: string;
@@ -32,7 +34,7 @@ export const PracticeAnswerForm = ({
       autoCapitalize="off"
       autoComplete="off"
       autoCorrect="off"
-      className="min-h-11 border border-input bg-card px-3 py-2 focus-visible:outline-2 focus-visible:outline-offset-2"
+      className={fieldClass}
       disabled={busy || disabled}
       onChange={(event) => onAnswerChange(event.target.value)}
       placeholder="Deine Antwort"
@@ -41,21 +43,17 @@ export const PracticeAnswerForm = ({
     />
     {disabled ? null : (
       <>
-        <button
-          className="min-h-11 bg-primary px-4 py-2 text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50"
-          disabled={busy || answer.trim() === ''}
-          type="submit"
-        >
+        <Button disabled={busy || answer.trim() === ''} type="submit">
           {busy && !skipping ? 'Wird geprüft …' : 'Prüfen'}
-        </button>
-        <button
-          className="min-h-11 w-fit self-center px-3 py-2 text-muted-foreground text-sm underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50"
+        </Button>
+        <Button
+          className="w-fit self-center px-3 py-2"
           disabled={busy}
           onClick={onSkip}
-          type="button"
+          variant="quiet-muted"
         >
           {skipping ? 'Wird gespeichert …' : 'Weiß ich nicht'}
-        </button>
+        </Button>
       </>
     )}
   </form>

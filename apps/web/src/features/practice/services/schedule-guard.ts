@@ -14,7 +14,7 @@ type ScheduledCard = {
 //
 // A card still working through FSRS's learning or relearning steps is the
 // exception. Those steps exist to be answered again within minutes, and that
-// includes the repeat of a card missed moments ago in the same free practice.
+// includes the repeat of a card missed moments ago in the same custom sitting.
 export const advancesSchedule = (
   card: ScheduledCard,
   now: Date,

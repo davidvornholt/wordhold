@@ -1,4 +1,5 @@
 import { Clock, Effect } from 'effect';
+import type { VocabularySelectionData } from '../../../shared/session/vocabulary-selection';
 import {
   LearningCardNotFoundError,
   LearningUnitNotFoundError,
@@ -19,6 +20,10 @@ export class LearningService extends Effect.Service<LearningService>()(
               })
             : pass;
         });
+      const getSelection = (
+        courseId: string,
+        selection: VocabularySelectionData,
+      ) => store.loadSelection(courseId, selection);
       const introduce = (courseId: string, unitId: string, cardId: string) =>
         Effect.gen(function* () {
           const at = new Date(yield* Clock.currentTimeMillis);
@@ -30,7 +35,7 @@ export class LearningService extends Effect.Service<LearningService>()(
             });
           }
         });
-      return { getPass, introduce } as const;
+      return { getPass, getSelection, introduce } as const;
     }),
   },
 ) {}

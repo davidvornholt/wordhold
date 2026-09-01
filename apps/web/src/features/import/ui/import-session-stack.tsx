@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { countNoun } from '../../../shared/format/count';
 
 type ImportSessionPage = {
   readonly id: string;
@@ -15,20 +16,20 @@ type ImportSessionStackProps = {
   readonly reviewAction: ReactNode;
 };
 
-const statusLabel = (page: ImportSessionPage) => {
+const statusDetails = (page: ImportSessionPage) => {
   if (page.status === 'verified') {
-    return 'Geprüft';
+    return { label: 'Geprüft', borderClass: 'border-l-primary' };
   }
-  return page.extractionReady ? 'Bereit zum Prüfen' : 'Auslesen fehlgeschlagen';
+  return page.extractionReady
+    ? { label: 'Bereit zum Prüfen', borderClass: 'border-l-border' }
+    : { label: 'Auslesen fehlgeschlagen', borderClass: 'border-l-destructive' };
 };
 
 const pendingPageLabel = (pendingCount: number) => {
   if (pendingCount === 0) {
     return 'Alle Seiten sind geprüft.';
   }
-  return pendingCount === 1
-    ? 'Eine Seite ist noch offen.'
-    : `${pendingCount} Seiten sind noch offen.`;
+  return `${countNoun(pendingCount, 'Seite ist', 'Seiten sind')} noch offen.`;
 };
 
 export const ImportSessionStack = ({
@@ -58,28 +59,29 @@ export const ImportSessionStack = ({
         {reviewAction}
       </div>
       <ol className="grid gap-4 sm:grid-cols-2">
-        {pages.map((page) => (
-          <li
-            className="flex gap-3 border border-border bg-card p-3"
-            key={page.id}
-          >
-            <img
-              alt=""
-              className="h-24 w-20 shrink-0 border border-border object-cover"
-              src={pageImageSource(page)}
-            />
-            <div className="flex min-w-0 flex-col gap-1">
-              <p className="font-display text-lg">
-                {reviewOrder === 'page_number' && page.pageNumber !== null
-                  ? `Buchseite ${page.pageNumber}`
-                  : `Scan ${page.position + 1}`}
-              </p>
-              <p className="text-muted-foreground text-sm">
-                {statusLabel(page)}
-              </p>
-            </div>
-          </li>
-        ))}
+        {pages.map((page) => {
+          const status = statusDetails(page);
+          return (
+            <li
+              className={`flex gap-3 border border-border border-l-4 bg-card p-3 ${status.borderClass}`}
+              key={page.id}
+            >
+              <img
+                alt=""
+                className="h-24 w-20 shrink-0 border border-border object-cover"
+                src={pageImageSource(page)}
+              />
+              <div className="flex min-w-0 flex-col gap-1">
+                <p className="font-display text-lg">
+                  {reviewOrder === 'page_number' && page.pageNumber !== null
+                    ? `Buchseite ${page.pageNumber}`
+                    : `Scan ${page.position + 1}`}
+                </p>
+                <p className="text-muted-foreground text-sm">{status.label}</p>
+              </div>
+            </li>
+          );
+        })}
       </ol>
     </section>
   );

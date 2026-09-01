@@ -44,6 +44,11 @@
   @apply mx-auto w-full max-w-3xl;
 }
 
+/* Small-caps style kicker above a value or heading. */
+@utility eyebrow {
+  @apply text-muted-foreground text-xs uppercase tracking-wide;
+}
+
 @utility verification-screen {
   @apply flex flex-col gap-4 py-6;
 }
@@ -62,52 +67,4 @@
 
 @utility verification-form-pane {
   @apply flex w-full max-w-3xl flex-col gap-4 justify-self-center xl:max-w-none;
-}
-
-.root-recovery {
-  @apply page-column flex min-h-screen flex-col justify-center gap-5 p-6;
-}
-
-.root-feedback-brand {
-  @apply font-semibold text-muted-foreground text-sm;
-}
-
-.root-feedback-heading {
-  @apply font-display font-semibold text-2xl;
-}
-
-.root-feedback-copy {
-  @apply text-muted-foreground text-sm;
-}
-
-.root-feedback-link {
-  @apply w-fit self-center text-sm underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2;
-}
-
-.root-feedback-actions {
-  @apply flex flex-wrap items-center gap-4;
-}
-
-.root-feedback-button {
-  @apply bg-primary px-4 py-2 text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2;
-}
-
-.root-pending {
-  @apply page-column flex min-h-screen items-center p-6;
-}
-
-.audio-recovery {
-  @apply flex flex-col items-start gap-3 border border-border bg-card p-4;
-}
-
-.audio-recovery-heading {
-  @apply font-display text-lg;
-}
-
-.audio-recovery-copy {
-  @apply text-muted-foreground text-sm;
-}
-
-.audio-recovery-button {
-  @apply bg-primary px-4 py-2 text-primary-foreground text-sm disabled:opacity-50;
 }

@@ -1,5 +1,6 @@
 import type { LanguageCode } from '@wordhold/db/schema/courses';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
+import type { ReactNode } from 'react';
 import {
   earliestDate,
   formatLearningDate,
@@ -92,18 +93,23 @@ type VocabularyScheduleProps = {
   readonly entry: VocabularyEntry;
   readonly targetLanguage: LanguageCode;
   readonly now?: Date;
+  readonly exampleControl: ReactNode;
 };
 
 export const VocabularySchedule = ({
   enabledDirections,
   entry,
   targetLanguage,
+  exampleControl,
   now = new Date(),
 }: VocabularyScheduleProps) => {
   const targetLabel = germanLabels[targetLanguage];
   return (
-    <details className="text-sm">
-      <summary className="cursor-pointer text-muted-foreground underline-offset-4 hover:underline">
+    <details className="group text-sm">
+      <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-1.5 text-muted-foreground underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
+        <span aria-hidden="true" className="group-open:rotate-90">
+          ▸
+        </span>
         {scheduleSummary(entry, enabledDirections, now)}
       </summary>
       <dl className="mt-3 grid gap-3 border-border border-l pl-3">
@@ -123,6 +129,7 @@ export const VocabularySchedule = ({
           </div>
         ))}
       </dl>
+      <div className="mt-3">{exampleControl}</div>
     </details>
   );
 };

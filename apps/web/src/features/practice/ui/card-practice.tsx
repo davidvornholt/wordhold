@@ -1,5 +1,16 @@
+import type { LanguageCode } from '@wordhold/db/schema/courses';
 import type { ReviewMode } from '@wordhold/db/schema/practice';
-import { type SubmitEvent, useEffect, useId, useRef } from 'react';
+import {
+  type SubmitEvent,
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from 'react';
+import { useAudioPlayback } from '../../../shared/audio/use-pronunciation-audio';
+import type { PrepareExamples } from '../../../shared/examples/example-model';
+import { cardClass } from '../../../shared/ui/surface-styles';
 import type {
   PracticeSession,
   ResolvedSubmitResult,
@@ -9,22 +20,33 @@ import type { SubmitPayloadData } from '../schemas/submission-schema';
 import { FeedbackPanel } from './feedback-panel';
 import { PracticeAnswerForm } from './practice-answer-form';
 import { useCardSubmission } from './use-card-submission';
+import { usePreparedExample } from './use-prepared-example';
 
 type SessionItem = PracticeSession['items'][number];
 
+const useLifetime = () => {
+  const [lifetime] = useState(() => new AbortController());
+  useEffect(() => () => lifetime.abort(), [lifetime]);
+  return lifetime.signal;
+};
+
+// "auf" takes the plain language name, so every target language declines
+// correctly ("auf Französisch", "auf Latein" — never "ins Lateine").
 const practiceInstruction = (
   direction: SessionItem['direction'],
   targetLabel: string,
 ) =>
   direction === 'to_target'
-    ? `Übersetze ins ${targetLabel}e`
-    : 'Übersetze ins Deutsche';
+    ? `Übersetze auf ${targetLabel}`
+    : 'Übersetze auf Deutsch';
 
 type CardPracticeProps = {
   readonly item: SessionItem;
   readonly repeated: boolean;
   readonly targetLabel: string;
+  readonly targetLanguage: LanguageCode;
   readonly mode: ReviewMode;
+  readonly prepareExamples: PrepareExamples;
   readonly submit: (input: {
     readonly data: SubmitPayloadData;
   }) => Promise<SubmitResult>;
@@ -35,13 +57,45 @@ export const CardPractice = ({
   item,
   repeated,
   targetLabel,
+  targetLanguage,
   mode,
+  prepareExamples,
   submit,
   onNext,
 }: CardPracticeProps) => {
   const answerInput = useRef<HTMLInputElement>(null);
+  const lifetime = useLifetime();
   const promptId = useId();
-  const audioUrl = item.hasAudio ? `/api/entries/${item.entryId}/audio` : null;
+  const { example, loadExample } = usePreparedExample(
+    item.entryId,
+    item.example,
+    prepareExamples,
+  );
+  const wordAudioUrl = item.hasAudio
+    ? `/api/entries/${item.entryId}/audio`
+    : null;
+  const sentenceAudioUrl = example?.hasAudio
+    ? `/api/entries/${item.entryId}/example-audio`
+    : null;
+  const { playAudio, playing: audioPlaying, stopAudio } = useAudioPlayback();
+  const playSentence = useCallback(
+    () => playAudio(sentenceAudioUrl),
+    [playAudio, sentenceAudioUrl],
+  );
+  const playWord = useCallback(
+    () => playAudio(wordAudioUrl),
+    [playAudio, wordAudioUrl],
+  );
+  const playFeedbackAudio = useCallback(async () => {
+    const prepared = await loadExample();
+    if (lifetime.aborted) {
+      return;
+    }
+    const preparedSentenceUrl = prepared?.hasAudio
+      ? `/api/entries/${item.entryId}/example-audio`
+      : null;
+    await playAudio(preparedSentenceUrl ?? wordAudioUrl);
+  }, [item.entryId, lifetime, loadExample, playAudio, wordAudioUrl]);
   const {
     answer,
     setAnswer,
@@ -58,7 +112,7 @@ export const CardPractice = ({
     cardId: item.cardId,
     revision: item.revision,
     mode,
-    audioUrl,
+    playFeedbackAudio,
     submit,
     onNext,
   });
@@ -71,6 +125,13 @@ export const CardPractice = ({
     return () => globalThis.clearTimeout(focusTask);
   }, [busy, result]);
 
+  useEffect(() => {
+    if (!result?.graded || example !== null) {
+      return;
+    }
+    loadExample().catch(() => undefined);
+  }, [example, loadExample, result]);
+
   const onSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     await submitAnswer();
@@ -82,7 +143,7 @@ export const CardPractice = ({
         {practiceInstruction(item.direction, targetLabel)}
         {repeated ? ' · Noch einmal' : null}
       </p>
-      <div className="border border-border bg-card p-6">
+      <div className={cardClass}>
         <h2 className="font-display text-xl" id={promptId}>
           {item.prompt}
         </h2>
@@ -100,22 +161,30 @@ export const CardPractice = ({
         submittedAnswer={submittedAnswer}
       />
       {error === null ? null : (
-        <p className="text-destructive text-sm">{error}</p>
+        <p className="text-destructive text-sm" role="alert">
+          {error}
+        </p>
       )}
       {result === null ? null : (
         <FeedbackPanel
-          audioUrl={audioUrl}
+          audioPlaying={audioPlaying}
+          busy={busy}
+          example={example}
           onNext={() => {
             if (!result.graded || result.stored) {
               onNext(result);
             }
           }}
+          playSentence={sentenceAudioUrl === null ? null : playSentence}
+          playWord={wordAudioUrl === null ? null : playWord}
           onResolveWrong={resolveWrongAnswer}
           repeated={repeated}
           resolution={resolution}
           result={result}
           skipped={skipped}
           submittedAnswer={submittedAnswer ?? ''}
+          targetLanguage={targetLanguage}
+          stopAudio={stopAudio}
         />
       )}
     </>

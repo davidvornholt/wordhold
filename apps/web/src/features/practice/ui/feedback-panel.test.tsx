@@ -25,23 +25,33 @@ const renderFeedback = (
 ) =>
   renderToStaticMarkup(
     <FeedbackPanel
-      audioUrl={null}
+      audioPlaying={false}
+      busy={false}
+      example={null}
       onNext={() => undefined}
       onResolveWrong={() => undefined}
+      playSentence={null}
+      playWord={null}
       repeated={false}
       resolution={null}
       result={{ ...result, expectedAnswers }}
       skipped={false}
       submittedAnswer={submittedAnswer}
+      targetLanguage="en"
+      stopAudio={() => undefined}
     />,
   );
 
 const renderHeldFeedback = () =>
   renderToStaticMarkup(
     <FeedbackPanel
-      audioUrl={null}
+      audioPlaying={false}
+      busy={false}
+      example={null}
       onNext={() => undefined}
       onResolveWrong={() => undefined}
+      playSentence={null}
+      playWord={null}
       repeated={false}
       resolution={null}
       result={{
@@ -53,15 +63,21 @@ const renderHeldFeedback = () =>
       }}
       skipped={false}
       submittedAnswer="waiter"
+      targetLanguage="en"
+      stopAudio={() => undefined}
     />,
   );
 
 const renderSkippedFeedback = () =>
   renderToStaticMarkup(
     <FeedbackPanel
-      audioUrl={null}
+      audioPlaying={false}
+      busy={false}
+      example={null}
       onNext={() => undefined}
       onResolveWrong={() => undefined}
+      playSentence={null}
+      playWord={null}
       repeated={false}
       resolution={null}
       result={{
@@ -76,6 +92,8 @@ const renderSkippedFeedback = () =>
       }}
       skipped={true}
       submittedAnswer=""
+      targetLanguage="en"
+      stopAudio={() => undefined}
     />,
   );
 

@@ -10,6 +10,7 @@ import { MediaDatabaseError } from './media-database-error';
 import { MediaNotFoundError } from './media-not-found-error';
 import {
   loadEntryAudio,
+  loadExampleAudio,
   MediaRepository,
   MediaRepositoryLive,
   type MediaRepositoryShape,
@@ -25,6 +26,7 @@ const repository = (
   overrides: Partial<MediaRepositoryShape> = {},
 ): MediaRepositoryShape => ({
   audioPath: () => Effect.succeed('audio/entry-amy.mp3'),
+  exampleAudioPath: () => Effect.succeed('audio/entry-example-amy.mp3'),
   pageImagePath: () => Effect.succeed('pages/page.png'),
   ...overrides,
 });
@@ -90,7 +92,7 @@ describe('loadEntryAudio', () => {
     expect(unreadable).toBe(failure);
   });
 
-  it('does not serve an audio file with a stale profile', async () => {
+  it('does not serve word or example audio with stale profiles', async () => {
     await Effect.runPromise(
       withMigratedTestDatabase((database) => {
         const databaseLayer = testDatabaseLayer(database.url);
@@ -119,13 +121,29 @@ describe('loadEntryAudio', () => {
             insert into entry_audio (entry_id, voice, path)
             values (${entryId}, 'Lea', 'audio/old.mp3')
           `;
+          yield* sql`
+            insert into entry_examples (
+              entry_id, target_text, native_text, source, position,
+              audio_profile, audio_path
+            ) values (
+              ${entryId}, 'Je garde cette mémoire.',
+              'Ich bewahre diese Erinnerung.', 'textbook', 0,
+              'Lea', 'audio/old-example.mp3'
+            )
+          `;
 
-          const stale = yield* Effect.either(
+          const staleWord = yield* Effect.either(
             loadEntryAudio(entryId).pipe(
               Effect.provideService(Storage, dataStorage),
             ),
           );
-          expect(stale._tag).toBe('Left');
+          const staleExample = yield* Effect.either(
+            loadExampleAudio(entryId).pipe(
+              Effect.provideService(Storage, dataStorage),
+            ),
+          );
+          expect(staleWord._tag).toBe('Left');
+          expect(staleExample._tag).toBe('Left');
           expect(storageReads).toBe(0);
 
           yield* sql`
@@ -133,11 +151,20 @@ describe('loadEntryAudio', () => {
             set voice = ${ttsAudioProfile('mémoire', 'fr')}
             where entry_id = ${entryId}
           `;
-          const current = yield* loadEntryAudio(entryId).pipe(
+          yield* sql`
+            update entry_examples
+            set audio_profile = ${ttsAudioProfile('Je garde cette mémoire.', 'fr')}
+            where entry_id = ${entryId}
+          `;
+          const currentWord = yield* loadEntryAudio(entryId).pipe(
             Effect.provideService(Storage, dataStorage),
           );
-          expect(current.bytes).toEqual(new Uint8Array([1]));
-          expect(storageReads).toBe(1);
+          const currentExample = yield* loadExampleAudio(entryId).pipe(
+            Effect.provideService(Storage, dataStorage),
+          );
+          expect(currentWord.bytes).toEqual(new Uint8Array([1]));
+          expect(currentExample.bytes).toEqual(new Uint8Array([1]));
+          expect(storageReads).toBe(2);
         }).pipe(
           Effect.provide(
             MediaRepositoryLive.pipe(Layer.provide(databaseLayer)),
@@ -146,5 +173,17 @@ describe('loadEntryAudio', () => {
         );
       }),
     );
+  });
+});
+
+describe('loadExampleAudio', () => {
+  it('loads the sentence recording through the same storage boundary', async () => {
+    const result = await Effect.runPromise(
+      loadExampleAudio('entry').pipe(
+        Effect.provideService(MediaRepository, repository()),
+        Effect.provideService(Storage, storage()),
+      ),
+    );
+    expect(result.path).toBe('audio/entry-example-amy.mp3');
   });
 });

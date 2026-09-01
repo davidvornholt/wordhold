@@ -1,7 +1,10 @@
 import { Tts } from '@wordhold/ai/tts';
-import { ttsAudioProfile } from '@wordhold/ai/tts/speech-text';
 import type { LanguageCode } from '@wordhold/db/schema/courses';
 import { Effect, Either } from 'effect';
+import {
+  speechAudioProfile,
+  synthesizeSpeechAudio,
+} from '../../../shared/audio/speech-audio';
 import { persistFileReference } from '../../../shared/storage/consistency';
 import { audioRelativePath, Storage } from '../../../shared/storage/server';
 import { AudioGenerationFailure } from '../errors/audio-generation-failure';
@@ -40,14 +43,18 @@ const generateEntryAudio = (entry: AudioTarget) =>
     return yield* store.withCriticalSection(
       entry.id,
       Effect.gen(function* () {
-        const audioProfile = ttsAudioProfile(entry.targetText, entry.language);
+        const audioProfile = speechAudioProfile(
+          entry.targetText,
+          entry.language,
+        );
         if (yield* store.hasReference(entry.id, audioProfile)) {
           return 'already-available' as const;
         }
-        const result = yield* tts.synthesize({
-          text: entry.targetText,
-          language: entry.language,
-        });
+        const result = yield* synthesizeSpeechAudio(
+          tts,
+          entry.targetText,
+          entry.language,
+        );
         const path = audioRelativePath(entry.id, audioProfile);
         yield* persistFileReference({
           write: storage.write(path, result.audio),

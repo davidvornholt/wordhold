@@ -2,6 +2,7 @@ import type { JudgeVerdictData } from '@wordhold/ai/judge/schema';
 import type { LanguageCode } from '@wordhold/db/schema/courses';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import type { cards, ReviewMode } from '@wordhold/db/schema/practice';
+import type { PreparedExampleSentence } from '../../../shared/examples/example-model';
 import type {
   DerivedRating,
   GradeOutcome,
@@ -15,6 +16,7 @@ export type PracticeItem = {
   readonly targetText: string;
   readonly nativeText: string;
   readonly hasAudio: boolean;
+  readonly example: PreparedExampleSentence | null;
   readonly prompt: string;
 };
 
@@ -35,6 +37,15 @@ export type PracticeSession = {
   readonly items: ReadonlyArray<PracticeItem>;
   readonly available: PracticeAvailability;
 };
+
+// Ready cards the sitting did not draw: what "Weitere X üben" would start.
+export const remainingReadyCount = (session: PracticeSession): number =>
+  Math.max(
+    0,
+    session.available.due +
+      session.available.firstReviews -
+      session.items.length,
+  );
 
 export type SubmitResult =
   | {

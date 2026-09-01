@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Button } from '../shared/ui/button';
 
 type HomeShellProps = {
   readonly signedIn: boolean;
@@ -22,13 +23,9 @@ export const HomeShell = ({
         </p>
       </div>
       {signedIn ? (
-        <button
-          className="text-muted-foreground text-sm underline"
-          onClick={onSignOut}
-          type="button"
-        >
+        <Button onClick={onSignOut} variant="quiet-muted">
           Abmelden
-        </button>
+        </Button>
       ) : null}
     </header>
     {signedIn ? (
@@ -38,13 +35,7 @@ export const HomeShell = ({
         <p className="text-muted-foreground text-sm">
           Melde dich an, um deine Kurse zu sehen.
         </p>
-        <button
-          className="bg-primary px-4 py-2 text-primary-foreground text-sm"
-          onClick={onSignIn}
-          type="button"
-        >
-          Mit GitHub anmelden
-        </button>
+        <Button onClick={onSignIn}>Mit GitHub anmelden</Button>
       </div>
     )}
   </main>

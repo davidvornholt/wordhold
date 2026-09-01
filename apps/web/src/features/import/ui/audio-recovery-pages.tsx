@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { countNoun } from '../../../shared/format/count';
 
 type AudioRecoveryPage = {
   readonly id: string;
@@ -42,10 +43,13 @@ export const AudioRecoveryPages = ({
           return (
             <li className="flex flex-wrap items-baseline gap-2" key={page.id}>
               <span className="text-sm">
-                {title}: {page.missingAudio}{' '}
-                {page.missingAudio === 1
-                  ? 'Audiodatei fehlt.'
-                  : 'Audiodateien fehlen.'}
+                {title}:{' '}
+                {countNoun(
+                  page.missingAudio,
+                  'Audiodatei fehlt',
+                  'Audiodateien fehlen',
+                )}
+                .
               </span>
               {renderPageAction(page, `Audio für ${title} ergänzen`)}
             </li>

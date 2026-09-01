@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'bun:test';
 import { renderToStaticMarkup } from 'react-dom/server';
-import '../../../styles.css';
 import { AudioRecovery } from './audio-recovery';
 
 describe('AudioRecovery', () => {

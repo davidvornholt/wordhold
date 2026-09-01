@@ -1,3 +1,4 @@
+import { countNoun } from '../../../shared/format/count';
 import type { BatchReviewSession } from '../schemas/batch-review-search';
 import type { Unit, UnitEntry } from '../services/repository';
 import { AudioRecovery } from './audio-recovery';
@@ -20,6 +21,10 @@ type VerificationWorkbenchProps = {
   readonly completed: CompletedPage | null;
   readonly existingEntries: ReadonlyArray<UnitEntry>;
   readonly extractionKey: string | null;
+  readonly generateExample: (
+    targetText: string,
+    nativeText: string,
+  ) => Promise<{ readonly target: string; readonly native: string }>;
   readonly initialEntries: ReadonlyArray<DraftEntry>;
   readonly initialUnitName: string | undefined;
   readonly onExtractionRetry: () => void;
@@ -41,8 +46,8 @@ const formSubmitLabel = (
       : 'Seite abschließen';
   }
   return batchSession !== null && !lastPage
-    ? `${entryCount} Einträge importieren und weiter`
-    : `${entryCount} Einträge importieren`;
+    ? `${countNoun(entryCount, 'Eintrag', 'Einträge')} importieren und weiter`
+    : `${countNoun(entryCount, 'Eintrag', 'Einträge')} importieren`;
 };
 
 export const VerificationWorkbench = ({
@@ -52,6 +57,7 @@ export const VerificationWorkbench = ({
   completed,
   existingEntries,
   extractionKey,
+  generateExample,
   initialEntries,
   initialUnitName,
   onExtractionRetry,
@@ -87,6 +93,7 @@ export const VerificationWorkbench = ({
         <VerifyForm
           busy={busy}
           existingEntries={existingEntries}
+          generateExample={generateExample}
           initialEntries={initialEntries}
           initialUnitName={initialUnitName}
           key={extractionKey}

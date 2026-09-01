@@ -1,50 +1,52 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
 import { parseVocabularySearch } from '../../../features/courses/schemas/vocabulary-search';
 import {
+  generateVocabularyExample,
   getCourseDirections,
   listCourseVocabulary,
 } from '../../../features/courses/services/server-fns';
-import { CourseLayout } from '../../../features/courses/ui/course-layout';
 import { VocabularyLibrary } from '../../../features/courses/ui/vocabulary-library';
 import { getCourse } from '../../../features/import/server-fns';
+import { ActionLink } from '../../../shared/ui/action-link';
+import { BackLink } from '../../../shared/ui/back-link';
+import { PageLayout } from '../../../shared/ui/page-layout';
 
 const VocabularyScreen = () => {
   const { course, directions, entries, filter, unit } = Route.useLoaderData();
   return (
-    <CourseLayout
+    <PageLayout
       backControl={
-        <Link
-          className="text-muted-foreground text-sm underline underline-offset-4"
-          params={{ courseId: course.id }}
-          to="/courses/$courseId"
-        >
-          ← {course.name}
-        </Link>
+        <BackLink params={{ courseId: course.id }} to="/courses/$courseId">
+          {course.name}
+        </BackLink>
       }
-      title={`${course.name}: Vokabelliste`}
+      title="Vokabelliste"
     >
       <p className="text-muted-foreground text-sm">
-        Termine gelten pro Abfragerichtung. Wähle beliebige kennengelernte
-        Vokabeln aus, um sie außerhalb des Lernplans zu üben.
+        Termine gelten pro Abfragerichtung. Wähle beliebige Vokabeln aus und übe
+        genau diese Auswahl.
       </p>
       <VocabularyLibrary
         enabledDirections={directions}
         entries={entries}
+        generateExample={(entryId) =>
+          generateVocabularyExample({ data: entryId })
+        }
         initialFilter={filter}
         initialUnitId={unit}
-        renderStudyAction={(entryIds) => (
-          <Link
-            className="inline-flex min-h-11 items-center bg-primary px-4 py-2 font-medium text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
+        renderStudyAction={(entryIds, intent) => (
+          <ActionLink
             params={{ courseId: course.id }}
-            search={{ entries: entryIds.join(',') }}
+            search={{ entries: entryIds.join(','), mode: intent }}
             to="/courses/$courseId/study"
           >
-            Frei üben
-          </Link>
+            Auswahl {intent === 'learn' ? 'kennenlernen' : 'üben'}
+          </ActionLink>
         )}
+        scope="course"
         targetLanguage={course.targetLanguage}
       />
-    </CourseLayout>
+    </PageLayout>
   );
 };
 

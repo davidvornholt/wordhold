@@ -5,7 +5,7 @@ import {
   withMigratedTestDatabase,
 } from '@wordhold/db/testing/postgres-test-database';
 import { Effect, Layer } from 'effect';
-import { practiceSectionSize } from '../../../shared/practice/session-policy';
+import { sessionSectionSize } from '../../../shared/session/section-policy';
 import {
   dueEntryId,
   firstReviewEntryId,
@@ -27,6 +27,7 @@ describe('PracticeSessionStore introduction contract', () => {
           const session = yield* store.loadScheduled(
             fixtureCourseId,
             'both',
+            null,
             fixtureNow,
           );
           expect(session.items.map((item) => item.entryId)).toEqual([
@@ -40,6 +41,21 @@ describe('PracticeSessionStore introduction contract', () => {
             ready: 3,
             nextDueAt: new Date('2026-08-21T12:00:00.000Z'),
           });
+          const unitSession = yield* store.loadScheduled(
+            fixtureCourseId,
+            'both',
+            fixtureUnitId,
+            fixtureNow,
+          );
+          expect(unitSession.items).toHaveLength(session.items.length);
+          const outsideUnit = yield* store.loadScheduled(
+            fixtureCourseId,
+            'both',
+            dueEntryId,
+            fixtureNow,
+          );
+          expect(outsideUnit.items).toEqual([]);
+          expect(outsideUnit.availability.ready).toBe(0);
         }).pipe(
           Effect.provide(
             PracticeSessionStore.live.pipe(Layer.provide(databaseLayer)),
@@ -49,7 +65,9 @@ describe('PracticeSessionStore introduction contract', () => {
       }),
     );
   });
+});
 
+describe('PracticeSessionStore queue policy', () => {
   it('keeps disabled directions out of mixed and explicit queues', async () => {
     await Effect.runPromise(
       withMigratedTestDatabase((database) => {
@@ -67,6 +85,7 @@ describe('PracticeSessionStore introduction contract', () => {
           const mixed = yield* store.loadScheduled(
             fixtureCourseId,
             'both',
+            null,
             fixtureNow,
           );
           expect(mixed.items.map((item) => item.direction)).toEqual([
@@ -75,6 +94,7 @@ describe('PracticeSessionStore introduction contract', () => {
           const disabled = yield* store.loadScheduled(
             fixtureCourseId,
             'to_target',
+            null,
             fixtureNow,
           );
           expect(disabled.items).toEqual([]);
@@ -119,77 +139,18 @@ describe('PracticeSessionStore introduction contract', () => {
           const session = yield* store.loadScheduled(
             fixtureCourseId,
             'both',
+            null,
             fixtureNow,
           );
-          expect(session.items).toHaveLength(practiceSectionSize);
+          expect(session.items).toHaveLength(sessionSectionSize);
           expect(
             session.items.some((item) => item.entryId === firstReviewEntryId),
           ).toBe(false);
           expect(session.availability).toMatchObject({
             due: 26,
             firstReviews: 2,
-            ready: practiceSectionSize,
+            ready: sessionSectionSize,
           });
-        }).pipe(
-          Effect.provide(
-            PracticeSessionStore.live.pipe(Layer.provide(databaseLayer)),
-          ),
-          Effect.provide(databaseLayer),
-        );
-      }),
-    );
-  });
-});
-
-describe('PracticeSessionStore selected practice', () => {
-  it('loads selected cards and permits a direction outside the regular plan', async () => {
-    await Effect.runPromise(
-      withMigratedTestDatabase((database) => {
-        const databaseLayer = testDatabaseLayer(database.url);
-        return Effect.gen(function* () {
-          yield* seedIntroducedCardFixture;
-          const sql = yield* Database;
-          const store = yield* PracticeSessionStore;
-
-          const mixed = yield* store.loadSelection({
-            courseId: fixtureCourseId,
-            direction: 'both',
-            selection: { unitId: fixtureUnitId },
-          });
-          expect(
-            mixed
-              .map(({ entryId, direction }) => `${entryId}:${direction}`)
-              .sort(),
-          ).toEqual(
-            [
-              `${dueEntryId}:to_native`,
-              `${dueEntryId}:to_target`,
-              `${firstReviewEntryId}:to_native`,
-              `${firstReviewEntryId}:to_target`,
-            ].sort(),
-          );
-          const target = yield* store.loadSelection({
-            courseId: fixtureCourseId,
-            direction: 'to_target',
-            selection: { unitId: fixtureUnitId },
-          });
-          expect(target.map(({ direction }) => direction)).toEqual([
-            'to_target',
-            'to_target',
-          ]);
-
-          yield* sql`
-            update courses
-            set directions = '{to_native}'::answer_direction[]
-            where id = ${fixtureCourseId}
-          `;
-          expect(
-            yield* store.loadSelection({
-              courseId: fixtureCourseId,
-              direction: 'to_target',
-              selection: { unitId: fixtureUnitId },
-            }),
-          ).toHaveLength(2);
         }).pipe(
           Effect.provide(
             PracticeSessionStore.live.pipe(Layer.provide(databaseLayer)),

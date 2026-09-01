@@ -4,6 +4,19 @@ import { assertNoAccessibilityViolations } from './a11y-assertions';
 
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
+test('a running sitting keeps the direction fixed', async ({ page }) => {
+  await page.goto('/?state=practice-session');
+  await expect(
+    page.getByRole('button', { name: 'Richtung ändern' }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole('button', { exact: true, name: '← Übersicht' }),
+  ).toHaveCount(1);
+  await expect(
+    page.getByRole('button', { exact: true, name: 'Zurück zur Übersicht' }),
+  ).toHaveCount(0);
+});
+
 test('a missed card returns in the end-of-section after-round', async ({
   page,
 }) => {
@@ -28,7 +41,7 @@ test('a missed card returns in the end-of-section after-round', async ({
   ).toBeVisible();
   await expect(answer).toBeFocused();
   await expect(
-    page.getByText('Übersetze ins Englische · Noch einmal'),
+    page.getByText('Übersetze auf Englisch · Noch einmal'),
   ).toBeVisible();
 
   await answer.fill('memory');
@@ -105,7 +118,7 @@ test('an unavailable judge leaves schedule and summary intact', async ({
   ).toBeVisible();
 });
 
-test('an ungraded future free-practice card keeps its existing date', async ({
+test('an ungraded future custom-practice card keeps its existing date', async ({
   page,
 }) => {
   await page.goto('/?state=study-session');
@@ -128,7 +141,12 @@ test('one-card progress and summary use the singular label', async ({
 
   await page.goto('/?state=practice-complete-one-card');
   await expect(page.getByText('1 von 1 Karte')).toBeVisible();
+  await expect(page.getByText('Jetzt fällig')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Weiter üben' })).toBeVisible();
 
   await page.goto('/?state=practice-ungraded-one-card');
   await expect(page.getByText('1 von 1 Karte')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Weiter üben' })).toHaveCount(
+    0,
+  );
 });

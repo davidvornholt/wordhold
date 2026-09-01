@@ -1,9 +1,7 @@
 import { Database } from '@wordhold/db/client';
 import { Context, Effect, Layer } from 'effect';
-import {
-  practiceSectionSize,
-  readyCardsInNextSection,
-} from '../../../shared/practice/session-policy';
+import { readyCardsInNextSection } from '../../../shared/practice/session-policy';
+import { sessionSectionSize } from '../../../shared/session/section-policy';
 import { PracticeDatabaseError } from '../errors/practice-errors';
 import type { PracticeItem } from '../schemas/practice-models';
 import type {
@@ -22,7 +20,7 @@ import type {
 // restriction"; the casts keep Postgres from having to guess the parameter's
 // type when it is null.
 
-type ItemRow = Omit<PracticeItem, 'prompt'>;
+type ItemRow = Omit<PracticeItem, 'example' | 'prompt'>;
 
 type AvailabilityRow = {
   readonly due: number;
@@ -41,6 +39,7 @@ export class PracticeSessionStore extends Context.Tag(
     readonly loadScheduled: (
       courseId: string,
       direction: SessionDirection,
+      unitId: string | null,
       now: Date,
     ) => Effect.Effect<
       {
@@ -66,6 +65,7 @@ export class PracticeSessionStore extends Context.Tag(
       const loadScheduled = (
         courseId: string,
         direction: SessionDirection,
+        unitId: string | null,
         now: Date,
       ) => {
         const only = chosenDirection(direction);
@@ -80,6 +80,7 @@ export class PracticeSessionStore extends Context.Tag(
               join entries e on e.id = c.entry_id
               join courses co on co.id = e.course_id
               where e.course_id = ${courseId}
+                and (${unitId}::uuid is null or e.unit_id = ${unitId}::uuid)
                 and c.introduced_at is not null
                 and c.direction = any(co.directions)
                 and (${only}::answer_direction is null
@@ -90,7 +91,7 @@ export class PracticeSessionStore extends Context.Tag(
                 )
               order by (c.state = 'new') asc, c.due_at asc nulls last,
                 e.created_at asc, c.direction asc
-              limit ${practiceSectionSize}
+              limit ${sessionSectionSize}
             `,
             availability: sql<AvailabilityRow>`
               select
@@ -104,6 +105,7 @@ export class PracticeSessionStore extends Context.Tag(
               join entries e on e.id = c.entry_id
               join courses co on co.id = e.course_id
               where e.course_id = ${courseId}
+                and (${unitId}::uuid is null or e.unit_id = ${unitId}::uuid)
                 and c.introduced_at is not null
                 and c.direction = any(co.directions)
                 and (${only}::answer_direction is null
@@ -156,7 +158,6 @@ export class PracticeSessionStore extends Context.Tag(
           join entries e on e.id = c.entry_id
           where e.course_id = ${courseId}
             and ${selectionClause}
-            and c.introduced_at is not null
             and (${only}::answer_direction is null
               or c.direction = ${only}::answer_direction)
           order by c.due_at asc nulls last, e.created_at asc, c.direction asc

@@ -46,7 +46,7 @@ export const ImportSessionFixture = () => (
           onClick={() => navigateToFixture('verification-batch-first')}
           type="button"
         >
-          Mit Seite 1 beginnen
+          Prüfung beginnen
         </button>
       }
     />

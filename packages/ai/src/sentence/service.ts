@@ -1,6 +1,7 @@
 import { generateText, Output } from 'ai';
 import { Effect, Schema } from 'effect';
 import { sentenceModel } from '../config';
+import { maximumExampleLength } from '../extraction/schema';
 import { BedrockProvider } from '../providers/bedrock';
 import {
   providerJsonSchema,
@@ -8,15 +9,34 @@ import {
 } from '../structured-output';
 import { SentenceGenError } from './error';
 
+const SentenceText = Schema.Trim.pipe(
+  Schema.minLength(1),
+  Schema.maxLength(maximumExampleLength),
+);
+
 export const SentenceBatch = Schema.Struct({
   sentences: Schema.Array(
     Schema.Struct({
-      target: Schema.String,
-      native: Schema.String,
+      target: SentenceText,
+      native: SentenceText,
     }),
   ),
 });
 export type SentenceBatchData = typeof SentenceBatch.Type;
+
+export const SentenceTranslation = Schema.Struct({ native: SentenceText });
+export type SentenceTranslationData = typeof SentenceTranslation.Type;
+
+export const sentenceGenerationProviderOptions = {
+  openai: {
+    ...structuredOutputOptions.openai,
+    // Mantle requires the Bedrock-prefixed model ID, which the OpenAI provider
+    // cannot classify from its usual gpt-* name.
+    forceReasoning: true,
+    reasoningEffort: 'medium',
+    reasoningSummary: null,
+  },
+} as const;
 
 export type SentenceRequest = {
   readonly targetText: string;
@@ -40,37 +60,62 @@ export const sentencePrompt = (request: SentenceRequest): string =>
     "needs a quotation, use single quotes ('wort').",
   ].join(' ');
 
+export const sentenceTranslationPrompt = (
+  targetText: string,
+  targetLanguage: string,
+): string =>
+  [
+    `Translate this ${targetLanguage} example sentence faithfully into German:`,
+    `"${targetText}". Return only the translation as \`native\`.`,
+    'Never use double quotes or typographic quotation marks; if the sentence',
+    "needs a quotation, use single quotes ('wort').",
+  ].join(' ');
+
 export class SentenceGen extends Effect.Service<SentenceGen>()(
   '@wordhold/ai/SentenceGen',
   {
     effect: Effect.gen(function* () {
       const bedrock = yield* BedrockProvider;
       const modelId = yield* sentenceModel;
-      const batchOutput = providerJsonSchema(SentenceBatch);
-      const decodeBatch = Schema.decodeUnknown(SentenceBatch);
 
-      const generate = (
-        request: SentenceRequest,
-      ): Effect.Effect<SentenceBatchData, SentenceGenError> =>
+      const generateStructured = <A, I>(
+        schema: Schema.Schema<A, I>,
+        prompt: string,
+      ): Effect.Effect<A, SentenceGenError> =>
         Effect.tryPromise({
           try: async () => {
             const { output } = await generateText({
               model: bedrock.responses(modelId),
-              output: Output.object({ schema: batchOutput }),
-              prompt: sentencePrompt(request),
-              providerOptions: structuredOutputOptions,
+              output: Output.object({ schema: providerJsonSchema(schema) }),
+              prompt,
+              providerOptions: sentenceGenerationProviderOptions,
             });
             return output;
           },
           catch: (cause) => new SentenceGenError({ cause }),
         }).pipe(
           Effect.flatMap((output) =>
-            decodeBatch(output).pipe(
+            Schema.decodeUnknown(schema)(output).pipe(
               Effect.mapError((cause) => new SentenceGenError({ cause })),
             ),
           ),
         );
-      return { generate } as const;
+
+      const generate = (
+        request: SentenceRequest,
+      ): Effect.Effect<SentenceBatchData, SentenceGenError> =>
+        generateStructured(SentenceBatch, sentencePrompt(request));
+
+      const translate = (request: {
+        readonly targetText: string;
+        readonly targetLanguage: string;
+      }): Effect.Effect<SentenceTranslationData, SentenceGenError> =>
+        generateStructured(
+          SentenceTranslation,
+          sentenceTranslationPrompt(request.targetText, request.targetLanguage),
+        );
+
+      return { generate, translate } as const;
     }),
   },
 ) {}

@@ -1,26 +1,23 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
 import {
   getCourseDirections,
   setCourseDirections,
 } from '../../../features/courses/services/server-fns';
-import { CourseLayout } from '../../../features/courses/ui/course-layout';
 import { DirectionSettings } from '../../../features/courses/ui/direction-settings';
 import { getCourse } from '../../../features/import/server-fns';
 import { germanLabels } from '../../../shared/languages';
+import { BackLink } from '../../../shared/ui/back-link';
+import { PageLayout } from '../../../shared/ui/page-layout';
 
 const CourseSettingsScreen = () => {
   const { course, directions } = Route.useLoaderData();
 
   return (
-    <CourseLayout
+    <PageLayout
       backControl={
-        <Link
-          className="text-muted-foreground text-sm underline"
-          params={{ courseId: course.id }}
-          to="/courses/$courseId"
-        >
-          ← {course.name}
-        </Link>
+        <BackLink params={{ courseId: course.id }} to="/courses/$courseId">
+          {course.name}
+        </BackLink>
       }
       title={`${course.name}: Einstellungen`}
     >
@@ -33,7 +30,7 @@ const CourseSettingsScreen = () => {
         }
         targetLabel={germanLabels[course.targetLanguage]}
       />
-    </CourseLayout>
+    </PageLayout>
   );
 };
 

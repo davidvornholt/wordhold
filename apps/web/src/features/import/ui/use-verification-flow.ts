@@ -20,7 +20,21 @@ const toPayloadEntry = (
   targetText: draft.targetText,
   nativeText: draft.nativeText,
   ...(draft.grammar === undefined ? {} : { grammar: draft.grammar }),
-  ...(draft.example.trim() === '' ? {} : { example: draft.example.trim() }),
+  ...(draft.example.trim() === ''
+    ? {}
+    : {
+        example: {
+          targetText: draft.example.trim(),
+          ...(draft.generatedExample?.nativeText.trim() === '' ||
+          draft.generatedExample === undefined
+            ? {}
+            : { nativeText: draft.generatedExample.nativeText.trim() }),
+          source:
+            draft.generatedExample === undefined
+              ? ('textbook' as const)
+              : ('generated' as const),
+        },
+      }),
   ...(draft.duplicateException === true ? { duplicateException: true } : {}),
   ...(draft.skipDuplicate === true ? { skipDuplicate: true } : {}),
 });

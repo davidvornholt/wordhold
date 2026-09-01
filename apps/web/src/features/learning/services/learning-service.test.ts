@@ -12,6 +12,7 @@ const storeWith = (store: Partial<LearningStore['Type']>) =>
     Layer.provide(
       Layer.succeed(LearningStore, {
         loadPass: () => Effect.succeed(undefined),
+        loadSelection: () => Effect.succeed({ directions: [], items: [] }),
         introduce: () => Effect.succeed(true),
         ...store,
       }),

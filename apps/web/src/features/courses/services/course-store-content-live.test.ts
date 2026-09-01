@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { Database } from '@wordhold/db/client';
-import {
-  testDatabaseLayer,
-  withMigratedTestDatabase,
-} from '@wordhold/db/testing/postgres-test-database';
-import { Effect, Layer } from 'effect';
+import { Effect } from 'effect';
 import {
   fixtureCourseId,
   fixtureNow,
@@ -13,25 +9,18 @@ import {
 } from '../../../shared/testing/introduced-card-fixture';
 import { CourseDatabaseError } from '../errors/courses-errors';
 import { CourseStore } from './course-store';
-
-const missingCourseId = '11111111-1111-4111-8111-111111111111';
-
-const runStoreTest = <A, E>(
-  effect: Effect.Effect<A, E, Database | CourseStore>,
-) =>
-  Effect.runPromise(
-    withMigratedTestDatabase((database) => {
-      const databaseLayer = testDatabaseLayer(database.url);
-      return effect.pipe(
-        Effect.provide(CourseStore.live.pipe(Layer.provide(databaseLayer))),
-        Effect.provide(databaseLayer),
-      );
-    }),
-  );
+import {
+  directionsAfterNativeRemoved,
+  directionsAfterTargetIntroduced,
+  emptyDirections,
+  initialDirections,
+  missingCourseId,
+  runCourseStoreTest,
+} from './course-store-content-test-fixtures';
 
 describe('CourseStore PostgreSQL course contents', () => {
   it('lists empty and populated units in deterministic course order', async () => {
-    await runStoreTest(
+    await runCourseStoreTest(
       Effect.gen(function* () {
         yield* seedIntroducedCardFixture;
         const sql = yield* Database;
@@ -53,6 +42,7 @@ describe('CourseStore PostgreSQL course contents', () => {
             due: 1,
             firstReviews: 2,
             nextDueAt: new Date('2026-08-21T12:00:00.000Z'),
+            directions: initialDirections,
           },
           {
             id: '99999999-9999-4999-8999-999999999999',
@@ -63,6 +53,7 @@ describe('CourseStore PostgreSQL course contents', () => {
             due: 0,
             firstReviews: 0,
             nextDueAt: null,
+            directions: emptyDirections,
           },
           {
             id: 'ffffffff-ffff-4fff-8fff-ffffffffffff',
@@ -73,6 +64,7 @@ describe('CourseStore PostgreSQL course contents', () => {
             due: 0,
             firstReviews: 0,
             nextDueAt: null,
+            directions: emptyDirections,
           },
         ]);
         expect(yield* store.listUnits(missingCourseId, fixtureNow)).toEqual([]);
@@ -83,7 +75,7 @@ describe('CourseStore PostgreSQL course contents', () => {
 
 describe('CourseStore PostgreSQL entry contents', () => {
   it('lists entries deterministically and exposes partially introduced entries', async () => {
-    await runStoreTest(
+    await runCourseStoreTest(
       Effect.gen(function* () {
         yield* seedIntroducedCardFixture;
         const sql = yield* Database;
@@ -94,6 +86,17 @@ describe('CourseStore PostgreSQL entry contents', () => {
           where entry_id = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc'
             and direction = 'to_target'
         `;
+        yield* sql`
+          insert into entry_examples (
+            entry_id, target_text, native_text, source, position
+          ) values (
+            'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+            'Je lis un livre.',
+            'Ich lese ein Buch.',
+            'textbook',
+            0
+          )
+        `;
 
         const listed = yield* store.listVocabulary(fixtureCourseId);
         expect(listed.map(({ cards: _cards, ...entry }) => entry)).toEqual([
@@ -101,6 +104,11 @@ describe('CourseStore PostgreSQL entry contents', () => {
             id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
             targetText: 'livre',
             nativeText: 'Buch',
+            example: {
+              targetText: 'Je lis un livre.',
+              nativeText: 'Ich lese ein Buch.',
+              source: 'textbook',
+            },
             introduced: true,
             unitId: fixtureUnitId,
             unitName: 'Unit 1',
@@ -109,6 +117,7 @@ describe('CourseStore PostgreSQL entry contents', () => {
             id: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
             targetText: 'mémoire',
             nativeText: 'Erinnerung',
+            example: null,
             introduced: true,
             unitId: fixtureUnitId,
             unitName: 'Unit 1',
@@ -117,6 +126,7 @@ describe('CourseStore PostgreSQL entry contents', () => {
             id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
             targetText: 'neuf',
             nativeText: 'neu',
+            example: null,
             introduced: true,
             unitId: fixtureUnitId,
             unitName: 'Unit 1',
@@ -134,6 +144,7 @@ describe('CourseStore PostgreSQL entry contents', () => {
           due: 1,
           firstReviews: 3,
           nextDueAt: new Date('2026-08-21T12:00:00.000Z'),
+          directions: directionsAfterTargetIntroduced,
         });
 
         yield* sql`
@@ -145,6 +156,7 @@ describe('CourseStore PostgreSQL entry contents', () => {
           id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
           targetText: 'neuf',
           nativeText: 'neu',
+          example: null,
           introduced: true,
           unitId: fixtureUnitId,
           unitName: 'Unit 1',
@@ -161,6 +173,7 @@ describe('CourseStore PostgreSQL entry contents', () => {
           due: 1,
           firstReviews: 3,
           nextDueAt: new Date('2026-08-21T12:00:00.000Z'),
+          directions: directionsAfterNativeRemoved,
         });
       }),
     );
@@ -169,7 +182,7 @@ describe('CourseStore PostgreSQL entry contents', () => {
 
 describe('CourseStore PostgreSQL course content errors', () => {
   it('maps PostgreSQL unit and entry failures to their operations', async () => {
-    await runStoreTest(
+    await runCourseStoreTest(
       Effect.gen(function* () {
         const sql = yield* Database;
         const store = yield* CourseStore;

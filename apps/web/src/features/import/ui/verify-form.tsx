@@ -1,15 +1,20 @@
 import { maximumEntriesPerPage } from '@wordhold/ai/extraction/schema';
 import { useState } from 'react';
+import { countNoun } from '../../../shared/format/count';
+import { Button } from '../../../shared/ui/button';
 import type { UnitSelectionData } from '../schemas/import-payload';
 import type { Unit, UnitEntry } from '../services/repository';
 import { BulkUnitAssignment } from './bulk-unit-assignment';
-import { assessDraftDuplicates } from './draft-duplicates';
 import {
   appendedRow,
+  draftFormState,
+  type IdentifiedDraftRow,
+  identifiedRows,
   rowsWithUnit,
   rowsWithUnitFrom,
   rowWithConfirmation,
   rowWithEntry,
+  rowWithGeneratedExample,
   rowWithUnit,
   withoutRow,
 } from './draft-rows';
@@ -17,11 +22,7 @@ import { type DraftEntry, EntryRow } from './entry-row';
 import { EntryUnitAssignment } from './entry-unit-assignment';
 import { initialUnitSelection } from './initial-unit-selection';
 import {
-  canCompleteWithoutImport,
-  type DraftRow,
-  entriesForSubmission,
   entryIsComplete,
-  selectImportableEntries,
   skippedSummary,
   unitSelectionIsComplete,
   type VerificationEntry,
@@ -34,27 +35,21 @@ type VerifyFormProps = {
   readonly targetLabel: string;
   readonly units: ReadonlyArray<Unit>;
   readonly busy: boolean;
+  readonly generateExample: (
+    targetText: string,
+    nativeText: string,
+  ) => Promise<{ readonly target: string; readonly native: string }>;
   readonly onSubmit: (
     verifiedEntries: ReadonlyArray<VerificationEntry>,
   ) => void;
   readonly submitLabel?: (entryCount: number) => string;
 };
 
-const initialDraftRows = (
-  entries: ReadonlyArray<DraftEntry>,
-  units: ReadonlyArray<Unit>,
-  initialUnitName: string | undefined,
-): ReadonlyArray<DraftRow> =>
-  entries.map((entry) => ({
-    ...entry,
-    unit: initialUnitSelection(units, initialUnitName),
-    duplicateConfirmed: false,
-  }));
-
 export const VerifyForm = ({
   initialEntries,
   initialUnitName,
   existingEntries,
+  generateExample,
   targetLabel,
   units,
   busy,
@@ -62,29 +57,21 @@ export const VerifyForm = ({
   submitLabel = (entryCount) =>
     entryCount === 0
       ? 'Seite abschließen'
-      : `${entryCount} Einträge importieren`,
+      : `${countNoun(entryCount, 'Eintrag', 'Einträge')} importieren`,
 }: VerifyFormProps) => {
   const [bulkUnit, setBulkUnit] = useState<UnitSelectionData>(() =>
     initialUnitSelection(units, initialUnitName),
   );
-  const [draftEntries, setDraftEntries] = useState<ReadonlyArray<DraftRow>>(
-    () => initialDraftRows(initialEntries, units, initialUnitName),
+  const [draftEntries, setDraftEntries] = useState<
+    ReadonlyArray<IdentifiedDraftRow>
+  >(() =>
+    identifiedRows(
+      initialEntries,
+      initialUnitSelection(units, initialUnitName),
+    ),
   );
 
-  const verdicts = assessDraftDuplicates(draftEntries, units, existingEntries);
-  const selection = selectImportableEntries(draftEntries, verdicts);
-  const entriesToSubmit = entriesForSubmission(selection);
-  const unitsNamed = entriesToSubmit.every((entry) =>
-    unitSelectionIsComplete(entry.unit),
-  );
-  const completionWithoutImport = canCompleteWithoutImport(
-    draftEntries,
-    selection,
-  );
-  const submittable =
-    !busy &&
-    unitsNamed &&
-    (selection.entries.length > 0 || completionWithoutImport);
+  const formState = draftFormState(draftEntries, units, existingEntries, busy);
 
   return (
     <form
@@ -92,10 +79,10 @@ export const VerifyForm = ({
       className="flex flex-col gap-4"
       onSubmit={(event) => {
         event.preventDefault();
-        if (!submittable) {
+        if (!formState.submittable) {
           return;
         }
-        onSubmit(entriesToSubmit);
+        onSubmit(formState.entriesToSubmit);
       }}
     >
       <BulkUnitAssignment
@@ -112,11 +99,12 @@ export const VerifyForm = ({
         {draftEntries.map((entry, index) => (
           <EntryRow
             disabled={busy}
-            duplicate={verdicts[index] ?? 'none'}
+            duplicate={formState.verdicts[index] ?? 'none'}
             duplicateConfirmed={entry.duplicateConfirmed}
             entry={entry}
-            // biome-ignore lint/suspicious/noArrayIndexKey: rows are positional edits of one page
-            key={index}
+            entryNumber={index + 1}
+            generateExample={generateExample}
+            key={entry.rowId}
             onChange={(next) =>
               setDraftEntries((current) => rowWithEntry(current, index, next))
             }
@@ -125,13 +113,22 @@ export const VerifyForm = ({
                 rowWithConfirmation(current, index, confirmed),
               )
             }
+            onGeneratedExample={(source, generated) =>
+              setDraftEntries((current) =>
+                rowWithGeneratedExample(
+                  current,
+                  entry.rowId,
+                  source,
+                  generated,
+                ),
+              )
+            }
             onRemove={() =>
               setDraftEntries((current) => withoutRow(current, index))
             }
             targetLabel={targetLabel}
             unitControl={
               <EntryUnitAssignment
-                canApplyFollowing={unitSelectionIsComplete(entry.unit)}
                 disabled={busy}
                 entryNumber={index + 1}
                 hasFollowing={index < draftEntries.length - 1}
@@ -147,20 +144,20 @@ export const VerifyForm = ({
                 }
                 required={entryIsComplete(entry)}
                 selection={entry.unit}
+                selectionComplete={unitSelectionIsComplete(entry.unit)}
                 units={units}
               />
             }
           />
         ))}
       </ul>
-      {selection.skipped > 0 ? (
+      {formState.selection.skipped > 0 ? (
         <p className="text-muted-foreground text-sm">
-          {skippedSummary(selection.skipped)}
+          {skippedSummary(formState.selection.skipped)}
         </p>
       ) : null}
       <div className="flex flex-wrap items-center gap-3">
-        <button
-          className="border border-input px-3 py-1.5 text-sm"
+        <Button
           disabled={busy || draftEntries.length >= maximumEntriesPerPage}
           onClick={() =>
             setDraftEntries((current) =>
@@ -170,21 +167,19 @@ export const VerifyForm = ({
               ),
             )
           }
-          type="button"
+          variant="outline"
         >
           Eintrag hinzufügen
-        </button>
-        <button
-          className="bg-primary px-4 py-1.5 text-primary-foreground text-sm disabled:opacity-50"
-          disabled={!submittable}
-          type="submit"
-        >
+        </Button>
+        <Button disabled={!formState.submittable} type="submit">
           {busy
             ? 'Importiere …'
             : submitLabel(
-                completionWithoutImport ? 0 : selection.entries.length,
+                formState.completionWithoutImport
+                  ? 0
+                  : formState.selection.entries.length,
               )}
-        </button>
+        </Button>
       </div>
     </form>
   );

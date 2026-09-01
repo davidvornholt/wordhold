@@ -1,4 +1,6 @@
+import { sql } from 'drizzle-orm';
 import {
+  check,
   foreignKey,
   integer,
   jsonb,
@@ -49,18 +51,30 @@ export const entries = pgTable(
 );
 
 export const exampleSources = ['textbook', 'generated'] as const;
+export type ExampleSource = (typeof exampleSources)[number];
 export const exampleSourceEnum = pgEnum('example_source', exampleSources);
 
-export const entryExamples = pgTable('entry_examples', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  entryId: uuid('entry_id')
-    .notNull()
-    .references(() => entries.id, { onDelete: 'cascade' }),
-  targetText: text('target_text').notNull(),
-  nativeText: text('native_text'),
-  source: exampleSourceEnum('source').notNull().default('textbook'),
-  position: integer('position').notNull().default(0),
-});
+export const entryExamples = pgTable(
+  'entry_examples',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    entryId: uuid('entry_id')
+      .notNull()
+      .references(() => entries.id, { onDelete: 'cascade' }),
+    targetText: text('target_text').notNull(),
+    nativeText: text('native_text'),
+    source: exampleSourceEnum('source').notNull().default('textbook'),
+    position: integer('position').notNull().default(0),
+    audioProfile: text('audio_profile'),
+    audioPath: text('audio_path'),
+  },
+  (table) => [
+    check(
+      'entry_examples_audio_complete',
+      sql`(${table.audioProfile} is null) = (${table.audioPath} is null)`,
+    ),
+  ],
+);
 
 export const answerSources = ['textbook', 'manual', 'judge'] as const;
 export type AnswerSource = (typeof answerSources)[number];

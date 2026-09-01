@@ -1,4 +1,5 @@
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
+import type { ExampleSource } from '@wordhold/db/schema/entries';
 import type { CardState } from '@wordhold/db/schema/practice';
 import type { VocabularyEntry } from './course-units';
 
@@ -8,6 +9,9 @@ export type VocabularyRow = {
   readonly unitName: string;
   readonly targetText: string;
   readonly nativeText: string;
+  readonly exampleTargetText: string | null;
+  readonly exampleNativeText: string | null;
+  readonly exampleSource: ExampleSource | null;
   readonly cardId: string;
   readonly direction: AnswerDirection;
   readonly state: CardState;
@@ -37,6 +41,14 @@ export const groupVocabularyRows = (
         unitName: row.unitName,
         targetText: row.targetText,
         nativeText: row.nativeText,
+        example:
+          row.exampleTargetText === null || row.exampleSource === null
+            ? null
+            : {
+                targetText: row.exampleTargetText,
+                nativeText: row.exampleNativeText,
+                source: row.exampleSource,
+              },
         introduced: row.introducedAt !== null,
         cards: [card],
       });

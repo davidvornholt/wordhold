@@ -76,6 +76,17 @@
           "nursery": { "noUndeclaredClasses": "off" }
         }
       }
+    },
+    {
+      // __root.tsx imports both styles.css?url and these feedback screens, so
+      // Biome connects them to the stylesheet — but their classes are Tailwind
+      // utilities generated at build time, which Biome cannot resolve.
+      "includes": ["apps/web/src/shared/routing/root-feedback.tsx"],
+      "linter": {
+        "rules": {
+          "nursery": { "noUndeclaredClasses": "off" }
+        }
+      }
     }
   ]
 }

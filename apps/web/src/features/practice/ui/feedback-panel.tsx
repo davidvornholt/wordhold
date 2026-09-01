@@ -1,22 +1,29 @@
+import type { LanguageCode } from '@wordhold/db/schema/courses';
 import { useEffect, useId, useRef } from 'react';
 import { formatLearningDate } from '../../../shared/dates/learning-date';
+import type { PreparedExampleSentence } from '../../../shared/examples/example-model';
 import { normalizeAnswerForComparison } from '../../../shared/grading/normalize';
+import { Callout } from '../../../shared/ui/callout';
 import type { SubmitResult } from '../schemas/practice-models';
 import type { WrongAnswerResolution } from '../schemas/submission-schema';
+import { FeedbackActions } from './feedback-actions';
+import { PracticeFeedbackExample } from './practice-feedback-example';
 
 const panelTone = (result: SubmitResult) => {
   if (!result.graded) {
-    return 'border-warning-foreground bg-warning';
+    return 'warning' as const;
   }
-  return result.correct
-    ? 'border-primary bg-accent'
-    : 'border-destructive bg-destructive/10';
+  return result.correct ? ('positive' as const) : ('destructive' as const);
 };
 
 type FeedbackPanelProps = {
+  readonly audioPlaying: boolean;
+  readonly busy: boolean;
   readonly result: SubmitResult;
   readonly submittedAnswer: string;
-  readonly audioUrl: string | null;
+  readonly example: PreparedExampleSentence | null;
+  readonly playSentence: (() => Promise<void>) | null;
+  readonly playWord: (() => Promise<void>) | null;
   readonly onNext: () => void;
   readonly onResolveWrong: (
     resolution: Exclude<WrongAnswerResolution, 'defer'>,
@@ -24,6 +31,8 @@ type FeedbackPanelProps = {
   readonly repeated: boolean;
   readonly resolution: Exclude<WrongAnswerResolution, 'defer'> | null;
   readonly skipped: boolean;
+  readonly stopAudio: () => void;
+  readonly targetLanguage: LanguageCode;
 };
 
 const feedbackHeading = (
@@ -68,10 +77,8 @@ const ScheduleNote = ({
   >;
   readonly repeated: boolean;
 }) => (
-  <aside className="border-foreground/30 border-l bg-card/50 p-3">
-    <p className="text-muted-foreground text-xs uppercase tracking-wide">
-      So geht es weiter
-    </p>
+  <Callout tone="neutral">
+    <p className="eyebrow">So geht es weiter</p>
     <p className="text-sm">
       {result.schedule.dueAt === null ? (
         'Noch kein weiterer Termin.'
@@ -87,18 +94,24 @@ const ScheduleNote = ({
         </>
       )}
     </p>
-  </aside>
+  </Callout>
 );
 
 export const FeedbackPanel = ({
+  audioPlaying,
+  busy,
   result,
   submittedAnswer,
-  audioUrl,
+  example,
+  playSentence,
+  playWord,
   onNext,
   onResolveWrong,
   repeated,
   resolution,
   skipped,
+  stopAudio,
+  targetLanguage,
 }: FeedbackPanelProps) => {
   const normalizedSubmission = normalizeAnswerForComparison(submittedAnswer);
   const repeatsSubmittedAnswer = result.expectedAnswers.some(
@@ -110,14 +123,13 @@ export const FeedbackPanel = ({
   const pendingWrong = result.graded && !result.stored;
 
   useEffect(() => {
-    nextButton.current?.focus();
-  }, []);
+    if (!busy) {
+      nextButton.current?.focus();
+    }
+  }, [busy]);
 
   return (
-    <div
-      aria-busy={resolution !== null}
-      className={`flex flex-col gap-3 border-l-4 p-4 ${panelTone(result)}`}
-    >
+    <Callout aria-busy={busy || resolution !== null} tone={panelTone(result)}>
       <div
         aria-live="polite"
         className="flex flex-col gap-3"
@@ -143,6 +155,14 @@ export const FeedbackPanel = ({
             Deine Antwort wurde als gültige Alternative gespeichert.
           </p>
         ) : null}
+        {result.graded && example !== null ? (
+          <PracticeFeedbackExample
+            example={example}
+            playSentence={playSentence}
+            playWord={playWord}
+            targetLanguage={targetLanguage}
+          />
+        ) : null}
         {pendingWrong ? (
           <p className="text-sm">
             Vertippt oder falsch bewertet? Du kannst die Antwort als richtig
@@ -154,47 +174,20 @@ export const FeedbackPanel = ({
           <ScheduleNote repeated={repeated} result={result} />
         ) : null}
       </div>
-      <div className="flex flex-wrap items-center gap-3">
-        {audioUrl === null ? null : (
-          <button
-            className="min-h-11 border border-input px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
-            onClick={async () => {
-              await new Audio(audioUrl).play().catch(() => undefined);
-            }}
-            type="button"
-          >
-            Aussprache anhören
-          </button>
-        )}
-        {pendingWrong ? (
-          <button
-            className="min-h-11 border border-input px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50"
-            disabled={resolution !== null}
-            onClick={() => onResolveWrong('hard')}
-            type="button"
-          >
-            {resolution === 'hard'
-              ? 'Wird gespeichert …'
-              : 'Als richtig werten'}
-          </button>
-        ) : null}
-        <button
-          aria-describedby={feedbackDescriptionId}
-          className="min-h-11 bg-primary px-4 py-2 text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50"
-          disabled={resolution !== null}
-          onClick={() => {
-            if (pendingWrong) {
-              onResolveWrong('again');
-            } else {
-              onNext();
-            }
-          }}
-          ref={nextButton}
-          type="button"
-        >
-          {resolution === 'again' ? 'Wird gespeichert …' : 'Weiter'}
-        </button>
-      </div>
-    </div>
+      <FeedbackActions
+        audioPlaying={audioPlaying}
+        busy={busy}
+        example={example}
+        feedbackDescriptionId={feedbackDescriptionId}
+        graded={result.graded}
+        nextButton={nextButton}
+        onNext={onNext}
+        onResolveWrong={onResolveWrong}
+        pendingWrong={pendingWrong}
+        playWord={playWord}
+        resolution={resolution}
+        stopAudio={stopAudio}
+      />
+    </Callout>
   );
 };

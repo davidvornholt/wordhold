@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { ratings } from '../../../shared/grading/rating';
-import { practiceSectionSize } from '../../../shared/practice/session-policy';
+import { sessionSectionSize } from '../../../shared/session/section-policy';
 import type {
   PracticeItem,
   ResolvedSubmitResult,
@@ -22,6 +22,7 @@ const item = (index: number): PracticeItem => ({
   targetText: `word-${index}`,
   nativeText: `Wort-${index}`,
   hasAudio: false,
+  example: null,
   prompt: `Wort-${index}`,
 });
 
@@ -142,10 +143,10 @@ describe('session queue', () => {
 
   it('pauses after twenty cards and continues with the next section', () => {
     const finalSectionSize = 5;
-    const total = practiceSectionSize * 2 + finalSectionSize;
-    const remaining = total - practiceSectionSize;
+    const total = sessionSectionSize * 2 + finalSectionSize;
+    const remaining = total - sessionSectionSize;
     let queue = createSessionQueue(items(total));
-    for (let index = 0; index < practiceSectionSize; index += 1) {
+    for (let index = 0; index < sessionSectionSize; index += 1) {
       queue = answerHead(queue, result(true, minuteLater));
     }
     expect(queue).toMatchObject({
@@ -157,7 +158,7 @@ describe('session queue', () => {
     expect(queue).toMatchObject({
       phase: 'main',
       section: 2,
-      sectionTotal: practiceSectionSize,
+      sectionTotal: sessionSectionSize,
     });
   });
 

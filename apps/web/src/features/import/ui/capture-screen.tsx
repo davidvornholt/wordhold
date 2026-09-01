@@ -1,4 +1,7 @@
 import type { ChangeEventHandler, ReactNode, SubmitEventHandler } from 'react';
+import { countNoun } from '../../../shared/format/count';
+import { Button } from '../../../shared/ui/button';
+import { PageLayout } from '../../../shared/ui/page-layout';
 import {
   hasStoredUpload,
   maximumUploadBatchSize,
@@ -46,11 +49,10 @@ export const CaptureScreen = ({
 }: CaptureScreenProps) => {
   const batchLocked = batchStarted || hasStoredUpload(pages);
   return (
-    <main className="page-column flex flex-col gap-4 p-6">
-      {backControl}
-      <h1 className="font-display font-semibold text-2xl">
-        {courseName}: Seiten erfassen
-      </h1>
+    <PageLayout
+      backControl={backControl}
+      title={`${courseName}: Seiten erfassen`}
+    >
       <p className="text-muted-foreground text-sm">
         Fotografiere eine Vokabelseite oder wähle bis zu zehn vorhandene Fotos.
         Wordhold speichert und liest jede Seite einzeln. Danach prüfst du die
@@ -80,7 +82,7 @@ export const CaptureScreen = ({
               onChange={fileSelectionHandler(onFilesSelected)}
               type="file"
             />
-            <span className="mt-auto border border-input bg-background px-4 py-2 text-center peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-ring peer-focus-visible:outline-offset-2 peer-disabled:opacity-50">
+            <span className="mt-auto inline-flex min-h-11 items-center justify-center border border-input bg-background px-4 py-2 text-center peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-ring peer-focus-visible:outline-offset-2 peer-disabled:opacity-50">
               Dateien auswählen
             </span>
           </label>
@@ -96,7 +98,7 @@ export const CaptureScreen = ({
               onChange={fileSelectionHandler(onFilesSelected)}
               type="file"
             />
-            <span className="mt-auto border border-input bg-background px-4 py-2 text-center peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-ring peer-focus-visible:outline-offset-2 peer-disabled:opacity-50">
+            <span className="mt-auto inline-flex min-h-11 items-center justify-center border border-input bg-background px-4 py-2 text-center peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-ring peer-focus-visible:outline-offset-2 peer-disabled:opacity-50">
               Kamera öffnen
             </span>
           </label>
@@ -115,19 +117,15 @@ export const CaptureScreen = ({
         />
         {reviewAction}
         {pages.some((page) => page.stage === 'waiting') ? (
-          <button
-            className="bg-primary px-4 py-2 text-primary-foreground text-sm disabled:opacity-50"
-            disabled={busy}
-            type="submit"
-          >
+          <Button disabled={busy} type="submit">
             {busy
               ? 'Seiten werden verarbeitet …'
-              : `${pages.filter((page) => page.stage === 'waiting').length} ${
-                  pages.filter((page) => page.stage === 'waiting').length === 1
-                    ? 'Seite'
-                    : 'Seiten'
-                } hochladen und auslesen`}
-          </button>
+              : `${countNoun(
+                  pages.filter((page) => page.stage === 'waiting').length,
+                  'Seite',
+                  'Seiten',
+                )} hochladen und auslesen`}
+          </Button>
         ) : null}
       </form>
       {error === null ? null : (
@@ -135,6 +133,6 @@ export const CaptureScreen = ({
           {error}
         </p>
       )}
-    </main>
+    </PageLayout>
   );
 };

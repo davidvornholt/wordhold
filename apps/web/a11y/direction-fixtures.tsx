@@ -1,57 +1,67 @@
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import { useRef, useState } from 'react';
-import { CourseLayout } from '../src/features/courses/ui/course-layout';
 import { DirectionSettings } from '../src/features/courses/ui/direction-settings';
 import { sessionOptions } from '../src/features/practice/services/session-options';
-import { PracticeLayout } from '../src/features/practice/ui/practice-layout';
 import { SessionStart } from '../src/features/practice/ui/session-start';
+import { countNoun } from '../src/shared/format/count';
+import { Button } from '../src/shared/ui/button';
+import { PageLayout } from '../src/shared/ui/page-layout';
+import { fixtureBackControl } from './fixture-controls';
 import { navigateToFixture } from './fixture-state';
 
-const backControl = (
-  <button
-    className="w-fit text-muted-foreground text-sm underline"
-    onClick={() => navigateToFixture('dashboard')}
-    type="button"
-  >
-    ← Übersicht
-  </button>
-);
+const backControl = fixtureBackControl('Übersicht', 'dashboard');
+const completePracticeCounts = [
+  { direction: 'to_target' as const, ready: 12 },
+  { direction: 'to_native' as const, ready: 8 },
+  { direction: 'both' as const, ready: 20 },
+];
+const partialPracticeCounts = [
+  { direction: 'to_target' as const, ready: 7 },
+  { direction: 'to_native' as const, ready: 0 },
+  { direction: 'both' as const, ready: 7 },
+];
 
-export const PracticeStartFixture = () => (
-  <PracticeLayout backControl={backControl} title="English A2: Üben">
+type PracticeStartFixtureProps = {
+  readonly partial?: boolean;
+};
+
+export const PracticeStartFixture = ({
+  partial = false,
+}: PracticeStartFixtureProps) => (
+  <PageLayout backControl={backControl} title="English A2: Üben">
     <SessionStart
-      options={sessionOptions(['to_target', 'to_native'], 'Englisch', [
-        { direction: 'to_target', ready: 12 },
-        { direction: 'to_native', ready: 8 },
-        { direction: 'both', ready: 20 },
-      ])}
-      preferenceKey="english-a2"
+      itemNoun={{ singular: 'Karte', plural: 'Karten' }}
+      options={sessionOptions(
+        ['to_target', 'to_native'],
+        'Englisch',
+        partial ? partialPracticeCounts : completePracticeCounts,
+      )}
+      preferenceKey="english-a2:practice"
       renderStartAction={(option, rememberDirection) => (
-        <button
-          className="min-h-11 w-fit bg-primary px-4 py-2 font-medium text-primary-foreground text-sm"
+        <Button
+          className="w-fit"
           onClick={() => {
             rememberDirection();
             navigateToFixture('practice-session');
           }}
-          type="button"
         >
-          {option.cards} Karten starten
-        </button>
+          {countNoun(option.cards, 'Karte', 'Karten')} starten
+        </Button>
       )}
     />
-  </PracticeLayout>
+  </PageLayout>
 );
 
 // Saving is instant here, so the status line reaches "Gespeichert." the way it
 // does against the server.
 export const CourseSettingsFixture = () => (
-  <CourseLayout backControl={backControl} title="English A2: Einstellungen">
+  <PageLayout backControl={backControl} title="English A2: Einstellungen">
     <DirectionSettings
       initial={['to_target', 'to_native']}
       save={() => Promise.resolve()}
       targetLabel="Englisch"
     />
-  </CourseLayout>
+  </PageLayout>
 );
 
 type DeferredSave = {
@@ -82,7 +92,7 @@ export const DeferredCourseSettingsFixture = () => {
     return pending.promise;
   };
   return (
-    <CourseLayout backControl={backControl} title="English A2: Einstellungen">
+    <PageLayout backControl={backControl} title="English A2: Einstellungen">
       <DirectionSettings
         initial={['to_target', 'to_native']}
         save={save}
@@ -104,6 +114,6 @@ export const DeferredCourseSettingsFixture = () => {
           Reject direction save
         </button>
       </fieldset>
-    </CourseLayout>
+    </PageLayout>
   );
 };

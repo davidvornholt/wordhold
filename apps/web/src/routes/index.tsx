@@ -14,6 +14,8 @@ import { AudioRecoveryPages } from '../features/import/ui/audio-recovery-pages';
 import { PendingImportSessions } from '../features/import/ui/pending-import-sessions';
 import { authClient } from '../shared/auth/client';
 import { getSessionUser } from '../shared/auth/session-fn';
+import { countNoun } from '../shared/format/count';
+import { ActionLink } from '../shared/ui/action-link';
 
 const Home = () => {
   const { user, courses, pendingImportSessions, audioRecovery, dashboard } =
@@ -40,7 +42,7 @@ const Home = () => {
             courses={courses}
             renderCourseLink={(course) => (
               <Link
-                className="font-medium underline"
+                className="font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
                 params={{ courseId: course.id }}
                 to="/courses/$courseId"
               >
@@ -48,24 +50,36 @@ const Home = () => {
               </Link>
             )}
             renderImportAction={(course) => (
-              <Link
-                className="border border-input px-4 py-3 text-sm underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
+              <ActionLink
                 params={{ courseId: course.id }}
                 to="/courses/$courseId/import"
+                variant="outline"
               >
                 Erste Seite fotografieren
-              </Link>
+              </ActionLink>
+            )}
+            renderLearnAction={(course) => (
+              <ActionLink
+                params={{ courseId: course.id }}
+                to="/courses/$courseId"
+              >
+                Neue Vokabeln kennenlernen
+              </ActionLink>
             )}
             renderPracticeAction={(course) => (
-              <Link
-                className="inline-flex min-h-11 items-center bg-primary px-4 py-2 font-medium text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
+              <ActionLink
                 params={{ courseId: course.id }}
                 to="/courses/$courseId/practice"
               >
-                {dashboard.perCourse.find((item) => item.courseId === course.id)
-                  ?.ready ?? 0}{' '}
-                Karten üben
-              </Link>
+                {countNoun(
+                  dashboard.perCourse.find(
+                    (item) => item.courseId === course.id,
+                  )?.ready ?? 0,
+                  'Karte',
+                  'Karten',
+                )}{' '}
+                üben
+              </ActionLink>
             )}
             reviewsToday={dashboard.reviewsToday}
             cardsToday={dashboard.cardsToday}
@@ -76,7 +90,7 @@ const Home = () => {
             entries={dashboard.fragile}
             renderEntryAction={(entry) => (
               <Link
-                className="font-medium underline underline-offset-4"
+                className="font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
                 params={{ courseId: entry.courseId }}
                 search={{ filter: 'difficult' }}
                 to="/courses/$courseId/vocabulary"
@@ -89,13 +103,13 @@ const Home = () => {
           <AudioRecoveryPages
             pages={audioRecovery}
             renderPageAction={(page, label) => (
-              <Link
-                className="text-sm underline"
+              <ActionLink
                 params={{ pageId: page.id }}
                 to="/pages/$pageId/verify"
+                variant="quiet"
               >
                 {label}
-              </Link>
+              </ActionLink>
             )}
           />
 
@@ -107,14 +121,13 @@ const Home = () => {
             }}
             renderSessionAction={(session, label) =>
               session.isComplete ? (
-                <Link
+                <ActionLink
                   aria-label={`${label} fortsetzen`}
-                  className="inline-flex min-h-11 items-center bg-primary px-4 py-2 font-medium text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
                   params={{ sessionId: session.id }}
                   to="/imports/$sessionId"
                 >
                   Stapel fortsetzen
-                </Link>
+                </ActionLink>
               ) : (
                 <span className="text-muted-foreground text-sm">
                   Verarbeitung läuft …

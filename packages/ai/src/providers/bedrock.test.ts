@@ -2,7 +2,11 @@ import { describe, expect, it } from 'bun:test';
 import { generateText, Output } from 'ai';
 import { ConfigProvider, Effect, Layer, type Schema } from 'effect';
 import { JudgeVerdict, type JudgeVerdictData } from '../judge/schema';
-import { SentenceBatch, type SentenceBatchData } from '../sentence/service';
+import {
+  SentenceBatch,
+  type SentenceBatchData,
+  sentenceGenerationProviderOptions,
+} from '../sentence/service';
 import {
   providerJsonSchema,
   structuredOutputOptions,
@@ -66,9 +70,14 @@ const responseBody = (output: unknown): unknown =>
 const captureStructuredRequest = async <A, I>(options: {
   readonly output: A;
   readonly prompt: string;
+  readonly sentenceGeneration?: boolean;
   readonly region: string;
   readonly schema: Schema.Schema<A, I>;
-}): Promise<{ readonly call: Call; readonly output: unknown }> => {
+}): Promise<{
+  readonly call: Call;
+  readonly output: unknown;
+  readonly warnings: ReadonlyArray<unknown>;
+}> => {
   const original = globalThis.fetch;
   let call: Call | null = null;
   globalThis.fetch = Object.assign(
@@ -89,12 +98,14 @@ const captureStructuredRequest = async <A, I>(options: {
       model: provider(options.region).responses(modelId),
       output: Output.object({ schema: providerJsonSchema(options.schema) }),
       prompt: options.prompt,
-      providerOptions: structuredOutputOptions,
+      providerOptions: options.sentenceGeneration
+        ? sentenceGenerationProviderOptions
+        : structuredOutputOptions,
     });
     if (call === null) {
       throw new Error('the provider made no request');
     }
-    return { call, output: result.output };
+    return { call, output: result.output, warnings: result.warnings ?? [] };
   } finally {
     globalThis.fetch = original;
   }
@@ -141,9 +152,10 @@ describe('BedrockProvider', () => {
         },
       ],
     };
-    const { call, output } = await captureStructuredRequest({
+    const { call, output, warnings } = await captureStructuredRequest({
       output: batch,
       prompt: 'Use „Café \\"München\\" ☕“ exactly, including Unicode.',
+      sentenceGeneration: true,
       region: 'us-west-2',
       schema: SentenceBatch,
     });
@@ -152,8 +164,11 @@ describe('BedrockProvider', () => {
       'https://bedrock-mantle.us-west-2.api.aws/openai/v1/',
     );
     expect(call.body).toHaveProperty('text.format.type', 'json_schema');
+    expect(call.body).toHaveProperty('reasoning.effort', 'medium');
+    expect(call.body).not.toHaveProperty('reasoning.summary');
     expect(JSON.stringify(call.body.input)).toContain('Café');
     expect(JSON.stringify(call.body.input)).toContain('☕');
+    expect(warnings).toEqual([]);
     expect(output).toEqual(batch);
   });
 });

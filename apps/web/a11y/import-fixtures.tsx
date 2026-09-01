@@ -104,6 +104,10 @@ export const VerificationFixture = ({
             <VerifyForm
               busy={false}
               existingEntries={existingEntries}
+              generateExample={async () => ({
+                target: 'This memory makes me smile.',
+                native: 'Diese Erinnerung bringt mich zum Lächeln.',
+              })}
               initialEntries={verificationEntries}
               initialUnitName={noUnits ? undefined : '  UNIT   2  '}
               onSubmit={() => navigateToFixture('dashboard')}
@@ -145,6 +149,10 @@ export const DeferredVerificationFixture = () => {
       <VerifyForm
         busy={busy}
         existingEntries={[]}
+        generateExample={async () => ({
+          target: 'This memory makes me smile.',
+          native: 'Diese Erinnerung bringt mich zum Lächeln.',
+        })}
         initialEntries={deferredEntries}
         initialUnitName={undefined}
         onSubmit={(entries) => {

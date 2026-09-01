@@ -1,3 +1,4 @@
+import { Button } from '../../../shared/ui/button';
 import type { UnitSelectionData } from '../schemas/import-payload';
 import type { Unit } from '../services/repository';
 import { UnitPicker } from './unit-picker';
@@ -20,12 +21,10 @@ export const BulkUnitAssignment = ({
   onApply,
 }: BulkUnitAssignmentProps) => (
   <fieldset className="flex flex-col gap-3 border border-border bg-card p-3">
-    <legend className="px-1 font-display text-xl">
-      Mehrere Vokabeln zuordnen
-    </legend>
+    <legend className="px-1 font-display text-xl">Einheit zuordnen</legend>
     <p className="text-muted-foreground text-sm">
-      Wähle eine Einheit für alle Vokabeln. Einzelne Zuordnungen kannst du
-      danach ändern.
+      Gilt für alle Vokabeln dieser Seite. Einzelne Einträge kannst du danach
+      direkt am Eintrag anders zuordnen.
     </p>
     <UnitPicker
       disabled={disabled}
@@ -44,13 +43,13 @@ export const BulkUnitAssignment = ({
       selection={selection}
       units={units}
     />
-    <button
-      className="w-fit border border-input px-3 py-1.5 text-sm disabled:opacity-50"
+    <Button
+      className="w-fit"
       disabled={disabled || !canApply}
       onClick={onApply}
-      type="button"
+      variant="outline"
     >
       Auf alle anwenden
-    </button>
+    </Button>
   </fieldset>
 );

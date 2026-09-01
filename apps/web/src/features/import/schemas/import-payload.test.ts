@@ -30,7 +30,15 @@ describe('decodeImportPayload', () => {
     },
     {
       pageId,
-      entries: [{ ...validEntry, example: over(maximumExampleLength) }],
+      entries: [
+        {
+          ...validEntry,
+          example: {
+            targetText: over(maximumExampleLength),
+            source: 'textbook',
+          },
+        },
+      ],
     },
     {
       pageId,

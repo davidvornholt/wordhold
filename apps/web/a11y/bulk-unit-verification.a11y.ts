@@ -9,7 +9,7 @@ test('bulk new-unit Enter applies without submitting the page', async ({
 }) => {
   await page.goto('/?state=verification-deferred');
   const bulkAssignment = page.getByRole('group', {
-    name: 'Mehrere Vokabeln zuordnen',
+    name: 'Einheit zuordnen',
   });
   await bulkAssignment
     .getByLabel('Einheit für alle Vokabeln')
@@ -23,7 +23,10 @@ test('bulk new-unit Enter applies without submitting the page', async ({
 
   await expect(page.getByLabel('Verification calls')).toHaveText('0');
   await expect(
-    page.locator('form > ul > li').first().getByLabel('Name der Einheit'),
-  ).toHaveValue('Unit 4');
+    page
+      .locator('form > ul > li')
+      .first()
+      .getByText('Einheit: Unit 4 (neu)', { exact: true }),
+  ).toBeVisible();
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
 });

@@ -2,58 +2,32 @@ import type { LanguageCode } from '@wordhold/db/schema/courses';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
+import { Button } from '../../../shared/ui/button';
+import { cardClass } from '../../../shared/ui/surface-styles';
 import type { VocabularyEntry } from '../schemas/course-units';
 import type { VocabularyFilter } from '../schemas/vocabulary-search';
+import { matchesFilter } from './vocabulary-filter-logic';
 import { VocabularyFilters } from './vocabulary-filters';
-import { VocabularySchedule } from './vocabulary-schedule';
-
-const isDue = (
-  entry: VocabularyEntry,
-  enabledDirections: ReadonlyArray<AnswerDirection>,
-  now: Date,
-) =>
-  entry.cards.some(
-    (card) =>
-      enabledDirections.includes(card.direction) &&
-      card.introducedAt !== null &&
-      card.state !== 'new' &&
-      card.dueAt !== null &&
-      card.dueAt <= now,
-  );
-
-const matchesFilter = (
-  entry: VocabularyEntry,
-  enabledDirections: ReadonlyArray<AnswerDirection>,
-  filter: VocabularyFilter,
-  now: Date,
-) => {
-  if (filter === 'due') {
-    return isDue(entry, enabledDirections, now);
-  }
-  if (filter === 'first-reviews') {
-    return entry.cards.some(
-      (card) =>
-        enabledDirections.includes(card.direction) &&
-        card.introducedAt !== null &&
-        card.state === 'new',
-    );
-  }
-  if (filter === 'difficult') {
-    return entry.cards.some(
-      (card) =>
-        enabledDirections.includes(card.direction) && card.failures >= 2,
-    );
-  }
-  return true;
-};
+import { VocabularySelectionBar } from './vocabulary-selection-bar';
+import { VocabularyUnitSection } from './vocabulary-unit-section';
 
 type VocabularyLibraryProps = {
   readonly enabledDirections: ReadonlyArray<AnswerDirection>;
   readonly entries: ReadonlyArray<VocabularyEntry>;
   readonly initialFilter: VocabularyFilter;
+  // Course scope only: preselects the unit dropdown when arriving via a link.
   readonly initialUnitId?: string;
+  // Course scope groups entries under unit headings with a unit dropdown; unit
+  // scope shows one flat list because every entry belongs to the same unit.
+  readonly scope: 'course' | 'unit';
   readonly targetLanguage: LanguageCode;
-  readonly renderStudyAction: (entryIds: ReadonlyArray<string>) => ReactNode;
+  readonly renderStudyAction: (
+    entryIds: ReadonlyArray<string>,
+    intent: 'learn' | 'practice',
+  ) => ReactNode;
+  readonly generateExample: (
+    entryId: string,
+  ) => Promise<NonNullable<VocabularyEntry['example']>>;
 };
 
 export const VocabularyLibrary = ({
@@ -61,8 +35,10 @@ export const VocabularyLibrary = ({
   entries,
   initialFilter,
   initialUnitId,
+  scope,
   targetLanguage,
   renderStudyAction,
+  generateExample,
 }: VocabularyLibraryProps) => {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<VocabularyFilter>(initialFilter);
@@ -77,25 +53,47 @@ export const VocabularyLibrary = ({
       needle === '' ||
       entry.targetText.toLocaleLowerCase('de-DE').includes(needle) ||
       entry.nativeText.toLocaleLowerCase('de-DE').includes(needle);
-    const matchesUnit = unitFilter === 'all' || entry.unitId === unitFilter;
+    const matchesUnit =
+      scope === 'unit' || unitFilter === 'all' || entry.unitId === unitFilter;
     return (
       matchesQuery &&
       matchesUnit &&
       matchesFilter(entry, enabledDirections, filter, now)
     );
   });
-  const units = Map.groupBy(visible, (entry) => entry.unitName);
+  const sections: ReadonlyArray<
+    readonly [string, ReadonlyArray<VocabularyEntry>]
+  > =
+    scope === 'course'
+      ? [...Map.groupBy(visible, (entry) => entry.unitName)]
+      : [['Alle auswählen', visible]];
   const unitOptions = [
     ...new Map(
-      entries.map((entry) => [entry.unitId, entry.unitName]),
+      entries.map((entry) => [entry.unitId, entry.unitName] as const),
     ).entries(),
   ];
-  const toggle = (entryId: string) =>
+  const toggleEntry = (entryId: string) =>
     setSelected((current) =>
       current.includes(entryId)
         ? current.filter((id) => id !== entryId)
         : [...current, entryId],
     );
+  const toggleAll = (entryIds: ReadonlyArray<string>, select: boolean) =>
+    setSelected((current) =>
+      select
+        ? [...current, ...entryIds.filter((id) => !current.includes(id))]
+        : current.filter((id) => !entryIds.includes(id)),
+    );
+  const selectedEntries = entries.filter((entry) =>
+    selected.includes(entry.id),
+  );
+  const selectionIntent = selectedEntries.every((entry) =>
+    entry.cards
+      .filter((card) => enabledDirections.includes(card.direction))
+      .every((card) => card.introducedAt === null),
+  )
+    ? 'learn'
+    : 'practice';
 
   return (
     <div className="flex flex-col gap-5">
@@ -103,14 +101,20 @@ export const VocabularyLibrary = ({
         filter={filter}
         onFilterChange={setFilter}
         onQueryChange={setQuery}
-        onUnitChange={setUnitFilter}
         query={query}
-        unitFilter={unitFilter}
-        unitOptions={unitOptions}
+        unitSelect={
+          scope === 'course'
+            ? {
+                value: unitFilter,
+                options: unitOptions,
+                onChange: setUnitFilter,
+              }
+            : undefined
+        }
       />
       {filter === 'difficult' && visible.some((entry) => entry.introduced) ? (
-        <button
-          className="min-h-11 w-fit border border-input px-4 py-2 text-sm underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
+        <Button
+          className="w-fit"
           onClick={() =>
             setSelected(
               visible
@@ -118,85 +122,36 @@ export const VocabularyLibrary = ({
                 .map((entry) => entry.id),
             )
           }
-          type="button"
+          variant="outline"
         >
           Schwierige Vokabeln auswählen
-        </button>
+        </Button>
       ) : null}
-      {[...units].map(([unitName, unitEntries]) => {
-        const selectable = unitEntries.filter((entry) => entry.introduced);
-        const unitSelected =
-          selectable.length > 0 &&
-          selectable.every((entry) => selected.includes(entry.id));
-        return (
-          <section className="flex flex-col gap-2" key={unitName}>
-            <label className="flex min-h-11 items-center gap-3 font-display text-xl">
-              <input
-                checked={unitSelected}
-                className="size-5 accent-primary"
-                disabled={selectable.length === 0}
-                onChange={() =>
-                  setSelected((current) =>
-                    unitSelected
-                      ? current.filter(
-                          (id) => !selectable.some((entry) => entry.id === id),
-                        )
-                      : [
-                          ...current,
-                          ...selectable
-                            .map((entry) => entry.id)
-                            .filter((id) => !current.includes(id)),
-                        ],
-                  )
-                }
-                type="checkbox"
-              />
-              {unitName}
-            </label>
-            <ul className="divide-y divide-border border border-border bg-card">
-              {unitEntries.map((entry) => (
-                <li className="flex gap-3 p-4" key={entry.id}>
-                  <input
-                    aria-label={`${entry.targetText} auswählen`}
-                    checked={selected.includes(entry.id)}
-                    className="mt-1 size-5 accent-primary"
-                    disabled={!entry.introduced}
-                    onChange={() => toggle(entry.id)}
-                    type="checkbox"
-                  />
-                  <div className="grid min-w-0 flex-1 gap-2 sm:grid-cols-2 sm:items-start">
-                    <p>
-                      <span className="font-medium" lang={targetLanguage}>
-                        {entry.targetText}
-                      </span>
-                      <span className="text-muted-foreground">
-                        {' '}
-                        · {entry.nativeText}
-                      </span>
-                    </p>
-                    <VocabularySchedule
-                      enabledDirections={enabledDirections}
-                      entry={entry}
-                      now={now}
-                      targetLanguage={targetLanguage}
-                    />
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </section>
-        );
-      })}
       {visible.length === 0 ? (
-        <p className="border border-border bg-card p-6 text-sm">
+        <p className={`${cardClass} text-sm`}>
           Für diese Auswahl wurden keine Vokabeln gefunden.
         </p>
-      ) : null}
+      ) : (
+        sections.map(([label, sectionEntries]) => (
+          <VocabularyUnitSection
+            enabledDirections={enabledDirections}
+            entries={sectionEntries}
+            generateExample={generateExample}
+            key={label}
+            label={label}
+            labelStyle={scope === 'course' ? 'heading' : 'plain'}
+            now={now}
+            onToggleAll={toggleAll}
+            onToggleEntry={toggleEntry}
+            selected={selected}
+            targetLanguage={targetLanguage}
+          />
+        ))
+      )}
       {selected.length === 0 ? null : (
-        <div className="sticky bottom-4 flex flex-wrap items-center justify-between gap-3 border border-primary bg-card p-4 shadow-lg">
-          <p className="font-medium">{selected.length} ausgewählt</p>
-          {renderStudyAction(selected)}
-        </div>
+        <VocabularySelectionBar count={selected.length}>
+          {renderStudyAction(selected, selectionIntent)}
+        </VocabularySelectionBar>
       )}
     </div>
   );

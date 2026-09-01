@@ -3,6 +3,8 @@ import { expect, test } from '@playwright/test';
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
 const reverseDirectionPattern = /Englisch → Deutsch/u;
+const forwardDirectionPattern = /Deutsch → Englisch/u;
+const mixedDirectionPattern = /Gemischt/u;
 
 test('the session picker remembers the last temporary direction', async ({
   page,
@@ -15,6 +17,20 @@ test('the session picker remembers the last temporary direction', async ({
   await page.getByRole('button', { name: '8 Karten starten' }).click();
   await page.goto('/?state=practice-start');
   await expect(reverse).toBeChecked();
+});
+
+test('mixed practice stays disabled until both directions have cards', async ({
+  page,
+}) => {
+  await page.goto('/?state=practice-start-partial');
+  const forward = page.getByRole('radio', { name: forwardDirectionPattern });
+  const reverse = page.getByRole('radio', { name: reverseDirectionPattern });
+  const mixed = page.getByRole('radio', { name: mixedDirectionPattern });
+
+  await expect(forward).toBeEnabled();
+  await expect(reverse).toBeDisabled();
+  await expect(mixed).toBeDisabled();
+  await expect(page.getByText('In einer Richtung fehlen Karten')).toBeVisible();
 });
 
 const pageColumnClass = /page-column/u;
@@ -90,7 +106,7 @@ test('a rejected direction save restores the last durable snapshot', async ({
   await toNative.uncheck();
   await page.getByRole('button', { name: 'Reject direction save' }).click();
   await expect(page.getByRole('status', { name: 'Speicherstatus' })).toHaveText(
-    'Speichern fehlgeschlagen: Test direction rejection',
+    'Speichern fehlgeschlagen. Die Änderung wurde zurückgenommen – versuche es noch einmal.',
   );
   await expect(toTarget).toBeEnabled();
   await expect(toNative).toBeEnabled();

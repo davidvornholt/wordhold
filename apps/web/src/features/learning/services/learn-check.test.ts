@@ -6,9 +6,11 @@ const item: LearnItem = {
   cardId: '00000000-0000-0000-0000-000000000011',
   direction: 'to_target',
   entryId: '00000000-0000-0000-0000-000000000001',
+  unitId: '00000000-0000-0000-0000-000000000002',
   targetText: 'to look (at)',
   nativeText: 'ansehen',
   hasAudio: false,
+  example: null,
   textbookAnswers: ['to look (at)'],
 };
 

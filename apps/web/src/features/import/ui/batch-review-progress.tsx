@@ -1,4 +1,5 @@
 import { useId } from 'react';
+import { ProgressMeter } from '../../../shared/ui/progress-meter';
 
 type BatchReviewProgressProps = {
   readonly position: number;
@@ -17,9 +18,7 @@ export const BatchReviewProgress = ({
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div>
-          <p className="text-muted-foreground text-xs uppercase tracking-wide">
-            Stapelprüfung
-          </p>
+          <p className="eyebrow">Stapelprüfung</p>
           <h2 className="font-display text-xl" id={headingId}>
             Seite {position} von {total}
           </h2>
@@ -28,10 +27,9 @@ export const BatchReviewProgress = ({
           {position - 1} von {total} geprüft
         </span>
       </div>
-      <progress
-        aria-label="Geprüfte Seiten"
-        className="h-2 w-full accent-primary"
-        max={total}
+      <ProgressMeter
+        accessibleName="Geprüfte Seiten"
+        total={total}
         value={position - 1}
       />
       <p className="text-muted-foreground text-sm">

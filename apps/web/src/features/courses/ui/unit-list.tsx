@@ -1,38 +1,36 @@
 import type { ReactNode } from 'react';
+import { cardClass, cardListClass } from '../../../shared/ui/surface-styles';
 import type { CourseUnit } from '../schemas/course-units';
-import { unitPracticeStatus } from './unit-status';
+import { unitProgressSummary } from './unit-status';
 
 type UnitListProps = {
   readonly units: ReadonlyArray<CourseUnit>;
+  readonly targetLabel: string;
   // The unit's name as a link into the unit itself. The row carries no other
   // control, so opening a unit is the one thing this list does.
   readonly renderUnitLink: (unit: CourseUnit) => ReactNode;
 };
 
-const unitProgress = (unit: CourseUnit): string => {
-  if (unit.entries === 0) {
-    return 'Noch keine Vokabeln';
-  }
-  const progress =
-    unit.unintroduced === 0
-      ? `${unit.entries} Vokabeln · alle kennengelernt`
-      : `${unit.entries} Vokabeln · ${unit.unintroduced} noch kennenlernen`;
-  return `${progress} · ${unitPracticeStatus(unit)}`;
-};
-
-export const UnitList = ({ units, renderUnitLink }: UnitListProps) =>
+export const UnitList = ({
+  units,
+  targetLabel,
+  renderUnitLink,
+}: UnitListProps) =>
   units.length === 0 ? (
-    <p className="border border-border bg-card p-6 text-sm">
+    <p className={`${cardClass} text-sm`}>
       Dieser Kurs hat noch keine Einheiten. Fotografiere eine Vokabelseite und
       gib ihr beim Prüfen einen Einheitennamen.
     </p>
   ) : (
-    <ul className="divide-y divide-border border border-border bg-card">
+    <ul className={cardListClass}>
       {units.map((unit) => (
-        <li className="flex flex-col gap-1 px-4 py-3" key={unit.id}>
+        <li
+          className="flex flex-col gap-1 px-4 py-3 hover:bg-muted/50"
+          key={unit.id}
+        >
           {renderUnitLink(unit)}
           <span className="text-muted-foreground text-sm">
-            {unitProgress(unit)}
+            {unitProgressSummary(unit, targetLabel)}
           </span>
         </li>
       ))}

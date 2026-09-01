@@ -1,6 +1,8 @@
 import type { VocabularyEntry } from '../src/features/courses/schemas/course-units';
-import { CourseLayout } from '../src/features/courses/ui/course-layout';
 import { VocabularyLibrary } from '../src/features/courses/ui/vocabulary-library';
+import { Button } from '../src/shared/ui/button';
+import { PageLayout } from '../src/shared/ui/page-layout';
+import { fixtureBackControl } from './fixture-controls';
 import { navigateToFixture } from './fixture-state';
 
 const entries: ReadonlyArray<VocabularyEntry> = [
@@ -10,6 +12,11 @@ const entries: ReadonlyArray<VocabularyEntry> = [
     unitName: 'Unit 3: Holidays',
     targetText: 'memory',
     nativeText: 'die Erinnerung',
+    example: {
+      targetText: 'That trip is a happy memory.',
+      nativeText: 'Diese Reise ist eine schöne Erinnerung.',
+      source: 'textbook',
+    },
     introduced: true,
     cards: [
       {
@@ -36,6 +43,7 @@ const entries: ReadonlyArray<VocabularyEntry> = [
     unitName: 'Unit 4: Sport',
     targetText: 'the referee',
     nativeText: 'der Schiedsrichter',
+    example: null,
     introduced: true,
     cards: [
       {
@@ -63,31 +71,36 @@ export const VocabularyFixture = ({
 }: {
   readonly difficult?: boolean;
 }) => (
-  <CourseLayout
-    backControl={
-      <button onClick={() => navigateToFixture('course')} type="button">
-        ← English A2
-      </button>
-    }
-    title="English A2: Vokabelliste"
+  <PageLayout
+    backControl={fixtureBackControl('English A2', 'course')}
+    title="Vokabelliste"
   >
     <p className="text-muted-foreground text-sm">
-      Termine gelten pro Abfragerichtung. Wähle Vokabeln aus beliebigen Units.
+      Termine gelten pro Abfragerichtung. Wähle Vokabeln aus beliebigen
+      Einheiten.
     </p>
     <VocabularyLibrary
       enabledDirections={['to_target', 'to_native']}
       entries={entries}
+      generateExample={async () => ({
+        targetText: 'The referee stopped the match.',
+        nativeText: 'Der Schiedsrichter unterbrach das Spiel.',
+        source: 'generated',
+      })}
       initialFilter={difficult ? 'difficult' : 'all'}
-      renderStudyAction={() => (
-        <button
-          className="min-h-11 bg-primary px-4 py-2 text-primary-foreground"
-          onClick={() => navigateToFixture('study-start')}
-          type="button"
+      renderStudyAction={(_, intent) => (
+        <Button
+          onClick={() =>
+            navigateToFixture(
+              intent === 'learn' ? 'learn-start' : 'study-start',
+            )
+          }
         >
-          Frei üben
-        </button>
+          Auswahl {intent === 'learn' ? 'kennenlernen' : 'üben'}
+        </Button>
       )}
+      scope="course"
       targetLanguage="en"
     />
-  </CourseLayout>
+  </PageLayout>
 );

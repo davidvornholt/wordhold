@@ -1,12 +1,16 @@
 import type { LanguageCode } from '@wordhold/db/schema/courses';
 import { type SubmitEvent, useEffect, useId, useRef, useState } from 'react';
 import { directionLabel } from '../../../shared/directions';
+import { Button } from '../../../shared/ui/button';
+import { fieldClass } from '../../../shared/ui/field-styles';
+import { cardClass } from '../../../shared/ui/surface-styles';
 import {
   type LearnItem,
   learnAnswer,
   learnPrompt,
 } from '../schemas/learning-models';
 import { matchesLearnItem } from '../services/learn-check';
+import { LearnExampleAudio } from './learn-example-audio';
 
 type LearnEntryProps = {
   readonly item: LearnItem;
@@ -37,22 +41,6 @@ export const LearnEntry = ({
   const answer = learnAnswer(item);
   const prompt = learnPrompt(item);
   const answerLanguage = item.direction === 'to_target' ? targetLanguage : 'de';
-  const audioUrl = item.hasAudio ? `/api/entries/${item.entryId}/audio` : null;
-  const play = async () => {
-    if (audioUrl !== null) {
-      await new Audio(audioUrl).play().catch(() => undefined);
-    }
-  };
-
-  // Hearing the entry is half of meeting it, so it plays on arrival. A browser
-  // that blocks unprompted audio leaves the button as the way in.
-  useEffect(() => {
-    if (audioUrl === null) {
-      return;
-    }
-    new Audio(audioUrl).play().catch(() => undefined);
-  }, [audioUrl]);
-
   useEffect(() => {
     if (busy) {
       return;
@@ -94,22 +82,18 @@ export const LearnEntry = ({
 
   return (
     <>
-      <div className="flex flex-col gap-2 border border-border bg-card p-6">
-        <h2 className="font-display text-xl" id={promptId}>
+      <div className={`flex flex-col gap-2 ${cardClass}`}>
+        <h2
+          className="font-display text-xl"
+          id={promptId}
+          lang={item.direction === 'to_native' ? targetLanguage : undefined}
+        >
           {prompt}
         </h2>
         <p className="text-muted-foreground text-sm">
           {directionLabel(item.direction, targetLabel)}
         </p>
-        {audioUrl === null ? null : (
-          <button
-            className="w-fit text-sm underline"
-            onClick={play}
-            type="button"
-          >
-            Aussprache anhören
-          </button>
-        )}
+        <LearnExampleAudio item={item} targetLanguage={targetLanguage} />
       </div>
       <form
         aria-busy={busy}
@@ -131,7 +115,7 @@ export const LearnEntry = ({
           autoCapitalize="off"
           autoComplete="off"
           autoCorrect="off"
-          className="min-h-11 border border-input bg-card px-3 py-2 focus-visible:outline-2 focus-visible:outline-offset-2"
+          className={fieldClass}
           disabled={busy}
           id={inputId}
           onChange={(event) => {
@@ -142,13 +126,9 @@ export const LearnEntry = ({
           ref={inputRef}
           value={typed}
         />
-        <button
-          className="min-h-11 bg-primary px-4 py-2 text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50"
-          disabled={busy || typed.trim() === ''}
-          type="submit"
-        >
+        <Button disabled={busy || typed.trim() === ''} type="submit">
           {actionLabel}
-        </button>
+        </Button>
       </form>
       <p aria-live="polite" className="text-sm">
         {missed ? 'Noch nicht ganz. Schreib die Vokabel genau so ab.' : null}

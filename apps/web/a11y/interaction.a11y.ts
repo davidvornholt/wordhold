@@ -28,19 +28,17 @@ test('an open import can be confirmed and removed from the dashboard', async ({
   await deleteAction.focus();
   await page.keyboard.press('Enter');
   await expect(
-    page.getByText('3 Seiten und die Fotos werden gelöscht.'),
+    page.getByText('3 Seiten und die Fotos werden endgültig gelöscht.'),
   ).toBeVisible();
   await expect(
-    page.getByRole('button', { name: 'Stapel löschen', exact: true }),
+    page.getByRole('button', { name: 'Endgültig löschen' }),
   ).toBeFocused();
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
   await page.keyboard.press('Tab');
   await page.keyboard.press('Enter');
   await expect(deleteAction).toBeFocused();
   await page.keyboard.press('Enter');
-  await page
-    .getByRole('button', { name: 'Stapel löschen', exact: true })
-    .press('Enter');
+  await page.getByRole('button', { name: 'Endgültig löschen' }).press('Enter');
   await expect(
     page.getByRole('heading', { name: 'Offene Importe' }),
   ).toHaveCount(0);
@@ -55,10 +53,31 @@ const actionIsRejected = async (action: Promise<unknown>): Promise<boolean> =>
 test('CardPractice freezes the submitted answer and ignores resubmission', async ({
   page,
 }) => {
+  await page.addInitScript(() => {
+    let plays = 0;
+    class AudioFixture {
+      currentTime = 0;
+      pause() {
+        this.currentTime = 0;
+      }
+      play() {
+        this.currentTime = 0;
+        plays += 1;
+        return Promise.resolve();
+      }
+    }
+    Object.defineProperty(globalThis, 'Audio', { value: AudioFixture });
+    Object.defineProperty(globalThis, '__audioPlays', {
+      get: () => plays,
+    });
+  });
   await page.goto('/?state=practice-deferred');
   const answer = page.getByLabel('Deine Antwort');
   await answer.fill('first answer');
-  await page.getByRole('button', { name: 'Prüfen' }).click();
+  await page.locator('form').evaluate((form: HTMLFormElement) => {
+    form.requestSubmit();
+    form.requestSubmit();
+  });
 
   await expect(answer).toBeDisabled();
   await expect(answer).toHaveValue('first answer');
@@ -76,6 +95,9 @@ test('CardPractice freezes the submitted answer and ignores resubmission', async
 
   await page.getByRole('button', { name: 'Resolve submission' }).click();
   await expect(page.getByText('Noch nicht sicher')).toBeVisible();
+  await expect
+    .poll(() => page.evaluate(() => Reflect.get(globalThis, '__audioPlays')))
+    .toBe(1);
 });
 
 test('CardPractice unlocks a rejected answer for a new submission', async ({
@@ -87,7 +109,11 @@ test('CardPractice unlocks a rejected answer for a new submission', async ({
   await page.getByRole('button', { name: 'Prüfen' }).click();
   await page.getByRole('button', { name: 'Reject submission' }).click();
 
-  await expect(page.getByText('Test rejection')).toBeVisible();
+  await expect(
+    page.getByText(
+      'Deine Antwort konnte nicht geprüft werden. Prüfe deine Verbindung und versuche es noch einmal.',
+    ),
+  ).toBeVisible();
   await expect(answer).toBeEnabled();
   await answer.fill('recovered answer');
   await page.getByRole('button', { name: 'Prüfen' }).click();
@@ -107,13 +133,16 @@ test('VerifyForm freezes every control and ignores resubmission', async ({
   const target = page.getByLabel('Englisch');
   const add = page.getByRole('button', { name: 'Eintrag hinzufügen' });
   const remove = page.getByRole('button', { name: 'Entfernen' });
+  await page
+    .getByRole('button', { name: 'Einheit für Eintrag 1 ändern' })
+    .click();
   const unit = page.getByLabel('Einheit für Eintrag 1');
   const bulkUnit = page.getByLabel('Einheit für alle Vokabeln');
   const applyToAll = page.getByRole('button', {
     name: 'Auf alle anwenden',
   });
   await target.fill('first target');
-  await page.getByRole('button', { name: '1 Einträge importieren' }).click();
+  await page.getByRole('button', { name: '1 Eintrag importieren' }).click();
 
   await Promise.all(
     [target, unit, bulkUnit, applyToAll, add, remove].map((control) =>
@@ -144,7 +173,7 @@ test('VerifyForm unlocks a rejected payload for a new submission', async ({
   await page.goto('/?state=verification-deferred');
   const target = page.getByLabel('Englisch');
   await target.fill('first target');
-  await page.getByRole('button', { name: '1 Einträge importieren' }).click();
+  await page.getByRole('button', { name: '1 Eintrag importieren' }).click();
   await page.getByRole('button', { name: 'Reject verification' }).click();
 
   await expect(page.getByLabel('Verification status')).toHaveText('rejected');
@@ -152,7 +181,7 @@ test('VerifyForm unlocks a rejected payload for a new submission', async ({
   await page.getByRole('button', { name: 'Eintrag hinzufügen' }).click();
   await expect(page.getByRole('button', { name: 'Entfernen' })).toHaveCount(2);
   await page.getByRole('button', { name: 'Entfernen' }).last().click();
-  await page.getByRole('button', { name: '1 Einträge importieren' }).click();
+  await page.getByRole('button', { name: '1 Eintrag importieren' }).click();
 
   await expect(page.getByLabel('Verification calls')).toHaveText('2');
   await expect(page.getByLabel('Verification snapshot')).toContainText(
