@@ -12,6 +12,7 @@ const spacedPhraseSeparator = /(?:\s+\/\s*|\s*\/\s+)/u;
 const semicolonSeparator = /\s*;\s*/u;
 const lowercaseWord = /^\p{Ll}+$/u;
 const uppercaseStart = /^\p{Lu}/u;
+const phraseEnd = /^[\s]*(?:;|$)/u;
 const compactSlashWithFlexibleSpacing =
   /(?<left>\p{Ll}+)\s*\/\s*(?<right>\p{Ll}+)/gu;
 
@@ -59,7 +60,7 @@ const normalizeCompactSlashSpacing = (text: string): string => {
       ({ fullEnding, shorthand }) =>
         right === shorthand && left.endsWith(fullEnding),
     );
-    const endsPhrase = /^[\s]*(?:;|$)/u.test(
+    const endsPhrase = phraseEnd.test(
       text.slice(match.index + match[0].length),
     );
     const replacement =
