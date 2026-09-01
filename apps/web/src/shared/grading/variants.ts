@@ -13,9 +13,9 @@ const semicolonSeparator = /\s*;\s*/u;
 const lowercaseWord = /^\p{Ll}+$/u;
 const uppercaseStart = /^\p{Lu}/u;
 const phraseEnd = /^[\s]*(?:;|$)/u;
+const whitespaceCharacter = /\s/u;
 const compactSlashWithFlexibleSpacing =
   /(?<left>\p{Ll}+)\s*\/\s*(?<right>\p{Ll}+)/gu;
-
 const compactSuffixReplacements: ReadonlyArray<{
   readonly fullEnding: string;
   readonly shorthand: string;
@@ -26,9 +26,7 @@ const compactSuffixReplacements: ReadonlyArray<{
   { fullEnding: 'o', shorthand: 'a', alternativeEnding: 'a' },
   { fullEnding: 'or', shorthand: 'a', alternativeEnding: 'ora' },
 ];
-
 const compactWordAlternatives = new Set(['be/get', 'der/die']);
-
 const compactSlashReadings = (
   left: string,
   right: string,
@@ -56,17 +54,24 @@ const normalizeCompactSlashSpacing = (text: string): string => {
     const left = match.groups?.left ?? '';
     const right = match.groups?.right ?? '';
     const readings = compactSlashReadings(left, right);
-    const isSuffixShorthand = compactSuffixReplacements.some(
-      ({ fullEnding, shorthand }) =>
-        right === shorthand && left.endsWith(fullEnding),
-    );
+    const isSuffixShorthand =
+      readings !== undefined &&
+      !compactWordAlternatives.has(`${left}/${right}`);
+    const slashIndex = match[0].indexOf('/');
+    const hasOneSidedWhitespace =
+      whitespaceCharacter.test(match[0].slice(0, slashIndex)) !==
+      whitespaceCharacter.test(match[0].slice(slashIndex + 1));
     const endsPhrase = phraseEnd.test(
       text.slice(match.index + match[0].length),
     );
-    const replacement =
-      readings === undefined || (isSuffixShorthand && !endsPhrase)
-        ? match[0]
-        : `${left}/${right}`;
+    const isAmbiguousOneSidedSpacing =
+      readings === undefined &&
+      hasOneSidedWhitespace &&
+      !right.startsWith(left);
+    const preserveSpacing =
+      (readings === undefined && !isAmbiguousOneSidedSpacing) ||
+      (isSuffixShorthand && !endsPhrase);
+    const replacement = preserveSpacing ? match[0] : `${left}/${right}`;
     normalized += text.slice(cursor, match.index) + replacement;
     cursor = match.index + match[0].length;
   }

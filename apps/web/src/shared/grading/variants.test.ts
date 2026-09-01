@@ -92,6 +92,7 @@ describe('answerVariants punctuation and separators', () => {
 
   it('does not detach an unregistered multi-character suffix', () => {
     expect(answerVariants('heureux/euse')).toEqual({ _tag: 'Overflow' });
+    expect(answerVariants('heureux /euse')).toEqual({ _tag: 'Overflow' });
     expect(answerVariants('vendeur/euse')).toEqual({ _tag: 'Overflow' });
     expect(answerVariants('bon/onne')).toEqual({ _tag: 'Overflow' });
   });
