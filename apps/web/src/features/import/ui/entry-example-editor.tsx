@@ -2,7 +2,11 @@ import { maximumExampleLength } from '@wordhold/ai/extraction/schema';
 import { useState } from 'react';
 import { Button } from '../../../shared/ui/button';
 import { fieldCompactClass } from '../../../shared/ui/field-styles';
-import type { DraftEntry } from './entry-row';
+import type {
+  DraftEntry,
+  ExampleGenerationSource,
+  GeneratedExample,
+} from './entry-row';
 
 type EntryExampleEditorProps = {
   readonly disabled: boolean;
@@ -12,6 +16,10 @@ type EntryExampleEditorProps = {
     nativeText: string,
   ) => Promise<{ readonly target: string; readonly native: string }>;
   readonly onChange: (entry: DraftEntry) => void;
+  readonly onGenerated: (
+    source: ExampleGenerationSource,
+    generated: GeneratedExample,
+  ) => void;
 };
 
 export const EntryExampleEditor = ({
@@ -19,6 +27,7 @@ export const EntryExampleEditor = ({
   entry,
   generate,
   onChange,
+  onGenerated,
 }: EntryExampleEditorProps) => {
   const [generationError, setGenerationError] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -29,15 +38,13 @@ export const EntryExampleEditor = ({
     setGenerating(true);
     setGenerationError(false);
     try {
-      const generated = await generate(
-        entry.targetText.trim(),
-        entry.nativeText.trim(),
-      );
-      onChange({
-        ...entry,
-        example: generated.target,
-        generatedExample: { nativeText: generated.native },
-      });
+      const source = {
+        targetText: entry.targetText.trim(),
+        nativeText: entry.nativeText.trim(),
+        example: entry.example,
+      };
+      const generated = await generate(source.targetText, source.nativeText);
+      onGenerated(source, generated);
     } catch {
       setGenerationError(true);
     } finally {
