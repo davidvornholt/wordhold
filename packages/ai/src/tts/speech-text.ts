@@ -5,12 +5,25 @@ import {
 
 export type { TtsLanguage } from './pronunciation-dictionary';
 
-const voices: Readonly<Record<TtsLanguage, string>> = {
-  de: 'Vicki',
-  en: 'Amy',
-  es: 'Lucia',
-  fr: 'Lea',
-};
+const speechProfiles = {
+  de: { languageCode: 'de-DE', voice: 'Vicki' },
+  en: { languageCode: 'en-US', voice: 'Stephen' },
+  es: { languageCode: 'es-ES', voice: 'Sergio' },
+  fr: { languageCode: 'fr-FR', voice: 'Remi' },
+} as const satisfies Readonly<
+  Record<
+    TtsLanguage,
+    {
+      readonly languageCode: string;
+      readonly voice: string;
+    }
+  >
+>;
+
+const speechEngine = 'generative' as const;
+const slashPauseMilliseconds = 25;
+const slashPauseTag = `<break time="${slashPauseMilliseconds}ms"/>`;
+type SpeechProfile = (typeof speechProfiles)[TtsLanguage];
 
 // Increment this when a dictionary change can alter existing speech.
 const pronunciationRevision = 1;
@@ -67,6 +80,16 @@ const escapeSsml = (value: string): string =>
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&apos;');
 
+const prepareLiteralText = (
+  value: string,
+): { readonly text: string; readonly usesSlashPause: boolean } => {
+  const segments = value.split('/');
+  return {
+    text: segments.map(escapeSsml).join(slashPauseTag),
+    usesSlashPause: segments.length > 1,
+  };
+};
+
 const aliasesFor = (language: TtsLanguage): ReadonlyMap<string, string> =>
   new Map(
     pronunciationDictionary[language].flatMap(([spokenForm, writtenForms]) =>
@@ -104,9 +127,11 @@ const matchers: Readonly<Record<TtsLanguage, RegExp>> = {
 
 export type PreparedSpeechText = {
   readonly audioProfile: string;
+  readonly engine: typeof speechEngine;
+  readonly languageCode: SpeechProfile['languageCode'];
   readonly text: string;
   readonly textType: 'ssml' | 'text';
-  readonly voice: string;
+  readonly voice: SpeechProfile['voice'];
 };
 
 export const prepareSpeechText = (
@@ -116,31 +141,53 @@ export const prepareSpeechText = (
   const safeText = removeForbiddenXml10Characters(text);
   const aliases = aliasesByLanguage[language];
   const matcher = matchers[language];
+  const profile = speechProfiles[language];
   const parts: Array<string> = [];
   let cursor = 0;
+  let usesPronunciation = false;
+  let usesSlashPause = false;
+  const pushLiteralText = (value: string): void => {
+    const literal = prepareLiteralText(value);
+    parts.push(literal.text);
+    usesSlashPause ||= literal.usesSlashPause;
+  };
   // Match the imported text before sanitizing it so forbidden characters cannot
   // create a new abbreviation boundary.
   for (const match of text.matchAll(matcher)) {
     const [writtenForm] = match;
     const spokenForm = aliases.get(writtenForm.toLocaleLowerCase());
     if (match.index !== undefined && spokenForm !== undefined) {
-      parts.push(escapeSsml(text.slice(cursor, match.index)));
+      pushLiteralText(text.slice(cursor, match.index));
       parts.push(
         `<sub alias="${escapeSsml(spokenForm)}">${escapeSsml(writtenForm)}</sub>`,
       );
+      usesPronunciation = true;
       cursor = match.index + writtenForm.length;
     }
   }
-  const voice = voices[language];
-  if (parts.length === 0) {
-    return { audioProfile: voice, text: safeText, textType: 'text', voice };
+  pushLiteralText(text.slice(cursor));
+
+  const baseAudioProfile = `${profile.voice}-${speechEngine}`;
+  const audioProfile = [
+    baseAudioProfile,
+    usesPronunciation ? `pronunciation-${pronunciationRevision}` : undefined,
+    usesSlashPause ? `slash-pause-${slashPauseMilliseconds}ms` : undefined,
+  ]
+    .filter((part) => part !== undefined)
+    .join('-');
+  const shared = {
+    audioProfile,
+    engine: speechEngine,
+    languageCode: profile.languageCode,
+    voice: profile.voice,
+  };
+  if (!(usesPronunciation || usesSlashPause)) {
+    return { ...shared, text: safeText, textType: 'text' };
   }
-  parts.push(escapeSsml(text.slice(cursor)));
   return {
-    audioProfile: `${voice}-pronunciation-${pronunciationRevision}`,
+    ...shared,
     text: `<speak>${parts.join('')}</speak>`,
     textType: 'ssml',
-    voice,
   };
 };
 

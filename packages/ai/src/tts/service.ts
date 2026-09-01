@@ -32,11 +32,13 @@ export class Tts extends Effect.Service<Tts>()('@wordhold/ai/Tts', {
           try: async () => {
             const response = await client.send(
               new SynthesizeSpeechCommand({
-                Engine: 'neural',
+                Engine: prepared.engine,
+                LanguageCode: prepared.languageCode,
                 OutputFormat: 'mp3',
+                SampleRate: '24000',
                 Text: prepared.text,
                 TextType: prepared.textType,
-                VoiceId: prepared.voice as never,
+                VoiceId: prepared.voice,
               }),
             );
             if (response.AudioStream === undefined) {
