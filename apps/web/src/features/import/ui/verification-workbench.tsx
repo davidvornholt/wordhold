@@ -11,7 +11,6 @@ import type { VerificationEntry } from './verify-form-selection';
 
 type CompletedPage = {
   readonly imported: number | null;
-  readonly pending: number | null;
 };
 
 type VerificationWorkbenchProps = {
@@ -19,6 +18,7 @@ type VerificationWorkbenchProps = {
   readonly batchSession: BatchReviewSession | null;
   readonly busy: boolean;
   readonly completed: CompletedPage | null;
+  readonly error: string | null;
   readonly existingEntries: ReadonlyArray<UnitEntry>;
   readonly extractionKey: string | null;
   readonly generateExample: (
@@ -55,6 +55,7 @@ export const VerificationWorkbench = ({
   batchSession,
   busy,
   completed,
+  error,
   existingEntries,
   extractionKey,
   generateExample,
@@ -81,9 +82,9 @@ export const VerificationWorkbench = ({
       {completed === null ? null : (
         <AudioRecovery
           busy={busy}
+          error={error}
           imported={completed.imported}
           onRetry={onRetryAudio}
-          pending={completed.pending}
         />
       )}
       {completed === null && extractionKey === null ? (

@@ -8,6 +8,7 @@ import {
   listAudioRecoveryPages,
   listCourses,
   listPendingImportSessions,
+  retryAudio,
 } from '../features/import/server-fns';
 import { clearUploadQueueIfSession } from '../features/import/services/upload-queue-persistence';
 import { AudioRecoveryPages } from '../features/import/ui/audio-recovery-pages';
@@ -101,16 +102,9 @@ const Home = () => {
           />
 
           <AudioRecoveryPages
+            onRecovered={() => router.invalidate({ sync: true })}
+            onRetry={(page) => retryAudio({ data: page.id })}
             pages={audioRecovery}
-            renderPageAction={(page, label) => (
-              <ActionLink
-                params={{ pageId: page.id }}
-                to="/pages/$pageId/verify"
-                variant="quiet"
-              >
-                {label}
-              </ActionLink>
-            )}
           />
 
           <PendingImportSessions

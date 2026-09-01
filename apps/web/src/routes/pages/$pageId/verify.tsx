@@ -1,5 +1,6 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import type { ExtractionResult } from '@wordhold/ai/extraction';
+import type { MouseEvent } from 'react';
 import {
   type BatchReviewSearchData,
   batchReviewSearchFor,
@@ -58,11 +59,25 @@ const VerificationPageScreen = ({
 }: VerificationPageScreenProps) => {
   const flow = useVerificationFlow(page, search);
   const targetLabel = germanLabels[course.targetLanguage];
+  const leaveThroughBackLink = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (
+      event.defaultPrevented ||
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    ) {
+      return;
+    }
+    flow.leavePage();
+  };
 
   return (
     <main className="verification-screen">
       <div className="verification-header">
         <BackLink
+          onClick={leaveThroughBackLink}
           params={{ sessionId: page.importSessionId }}
           to="/imports/$sessionId"
         >
@@ -72,7 +87,7 @@ const VerificationPageScreen = ({
           {course.name}:{' '}
           {flow.batchSummary === null ? 'Seite überprüfen' : 'Seiten geprüft'}
         </h1>
-        {flow.error === null ? null : (
+        {flow.error === null || flow.completed !== null ? null : (
           <p className="text-destructive text-sm" role="alert">
             {flow.error}
           </p>
@@ -97,6 +112,7 @@ const VerificationPageScreen = ({
           batchSession={flow.batchSession}
           busy={flow.busy}
           completed={flow.completed}
+          error={flow.error}
           existingEntries={unitEntries}
           extractionKey={
             flow.extraction === null

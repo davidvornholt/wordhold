@@ -86,12 +86,12 @@ export const VerificationFixture = ({
           {audioRecovery ? (
             <AudioRecovery
               busy={false}
+              error={null}
               imported={1}
               onRetry={() => {
                 completeAudioRecovery();
                 navigateToFixture('dashboard-audio-recovery');
               }}
-              pending={1}
             />
           ) : null}
           {!audioRecovery && empty ? (

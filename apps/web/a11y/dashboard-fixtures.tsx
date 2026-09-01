@@ -4,6 +4,7 @@ import { CourseGrid } from '../src/features/dashboard/ui/course-grid';
 import { FragileList } from '../src/features/dashboard/ui/fragile-list';
 import { AudioRecoveryPages } from '../src/features/import/ui/audio-recovery-pages';
 import { PendingImportSessions } from '../src/features/import/ui/pending-import-sessions';
+import { AudioRecoveryPagesFixture } from './audio-recovery-pages-fixture';
 import { audioRecoveryIsComplete, navigateToFixture } from './fixture-state';
 
 const course = {
@@ -95,6 +96,8 @@ export const DashboardFixture = ({
   pending = false,
   resting = false,
 }) => {
+  const queueRecovery =
+    new URLSearchParams(globalThis.location.search).get('queue') === 'true';
   const [pendingImportSessions, setPendingImportSessions] = useState(
     pending ? [pendingImportSession] : [],
   );
@@ -141,19 +144,17 @@ export const DashboardFixture = ({
           </button>
         )}
       />
-      <AudioRecoveryPages
-        pages={
-          audioRecovery && !audioRecoveryIsComplete() ? [recoveryPage] : []
-        }
-        renderPageAction={(_page, label) => (
-          <a
-            className="text-sm underline"
-            href="/?state=verification-audio-recovery"
-          >
-            {label}
-          </a>
-        )}
-      />
+      {queueRecovery ? (
+        <AudioRecoveryPagesFixture />
+      ) : (
+        <AudioRecoveryPages
+          onRecovered={async () => undefined}
+          onRetry={async () => ({ pending: 1 })}
+          pages={
+            audioRecovery && !audioRecoveryIsComplete() ? [recoveryPage] : []
+          }
+        />
+      )}
       <PendingImportSessions
         onDiscard={async (session) =>
           setPendingImportSessions((current) =>
