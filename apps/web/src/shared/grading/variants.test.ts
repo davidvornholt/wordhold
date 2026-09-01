@@ -53,16 +53,34 @@ describe('answerVariants', () => {
       readings: ['sportif', 'sportive'],
     });
   });
+});
+
+describe('answerVariants punctuation and separators', () => {
+  it('ignores spacing around registered compact slash notation', () => {
+    for (const notation of ['amigo/a', 'amigo /a', 'amigo/ a', 'amigo / a']) {
+      expect(answerVariants(notation)).toEqual({
+        _tag: 'Expanded',
+        readings: ['amigo', 'amiga'],
+      });
+    }
+    expect(answerVariants('der / die Angestellte')).toEqual({
+      _tag: 'Expanded',
+      readings: ['der angestellte', 'die angestellte'],
+    });
+  });
 
   it('expands explicit and conservative compact phrase alternatives', () => {
-    expect(answerVariants('die Straße / der Weg')).toEqual({
-      _tag: 'Expanded',
-      readings: ['die straße', 'der weg'],
-    });
-    expect(answerVariants('die Straße/der Weg')).toEqual({
-      _tag: 'Expanded',
-      readings: ['die straße', 'der weg'],
-    });
+    for (const notation of [
+      'die Straße/der Weg',
+      'die Straße /der Weg',
+      'die Straße/ der Weg',
+      'die Straße / der Weg',
+    ]) {
+      expect(answerVariants(notation)).toEqual({
+        _tag: 'Expanded',
+        readings: ['die straße', 'der weg'],
+      });
+    }
   });
 
   it('keeps literal slash names whole', () => {
@@ -79,12 +97,30 @@ describe('answerVariants', () => {
   });
 
   it('expands complete alternatives when the separator makes them explicit', () => {
-    expect(answerVariants('bon / bonne')).toEqual({
+    for (const notation of ['bon / bonne', 'bon /bonne', 'bon/ bonne']) {
+      expect(answerVariants(notation)).toEqual({
+        _tag: 'Expanded',
+        readings: ['bon', 'bonne'],
+      });
+    }
+  });
+
+  it('combines semicolon and slash-separated phrase alternatives', () => {
+    expect(answerVariants('correct / right; accurate;')).toEqual({
       _tag: 'Expanded',
-      readings: ['bon', 'bonne'],
+      readings: ['correct', 'right', 'accurate'],
     });
   });
 
+  it('ignores commas within a reading', () => {
+    expect(answerVariants('hello, world')).toEqual({
+      _tag: 'Expanded',
+      readings: ['hello world'],
+    });
+  });
+});
+
+describe('answerVariants combinations and bounds', () => {
   it('expands each non-empty semicolon-separated textbook answer', () => {
     expect(answerVariants('lingua franca; Verkehrssprache')).toEqual({
       _tag: 'Expanded',

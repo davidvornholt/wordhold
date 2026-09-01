@@ -19,7 +19,10 @@ const result: SubmitResult = {
   },
 };
 
-const renderFeedback = (submittedAnswer: string) =>
+const renderFeedback = (
+  submittedAnswer: string,
+  expectedAnswers: ReadonlyArray<string> = result.expectedAnswers,
+) =>
   renderToStaticMarkup(
     <FeedbackPanel
       audioUrl={null}
@@ -27,7 +30,7 @@ const renderFeedback = (submittedAnswer: string) =>
       onResolveWrong={() => undefined}
       repeated={false}
       resolution={null}
-      result={result}
+      result={{ ...result, expectedAnswers }}
       skipped={false}
       submittedAnswer={submittedAnswer}
     />,
@@ -79,6 +82,9 @@ const renderSkippedFeedback = () =>
 describe('answer feedback', () => {
   it('does not repeat an expected answer that matches the submission', () => {
     expect(renderFeedback('  Waiter. ')).not.toContain('Erwartet:');
+    expect(renderFeedback('hello world', ['hello, world'])).not.toContain(
+      'Erwartet:',
+    );
   });
 
   it('shows the textbook answer for a different accepted answer', () => {

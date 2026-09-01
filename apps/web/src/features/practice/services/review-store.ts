@@ -96,10 +96,9 @@ export class PracticeReviewStore extends Context.Tag(
       ) =>
         sql<{
           readonly text: string;
-          readonly normalized: string;
           readonly source: AnswerSource;
         }>`
-          select text, normalized, source from accepted_answers
+          select text, source from accepted_answers
           where entry_id = ${entryId} and direction = ${direction}
         `.pipe(
           Effect.mapError((cause) =>

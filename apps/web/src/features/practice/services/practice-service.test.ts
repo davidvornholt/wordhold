@@ -40,7 +40,6 @@ describe('PracticeService', () => {
           Effect.succeed([
             {
               text: 'bon/onne',
-              normalized: 'bon/onne',
               source: 'textbook',
             },
           ]),
@@ -65,7 +64,6 @@ describe('PracticeService', () => {
           Effect.succeed([
             {
               text: 'profesor/a',
-              normalized: 'profesor/a',
               source: 'textbook',
             },
           ]),
@@ -98,9 +96,7 @@ describe('PracticeService', () => {
       {
         findSubmission: () => Effect.succeed(testSubmission),
         listAcceptedAnswers: () =>
-          Effect.succeed([
-            { text: 'correct', normalized: 'correct', source: 'textbook' },
-          ]),
+          Effect.succeed([{ text: 'correct', source: 'textbook' }]),
         commit: () =>
           Effect.sync(() => {
             commits += 1;
