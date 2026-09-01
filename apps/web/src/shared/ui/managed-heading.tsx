@@ -20,7 +20,11 @@ export const ManagedHeading = ({
   }, []);
 
   return (
-    <h2 className={className} ref={heading} tabIndex={-1}>
+    <h2
+      className={`${className} focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2`}
+      ref={heading}
+      tabIndex={-1}
+    >
       {children}
     </h2>
   );

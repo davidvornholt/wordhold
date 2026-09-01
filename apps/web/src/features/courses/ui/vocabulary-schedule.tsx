@@ -1,5 +1,6 @@
 import type { LanguageCode } from '@wordhold/db/schema/courses';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
+import type { ReactNode } from 'react';
 import {
   earliestDate,
   formatLearningDate,
@@ -92,12 +93,14 @@ type VocabularyScheduleProps = {
   readonly entry: VocabularyEntry;
   readonly targetLanguage: LanguageCode;
   readonly now?: Date;
+  readonly exampleControl: ReactNode;
 };
 
 export const VocabularySchedule = ({
   enabledDirections,
   entry,
   targetLanguage,
+  exampleControl,
   now = new Date(),
 }: VocabularyScheduleProps) => {
   const targetLabel = germanLabels[targetLanguage];
@@ -126,6 +129,7 @@ export const VocabularySchedule = ({
           </div>
         ))}
       </dl>
+      <div className="mt-3">{exampleControl}</div>
     </details>
   );
 };

@@ -10,6 +10,7 @@ import {
   learnPrompt,
 } from '../schemas/learning-models';
 import { matchesLearnItem } from '../services/learn-check';
+import { LearnExampleAudio } from './learn-example-audio';
 
 type LearnEntryProps = {
   readonly item: LearnItem;
@@ -40,22 +41,6 @@ export const LearnEntry = ({
   const answer = learnAnswer(item);
   const prompt = learnPrompt(item);
   const answerLanguage = item.direction === 'to_target' ? targetLanguage : 'de';
-  const audioUrl = item.hasAudio ? `/api/entries/${item.entryId}/audio` : null;
-  const play = async () => {
-    if (audioUrl !== null) {
-      await new Audio(audioUrl).play().catch(() => undefined);
-    }
-  };
-
-  // Hearing the entry is half of meeting it, so it plays on arrival. A browser
-  // that blocks unprompted audio leaves the button as the way in.
-  useEffect(() => {
-    if (audioUrl === null) {
-      return;
-    }
-    new Audio(audioUrl).play().catch(() => undefined);
-  }, [audioUrl]);
-
   useEffect(() => {
     if (busy) {
       return;
@@ -98,17 +83,17 @@ export const LearnEntry = ({
   return (
     <>
       <div className={`flex flex-col gap-2 ${cardClass}`}>
-        <h2 className="font-display text-xl" id={promptId}>
+        <h2
+          className="font-display text-xl"
+          id={promptId}
+          lang={item.direction === 'to_native' ? targetLanguage : undefined}
+        >
           {prompt}
         </h2>
         <p className="text-muted-foreground text-sm">
           {directionLabel(item.direction, targetLabel)}
         </p>
-        {audioUrl === null ? null : (
-          <Button className="w-fit" onClick={play} variant="quiet">
-            Aussprache anhören
-          </Button>
-        )}
+        <LearnExampleAudio item={item} targetLanguage={targetLanguage} />
       </div>
       <form
         aria-busy={busy}

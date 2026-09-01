@@ -34,6 +34,10 @@ export const StaleUnitVerificationFixture = () => {
       <VerifyForm
         busy={busy}
         existingEntries={[]}
+        generateExample={async () => ({
+          target: 'This memory makes me smile.',
+          native: 'Diese Erinnerung bringt mich zum Lächeln.',
+        })}
         initialEntries={entries}
         initialUnitName="Unit 3"
         onSubmit={() => {

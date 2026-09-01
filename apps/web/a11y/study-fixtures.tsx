@@ -12,6 +12,7 @@ export const StudyStartFixture = () => (
     title="Unit 3 – Holidays üben"
   >
     <SessionStart
+      itemNoun={{ singular: 'Karte', plural: 'Karten' }}
       options={sessionOptions(['to_target', 'to_native'], 'Englisch', [
         { direction: 'to_target', ready: 16 },
         { direction: 'to_native', ready: 16 },

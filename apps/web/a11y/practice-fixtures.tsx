@@ -13,6 +13,8 @@ import { ProgressMeter } from '../src/shared/ui/progress-meter';
 import { fixtureBackControl, fixtureControl } from './fixture-controls';
 import { navigateToFixture } from './fixture-state';
 
+const justDueAt = new Date();
+
 const item = {
   cardId: '00000000-0000-0000-0000-000000000001',
   revision: 0,
@@ -21,6 +23,12 @@ const item = {
   targetText: 'memory',
   nativeText: 'Erinnerung',
   hasAudio: false,
+  example: {
+    targetText: 'This memory still makes me smile.',
+    nativeText: 'Diese Erinnerung bringt mich noch immer zum Lächeln.',
+    source: 'textbook' as const,
+    hasAudio: true,
+  },
   prompt: 'Erinnerung',
 };
 
@@ -35,6 +43,8 @@ const result: SubmitResult = {
 };
 
 const backControl = fixtureBackControl('Übersicht', 'dashboard');
+const prepareExamples = ({ data }: { readonly data: Array<string> }) =>
+  Promise.resolve(data.map((entryId) => ({ entryId, example: item.example })));
 
 export const PracticeFixture = () => (
   <PageLayout backControl={backControl} title="English A2: Üben">
@@ -51,12 +61,14 @@ export const PracticeFixture = () => (
       item={item}
       mode="scheduled"
       onNext={() => undefined}
+      prepareExamples={prepareExamples}
       repeated={true}
       submit={() => {
         navigateToFixture('practice-feedback');
         return Promise.resolve(result);
       }}
       targetLabel="Englisch"
+      targetLanguage="en"
     />
   </PageLayout>
 );
@@ -64,14 +76,17 @@ export const PracticeFixture = () => (
 export const PracticeFeedbackFixture = () => (
   <PageLayout backControl={backControl} title="English A2: Üben">
     <FeedbackPanel
-      audioUrl={null}
+      example={item.example}
       onNext={() => navigateToFixture('practice-empty')}
       onResolveWrong={() => navigateToFixture('practice-empty')}
+      playSentence={null}
+      playWord={null}
       resolution={null}
       repeated={false}
       result={result}
       skipped={false}
       submittedAnswer="wrong"
+      targetLanguage="en"
     />
   </PageLayout>
 );
@@ -110,7 +125,7 @@ export const PracticeOneCardSummaryFixture = ({
     schedule: {
       advanced: true,
       state: 'review',
-      dueAt: new Date('2026-08-30T12:00:00Z'),
+      dueAt: justDueAt,
     },
   };
   const unavailable: SubmitResult = {
@@ -127,6 +142,7 @@ export const PracticeOneCardSummaryFixture = ({
     <PageLayout backControl={backControl} title="English A2: Üben">
       <SessionSummary
         backControl={backControl}
+        continueControl={fixtureControl('Weiter üben', 'practice', 'primary')}
         emptyMessage="Für jetzt geschafft"
         queue={queue}
         remainingReady={0}
@@ -165,12 +181,14 @@ export const DeferredPracticeFixture = () => {
   return (
     <PageLayout backControl={backControl} title="English A2: Üben">
       <CardPractice
-        item={item}
+        item={{ ...item, hasAudio: true }}
         mode="scheduled"
         onNext={() => undefined}
+        prepareExamples={prepareExamples}
         repeated={false}
         submit={submit}
         targetLabel="Englisch"
+        targetLanguage="en"
       />
       <output aria-label="Submit calls">{calls}</output>
       <output aria-label="Submitted answer">{submittedAnswer}</output>

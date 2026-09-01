@@ -12,12 +12,34 @@ type DeferredSubmitData = Extract<
   SubmitPayloadData,
   { readonly wrongAnswerResolution: 'defer' }
 >;
+type StoredResolution = Exclude<WrongAnswerResolution, 'defer'>;
+
+const submissionError =
+  'Deine Antwort konnte nicht geprüft werden. Prüfe deine Verbindung und versuche es noch einmal.';
+const resolutionError =
+  'Die Bewertung konnte nicht gespeichert werden. Versuche es noch einmal.';
+
+const createSubmissionLock = () => {
+  let active = false;
+  return {
+    acquire: () => {
+      if (active) {
+        return false;
+      }
+      active = true;
+      return true;
+    },
+    release: () => {
+      active = false;
+    },
+  };
+};
 
 type CardSubmissionInput = {
   readonly cardId: string;
   readonly revision: number;
   readonly mode: DeferredSubmitData['mode'];
-  readonly audioUrl: string | null;
+  readonly playFeedbackAudio: () => Promise<void>;
   readonly submit: (input: {
     readonly data: SubmitPayloadData;
   }) => Promise<SubmitResult>;
@@ -30,7 +52,7 @@ export const useCardSubmission = ({
   cardId,
   revision,
   mode,
-  audioUrl,
+  playFeedbackAudio,
   submit,
   onNext,
 }: CardSubmissionInput) => {
@@ -42,11 +64,9 @@ export const useCardSubmission = ({
   const [startedAt] = useState(() => performance.now());
   const [result, setResult] = useState<SubmitResult | null>(null);
   const [busy, setBusy] = useState(false);
-  const [resolution, setResolution] = useState<Exclude<
-    WrongAnswerResolution,
-    'defer'
-  > | null>(null);
+  const [resolution, setResolution] = useState<StoredResolution | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [submissionLock] = useState(createSubmissionLock);
 
   const submitAndPresent = async (
     data: SubmitPayloadData,
@@ -57,21 +77,20 @@ export const useCardSubmission = ({
     try {
       const submitted = await submit({ data });
       setResult(submitted);
-      if (audioUrl !== null) {
-        await new Audio(audioUrl).play().catch(() => undefined);
+      if (submitted.graded) {
+        await playFeedbackAudio();
       }
     } catch {
       rollback();
-      setError(
-        'Deine Antwort konnte nicht geprüft werden. Prüfe deine Verbindung und versuche es noch einmal.',
-      );
+      setError(submissionError);
     } finally {
+      submissionLock.release();
       setBusy(false);
     }
   };
 
   const submitAnswer = async () => {
-    if (busy || result !== null) {
+    if (busy || result !== null || !submissionLock.acquire()) {
       return;
     }
     const data: DeferredSubmitData = {
@@ -87,7 +106,7 @@ export const useCardSubmission = ({
   };
 
   const skipCard = async () => {
-    if (busy || result !== null) {
+    if (busy || result !== null || !submissionLock.acquire()) {
       return;
     }
     setSkipped(true);
@@ -104,14 +123,15 @@ export const useCardSubmission = ({
   };
 
   const resolveWrongAnswer = async (
-    wrongAnswerResolution: Exclude<WrongAnswerResolution, 'defer'>,
+    wrongAnswerResolution: StoredResolution,
   ) => {
     if (
       busy ||
       submittedData === null ||
       result === null ||
       !result.graded ||
-      result.stored
+      result.stored ||
+      !submissionLock.acquire()
     ) {
       return;
     }
@@ -132,10 +152,9 @@ export const useCardSubmission = ({
       setResult(submitted);
       onNext(submitted);
     } catch {
-      setError(
-        'Die Bewertung konnte nicht gespeichert werden. Versuche es noch einmal.',
-      );
+      setError(resolutionError);
     } finally {
+      submissionLock.release();
       setBusy(false);
       setResolution(null);
     }

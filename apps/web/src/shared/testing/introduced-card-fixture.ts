@@ -3,7 +3,7 @@ import { Effect } from 'effect';
 
 export const fixtureCourseId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 export const fixtureUnitId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
-const unintroducedEntryId = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+export const unintroducedEntryId = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
 export const firstReviewEntryId = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
 export const dueEntryId = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
 export const fixtureNow = new Date('2026-08-20T12:00:00.000Z');

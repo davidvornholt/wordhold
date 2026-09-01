@@ -41,13 +41,14 @@ export const persistVerifiedEntries = (
       const entryId = inserted[index]?.id;
       return entryId === undefined ||
         entry.example === undefined ||
-        entry.example === ''
+        entry.example.targetText === ''
         ? []
         : [
             {
               entryId,
-              targetText: entry.example,
-              source: 'textbook',
+              targetText: entry.example.targetText,
+              nativeText: entry.example.nativeText ?? null,
+              source: entry.example.source,
             },
           ];
     });

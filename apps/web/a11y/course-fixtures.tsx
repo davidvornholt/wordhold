@@ -1,61 +1,46 @@
 import type { VocabularyEntry } from '../src/features/courses/schemas/course-units';
-import { introducedEntries } from '../src/features/courses/schemas/course-units';
 import { CourseOverview } from '../src/features/courses/ui/course-overview';
+import { UnitDirectionPlan } from '../src/features/courses/ui/unit-direction-plan';
 import { unitProgressSummary } from '../src/features/courses/ui/unit-status';
+import { UnitVocabularyEmpty } from '../src/features/courses/ui/unit-vocabulary-empty';
 import { VocabularyLibrary } from '../src/features/courses/ui/vocabulary-library';
+import { directionLabel } from '../src/shared/directions';
 import { countNoun } from '../src/shared/format/count';
+import { itemsInNextSection } from '../src/shared/session/section-policy';
 import { Button } from '../src/shared/ui/button';
 import { PageLayout } from '../src/shared/ui/page-layout';
+import {
+  courseUnits,
+  dueUnit,
+  emptyUnit,
+  mixedUnit,
+  targetLabel,
+  unintroducedUnit,
+} from './course-fixture-data';
 import { fixtureBackControl, fixtureControl } from './fixture-controls';
 import { navigateToFixture } from './fixture-state';
 
-const mixedUnit = {
-  id: '00000000-0000-0000-0000-000000000003',
-  name: 'Unit 3 – Holidays',
-  entries: 18,
-  introduced: 16,
-  unintroduced: 2,
-  due: 4,
-  firstReviews: 2,
-  nextDueAt: new Date('2026-08-30T10:40:00Z'),
-};
-
-const unintroducedUnit = {
-  id: '00000000-0000-0000-0000-000000000004',
-  name: 'Unit 4 – Sport',
-  entries: 12,
-  introduced: 0,
-  unintroduced: 12,
-  due: 0,
-  firstReviews: 0,
-  nextDueAt: null,
-};
-
-const finishedUnit = {
-  id: '00000000-0000-0000-0000-000000000002',
-  name: 'Unit 2 – School',
-  entries: 16,
-  introduced: 16,
-  unintroduced: 0,
-  due: 0,
-  firstReviews: 0,
-  nextDueAt: new Date('2026-08-30T10:40:00Z'),
-};
-
-const emptyUnit = {
-  id: '00000000-0000-0000-0000-000000000005',
-  name: 'Unit 5 – Empty',
-  entries: 0,
-  introduced: 0,
-  unintroduced: 0,
-  due: 0,
-  firstReviews: 0,
-  nextDueAt: null,
+const coursePrimaryAction = (
+  emptyVocabulary: boolean,
+  practiceAvailable: boolean,
+) => {
+  if (emptyVocabulary) {
+    return fixtureControl('Seite fotografieren', 'import', 'primary');
+  }
+  return practiceAvailable
+    ? fixtureControl('6 Karten üben', 'practice', 'primary')
+    : fixtureControl(
+        '2 Vokabeln kennenlernen · Englisch → Deutsch',
+        'learn',
+        'primary',
+      );
 };
 
 export const CourseFixture = ({
+  emptyVocabulary = false,
   practiceAvailable = true,
 }: {
+  readonly emptyVocabulary?: boolean;
   readonly practiceAvailable?: boolean;
 }) => (
   <PageLayout
@@ -63,26 +48,42 @@ export const CourseFixture = ({
     title="English A2"
   >
     <CourseOverview
-      importAction={fixtureControl('Seite fotografieren', 'import', 'quiet')}
-      languageLabel="Englisch"
-      primaryAction={
-        practiceAvailable
-          ? fixtureControl('6 Karten üben', 'practice', 'primary')
-          : fixtureControl('2 Vokabeln kennenlernen', 'learn', 'primary')
+      createUnit={async (name) => [
+        ...courseUnits,
+        { ...emptyUnit, id: crypto.randomUUID(), name },
+      ]}
+      importAction={
+        emptyVocabulary
+          ? null
+          : fixtureControl('Seite fotografieren', 'import', 'quiet')
       }
+      languageLabel="Englisch"
+      primaryAction={coursePrimaryAction(emptyVocabulary, practiceAvailable)}
       renderUnitLink={(unit) => fixtureControl(unit.name, 'unit', 'quiet')}
+      reorderUnits={async (unitIds) =>
+        unitIds.flatMap((unitId) => {
+          const unit = courseUnits.find((candidate) => candidate.id === unitId);
+          return unit === undefined ? [] : [unit];
+        })
+      }
       settingsAction={fixtureControl(
         'Einstellungen',
         'course-settings',
         'quiet',
       )}
+      targetLabel={targetLabel}
       vocabularyAction={fixtureControl('Vokabelliste', 'vocabulary', 'quiet')}
-      units={[mixedUnit, unintroducedUnit, finishedUnit, emptyUnit]}
+      units={emptyVocabulary ? [emptyUnit] : courseUnits}
     />
   </PageLayout>
 );
 
-const unintroducedEntryIndex = 3;
+const uuidTailLength = 12;
+const entryIdOffset = 100;
+const cardIdOffset = 200;
+
+const fixtureId = (offset: number, index: number): string =>
+  `00000000-0000-4000-8000-${String(offset + index).padStart(uuidTailLength, '0')}`;
 
 const unitEntry = (
   index: number,
@@ -90,15 +91,16 @@ const unitEntry = (
   native: string,
   introduced: boolean,
 ): VocabularyEntry => ({
-  id: `00000000-0000-0000-0000-00000000003${index}`,
+  id: fixtureId(entryIdOffset, index),
   unitId: mixedUnit.id,
   unitName: mixedUnit.name,
   targetText: target,
   nativeText: native,
+  example: null,
   introduced,
   cards: [
     {
-      cardId: `00000000-0000-0000-0000-00000000004${index}`,
+      cardId: fixtureId(cardIdOffset, index),
       direction: 'to_target',
       state: introduced ? 'review' : 'new',
       dueAt: introduced ? new Date('2026-08-28T10:00:00Z') : null,
@@ -109,12 +111,13 @@ const unitEntry = (
 });
 
 type UnitFixtureProps = {
-  readonly state?: 'mixed' | 'unintroduced' | 'empty';
+  readonly state?: 'mixed' | 'unintroduced' | 'due' | 'empty';
 };
 
 const unitsByState = {
   mixed: mixedUnit,
   unintroduced: unintroducedUnit,
+  due: dueUnit,
   empty: emptyUnit,
 } as const;
 
@@ -126,20 +129,19 @@ const entriesByState: Record<
     unitEntry(1, 'memory', 'die Erinnerung', true),
     unitEntry(2, 'holiday', 'die Ferien', false),
   ],
-  unintroduced: [
+  unintroduced: Array.from({ length: unintroducedUnit.entries }, (_, index) =>
     unitEntry(
-      unintroducedEntryIndex,
-      'the referee',
-      'der Schiedsrichter',
+      index + 1,
+      `new word ${index + 1}`,
+      `neues Wort ${index + 1}`,
       false,
     ),
-  ],
+  ),
+  due: [unitEntry(1, 'memory', 'die Erinnerung', true)],
   empty: [],
 };
 
-// The merged unit screen: progress line, the unit's actions, and its
-// vocabulary as one selectable list. An unintroduced unit only offers
-// kennenlernen; an empty one offers neither action.
+// One unit screen holds both learning paths and its selectable vocabulary.
 export const UnitFixture = ({ state = 'mixed' }: UnitFixtureProps) => {
   const unit = unitsByState[state];
   return (
@@ -148,39 +150,64 @@ export const UnitFixture = ({ state = 'mixed' }: UnitFixtureProps) => {
       title={unit.name}
     >
       <p className="text-muted-foreground text-sm">
-        {unitProgressSummary(unit)}
+        {unitProgressSummary(unit, targetLabel)}
       </p>
-      {unit.unintroduced > 0 || introducedEntries(unit) > 0 ? (
-        <div className="flex flex-wrap items-center gap-4">
-          {unit.unintroduced > 0
-            ? fixtureControl(
-                `${countNoun(unit.unintroduced, 'Vokabel', 'Vokabeln')} kennenlernen`,
-                'learn',
-                'primary',
-              )
-            : null}
-          {introducedEntries(unit) > 0
-            ? fixtureControl(
-                `${countNoun(introducedEntries(unit), 'Vokabel', 'Vokabeln')} üben`,
-                'study-start',
-                unit.unintroduced > 0 ? 'outline' : 'primary',
-              )
-            : null}
-        </div>
-      ) : null}
-      <h2 className="font-display text-xl">Vokabeln</h2>
-      <VocabularyLibrary
-        enabledDirections={['to_target']}
-        entries={entriesByState[state]}
-        initialFilter="all"
-        renderStudyAction={() => (
-          <Button onClick={() => navigateToFixture('study-start')}>
-            Frei üben
-          </Button>
-        )}
-        scope="unit"
-        targetLanguage="en"
-      />
+      {unit.directions.length === 0 ? null : (
+        <UnitDirectionPlan
+          renderLearnAction={(progress, variant) =>
+            fixtureControl(
+              `${countNoun(itemsInNextSection(progress.unintroduced), 'Vokabel', 'Vokabeln')} kennenlernen${variant === 'primary' ? ` · ${directionLabel(progress.direction, targetLabel)}` : ''}`,
+              'learn',
+              variant,
+            )
+          }
+          renderScheduledAction={(progress, variant) =>
+            fixtureControl(
+              `${countNoun(progress.due + progress.firstReviews, 'Karte', 'Karten')} üben · ${directionLabel(progress.direction, targetLabel)}`,
+              'practice',
+              variant,
+            )
+          }
+          targetLabel={targetLabel}
+          unit={unit}
+        />
+      )}
+      {entriesByState[state].length === 0 ? (
+        <UnitVocabularyEmpty
+          importAction={fixtureControl(
+            'Seite fotografieren',
+            'import',
+            'primary',
+          )}
+        />
+      ) : (
+        <>
+          <h2 className="font-display text-xl">Vokabeln</h2>
+          <VocabularyLibrary
+            enabledDirections={['to_target', 'to_native']}
+            entries={entriesByState[state]}
+            generateExample={async () => ({
+              targetText: 'This is a useful example.',
+              nativeText: 'Das ist ein hilfreiches Beispiel.',
+              source: 'generated',
+            })}
+            initialFilter="all"
+            renderStudyAction={(_, intent) => (
+              <Button
+                onClick={() =>
+                  navigateToFixture(
+                    intent === 'learn' ? 'learn-start' : 'study-start',
+                  )
+                }
+              >
+                Auswahl {intent === 'learn' ? 'kennenlernen' : 'üben'}
+              </Button>
+            )}
+            scope="unit"
+            targetLanguage="en"
+          />
+        </>
+      )}
     </PageLayout>
   );
 };

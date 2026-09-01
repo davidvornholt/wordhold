@@ -12,6 +12,11 @@ const entries: ReadonlyArray<VocabularyEntry> = [
     unitName: 'Unit 3: Holidays',
     targetText: 'memory',
     nativeText: 'die Erinnerung',
+    example: {
+      targetText: 'That trip is a happy memory.',
+      nativeText: 'Diese Reise ist eine schöne Erinnerung.',
+      source: 'textbook',
+    },
     introduced: true,
     cards: [
       {
@@ -38,6 +43,7 @@ const entries: ReadonlyArray<VocabularyEntry> = [
     unitName: 'Unit 4: Sport',
     targetText: 'the referee',
     nativeText: 'der Schiedsrichter',
+    example: null,
     introduced: true,
     cards: [
       {
@@ -76,10 +82,21 @@ export const VocabularyFixture = ({
     <VocabularyLibrary
       enabledDirections={['to_target', 'to_native']}
       entries={entries}
+      generateExample={async () => ({
+        targetText: 'The referee stopped the match.',
+        nativeText: 'Der Schiedsrichter unterbrach das Spiel.',
+        source: 'generated',
+      })}
       initialFilter={difficult ? 'difficult' : 'all'}
-      renderStudyAction={() => (
-        <Button onClick={() => navigateToFixture('study-start')}>
-          Frei üben
+      renderStudyAction={(_, intent) => (
+        <Button
+          onClick={() =>
+            navigateToFixture(
+              intent === 'learn' ? 'learn-start' : 'study-start',
+            )
+          }
+        >
+          Auswahl {intent === 'learn' ? 'kennenlernen' : 'üben'}
         </Button>
       )}
       scope="course"

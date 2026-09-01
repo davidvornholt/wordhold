@@ -21,7 +21,13 @@ type VocabularyLibraryProps = {
   // scope shows one flat list because every entry belongs to the same unit.
   readonly scope: 'course' | 'unit';
   readonly targetLanguage: LanguageCode;
-  readonly renderStudyAction: (entryIds: ReadonlyArray<string>) => ReactNode;
+  readonly renderStudyAction: (
+    entryIds: ReadonlyArray<string>,
+    intent: 'learn' | 'practice',
+  ) => ReactNode;
+  readonly generateExample: (
+    entryId: string,
+  ) => Promise<NonNullable<VocabularyEntry['example']>>;
 };
 
 export const VocabularyLibrary = ({
@@ -32,6 +38,7 @@ export const VocabularyLibrary = ({
   scope,
   targetLanguage,
   renderStudyAction,
+  generateExample,
 }: VocabularyLibraryProps) => {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<VocabularyFilter>(initialFilter);
@@ -77,6 +84,16 @@ export const VocabularyLibrary = ({
         ? [...current, ...entryIds.filter((id) => !current.includes(id))]
         : current.filter((id) => !entryIds.includes(id)),
     );
+  const selectedEntries = entries.filter((entry) =>
+    selected.includes(entry.id),
+  );
+  const selectionIntent = selectedEntries.every((entry) =>
+    entry.cards
+      .filter((card) => enabledDirections.includes(card.direction))
+      .every((card) => card.introducedAt === null),
+  )
+    ? 'learn'
+    : 'practice';
 
   return (
     <div className="flex flex-col gap-5">
@@ -119,6 +136,7 @@ export const VocabularyLibrary = ({
           <VocabularyUnitSection
             enabledDirections={enabledDirections}
             entries={sectionEntries}
+            generateExample={generateExample}
             key={label}
             label={label}
             labelStyle={scope === 'course' ? 'heading' : 'plain'}
@@ -132,7 +150,7 @@ export const VocabularyLibrary = ({
       )}
       {selected.length === 0 ? null : (
         <VocabularySelectionBar count={selected.length}>
-          {renderStudyAction(selected)}
+          {renderStudyAction(selected, selectionIntent)}
         </VocabularySelectionBar>
       )}
     </div>

@@ -1,6 +1,6 @@
-export const practiceSectionSize = 20;
+import { itemsInNextSection } from '../session/section-policy';
 
 export const readyCardsInNextSection = (
   due: number,
   firstReviews: number,
-): number => Math.min(practiceSectionSize, due + firstReviews);
+): number => itemsInNextSection(due + firstReviews);

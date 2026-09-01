@@ -28,6 +28,7 @@ type CourseGridProps = {
   readonly cardsToday: number;
   readonly renderCourseLink: (course: Course) => ReactNode;
   readonly renderPracticeAction: (course: Course) => ReactNode;
+  readonly renderLearnAction: (course: Course) => ReactNode;
   readonly renderImportAction: (course: Course) => ReactNode;
 };
 
@@ -38,6 +39,7 @@ export const CourseGrid = ({
   cardsToday,
   renderCourseLink,
   renderPracticeAction,
+  renderLearnAction,
   renderImportAction,
 }: CourseGridProps) => (
   <section className="flex flex-col gap-3">
@@ -60,6 +62,7 @@ export const CourseGrid = ({
           courseLink={renderCourseLink(course)}
           importAction={renderImportAction(course)}
           key={course.id}
+          learnAction={renderLearnAction(course)}
           practiceAction={renderPracticeAction(course)}
           stats={stats.find((item) => item.courseId === course.id)}
         />

@@ -1,4 +1,6 @@
+import { ttsAudioProfile } from '@wordhold/ai/tts/speech-text';
 import { Database } from '@wordhold/db/client';
+import type { LanguageCode } from '@wordhold/db/schema/courses';
 import { Context, Effect, Layer } from 'effect';
 import { MediaDatabaseError } from './media-database-error';
 import { MediaNotFoundError } from './media-not-found-error';
@@ -6,6 +8,9 @@ import { Storage } from './server';
 
 export type MediaRepositoryShape = {
   readonly audioPath: (
+    entryId: string,
+  ) => Effect.Effect<string | undefined, MediaDatabaseError>;
+  readonly exampleAudioPath: (
     entryId: string,
   ) => Effect.Effect<string | undefined, MediaDatabaseError>;
   readonly pageImagePath: (
@@ -30,8 +35,55 @@ export const MediaRepositoryLive = Layer.effect(
       audioPath: (entryId) =>
         sql<{
           path: string;
-        }>`select path from entry_audio where entry_id = ${entryId} limit 1`.pipe(
-          Effect.map((rows) => rows[0]?.path),
+          voice: string;
+          targetText: string;
+          language: LanguageCode;
+        }>`
+          select entry_audio.path,
+            entry_audio.voice,
+            entries.target_text as "targetText",
+            courses.target_language as language
+          from entry_audio
+          inner join entries on entries.id = entry_audio.entry_id
+          inner join courses on courses.id = entries.course_id
+          where entry_audio.entry_id = ${entryId}
+        `.pipe(
+          Effect.map(
+            (rows) =>
+              rows.find(
+                (row) =>
+                  row.voice === ttsAudioProfile(row.targetText, row.language),
+              )?.path,
+          ),
+          Effect.mapError(mapDatabaseError),
+        ),
+      exampleAudioPath: (entryId) =>
+        sql<{
+          audioProfile: string;
+          language: LanguageCode;
+          path: string;
+          targetText: string;
+        }>`
+          select entry_examples.audio_path as path,
+            entry_examples.audio_profile as "audioProfile",
+            entry_examples.target_text as "targetText",
+            courses.target_language as language
+          from entry_examples
+          inner join entries on entries.id = entry_examples.entry_id
+          inner join courses on courses.id = entries.course_id
+          where entry_examples.entry_id = ${entryId}
+            and entry_examples.audio_path is not null
+            and entry_examples.audio_profile is not null
+          order by entry_examples.position, entry_examples.id
+        `.pipe(
+          Effect.map(
+            (rows) =>
+              rows.find(
+                (row) =>
+                  row.audioProfile ===
+                  ttsAudioProfile(row.targetText, row.language),
+              )?.path,
+          ),
           Effect.mapError(mapDatabaseError),
         ),
       pageImagePath: (pageId) =>
@@ -62,6 +114,9 @@ const loadMedia = (
 
 export const loadEntryAudio = (entryId: string) =>
   loadMedia((repository) => repository.audioPath(entryId));
+
+export const loadExampleAudio = (entryId: string) =>
+  loadMedia((repository) => repository.exampleAudioPath(entryId));
 
 export const loadPageImage = (pageId: string) =>
   loadMedia((repository) => repository.pageImagePath(pageId));

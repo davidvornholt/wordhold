@@ -1,32 +1,36 @@
 import type { ReactNode } from 'react';
+import { countNoun } from '../../../shared/format/count';
 import { ManagedHeading } from '../../../shared/ui/managed-heading';
 import { cardClass } from '../../../shared/ui/surface-styles';
 
 type LearnDoneProps = {
   readonly learned: number;
-  readonly practiceControl: ReactNode;
+  readonly directionLabel: string | null;
+  readonly controls: ReactNode;
 };
 
-const doneHeading = (learned: number): string => {
+const doneHeading = (learned: number, direction: string | null): string => {
   if (learned === 0) {
     return 'In dieser Einheit gibt es keine offene Abfragerichtung.';
   }
-  if (learned === 1) {
-    return 'Eine Abfragerichtung kennengelernt';
-  }
-  return `${learned} Abfragerichtungen kennengelernt`;
+  const count = countNoun(learned, 'Vokabel', 'Vokabeln');
+  return direction === null
+    ? `${count} kennengelernt`
+    : `${count} für ${direction} kennengelernt`;
 };
 
-export const LearnDone = ({ learned, practiceControl }: LearnDoneProps) => (
+export const LearnDone = ({
+  learned,
+  directionLabel,
+  controls,
+}: LearnDoneProps) => (
   <div className={`flex flex-col gap-3 ${cardClass}`}>
     <ManagedHeading className="font-display text-xl">
-      {doneHeading(learned)}
+      {doneHeading(learned, directionLabel)}
     </ManagedHeading>
     {learned === 0 ? null : (
-      <p className="text-sm">
-        Die Karten sind jetzt für ihre erste Abfrage bereit.
-      </p>
+      <p className="text-sm">Diese Richtung ist jetzt zum Üben bereit.</p>
     )}
-    {practiceControl}
+    {controls}
   </div>
 );

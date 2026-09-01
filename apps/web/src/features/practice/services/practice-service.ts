@@ -11,8 +11,11 @@ import { PracticeJudge } from './practice-judge';
 import { PracticeReviewStore } from './review-store';
 import { PracticeSessionStore } from './session-store';
 
-const withPrompt = (item: Omit<PracticeItem, 'prompt'>): PracticeItem => ({
+const withPrompt = (
+  item: Omit<PracticeItem, 'example' | 'prompt'>,
+): PracticeItem => ({
   ...item,
+  example: null,
   prompt: item.direction === 'to_target' ? item.nativeText : item.targetText,
 });
 
@@ -24,12 +27,17 @@ export class PracticeService extends Effect.Service<PracticeService>()(
       const reviews = yield* PracticeReviewStore;
       const cache = yield* JudgeCacheStore;
       const judge = yield* PracticeJudge;
-      const getSession = ({ courseId, direction }: SessionRequestData) =>
+      const getSession = ({
+        courseId,
+        direction,
+        unitId,
+      }: SessionRequestData) =>
         Effect.gen(function* () {
           const now = new Date(yield* Clock.currentTimeMillis);
           const { items, availability } = yield* sessions.loadScheduled(
             courseId,
             direction,
+            unitId ?? null,
             now,
           );
           return {

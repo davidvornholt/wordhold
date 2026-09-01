@@ -53,10 +53,31 @@ const actionIsRejected = async (action: Promise<unknown>): Promise<boolean> =>
 test('CardPractice freezes the submitted answer and ignores resubmission', async ({
   page,
 }) => {
+  await page.addInitScript(() => {
+    let plays = 0;
+    class AudioFixture {
+      currentTime = 0;
+      pause() {
+        this.currentTime = 0;
+      }
+      play() {
+        this.currentTime = 0;
+        plays += 1;
+        return Promise.resolve();
+      }
+    }
+    Object.defineProperty(globalThis, 'Audio', { value: AudioFixture });
+    Object.defineProperty(globalThis, '__audioPlays', {
+      get: () => plays,
+    });
+  });
   await page.goto('/?state=practice-deferred');
   const answer = page.getByLabel('Deine Antwort');
   await answer.fill('first answer');
-  await page.getByRole('button', { name: 'Prüfen' }).click();
+  await page.locator('form').evaluate((form: HTMLFormElement) => {
+    form.requestSubmit();
+    form.requestSubmit();
+  });
 
   await expect(answer).toBeDisabled();
   await expect(answer).toHaveValue('first answer');
@@ -74,6 +95,9 @@ test('CardPractice freezes the submitted answer and ignores resubmission', async
 
   await page.getByRole('button', { name: 'Resolve submission' }).click();
   await expect(page.getByText('Noch nicht sicher')).toBeVisible();
+  await expect
+    .poll(() => page.evaluate(() => Reflect.get(globalThis, '__audioPlays')))
+    .toBe(1);
 });
 
 test('CardPractice unlocks a rejected answer for a new submission', async ({

@@ -68,12 +68,12 @@ export const SignedOutFixture = () => (
   </HomeShell>
 );
 
-const dashboardStats = (empty: boolean) => [
+const dashboardStats = (empty: boolean, resting: boolean) => [
   {
     courseId: course.id,
     due: empty ? 0 : fixtureDue,
-    firstReviews: empty ? 0 : fixtureFirstReviews,
-    ready: empty ? 0 : fixtureDue + fixtureFirstReviews,
+    firstReviews: empty || resting ? 0 : fixtureFirstReviews,
+    ready: empty || resting ? 0 : fixtureDue + fixtureFirstReviews,
     unintroduced: empty ? 0 : fixtureUnintroduced,
     entries: empty ? 0 : fixtureEntries,
     nextDueAt: empty ? null : new Date('2026-08-30T10:40:00Z'),
@@ -81,8 +81,8 @@ const dashboardStats = (empty: boolean) => [
       {
         direction: 'to_target' as const,
         due: empty ? 0 : fixtureDue,
-        firstReviews: empty ? 0 : fixtureFirstReviews,
-        ready: empty ? 0 : fixtureDue + fixtureFirstReviews,
+        firstReviews: empty || resting ? 0 : fixtureFirstReviews,
+        ready: empty || resting ? 0 : fixtureDue + fixtureFirstReviews,
         nextDueAt: empty ? null : new Date('2026-08-30T10:40:00Z'),
       },
     ],
@@ -93,6 +93,7 @@ export const DashboardFixture = ({
   empty = false,
   audioRecovery = false,
   pending = false,
+  resting = false,
 }) => {
   const [pendingImportSessions, setPendingImportSessions] = useState(
     pending ? [pendingImportSession] : [],
@@ -110,10 +111,11 @@ export const DashboardFixture = ({
         renderImportAction={() =>
           action('fotografiere die erste Seite', 'import')
         }
+        renderLearnAction={() => action('Neue Vokabeln kennenlernen', 'course')}
         renderPracticeAction={() => action('6 Karten üben', 'practice')}
         reviewsToday={empty ? 0 : fixtureReviewsToday}
         cardsToday={empty ? 0 : fixtureCardsToday}
-        stats={dashboardStats(empty)}
+        stats={dashboardStats(empty, resting)}
       />
       <FragileList
         entries={

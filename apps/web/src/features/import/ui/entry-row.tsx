@@ -1,18 +1,19 @@
 import type { GrammarInfo } from '@wordhold/ai/extraction/schema';
-import {
-  maximumEntryTextLength,
-  maximumExampleLength,
-} from '@wordhold/ai/extraction/schema';
+import { maximumEntryTextLength } from '@wordhold/ai/extraction/schema';
 import type { ReactNode } from 'react';
 import { Button } from '../../../shared/ui/button';
 import { fieldCompactClass } from '../../../shared/ui/field-styles';
 import { Checkbox } from '../../../shared/ui/selection-controls';
 import type { DuplicateVerdict } from '../services/entry-identity';
+import { EntryExampleEditor } from './entry-example-editor';
 
 export type DraftEntry = {
   readonly targetText: string;
   readonly nativeText: string;
   readonly example: string;
+  readonly generatedExample?: {
+    readonly nativeText: string;
+  };
   readonly grammar?: GrammarInfo;
   readonly confidence?: number;
 };
@@ -70,6 +71,10 @@ type EntryRowProps = {
   readonly disabled: boolean;
   readonly targetLabel: string;
   readonly unitControl: ReactNode;
+  readonly generateExample: (
+    targetText: string,
+    nativeText: string,
+  ) => Promise<{ readonly target: string; readonly native: string }>;
   readonly duplicate: DuplicateVerdict;
   readonly duplicateConfirmed: boolean;
   readonly onChange: (entry: DraftEntry) => void;
@@ -83,12 +88,14 @@ export const EntryRow = ({
   disabled,
   targetLabel,
   unitControl,
+  generateExample,
   duplicate,
   duplicateConfirmed,
   onChange,
   onDuplicateConfirmedChange,
   onRemove,
 }: EntryRowProps) => {
+  const duplicateConfirmationId = `duplicate-confirmation-${entryNumber}`;
   const uncertain =
     entry.confidence !== undefined && entry.confidence < lowConfidence;
   const flagged = uncertain || duplicate !== 'none';
@@ -149,16 +156,11 @@ export const EntryRow = ({
           value={entry.nativeText}
         />
       </div>
-      <input
-        aria-label="Beispielsatz"
-        className={inputClass}
+      <EntryExampleEditor
         disabled={disabled}
-        maxLength={maximumExampleLength}
-        onChange={(event) =>
-          onChange({ ...entry, example: event.target.value })
-        }
-        placeholder="Beispielsatz (optional)"
-        value={entry.example}
+        entry={entry}
+        generate={generateExample}
+        onChange={onChange}
       />
       {grammar === '' ? null : (
         <p className="text-muted-foreground text-xs">{grammar}</p>
@@ -170,10 +172,14 @@ export const EntryRow = ({
         </p>
       ) : null}
       {duplicate === 'exception' ? (
-        <label className="flex items-center gap-2 text-sm">
+        <label
+          className="flex items-center gap-2 text-sm"
+          htmlFor={duplicateConfirmationId}
+        >
           <Checkbox
             checked={duplicateConfirmed}
             disabled={disabled}
+            id={duplicateConfirmationId}
             onChange={(event) =>
               onDuplicateConfirmedChange(event.target.checked)
             }

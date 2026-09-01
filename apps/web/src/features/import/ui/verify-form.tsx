@@ -36,6 +36,10 @@ type VerifyFormProps = {
   readonly targetLabel: string;
   readonly units: ReadonlyArray<Unit>;
   readonly busy: boolean;
+  readonly generateExample: (
+    targetText: string,
+    nativeText: string,
+  ) => Promise<{ readonly target: string; readonly native: string }>;
   readonly onSubmit: (
     verifiedEntries: ReadonlyArray<VerificationEntry>,
   ) => void;
@@ -57,6 +61,7 @@ export const VerifyForm = ({
   initialEntries,
   initialUnitName,
   existingEntries,
+  generateExample,
   targetLabel,
   units,
   busy,
@@ -118,6 +123,7 @@ export const VerifyForm = ({
             duplicateConfirmed={entry.duplicateConfirmed}
             entry={entry}
             entryNumber={index + 1}
+            generateExample={generateExample}
             // biome-ignore lint/suspicious/noArrayIndexKey: rows are positional edits of one page
             key={index}
             onChange={(next) =>
@@ -176,10 +182,7 @@ export const VerifyForm = ({
         >
           Eintrag hinzufügen
         </Button>
-        <Button
-          disabled={!submittable}
-          type="submit"
-        >
+        <Button disabled={!submittable} type="submit">
           {busy
             ? 'Importiere …'
             : submitLabel(

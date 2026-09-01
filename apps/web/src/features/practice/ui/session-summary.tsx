@@ -4,7 +4,7 @@ import {
   formatLearningDate,
 } from '../../../shared/dates/learning-date';
 import { countNoun } from '../../../shared/format/count';
-import { practiceSectionSize } from '../../../shared/practice/session-policy';
+import { itemsInNextSection } from '../../../shared/session/section-policy';
 import { Button } from '../../../shared/ui/button';
 import { Callout } from '../../../shared/ui/callout';
 import { ManagedHeading } from '../../../shared/ui/managed-heading';
@@ -35,6 +35,10 @@ export const SessionSummary = ({
     earliestScheduledReview(queue),
     initialNextDueAt,
   ]);
+  const now = new Date();
+  const reviewIsDue = nextDueAt !== null && nextDueAt <= now;
+  const showContinueControl =
+    continueControl !== undefined && (remainingReady > 0 || reviewIsDue);
   const heading = queue.total === 0 ? emptyMessage : 'Für jetzt geschafft';
 
   return (
@@ -71,13 +75,13 @@ export const SessionSummary = ({
       {nextDueAt === null ? null : (
         <Callout tone="positive">
           <p className="eyebrow">
-            {nextDueAt <= new Date()
+            {reviewIsDue
               ? 'Reguläre Wiederholung fällig'
               : 'Nächster Lerntermin'}
           </p>
           <p className="font-display text-lg">
             <time dateTime={nextDueAt.toISOString()}>
-              {formatLearningDate(nextDueAt)}
+              {formatLearningDate(nextDueAt, now)}
             </time>
           </p>
         </Callout>
@@ -90,7 +94,7 @@ export const SessionSummary = ({
         </p>
       ) : null}
       <div className="flex flex-wrap items-center gap-4">
-        {continueControl}
+        {showContinueControl ? continueControl : null}
         {backControl}
       </div>
     </section>
@@ -118,7 +122,7 @@ export const SectionCheckpoint = ({
     </p>
     <div className="flex flex-wrap gap-3">
       <Button onClick={onContinue}>
-        Weitere {Math.min(practiceSectionSize, queue.remaining.length)} üben
+        Weitere {itemsInNextSection(queue.remaining.length)} üben
       </Button>
       <Button onClick={onFinish} variant="outline">
         Für jetzt beenden

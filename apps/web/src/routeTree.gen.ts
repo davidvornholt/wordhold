@@ -22,6 +22,7 @@ import { Route as CoursesCourseIdStudyRouteImport } from './routes/courses/$cour
 import { Route as CoursesCourseIdVocabularyRouteImport } from './routes/courses/$courseId/vocabulary'
 import { Route as PagesPageIdVerifyRouteImport } from './routes/pages/$pageId/verify'
 import { Route as ApiEntriesEntryIdAudioRouteImport } from './routes/api/entries/$entryId/audio'
+import { Route as ApiEntriesEntryIdExampleAudioRouteImport } from './routes/api/entries/$entryId/example-audio'
 import { Route as ApiPagesPageIdImageRouteImport } from './routes/api/pages/$pageId/image'
 import { Route as CoursesCourseIdUnitsUnitIdIndexRouteImport } from './routes/courses/$courseId/units/$unitId/index'
 import { Route as CoursesCourseIdUnitsUnitIdLearnRouteImport } from './routes/courses/$courseId/units/$unitId/learn'
@@ -92,6 +93,12 @@ const ApiEntriesEntryIdAudioRoute = ApiEntriesEntryIdAudioRouteImport.update({
   path: '/api/entries/$entryId/audio',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiEntriesEntryIdExampleAudioRoute =
+  ApiEntriesEntryIdExampleAudioRouteImport.update({
+    id: '/api/entries/$entryId/example-audio',
+    path: '/api/entries/$entryId/example-audio',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPagesPageIdImageRoute = ApiPagesPageIdImageRouteImport.update({
   id: '/$pageId/image',
   path: '/$pageId/image',
@@ -124,6 +131,7 @@ export interface FileRoutesByFullPath {
   '/pages/$pageId/verify': typeof PagesPageIdVerifyRoute
   '/courses/$courseId/': typeof CoursesCourseIdIndexRoute
   '/api/entries/$entryId/audio': typeof ApiEntriesEntryIdAudioRoute
+  '/api/entries/$entryId/example-audio': typeof ApiEntriesEntryIdExampleAudioRoute
   '/api/pages/$pageId/image': typeof ApiPagesPageIdImageRoute
   '/courses/$courseId/units/$unitId/learn': typeof CoursesCourseIdUnitsUnitIdLearnRoute
   '/courses/$courseId/units/$unitId/': typeof CoursesCourseIdUnitsUnitIdIndexRoute
@@ -142,6 +150,7 @@ export interface FileRoutesByTo {
   '/pages/$pageId/verify': typeof PagesPageIdVerifyRoute
   '/courses/$courseId': typeof CoursesCourseIdIndexRoute
   '/api/entries/$entryId/audio': typeof ApiEntriesEntryIdAudioRoute
+  '/api/entries/$entryId/example-audio': typeof ApiEntriesEntryIdExampleAudioRoute
   '/api/pages/$pageId/image': typeof ApiPagesPageIdImageRoute
   '/courses/$courseId/units/$unitId/learn': typeof CoursesCourseIdUnitsUnitIdLearnRoute
   '/courses/$courseId/units/$unitId': typeof CoursesCourseIdUnitsUnitIdIndexRoute
@@ -161,6 +170,7 @@ export interface FileRoutesById {
   '/pages/$pageId/verify': typeof PagesPageIdVerifyRoute
   '/courses/$courseId/': typeof CoursesCourseIdIndexRoute
   '/api/entries/$entryId/audio': typeof ApiEntriesEntryIdAudioRoute
+  '/api/entries/$entryId/example-audio': typeof ApiEntriesEntryIdExampleAudioRoute
   '/api/pages/$pageId/image': typeof ApiPagesPageIdImageRoute
   '/courses/$courseId/units/$unitId/learn': typeof CoursesCourseIdUnitsUnitIdLearnRoute
   '/courses/$courseId/units/$unitId/': typeof CoursesCourseIdUnitsUnitIdIndexRoute
@@ -181,6 +191,7 @@ export interface FileRouteTypes {
     | '/pages/$pageId/verify'
     | '/courses/$courseId/'
     | '/api/entries/$entryId/audio'
+    | '/api/entries/$entryId/example-audio'
     | '/api/pages/$pageId/image'
     | '/courses/$courseId/units/$unitId/learn'
     | '/courses/$courseId/units/$unitId/'
@@ -199,6 +210,7 @@ export interface FileRouteTypes {
     | '/pages/$pageId/verify'
     | '/courses/$courseId'
     | '/api/entries/$entryId/audio'
+    | '/api/entries/$entryId/example-audio'
     | '/api/pages/$pageId/image'
     | '/courses/$courseId/units/$unitId/learn'
     | '/courses/$courseId/units/$unitId'
@@ -217,6 +229,7 @@ export interface FileRouteTypes {
     | '/pages/$pageId/verify'
     | '/courses/$courseId/'
     | '/api/entries/$entryId/audio'
+    | '/api/entries/$entryId/example-audio'
     | '/api/pages/$pageId/image'
     | '/courses/$courseId/units/$unitId/learn'
     | '/courses/$courseId/units/$unitId/'
@@ -236,6 +249,7 @@ export interface RootRouteChildren {
   PagesPageIdVerifyRoute: typeof PagesPageIdVerifyRoute
   CoursesCourseIdIndexRoute: typeof CoursesCourseIdIndexRoute
   ApiEntriesEntryIdAudioRoute: typeof ApiEntriesEntryIdAudioRoute
+  ApiEntriesEntryIdExampleAudioRoute: typeof ApiEntriesEntryIdExampleAudioRoute
   CoursesCourseIdUnitsUnitIdLearnRoute: typeof CoursesCourseIdUnitsUnitIdLearnRoute
   CoursesCourseIdUnitsUnitIdIndexRoute: typeof CoursesCourseIdUnitsUnitIdIndexRoute
 }
@@ -333,6 +347,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiEntriesEntryIdAudioRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/entries/$entryId/example-audio': {
+      id: '/api/entries/$entryId/example-audio'
+      path: '/api/entries/$entryId/example-audio'
+      fullPath: '/api/entries/$entryId/example-audio'
+      preLoaderRoute: typeof ApiEntriesEntryIdExampleAudioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/pages/$pageId/image': {
       id: '/api/pages/$pageId/image'
       path: '/$pageId/image'
@@ -383,6 +404,7 @@ const rootRouteChildren: RootRouteChildren = {
   PagesPageIdVerifyRoute: PagesPageIdVerifyRoute,
   CoursesCourseIdIndexRoute: CoursesCourseIdIndexRoute,
   ApiEntriesEntryIdAudioRoute: ApiEntriesEntryIdAudioRoute,
+  ApiEntriesEntryIdExampleAudioRoute: ApiEntriesEntryIdExampleAudioRoute,
   CoursesCourseIdUnitsUnitIdLearnRoute: CoursesCourseIdUnitsUnitIdLearnRoute,
   CoursesCourseIdUnitsUnitIdIndexRoute: CoursesCourseIdUnitsUnitIdIndexRoute,
 }

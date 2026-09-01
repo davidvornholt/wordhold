@@ -24,7 +24,7 @@ describe('advancesSchedule', () => {
   });
 
   // Learning and relearning steps are minutes apart and exist to be answered
-  // again, so a repeat inside free practice still counts.
+  // again, so a repeat inside a custom sitting still counts.
   it('advances a card that is still on a learning step', () => {
     expect(
       advancesSchedule({ state: 'relearning', dueAt: inThreeDays }, now, true),

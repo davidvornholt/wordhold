@@ -110,7 +110,11 @@ export const resolveAnswerSubmission = (
   { reviews, cache, judge }: SubmissionDependencies,
 ) =>
   Effect.gen(function* () {
-    const row = yield* reviews.findSubmission(data.cardId, data.revision);
+    const row = yield* reviews.findSubmission(
+      data.cardId,
+      data.revision,
+      data.mode,
+    );
     if (row === undefined) {
       return yield* new StaleAnswerSubmissionError({
         message: 'Diese Karte wurde bereits beantwortet. Lade die Übung neu.',

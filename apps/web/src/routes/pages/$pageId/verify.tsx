@@ -5,7 +5,11 @@ import {
   batchReviewSearchFor,
   parseBatchReviewSearch,
 } from '../../../features/import/schemas/batch-review-search';
-import { getImportSession, getPage } from '../../../features/import/server-fns';
+import {
+  generateDraftExample,
+  getImportSession,
+  getPage,
+} from '../../../features/import/server-fns';
 import type {
   Course,
   Unit,
@@ -99,6 +103,11 @@ const VerificationPageScreen = ({
               ? null
               : flow.extraction.modelId +
                 String(flow.extraction.page.entries.length)
+          }
+          generateExample={(targetText, nativeText) =>
+            generateDraftExample({
+              data: { pageId: page.id, targetText, nativeText },
+            })
           }
           initialEntries={draftsFromExtraction(flow.extraction)}
           initialUnitName={flow.extraction?.page.unitName}

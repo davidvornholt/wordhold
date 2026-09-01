@@ -91,22 +91,38 @@ describe('verifyPageLive duplicates', () => {
         Effect.gen(function* () {
           yield* seedCourse;
           yield* importEntries(pageIds[0], [
-            entry('mémoire', { example: 'Une bonne mémoire.' }),
+            entry('mémoire', {
+              example: {
+                targetText: 'Une bonne mémoire.',
+                source: 'textbook',
+              },
+            }),
           ]);
           const unconfirmed = yield* importEntries(pageIds[1], [
-            entry('Mémoire', { example: 'Une bonne mémoire.' }),
+            entry('Mémoire', {
+              example: {
+                targetText: 'Une bonne mémoire.',
+                source: 'textbook',
+              },
+            }),
           ]);
           expect(unconfirmed._tag).toBe('Left');
           const casingVariant = yield* importEntries(pageIds[1], [
             entry('Mémoire', {
-              example: 'Une bonne mémoire.',
+              example: {
+                targetText: 'Une bonne mémoire.',
+                source: 'textbook',
+              },
               duplicateException: true,
             }),
           ]);
           expect(casingVariant._tag).toBe('Right');
           const exampleVariant = yield* importEntries(pageIds[2], [
             entry('mémoire', {
-              example: 'La mémoire humaine.',
+              example: {
+                targetText: 'La mémoire humaine.',
+                source: 'textbook',
+              },
               duplicateException: true,
             }),
           ]);

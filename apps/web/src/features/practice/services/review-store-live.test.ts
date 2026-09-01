@@ -54,7 +54,11 @@ describe('PracticeReviewStore introduction contract', () => {
             return yield* Effect.die('Missing unintroduced card fixture.');
           }
 
-          const submission = yield* store.findSubmission(identity.id, 0);
+          const submission = yield* store.findSubmission(
+            identity.id,
+            0,
+            'scheduled',
+          );
           expect(submission).toBeUndefined();
 
           const card: typeof cards.$inferSelect = {
@@ -111,6 +115,69 @@ describe('PracticeReviewStore introduction contract', () => {
             introducedAt: null,
           });
           expect(counts).toEqual({ reviews: 0, alternatives: 0 });
+        }).pipe(Effect.provide(reviewLayer), Effect.provide(databaseLayer));
+      }),
+    );
+  });
+});
+
+describe('PracticeReviewStore explicit selection', () => {
+  it('introduces an explicitly selected card with its first answer', async () => {
+    await Effect.runPromise(
+      withMigratedTestDatabase((database) => {
+        const databaseLayer = testDatabaseLayer(database.url);
+        const reviewLayer = PracticeReviewStore.live.pipe(
+          Layer.provide(databaseLayer),
+        );
+        return Effect.gen(function* () {
+          yield* seedIntroducedCardFixture;
+          const sql = yield* Database;
+          const store = yield* PracticeReviewStore;
+          const [identity] = yield* sql<CardIdentity>`
+            select id, entry_id as "entryId", direction
+            from cards where introduced_at is null
+            order by direction limit 1
+          `;
+          if (identity === undefined) {
+            return yield* Effect.die('Missing unintroduced card fixture.');
+          }
+
+          const submission = yield* store.findSubmission(
+            identity.id,
+            0,
+            'drill',
+          );
+          if (submission === undefined) {
+            return yield* Effect.die('Expected the selected card revision.');
+          }
+          expect(
+            yield* store.commit({
+              card: submission.card,
+              expectedRevision: 0,
+              rating: ratings.good,
+              reviewedAt: fixtureNow,
+              outcome: { method: 'judge', verdict: acceptedVerdict },
+              answer: 'nouveau',
+              elapsedMs: 1000,
+              mode: 'drill',
+              entryId: identity.entryId,
+              direction: identity.direction,
+              normalizedAnswer: 'nouveau',
+            }),
+          ).toMatchObject({ revision: 1 });
+
+          const [stored] = yield* sql<{
+            readonly introducedAt: Date | null;
+            readonly reviews: number;
+          }>`
+            select c.introduced_at as "introducedAt",
+              count(r.id)::int as reviews
+            from cards c
+            left join reviews r on r.card_id = c.id
+            where c.id = ${identity.id}
+            group by c.id
+          `;
+          expect(stored).toEqual({ introducedAt: fixtureNow, reviews: 1 });
         }).pipe(Effect.provide(reviewLayer), Effect.provide(databaseLayer));
       }),
     );

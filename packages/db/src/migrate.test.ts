@@ -14,6 +14,8 @@ const reviewOrderMigrationHash =
   '3b01f431635ab6d65034133670f39894f3ea9b7710520a3659c4f0e426a092d2';
 const reviewPositionMigrationHash =
   '667da7736b64b0656bc94e13aa92a626ee11d920ef4a49b55660274959306df1';
+const exampleAudioMigrationHash =
+  'aface4b435b2dafbc5c9edefed79481429abecc375d5cd26d416759672671b24';
 
 const getMigrationError = (url: string) =>
   Effect.runPromise(migrateDatabase(url).pipe(Effect.flip));
@@ -45,12 +47,16 @@ it('applies every migration and is safe to rerun', async () => {
         yield* sql`alter table pages drop column review_position`;
         yield* sql`alter table pages drop column review_order`;
         yield* sql`drop type page_review_order`;
+        yield* sql`alter table entry_examples drop constraint entry_examples_audio_complete`;
+        yield* sql`alter table entry_examples drop column audio_profile`;
+        yield* sql`alter table entry_examples drop column audio_path`;
         yield* sql`
           delete from drizzle.__drizzle_migrations
           where hash in (
             ${importPositionConstraintMigrationHash},
             ${reviewOrderMigrationHash},
-            ${reviewPositionMigrationHash}
+            ${reviewPositionMigrationHash},
+            ${exampleAudioMigrationHash}
           )
         `;
         yield* migrateDatabase(database.url);

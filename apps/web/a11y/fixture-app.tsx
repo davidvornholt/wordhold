@@ -1,9 +1,4 @@
 import {
-  RootError,
-  RootNotFound,
-  RootPending,
-} from '../src/shared/routing/root-feedback';
-import {
   BatchReviewCompleteFixture,
   BatchReviewFixture,
 } from './batch-review-fixtures';
@@ -15,17 +10,18 @@ import {
   DeferredCourseSettingsFixture,
   PracticeStartFixture,
 } from './direction-fixtures';
-import {
-  type FixtureState,
-  navigateToFixture,
-  readFixtureState,
-} from './fixture-state';
+import { type FixtureState, readFixtureState } from './fixture-state';
 import {
   DeferredVerificationFixture,
   VerificationFixture,
 } from './import-fixtures';
 import { ImportSessionFixture } from './import-session-fixture';
-import { LearnDoneFixture, LearnFixture } from './learning-fixtures';
+import {
+  LearnDoneFixture,
+  LearnFixture,
+  LearnSectionDoneFixture,
+  LearnStartFixture,
+} from './learning-fixtures';
 import {
   DeferredPracticeFixture,
   PracticeEmptyFixture,
@@ -37,6 +33,7 @@ import {
   FutureStudySessionFixture,
   PracticeSessionFixture,
 } from './practice-session-fixtures';
+import { rootFixture } from './root-fixtures';
 import { StaleUnitVerificationFixture } from './stale-unit-fixture';
 import { StudyStartFixture } from './study-fixtures';
 import { VocabularyFixture } from './vocabulary-fixtures';
@@ -54,10 +51,46 @@ const batchReviewFixture = (state: FixtureState) => {
   }
 };
 
-const ErrorFixture = () => (
-  <RootError
-    error={new Error('Database unavailable')}
-    reset={() => navigateToFixture('dashboard')}
+const learningFixture = (state: FixtureState) => {
+  switch (state) {
+    case 'learn':
+      return <LearnFixture />;
+    case 'learn-audio':
+      return <LearnFixture withAudio={true} />;
+    case 'learn-start':
+      return <LearnStartFixture />;
+    case 'learn-native':
+      return <LearnFixture direction="to_native" />;
+    case 'learn-retry':
+      return <LearnFixture failFirst={true} />;
+    case 'learn-done':
+      return <LearnDoneFixture />;
+    case 'learn-section-done':
+      return <LearnSectionDoneFixture />;
+    default:
+      return null;
+  }
+};
+
+const courseFixture = (state: FixtureState) => {
+  switch (state) {
+    case 'course':
+      return <CourseFixture />;
+    case 'course-no-practice':
+      return <CourseFixture practiceAvailable={false} />;
+    case 'course-empty-units':
+      return <CourseFixture emptyVocabulary={true} />;
+    default:
+      return null;
+  }
+};
+
+const dashboardFixture = (state: FixtureState) => (
+  <DashboardFixture
+    audioRecovery={state === 'dashboard-audio-recovery'}
+    empty={state === 'dashboard-empty'}
+    pending={state === 'dashboard-pending'}
+    resting={state === 'dashboard-learning'}
   />
 );
 
@@ -67,13 +100,11 @@ export const FixtureApp = () => {
     case 'signed-out':
       return <SignedOutFixture />;
     case 'dashboard':
-      return <DashboardFixture />;
     case 'dashboard-empty':
-      return <DashboardFixture empty={true} />;
+    case 'dashboard-learning':
     case 'dashboard-audio-recovery':
-      return <DashboardFixture audioRecovery={true} />;
     case 'dashboard-pending':
-      return <DashboardFixture pending={true} />;
+      return dashboardFixture(state);
     case 'import':
       return <ImportFixture />;
     case 'import-selected':
@@ -109,21 +140,25 @@ export const FixtureApp = () => {
     case 'verification-deferred':
       return <DeferredVerificationFixture />;
     case 'course':
-      return <CourseFixture />;
     case 'course-no-practice':
-      return <CourseFixture practiceAvailable={false} />;
+    case 'course-empty-units':
+      return courseFixture(state);
     case 'unit':
       return <UnitFixture />;
     case 'unit-unintroduced':
       return <UnitFixture state="unintroduced" />;
+    case 'unit-due':
+      return <UnitFixture state="due" />;
     case 'unit-empty':
       return <UnitFixture state="empty" />;
     case 'learn':
-      return <LearnFixture />;
+    case 'learn-audio':
+    case 'learn-start':
+    case 'learn-native':
     case 'learn-retry':
-      return <LearnFixture failFirst={true} />;
     case 'learn-done':
-      return <LearnDoneFixture />;
+    case 'learn-section-done':
+      return learningFixture(state);
     case 'course-settings':
       return <CourseSettingsFixture />;
     case 'vocabulary':
@@ -138,6 +173,8 @@ export const FixtureApp = () => {
       return <PracticeFixture />;
     case 'practice-start':
       return <PracticeStartFixture />;
+    case 'practice-start-partial':
+      return <PracticeStartFixture partial={true} />;
     case 'practice-session':
       return <PracticeSessionFixture />;
     case 'study-session':
@@ -153,11 +190,9 @@ export const FixtureApp = () => {
     case 'practice-deferred':
       return <DeferredPracticeFixture />;
     case 'loading':
-      return <RootPending />;
     case 'error':
-      return <ErrorFixture />;
     case 'not-found':
-      return <RootNotFound />;
+      return rootFixture(state);
     default:
       return state satisfies never;
   }

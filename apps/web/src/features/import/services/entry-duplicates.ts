@@ -34,7 +34,10 @@ const inspectEntry = (
   }
   const pool = pools.get(unitId) ?? [];
   const verdict = duplicateVerdict(
-    { targetText: entry.targetText, example: entry.example ?? '' },
+    {
+      targetText: entry.targetText,
+      example: entry.example?.targetText ?? '',
+    },
     pool,
   );
   const blocked = isBlockedDuplicate(entry, verdict);
@@ -42,9 +45,9 @@ const inspectEntry = (
     pool.push({
       targetText: entry.targetText,
       examples:
-        entry.example === undefined || entry.example === ''
+        entry.example === undefined || entry.example.targetText === ''
           ? []
-          : [entry.example],
+          : [entry.example.targetText],
     });
     pools.set(unitId, pool);
   }

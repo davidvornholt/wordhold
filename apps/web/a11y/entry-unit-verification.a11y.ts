@@ -2,6 +2,8 @@ import { scanWcag22AaViolations } from '@davidvornholt/a11y-testing/axe';
 import { expect, test } from '@playwright/test';
 import { assertNoAccessibilityViolations } from './a11y-assertions';
 
+const generatedExampleIndex = 3;
+
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
 test('VerifyForm defaults to the latest real unit and routes entries independently', async ({
@@ -99,5 +101,27 @@ test('VerifyForm announces a stale unit failure and unlocks recovery', async ({
   await expect(
     page.locator('form > ul > li').first().getByLabel('Einheit für Eintrag 1'),
   ).toBeEnabled();
+  assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
+});
+
+test('VerifyForm generates an editable sentence and German translation', async ({
+  page,
+}) => {
+  await page.goto('/?state=verification');
+  const generate = page
+    .getByRole('button', { name: 'Beispielsatz erzeugen' })
+    .first();
+  await generate.click();
+  await expect(
+    page.getByLabel('Beispielsatz').nth(generatedExampleIndex),
+  ).toHaveValue('This memory makes me smile.');
+  await expect(
+    page.getByLabel('Deutsche Übersetzung des Beispielsatzes').first(),
+  ).toHaveValue('Diese Erinnerung bringt mich zum Lächeln.');
+  await expect(
+    page.getByText(
+      'Mit KI erzeugt. Prüfe Satz und Übersetzung vor dem Import.',
+    ),
+  ).toBeVisible();
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
 });

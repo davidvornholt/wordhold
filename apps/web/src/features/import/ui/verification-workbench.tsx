@@ -21,6 +21,10 @@ type VerificationWorkbenchProps = {
   readonly completed: CompletedPage | null;
   readonly existingEntries: ReadonlyArray<UnitEntry>;
   readonly extractionKey: string | null;
+  readonly generateExample: (
+    targetText: string,
+    nativeText: string,
+  ) => Promise<{ readonly target: string; readonly native: string }>;
   readonly initialEntries: ReadonlyArray<DraftEntry>;
   readonly initialUnitName: string | undefined;
   readonly onExtractionRetry: () => void;
@@ -53,6 +57,7 @@ export const VerificationWorkbench = ({
   completed,
   existingEntries,
   extractionKey,
+  generateExample,
   initialEntries,
   initialUnitName,
   onExtractionRetry,
@@ -88,6 +93,7 @@ export const VerificationWorkbench = ({
         <VerifyForm
           busy={busy}
           existingEntries={existingEntries}
+          generateExample={generateExample}
           initialEntries={initialEntries}
           initialUnitName={initialUnitName}
           key={extractionKey}
