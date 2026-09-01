@@ -22,11 +22,7 @@ export const AudioRecovery = ({
   }, []);
 
   return (
-    <Callout
-      aria-busy={busy}
-      aria-live="polite"
-      tone={error === null ? 'neutral' : 'destructive'}
-    >
+    <Callout aria-busy={busy} tone={error === null ? 'neutral' : 'destructive'}>
       <h2 className="font-display text-xl">Import abgeschlossen</h2>
       <p className="text-sm">
         {imported === null
@@ -35,19 +31,25 @@ export const AudioRecovery = ({
         Wordhold ergänzt die Aussprache automatisch. Du kannst bereits
         weiterlernen.
       </p>
-      {busy ? (
-        <p className="text-sm" role="status">
-          Aussprache wird erstellt …
-        </p>
-      ) : null}
-      {error === null ? null : (
+      {busy || error !== null ? (
         <div className="flex flex-col items-start gap-3">
-          <p className="text-sm" role="alert">
-            Die Aussprache konnte noch nicht erstellt werden.
+          <p className="text-sm" role={busy ? 'status' : 'alert'}>
+            {busy
+              ? 'Aussprache wird erstellt …'
+              : 'Die Aussprache konnte noch nicht erstellt werden.'}
           </p>
-          <Button onClick={onRetry}>Erneut versuchen</Button>
+          <Button
+            aria-disabled={busy}
+            onClick={() => {
+              if (!busy) {
+                onRetry();
+              }
+            }}
+          >
+            {busy ? 'Wird erstellt …' : 'Erneut versuchen'}
+          </Button>
         </div>
-      )}
+      ) : null}
     </Callout>
   );
 };

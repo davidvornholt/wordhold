@@ -57,7 +57,11 @@ test('verification announces recovery and offers another attempt after failure',
   await expect(page.getByRole('alert')).toHaveText(
     'Die Aussprache konnte noch nicht erstellt werden.',
   );
-  await page.getByRole('button', { name: 'Erneut versuchen' }).click();
+  const retryButton = page.getByRole('button', { name: 'Erneut versuchen' });
+  await retryButton.click();
+  const workingButton = page.getByRole('button', { name: 'Wird erstellt …' });
+  await expect(workingButton).toBeFocused();
+  await expect(workingButton).toHaveAttribute('aria-disabled', 'true');
   await expect(page.getByRole('status')).toHaveText(
     'Aussprache wird erstellt …',
   );
