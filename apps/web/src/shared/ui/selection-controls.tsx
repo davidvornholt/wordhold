@@ -59,11 +59,7 @@ export const Checkbox = ({
         fill="none"
         viewBox="0 0 14 14"
       >
-        <path
-          d="M2 7.5 5.5 11 12 3.5"
-          stroke="currentColor"
-          strokeWidth="2"
-        />
+        <path d="M2 7.5 5.5 11 12 3.5" stroke="currentColor" strokeWidth="2" />
       </svg>
       <span
         aria-hidden="true"

@@ -1,17 +1,16 @@
 import type { ReviewMode } from '@wordhold/db/schema/practice';
 import { useRef, useState } from 'react';
-import type {
-  PracticeSession,
-  SubmitResult,
-} from '../src/features/practice/schemas/practice-models';
-import type { SubmitPayloadData } from '../src/features/practice/schemas/submission-schema';
+import type { PracticeSession } from '../src/features/practice/schemas/practice-models';
 import { SessionRunner } from '../src/features/practice/ui/session-runner';
-import { ratings } from '../src/shared/grading/rating';
 import { PageLayout } from '../src/shared/ui/page-layout';
+import { DeferredExampleControls } from './deferred-example-controls';
+import {
+  type DeferredExamples,
+  makeDeferredExamples,
+} from './deferred-examples';
 import { fixtureBackControl, fixtureControl } from './fixture-controls';
+import { gradeFixtureAnswer } from './practice-session-grade';
 
-const millisecondsPerDay = 86_400_000;
-const millisecondsPerSecond = 1000;
 type FixtureCard = PracticeSession['items'][number];
 
 const card = (index: number, target: string, native: string): FixtureCard => ({
@@ -43,95 +42,6 @@ const audioItems = [
     },
   },
 ] as const;
-
-type PreparedExamples = ReadonlyArray<{
-  readonly entryId: string;
-  readonly example: FixtureCard['example'];
-}>;
-
-type DeferredExamples = {
-  readonly promise: Promise<PreparedExamples>;
-  readonly resolve: (value: PreparedExamples) => void;
-};
-
-const makeDeferredExamples = (): DeferredExamples => {
-  let resolve: DeferredExamples['resolve'] = () => undefined;
-  const promise = new Promise<PreparedExamples>((accept) => {
-    resolve = accept;
-  });
-  return { promise, resolve };
-};
-
-const resolvedRating = (correct: boolean, corrected: boolean) => {
-  if (correct) {
-    return ratings.good;
-  }
-  return corrected ? ratings.hard : ratings.again;
-};
-
-const grade = (
-  sessionItems: ReadonlyArray<FixtureCard>,
-  { data }: { readonly data: SubmitPayloadData },
-): Promise<SubmitResult> => {
-  const expected =
-    sessionItems.find((item) => item.cardId === data.cardId)?.targetText ?? '';
-  if ('skipped' in data) {
-    return Promise.resolve({
-      graded: true,
-      correct: false,
-      stored: true,
-      revision: data.revision + 1,
-      rating: ratings.again,
-      expectedAnswers: [expected],
-      explanation: null,
-      acceptedAsAlternative: false,
-      schedule: {
-        advanced: true,
-        state: 'relearning',
-        dueAt: new Date(Date.now() - millisecondsPerSecond),
-      },
-    });
-  }
-  if (data.answer === 'ungraded') {
-    return Promise.resolve({
-      graded: false,
-      expectedAnswers: [expected],
-      message: 'Der KI-Prüfer ist gerade nicht erreichbar.',
-    });
-  }
-  const correct = data.answer === expected;
-  if (!correct && data.wrongAnswerResolution === 'defer') {
-    return Promise.resolve({
-      graded: true,
-      correct: false,
-      stored: false,
-      expectedAnswers: [expected],
-      explanation: null,
-      acceptedAsAlternative: false,
-      assessmentId: '00000000-0000-0000-0000-000000000003',
-    });
-  }
-  const corrected = !correct && data.wrongAnswerResolution === 'hard';
-  const resolvedCorrect = correct || corrected;
-  const scheduleAdvances = data.mode === 'scheduled' || !resolvedCorrect;
-  return Promise.resolve({
-    graded: true,
-    correct: resolvedCorrect,
-    stored: true,
-    revision: data.revision + 1,
-    rating: resolvedRating(correct, corrected),
-    expectedAnswers: [expected],
-    explanation: null,
-    acceptedAsAlternative: false,
-    schedule: {
-      advanced: scheduleAdvances,
-      state: resolvedCorrect ? 'review' : 'relearning',
-      dueAt: resolvedCorrect
-        ? new Date(Date.now() + millisecondsPerDay)
-        : new Date(Date.now() - millisecondsPerSecond),
-    },
-  });
-};
 
 type PracticeSessionFixtureProps = {
   readonly sessionItems?: ReadonlyArray<FixtureCard>;
@@ -201,27 +111,20 @@ export const PracticeSessionFixture = ({
           mode={mode}
           prepareExamples={prepareExamples}
           session={session}
-          submit={(input) => grade(activeItems, input)}
+          submit={(input) => gradeFixtureAnswer(activeItems, input)}
           targetLabel="Englisch"
           targetLanguage="en"
         />
       ) : null}
       {deferredExample ? (
-        <div>
-          <button onClick={() => setShowSession(false)} type="button">
-            Sitzung ausblenden
-          </button>
-          <button
-            onClick={() =>
-              deferred.current?.resolve(
-                preparedExamples(activeItems.map((item) => item.entryId)),
-              )
-            }
-            type="button"
-          >
-            Beispielsatz freigeben
-          </button>
-        </div>
+        <DeferredExampleControls
+          onHide={() => setShowSession(false)}
+          onResolve={() =>
+            deferred.current?.resolve(
+              preparedExamples(activeItems.map((item) => item.entryId)),
+            )
+          }
+        />
       ) : null}
     </PageLayout>
   );

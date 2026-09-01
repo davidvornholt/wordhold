@@ -3,10 +3,10 @@ import { useEffect, useId, useRef } from 'react';
 import { formatLearningDate } from '../../../shared/dates/learning-date';
 import type { PreparedExampleSentence } from '../../../shared/examples/example-model';
 import { normalizeAnswerForComparison } from '../../../shared/grading/normalize';
-import { Button } from '../../../shared/ui/button';
 import { Callout } from '../../../shared/ui/callout';
 import type { SubmitResult } from '../schemas/practice-models';
 import type { WrongAnswerResolution } from '../schemas/submission-schema';
+import { FeedbackActions } from './feedback-actions';
 import { PracticeFeedbackExample } from './practice-feedback-example';
 
 const panelTone = (result: SubmitResult) => {
@@ -97,25 +97,6 @@ const ScheduleNote = ({
   </Callout>
 );
 
-const WordAudioFallback = ({
-  example,
-  graded,
-  playWord,
-}: {
-  readonly example: PreparedExampleSentence | null;
-  readonly graded: boolean;
-  readonly playWord: (() => Promise<void>) | null;
-}) => {
-  if (!graded || example !== null || playWord === null) {
-    return null;
-  }
-  return (
-    <Button onClick={playWord} variant="outline">
-      Wort anhören
-    </Button>
-  );
-};
-
 export const FeedbackPanel = ({
   audioPlaying,
   busy,
@@ -148,10 +129,7 @@ export const FeedbackPanel = ({
   }, [busy]);
 
   return (
-    <Callout
-      aria-busy={busy || resolution !== null}
-      tone={panelTone(result)}
-    >
+    <Callout aria-busy={busy || resolution !== null} tone={panelTone(result)}>
       <div
         aria-live="polite"
         className="flex flex-col gap-3"
@@ -196,43 +174,20 @@ export const FeedbackPanel = ({
           <ScheduleNote repeated={repeated} result={result} />
         ) : null}
       </div>
-      <div className="flex flex-wrap items-center gap-3">
-        {audioPlaying ? (
-          <Button onClick={stopAudio} variant="outline">
-            Audio stoppen
-          </Button>
-        ) : null}
-        <WordAudioFallback
-          example={example}
-          graded={result.graded}
-          playWord={playWord}
-        />
-        {pendingWrong ? (
-          <Button
-            disabled={busy || resolution !== null}
-            onClick={() => onResolveWrong('hard')}
-            variant="outline"
-          >
-            {resolution === 'hard'
-              ? 'Wird gespeichert …'
-              : 'Als richtig werten'}
-          </Button>
-        ) : null}
-        <Button
-          aria-describedby={feedbackDescriptionId}
-          disabled={busy || resolution !== null}
-          onClick={() => {
-            if (pendingWrong) {
-              onResolveWrong('again');
-            } else {
-              onNext();
-            }
-          }}
-          ref={nextButton}
-        >
-          {resolution === 'again' ? 'Wird gespeichert …' : 'Weiter'}
-        </Button>
-      </div>
+      <FeedbackActions
+        audioPlaying={audioPlaying}
+        busy={busy}
+        example={example}
+        feedbackDescriptionId={feedbackDescriptionId}
+        graded={result.graded}
+        nextButton={nextButton}
+        onNext={onNext}
+        onResolveWrong={onResolveWrong}
+        pendingWrong={pendingWrong}
+        playWord={playWord}
+        resolution={resolution}
+        stopAudio={stopAudio}
+      />
     </Callout>
   );
 };

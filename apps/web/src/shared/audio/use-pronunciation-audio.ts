@@ -13,7 +13,7 @@ export const useAudioPlayback = () => {
   );
 
   const stopAudio = useCallback(() => {
-    const current = audio.current;
+    const { current } = audio;
     audio.current = null;
     current?.pause();
     setPlaying(false);
