@@ -1,4 +1,6 @@
+import { scanWcag22AaViolations } from '@davidvornholt/a11y-testing/axe';
 import { expect, test } from '@playwright/test';
+import { assertNoAccessibilityViolations } from './a11y-assertions';
 
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
@@ -13,7 +15,9 @@ test('a failed import recovers pronunciation without user action', async ({
 
   await page.goto('/?state=dashboard-audio-recovery');
   await expect(
-    page.getByRole('heading', { name: 'Aussprache folgt automatisch' }),
+    page.getByRole('heading', {
+      name: 'Aussprache noch nicht vollständig',
+    }),
   ).toBeVisible();
   await expect(
     page.getByRole('heading', { name: 'Offene Importe' }),
@@ -79,6 +83,45 @@ test('a completed recovery cannot pull the learner away from the page stack', as
     page.getByRole('heading', { name: 'Seiten im Stapel' }),
   ).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Übersicht' })).toHaveCount(0);
+});
+
+test('dashboard recovery advances past failures and retries only on request', async ({
+  page,
+}) => {
+  await page.goto('/?state=dashboard-audio-recovery&queue=true');
+
+  await expect(
+    page.getByRole('heading', {
+      name: 'Aussprache noch nicht vollständig',
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByLabel('Erstellungsversuche', { exact: true }),
+  ).toHaveText('3');
+  await expect(page.getByLabel('Gleichzeitige Erstellungsversuche')).toHaveText(
+    '1',
+  );
+  await expect(
+    page.getByText('Für 1 Vokabel fehlt noch die Aussprache.'),
+  ).toBeVisible();
+  assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
+
+  await page.getByRole('button', { name: 'Daten neu laden' }).click();
+  await expect(
+    page.getByLabel('Erstellungsversuche', { exact: true }),
+  ).toHaveText('3');
+
+  await page
+    .getByRole('button', { name: 'Aussprache erneut erstellen' })
+    .click();
+  await expect(
+    page.getByLabel('Erstellungsversuche', { exact: true }),
+  ).toHaveText('4');
+  await expect(
+    page.getByRole('heading', {
+      name: 'Aussprache noch nicht vollständig',
+    }),
+  ).toHaveCount(0);
 });
 
 test('verification uses the production image and extraction retry names', async ({
