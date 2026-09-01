@@ -54,8 +54,16 @@ const normalizeCompactSlashSpacing = (text: string): string => {
   for (const match of text.matchAll(compactSlashWithFlexibleSpacing)) {
     const left = match.groups?.left ?? '';
     const right = match.groups?.right ?? '';
+    const readings = compactSlashReadings(left, right);
+    const isSuffixShorthand = compactSuffixReplacements.some(
+      ({ fullEnding, shorthand }) =>
+        right === shorthand && left.endsWith(fullEnding),
+    );
+    const endsPhrase = /^[\s]*(?:;|$)/u.test(
+      text.slice(match.index + match[0].length),
+    );
     const replacement =
-      compactSlashReadings(left, right) === undefined
+      readings === undefined || (isSuffixShorthand && !endsPhrase)
         ? match[0]
         : `${left}/${right}`;
     normalized += text.slice(cursor, match.index) + replacement;

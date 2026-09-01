@@ -105,6 +105,13 @@ describe('answerVariants punctuation and separators', () => {
     }
   });
 
+  it('keeps a multiword explicit alternative after a compact-looking prefix', () => {
+    expect(answerVariants('camino / a pie')).toEqual({
+      _tag: 'Expanded',
+      readings: ['camino', 'a pie'],
+    });
+  });
+
   it('combines semicolon and slash-separated phrase alternatives', () => {
     expect(answerVariants('correct / right; accurate;')).toEqual({
       _tag: 'Expanded',
