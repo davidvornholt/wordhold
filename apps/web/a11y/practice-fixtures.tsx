@@ -76,6 +76,7 @@ export const PracticeFixture = () => (
 export const PracticeFeedbackFixture = () => (
   <PageLayout backControl={backControl} title="English A2: Üben">
     <FeedbackPanel
+      busy={false}
       example={item.example}
       onNext={() => navigateToFixture('practice-empty')}
       onResolveWrong={() => navigateToFixture('practice-empty')}

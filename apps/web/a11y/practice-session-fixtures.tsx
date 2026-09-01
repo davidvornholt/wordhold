@@ -1,4 +1,5 @@
 import type { ReviewMode } from '@wordhold/db/schema/practice';
+import { useRef, useState } from 'react';
 import type {
   PracticeSession,
   SubmitResult,
@@ -42,6 +43,24 @@ const audioItems = [
     },
   },
 ] as const;
+
+type PreparedExamples = ReadonlyArray<{
+  readonly entryId: string;
+  readonly example: FixtureCard['example'];
+}>;
+
+type DeferredExamples = {
+  readonly promise: Promise<PreparedExamples>;
+  readonly resolve: (value: PreparedExamples) => void;
+};
+
+const makeDeferredExamples = (): DeferredExamples => {
+  let resolve: DeferredExamples['resolve'] = () => undefined;
+  const promise = new Promise<PreparedExamples>((accept) => {
+    resolve = accept;
+  });
+  return { promise, resolve };
+};
 
 const resolvedRating = (correct: boolean, corrected: boolean) => {
   if (correct) {
@@ -127,8 +146,11 @@ export const PracticeSessionFixture = ({
 }: PracticeSessionFixtureProps) => {
   const fixtureSearch = new URLSearchParams(globalThis.location.search);
   const lateExample = fixtureSearch.get('late-example') === 'true';
+  const deferredExample = fixtureSearch.get('deferred-example') === 'true';
+  const deferred = useRef<DeferredExamples | null>(null);
+  const [showSession, setShowSession] = useState(true);
   let activeItems: ReadonlyArray<FixtureCard> = sessionItems ?? items;
-  if (sessionItems === undefined && lateExample) {
+  if (sessionItems === undefined && (lateExample || deferredExample)) {
     activeItems = [{ ...audioItems[0], example: null }];
   } else if (
     sessionItems === undefined &&
@@ -150,31 +172,57 @@ export const PracticeSessionFixture = ({
     'dashboard',
     'quiet-muted',
   );
+  const preparedExamples = (entryIds: ReadonlyArray<string>) =>
+    entryIds.map((entryId) => ({
+      entryId,
+      example:
+        (lateExample || deferredExample ? audioItems : activeItems).find(
+          (item) => item.entryId === entryId,
+        )?.example ?? null,
+    }));
+  const prepareExamples = ({ data }: { readonly data: Array<string> }) => {
+    const prepared = preparedExamples(data);
+    if (!deferredExample) {
+      return Promise.resolve(prepared);
+    }
+    const pending = makeDeferredExamples();
+    deferred.current = pending;
+    return pending.promise;
+  };
   return (
     <PageLayout
       backControl={fixtureBackControl('Übersicht', 'dashboard')}
       title={title}
     >
-      <SessionRunner
-        backControl={backControl}
-        emptyMessage="Für jetzt geschafft"
-        mode={mode}
-        prepareExamples={({ data }) =>
-          Promise.resolve(
-            data.map((entryId) => ({
-              entryId,
-              example:
-                (lateExample ? audioItems : activeItems).find(
-                  (item) => item.entryId === entryId,
-                )?.example ?? null,
-            })),
-          )
-        }
-        session={session}
-        submit={(input) => grade(activeItems, input)}
-        targetLabel="Englisch"
-        targetLanguage="en"
-      />
+      {showSession ? (
+        <SessionRunner
+          backControl={backControl}
+          emptyMessage="Für jetzt geschafft"
+          mode={mode}
+          prepareExamples={prepareExamples}
+          session={session}
+          submit={(input) => grade(activeItems, input)}
+          targetLabel="Englisch"
+          targetLanguage="en"
+        />
+      ) : null}
+      {deferredExample ? (
+        <div>
+          <button onClick={() => setShowSession(false)} type="button">
+            Sitzung ausblenden
+          </button>
+          <button
+            onClick={() =>
+              deferred.current?.resolve(
+                preparedExamples(activeItems.map((item) => item.entryId)),
+              )
+            }
+            type="button"
+          >
+            Beispielsatz freigeben
+          </button>
+        </div>
+      ) : null}
     </PageLayout>
   );
 };

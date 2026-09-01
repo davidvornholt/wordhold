@@ -25,6 +25,7 @@ const renderFeedback = (
 ) =>
   renderToStaticMarkup(
     <FeedbackPanel
+      busy={false}
       example={null}
       onNext={() => undefined}
       onResolveWrong={() => undefined}
@@ -42,6 +43,7 @@ const renderFeedback = (
 const renderHeldFeedback = () =>
   renderToStaticMarkup(
     <FeedbackPanel
+      busy={false}
       example={null}
       onNext={() => undefined}
       onResolveWrong={() => undefined}
@@ -65,6 +67,7 @@ const renderHeldFeedback = () =>
 const renderSkippedFeedback = () =>
   renderToStaticMarkup(
     <FeedbackPanel
+      busy={false}
       example={null}
       onNext={() => undefined}
       onResolveWrong={() => undefined}

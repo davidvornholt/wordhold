@@ -17,6 +17,7 @@ const panelTone = (result: SubmitResult) => {
 };
 
 type FeedbackPanelProps = {
+  readonly busy: boolean;
   readonly result: SubmitResult;
   readonly submittedAnswer: string;
   readonly example: PreparedExampleSentence | null;
@@ -114,6 +115,7 @@ const WordAudioFallback = ({
 };
 
 export const FeedbackPanel = ({
+  busy,
   result,
   submittedAnswer,
   example,
@@ -136,11 +138,16 @@ export const FeedbackPanel = ({
   const pendingWrong = result.graded && !result.stored;
 
   useEffect(() => {
-    nextButton.current?.focus();
-  }, []);
+    if (!busy) {
+      nextButton.current?.focus();
+    }
+  }, [busy]);
 
   return (
-    <Callout aria-busy={resolution !== null} tone={panelTone(result)}>
+    <Callout
+      aria-busy={busy || resolution !== null}
+      tone={panelTone(result)}
+    >
       <div
         aria-live="polite"
         className="flex flex-col gap-3"
@@ -193,7 +200,7 @@ export const FeedbackPanel = ({
         />
         {pendingWrong ? (
           <Button
-            disabled={resolution !== null}
+            disabled={busy || resolution !== null}
             onClick={() => onResolveWrong('hard')}
             variant="outline"
           >
@@ -204,7 +211,7 @@ export const FeedbackPanel = ({
         ) : null}
         <Button
           aria-describedby={feedbackDescriptionId}
-          disabled={resolution !== null}
+          disabled={busy || resolution !== null}
           onClick={() => {
             if (pendingWrong) {
               onResolveWrong('again');

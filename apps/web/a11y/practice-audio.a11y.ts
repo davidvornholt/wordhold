@@ -68,3 +68,21 @@ test('an ungraded answer neither reveals nor plays the sentence', async ({
     .poll(() => page.evaluate(() => Reflect.get(globalThis, '__audioUrls')))
     .toEqual([]);
 });
+
+test('pending feedback preparation cannot outlive its practice card', async ({
+  page,
+}) => {
+  await page.addInitScript(audioRecorderScript);
+  await page.goto('/?state=practice-session&deferred-example=true');
+  await page.getByLabel('Deine Antwort').fill('memory');
+  await page.getByRole('button', { name: 'Prüfen' }).click();
+
+  await expect(page.getByText('Richtig')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Weiter' })).toBeDisabled();
+
+  await page.getByRole('button', { name: 'Sitzung ausblenden' }).click();
+  await page.getByRole('button', { name: 'Beispielsatz freigeben' }).click();
+  await expect
+    .poll(() => page.evaluate(() => Reflect.get(globalThis, '__audioUrls')))
+    .toEqual([]);
+});

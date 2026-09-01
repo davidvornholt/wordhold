@@ -51,6 +51,7 @@ export const CardPractice = ({
   onNext,
 }: CardPracticeProps) => {
   const answerInput = useRef<HTMLInputElement>(null);
+  const mounted = useRef(true);
   const promptId = useId();
   const { example, loadExample } = usePreparedExample(
     item.entryId,
@@ -74,6 +75,9 @@ export const CardPractice = ({
   );
   const playFeedbackAudio = useCallback(async () => {
     const prepared = await loadExample();
+    if (!mounted.current) {
+      return;
+    }
     const preparedSentenceUrl = prepared?.hasAudio
       ? `/api/entries/${item.entryId}/example-audio`
       : null;
@@ -99,6 +103,13 @@ export const CardPractice = ({
     submit,
     onNext,
   });
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (busy || result !== null) {
@@ -150,6 +161,7 @@ export const CardPractice = ({
       )}
       {result === null ? null : (
         <FeedbackPanel
+          busy={busy}
           example={example}
           onNext={() => {
             if (!result.graded || result.stored) {
