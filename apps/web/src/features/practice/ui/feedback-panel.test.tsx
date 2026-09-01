@@ -25,6 +25,8 @@ const renderFeedback = (
 ) =>
   renderToStaticMarkup(
     <FeedbackPanel
+      audioPlaying={false}
+      busy={false}
       example={null}
       onNext={() => undefined}
       onResolveWrong={() => undefined}
@@ -36,12 +38,15 @@ const renderFeedback = (
       skipped={false}
       submittedAnswer={submittedAnswer}
       targetLanguage="en"
+      stopAudio={() => undefined}
     />,
   );
 
 const renderHeldFeedback = () =>
   renderToStaticMarkup(
     <FeedbackPanel
+      audioPlaying={false}
+      busy={false}
       example={null}
       onNext={() => undefined}
       onResolveWrong={() => undefined}
@@ -59,12 +64,15 @@ const renderHeldFeedback = () =>
       skipped={false}
       submittedAnswer="waiter"
       targetLanguage="en"
+      stopAudio={() => undefined}
     />,
   );
 
 const renderSkippedFeedback = () =>
   renderToStaticMarkup(
     <FeedbackPanel
+      audioPlaying={false}
+      busy={false}
       example={null}
       onNext={() => undefined}
       onResolveWrong={() => undefined}
@@ -85,6 +93,7 @@ const renderSkippedFeedback = () =>
       skipped={true}
       submittedAnswer=""
       targetLanguage="en"
+      stopAudio={() => undefined}
     />,
   );
 

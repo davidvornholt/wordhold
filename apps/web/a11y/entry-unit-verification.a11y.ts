@@ -16,6 +16,7 @@ test('VerifyForm defaults to the latest real unit and routes entries independent
     .getByRole('button', { name: 'Einheit für Eintrag 1 ändern' })
     .click();
   const firstUnit = rows.first().getByLabel('Einheit für Eintrag 1');
+  await expect(firstUnit).toBeFocused();
   await expect(firstUnit).toHaveValue('22222222-2222-4222-8222-222222222222');
   await firstUnit.selectOption('11111111-1111-4111-8111-111111111111');
   await page.getByRole('button', { name: 'Eintrag hinzufügen' }).click();
@@ -112,12 +113,17 @@ test('VerifyForm generates an editable sentence and German translation', async (
     .getByRole('button', { name: 'Beispielsatz erzeugen' })
     .first();
   await generate.click();
-  await expect(
-    page.getByLabel('Beispielsatz').nth(generatedExampleIndex),
-  ).toHaveValue('This memory makes me smile.');
-  await expect(
-    page.getByLabel('Deutsche Übersetzung des Beispielsatzes').first(),
-  ).toHaveValue('Diese Erinnerung bringt mich zum Lächeln.');
+  const generatedExample = page
+    .getByLabel('Beispielsatz')
+    .nth(generatedExampleIndex);
+  await expect(generatedExample).toHaveValue('This memory makes me smile.');
+  const generatedTranslation = page
+    .getByLabel('Deutsche Übersetzung des Beispielsatzes')
+    .first();
+  await expect(generatedTranslation).toHaveValue(
+    'Diese Erinnerung bringt mich zum Lächeln.',
+  );
+  await expect(generatedTranslation).toBeFocused();
   await expect(
     page.getByText(
       'Mit KI erzeugt. Prüfe Satz und Übersetzung vor dem Import.',

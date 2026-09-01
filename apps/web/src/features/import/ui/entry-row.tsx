@@ -18,6 +18,17 @@ export type DraftEntry = {
   readonly confidence?: number;
 };
 
+export type ExampleGenerationSource = {
+  readonly targetText: string;
+  readonly nativeText: string;
+  readonly example: string;
+};
+
+export type GeneratedExample = {
+  readonly target: string;
+  readonly native: string;
+};
+
 const lowConfidence = 0.8;
 
 const genderLabels = {
@@ -78,6 +89,10 @@ type EntryRowProps = {
   readonly duplicate: DuplicateVerdict;
   readonly duplicateConfirmed: boolean;
   readonly onChange: (entry: DraftEntry) => void;
+  readonly onGeneratedExample: (
+    source: ExampleGenerationSource,
+    generated: GeneratedExample,
+  ) => void;
   readonly onDuplicateConfirmedChange: (confirmed: boolean) => void;
   readonly onRemove: () => void;
 };
@@ -92,6 +107,7 @@ export const EntryRow = ({
   duplicate,
   duplicateConfirmed,
   onChange,
+  onGeneratedExample,
   onDuplicateConfirmedChange,
   onRemove,
 }: EntryRowProps) => {
@@ -161,6 +177,7 @@ export const EntryRow = ({
         entry={entry}
         generate={generateExample}
         onChange={onChange}
+        onGenerated={onGeneratedExample}
       />
       {grammar === '' ? null : (
         <p className="text-muted-foreground text-xs">{grammar}</p>

@@ -23,6 +23,7 @@ const OrderedUnitIds = Schema.Array(Schema.UUID).pipe(
 
 export const ReorderCourseUnits = Schema.Struct({
   courseId: Schema.UUID,
+  expectedUnitIds: OrderedUnitIds,
   unitIds: OrderedUnitIds,
 });
 

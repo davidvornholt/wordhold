@@ -47,10 +47,11 @@ describe('CourseStore PostgreSQL unit mutations', () => {
 
         const created = yield* store.listUnits(fixtureCourseId, fixtureNow);
         expect(created.map((unit) => unit.name)).toEqual(['Unit 1', 'Unit 2']);
+        const createdIds = created.map((unit) => unit.id);
         const reversedIds = [...created].reverse().map((unit) => unit.id);
-        expect(yield* store.reorderUnits(fixtureCourseId, reversedIds)).toBe(
-          true,
-        );
+        expect(
+          yield* store.reorderUnits(fixtureCourseId, createdIds, reversedIds),
+        ).toBe(true);
         expect(
           (yield* store.listUnits(fixtureCourseId, fixtureNow)).map(
             (unit) => unit.name,
@@ -58,13 +59,41 @@ describe('CourseStore PostgreSQL unit mutations', () => {
         ).toEqual(['Unit 2', 'Unit 1']);
 
         expect(
-          yield* store.reorderUnits(fixtureCourseId, [fixtureUnitId]),
+          yield* store.reorderUnits(fixtureCourseId, reversedIds, [
+            fixtureUnitId,
+          ]),
         ).toBe(false);
         expect(
           (yield* store.listUnits(fixtureCourseId, fixtureNow)).map(
             (unit) => unit.name,
           ),
         ).toEqual(['Unit 2', 'Unit 1']);
+      }),
+    );
+  });
+
+  it('keeps the first saved order when a stale editor saves afterward', async () => {
+    await runStoreTest(
+      Effect.gen(function* () {
+        yield* seedIntroducedCardFixture;
+        const store = yield* CourseStore;
+        yield* store.createUnit(fixtureCourseId, 'Unit 2');
+
+        const original = yield* store.listUnits(fixtureCourseId, fixtureNow);
+        const originalIds = original.map((unit) => unit.id);
+        const reversedIds = [...originalIds].reverse();
+
+        expect(
+          yield* store.reorderUnits(fixtureCourseId, originalIds, reversedIds),
+        ).toBe(true);
+        expect(
+          yield* store.reorderUnits(fixtureCourseId, originalIds, originalIds),
+        ).toBe(false);
+        expect(
+          (yield* store.listUnits(fixtureCourseId, fixtureNow)).map(
+            (unit) => unit.id,
+          ),
+        ).toEqual(reversedIds);
       }),
     );
   });

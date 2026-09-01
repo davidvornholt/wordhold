@@ -40,6 +40,7 @@ export const EntryUnitAssignment = ({
   onApplyFollowing,
 }: EntryUnitAssignmentProps) => {
   const [pickerRequested, setPickerRequested] = useState(false);
+
   if (!pickerRequested && selectionComplete) {
     return (
       <p className="flex items-center gap-2 text-muted-foreground text-xs">
@@ -59,6 +60,7 @@ export const EntryUnitAssignment = ({
     <div className="flex flex-col gap-2">
       <UnitPicker
         disabled={disabled}
+        focusOnMount={pickerRequested}
         label={`Einheit für Eintrag ${entryNumber}`}
         onChange={onChange}
         required={required}

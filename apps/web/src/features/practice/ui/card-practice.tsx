@@ -1,6 +1,13 @@
 import type { LanguageCode } from '@wordhold/db/schema/courses';
 import type { ReviewMode } from '@wordhold/db/schema/practice';
-import { type SubmitEvent, useCallback, useEffect, useId, useRef } from 'react';
+import {
+  type SubmitEvent,
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from 'react';
 import { useAudioPlayback } from '../../../shared/audio/use-pronunciation-audio';
 import type { PrepareExamples } from '../../../shared/examples/example-model';
 import { cardClass } from '../../../shared/ui/surface-styles';
@@ -16,6 +23,12 @@ import { useCardSubmission } from './use-card-submission';
 import { usePreparedExample } from './use-prepared-example';
 
 type SessionItem = PracticeSession['items'][number];
+
+const useLifetime = () => {
+  const [lifetime] = useState(() => new AbortController());
+  useEffect(() => () => lifetime.abort(), [lifetime]);
+  return lifetime.signal;
+};
 
 // "auf" takes the plain language name, so every target language declines
 // correctly ("auf Französisch", "auf Latein" — never "ins Lateine").
@@ -51,6 +64,7 @@ export const CardPractice = ({
   onNext,
 }: CardPracticeProps) => {
   const answerInput = useRef<HTMLInputElement>(null);
+  const lifetime = useLifetime();
   const promptId = useId();
   const { example, loadExample } = usePreparedExample(
     item.entryId,
@@ -63,7 +77,7 @@ export const CardPractice = ({
   const sentenceAudioUrl = example?.hasAudio
     ? `/api/entries/${item.entryId}/example-audio`
     : null;
-  const playAudio = useAudioPlayback();
+  const { playAudio, playing: audioPlaying, stopAudio } = useAudioPlayback();
   const playSentence = useCallback(
     () => playAudio(sentenceAudioUrl),
     [playAudio, sentenceAudioUrl],
@@ -74,11 +88,14 @@ export const CardPractice = ({
   );
   const playFeedbackAudio = useCallback(async () => {
     const prepared = await loadExample();
+    if (lifetime.aborted) {
+      return;
+    }
     const preparedSentenceUrl = prepared?.hasAudio
       ? `/api/entries/${item.entryId}/example-audio`
       : null;
     await playAudio(preparedSentenceUrl ?? wordAudioUrl);
-  }, [item.entryId, loadExample, playAudio, wordAudioUrl]);
+  }, [item.entryId, lifetime, loadExample, playAudio, wordAudioUrl]);
   const {
     answer,
     setAnswer,
@@ -150,6 +167,8 @@ export const CardPractice = ({
       )}
       {result === null ? null : (
         <FeedbackPanel
+          audioPlaying={audioPlaying}
+          busy={busy}
           example={example}
           onNext={() => {
             if (!result.graded || result.stored) {
@@ -165,6 +184,7 @@ export const CardPractice = ({
           skipped={skipped}
           submittedAnswer={submittedAnswer ?? ''}
           targetLanguage={targetLanguage}
+          stopAudio={stopAudio}
         />
       )}
     </>

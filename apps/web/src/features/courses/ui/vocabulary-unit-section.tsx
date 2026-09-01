@@ -44,15 +44,21 @@ export const VocabularyUnitSection = ({
   onToggleAll,
 }: VocabularyUnitSectionProps) => {
   const selectAllId = useId();
+  const selectedEntryCount = entries.filter((entry) =>
+    selected.includes(entry.id),
+  ).length;
   const allSelected =
-    entries.length > 0 && entries.every((entry) => selected.includes(entry.id));
+    entries.length > 0 && selectedEntryCount === entries.length;
+  const partiallySelected = selectedEntryCount > 0 && !allSelected;
   return (
     <section className="flex flex-col gap-2">
       <label className={labelClasses[labelStyle]} htmlFor={selectAllId}>
         <Checkbox
+          aria-checked={partiallySelected ? 'mixed' : allSelected}
           checked={allSelected}
           disabled={entries.length === 0}
           id={selectAllId}
+          indeterminate={partiallySelected}
           onChange={() =>
             onToggleAll(
               entries.map((entry) => entry.id),

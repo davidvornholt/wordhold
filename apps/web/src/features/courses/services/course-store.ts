@@ -43,6 +43,7 @@ export class CourseStore extends Context.Tag('wordhold/CourseStore')<
     ) => Effect.Effect<CreateUnitResult, CourseDatabaseError>;
     readonly reorderUnits: (
       courseId: string,
+      expectedUnitIds: ReadonlyArray<string>,
       unitIds: ReadonlyArray<string>,
     ) => Effect.Effect<boolean, CourseDatabaseError>;
     readonly listVocabulary: (

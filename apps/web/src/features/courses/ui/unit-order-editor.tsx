@@ -24,6 +24,7 @@ type UnitOrderEditorProps = {
   readonly initialUnits: ReadonlyArray<CourseUnit>;
   readonly createUnit: (name: string) => Promise<ReadonlyArray<CourseUnit>>;
   readonly reorderUnits: (
+    expectedUnitIds: ReadonlyArray<string>,
     unitIds: ReadonlyArray<string>,
   ) => Promise<ReadonlyArray<CourseUnit>>;
 };
@@ -89,7 +90,12 @@ export const UnitOrderEditor = ({
     setFailed(false);
     setStatus('Reihenfolge wird gespeichert …');
     try {
-      setUnits(await reorderUnits(next.map((unit) => unit.id)));
+      setUnits(
+        await reorderUnits(
+          previous.map((unit) => unit.id),
+          next.map((unit) => unit.id),
+        ),
+      );
       setStatus('Reihenfolge gespeichert.');
     } catch {
       setUnits(previous);

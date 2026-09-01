@@ -10,6 +10,46 @@ type LearnExampleAudioProps = {
   readonly targetLanguage: LanguageCode;
 };
 
+const LearningAudioControls = ({
+  playSentence,
+  playWord,
+  playing,
+  stopAudio,
+  wordIsPrimary,
+}: {
+  readonly playSentence: (() => Promise<void>) | null;
+  readonly playWord: (() => Promise<void>) | null;
+  readonly playing: boolean;
+  readonly stopAudio: () => void;
+  readonly wordIsPrimary: boolean;
+}) => {
+  if (playSentence === null && playWord === null) {
+    return null;
+  }
+  return (
+    <div className="flex flex-wrap gap-3">
+      {playSentence === null ? null : (
+        <Button onClick={playSentence} variant="quiet">
+          Satz anhören
+        </Button>
+      )}
+      {playWord === null ? null : (
+        <Button
+          onClick={playWord}
+          variant={wordIsPrimary ? 'quiet' : 'quiet-muted'}
+        >
+          Wort anhören
+        </Button>
+      )}
+      {playing ? (
+        <Button onClick={stopAudio} variant="quiet-muted">
+          Audio stoppen
+        </Button>
+      ) : null}
+    </div>
+  );
+};
+
 export const LearnExampleAudio = ({
   item,
   targetLanguage,
@@ -21,7 +61,7 @@ export const LearnExampleAudio = ({
     ? `/api/entries/${item.entryId}/example-audio`
     : null;
   const automaticAudioUrl = sentenceAudioUrl ?? wordAudioUrl;
-  const playAudio = useAudioPlayback();
+  const { playAudio, playing, stopAudio } = useAudioPlayback();
   const playSentence = useCallback(
     () => playAudio(sentenceAudioUrl),
     [playAudio, sentenceAudioUrl],
@@ -41,32 +81,23 @@ export const LearnExampleAudio = ({
     return () => globalThis.clearTimeout(playTask);
   }, [automaticAudioUrl, playAudio]);
 
+  const controls = (
+    <LearningAudioControls
+      playSentence={sentenceAudioUrl === null ? null : playSentence}
+      playWord={wordAudioUrl === null ? null : playWord}
+      playing={playing}
+      stopAudio={stopAudio}
+      wordIsPrimary={item.example === null}
+    />
+  );
+
   if (item.example === null) {
-    return wordAudioUrl === null ? null : (
-      <Button className="w-fit" onClick={playWord} variant="quiet">
-        Wort anhören
-      </Button>
-    );
+    return wordAudioUrl === null ? null : controls;
   }
 
   return (
     <ExampleSentence
-      controls={
-        sentenceAudioUrl === null && wordAudioUrl === null ? null : (
-          <div className="flex flex-wrap gap-3">
-            {sentenceAudioUrl === null ? null : (
-              <Button onClick={playSentence} variant="quiet">
-                Satz anhören
-              </Button>
-            )}
-            {wordAudioUrl === null ? null : (
-              <Button onClick={playWord} variant="quiet-muted">
-                Wort anhören
-              </Button>
-            )}
-          </div>
-        )
-      }
+      controls={controls}
       example={item.example}
       targetLanguage={targetLanguage}
     />

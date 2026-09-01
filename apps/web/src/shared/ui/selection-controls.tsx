@@ -1,4 +1,4 @@
-import type { ComponentPropsWithRef } from 'react';
+import { type ComponentPropsWithRef, useEffect, useRef } from 'react';
 
 // The native controls keep their semantics; only the drawing is replaced so
 // both marks share the theme's square geometry. The check and the dot render
@@ -20,23 +20,54 @@ type ControlProps = Omit<
   readonly className?: string;
 };
 
-export const Checkbox = ({ className, ...props }: ControlProps) => (
-  <span className={wrapperClass(className)}>
-    <input
-      {...props}
-      className={`${boxClass} checked:bg-primary`}
-      type="checkbox"
-    />
-    <svg
-      aria-hidden="true"
-      className="pointer-events-none absolute inset-0 m-auto hidden size-3.5 text-primary-foreground peer-checked:block peer-disabled:opacity-50"
-      fill="none"
-      viewBox="0 0 14 14"
-    >
-      <path d="M2 7.5 5.5 11 12 3.5" stroke="currentColor" strokeWidth="2" />
-    </svg>
-  </span>
-);
+type CheckboxProps = ControlProps & {
+  readonly indeterminate?: boolean;
+};
+
+export const Checkbox = ({
+  className,
+  indeterminate = false,
+  ref,
+  ...props
+}: CheckboxProps) => {
+  const control = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (control.current !== null) {
+      control.current.indeterminate = indeterminate;
+    }
+  }, [indeterminate]);
+
+  return (
+    <span className={wrapperClass(className)}>
+      <input
+        {...props}
+        className={`${boxClass} checked:bg-primary indeterminate:border-primary indeterminate:bg-primary`}
+        ref={(node) => {
+          control.current = node;
+          if (typeof ref === 'function') {
+            ref(node);
+          } else if (ref !== null && ref !== undefined) {
+            ref.current = node;
+          }
+        }}
+        type="checkbox"
+      />
+      <svg
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 m-auto hidden size-3.5 text-primary-foreground peer-checked:block peer-disabled:opacity-50"
+        fill="none"
+        viewBox="0 0 14 14"
+      >
+        <path d="M2 7.5 5.5 11 12 3.5" stroke="currentColor" strokeWidth="2" />
+      </svg>
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 m-auto hidden h-0.5 w-3 bg-primary-foreground peer-indeterminate:block peer-disabled:opacity-50"
+      />
+    </span>
+  );
+};
 
 export const RadioButton = ({ className, ...props }: ControlProps) => (
   <span className={wrapperClass(className)}>

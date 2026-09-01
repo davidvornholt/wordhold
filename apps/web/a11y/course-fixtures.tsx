@@ -60,7 +60,7 @@ export const CourseFixture = ({
       languageLabel="Englisch"
       primaryAction={coursePrimaryAction(emptyVocabulary, practiceAvailable)}
       renderUnitLink={(unit) => fixtureControl(unit.name, 'unit', 'quiet')}
-      reorderUnits={async (unitIds) =>
+      reorderUnits={async (_expectedUnitIds, unitIds) =>
         unitIds.flatMap((unitId) => {
           const unit = courseUnits.find((candidate) => candidate.id === unitId);
           return unit === undefined ? [] : [unit];

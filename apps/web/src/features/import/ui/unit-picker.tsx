@@ -1,6 +1,6 @@
 import { maximumUnitNameLength } from '@wordhold/ai/extraction/schema';
 import type { KeyboardEventHandler } from 'react';
-import { useId } from 'react';
+import { useCallback, useId } from 'react';
 import { countNoun } from '../../../shared/format/count';
 import { fieldCompactClass } from '../../../shared/ui/field-styles';
 import type { UnitSelectionData } from '../schemas/import-payload';
@@ -9,6 +9,7 @@ import type { Unit } from '../services/repository';
 const newUnitValue = 'new';
 
 type UnitPickerProps = {
+  readonly focusOnMount?: boolean;
   readonly units: ReadonlyArray<Unit>;
   readonly selection: UnitSelectionData;
   readonly label: string;
@@ -19,6 +20,7 @@ type UnitPickerProps = {
 };
 
 export const UnitPicker = ({
+  focusOnMount = false,
   units,
   selection,
   label,
@@ -29,6 +31,14 @@ export const UnitPicker = ({
 }: UnitPickerProps) => {
   const selectId = useId();
   const nameId = useId();
+  const focusSelectOnMount = useCallback(
+    (select: HTMLSelectElement | null) => {
+      if (focusOnMount) {
+        select?.focus();
+      }
+    },
+    [focusOnMount],
+  );
 
   return (
     <div className="flex flex-col gap-2">
@@ -45,6 +55,7 @@ export const UnitPicker = ({
                 : { kind: 'existing', unitId: event.target.value },
             )
           }
+          ref={focusSelectOnMount}
           value={
             selection.kind === 'existing' ? selection.unitId : newUnitValue
           }
