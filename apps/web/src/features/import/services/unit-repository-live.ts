@@ -2,6 +2,7 @@ import type { Database } from '@wordhold/db/client';
 import { Effect } from 'effect';
 import { ImportDatabaseError } from '../errors/import-database-error';
 import type { Unit } from './repository';
+import { selectUnitEntries } from './unit-entries';
 
 export const unitRepositoryLive = (sql: Database) => ({
   // The verify screen offers these for selection, so the entry count matters:
@@ -27,6 +28,19 @@ export const unitRepositoryLive = (sql: Database) => ({
             operation: 'list units',
             cause,
             message: 'Database operation failed: list units.',
+          }),
+      ),
+    ),
+  // The verify screen compares extracted entries against these to flag a
+  // page that was scanned before.
+  listUnitEntries: (courseId: string) =>
+    selectUnitEntries(sql, courseId).pipe(
+      Effect.mapError(
+        (cause) =>
+          new ImportDatabaseError({
+            operation: 'list unit entries',
+            cause,
+            message: 'Database operation failed: list unit entries.',
           }),
       ),
     ),

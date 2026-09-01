@@ -1,10 +1,13 @@
+import type { LanguageCode } from '@wordhold/db/schema/courses';
 import { useEffect, useId, useRef } from 'react';
 import { formatLearningDate } from '../../../shared/dates/learning-date';
-import { normalizeAnswer } from '../../../shared/grading/normalize';
+import type { PreparedExampleSentence } from '../../../shared/examples/example-model';
+import { normalizeAnswerForComparison } from '../../../shared/grading/normalize';
 import { Button } from '../../../shared/ui/button';
 import { Callout } from '../../../shared/ui/callout';
 import type { SubmitResult } from '../schemas/practice-models';
 import type { WrongAnswerResolution } from '../schemas/submission-schema';
+import { PracticeFeedbackExample } from './practice-feedback-example';
 
 const panelTone = (result: SubmitResult) => {
   if (!result.graded) {
@@ -16,7 +19,9 @@ const panelTone = (result: SubmitResult) => {
 type FeedbackPanelProps = {
   readonly result: SubmitResult;
   readonly submittedAnswer: string;
-  readonly audioUrl: string | null;
+  readonly example: PreparedExampleSentence | null;
+  readonly playSentence: (() => Promise<void>) | null;
+  readonly playWord: (() => Promise<void>) | null;
   readonly onNext: () => void;
   readonly onResolveWrong: (
     resolution: Exclude<WrongAnswerResolution, 'defer'>,
@@ -24,6 +29,7 @@ type FeedbackPanelProps = {
   readonly repeated: boolean;
   readonly resolution: Exclude<WrongAnswerResolution, 'defer'> | null;
   readonly skipped: boolean;
+  readonly targetLanguage: LanguageCode;
 };
 
 const feedbackHeading = (
@@ -88,20 +94,42 @@ const ScheduleNote = ({
   </Callout>
 );
 
+const WordAudioFallback = ({
+  example,
+  graded,
+  playWord,
+}: {
+  readonly example: PreparedExampleSentence | null;
+  readonly graded: boolean;
+  readonly playWord: (() => Promise<void>) | null;
+}) => {
+  if (!graded || example !== null || playWord === null) {
+    return null;
+  }
+  return (
+    <Button onClick={playWord} variant="outline">
+      Wort anhören
+    </Button>
+  );
+};
+
 export const FeedbackPanel = ({
   result,
   submittedAnswer,
-  audioUrl,
+  example,
+  playSentence,
+  playWord,
   onNext,
   onResolveWrong,
   repeated,
   resolution,
   skipped,
+  targetLanguage,
 }: FeedbackPanelProps) => {
-  const normalizedSubmission = normalizeAnswer(submittedAnswer);
+  const normalizedSubmission = normalizeAnswerForComparison(submittedAnswer);
   const repeatsSubmittedAnswer = result.expectedAnswers.some(
     (expectedAnswer) =>
-      normalizeAnswer(expectedAnswer) === normalizedSubmission,
+      normalizeAnswerForComparison(expectedAnswer) === normalizedSubmission,
   );
   const nextButton = useRef<HTMLButtonElement>(null);
   const feedbackDescriptionId = useId();
@@ -138,6 +166,14 @@ export const FeedbackPanel = ({
             Deine Antwort wurde als gültige Alternative gespeichert.
           </p>
         ) : null}
+        {result.graded && example !== null ? (
+          <PracticeFeedbackExample
+            example={example}
+            playSentence={playSentence}
+            playWord={playWord}
+            targetLanguage={targetLanguage}
+          />
+        ) : null}
         {pendingWrong ? (
           <p className="text-sm">
             Vertippt oder falsch bewertet? Du kannst die Antwort als richtig
@@ -150,16 +186,11 @@ export const FeedbackPanel = ({
         ) : null}
       </div>
       <div className="flex flex-wrap items-center gap-3">
-        {audioUrl === null ? null : (
-          <Button
-            onClick={async () => {
-              await new Audio(audioUrl).play().catch(() => undefined);
-            }}
-            variant="outline"
-          >
-            Aussprache anhören
-          </Button>
-        )}
+        <WordAudioFallback
+          example={example}
+          graded={result.graded}
+          playWord={playWord}
+        />
         {pendingWrong ? (
           <Button
             disabled={resolution !== null}

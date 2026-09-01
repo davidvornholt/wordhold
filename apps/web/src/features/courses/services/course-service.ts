@@ -1,9 +1,17 @@
 import { Clock, Effect } from 'effect';
-import { CourseSettingsNotFoundError } from '../errors/courses-errors';
+import {
+  CourseSettingsNotFoundError,
+  CourseUnitConflictError,
+  CourseUnitOrderChangedError,
+} from '../errors/courses-errors';
 import type {
   CourseDirectionsData,
   SetCourseDirectionsData,
 } from '../schemas/course-directions';
+import type {
+  CreateCourseUnitData,
+  ReorderCourseUnitsData,
+} from '../schemas/course-unit-management';
 import { CourseStore } from './course-store';
 
 const notFound = new CourseSettingsNotFoundError({
@@ -44,12 +52,38 @@ export class CourseService extends Effect.Service<CourseService>()(
         Effect.flatMap(Clock.currentTimeMillis, (now) =>
           store.listUnits(courseId, new Date(now)),
         );
+      const createUnit = ({ courseId, name }: CreateCourseUnitData) =>
+        Effect.gen(function* () {
+          const result = yield* store.createUnit(courseId, name);
+          if (result === 'course-missing') {
+            return yield* notFound;
+          }
+          if (result === 'duplicate') {
+            return yield* new CourseUnitConflictError({
+              message: `Die Einheit "${name}" gibt es bereits.`,
+            });
+          }
+          return yield* listUnits(courseId);
+        });
+      const reorderUnits = ({ courseId, unitIds }: ReorderCourseUnitsData) =>
+        Effect.gen(function* () {
+          const updated = yield* store.reorderUnits(courseId, unitIds);
+          if (!updated) {
+            return yield* new CourseUnitOrderChangedError({
+              message:
+                'Die Einheiten wurden zwischenzeitlich geändert. Lade die Seite neu und versuche es noch einmal.',
+            });
+          }
+          return yield* listUnits(courseId);
+        });
       const listVocabulary = (courseId: string) =>
         store.listVocabulary(courseId);
       return {
         getDirections,
         setDirections,
         listUnits,
+        createUnit,
+        reorderUnits,
         listVocabulary,
       } as const;
     }),

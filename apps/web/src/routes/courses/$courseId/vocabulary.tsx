@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { parseVocabularySearch } from '../../../features/courses/schemas/vocabulary-search';
 import {
+  generateVocabularyExample,
   getCourseDirections,
   listCourseVocabulary,
 } from '../../../features/courses/services/server-fns';
@@ -22,21 +23,24 @@ const VocabularyScreen = () => {
       title="Vokabelliste"
     >
       <p className="text-muted-foreground text-sm">
-        Termine gelten pro Abfragerichtung. Wähle beliebige kennengelernte
-        Vokabeln aus, um sie außerhalb des Lernplans zu üben.
+        Termine gelten pro Abfragerichtung. Wähle beliebige Vokabeln aus und übe
+        genau diese Auswahl.
       </p>
       <VocabularyLibrary
         enabledDirections={directions}
         entries={entries}
+        generateExample={(entryId) =>
+          generateVocabularyExample({ data: entryId })
+        }
         initialFilter={filter}
         initialUnitId={unit}
-        renderStudyAction={(entryIds) => (
+        renderStudyAction={(entryIds, intent) => (
           <ActionLink
             params={{ courseId: course.id }}
-            search={{ entries: entryIds.join(',') }}
+            search={{ entries: entryIds.join(','), mode: intent }}
             to="/courses/$courseId/study"
           >
-            Frei üben
+            Auswahl {intent === 'learn' ? 'kennenlernen' : 'üben'}
           </ActionLink>
         )}
         scope="course"

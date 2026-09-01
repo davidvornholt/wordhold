@@ -14,6 +14,7 @@ const session = (
     targetText: 'memory',
     nativeText: 'Erinnerung',
     hasAudio: false,
+    example: null,
     prompt: 'Erinnerung',
   })),
   available: { due, firstReviews, ready: due + firstReviews, nextDueAt: null },

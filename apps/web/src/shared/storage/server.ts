@@ -44,6 +44,11 @@ export const pageImageRelativePath = (
 export const audioRelativePath = (entryId: string, voice: string): string =>
   `audio/${entryId}-${voice.toLowerCase()}.mp3`;
 
+export const exampleAudioRelativePath = (
+  entryId: string,
+  audioProfile: string,
+): string => `audio/${entryId}-example-${audioProfile.toLowerCase()}.mp3`;
+
 const tryStorage = <A>(operation: string, evaluate: () => Promise<A>) =>
   Effect.tryPromise({
     try: evaluate,

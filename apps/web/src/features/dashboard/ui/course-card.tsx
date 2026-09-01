@@ -30,35 +30,60 @@ type CourseCardProps = {
   // everything but today's practice lives.
   readonly courseLink: ReactNode;
   readonly practiceAction: ReactNode;
+  readonly learnAction: ReactNode;
   readonly importAction: ReactNode;
 };
 
 type CourseProgressProps = NonNullable<CourseCardProps['stats']>;
 
+const restingHeading = (stats: CourseProgressProps) =>
+  stats.nextDueAt === null
+    ? 'Bereit zum Kennenlernen'
+    : 'Alles für heute wiederholt';
+
+const courseAction = (
+  stats: CourseCardProps['stats'],
+  practiceAction: ReactNode,
+  learnAction: ReactNode,
+): ReactNode => {
+  if (hasAvailablePractice(stats)) {
+    return practiceAction;
+  }
+  return (stats?.unintroduced ?? 0) > 0 ? learnAction : null;
+};
+
 const CourseProgress = (stats: CourseProgressProps) => {
   const { nextDueAt } = stats;
   return (
     <div className="flex flex-col gap-2">
-      <p className="flex items-baseline gap-2">
-        <span className="font-display text-3xl">{stats.ready}</span>
-        <span>{stats.ready === 1 ? 'Karte bereit' : 'Karten bereit'}</span>
-      </p>
+      {stats.ready > 0 ? (
+        <p className="flex items-baseline gap-2">
+          <span className="font-display text-3xl">{stats.ready}</span>
+          <span>{stats.ready === 1 ? 'Karte bereit' : 'Karten bereit'}</span>
+        </p>
+      ) : (
+        <p className="font-display text-xl">{restingHeading(stats)}</p>
+      )}
       <ul className="text-muted-foreground text-sm">
-        <li>
-          {stats.due === 0
-            ? 'Keine Wiederholung fällig'
-            : `${countNoun(stats.due, 'Wiederholung', 'Wiederholungen')} offen`}
-        </li>
-        <li>
-          {stats.firstReviews === 0
-            ? 'Keine erste Abfrage offen'
-            : `${countNoun(stats.firstReviews, 'erste Abfrage', 'erste Abfragen')} offen`}
-        </li>
+        {stats.due === 0 ? null : (
+          <li>
+            {countNoun(stats.due, 'Wiederholung', 'Wiederholungen')} fällig
+          </li>
+        )}
+        {stats.firstReviews === 0 ? null : (
+          <li>
+            {countNoun(stats.firstReviews, 'Karte', 'Karten')} zum ersten Mal{' '}
+            üben
+          </li>
+        )}
         {stats.ready === 0 && nextDueAt !== null ? (
           <li>
             Nächster Termin{' '}
             {formatLearningDate(nextDueAt).toLocaleLowerCase('de-DE')}
           </li>
+        ) : null}
+        {stats.ready === 0 && stats.unintroduced > 0 ? (
+          <li>Neue Vokabeln verfügbar</li>
         ) : null}
       </ul>
       <p className="text-muted-foreground text-xs">
@@ -68,22 +93,20 @@ const CourseProgress = (stats: CourseProgressProps) => {
           'Abfragerichtung',
           'Abfragerichtungen',
         )}
-        {stats.unintroduced > 0
-          ? ` · ${stats.unintroduced} noch kennenlernen`
-          : ''}
       </p>
     </div>
   );
 };
 
-// The card answers one question: is there work here today. Units, vocabulary,
-// importing and settings all sit one click away behind the course name, so the
-// overview stays readable with several courses on it.
+// The card leads to today's practice first, then to new vocabulary when the
+// schedule is resting. Units and settings stay behind the course name so the
+// overview remains readable with several courses on it.
 export const CourseCard = ({
   course,
   stats,
   courseLink,
   practiceAction,
+  learnAction,
   importAction,
 }: CourseCardProps) => {
   const subtitle = languageSubtitle(course.name, course.targetLanguage);
@@ -104,7 +127,7 @@ export const CourseCard = ({
         <CourseProgress {...stats} />
       )}
       <div className="mt-auto">
-        {hasAvailablePractice(stats) ? practiceAction : null}
+        {courseAction(stats, practiceAction, learnAction)}
       </div>
     </li>
   );

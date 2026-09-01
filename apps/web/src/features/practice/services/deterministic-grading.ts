@@ -1,10 +1,9 @@
 import type { AnswerSource } from '@wordhold/db/schema/entries';
-import { normalizeAnswer } from '../../../shared/grading/normalize';
+import { normalizeAnswerForComparison } from '../../../shared/grading/normalize';
 import { answerVariants } from '../../../shared/grading/variants';
 
 export type AcceptedAnswer = {
   readonly text: string;
-  readonly normalized: string;
   readonly source: AnswerSource;
 };
 
@@ -12,12 +11,18 @@ export const isDeterministicMatch = (
   submittedAnswer: string,
   accepted: ReadonlyArray<AcceptedAnswer>,
 ): boolean => {
-  const normalized = normalizeAnswer(submittedAnswer);
-  if (accepted.some((answer) => answer.normalized === normalized)) {
+  const normalized = normalizeAnswerForComparison(submittedAnswer);
+  if (
+    accepted.some(
+      (answer) => normalizeAnswerForComparison(answer.text) === normalized,
+    )
+  ) {
     return true;
   }
 
-  const acceptedReadings = new Set(accepted.map((answer) => answer.normalized));
+  const acceptedReadings = new Set(
+    accepted.map((answer) => normalizeAnswerForComparison(answer.text)),
+  );
   for (const answer of accepted) {
     if (answer.source === 'textbook') {
       const expansion = answerVariants(answer.text);

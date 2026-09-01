@@ -19,9 +19,7 @@ describe('PracticeService skip', () => {
       {
         findSubmission: () => Effect.succeed(testSubmission),
         listAcceptedAnswers: () =>
-          Effect.succeed([
-            { text: 'correct', normalized: 'correct', source: 'textbook' },
-          ]),
+          Effect.succeed([{ text: 'correct', source: 'textbook' }]),
         commit: (input) =>
           Effect.sync(() => {
             commits.push(input);

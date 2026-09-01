@@ -1,17 +1,20 @@
 import { createFileRoute } from '@tanstack/react-router';
 import {
-  introducedEntries,
-  unitOffers,
-} from '../../../../../features/courses/schemas/course-units';
-import {
+  generateVocabularyExample,
   getCourseDirections,
   listCourseUnits,
   listCourseVocabulary,
 } from '../../../../../features/courses/services/server-fns';
+import { UnitDirectionPlan } from '../../../../../features/courses/ui/unit-direction-plan';
 import { unitProgressSummary } from '../../../../../features/courses/ui/unit-status';
+import { UnitVocabularyEmpty } from '../../../../../features/courses/ui/unit-vocabulary-empty';
 import { VocabularyLibrary } from '../../../../../features/courses/ui/vocabulary-library';
 import { getCourse } from '../../../../../features/import/server-fns';
+import { directionLabel } from '../../../../../shared/directions';
 import { countNoun } from '../../../../../shared/format/count';
+import { germanLabels } from '../../../../../shared/languages';
+import { readyCardsInNextSection } from '../../../../../shared/practice/session-policy';
+import { itemsInNextSection } from '../../../../../shared/session/section-policy';
 import { ActionLink } from '../../../../../shared/ui/action-link';
 import { BackLink } from '../../../../../shared/ui/back-link';
 import { PageLayout } from '../../../../../shared/ui/page-layout';
@@ -37,51 +40,92 @@ const UnitScreen = () => {
     );
   }
 
-  const offers = unitOffers(unit);
+  const targetLabel = germanLabels[course.targetLanguage];
   return (
     <PageLayout backControl={backControl} title={unit.name}>
       <p className="text-muted-foreground text-sm">
-        {unitProgressSummary(unit)}
+        {unitProgressSummary(unit, targetLabel)}
       </p>
-      {offers.learn || offers.practice ? (
-        <div className="flex flex-wrap items-center gap-4">
-          {offers.learn ? (
+      {unit.directions.length === 0 ? null : (
+        <UnitDirectionPlan
+          renderLearnAction={(progress, variant) => (
             <ActionLink
+              className="w-full sm:w-fit"
               params={{ courseId: course.id, unitId: unit.id }}
+              search={{ direction: progress.direction }}
               to="/courses/$courseId/units/$unitId/learn"
+              variant={variant}
             >
-              {countNoun(unit.unintroduced, 'Vokabel', 'Vokabeln')} kennenlernen
+              {`${countNoun(
+                itemsInNextSection(progress.unintroduced),
+                'Vokabel',
+                'Vokabeln',
+              )} kennenlernen${
+                variant === 'primary'
+                  ? ` · ${directionLabel(progress.direction, targetLabel)}`
+                  : ''
+              }`}
             </ActionLink>
-          ) : null}
-          {offers.practice ? (
+          )}
+          renderScheduledAction={(progress, variant) => (
+            <ActionLink
+              className="w-full sm:w-fit"
+              params={{ courseId: course.id }}
+              search={{ direction: progress.direction, unit: unit.id }}
+              to="/courses/$courseId/practice"
+              variant={variant}
+            >
+              {countNoun(
+                readyCardsInNextSection(progress.due, progress.firstReviews),
+                'Karte',
+                'Karten',
+              )}{' '}
+              üben · {directionLabel(progress.direction, targetLabel)}
+            </ActionLink>
+          )}
+          targetLabel={targetLabel}
+          unit={unit}
+        />
+      )}
+      {unitEntries.length === 0 ? (
+        <UnitVocabularyEmpty
+          importAction={
             <ActionLink
               params={{ courseId: course.id }}
-              search={{ unit: unit.id }}
-              to="/courses/$courseId/study"
-              variant={offers.learn ? 'outline' : 'primary'}
+              to="/courses/$courseId/import"
             >
-              {countNoun(introducedEntries(unit), 'Vokabel', 'Vokabeln')} üben
+              Seite fotografieren
             </ActionLink>
-          ) : null}
-        </div>
-      ) : null}
-      <h2 className="font-display text-xl">Vokabeln</h2>
-      <VocabularyLibrary
-        enabledDirections={directions}
-        entries={unitEntries}
-        initialFilter="all"
-        renderStudyAction={(entryIds) => (
-          <ActionLink
-            params={{ courseId: course.id }}
-            search={{ entries: entryIds.join(',') }}
-            to="/courses/$courseId/study"
-          >
-            Frei üben
-          </ActionLink>
-        )}
-        scope="unit"
-        targetLanguage={course.targetLanguage}
-      />
+          }
+        />
+      ) : (
+        <>
+          <h2 className="font-display text-xl">Vokabeln</h2>
+          <VocabularyLibrary
+            enabledDirections={directions}
+            entries={unitEntries}
+            generateExample={(entryId) =>
+              generateVocabularyExample({ data: entryId })
+            }
+            initialFilter="all"
+            renderStudyAction={(entryIds, intent) => (
+              <ActionLink
+                params={{ courseId: course.id }}
+                search={
+                  entryIds.length === unitEntries.length
+                    ? { mode: intent, unit: unit.id }
+                    : { entries: entryIds.join(','), mode: intent }
+                }
+                to="/courses/$courseId/study"
+              >
+                Auswahl {intent === 'learn' ? 'kennenlernen' : 'üben'}
+              </ActionLink>
+            )}
+            scope="unit"
+            targetLanguage={course.targetLanguage}
+          />
+        </>
+      )}
     </PageLayout>
   );
 };

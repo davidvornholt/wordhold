@@ -1,4 +1,4 @@
-import { normalizeAnswer } from './normalize';
+import { normalizeAnswerForComparison } from './normalize';
 
 export const maximumAnswerVariants = 24;
 
@@ -40,7 +40,7 @@ export const normalizeReadings = (
       return alternatives;
     }
     for (const reading of alternatives.values) {
-      const normalized = normalizeAnswer(reading);
+      const normalized = normalizeAnswerForComparison(reading);
       if (normalized !== '' && !readings.includes(normalized)) {
         if (readings.length === maximumAnswerVariants) {
           return { _tag: 'Overflow' };

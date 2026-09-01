@@ -5,7 +5,7 @@ import { isDeterministicMatch } from './deterministic-grading';
 const answer = (
   text: string,
   source: AcceptedAnswer['source'] = 'textbook',
-): AcceptedAnswer => ({ text, normalized: text.toLowerCase(), source });
+): AcceptedAnswer => ({ text, source });
 
 describe('isDeterministicMatch', () => {
   it('accepts every supported textbook reading', () => {
@@ -31,6 +31,18 @@ describe('isDeterministicMatch', () => {
         answer('lingua franca; Verkehrssprache'),
       ]),
     ).toBe(true);
+  });
+
+  it('ignores commas and spacing around textbook separators', () => {
+    expect(isDeterministicMatch('hello world', [answer('hello, world')])).toBe(
+      true,
+    );
+    expect(isDeterministicMatch('hello,world', [answer('hello world')])).toBe(
+      true,
+    );
+    expect(isDeterministicMatch('amiga', [answer('amigo / a')])).toBe(true);
+    expect(isDeterministicMatch('a', [answer('amigo / a')])).toBe(false);
+    expect(isDeterministicMatch('bonne', [answer('bon/ bonne')])).toBe(true);
   });
 
   it('rejects compact suffix fragments and invented forms', () => {

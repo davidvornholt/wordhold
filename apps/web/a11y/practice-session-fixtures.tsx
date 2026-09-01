@@ -11,8 +11,9 @@ import { fixtureBackControl, fixtureControl } from './fixture-controls';
 
 const millisecondsPerDay = 86_400_000;
 const millisecondsPerSecond = 1000;
+type FixtureCard = PracticeSession['items'][number];
 
-const card = (index: number, target: string, native: string) => ({
+const card = (index: number, target: string, native: string): FixtureCard => ({
   cardId: `0000000-0000-0000-0000-00000000000${index}`,
   revision: 0,
   direction: 'to_target' as const,
@@ -20,12 +21,26 @@ const card = (index: number, target: string, native: string) => ({
   targetText: target,
   nativeText: native,
   hasAudio: false,
+  example: null,
   prompt: native,
 });
 
 const items = [
   card(1, 'memory', 'Erinnerung'),
   card(2, 'holiday', 'Ferien'),
+] as const;
+
+const audioItems = [
+  {
+    ...items[0],
+    hasAudio: true,
+    example: {
+      targetText: 'This memory still makes me smile.',
+      nativeText: 'Diese Erinnerung bringt mich immer noch zum Lächeln.',
+      source: 'textbook' as const,
+      hasAudio: true,
+    },
+  },
 ] as const;
 
 const resolvedRating = (correct: boolean, corrected: boolean) => {
@@ -36,7 +51,7 @@ const resolvedRating = (correct: boolean, corrected: boolean) => {
 };
 
 const grade = (
-  sessionItems: ReadonlyArray<ReturnType<typeof card>>,
+  sessionItems: ReadonlyArray<FixtureCard>,
   { data }: { readonly data: SubmitPayloadData },
 ): Promise<SubmitResult> => {
   const expected =
@@ -100,22 +115,33 @@ const grade = (
 };
 
 type PracticeSessionFixtureProps = {
-  readonly sessionItems?: ReadonlyArray<ReturnType<typeof card>>;
+  readonly sessionItems?: ReadonlyArray<FixtureCard>;
   readonly mode?: ReviewMode;
   readonly title?: string;
 };
 
 export const PracticeSessionFixture = ({
-  sessionItems = items,
+  sessionItems,
   mode = 'scheduled',
   title = 'English A2: Üben',
 }: PracticeSessionFixtureProps) => {
+  const fixtureSearch = new URLSearchParams(globalThis.location.search);
+  const lateExample = fixtureSearch.get('late-example') === 'true';
+  let activeItems: ReadonlyArray<FixtureCard> = sessionItems ?? items;
+  if (sessionItems === undefined && lateExample) {
+    activeItems = [{ ...audioItems[0], example: null }];
+  } else if (
+    sessionItems === undefined &&
+    fixtureSearch.get('audio') === 'true'
+  ) {
+    activeItems = audioItems;
+  }
   const session: PracticeSession = {
-    items: sessionItems,
+    items: activeItems,
     available: {
-      due: sessionItems.length,
+      due: activeItems.length,
       firstReviews: 0,
-      ready: sessionItems.length,
+      ready: activeItems.length,
       nextDueAt: null,
     },
   };
@@ -133,9 +159,21 @@ export const PracticeSessionFixture = ({
         backControl={backControl}
         emptyMessage="Für jetzt geschafft"
         mode={mode}
+        prepareExamples={({ data }) =>
+          Promise.resolve(
+            data.map((entryId) => ({
+              entryId,
+              example:
+                (lateExample ? audioItems : activeItems).find(
+                  (item) => item.entryId === entryId,
+                )?.example ?? null,
+            })),
+          )
+        }
         session={session}
-        submit={(input) => grade(sessionItems, input)}
+        submit={(input) => grade(activeItems, input)}
         targetLabel="Englisch"
+        targetLanguage="en"
       />
     </PageLayout>
   );

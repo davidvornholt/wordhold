@@ -2,7 +2,7 @@ import { Database } from '@wordhold/db/client';
 import type { LanguageCode } from '@wordhold/db/schema/courses';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import type { AnswerSource } from '@wordhold/db/schema/entries';
-import type { cards } from '@wordhold/db/schema/practice';
+import type { cards, ReviewMode } from '@wordhold/db/schema/practice';
 import { Context, Effect, Layer } from 'effect';
 import { ratings } from '../../../shared/grading/rating';
 import {
@@ -40,6 +40,7 @@ export class PracticeReviewStore extends Context.Tag(
     readonly findSubmission: (
       cardId: string,
       revision: number,
+      mode: ReviewMode,
     ) => Effect.Effect<SubmissionRecord | undefined, PracticeDatabaseError>;
     readonly listAcceptedAnswers: (
       entryId: string,
@@ -57,7 +58,11 @@ export class PracticeReviewStore extends Context.Tag(
     PracticeReviewStore,
     Effect.gen(function* () {
       const sql = yield* Database;
-      const findSubmission = (cardId: string, revision: number) =>
+      const findSubmission = (
+        cardId: string,
+        revision: number,
+        mode: ReviewMode,
+      ) =>
         sql<SubmissionRow>`
           select c.id, c.entry_id as "entryId", c.direction,
             c.state, c.due_at as "dueAt", c.stability, c.difficulty,
@@ -70,7 +75,10 @@ export class PracticeReviewStore extends Context.Tag(
           join entries e on e.id = c.entry_id
           join courses co on co.id = e.course_id
           where c.id = ${cardId} and c.revision = ${revision}
-            and c.introduced_at is not null
+            and (
+              c.introduced_at is not null
+              or ${mode}::review_mode = 'drill'::review_mode
+            )
         `.pipe(
           Effect.map((rows) => {
             const [row] = rows;
@@ -96,10 +104,9 @@ export class PracticeReviewStore extends Context.Tag(
       ) =>
         sql<{
           readonly text: string;
-          readonly normalized: string;
           readonly source: AnswerSource;
         }>`
-          select text, normalized, source from accepted_answers
+          select text, source from accepted_answers
           where entry_id = ${entryId} and direction = ${direction}
         `.pipe(
           Effect.mapError((cause) =>
@@ -124,15 +131,24 @@ export class PracticeReviewStore extends Context.Tag(
                           difficulty = ${next.difficulty}, reps = ${next.reps},
                           lapses = ${next.lapses}, scheduled_days = ${next.scheduledDays},
                           learning_steps = ${next.learningSteps},
-                          last_reviewed_at = ${next.lastReviewedAt}, revision = revision + 1
+                          last_reviewed_at = ${next.lastReviewedAt},
+                          revision = revision + 1,
+                          introduced_at = coalesce(introduced_at, ${input.reviewedAt})
                         where id = ${input.card.id} and revision = ${input.expectedRevision}
-                          and introduced_at is not null
+                          and (
+                            introduced_at is not null
+                            or ${input.mode}::review_mode = 'drill'::review_mode
+                          )
                         returning revision
                       `
                     : sql<{ readonly revision: number }>`
-                        update cards set revision = revision + 1
+                        update cards set revision = revision + 1,
+                          introduced_at = coalesce(introduced_at, ${input.reviewedAt})
                         where id = ${input.card.id} and revision = ${input.expectedRevision}
-                          and introduced_at is not null
+                          and (
+                            introduced_at is not null
+                            or ${input.mode}::review_mode = 'drill'::review_mode
+                          )
                         returning revision
                       `
                   ).pipe(

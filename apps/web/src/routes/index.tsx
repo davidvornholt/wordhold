@@ -59,6 +59,14 @@ const Home = () => {
                 Erste Seite fotografieren
               </ActionLink>
             )}
+            renderLearnAction={(course) => (
+              <ActionLink
+                params={{ courseId: course.id }}
+                to="/courses/$courseId"
+              >
+                Neue Vokabeln kennenlernen
+              </ActionLink>
+            )}
             renderPracticeAction={(course) => (
               <ActionLink
                 params={{ courseId: course.id }}

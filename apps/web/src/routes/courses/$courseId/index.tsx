@@ -1,20 +1,32 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute, Link, useRouter } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
-import { listCourseUnits } from '../../../features/courses/services/server-fns';
+import {
+  courseTotals,
+  recommendedUnitAction,
+} from '../../../features/courses/schemas/course-units';
+import {
+  createCourseUnit,
+  listCourseUnits,
+  reorderCourseUnits,
+} from '../../../features/courses/services/server-fns';
 import { CourseOverview } from '../../../features/courses/ui/course-overview';
 import { hasAvailablePractice } from '../../../features/dashboard/schemas/dashboard-models';
 import { getDashboard } from '../../../features/dashboard/services/server-fns';
 import { getCourse } from '../../../features/import/server-fns';
+import { directionLabel } from '../../../shared/directions';
 import { countNoun } from '../../../shared/format/count';
-import { languageSubtitle } from '../../../shared/languages';
+import { germanLabels, languageSubtitle } from '../../../shared/languages';
+import { itemsInNextSection } from '../../../shared/session/section-policy';
 import { ActionLink } from '../../../shared/ui/action-link';
 import { BackLink } from '../../../shared/ui/back-link';
 import { PageLayout } from '../../../shared/ui/page-layout';
 
 const CourseScreen = () => {
   const { course, units, stats } = Route.useLoaderData();
+  const router = useRouter();
   const nextUnit = units.find((unit) => unit.unintroduced > 0);
-  const isEmpty = units.length === 0;
+  const isEmpty = courseTotals(units).entries === 0;
+  const targetLabel = germanLabels[course.targetLanguage];
   let primaryAction: ReactNode = null;
   if (hasAvailablePractice(stats)) {
     primaryAction = (
@@ -26,12 +38,29 @@ const CourseScreen = () => {
       </ActionLink>
     );
   } else if (nextUnit !== undefined) {
+    const recommendation = recommendedUnitAction(nextUnit);
+    const recommendedDirection =
+      recommendation?.kind === 'learn'
+        ? nextUnit.directions.find(
+            (progress) => progress.direction === recommendation.direction,
+          )
+        : undefined;
     primaryAction = (
       <ActionLink
         params={{ courseId: course.id, unitId: nextUnit.id }}
+        search={{ direction: recommendedDirection?.direction }}
         to="/courses/$courseId/units/$unitId/learn"
       >
-        {countNoun(nextUnit.unintroduced, 'Vokabel', 'Vokabeln')} kennenlernen
+        {recommendedDirection === undefined
+          ? 'Neue Vokabeln kennenlernen'
+          : `${countNoun(
+              itemsInNextSection(recommendedDirection.unintroduced),
+              'Vokabel',
+              'Vokabeln',
+            )} kennenlernen · ${directionLabel(
+              recommendedDirection.direction,
+              targetLabel,
+            )}`}
       </ActionLink>
     );
   } else if (isEmpty) {
@@ -51,6 +80,13 @@ const CourseScreen = () => {
       title={course.name}
     >
       <CourseOverview
+        createUnit={async (name) => {
+          const next = await createCourseUnit({
+            data: { courseId: course.id, name },
+          });
+          await router.invalidate();
+          return next;
+        }}
         importAction={
           isEmpty ? null : (
             <ActionLink
@@ -73,6 +109,13 @@ const CourseScreen = () => {
             {unit.name}
           </Link>
         )}
+        reorderUnits={async (unitIds) => {
+          const next = await reorderCourseUnits({
+            data: { courseId: course.id, unitIds },
+          });
+          await router.invalidate();
+          return next;
+        }}
         settingsAction={
           <ActionLink
             params={{ courseId: course.id }}
@@ -82,6 +125,7 @@ const CourseScreen = () => {
             Einstellungen
           </ActionLink>
         }
+        targetLabel={targetLabel}
         vocabularyAction={
           <ActionLink
             params={{ courseId: course.id }}

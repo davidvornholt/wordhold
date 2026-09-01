@@ -1,5 +1,8 @@
+import type { LanguageCode } from '@wordhold/db/schema/courses';
 import type { ReviewMode } from '@wordhold/db/schema/practice';
-import { type SubmitEvent, useEffect, useId, useRef } from 'react';
+import { type SubmitEvent, useCallback, useEffect, useId, useRef } from 'react';
+import { useAudioPlayback } from '../../../shared/audio/use-pronunciation-audio';
+import type { PrepareExamples } from '../../../shared/examples/example-model';
 import { cardClass } from '../../../shared/ui/surface-styles';
 import type {
   PracticeSession,
@@ -10,6 +13,7 @@ import type { SubmitPayloadData } from '../schemas/submission-schema';
 import { FeedbackPanel } from './feedback-panel';
 import { PracticeAnswerForm } from './practice-answer-form';
 import { useCardSubmission } from './use-card-submission';
+import { usePreparedExample } from './use-prepared-example';
 
 type SessionItem = PracticeSession['items'][number];
 
@@ -27,7 +31,9 @@ type CardPracticeProps = {
   readonly item: SessionItem;
   readonly repeated: boolean;
   readonly targetLabel: string;
+  readonly targetLanguage: LanguageCode;
   readonly mode: ReviewMode;
+  readonly prepareExamples: PrepareExamples;
   readonly submit: (input: {
     readonly data: SubmitPayloadData;
   }) => Promise<SubmitResult>;
@@ -38,13 +44,41 @@ export const CardPractice = ({
   item,
   repeated,
   targetLabel,
+  targetLanguage,
   mode,
+  prepareExamples,
   submit,
   onNext,
 }: CardPracticeProps) => {
   const answerInput = useRef<HTMLInputElement>(null);
   const promptId = useId();
-  const audioUrl = item.hasAudio ? `/api/entries/${item.entryId}/audio` : null;
+  const { example, loadExample } = usePreparedExample(
+    item.entryId,
+    item.example,
+    prepareExamples,
+  );
+  const wordAudioUrl = item.hasAudio
+    ? `/api/entries/${item.entryId}/audio`
+    : null;
+  const sentenceAudioUrl = example?.hasAudio
+    ? `/api/entries/${item.entryId}/example-audio`
+    : null;
+  const playAudio = useAudioPlayback();
+  const playSentence = useCallback(
+    () => playAudio(sentenceAudioUrl),
+    [playAudio, sentenceAudioUrl],
+  );
+  const playWord = useCallback(
+    () => playAudio(wordAudioUrl),
+    [playAudio, wordAudioUrl],
+  );
+  const playFeedbackAudio = useCallback(async () => {
+    const prepared = await loadExample();
+    const preparedSentenceUrl = prepared?.hasAudio
+      ? `/api/entries/${item.entryId}/example-audio`
+      : null;
+    await playAudio(preparedSentenceUrl ?? wordAudioUrl);
+  }, [item.entryId, loadExample, playAudio, wordAudioUrl]);
   const {
     answer,
     setAnswer,
@@ -61,7 +95,7 @@ export const CardPractice = ({
     cardId: item.cardId,
     revision: item.revision,
     mode,
-    audioUrl,
+    playFeedbackAudio,
     submit,
     onNext,
   });
@@ -73,6 +107,13 @@ export const CardPractice = ({
     const focusTask = globalThis.setTimeout(() => answerInput.current?.focus());
     return () => globalThis.clearTimeout(focusTask);
   }, [busy, result]);
+
+  useEffect(() => {
+    if (!result?.graded || example !== null) {
+      return;
+    }
+    loadExample().catch(() => undefined);
+  }, [example, loadExample, result]);
 
   const onSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -109,18 +150,21 @@ export const CardPractice = ({
       )}
       {result === null ? null : (
         <FeedbackPanel
-          audioUrl={audioUrl}
+          example={example}
           onNext={() => {
             if (!result.graded || result.stored) {
               onNext(result);
             }
           }}
+          playSentence={sentenceAudioUrl === null ? null : playSentence}
+          playWord={wordAudioUrl === null ? null : playWord}
           onResolveWrong={resolveWrongAnswer}
           repeated={repeated}
           resolution={resolution}
           result={result}
           skipped={skipped}
           submittedAnswer={submittedAnswer ?? ''}
+          targetLanguage={targetLanguage}
         />
       )}
     </>

@@ -1,4 +1,4 @@
-import { practiceSectionSize } from '../../../shared/practice/session-policy';
+import { sessionSectionSize } from '../../../shared/session/section-policy';
 import type {
   PracticeItem,
   ResolvedSubmitResult,
@@ -37,7 +37,7 @@ export type ExpectedCard = Pick<PracticeItem, 'cardId' | 'revision'>;
 const beginSection = (
   queue: Omit<SessionQueue, 'pending' | 'sectionTotal'>,
 ): SessionQueue => {
-  const items = queue.remaining.slice(0, practiceSectionSize);
+  const items = queue.remaining.slice(0, sessionSectionSize);
   return {
     ...queue,
     pending: items.map((item) => ({ ...item, repeated: false })),

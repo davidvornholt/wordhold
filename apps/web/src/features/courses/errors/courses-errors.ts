@@ -13,3 +13,27 @@ export class CourseSettingsNotFoundError extends Data.TaggedError(
 )<{
   readonly message: string;
 }> {}
+
+export class CourseUnitConflictError extends Data.TaggedError(
+  'CourseUnitConflictError',
+)<{
+  readonly message: string;
+}> {}
+
+export class CourseUnitOrderChangedError extends Data.TaggedError(
+  'CourseUnitOrderChangedError',
+)<{
+  readonly message: string;
+}> {}
+
+export class VocabularyEntryNotFoundError extends Data.TaggedError(
+  'VocabularyEntryNotFoundError',
+)<{
+  readonly message: string;
+}> {}
+
+export class CourseExampleGenerationError extends Data.TaggedError(
+  'CourseExampleGenerationError',
+)<{
+  readonly message: string;
+}> {}

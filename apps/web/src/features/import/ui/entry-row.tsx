@@ -1,16 +1,19 @@
 import type { GrammarInfo } from '@wordhold/ai/extraction/schema';
-import {
-  maximumEntryTextLength,
-  maximumExampleLength,
-} from '@wordhold/ai/extraction/schema';
+import { maximumEntryTextLength } from '@wordhold/ai/extraction/schema';
 import type { ReactNode } from 'react';
 import { Button } from '../../../shared/ui/button';
 import { fieldCompactClass } from '../../../shared/ui/field-styles';
+import { Checkbox } from '../../../shared/ui/selection-controls';
+import type { DuplicateVerdict } from '../services/entry-identity';
+import { EntryExampleEditor } from './entry-example-editor';
 
 export type DraftEntry = {
   readonly targetText: string;
   readonly nativeText: string;
   readonly example: string;
+  readonly generatedExample?: {
+    readonly nativeText: string;
+  };
   readonly grammar?: GrammarInfo;
   readonly confidence?: number;
 };
@@ -68,7 +71,14 @@ type EntryRowProps = {
   readonly disabled: boolean;
   readonly targetLabel: string;
   readonly unitControl: ReactNode;
+  readonly generateExample: (
+    targetText: string,
+    nativeText: string,
+  ) => Promise<{ readonly target: string; readonly native: string }>;
+  readonly duplicate: DuplicateVerdict;
+  readonly duplicateConfirmed: boolean;
   readonly onChange: (entry: DraftEntry) => void;
+  readonly onDuplicateConfirmedChange: (confirmed: boolean) => void;
   readonly onRemove: () => void;
 };
 
@@ -78,18 +88,24 @@ export const EntryRow = ({
   disabled,
   targetLabel,
   unitControl,
+  generateExample,
+  duplicate,
+  duplicateConfirmed,
   onChange,
+  onDuplicateConfirmedChange,
   onRemove,
 }: EntryRowProps) => {
+  const duplicateConfirmationId = `duplicate-confirmation-${entryNumber}`;
   const uncertain =
     entry.confidence !== undefined && entry.confidence < lowConfidence;
+  const flagged = uncertain || duplicate !== 'none';
   const grammar =
     entry.grammar === undefined ? '' : grammarSummary(entry.grammar);
   const inputClass = fieldCompactClass;
   return (
     <li
       className={`flex flex-col gap-2 border p-3 ${
-        uncertain
+        flagged
           ? 'border-warning-foreground/40 border-l-4 border-l-warning-foreground bg-warning'
           : 'border-border bg-card'
       }`}
@@ -101,6 +117,11 @@ export const EntryRow = ({
             Unsicher gelesen – bitte prüfen
           </span>
         ) : null}
+        {duplicate === 'none' ? null : (
+          <span className="font-medium text-warning-foreground text-xs">
+            Schon in dieser Einheit
+          </span>
+        )}
         <Button
           aria-label={`Eintrag ${entryNumber} entfernen`}
           className="ml-auto"
@@ -135,20 +156,37 @@ export const EntryRow = ({
           value={entry.nativeText}
         />
       </div>
-      <input
-        aria-label="Beispielsatz"
-        className={inputClass}
+      <EntryExampleEditor
         disabled={disabled}
-        maxLength={maximumExampleLength}
-        onChange={(event) =>
-          onChange({ ...entry, example: event.target.value })
-        }
-        placeholder="Beispielsatz (optional)"
-        value={entry.example}
+        entry={entry}
+        generate={generateExample}
+        onChange={onChange}
       />
       {grammar === '' ? null : (
         <p className="text-muted-foreground text-xs">{grammar}</p>
       )}
+      {duplicate === 'exact' ? (
+        <p className="text-warning-foreground text-xs">
+          Wird nicht erneut importiert. Für eine Ausnahme ändere die
+          Schreibweise oder den Beispielsatz.
+        </p>
+      ) : null}
+      {duplicate === 'exception' ? (
+        <label
+          className="flex items-center gap-2 text-sm"
+          htmlFor={duplicateConfirmationId}
+        >
+          <Checkbox
+            checked={duplicateConfirmed}
+            disabled={disabled}
+            id={duplicateConfirmationId}
+            onChange={(event) =>
+              onDuplicateConfirmedChange(event.target.checked)
+            }
+          />
+          Als Ausnahme importieren (andere Schreibweise oder anderes Beispiel)
+        </label>
+      ) : null}
       {unitControl}
     </li>
   );

@@ -10,15 +10,32 @@ import { fixtureBackControl } from './fixture-controls';
 import { navigateToFixture } from './fixture-state';
 
 const backControl = fixtureBackControl('Übersicht', 'dashboard');
+const completePracticeCounts = [
+  { direction: 'to_target' as const, ready: 12 },
+  { direction: 'to_native' as const, ready: 8 },
+  { direction: 'both' as const, ready: 20 },
+];
+const partialPracticeCounts = [
+  { direction: 'to_target' as const, ready: 7 },
+  { direction: 'to_native' as const, ready: 0 },
+  { direction: 'both' as const, ready: 7 },
+];
 
-export const PracticeStartFixture = () => (
+type PracticeStartFixtureProps = {
+  readonly partial?: boolean;
+};
+
+export const PracticeStartFixture = ({
+  partial = false,
+}: PracticeStartFixtureProps) => (
   <PageLayout backControl={backControl} title="English A2: Üben">
     <SessionStart
-      options={sessionOptions(['to_target', 'to_native'], 'Englisch', [
-        { direction: 'to_target', ready: 12 },
-        { direction: 'to_native', ready: 8 },
-        { direction: 'both', ready: 20 },
-      ])}
+      itemNoun={{ singular: 'Karte', plural: 'Karten' }}
+      options={sessionOptions(
+        ['to_target', 'to_native'],
+        'Englisch',
+        partial ? partialPracticeCounts : completePracticeCounts,
+      )}
       preferenceKey="english-a2:practice"
       renderStartAction={(option, rememberDirection) => (
         <Button

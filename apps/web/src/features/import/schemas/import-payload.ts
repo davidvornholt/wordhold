@@ -27,6 +27,20 @@ export const UnitSelection = Schema.Union(
 );
 export type UnitSelectionData = typeof UnitSelection.Type;
 
+const VerifiedExample = Schema.Struct({
+  targetText: Schema.Trim.pipe(
+    Schema.minLength(1),
+    Schema.maxLength(maximumExampleLength),
+  ),
+  nativeText: Schema.optional(
+    Schema.Trim.pipe(
+      Schema.minLength(1),
+      Schema.maxLength(maximumExampleLength),
+    ),
+  ),
+  source: Schema.Literal('textbook', 'generated'),
+});
+
 // The human-verified shape of one entry, as submitted from the verify screen.
 // Confidence is dropped: after verification the human is the authority.
 export const VerifiedEntry = Schema.Struct({
@@ -40,9 +54,16 @@ export const VerifiedEntry = Schema.Struct({
     Schema.maxLength(maximumEntryTextLength),
   ),
   grammar: Schema.optional(Grammar),
-  example: Schema.optional(
-    Schema.Trim.pipe(Schema.maxLength(maximumExampleLength)),
-  ),
+  example: Schema.optional(VerifiedExample),
+  // Present only when the learner confirmed importing a word that already
+  // exists in the unit with a different casing or example sentence. The
+  // server refuses such an entry without this consent, so a stale verify
+  // screen cannot slip a duplicate through.
+  duplicateException: Schema.optional(Schema.Literal(true)),
+  // Present only when the verify screen is completing an exact duplicate
+  // without creating another entry. The server rechecks the duplicate before
+  // it claims the page.
+  skipDuplicate: Schema.optional(Schema.Literal(true)),
 });
 export type VerifiedEntryData = typeof VerifiedEntry.Type;
 

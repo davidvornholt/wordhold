@@ -22,6 +22,9 @@ type VocabularyUnitSectionProps = {
   readonly targetLanguage: LanguageCode;
   readonly selected: ReadonlyArray<string>;
   readonly onToggleEntry: (entryId: string) => void;
+  readonly generateExample: (
+    entryId: string,
+  ) => Promise<NonNullable<VocabularyEntry['example']>>;
   readonly onToggleAll: (
     entryIds: ReadonlyArray<string>,
     select: boolean,
@@ -37,23 +40,22 @@ export const VocabularyUnitSection = ({
   targetLanguage,
   selected,
   onToggleEntry,
+  generateExample,
   onToggleAll,
 }: VocabularyUnitSectionProps) => {
   const selectAllId = useId();
-  const selectable = entries.filter((entry) => entry.introduced);
   const allSelected =
-    selectable.length > 0 &&
-    selectable.every((entry) => selected.includes(entry.id));
+    entries.length > 0 && entries.every((entry) => selected.includes(entry.id));
   return (
     <section className="flex flex-col gap-2">
       <label className={labelClasses[labelStyle]} htmlFor={selectAllId}>
         <Checkbox
           checked={allSelected}
-          disabled={selectable.length === 0}
+          disabled={entries.length === 0}
           id={selectAllId}
           onChange={() =>
             onToggleAll(
-              selectable.map((entry) => entry.id),
+              entries.map((entry) => entry.id),
               !allSelected,
             )
           }
@@ -65,6 +67,7 @@ export const VocabularyUnitSection = ({
           <VocabularyEntryRow
             enabledDirections={enabledDirections}
             entry={entry}
+            generateExample={() => generateExample(entry.id)}
             key={entry.id}
             now={now}
             onToggle={() => onToggleEntry(entry.id)}
