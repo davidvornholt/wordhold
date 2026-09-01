@@ -41,6 +41,46 @@ test('a failed import recovers pronunciation without user action', async ({
   ).toHaveCount(0);
 });
 
+test('verification announces recovery and offers another attempt after failure', async ({
+  page,
+}) => {
+  await page.goto('/?state=verification-audio-recovery-deferred');
+  await expect(page.getByRole('status')).toHaveText(
+    'Aussprache wird erstellt …',
+  );
+
+  await page.getByRole('button', { name: 'Reject pronunciation' }).click();
+  await expect(page.getByRole('alert')).toHaveText(
+    'Die Aussprache konnte noch nicht erstellt werden.',
+  );
+  await page.getByRole('button', { name: 'Erneut versuchen' }).click();
+  await expect(page.getByRole('status')).toHaveText(
+    'Aussprache wird erstellt …',
+  );
+
+  await page.getByRole('button', { name: 'Resolve pronunciation' }).click();
+  await expect(page.getByRole('heading', { name: 'Übersicht' })).toBeVisible();
+});
+
+test('a completed recovery cannot pull the learner away from the page stack', async ({
+  page,
+}) => {
+  await page.goto('/?state=verification-audio-recovery-deferred');
+  await expect(page.getByRole('status')).toHaveText(
+    'Aussprache wird erstellt …',
+  );
+  await page.getByRole('button', { name: 'Seitenstapel' }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Seiten im Stapel' }),
+  ).toBeVisible();
+
+  await page.getByRole('button', { name: 'Resolve pronunciation' }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Seiten im Stapel' }),
+  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Übersicht' })).toHaveCount(0);
+});
+
 test('verification uses the production image and extraction retry names', async ({
   page,
 }) => {

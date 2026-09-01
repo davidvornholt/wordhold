@@ -1,9 +1,10 @@
 import type { ExtractionResult } from '@wordhold/ai/extraction';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { importPage } from '../import-fn';
 import type { BatchReviewSearchData } from '../schemas/batch-review-search';
 import type { UnitSelectionData } from '../schemas/import-payload';
 import { retryAudio, retryExtraction } from '../server-fns';
+import { finishAudioRecovery } from './audio-recovery-navigation';
 import { useVerificationNavigation } from './use-verification-navigation';
 import type { VerificationEntry } from './verify-form-selection';
 
@@ -66,6 +67,14 @@ export const useVerificationFlow = (
   } | null>(page.status === 'verified' ? { imported: null } : null);
   const actions = useActionRunner();
   const navigation = useVerificationNavigation(page.id, search);
+  const active = useRef<boolean>(true);
+
+  useEffect(() => {
+    active.current = true;
+    return () => {
+      active.current = false;
+    };
+  }, []);
 
   const retryPageExtraction = () =>
     actions.run(async () => {
@@ -73,13 +82,17 @@ export const useVerificationFlow = (
       setExtraction(updated.extraction);
     });
   const retryPageAudio = () =>
-    actions.run(async () => {
-      await retryAudio({ data: page.id });
-      await navigation.refreshOverview();
-      await (navigation.batchSession === null
-        ? navigation.goToOverview()
-        : navigation.advanceReview());
-    });
+    actions.run(() =>
+      finishAudioRecovery({
+        retry: () => retryAudio({ data: page.id }).then(() => undefined),
+        refreshOverview: navigation.refreshOverview,
+        finishNavigation: () =>
+          navigation.batchSession === null
+            ? navigation.goToOverview()
+            : navigation.advanceReview(),
+        shouldNavigate: () => active.current,
+      }),
+    );
   const submitPage = (verified: ReadonlyArray<VerificationEntry>) =>
     actions.run(async () => {
       const result = await importPage({
@@ -107,6 +120,9 @@ export const useVerificationFlow = (
     ...navigation,
     completed,
     extraction,
+    leavePage: () => {
+      active.current = false;
+    },
     retryPageAudio,
     retryPageExtraction,
     submitPage,

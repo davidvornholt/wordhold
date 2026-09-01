@@ -11,10 +11,6 @@ import {
   PracticeStartFixture,
 } from './direction-fixtures';
 import { type FixtureState, readFixtureState } from './fixture-state';
-import {
-  DeferredVerificationFixture,
-  VerificationFixture,
-} from './import-fixtures';
 import { ImportSessionFixture } from './import-session-fixture';
 import {
   LearnDoneFixture,
@@ -34,8 +30,8 @@ import {
   PracticeSessionFixture,
 } from './practice-session-fixtures';
 import { rootFixture } from './root-fixtures';
-import { StaleUnitVerificationFixture } from './stale-unit-fixture';
 import { StudyStartFixture } from './study-fixtures';
+import { verificationFixture } from './verification-fixture-router';
 import { VocabularyFixture } from './vocabulary-fixtures';
 
 const batchReviewFixture = (state: FixtureState) => {
@@ -119,26 +115,20 @@ export const FixtureApp = () => {
       return <ImportFixture error={true} />;
     case 'import-session':
       return <ImportSessionFixture />;
-    case 'verification':
-      return <VerificationFixture />;
-    case 'verification-duplicates':
-      return <VerificationFixture duplicates={true} />;
-    case 'verification-all-duplicates':
-      return <VerificationFixture allDuplicates={true} />;
     case 'verification-batch-first':
     case 'verification-batch-second':
     case 'verification-batch-complete':
       return batchReviewFixture(state);
+    case 'verification':
+    case 'verification-duplicates':
+    case 'verification-all-duplicates':
     case 'verification-empty':
-      return <VerificationFixture empty={true} />;
     case 'verification-no-units':
-      return <VerificationFixture noUnits={true} />;
     case 'verification-stale-unit':
-      return <StaleUnitVerificationFixture />;
+    case 'verification-audio-recovery-deferred':
     case 'verification-audio-recovery':
-      return <VerificationFixture audioRecovery={true} />;
     case 'verification-deferred':
-      return <DeferredVerificationFixture />;
+      return verificationFixture(state);
     case 'course':
     case 'course-no-practice':
     case 'course-empty-units':

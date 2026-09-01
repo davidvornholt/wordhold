@@ -22,6 +22,7 @@ export const fixtureStates = [
   'verification-no-units',
   'verification-stale-unit',
   'verification-deferred',
+  'verification-audio-recovery-deferred',
   'course',
   'course-no-practice',
   'course-empty-units',
