@@ -2,7 +2,7 @@ import type { LanguageCode } from '@wordhold/db/schema/courses';
 import { useEffect, useId, useRef } from 'react';
 import { formatLearningDate } from '../../../shared/dates/learning-date';
 import type { PreparedExampleSentence } from '../../../shared/examples/example-model';
-import { normalizeAnswer } from '../../../shared/grading/normalize';
+import { normalizeAnswerForComparison } from '../../../shared/grading/normalize';
 import { Button } from '../../../shared/ui/button';
 import { Callout } from '../../../shared/ui/callout';
 import type { SubmitResult } from '../schemas/practice-models';
@@ -126,10 +126,10 @@ export const FeedbackPanel = ({
   skipped,
   targetLanguage,
 }: FeedbackPanelProps) => {
-  const normalizedSubmission = normalizeAnswer(submittedAnswer);
+  const normalizedSubmission = normalizeAnswerForComparison(submittedAnswer);
   const repeatsSubmittedAnswer = result.expectedAnswers.some(
     (expectedAnswer) =>
-      normalizeAnswer(expectedAnswer) === normalizedSubmission,
+      normalizeAnswerForComparison(expectedAnswer) === normalizedSubmission,
   );
   const nextButton = useRef<HTMLButtonElement>(null);
   const feedbackDescriptionId = useId();

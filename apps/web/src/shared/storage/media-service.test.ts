@@ -156,12 +156,14 @@ describe('loadEntryAudio', () => {
             set audio_profile = ${ttsAudioProfile('Je garde cette mémoire.', 'fr')}
             where entry_id = ${entryId}
           `;
-          yield* loadEntryAudio(entryId).pipe(
+          const currentWord = yield* loadEntryAudio(entryId).pipe(
             Effect.provideService(Storage, dataStorage),
           );
-          yield* loadExampleAudio(entryId).pipe(
+          const currentExample = yield* loadExampleAudio(entryId).pipe(
             Effect.provideService(Storage, dataStorage),
           );
+          expect(currentWord.bytes).toEqual(new Uint8Array([1]));
+          expect(currentExample.bytes).toEqual(new Uint8Array([1]));
           expect(storageReads).toBe(2);
         }).pipe(
           Effect.provide(

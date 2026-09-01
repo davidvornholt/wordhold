@@ -1,4 +1,4 @@
-import { normalizeAnswer } from '../../../shared/grading/normalize';
+import { normalizeAnswerForComparison } from '../../../shared/grading/normalize';
 import { answerVariants } from '../../../shared/grading/variants';
 import { type LearnItem, learnAnswer } from '../schemas/learning-models';
 
@@ -8,12 +8,16 @@ import { type LearnItem, learnAnswer } from '../schemas/learning-models';
 // uses the graded path's normalization against that answer plus every accepted
 // answer for the direction. It never calls the judge or incurs model cost.
 export const matchesLearnItem = (item: LearnItem, typed: string): boolean => {
-  const normalized = normalizeAnswer(typed);
+  const normalized = normalizeAnswerForComparison(typed);
   if (normalized === '') {
     return false;
   }
   const answers = [learnAnswer(item), ...item.textbookAnswers];
-  if (answers.some((answer) => normalizeAnswer(answer) === normalized)) {
+  if (
+    answers.some(
+      (answer) => normalizeAnswerForComparison(answer) === normalized,
+    )
+  ) {
     return true;
   }
   return answers.some((answer) => {

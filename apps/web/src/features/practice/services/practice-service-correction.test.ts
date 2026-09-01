@@ -91,7 +91,6 @@ const runSubmit = (
         Effect.succeed([
           {
             text: acceptedText,
-            normalized: acceptedText,
             source: 'textbook',
           },
         ]),

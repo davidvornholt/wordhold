@@ -46,6 +46,29 @@ describe('matchesLearnItem', () => {
     expect(matchesLearnItem(item, 'to look at')).toBe(true);
   });
 
+  it('ignores commas and flexible spacing around textbook separators', () => {
+    expect(
+      matchesLearnItem(
+        {
+          ...item,
+          targetText: 'hello, world',
+          textbookAnswers: ['hello, world'],
+        },
+        'hello world',
+      ),
+    ).toBe(true);
+    expect(
+      matchesLearnItem(
+        {
+          ...item,
+          targetText: 'amigo / a',
+          textbookAnswers: ['amigo / a'],
+        },
+        'amiga',
+      ),
+    ).toBe(true);
+  });
+
   it('uses the shared textbook notation contract', () => {
     expect(
       matchesLearnItem(
