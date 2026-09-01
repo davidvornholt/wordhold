@@ -109,9 +109,9 @@ const CourseScreen = () => {
             {unit.name}
           </Link>
         )}
-        reorderUnits={async (unitIds) => {
+        reorderUnits={async (expectedUnitIds, unitIds) => {
           const next = await reorderCourseUnits({
-            data: { courseId: course.id, unitIds },
+            data: { courseId: course.id, expectedUnitIds, unitIds },
           });
           await router.invalidate();
           return next;

@@ -65,9 +65,17 @@ export class CourseService extends Effect.Service<CourseService>()(
           }
           return yield* listUnits(courseId);
         });
-      const reorderUnits = ({ courseId, unitIds }: ReorderCourseUnitsData) =>
+      const reorderUnits = ({
+        courseId,
+        expectedUnitIds,
+        unitIds,
+      }: ReorderCourseUnitsData) =>
         Effect.gen(function* () {
-          const updated = yield* store.reorderUnits(courseId, unitIds);
+          const updated = yield* store.reorderUnits(
+            courseId,
+            expectedUnitIds,
+            unitIds,
+          );
           if (!updated) {
             return yield* new CourseUnitOrderChangedError({
               message:

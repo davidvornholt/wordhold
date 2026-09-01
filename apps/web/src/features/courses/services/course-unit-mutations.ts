@@ -41,7 +41,11 @@ export const makeCourseUnitMutations = (sql: Database) => {
       )
       .pipe(Effect.mapError((cause) => databaseError('create unit', cause)));
 
-  const reorderUnits = (courseId: string, unitIds: ReadonlyArray<string>) =>
+  const reorderUnits = (
+    courseId: string,
+    expectedUnitIds: ReadonlyArray<string>,
+    unitIds: ReadonlyArray<string>,
+  ) =>
     sql
       .withTransaction(
         Effect.gen(function* () {
@@ -51,9 +55,20 @@ export const makeCourseUnitMutations = (sql: Database) => {
             where course_id = ${courseId}
             order by position, name, id
           `;
-          const currentIds = new Set(current.map((unit) => unit.id));
+          const currentUnitIds = current.map((unit) => unit.id);
+          if (
+            currentUnitIds.length !== expectedUnitIds.length ||
+            currentUnitIds.some(
+              (unitId, position) => unitId !== expectedUnitIds[position],
+            )
+          ) {
+            return false;
+          }
+          const currentIds = new Set(currentUnitIds);
+          const nextIds = new Set(unitIds);
           if (
             currentIds.size !== unitIds.length ||
+            nextIds.size !== unitIds.length ||
             unitIds.some((unitId) => !currentIds.has(unitId))
           ) {
             return false;

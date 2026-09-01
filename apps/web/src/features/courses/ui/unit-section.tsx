@@ -10,6 +10,7 @@ type UnitSectionProps = {
   readonly renderUnitLink: (unit: CourseUnit) => ReactNode;
   readonly createUnit: (name: string) => Promise<ReadonlyArray<CourseUnit>>;
   readonly reorderUnits: (
+    expectedUnitIds: ReadonlyArray<string>,
     unitIds: ReadonlyArray<string>,
   ) => Promise<ReadonlyArray<CourseUnit>>;
 };
