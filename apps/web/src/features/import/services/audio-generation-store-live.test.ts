@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import { ttsAudioProfile } from '@wordhold/ai/tts/speech-text';
 import { Database } from '@wordhold/db/client';
 import {
   testDatabaseLayer,
@@ -40,7 +41,7 @@ const seedAudioTargets = Effect.gen(function* () {
     insert into entry_audio (entry_id, voice, path)
     values
       (${abbreviationEntryId}, 'Lea', 'audio/old-abbreviation.mp3'),
-      (${plainEntryId}, 'Lea', 'audio/current-plain.mp3')
+      (${plainEntryId}, ${ttsAudioProfile('mémoire', 'fr')}, 'audio/current-plain.mp3')
   `;
 });
 

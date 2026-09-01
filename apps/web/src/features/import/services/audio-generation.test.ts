@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { Tts } from '@wordhold/ai/tts';
 import { TtsError } from '@wordhold/ai/tts/error';
+import { ttsAudioProfile } from '@wordhold/ai/tts/speech-text';
 import { Effect } from 'effect';
 import { FileReferenceError } from '../../../shared/storage/file-reference-error';
 import { Storage } from '../../../shared/storage/server';
@@ -158,7 +159,7 @@ describe('pronunciation audio revisions', () => {
           AudioGenerationStore,
           makeAudioGenerationStore({
             hasReference: (_entryId, audioProfile) =>
-              Effect.succeed(audioProfile === 'Lea'),
+              Effect.succeed(audioProfile === ttsAudioProfile('mémoire', 'fr')),
           }),
         ),
         Effect.provideService(Storage, makeStorage()),

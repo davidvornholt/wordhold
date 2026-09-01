@@ -9,9 +9,9 @@ changes.
 | `Extraction` | Google Enterprise AI (`AI_EXTRACTION_MODEL`, escalating to `AI_EXTRACTION_ESCALATION_MODEL` on low confidence) | Vision extraction of textbook vocabulary pages into structured entries. |
 | `Judge` | Bedrock OpenAI-compatible endpoint (`AI_JUDGE_MODEL`) | Multi-dimensional grading of answers that failed deterministic matching. |
 | `SentenceGen` | Bedrock OpenAI-compatible endpoint (`AI_SENTENCE_MODEL`) | Example-sentence generation for entries. |
-| `Tts` | Amazon Polly (neural voices) | Pronunciation audio, batch-generated at import time. |
+| `Tts` | Amazon Polly (generative voices) | Pronunciation audio, batch-generated at import time. |
 
-Before calling Polly, `Tts` replaces recognized German, English, Spanish, and French abbreviations with SSML pronunciation aliases while preserving the textbook spelling. Audio that uses the dictionary carries a pronunciation revision, so a changed dictionary can invalidate affected files without regenerating plain vocabulary.
+Polly uses Vicki for German, Stephen for US English, Sergio for European Spanish, and Remi for French. Before calling Polly, `Tts` replaces recognized abbreviations with SSML pronunciation aliases while preserving the textbook spelling. A `/` outside a recognized abbreviation becomes a 25 ms pause. Polly handles commas, semicolons, and parentheses without extra SSML pauses. Audio profiles record the engine, pronunciation revision, and slash pause when applicable, so affected files can be regenerated without invalidating unrelated audio.
 
 Structured outputs are validated with Effect Schema via the Standard Schema
 bridge (`Schema.standardSchemaV1`), so the AI SDK retries on shape mismatch

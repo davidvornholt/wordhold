@@ -1,14 +1,25 @@
 import { describe, expect, it } from 'bun:test';
-import { Effect } from 'effect';
+import { ttsAudioProfile } from '@wordhold/ai/tts/speech-text';
+import { Database } from '@wordhold/db/client';
+import {
+  testDatabaseLayer,
+  withMigratedTestDatabase,
+} from '@wordhold/db/testing/postgres-test-database';
+import { Effect, Layer } from 'effect';
 import { MediaDatabaseError } from './media-database-error';
 import { MediaNotFoundError } from './media-not-found-error';
 import {
   loadEntryAudio,
   MediaRepository,
+  MediaRepositoryLive,
   type MediaRepositoryShape,
 } from './media-service';
 import { Storage, type StorageShape } from './server';
 import { StorageError } from './storage-error';
+
+const courseId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+const unitId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+const entryId = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
 
 const repository = (
   overrides: Partial<MediaRepositoryShape> = {},
@@ -77,5 +88,63 @@ describe('loadEntryAudio', () => {
       storage({ read: () => Effect.fail(failure) }),
     );
     expect(unreadable).toBe(failure);
+  });
+
+  it('does not serve an audio file with a stale profile', async () => {
+    await Effect.runPromise(
+      withMigratedTestDatabase((database) => {
+        const databaseLayer = testDatabaseLayer(database.url);
+        let storageReads = 0;
+        const dataStorage = storage({
+          read: () => {
+            storageReads += 1;
+            return Effect.succeed(new Uint8Array([1]));
+          },
+        });
+        return Effect.gen(function* () {
+          const sql = yield* Database;
+          yield* sql`
+            insert into courses (id, name, target_language)
+            values (${courseId}, 'French', 'fr')
+          `;
+          yield* sql`
+            insert into units (id, course_id, name, position)
+            values (${unitId}, ${courseId}, 'Unit 1', 0)
+          `;
+          yield* sql`
+            insert into entries (id, course_id, unit_id, target_text, native_text)
+            values (${entryId}, ${courseId}, ${unitId}, 'mémoire', 'Erinnerung')
+          `;
+          yield* sql`
+            insert into entry_audio (entry_id, voice, path)
+            values (${entryId}, 'Lea', 'audio/old.mp3')
+          `;
+
+          const stale = yield* Effect.either(
+            loadEntryAudio(entryId).pipe(
+              Effect.provideService(Storage, dataStorage),
+            ),
+          );
+          expect(stale._tag).toBe('Left');
+          expect(storageReads).toBe(0);
+
+          yield* sql`
+            update entry_audio
+            set voice = ${ttsAudioProfile('mémoire', 'fr')}
+            where entry_id = ${entryId}
+          `;
+          const current = yield* loadEntryAudio(entryId).pipe(
+            Effect.provideService(Storage, dataStorage),
+          );
+          expect(current.bytes).toEqual(new Uint8Array([1]));
+          expect(storageReads).toBe(1);
+        }).pipe(
+          Effect.provide(
+            MediaRepositoryLive.pipe(Layer.provide(databaseLayer)),
+          ),
+          Effect.provide(databaseLayer),
+        );
+      }),
+    );
   });
 });
