@@ -19,7 +19,17 @@ test('selected practice reaches a unit sitting through the course page', async (
   await expect(page.getByRole('heading', { name: 'Vokabeln' })).toBeVisible();
   await expect(page.getByText('memory')).toBeVisible();
 
-  await page.getByRole('checkbox', { name: 'Alle auswählen' }).check();
+  const selectAll = page.getByRole('checkbox', { name: 'Alle auswählen' });
+  await page.getByLabel('memory auswählen').check();
+  await expect(selectAll).toHaveAttribute('aria-checked', 'mixed');
+  await expect
+    .poll(() =>
+      selectAll.evaluate(
+        (control) => (control as HTMLInputElement).indeterminate,
+      ),
+    )
+    .toBe(true);
+  await selectAll.check();
   await expect(page.getByText('2 Vokabeln ausgewählt')).toBeVisible();
   await page.getByRole('button', { name: 'Auswahl üben' }).click();
   await expect(page.locator('body')).toHaveAttribute(
