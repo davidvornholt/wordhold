@@ -1,5 +1,5 @@
 import { maximumExampleLength } from '@wordhold/ai/extraction/schema';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '../../../shared/ui/button';
 import { fieldCompactClass } from '../../../shared/ui/field-styles';
 import type {
@@ -31,8 +31,20 @@ export const EntryExampleEditor = ({
 }: EntryExampleEditorProps) => {
   const [generationError, setGenerationError] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const generatedTranslation = useRef<HTMLInputElement>(null);
+  const previousGeneratedExample = useRef(entry.generatedExample);
   const canGenerate =
     entry.targetText.trim() !== '' && entry.nativeText.trim() !== '';
+
+  useEffect(() => {
+    const translationAppeared =
+      previousGeneratedExample.current === undefined &&
+      entry.generatedExample !== undefined;
+    previousGeneratedExample.current = entry.generatedExample;
+    if (translationAppeared) {
+      generatedTranslation.current?.focus();
+    }
+  }, [entry.generatedExample]);
 
   const generateExample = async () => {
     setGenerating(true);
@@ -78,6 +90,7 @@ export const EntryExampleEditor = ({
             })
           }
           placeholder="Deutsche Übersetzung"
+          ref={generatedTranslation}
           value={entry.generatedExample.nativeText}
         />
       )}

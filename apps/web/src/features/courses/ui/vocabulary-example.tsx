@@ -1,5 +1,5 @@
 import type { LanguageCode } from '@wordhold/db/schema/courses';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '../../../shared/ui/button';
 import type { VocabularyEntry } from '../schemas/course-units';
 
@@ -17,10 +17,22 @@ export const VocabularyExample = ({
   const [example, setExample] = useState(entry.example);
   const [generating, setGenerating] = useState(false);
   const [failed, setFailed] = useState(false);
+  const generatedResult = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (entry.example === null && example !== null) {
+      generatedResult.current?.focus();
+    }
+  }, [entry.example, example]);
 
   if (example !== null) {
     return (
-      <div className="grid gap-1 border-border border-l pl-3 text-sm">
+      <div
+        className="grid gap-1 border-border border-l pl-3 text-sm focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
+        ref={generatedResult}
+        role={entry.example === null ? 'status' : undefined}
+        tabIndex={entry.example === null ? -1 : undefined}
+      >
         <p className="font-medium" lang={targetLanguage}>
           {example.targetText}
         </p>
@@ -42,7 +54,8 @@ export const VocabularyExample = ({
           setGenerating(true);
           setFailed(false);
           try {
-            setExample(await generate());
+            const generated = await generate();
+            setExample(generated);
           } catch {
             setFailed(true);
           } finally {
