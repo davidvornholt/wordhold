@@ -23,7 +23,7 @@
     "test": "bun test"
   },
   "dependencies": {
-    "@ai-sdk/google-vertex": "^5.0.61",
+    "@ai-sdk/google-vertex": "^5.0.70",
     "@ai-sdk/openai": "^4.0.47",
     "@aws-sdk/client-polly": "^3.1116.0",
     "ai": "^7.0.77",
