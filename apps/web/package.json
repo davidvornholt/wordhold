@@ -36,7 +36,7 @@
     "ts-fsrs": "^5.4.1"
   },
   "devDependencies": {
-    "@axe-core/playwright": "^4.12.1",
+    "@axe-core/playwright": "^4.13.0",
     "@davidvornholt/a11y-testing": "workspace:*",
     "@davidvornholt/typescript-config": "workspace:*",
     "@playwright/test": "1.62.1",

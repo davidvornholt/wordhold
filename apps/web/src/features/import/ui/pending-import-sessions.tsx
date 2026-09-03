@@ -101,11 +101,11 @@ export const PendingImportSessions = ({
             <li className="relative mt-2 ml-2" key={session.id}>
               <div
                 aria-hidden="true"
-                className="pointer-events-none absolute -top-2 -left-2 h-full w-full border border-border bg-background"
+                className="pointer-events-none absolute -top-2 -left-2 size-full border border-border bg-background"
               />
               <div
                 aria-hidden="true"
-                className="pointer-events-none absolute -top-1 -left-1 h-full w-full border border-border bg-card"
+                className="pointer-events-none absolute -top-1 -left-1 size-full border border-border bg-card"
               />
               <div className="relative flex flex-col gap-3 border border-border bg-card p-4">
                 <div>
