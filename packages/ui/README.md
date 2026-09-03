@@ -2,15 +2,12 @@
 
 Shared design tokens for the Wordhold web app.
 
-`src/theme.css` is the single token source: the "heirloom-product" theme
-(winner of the design bake-off), applied at `:root`. Carded surfaces on warm
-off-white, Spectral serif display over Hanken Grotesk body, forest green as
-the single strong color, square corners throughout. Dark mode comes from
-`prefers-color-scheme` (no toggle).
+`src/theme.css` is the single token source, applied at `:root`. Dark mode
+comes from `prefers-color-scheme` with no application toggle.
 
 All app color and type decisions consume these tokens through the Tailwind
 utilities mapped in `apps/web/src/styles.css`; no raw color values in app
-code. The design intent lives in the root `DESIGN.md`.
+code.
 
 `src/theme.test.ts` enforces that every color token has a dark-mode
 override and that dark mode introduces no tokens of its own.
