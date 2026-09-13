@@ -54,9 +54,9 @@ export const SessionStart = ({
   preferenceKey,
   renderStartAction,
 }: SessionStartProps) => {
-  const legend = useRef<HTMLLegendElement>(null);
+  const legendRef = useRef<HTMLLegendElement>(null);
   useEffect(() => {
-    const focusTask = globalThis.setTimeout(() => legend.current?.focus());
+    const focusTask = globalThis.setTimeout(() => legendRef.current?.focus());
     return () => globalThis.clearTimeout(focusTask);
   }, []);
   const storageKey = `wordhold-practice-direction-${preferenceKey}`;
@@ -84,7 +84,7 @@ export const SessionStart = ({
       <fieldset className="flex flex-col gap-3">
         <legend
           className="mb-3 font-display text-xl focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
-          ref={legend}
+          ref={legendRef}
           tabIndex={-1}
         >
           Welche Richtung?

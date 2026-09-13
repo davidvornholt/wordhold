@@ -44,7 +44,7 @@ export const PendingImportSessions = ({
   const [discardingId, setDiscardingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const confirmationActionRef = useRef<HTMLButtonElement>(null);
-  const discardActionRefs = useRef(new Map<string, HTMLButtonElement>());
+  const discardActionRefsRef = useRef(new Map<string, HTMLButtonElement>());
   const restoreFocusIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -54,7 +54,7 @@ export const PendingImportSessions = ({
     }
     const restoreFocusId = restoreFocusIdRef.current;
     if (restoreFocusId !== null) {
-      discardActionRefs.current.get(restoreFocusId)?.focus();
+      discardActionRefsRef.current.get(restoreFocusId)?.focus();
       restoreFocusIdRef.current = null;
     }
   }, [confirmingId]);
@@ -162,9 +162,9 @@ export const PendingImportSessions = ({
                       }}
                       ref={(element) => {
                         if (element === null) {
-                          discardActionRefs.current.delete(session.id);
+                          discardActionRefsRef.current.delete(session.id);
                         } else {
-                          discardActionRefs.current.set(session.id, element);
+                          discardActionRefsRef.current.set(session.id, element);
                         }
                       }}
                       variant="quiet-muted"

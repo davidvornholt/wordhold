@@ -37,7 +37,7 @@ export const useUploadQueuePersistence = ({
   setProcessingStarted,
 }: UseUploadQueuePersistenceOptions) => {
   const [hydratedCourseId, setHydratedCourseId] = useState<string | null>(null);
-  const persistenceQueue = useRef(Promise.resolve());
+  const persistenceQueueRef = useRef(Promise.resolve());
   const hydrated = hydratedCourseId === courseId;
 
   useEffect(() => {
@@ -98,7 +98,7 @@ export const useUploadQueuePersistence = ({
                 pages,
               ),
             );
-    persistenceQueue.current = persistenceQueue.current
+    persistenceQueueRef.current = persistenceQueueRef.current
       .then(operation)
       .catch(() => undefined);
   }, [courseId, hydrated, importSessionId, pages, processingStarted]);
@@ -106,7 +106,7 @@ export const useUploadQueuePersistence = ({
   return {
     hydrated,
     clearPersistedQueue: () => {
-      persistenceQueue.current = persistenceQueue.current
+      persistenceQueueRef.current = persistenceQueueRef.current
         .then(() => clearUploadQueue(courseId))
         .catch(() => undefined);
     },
