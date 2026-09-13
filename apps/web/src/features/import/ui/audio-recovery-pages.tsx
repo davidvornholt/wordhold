@@ -21,10 +21,10 @@ const useAudioRecoveryPass = ({
   onRecovered,
   onRetry,
 }: AudioRecoveryPagesProps) => {
-  const attemptedPageIds = useRef(new Set<string>());
-  const currentPass = useRef(-1);
-  const pendingAttempts = useRef(0);
-  const recoveryQueue = useRef(Promise.resolve());
+  const attemptedPageIdsRef = useRef(new Set<string>());
+  const currentPassRef = useRef(-1);
+  const pendingAttemptsRef = useRef(0);
+  const recoveryQueueRef = useRef(Promise.resolve());
   const [creating, setCreating] = useState(pages.length > 0);
   const [pass, setPass] = useState(0);
   const pageIds = pages.map((page) => page.id).join('\n');
@@ -43,36 +43,36 @@ const useAudioRecoveryPass = ({
     } catch {
       // Continue the pass so one failed page cannot block later pages.
     } finally {
-      pendingAttempts.current -= 1;
+      pendingAttemptsRef.current -= 1;
     }
   });
 
   const enqueueRecovery = useEffectEvent(
     (loadedPageIds: string, requestedPass: number) => {
-      if (currentPass.current !== requestedPass) {
-        currentPass.current = requestedPass;
-        attemptedPageIds.current.clear();
+      if (currentPassRef.current !== requestedPass) {
+        currentPassRef.current = requestedPass;
+        attemptedPageIdsRef.current.clear();
       }
       const nextPageIds = loadedPageIds
         .split('\n')
         .filter(
           (pageId) =>
-            pageId.length > 0 && !attemptedPageIds.current.has(pageId),
+            pageId.length > 0 && !attemptedPageIdsRef.current.has(pageId),
         );
       if (nextPageIds.length === 0) {
         return;
       }
       for (const pageId of nextPageIds) {
-        attemptedPageIds.current.add(pageId);
+        attemptedPageIdsRef.current.add(pageId);
       }
-      pendingAttempts.current += nextPageIds.length;
+      pendingAttemptsRef.current += nextPageIds.length;
       setCreating(true);
       const queuedRecovery = nextPageIds.reduce(
         (queue, pageId) => queue.then(() => attemptPage(pageId)),
-        recoveryQueue.current,
+        recoveryQueueRef.current,
       );
-      recoveryQueue.current = queuedRecovery.then(() => {
-        if (pendingAttempts.current === 0) {
+      recoveryQueueRef.current = queuedRecovery.then(() => {
+        if (pendingAttemptsRef.current === 0) {
           setCreating(false);
         }
       });

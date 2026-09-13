@@ -138,7 +138,7 @@ const makeDeferred = (): Deferred => {
 };
 
 export const DeferredVerificationFixture = () => {
-  const deferred = useRef<Deferred | null>(null);
+  const deferredRef = useRef<Deferred | null>(null);
   const [busy, setBusy] = useState(false);
   const [calls, setCalls] = useState(0);
   const [snapshot, setSnapshot] = useState('none');
@@ -157,7 +157,7 @@ export const DeferredVerificationFixture = () => {
         initialUnitName={undefined}
         onSubmit={(entries) => {
           const pending = makeDeferred();
-          deferred.current = pending;
+          deferredRef.current = pending;
           setBusy(true);
           setCalls((count) => count + 1);
           setSnapshot(JSON.stringify({ entries }));
@@ -175,11 +175,13 @@ export const DeferredVerificationFixture = () => {
       <output aria-label="Verification status">{status}</output>
       <fieldset>
         <legend>Test controls</legend>
-        <button onClick={() => deferred.current?.resolve()} type="button">
+        <button onClick={() => deferredRef.current?.resolve()} type="button">
           Resolve verification
         </button>
         <button
-          onClick={() => deferred.current?.reject(new Error('Test rejection'))}
+          onClick={() =>
+            deferredRef.current?.reject(new Error('Test rejection'))
+          }
           type="button"
         >
           Reject verification

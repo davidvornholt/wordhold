@@ -1,8 +1,10 @@
+/* biome-ignore lint/nursery/useLayeredStyles: The imported stylesheet declares its own cascade layers. */
 @import "tailwindcss";
-@import "@fontsource/spectral/400.css";
-@import "@fontsource/spectral/600.css";
-@import "@fontsource/spectral/400-italic.css";
-@import "@fontsource-variable/hanken-grotesk";
+@import "@fontsource/spectral/400.css" layer(base);
+@import "@fontsource/spectral/600.css" layer(base);
+@import "@fontsource/spectral/400-italic.css" layer(base);
+@import "@fontsource-variable/hanken-grotesk" layer(base);
+/* biome-ignore lint/nursery/useLayeredStyles: The imported stylesheet declares its own cascade layers. */
 @import "@wordhold/ui/theme.css";
 
 @source "./**/*.{ts,tsx}";

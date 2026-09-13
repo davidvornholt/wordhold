@@ -81,12 +81,12 @@ const makeDeferredSave = (): DeferredSave => {
 };
 
 export const DeferredCourseSettingsFixture = () => {
-  const deferred = useRef<DeferredSave | null>(null);
+  const deferredRef = useRef<DeferredSave | null>(null);
   const [calls, setCalls] = useState(0);
   const [snapshot, setSnapshot] = useState('none');
   const save = (directions: ReadonlyArray<AnswerDirection>) => {
     const pending = makeDeferredSave();
-    deferred.current = pending;
+    deferredRef.current = pending;
     setCalls((count) => count + 1);
     setSnapshot(directions.join(','));
     return pending.promise;
@@ -102,12 +102,12 @@ export const DeferredCourseSettingsFixture = () => {
       <output aria-label="Direction save snapshot">{snapshot}</output>
       <fieldset>
         <legend>Test controls</legend>
-        <button onClick={() => deferred.current?.resolve()} type="button">
+        <button onClick={() => deferredRef.current?.resolve()} type="button">
           Resolve direction save
         </button>
         <button
           onClick={() =>
-            deferred.current?.reject(new Error('Test direction rejection'))
+            deferredRef.current?.reject(new Error('Test direction rejection'))
           }
           type="button"
         >

@@ -12,17 +12,17 @@ export const ManagedHeading = ({
   children,
   className,
 }: ManagedHeadingProps) => {
-  const heading = useRef<HTMLHeadingElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
-    const focusTask = globalThis.setTimeout(() => heading.current?.focus());
+    const focusTask = globalThis.setTimeout(() => headingRef.current?.focus());
     return () => globalThis.clearTimeout(focusTask);
   }, []);
 
   return (
     <h2
       className={`${className} focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2`}
-      ref={heading}
+      ref={headingRef}
       tabIndex={-1}
     >
       {children}

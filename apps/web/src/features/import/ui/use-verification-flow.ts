@@ -67,12 +67,12 @@ export const useVerificationFlow = (
   } | null>(page.status === 'verified' ? { imported: null } : null);
   const actions = useActionRunner();
   const navigation = useVerificationNavigation(page.id, search);
-  const active = useRef<boolean>(true);
+  const activeRef = useRef<boolean>(true);
 
   useEffect(() => {
-    active.current = true;
+    activeRef.current = true;
     return () => {
-      active.current = false;
+      activeRef.current = false;
     };
   }, []);
 
@@ -90,7 +90,7 @@ export const useVerificationFlow = (
           navigation.batchSession === null
             ? navigation.goToOverview()
             : navigation.advanceReview(),
-        shouldNavigate: () => active.current,
+        shouldNavigate: () => activeRef.current,
       }),
     );
   const submitPage = (verified: ReadonlyArray<VerificationEntry>) =>
@@ -121,7 +121,7 @@ export const useVerificationFlow = (
     completed,
     extraction,
     leavePage: () => {
-      active.current = false;
+      activeRef.current = false;
     },
     retryPageAudio,
     retryPageExtraction,

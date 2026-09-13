@@ -76,7 +76,7 @@ export const CaptureScreen = ({
               Mehrere JPEG-, PNG- oder WebP-Dateien
             </span>
             <input
-              accept="image/jpeg,image/png,image/webp"
+              accept="image/jpeg, image/png, image/webp"
               className="peer sr-only"
               multiple={true}
               onChange={fileSelectionHandler(onFilesSelected)}
@@ -92,7 +92,7 @@ export const CaptureScreen = ({
               Öffnet die rückseitige Kamera für eine Seite
             </span>
             <input
-              accept="image/jpeg,image/png,image/webp"
+              accept="image/jpeg, image/png, image/webp"
               capture="environment"
               className="peer sr-only"
               onChange={fileSelectionHandler(onFilesSelected)}

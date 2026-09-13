@@ -62,7 +62,7 @@ export const useUploadQueue = (courseId: string) => {
   const [importSessionId, setImportSessionId] = useState<string>(() =>
     crypto.randomUUID(),
   );
-  const previewUrls = useRef(new Set<string>());
+  const previewUrlsRef = useRef(new Set<string>());
   const [pages, setPages] = useState<ReadonlyArray<QueuedPage>>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,7 +72,7 @@ export const useUploadQueue = (courseId: string) => {
     courseId,
     importSessionId,
     pages,
-    previewUrls,
+    previewUrls: previewUrlsRef,
     processingStarted,
     setImportSessionId,
     setPages,
@@ -137,7 +137,7 @@ export const useUploadQueue = (courseId: string) => {
       const position = nextUploadPosition(usedPositions);
       usedPositions.add(position);
       const previewUrl = URL.createObjectURL(file);
-      previewUrls.current.add(previewUrl);
+      previewUrlsRef.current.add(previewUrl);
       return {
         id: crypto.randomUUID(),
         file,
@@ -154,7 +154,7 @@ export const useUploadQueue = (courseId: string) => {
       const removed = current.find((page) => page.id === pageId);
       if (removed !== undefined) {
         URL.revokeObjectURL(removed.previewUrl);
-        previewUrls.current.delete(removed.previewUrl);
+        previewUrlsRef.current.delete(removed.previewUrl);
       }
       return current.filter((page) => page.id !== pageId);
     });
