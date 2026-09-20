@@ -1,9 +1,7 @@
 import { useNavigate, useRouter } from '@tanstack/react-router';
-import { useState } from 'react';
 import {
   advanceBatchReview,
   type BatchReviewSearchData,
-  type BatchReviewSummary,
   resolveBatchReviewSession,
 } from '../schemas/batch-review-search';
 import {
@@ -18,9 +16,6 @@ export const useVerificationNavigation = (
 ) => {
   const navigate = useNavigate();
   const router = useRouter();
-  const [batchSummary, setBatchSummary] = useState<BatchReviewSummary | null>(
-    null,
-  );
   const batchSession = resolveBatchReviewSession(search, pageId);
   const clearOverviewCache = () =>
     router.clearCache({
@@ -35,21 +30,21 @@ export const useVerificationNavigation = (
       clearOverviewCache,
       navigate: () => navigate({ to: '/' }),
     });
+  // After the last page the stack has nothing left to offer, so a finished
+  // batch returns to the overview exactly like a single page does; the course
+  // card there shows the new vocabulary as the next step.
   const advanceReview = async (): Promise<void> => {
-    if (batchSession === null) {
+    const next =
+      batchSession === null ? null : advanceBatchReview(batchSession);
+    if (next === null) {
       await goToOverview();
       return;
     }
-    const next = advanceBatchReview(batchSession);
-    if ('pageId' in next) {
-      await navigate({
-        params: { pageId: next.pageId },
-        search: next.search,
-        to: '/pages/$pageId/verify',
-      });
-      return;
-    }
-    setBatchSummary(next);
+    await navigate({
+      params: { pageId: next.pageId },
+      search: next.search,
+      to: '/pages/$pageId/verify',
+    });
   };
 
   return {
@@ -58,7 +53,6 @@ export const useVerificationNavigation = (
       batchSession !== null &&
       batchSession.position === batchSession.pageIds.length - 1,
     batchSession,
-    batchSummary,
     goToOverview,
     refreshOverview,
     retireCachedOverview,
