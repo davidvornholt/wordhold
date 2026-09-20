@@ -25,11 +25,10 @@ export type SessionQueue = {
   readonly section: number;
   readonly sectionTotal: number;
   readonly sectionProcessed: number;
-  // The rail for the round being asked right now: the section in the main
-  // phase, one pass over the missed cards in the after-round. A card missed
-  // again waits for the next pass, which starts its own rail.
-  readonly railTotal: number;
-  readonly railOutcomes: ReadonlyArray<RailOutcome>;
+  // The section's cards in asking order with their latest outcome. The
+  // after-round asks the missed cards again and turns their ticks green in
+  // place, so one rail tells the whole section's story.
+  readonly rail: ReadonlyArray<RailTick>;
   readonly total: number;
   readonly firstTryCorrect: number;
   readonly afterRoundCorrect: number;
@@ -40,13 +39,15 @@ export type SessionQueue = {
   readonly processedCardIds: ReadonlyArray<string>;
 };
 
+export type RailTick = {
+  readonly cardId: string;
+  readonly outcome: RailOutcome | null;
+};
+
 export type ExpectedCard = Pick<PracticeItem, 'cardId' | 'revision'>;
 
 const beginSection = (
-  queue: Omit<
-    SessionQueue,
-    'pending' | 'sectionTotal' | 'railTotal' | 'railOutcomes'
-  >,
+  queue: Omit<SessionQueue, 'pending' | 'sectionTotal' | 'rail'>,
 ): SessionQueue => {
   const items = queue.remaining.slice(0, sessionSectionSize);
   return {
@@ -54,8 +55,7 @@ const beginSection = (
     pending: items.map((item) => ({ ...item, repeated: false })),
     remaining: queue.remaining.slice(items.length),
     sectionTotal: items.length,
-    railTotal: items.length,
-    railOutcomes: [],
+    rail: items.map((item) => ({ cardId: item.cardId, outcome: null })),
   };
 };
 
@@ -89,13 +89,7 @@ const finishCheckpoint = (queue: SessionQueue): SessionQueue => {
     return queue;
   }
   if (queue.repeatCards.length > 0) {
-    return {
-      ...queue,
-      phase: 'after-round',
-      pending: queue.repeatCards,
-      railTotal: queue.repeatCards.length,
-      railOutcomes: [],
-    };
+    return { ...queue, phase: 'after-round', pending: queue.repeatCards };
   }
   if (queue.remaining.length > 0) {
     return { ...queue, phase: 'checkpoint' };
@@ -120,10 +114,13 @@ export const endSession = (queue: SessionQueue): SessionQueue =>
 
 const withOutcome = (
   queue: SessionQueue,
+  cardId: string,
   outcome: RailOutcome,
 ): SessionQueue => ({
   ...queue,
-  railOutcomes: [...queue.railOutcomes, outcome],
+  rail: queue.rail.map((tick) =>
+    tick.cardId === cardId ? { cardId, outcome } : tick,
+  ),
 });
 
 const addUnique = (ids: ReadonlyArray<string>, id: string) =>
@@ -162,6 +159,7 @@ export const advanceQueue = (
           ),
           ungradedCardIds: addUnique(queue.ungradedCardIds, card.cardId),
         },
+        card.cardId,
         'ungraded',
       ),
     );
@@ -195,6 +193,7 @@ export const advanceQueue = (
               ),
             }
           : { ...counted, firstTryCorrect: queue.firstTryCorrect + 1 },
+        card.cardId,
         'correct',
       ),
     );
@@ -215,6 +214,7 @@ export const advanceQueue = (
         ],
         missedCardIds: addUnique(queue.missedCardIds, card.cardId),
       },
+      card.cardId,
       'wrong',
     ),
   );

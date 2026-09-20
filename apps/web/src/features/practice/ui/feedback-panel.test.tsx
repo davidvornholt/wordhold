@@ -28,6 +28,7 @@ const render = (
 ) =>
   renderToStaticMarkup(
     <FeedbackPanel
+      answerLanguage="en"
       busy={false}
       example={null}
       id={feedbackId}

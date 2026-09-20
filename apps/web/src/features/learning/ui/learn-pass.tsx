@@ -31,11 +31,13 @@ export const LearnPass = ({
     <>
       {items.length === 0 ? null : (
         <CardRail
-          current={null}
+          activeIndex={item === undefined ? null : index}
+          activeOutcome={null}
           description={`${index} von ${items.length} Vokabeln kennengelernt · ${directionLabel}`}
           label="Kennenlernen"
-          outcomes={Array.from({ length: index }, () => 'correct' as const)}
-          total={items.length}
+          ticks={items.map((_, position) =>
+            position < index ? ('correct' as const) : null,
+          )}
         />
       )}
       {item === undefined ? (

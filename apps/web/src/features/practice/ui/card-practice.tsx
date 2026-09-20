@@ -1,6 +1,6 @@
 import type { LanguageCode } from '@wordhold/db/schema/courses';
 import type { ReviewMode } from '@wordhold/db/schema/practice';
-import { type SubmitEvent, useEffect, useId, useRef } from 'react';
+import { type SubmitEvent, useId, useRef } from 'react';
 import type { PrepareExamples } from '../../../shared/examples/example-model';
 import type { RailOutcome } from '../../../shared/session/rail-outcome';
 import { WordCard } from '../../../shared/ui/word-card';
@@ -14,6 +14,7 @@ import { FeedbackActions } from './feedback-actions';
 import { FeedbackPanel } from './feedback-panel';
 import { feedbackTone } from './feedback-tone';
 import { PracticeAnswerForm } from './practice-answer-form';
+import { useCardFlow } from './use-card-flow';
 import { useCardSubmission } from './use-card-submission';
 import { usePracticeAudio } from './use-practice-audio';
 import { usePreparedExample } from './use-prepared-example';
@@ -49,13 +50,6 @@ type CardPracticeProps = {
   // Fires as soon as an answer is judged, before "Weiter" moves on.
   readonly onJudged: (outcome: RailOutcome) => void;
   readonly onNext: (result: ResolvedSubmitResult) => void;
-};
-
-const outcomeOf = (result: SubmitResult): RailOutcome => {
-  if (!result.graded) {
-    return 'ungraded';
-  }
-  return result.correct ? 'correct' : 'wrong';
 };
 
 export const CardPractice = ({
@@ -94,29 +88,15 @@ export const CardPractice = ({
     onNext,
   });
   const { result, busy, resolution } = submission;
-
-  // Focus follows the loop: the field while answering, "Weiter" once judged.
-  useEffect(() => {
-    if (busy) {
-      return;
-    }
-    const target = result === null ? inputRef : nextButtonRef;
-    const focusTask = globalThis.setTimeout(() => target.current?.focus());
-    return () => globalThis.clearTimeout(focusTask);
-  }, [busy, result]);
-
-  useEffect(() => {
-    if (result !== null) {
-      onJudged(outcomeOf(result));
-    }
-  }, [onJudged, result]);
-
-  useEffect(() => {
-    if (!result?.graded || example !== null) {
-      return;
-    }
-    loadExample().catch(() => undefined);
-  }, [example, loadExample, result]);
+  useCardFlow({
+    busy,
+    result,
+    example,
+    loadExample,
+    onJudged,
+    inputRef,
+    nextButtonRef,
+  });
 
   const onSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -137,6 +117,9 @@ export const CardPractice = ({
       >
         {result === null ? null : (
           <FeedbackPanel
+            answerLanguage={
+              item.direction === 'to_target' ? targetLanguage : 'de'
+            }
             busy={busy || resolution !== null}
             example={example}
             id={feedbackDescriptionId}

@@ -71,15 +71,15 @@ const Outcome = ({ queue }: { readonly queue: SessionQueue }) => {
   return (
     <>
       <CardRail
-        current={null}
+        activeIndex={null}
+        activeOutcome={null}
         description={`${queue.processedCardIds.length} von ${countNoun(
           queue.total,
           'Karte',
           'Karten',
         )}`}
         label="Erster Durchgang"
-        outcomes={firstPassOutcomes(queue)}
-        total={queue.total}
+        ticks={firstPassOutcomes(queue)}
       />
       <dl className="grid grid-cols-2 gap-6 sm:grid-cols-3">
         <Figure

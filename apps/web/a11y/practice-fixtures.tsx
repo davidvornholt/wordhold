@@ -52,11 +52,11 @@ const prepareExamples = ({ data }: { readonly data: Array<string> }) =>
 export const PracticeFixture = () => (
   <FocusLayout exit={backControl} title="English A2 · Üben">
     <CardRail
-      current={null}
+      activeIndex={0}
+      activeOutcome={null}
       description="0 von 1 Karte bearbeitet"
       label="Abschnitt 1"
-      outcomes={[]}
-      total={1}
+      ticks={[null]}
     />
     <CardPractice
       deck={0}
@@ -90,6 +90,7 @@ export const PracticeFeedbackFixture = () => {
         wordLang={undefined}
       >
         <FeedbackPanel
+          answerLanguage="en"
           busy={false}
           example={item.example}
           id={feedbackId}

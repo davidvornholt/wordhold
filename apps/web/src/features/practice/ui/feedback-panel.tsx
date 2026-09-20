@@ -33,6 +33,8 @@ type FeedbackPanelProps = {
   readonly repeated: boolean;
   readonly skipped: boolean;
   readonly targetLanguage: LanguageCode;
+  // The language of the expected answer, for hyphenation and speech.
+  readonly answerLanguage: LanguageCode;
 };
 
 const feedbackHeading = (
@@ -105,6 +107,7 @@ export const FeedbackPanel = ({
   repeated,
   skipped,
   targetLanguage,
+  answerLanguage,
 }: FeedbackPanelProps) => {
   const normalizedSubmission = normalizeAnswerForComparison(submittedAnswer);
   const repeatsSubmittedAnswer = result.expectedAnswers.some(
@@ -128,7 +131,10 @@ export const FeedbackPanel = ({
       {repeatsSubmittedAnswer ? null : (
         <p>
           <span className="text-muted-foreground text-sm">Erwartet: </span>
-          <span className="font-display text-2xl">
+          <span
+            className="wrap-break-word hyphens-auto font-display text-2xl"
+            lang={answerLanguage}
+          >
             {result.expectedAnswers.join(' / ')}
           </span>
         </p>

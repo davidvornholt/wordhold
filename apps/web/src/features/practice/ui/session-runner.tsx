@@ -37,11 +37,7 @@ type SessionRunnerProps = {
 
 const railDescription = (queue: SessionQueue): string => {
   if (queue.phase === 'after-round') {
-    return `${queue.railOutcomes.length} von ${countNoun(
-      queue.railTotal,
-      'Karte',
-      'Karten',
-    )} noch einmal`;
+    return `${countNoun(queue.pending.length, 'Karte', 'Karten')} noch einmal`;
   }
   const processed = `${queue.sectionProcessed} von ${countNoun(
     queue.sectionTotal,
@@ -113,15 +109,19 @@ export const SessionRunner = ({
     <>
       {queue.total === 0 || queue.phase === 'complete' ? null : (
         <CardRail
-          current={judged}
+          activeIndex={
+            card === undefined
+              ? null
+              : queue.rail.findIndex((tick) => tick.cardId === card.cardId)
+          }
+          activeOutcome={judged}
           description={railDescription(queue)}
           label={
             queue.phase === 'after-round'
               ? 'Nachrunde'
               : `Abschnitt ${queue.section}`
           }
-          outcomes={queue.railOutcomes}
-          total={queue.railTotal}
+          ticks={queue.rail.map((tick) => tick.outcome)}
         />
       )}
       {content}

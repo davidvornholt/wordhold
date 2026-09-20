@@ -51,7 +51,7 @@ export const WordCard = ({
     >
       <p className="eyebrow">{eyebrow}</p>
       <h2
-        className="text-balance font-display text-4xl leading-tight sm:text-5xl"
+        className="wrap-break-word hyphens-auto text-balance font-display text-4xl leading-tight sm:text-5xl"
         id={wordId}
         lang={wordLang}
       >

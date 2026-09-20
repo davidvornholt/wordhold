@@ -180,29 +180,28 @@ describe('session queue', () => {
 });
 
 describe('session queue rail', () => {
-  it('records one outcome per asked card and restarts for the after-round', () => {
+  const outcomes = (queue: ReturnType<typeof createSessionQueue>) =>
+    queue.rail.map((tick) => tick.outcome);
+
+  it('records one outcome per section card and lets the after-round repair it', () => {
     const roundSize = 3;
     const missed = answerHead(
       createSessionQueue(items(roundSize)),
       result(false, minuteLater),
     );
     const ungradedNext = answerHead(missed, ungraded);
-    expect(ungradedNext).toMatchObject({
-      railTotal: roundSize,
-      railOutcomes: ['wrong', 'ungraded'],
-    });
+    expect(outcomes(ungradedNext)).toEqual(['wrong', 'ungraded', null]);
     const afterRound = answerHead(ungradedNext, result(true, minuteLater));
-    expect(afterRound).toMatchObject({
-      phase: 'after-round',
-      railTotal: 1,
-      railOutcomes: [],
-    });
+    expect(afterRound.phase).toBe('after-round');
+    expect(outcomes(afterRound)).toEqual(['wrong', 'ungraded', 'correct']);
     const missedAgain = answerHead(afterRound, result(false, minuteLater, 2));
-    expect(missedAgain).toMatchObject({
-      phase: 'after-round',
-      railTotal: 1,
-      railOutcomes: [],
-    });
+    expect(outcomes(missedAgain)).toEqual(['wrong', 'ungraded', 'correct']);
+    const repaired = answerHead(
+      missedAgain,
+      result(true, minuteLater, thirdRevision),
+    );
+    expect(repaired.phase).toBe('complete');
+    expect(outcomes(repaired)).toEqual(['correct', 'ungraded', 'correct']);
   });
 
   it('counts cards that graduate to review during the sitting', () => {
