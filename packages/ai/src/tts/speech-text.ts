@@ -23,6 +23,13 @@ const speechProfiles = {
 const speechEngine = 'generative' as const;
 const slashPauseMilliseconds = 25;
 const slashPauseTag = `<break time="${slashPauseMilliseconds}ms"/>`;
+// Textbook notation between two spoken parts: "gaming -> game" (word
+// family), "= a definition", "ask <-> explain" (opposites), "→ organiser qc"
+// (derivation). Read aloud these symbols come out as "minus greater than";
+// a pause says the same thing without words.
+const notationPauseMilliseconds = 400;
+const notationPauseTag = `<break time="${notationPauseMilliseconds}ms"/>`;
+const notationSeparator = /\s*(?:<->|<=>|->|<-|=|→|↔|←)\s*/u;
 type SpeechProfile = (typeof speechProfiles)[TtsLanguage];
 
 // Increment this when a dictionary change can alter existing speech.
@@ -80,13 +87,33 @@ const escapeSsml = (value: string): string =>
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&apos;');
 
-const prepareLiteralText = (
-  value: string,
-): { readonly text: string; readonly usesSlashPause: boolean } => {
+type LiteralText = {
+  readonly text: string;
+  readonly usesSlashPause: boolean;
+  readonly usesNotationPause: boolean;
+};
+
+const prepareSlashText = (value: string): LiteralText => {
   const segments = value.split('/');
   return {
     text: segments.map(escapeSsml).join(slashPauseTag),
     usesSlashPause: segments.length > 1,
+    usesNotationPause: false,
+  };
+};
+
+// A notation symbol at the very start or end has nothing to separate, so it
+// disappears without a pause ("= a definition" is read as the definition).
+const prepareLiteralText = (value: string): LiteralText => {
+  const parts = value
+    .split(notationSeparator)
+    .filter((segment) => segment.trim() !== '')
+    .map(prepareSlashText);
+  const usesNotationPause = notationSeparator.test(value);
+  return {
+    text: parts.map((part) => part.text).join(` ${notationPauseTag} `),
+    usesSlashPause: parts.some((part) => part.usesSlashPause),
+    usesNotationPause,
   };
 };
 
@@ -146,10 +173,12 @@ export const prepareSpeechText = (
   let cursor = 0;
   let usesPronunciation = false;
   let usesSlashPause = false;
+  let usesNotationPause = false;
   const pushLiteralText = (value: string): void => {
     const literal = prepareLiteralText(value);
     parts.push(literal.text);
     usesSlashPause ||= literal.usesSlashPause;
+    usesNotationPause ||= literal.usesNotationPause;
   };
   // Match the imported text before sanitizing it so forbidden characters cannot
   // create a new abbreviation boundary.
@@ -172,6 +201,9 @@ export const prepareSpeechText = (
     baseAudioProfile,
     usesPronunciation ? `pronunciation-${pronunciationRevision}` : undefined,
     usesSlashPause ? `slash-pause-${slashPauseMilliseconds}ms` : undefined,
+    usesNotationPause
+      ? `notation-pause-${notationPauseMilliseconds}ms`
+      : undefined,
   ]
     .filter((part) => part !== undefined)
     .join('-');
@@ -181,7 +213,7 @@ export const prepareSpeechText = (
     languageCode: profile.languageCode,
     voice: profile.voice,
   };
-  if (!(usesPronunciation || usesSlashPause)) {
+  if (!(usesPronunciation || usesSlashPause || usesNotationPause)) {
     return { ...shared, text: safeText, textType: 'text' };
   }
   return {

@@ -83,6 +83,51 @@ describe('SSML pronunciation and pauses', () => {
     });
   });
 
+  it('turns textbook notation between two parts into a longer pause', () => {
+    expect(prepareSpeechText('gaming -> game', 'en')).toEqual({
+      audioProfile: 'Stephen-generative-notation-pause-400ms',
+      engine: 'generative',
+      languageCode: 'en-US',
+      text: '<speak>gaming <break time="400ms"/> game</speak>',
+      textType: 'ssml',
+      voice: 'Stephen',
+    });
+    expect(
+      prepareSpeechText('nach dem Weg fragen <-> den Weg erklären', 'de').text,
+    ).toBe(
+      '<speak>nach dem Weg fragen <break time="400ms"/> den Weg erklären</speak>',
+    );
+    expect(prepareSpeechText('difficulty→difficult', 'en').text).toBe(
+      '<speak>difficulty <break time="400ms"/> difficult</speak>',
+    );
+  });
+
+  it('drops a notation symbol that opens or closes the text', () => {
+    expect(prepareSpeechText('→ organiser qc', 'fr')).toMatchObject({
+      audioProfile: 'Remi-generative-pronunciation-1-notation-pause-400ms',
+      text: '<speak>organiser <sub alias="quelque chose">qc</sub></speak>',
+      textType: 'ssml',
+    });
+    expect(
+      prepareSpeechText(
+        '= language used for communication between groups',
+        'en',
+      ).text,
+    ).toBe('<speak>language used for communication between groups</speak>');
+  });
+
+  it('keeps notation pauses after a sentence and beside slash pauses', () => {
+    expect(
+      prepareSpeechText(
+        'What difficulties do immigrants face?\ndifficulty -> difficult/difficulties',
+        'en',
+      ),
+    ).toMatchObject({
+      audioProfile: 'Stephen-generative-slash-pause-25ms-notation-pause-400ms',
+      text: '<speak>What difficulties do immigrants face?\ndifficulty <break time="400ms"/> difficult<break time="25ms"/>difficulties</speak>',
+    });
+  });
+
   it('leaves other punctuation to the generative voice', () => {
     const text = 'Well, this; sentence (still) flows.';
 
