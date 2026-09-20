@@ -56,8 +56,7 @@ export const totalReady = (
   perCourse: ReadonlyArray<Pick<CourseStats, 'ready'>>,
 ): number => perCourse.reduce((total, stats) => total + stats.ready, 0);
 
-// The course the "Jetzt üben" action opens: the one with the most cards
-// ready, so a single tap always starts the largest sitting.
+// The course the "Heute" action opens: the one with the most cards ready.
 export const busiestCourse = <Stats extends Pick<CourseStats, 'ready'>>(
   perCourse: ReadonlyArray<Stats>,
 ): Stats | undefined =>
@@ -68,3 +67,15 @@ export const busiestCourse = <Stats extends Pick<CourseStats, 'ready'>>(
         : best,
     undefined,
   );
+
+// The "Heute" action names what it opens. When every ready card belongs to
+// that course a plain "Jetzt üben" is exact; otherwise the label carries the
+// course and its own count so the total above is never mistaken for one
+// sitting.
+export const todayActionLabel = (
+  course: { readonly name: string; readonly ready: number },
+  ready: number,
+): string =>
+  course.ready === ready
+    ? 'Jetzt üben'
+    : `${course.name} üben · ${course.ready} ${course.ready === 1 ? 'Karte' : 'Karten'}`;

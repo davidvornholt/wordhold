@@ -2,6 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import {
   busiestCourse,
   hasAvailablePractice,
+  todayActionLabel,
   totalReady,
 } from './dashboard-models';
 
@@ -38,5 +39,24 @@ describe('busiestCourse', () => {
 
   it('returns nothing when no course has cards ready', () => {
     expect(busiestCourse([{ courseId: 'a', ready: 0 }])).toBeUndefined();
+  });
+});
+
+describe('todayActionLabel', () => {
+  const french = { name: 'Französisch', ready: 20 };
+  const latin = { name: 'Latein', ready: 1 };
+  const otherCourses = 15;
+
+  it('stays plain when the course holds every ready card', () => {
+    expect(todayActionLabel(french, french.ready)).toBe('Jetzt üben');
+  });
+
+  it('names the course and its own count otherwise', () => {
+    expect(todayActionLabel(french, french.ready + otherCourses)).toBe(
+      'Französisch üben · 20 Karten',
+    );
+    expect(todayActionLabel(latin, latin.ready + otherCourses)).toBe(
+      'Latein üben · 1 Karte',
+    );
   });
 });

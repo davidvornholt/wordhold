@@ -52,3 +52,24 @@ test('an empty account shows an open week and no streak', async ({ page }) => {
   await expect(page.getByText('Noch keine Vokabeln.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Jetzt üben' })).toHaveCount(0);
 });
+
+test('with several courses the Heute action names the course it opens', async ({
+  page,
+}) => {
+  await page.goto('/?state=dashboard-two-courses');
+
+  await expect(
+    page.getByRole('heading', { level: 1, name: '26 Karten bereit' }),
+  ).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Jetzt üben' })).toHaveCount(0);
+  await expect(
+    page.getByRole('button', { name: 'Französisch üben · 20 Karten' }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: '6 Karten üben' }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: '20 Karten üben' }),
+  ).toBeVisible();
+  assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
+});

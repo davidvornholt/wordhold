@@ -115,6 +115,7 @@ const dashboardFixture = (state: FixtureState) => (
     empty={state === 'dashboard-empty'}
     pending={state === 'dashboard-pending'}
     resting={state === 'dashboard-learning'}
+    twoCourses={state === 'dashboard-two-courses'}
   />
 );
 
@@ -127,6 +128,7 @@ const fixtureContent = (state: FixtureState) => {
     case 'dashboard-learning':
     case 'dashboard-audio-recovery':
     case 'dashboard-pending':
+    case 'dashboard-two-courses':
       return dashboardFixture(state);
     case 'import':
       return <ImportFixture />;

@@ -5,6 +5,7 @@ export const fixtureStates = [
   'dashboard-learning',
   'dashboard-audio-recovery',
   'dashboard-pending',
+  'dashboard-two-courses',
   'import',
   'import-selected',
   'import-progress',

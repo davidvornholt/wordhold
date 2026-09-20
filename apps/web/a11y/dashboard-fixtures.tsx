@@ -4,6 +4,7 @@ import {
   busiestCourse,
   type CourseStats,
   type PracticeDay,
+  todayActionLabel,
   totalReady,
 } from '../src/features/dashboard/schemas/dashboard-models';
 import { CourseGrid } from '../src/features/dashboard/ui/course-grid';
@@ -19,6 +20,12 @@ const course = {
   name: 'English A2',
   targetLanguage: 'en' as const,
 };
+const secondCourse = {
+  id: '00000000-0000-0000-0000-000000000005',
+  name: 'Französisch',
+  targetLanguage: 'fr' as const,
+};
+const secondCourseReady = 20;
 const fixtureUser = { name: 'David' };
 const fixtureReviewsToday = 7;
 const fixtureCardsToday = 5;
@@ -61,15 +68,10 @@ const fixtureWeek: ReadonlyArray<PracticeDay> = [
   { day: '2026-08-24', weekday: 1, practiced: true },
 ];
 
-type FixtureAction =
-  | 'course'
-  | 'import'
-  | 'learn'
-  | 'practice'
-  | 'practice-outline';
+type FixtureAction = 'course' | 'import' | 'learn' | 'practice' | 'today';
 
 const fixtureDestination = (destination: FixtureAction) => {
-  if (destination === 'practice-outline') {
+  if (destination === 'today') {
     return 'practice';
   }
   return destination === 'learn' ? 'course' : destination;
@@ -79,7 +81,7 @@ const actionClass = (destination: FixtureAction) => {
   if (destination === 'practice' || destination === 'learn') {
     return 'inline-flex min-h-11 items-center bg-primary px-4 py-2 font-medium text-primary-foreground text-sm';
   }
-  if (destination === 'practice-outline' || destination === 'import') {
+  if (destination === 'today' || destination === 'import') {
     return 'inline-flex min-h-11 items-center border border-input px-4 py-2 text-sm underline-offset-4 hover:underline';
   }
   return 'font-display text-xl underline decoration-border underline-offset-4 hover:decoration-current';
@@ -104,6 +106,26 @@ export const SignedOutFixture = () => (
     {null}
   </HomeShell>
 );
+
+const secondCourseStats: CourseStats = {
+  courseId: secondCourse.id,
+  due: secondCourseReady,
+  firstReviews: 0,
+  ready: secondCourseReady,
+  unintroduced: 0,
+  entries: 80,
+  known: 12,
+  nextDueAt: fixtureNextDueAt,
+  directions: [
+    {
+      direction: 'to_target' as const,
+      due: secondCourseReady,
+      firstReviews: 0,
+      ready: secondCourseReady,
+      nextDueAt: fixtureNextDueAt,
+    },
+  ],
+};
 
 const dashboardStats = (
   empty: boolean,
@@ -135,14 +157,22 @@ export const DashboardFixture = ({
   audioRecovery = false,
   pending = false,
   resting = false,
+  twoCourses = false,
 }) => {
   const queueRecovery =
     new URLSearchParams(globalThis.location.search).get('queue') === 'true';
   const [pendingImportSessions, setPendingImportSessions] = useState(
     pending ? [pendingImportSession] : [],
   );
-  const stats = dashboardStats(empty, resting);
+  const courses = twoCourses ? [course, secondCourse] : [course];
+  const stats = twoCourses
+    ? [...dashboardStats(empty, resting), secondCourseStats]
+    : dashboardStats(empty, resting);
+  const ready = totalReady(stats);
   const busiest = busiestCourse(stats);
+  const busiestName = courses.find(
+    (candidate) => candidate.id === busiest?.courseId,
+  )?.name;
 
   return (
     <HomeShell
@@ -151,10 +181,20 @@ export const DashboardFixture = ({
       user={fixtureUser}
     >
       <TodayPanel
-        action={busiest === undefined ? null : action('Jetzt üben', 'practice')}
+        action={
+          busiest === undefined || busiestName === undefined
+            ? null
+            : action(
+                todayActionLabel(
+                  { name: busiestName, ready: busiest.ready },
+                  ready,
+                ),
+                'today',
+              )
+        }
         cardsToday={empty ? 0 : fixtureCardsToday}
         nextDueAt={stats[0]?.nextDueAt ?? null}
-        ready={totalReady(stats)}
+        ready={ready}
         reviewsToday={empty ? 0 : fixtureReviewsToday}
         streak={empty ? 0 : fixtureStreak}
         week={
@@ -164,13 +204,20 @@ export const DashboardFixture = ({
         }
       />
       <CourseGrid
-        courses={[course]}
-        renderCourseLink={() => action(course.name, 'course')}
+        courses={courses}
+        renderCourseLink={(candidate) => action(candidate.name, 'course')}
         renderImportAction={() =>
           action('fotografiere die erste Seite', 'import')
         }
         renderLearnAction={() => action('Neue Vokabeln kennenlernen', 'learn')}
-        renderPracticeAction={() => action('6 Karten üben', 'practice-outline')}
+        renderPracticeAction={(candidate) =>
+          action(
+            candidate.id === course.id
+              ? '6 Karten üben'
+              : `${secondCourseReady} Karten üben`,
+            'practice',
+          )
+        }
         stats={stats}
       />
       <FragileList

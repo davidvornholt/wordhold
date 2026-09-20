@@ -3,6 +3,7 @@ import { HomeShell } from '../app/home-shell';
 import {
   busiestCourse,
   type DashboardData,
+  todayActionLabel,
   totalReady,
 } from '../features/dashboard/schemas/dashboard-models';
 import { getDashboard } from '../features/dashboard/services/server-fns';
@@ -28,17 +29,35 @@ import { ActionLink } from '../shared/ui/action-link';
 const courseLinkClass =
   'font-display text-xl underline decoration-border underline-offset-4 transition-colors hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring';
 
-const Today = ({ dashboard }: { readonly dashboard: DashboardData }) => {
+type TodayProps = {
+  readonly dashboard: DashboardData;
+  readonly courses: ReadonlyArray<{
+    readonly id: string;
+    readonly name: string;
+  }>;
+};
+
+// The course cards start sittings; the "Heute" action is a shortcut to the
+// busiest one and says so when the total spans several courses.
+const Today = ({ dashboard, courses }: TodayProps) => {
+  const ready = totalReady(dashboard.perCourse);
   const busiest = busiestCourse(dashboard.perCourse);
+  const busiestName = courses.find(
+    (course) => course.id === busiest?.courseId,
+  )?.name;
   return (
     <TodayPanel
       action={
-        busiest === undefined ? null : (
+        busiest === undefined || busiestName === undefined ? null : (
           <ActionLink
             params={{ courseId: busiest.courseId }}
             to="/courses/$courseId/practice"
+            variant="outline"
           >
-            Jetzt üben
+            {todayActionLabel(
+              { name: busiestName, ready: busiest.ready },
+              ready,
+            )}
           </ActionLink>
         )
       }
@@ -46,7 +65,7 @@ const Today = ({ dashboard }: { readonly dashboard: DashboardData }) => {
       nextDueAt={earliestDate(
         dashboard.perCourse.map((stats) => stats.nextDueAt),
       )}
-      ready={totalReady(dashboard.perCourse)}
+      ready={ready}
       reviewsToday={dashboard.reviewsToday}
       streak={dashboard.streak}
       week={dashboard.week}
@@ -75,7 +94,7 @@ const Home = () => {
     >
       {dashboard === null ? null : (
         <>
-          <Today dashboard={dashboard} />
+          <Today courses={courses} dashboard={dashboard} />
 
           <CourseGrid
             courses={courses}
@@ -109,7 +128,6 @@ const Home = () => {
               <ActionLink
                 params={{ courseId: course.id }}
                 to="/courses/$courseId/practice"
-                variant="outline"
               >
                 {countNoun(
                   dashboard.perCourse.find(
