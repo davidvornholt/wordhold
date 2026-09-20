@@ -2,7 +2,7 @@ import type { ReviewMode } from '@wordhold/db/schema/practice';
 import { useRef, useState } from 'react';
 import type { PracticeSession } from '../src/features/practice/schemas/practice-models';
 import { SessionRunner } from '../src/features/practice/ui/session-runner';
-import { PageLayout } from '../src/shared/ui/page-layout';
+import { FocusLayout } from '../src/shared/ui/focus-layout';
 import { DeferredExampleControls } from './deferred-example-controls';
 import {
   type DeferredExamples,
@@ -21,6 +21,7 @@ const card = (index: number, target: string, native: string): FixtureCard => ({
   targetText: target,
   nativeText: native,
   hasAudio: false,
+  state: 'learning' as const,
   example: null,
   prompt: native,
 });
@@ -52,7 +53,7 @@ type PracticeSessionFixtureProps = {
 export const PracticeSessionFixture = ({
   sessionItems,
   mode = 'scheduled',
-  title = 'English A2: Üben',
+  title = 'English A2 · Üben',
 }: PracticeSessionFixtureProps) => {
   const fixtureSearch = new URLSearchParams(globalThis.location.search);
   const lateExample = fixtureSearch.get('late-example') === 'true';
@@ -100,8 +101,8 @@ export const PracticeSessionFixture = ({
     return pending.promise;
   };
   return (
-    <PageLayout
-      backControl={fixtureBackControl('Übersicht', 'dashboard')}
+    <FocusLayout
+      exit={fixtureBackControl('Übersicht', 'dashboard')}
       title={title}
     >
       {showSession ? (
@@ -126,7 +127,7 @@ export const PracticeSessionFixture = ({
           }
         />
       ) : null}
-    </PageLayout>
+    </FocusLayout>
   );
 };
 
@@ -134,6 +135,6 @@ export const FutureStudySessionFixture = () => (
   <PracticeSessionFixture
     mode="drill"
     sessionItems={[items[0]]}
-    title="Unit 3: Holidays üben"
+    title="Unit 3: Holidays · Üben"
   />
 );

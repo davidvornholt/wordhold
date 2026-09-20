@@ -22,7 +22,7 @@ import { focusShell } from '../../../../../shared/routing/shell';
 import { itemsInNextSection } from '../../../../../shared/session/section-policy';
 import { ActionLink } from '../../../../../shared/ui/action-link';
 import { BackLink } from '../../../../../shared/ui/back-link';
-import { PageLayout } from '../../../../../shared/ui/page-layout';
+import { FocusLayout } from '../../../../../shared/ui/focus-layout';
 import { LearnCompletionControls } from './-learn-completion-controls';
 
 const LearnUnitScreen = () => {
@@ -128,8 +128,8 @@ const LearnUnitScreen = () => {
   }
 
   return (
-    <PageLayout
-      backControl={
+    <FocusLayout
+      exit={
         <BackLink
           params={{ courseId: course.id, unitId: pass.unit.id }}
           to="/courses/$courseId/units/$unitId"
@@ -137,10 +137,10 @@ const LearnUnitScreen = () => {
           {pass.unit.name}
         </BackLink>
       }
-      title={`${pass.unit.name} kennenlernen`}
+      title={`${pass.unit.name} · Kennenlernen`}
     >
       {content}
-    </PageLayout>
+    </FocusLayout>
   );
 };
 

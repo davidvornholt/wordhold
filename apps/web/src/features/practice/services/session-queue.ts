@@ -1,3 +1,4 @@
+import type { RailOutcome } from '../../../shared/session/rail-outcome';
 import { sessionSectionSize } from '../../../shared/session/section-policy';
 import type {
   PracticeItem,
@@ -24,9 +25,16 @@ export type SessionQueue = {
   readonly section: number;
   readonly sectionTotal: number;
   readonly sectionProcessed: number;
+  // The rail for the round being asked right now: the section in the main
+  // phase, one pass over the missed cards in the after-round. A card missed
+  // again waits for the next pass, which starts its own rail.
+  readonly railTotal: number;
+  readonly railOutcomes: ReadonlyArray<RailOutcome>;
   readonly total: number;
   readonly firstTryCorrect: number;
   readonly afterRoundCorrect: number;
+  // Cards that left the learning steps during this sitting.
+  readonly graduatedCardIds: ReadonlyArray<string>;
   readonly missedCardIds: ReadonlyArray<string>;
   readonly ungradedCardIds: ReadonlyArray<string>;
   readonly processedCardIds: ReadonlyArray<string>;
@@ -35,7 +43,10 @@ export type SessionQueue = {
 export type ExpectedCard = Pick<PracticeItem, 'cardId' | 'revision'>;
 
 const beginSection = (
-  queue: Omit<SessionQueue, 'pending' | 'sectionTotal'>,
+  queue: Omit<
+    SessionQueue,
+    'pending' | 'sectionTotal' | 'railTotal' | 'railOutcomes'
+  >,
 ): SessionQueue => {
   const items = queue.remaining.slice(0, sessionSectionSize);
   return {
@@ -43,6 +54,8 @@ const beginSection = (
     pending: items.map((item) => ({ ...item, repeated: false })),
     remaining: queue.remaining.slice(items.length),
     sectionTotal: items.length,
+    railTotal: items.length,
+    railOutcomes: [],
   };
 };
 
@@ -59,6 +72,7 @@ export const createSessionQueue = (
     total: items.length,
     firstTryCorrect: 0,
     afterRoundCorrect: 0,
+    graduatedCardIds: [],
     missedCardIds: [],
     ungradedCardIds: [],
     processedCardIds: [],
@@ -75,7 +89,13 @@ const finishCheckpoint = (queue: SessionQueue): SessionQueue => {
     return queue;
   }
   if (queue.repeatCards.length > 0) {
-    return { ...queue, phase: 'after-round', pending: queue.repeatCards };
+    return {
+      ...queue,
+      phase: 'after-round',
+      pending: queue.repeatCards,
+      railTotal: queue.repeatCards.length,
+      railOutcomes: [],
+    };
   }
   if (queue.remaining.length > 0) {
     return { ...queue, phase: 'checkpoint' };
@@ -97,6 +117,17 @@ export const endSession = (queue: SessionQueue): SessionQueue =>
   queue.phase === 'checkpoint'
     ? { ...queue, phase: 'complete', remaining: [] }
     : queue;
+
+const withOutcome = (
+  queue: SessionQueue,
+  outcome: RailOutcome,
+): SessionQueue => ({
+  ...queue,
+  railOutcomes: [...queue.railOutcomes, outcome],
+});
+
+const addUnique = (ids: ReadonlyArray<string>, id: string) =>
+  ids.includes(id) ? ids : [...ids, id];
 
 export const advanceQueue = (
   queue: SessionQueue,
@@ -122,15 +153,18 @@ export const advanceQueue = (
         }
       : withoutHead;
   if (!result.graded) {
-    return finishCheckpoint({
-      ...processed,
-      repeatCards: queue.repeatCards.filter(
-        (item) => item.cardId !== card.cardId,
+    return finishCheckpoint(
+      withOutcome(
+        {
+          ...processed,
+          repeatCards: queue.repeatCards.filter(
+            (item) => item.cardId !== card.cardId,
+          ),
+          ungradedCardIds: addUnique(queue.ungradedCardIds, card.cardId),
+        },
+        'ungraded',
       ),
-      ungradedCardIds: queue.ungradedCardIds.includes(card.cardId)
-        ? queue.ungradedCardIds
-        : [...queue.ungradedCardIds, card.cardId],
-    });
+    );
   }
 
   const withSchedule = {
@@ -142,16 +176,27 @@ export const advanceQueue = (
     ),
   };
   if (result.correct) {
+    const graduated =
+      result.schedule.state === 'review' && card.state !== 'review';
+    const counted = {
+      ...withSchedule,
+      graduatedCardIds: graduated
+        ? addUnique(queue.graduatedCardIds, card.cardId)
+        : queue.graduatedCardIds,
+    };
     return finishCheckpoint(
-      queue.phase === 'after-round'
-        ? {
-            ...withSchedule,
-            afterRoundCorrect: queue.afterRoundCorrect + 1,
-            repeatCards: queue.repeatCards.filter(
-              (item) => item.cardId !== card.cardId,
-            ),
-          }
-        : { ...withSchedule, firstTryCorrect: queue.firstTryCorrect + 1 },
+      withOutcome(
+        queue.phase === 'after-round'
+          ? {
+              ...counted,
+              afterRoundCorrect: queue.afterRoundCorrect + 1,
+              repeatCards: queue.repeatCards.filter(
+                (item) => item.cardId !== card.cardId,
+              ),
+            }
+          : { ...counted, firstTryCorrect: queue.firstTryCorrect + 1 },
+        'correct',
+      ),
     );
   }
 
@@ -160,16 +205,19 @@ export const advanceQueue = (
     revision: result.revision,
     repeated: true,
   };
-  return finishCheckpoint({
-    ...withSchedule,
-    repeatCards: [
-      ...queue.repeatCards.filter((item) => item.cardId !== card.cardId),
-      repeatCard,
-    ],
-    missedCardIds: queue.missedCardIds.includes(card.cardId)
-      ? queue.missedCardIds
-      : [...queue.missedCardIds, card.cardId],
-  });
+  return finishCheckpoint(
+    withOutcome(
+      {
+        ...withSchedule,
+        repeatCards: [
+          ...queue.repeatCards.filter((item) => item.cardId !== card.cardId),
+          repeatCard,
+        ],
+        missedCardIds: addUnique(queue.missedCardIds, card.cardId),
+      },
+      'wrong',
+    ),
+  );
 };
 
 export const earliestScheduledReview = (queue: SessionQueue): Date | null =>

@@ -3,7 +3,8 @@ import type { ReviewMode } from '@wordhold/db/schema/practice';
 import { type ReactNode, useState } from 'react';
 import type { PrepareExamples } from '../../../shared/examples/example-model';
 import { countNoun } from '../../../shared/format/count';
-import { ProgressMeter } from '../../../shared/ui/progress-meter';
+import type { RailOutcome } from '../../../shared/session/rail-outcome';
+import { CardRail } from '../../../shared/ui/card-rail';
 import {
   type PracticeSession,
   remainingReadyCount,
@@ -15,6 +16,7 @@ import {
   continueQueue,
   createSessionQueue,
   endSession,
+  type SessionQueue,
 } from '../services/session-queue';
 import { CardPractice } from './card-practice';
 import { SectionCheckpoint, SessionSummary } from './session-summary';
@@ -33,6 +35,24 @@ type SessionRunnerProps = {
   }) => Promise<SubmitResult>;
 };
 
+const railDescription = (queue: SessionQueue): string => {
+  if (queue.phase === 'after-round') {
+    return `${queue.railOutcomes.length} von ${countNoun(
+      queue.railTotal,
+      'Karte',
+      'Karten',
+    )} noch einmal`;
+  }
+  const processed = `${queue.sectionProcessed} von ${countNoun(
+    queue.sectionTotal,
+    'Karte',
+    'Karten',
+  )} bearbeitet`;
+  return queue.repeatCards.length > 0
+    ? `${processed} · ${queue.repeatCards.length} für die Nachrunde`
+    : processed;
+};
+
 export const SessionRunner = ({
   session,
   targetLabel,
@@ -45,6 +65,7 @@ export const SessionRunner = ({
   submit,
 }: SessionRunnerProps) => {
   const [queue, setQueue] = useState(() => createSessionQueue(session.items));
+  const [judged, setJudged] = useState<RailOutcome | null>(null);
   const card = queue.pending.at(0);
   const remainingReady = remainingReadyCount(session);
   let content: ReactNode;
@@ -70,12 +91,15 @@ export const SessionRunner = ({
   } else {
     content = (
       <CardPractice
+        deck={queue.pending.length - 1}
         item={card}
         key={`${card.cardId}-${card.revision}`}
         mode={mode}
-        onNext={(result) =>
-          setQueue((current) => advanceQueue(current, card, result))
-        }
+        onJudged={setJudged}
+        onNext={(result) => {
+          setJudged(null);
+          setQueue((current) => advanceQueue(current, card, result));
+        }}
         prepareExamples={prepareExamples}
         repeated={queue.phase === 'after-round'}
         submit={submit}
@@ -88,27 +112,17 @@ export const SessionRunner = ({
   return (
     <>
       {queue.total === 0 || queue.phase === 'complete' ? null : (
-        <div className="flex flex-col gap-1.5">
-          <p className="font-medium text-sm">
-            {queue.phase === 'after-round'
+        <CardRail
+          current={judged}
+          description={railDescription(queue)}
+          label={
+            queue.phase === 'after-round'
               ? 'Nachrunde'
-              : `Abschnitt ${queue.section}`}
-          </p>
-          <ProgressMeter
-            accessibleName="Fortschritt"
-            description={`${queue.sectionProcessed} von ${countNoun(
-              queue.sectionTotal,
-              'Karte',
-              'Karten',
-            )} bearbeitet${
-              queue.repeatCards.length > 0
-                ? ` · ${queue.repeatCards.length} für die Nachrunde`
-                : ''
-            }`}
-            total={queue.sectionTotal}
-            value={queue.sectionProcessed}
-          />
-        </div>
+              : `Abschnitt ${queue.section}`
+          }
+          outcomes={queue.railOutcomes}
+          total={queue.railTotal}
+        />
       )}
       {content}
     </>

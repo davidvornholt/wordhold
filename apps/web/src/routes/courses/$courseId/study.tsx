@@ -12,7 +12,7 @@ import { germanLabels } from '../../../shared/languages';
 import { focusShell } from '../../../shared/routing/shell';
 import { ActionLink } from '../../../shared/ui/action-link';
 import { BackLink } from '../../../shared/ui/back-link';
-import { PageLayout } from '../../../shared/ui/page-layout';
+import { FocusLayout } from '../../../shared/ui/focus-layout';
 import { cardClass } from '../../../shared/ui/surface-styles';
 import { StudyLearning } from './-study-learning';
 import { loadStudyData } from './-study-loader';
@@ -74,7 +74,7 @@ const StudyScreen = () => {
       </BackLink>
     );
   const titleSubject = unit === undefined ? 'Auswahl' : unit.name;
-  const title = `${titleSubject} ${mode === 'learn' ? 'kennenlernen' : 'üben'}`;
+  const title = `${titleSubject} · ${mode === 'learn' ? 'Kennenlernen' : 'Üben'}`;
   let content: ReactNode;
   if (selection === null) {
     content = (
@@ -151,9 +151,9 @@ const StudyScreen = () => {
   }
 
   return (
-    <PageLayout backControl={backControl} title={title}>
+    <FocusLayout exit={backControl} title={title}>
       {content}
-    </PageLayout>
+    </FocusLayout>
   );
 };
 

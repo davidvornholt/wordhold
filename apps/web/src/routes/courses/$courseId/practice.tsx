@@ -28,7 +28,7 @@ import { itemsInNextSection } from '../../../shared/session/section-policy';
 import { ActionLink } from '../../../shared/ui/action-link';
 import { BackLink } from '../../../shared/ui/back-link';
 import { Button } from '../../../shared/ui/button';
-import { PageLayout } from '../../../shared/ui/page-layout';
+import { FocusLayout } from '../../../shared/ui/focus-layout';
 
 const PracticeScreen = () => {
   const { availability, course, directions, direction, session, unit } =
@@ -63,9 +63,9 @@ const PracticeScreen = () => {
     );
 
   return (
-    <PageLayout
-      backControl={pageBackControl}
-      title={`${unit?.name ?? course.name}: Üben`}
+    <FocusLayout
+      exit={pageBackControl}
+      title={`${unit?.name ?? course.name} · Üben`}
     >
       {session === null ? (
         <SessionStart
@@ -114,7 +114,7 @@ const PracticeScreen = () => {
           targetLanguage={course.targetLanguage}
         />
       )}
-    </PageLayout>
+    </FocusLayout>
   );
 };
 

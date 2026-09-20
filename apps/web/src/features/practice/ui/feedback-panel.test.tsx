@@ -19,105 +19,78 @@ const result: SubmitResult = {
   },
 };
 
-const renderFeedback = (
+const feedbackId = 'feedback';
+
+const render = (
   submittedAnswer: string,
-  expectedAnswers: ReadonlyArray<string> = result.expectedAnswers,
+  overrides: Partial<SubmitResult> = {},
+  skipped = false,
 ) =>
   renderToStaticMarkup(
     <FeedbackPanel
-      audioPlaying={false}
       busy={false}
       example={null}
-      onNext={() => undefined}
-      onResolveWrong={() => undefined}
+      id={feedbackId}
       playSentence={null}
       playWord={null}
       repeated={false}
-      resolution={null}
-      result={{ ...result, expectedAnswers }}
-      skipped={false}
+      result={{ ...result, ...overrides } as SubmitResult}
+      skipped={skipped}
       submittedAnswer={submittedAnswer}
       targetLanguage="en"
-      stopAudio={() => undefined}
     />,
   );
 
-const renderHeldFeedback = () =>
-  renderToStaticMarkup(
-    <FeedbackPanel
-      audioPlaying={false}
-      busy={false}
-      example={null}
-      onNext={() => undefined}
-      onResolveWrong={() => undefined}
-      playSentence={null}
-      playWord={null}
-      repeated={false}
-      resolution={null}
-      result={{
-        ...result,
-        schedule: {
-          ...result.schedule,
-          advanced: false,
-        },
-      }}
-      skipped={false}
-      submittedAnswer="waiter"
-      targetLanguage="en"
-      stopAudio={() => undefined}
-    />,
-  );
+const heldResult: Partial<SubmitResult> = {
+  schedule: { ...result.schedule, advanced: false },
+};
 
-const renderSkippedFeedback = () =>
-  renderToStaticMarkup(
-    <FeedbackPanel
-      audioPlaying={false}
-      busy={false}
-      example={null}
-      onNext={() => undefined}
-      onResolveWrong={() => undefined}
-      playSentence={null}
-      playWord={null}
-      repeated={false}
-      resolution={null}
-      result={{
-        ...result,
-        correct: false,
-        rating: 1,
-        schedule: {
-          advanced: true,
-          state: 'relearning',
-          dueAt: new Date('2026-08-30T12:10:00Z'),
-        },
-      }}
-      skipped={true}
-      submittedAnswer=""
-      targetLanguage="en"
-      stopAudio={() => undefined}
-    />,
-  );
+const skippedResult: Partial<SubmitResult> = {
+  correct: false,
+  rating: 1,
+  schedule: {
+    advanced: true,
+    state: 'relearning',
+    dueAt: new Date('2026-08-30T12:10:00Z'),
+  },
+};
+
+const pendingWrongResult: SubmitResult = {
+  graded: true,
+  correct: false,
+  stored: false,
+  expectedAnswers: ['waiter'],
+  explanation: null,
+  acceptedAsAlternative: false,
+  assessmentId: 'assessment',
+};
 
 describe('answer feedback', () => {
   it('does not repeat an expected answer that matches the submission', () => {
-    expect(renderFeedback('  Waiter. ')).not.toContain('Erwartet:');
-    expect(renderFeedback('hello world', ['hello, world'])).not.toContain(
-      'Erwartet:',
-    );
+    expect(render('  Waiter. ')).not.toContain('Erwartet:');
+    expect(
+      render('hello world', { expectedAnswers: ['hello, world'] }),
+    ).not.toContain('Erwartet:');
   });
 
   it('shows the textbook answer for a different accepted answer', () => {
-    expect(renderFeedback('server')).toContain('Erwartet:');
+    expect(render('server')).toContain('Erwartet:');
   });
 
   it('distinguishes an early free exercise from a regular review', () => {
-    expect(renderHeldFeedback()).toContain('Zusätzliche Übung.');
-    expect(renderHeldFeedback()).toContain('Lernplan unverändert.');
+    expect(render('waiter', heldResult)).toContain('Zusätzliche Übung.');
+    expect(render('waiter', heldResult)).toContain('Lernplan unverändert.');
   });
 
   it('reveals the solution of a skipped card without judging an attempt', () => {
-    const markup = renderSkippedFeedback();
+    const markup = render('', skippedResult, true);
     expect(markup).toContain('Nicht gewusst');
     expect(markup).toContain('Erwartet:');
     expect(markup).not.toContain('Als richtig werten');
+  });
+
+  it('explains the regrading option only while a wrong answer is pending', () => {
+    expect(render('waitor', pendingWrongResult)).toContain('nicht als Lösung');
+    expect(render('server')).not.toContain('nicht als Lösung');
   });
 });

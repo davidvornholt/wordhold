@@ -4,11 +4,12 @@ import {
   formatLearningDate,
 } from '../../../shared/dates/learning-date';
 import { countNoun } from '../../../shared/format/count';
+import type { RailOutcome } from '../../../shared/session/rail-outcome';
 import { itemsInNextSection } from '../../../shared/session/section-policy';
 import { Button } from '../../../shared/ui/button';
 import { Callout } from '../../../shared/ui/callout';
+import { CardRail } from '../../../shared/ui/card-rail';
 import { ManagedHeading } from '../../../shared/ui/managed-heading';
-import { cardClass } from '../../../shared/ui/surface-styles';
 import type { SessionQueue } from '../services/session-queue';
 import { earliestScheduledReview } from '../services/session-queue';
 
@@ -21,6 +22,82 @@ type SessionSummaryProps = {
   readonly initialNextDueAt?: Date | null;
 };
 
+// How the first pass went, card by card: the rail the sitting started with,
+// now complete.
+const firstPassOutcomes = (queue: SessionQueue): ReadonlyArray<RailOutcome> =>
+  queue.processedCardIds.map((cardId) => {
+    if (queue.ungradedCardIds.includes(cardId)) {
+      return 'ungraded';
+    }
+    return queue.missedCardIds.includes(cardId) ? 'wrong' : 'correct';
+  });
+
+const Figure = ({
+  label,
+  value,
+}: {
+  readonly label: string;
+  readonly value: string;
+}) => (
+  <div className="flex flex-col gap-1">
+    <dt className="text-muted-foreground text-sm">{label}</dt>
+    <dd className="font-display text-3xl tabular-nums leading-none">{value}</dd>
+  </div>
+);
+
+const NextDue = ({
+  nextDueAt,
+  now,
+  reviewIsDue,
+}: {
+  readonly nextDueAt: Date;
+  readonly now: Date;
+  readonly reviewIsDue: boolean;
+}) => (
+  <div className="flex flex-col gap-1 border-primary border-l-4 pl-4">
+    <p className="eyebrow">
+      {reviewIsDue ? 'Reguläre Wiederholung fällig' : 'Nächster Lerntermin'}
+    </p>
+    <p className="font-display text-xl">
+      <time dateTime={nextDueAt.toISOString()}>
+        {formatLearningDate(nextDueAt, now)}
+      </time>
+    </p>
+  </div>
+);
+
+const Outcome = ({ queue }: { readonly queue: SessionQueue }) => {
+  const graduated = queue.graduatedCardIds.length;
+  return (
+    <>
+      <CardRail
+        current={null}
+        description={`${queue.processedCardIds.length} von ${countNoun(
+          queue.total,
+          'Karte',
+          'Karten',
+        )}`}
+        label="Erster Durchgang"
+        outcomes={firstPassOutcomes(queue)}
+        total={queue.total}
+      />
+      <dl className="grid grid-cols-2 gap-6 sm:grid-cols-3">
+        <Figure
+          label="Auf Anhieb richtig"
+          value={String(queue.firstTryCorrect)}
+        />
+        <Figure
+          label="Nach Fehlern richtig"
+          value={String(queue.afterRoundCorrect)}
+        />
+        {graduated === 0 ? null : (
+          <Figure label="Neu sicher" value={`+${graduated}`} />
+        )}
+      </dl>
+    </>
+  );
+};
+
 export const SessionSummary = ({
   queue,
   emptyMessage,
@@ -30,7 +107,6 @@ export const SessionSummary = ({
   initialNextDueAt = null,
 }: SessionSummaryProps) => {
   const ungraded = queue.ungradedCardIds.length;
-  const answered = queue.processedCardIds.length;
   const nextDueAt = earliestDate([
     earliestScheduledReview(queue),
     initialNextDueAt,
@@ -42,28 +118,11 @@ export const SessionSummary = ({
   const heading = queue.total === 0 ? emptyMessage : 'Für jetzt geschafft';
 
   return (
-    <section className={`flex flex-col gap-4 ${cardClass}`}>
-      <ManagedHeading className="font-display text-xl">
+    <section className="flex animate-rise flex-col gap-8">
+      <ManagedHeading className="text-balance font-display text-3xl sm:text-4xl">
         {heading}
       </ManagedHeading>
-      {queue.total === 0 ? null : (
-        <dl className="grid gap-2 text-sm sm:grid-cols-3">
-          <div>
-            <dt className="text-muted-foreground">Bearbeitet</dt>
-            <dd className="font-medium">
-              {answered} von {countNoun(queue.total, 'Karte', 'Karten')}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Auf Anhieb richtig</dt>
-            <dd className="font-medium">{queue.firstTryCorrect}</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Nach Fehlern richtig</dt>
-            <dd className="font-medium">{queue.afterRoundCorrect}</dd>
-          </div>
-        </dl>
-      )}
+      {queue.total === 0 ? null : <Outcome queue={queue} />}
       {ungraded === 0 ? null : (
         <Callout tone="warning">
           <p className="text-sm">
@@ -73,18 +132,7 @@ export const SessionSummary = ({
         </Callout>
       )}
       {nextDueAt === null ? null : (
-        <Callout tone="positive">
-          <p className="eyebrow">
-            {reviewIsDue
-              ? 'Reguläre Wiederholung fällig'
-              : 'Nächster Lerntermin'}
-          </p>
-          <p className="font-display text-lg">
-            <time dateTime={nextDueAt.toISOString()}>
-              {formatLearningDate(nextDueAt, now)}
-            </time>
-          </p>
-        </Callout>
+        <NextDue nextDueAt={nextDueAt} now={now} reviewIsDue={reviewIsDue} />
       )}
       {remainingReady > 0 ? (
         <p className="text-muted-foreground text-sm">
@@ -112,11 +160,11 @@ export const SectionCheckpoint = ({
   onContinue,
   onFinish,
 }: SectionCheckpointProps) => (
-  <section className={`flex flex-col gap-4 ${cardClass}`}>
-    <ManagedHeading className="font-display text-xl">
+  <section className="flex animate-rise flex-col gap-6">
+    <ManagedHeading className="text-balance font-display text-3xl sm:text-4xl">
       Abschnitt {queue.section} abgeschlossen
     </ManagedHeading>
-    <p className="text-sm">
+    <p className="text-muted-foreground">
       Noch {countNoun(queue.remaining.length, 'Karte', 'Karten')} in dieser
       Auswahl.
     </p>

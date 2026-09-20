@@ -22,6 +22,7 @@ const item = (index: number): PracticeItem => ({
   targetText: `word-${index}`,
   nativeText: `Wort-${index}`,
   hasAudio: false,
+  state: 'learning',
   example: null,
   prompt: `Wort-${index}`,
 });
@@ -175,6 +176,42 @@ describe('session queue', () => {
     expect(advanceQueue(advanced, expected, result(true, minuteLater))).toEqual(
       advanced,
     );
+  });
+});
+
+describe('session queue rail', () => {
+  it('records one outcome per asked card and restarts for the after-round', () => {
+    const roundSize = 3;
+    const missed = answerHead(
+      createSessionQueue(items(roundSize)),
+      result(false, minuteLater),
+    );
+    const ungradedNext = answerHead(missed, ungraded);
+    expect(ungradedNext).toMatchObject({
+      railTotal: roundSize,
+      railOutcomes: ['wrong', 'ungraded'],
+    });
+    const afterRound = answerHead(ungradedNext, result(true, minuteLater));
+    expect(afterRound).toMatchObject({
+      phase: 'after-round',
+      railTotal: 1,
+      railOutcomes: [],
+    });
+    const missedAgain = answerHead(afterRound, result(false, minuteLater, 2));
+    expect(missedAgain).toMatchObject({
+      phase: 'after-round',
+      railTotal: 1,
+      railOutcomes: [],
+    });
+  });
+
+  it('counts cards that graduate to review during the sitting', () => {
+    const queue = answerHead(
+      createSessionQueue([item(0), { ...item(1), state: 'review' }]),
+      result(true, minuteLater),
+    );
+    const done = answerHead(queue, result(true, minuteLater));
+    expect(done.graduatedCardIds).toEqual(['card-0']);
   });
 });
 

@@ -29,12 +29,14 @@ const WordAudioFallback = ({
     return null;
   }
   return (
-    <Button onClick={playWord} variant="outline">
+    <Button onClick={playWord} variant="quiet">
       Wort anhören
     </Button>
   );
 };
 
+// "Weiter" takes the place "Prüfen" had, so the hand does not move between
+// answering and continuing. Everything else is secondary and sits beneath.
 export const FeedbackActions = ({
   audioPlaying,
   busy,
@@ -48,36 +50,49 @@ export const FeedbackActions = ({
   playWord,
   resolution,
   stopAudio,
-}: FeedbackActionsProps) => (
-  <div className="flex flex-wrap items-center gap-3">
-    {audioPlaying ? (
-      <Button onClick={stopAudio} variant="outline">
-        Audio stoppen
-      </Button>
-    ) : null}
-    <WordAudioFallback example={example} graded={graded} playWord={playWord} />
-    {pendingWrong ? (
+}: FeedbackActionsProps) => {
+  const secondary = [
+    pendingWrong ? (
       <Button
         disabled={busy || resolution !== null}
+        key="hard"
         onClick={() => onResolveWrong('hard')}
-        variant="outline"
+        variant="quiet"
       >
         {resolution === 'hard' ? 'Wird gespeichert …' : 'Als richtig werten'}
       </Button>
-    ) : null}
-    <Button
-      aria-describedby={feedbackDescriptionId}
-      disabled={busy || resolution !== null}
-      onClick={() => {
-        if (pendingWrong) {
-          onResolveWrong('again');
-        } else {
-          onNext();
-        }
-      }}
-      ref={nextButton}
-    >
-      {resolution === 'again' ? 'Wird gespeichert …' : 'Weiter'}
-    </Button>
-  </div>
-);
+    ) : null,
+    <WordAudioFallback
+      example={example}
+      graded={graded}
+      key="word"
+      playWord={playWord}
+    />,
+    audioPlaying ? (
+      <Button key="stop" onClick={stopAudio} variant="quiet-muted">
+        Audio stoppen
+      </Button>
+    ) : null,
+  ];
+  return (
+    <div className="flex flex-col gap-3">
+      <Button
+        aria-describedby={feedbackDescriptionId}
+        disabled={busy || resolution !== null}
+        onClick={() => {
+          if (pendingWrong) {
+            onResolveWrong('again');
+          } else {
+            onNext();
+          }
+        }}
+        ref={nextButton}
+      >
+        {resolution === 'again' ? 'Wird gespeichert …' : 'Weiter'}
+      </Button>
+      <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1">
+        {secondary}
+      </div>
+    </div>
+  );
+};

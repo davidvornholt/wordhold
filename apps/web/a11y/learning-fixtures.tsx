@@ -7,7 +7,7 @@ import { SessionStart } from '../src/features/practice/ui/session-start';
 import { countNoun } from '../src/shared/format/count';
 import { sessionSectionSize } from '../src/shared/session/section-policy';
 import { Button } from '../src/shared/ui/button';
-import { PageLayout } from '../src/shared/ui/page-layout';
+import { FocusLayout } from '../src/shared/ui/focus-layout';
 import { fixtureBackControl, fixtureControl } from './fixture-controls';
 import { navigateToFixture } from './fixture-state';
 
@@ -99,7 +99,7 @@ export const LearnFixture = ({
   const [introduced, setIntroduced] = useState<ReadonlyArray<string>>([]);
   const [attempts, setAttempts] = useState(0);
   return (
-    <PageLayout backControl={backControl} title="Unit 3: Holidays kennenlernen">
+    <FocusLayout exit={backControl} title="Unit 3: Holidays · Kennenlernen">
       <LearnPass
         completionControls={completionControls(
           activeDirection,
@@ -143,12 +143,12 @@ export const LearnFixture = ({
       <output aria-label="Introduction attempts" className="sr-only">
         {attempts}
       </output>
-    </PageLayout>
+    </FocusLayout>
   );
 };
 
 export const LearnStartFixture = () => (
-  <PageLayout backControl={backControl} title="Unit 3: Holidays kennenlernen">
+  <FocusLayout exit={backControl} title="Unit 3: Holidays · Kennenlernen">
     <SessionStart
       itemNoun={{ singular: 'Vokabel', plural: 'Vokabeln' }}
       options={directionOptions(['to_target', 'to_native'], 'Englisch', [
@@ -170,23 +170,23 @@ export const LearnStartFixture = () => (
         </Button>
       )}
     />
-  </PageLayout>
+  </FocusLayout>
 );
 
 export const LearnDoneFixture = () => (
-  <PageLayout backControl={backControl} title="Unit 3: Holidays kennenlernen">
+  <FocusLayout exit={backControl} title="Unit 3: Holidays · Kennenlernen">
     <LearnDone
       controls={practiceControl}
       directionLabel="Deutsch → Englisch"
       learned={2}
     />
-  </PageLayout>
+  </FocusLayout>
 );
 
 export const LearnSectionDoneFixture = () => {
   const [continuations, setContinuations] = useState(0);
   return (
-    <PageLayout backControl={backControl} title="Unit 3: Holidays kennenlernen">
+    <FocusLayout exit={backControl} title="Unit 3: Holidays · Kennenlernen">
       <LearnDone
         controls={
           <div className="flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap">
@@ -208,6 +208,6 @@ export const LearnSectionDoneFixture = () => {
         learned={sessionSectionSize}
       />
       <output aria-label="Continued learning sections">{continuations}</output>
-    </PageLayout>
+    </FocusLayout>
   );
 };
