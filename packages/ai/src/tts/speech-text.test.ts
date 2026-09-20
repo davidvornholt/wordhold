@@ -108,6 +108,34 @@ describe('textbook markers and notation', () => {
     ).toBe('text');
   });
 
+  it('reads cross-language notes as their parts with a pause between', () => {
+    expect(prepareSpeechText('E violence F la violence', 'fr')).toEqual({
+      audioProfile: 'Remi-generative-notation-pause-400ms',
+      engine: 'generative',
+      languageCode: 'fr-FR',
+      text: '<speak>violence <break time="400ms"/> la violence</speak>',
+      textType: 'ssml',
+      voice: 'Remi',
+    });
+    expect(prepareSpeechText('F le ciel L caelum', 'fr').text).toBe(
+      '<speak>le ciel <break time="400ms"/> caelum</speak>',
+    );
+    expect(prepareSpeechText('E Gewalt F die Gewalt', 'de').text).toBe(
+      '<speak>Gewalt <break time="400ms"/> die Gewalt</speak>',
+    );
+  });
+
+  it('leaves sentences that merely start with a capital letter alone', () => {
+    for (const sentence of [
+      'I liked all the countries I visited while in Europe.',
+      'A friend I trust',
+      'E violence',
+      'Elle a raison.',
+    ]) {
+      expect(prepareSpeechText(sentence, 'en').text).toBe(sentence);
+    }
+  });
+
   it('turns textbook notation between two parts into a longer pause', () => {
     expect(prepareSpeechText('gaming -> game', 'en')).toEqual({
       audioProfile: 'Stephen-generative-notation-pause-400ms',

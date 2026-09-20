@@ -30,6 +30,44 @@ const slashPauseTag = `<break time="${slashPauseMilliseconds}ms"/>`;
 const notationPauseMilliseconds = 400;
 const notationPauseTag = `<break time="${notationPauseMilliseconds}ms"/>`;
 const notationSeparator = /\s*(?:<->|<=>|->|<-|=|→|↔|←)\s*/u;
+// Cross-language notes label each part with a language letter: "E violence
+// F la violence", "F le ciel L caelum". The letters are read as notation, so
+// they become pauses too. A note starts with a marker and uses at least two
+// different ones; an English sentence like "I liked the countries I visited"
+// repeats one letter and stays as it is.
+const languageMarkers = new Set([
+  'D',
+  'E',
+  'F',
+  'G',
+  'I',
+  'L',
+  'N',
+  'P',
+  'R',
+  'S',
+]);
+const languageMarkerPattern = /(?:^|\s)(?<letter>[A-Z])\s+(?=\S)/gu;
+const leadingMarkerPattern = /^[A-Z]\s/u;
+
+const isLanguageNote = (text: string): boolean => {
+  if (!leadingMarkerPattern.test(text)) {
+    return false;
+  }
+  const letters = [...text.matchAll(languageMarkerPattern)]
+    .map((match) => match.groups?.letter ?? '')
+    .filter((letter) => languageMarkers.has(letter));
+  return new Set(letters).size >= 2;
+};
+
+const replaceLanguageMarkers = (text: string): string =>
+  isLanguageNote(text)
+    ? text
+        .replace(languageMarkerPattern, (match, letter: string) =>
+          languageMarkers.has(letter) ? ' → ' : match,
+        )
+        .trim()
+    : text;
 type SpeechProfile = (typeof speechProfiles)[TtsLanguage];
 
 // Increment this when a dictionary change can alter existing speech.
@@ -162,9 +200,10 @@ export type PreparedSpeechText = {
 };
 
 export const prepareSpeechText = (
-  text: string,
+  source: string,
   language: TtsLanguage,
 ): PreparedSpeechText => {
+  const text = replaceLanguageMarkers(source);
   const safeText = removeForbiddenXml10Characters(text);
   const aliases = aliasesByLanguage[language];
   const matcher = matchers[language];
