@@ -13,7 +13,11 @@ document.body.dataset.fixture =
 const strictModeOption = 'unstable_strictMode';
 const rootOptions: Parameters<typeof createRoot>[1] &
   Readonly<Record<typeof strictModeOption, boolean>> = {
-  [strictModeOption]: document.body.dataset.fixture === 'learn-audio',
+  // Audio playback must survive StrictMode's double-invoked effects, which
+  // the real client entry runs in development.
+  [strictModeOption]: ['learn-audio', 'practice-session'].includes(
+    document.body.dataset.fixture ?? '',
+  ),
 };
 
 createRoot(root, rootOptions).render(<FixtureApp />);

@@ -1,11 +1,19 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useAudioPlayback } from '../../../shared/audio/use-pronunciation-audio';
 import type { PreparedExampleSentence } from '../../../shared/examples/example-model';
 
+// Whether this card is still on screen, read at the moment it matters. The
+// controller is created by the effect and read through a ref, so StrictMode's
+// simulated unmount and remount in development aborts one controller and
+// hands the card a fresh one, instead of leaving it aborted for good.
 const useLifetime = () => {
-  const [lifetime] = useState(() => new AbortController());
-  useEffect(() => () => lifetime.abort(), [lifetime]);
-  return lifetime.signal;
+  const lifetimeRef = useRef(new AbortController());
+  useEffect(() => {
+    const controller = new AbortController();
+    lifetimeRef.current = controller;
+    return () => controller.abort();
+  }, []);
+  return useCallback(() => !lifetimeRef.current.signal.aborted, []);
 };
 
 type PracticeAudioInput = {
@@ -23,7 +31,7 @@ export const usePracticeAudio = ({
   example,
   loadExample,
 }: PracticeAudioInput) => {
-  const lifetime = useLifetime();
+  const isOnScreen = useLifetime();
   const wordAudioUrl = hasWordAudio ? `/api/entries/${entryId}/audio` : null;
   const sentenceAudioUrl = example?.hasAudio
     ? `/api/entries/${entryId}/example-audio`
@@ -39,14 +47,14 @@ export const usePracticeAudio = ({
   );
   const playFeedbackAudio = useCallback(async () => {
     const prepared = await loadExample();
-    if (lifetime.aborted) {
+    if (!isOnScreen()) {
       return;
     }
     const preparedSentenceUrl = prepared?.hasAudio
       ? `/api/entries/${entryId}/example-audio`
       : null;
     await playAudio(preparedSentenceUrl ?? wordAudioUrl);
-  }, [entryId, lifetime, loadExample, playAudio, wordAudioUrl]);
+  }, [entryId, isOnScreen, loadExample, playAudio, wordAudioUrl]);
   return {
     playing,
     stopAudio,
