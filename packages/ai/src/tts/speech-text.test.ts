@@ -37,7 +37,7 @@ describe('SSML pronunciation and pauses', () => {
       expect(result.text).toContain(`alias="${firstSpokenForm}`);
       expect(result.text).toContain(`alias="${secondSpokenForm}`);
       expect(result.text).toContain(text.split(' ')[0] ?? '');
-      expect(result.audioProfile).toContain('-generative-pronunciation-1');
+      expect(result.audioProfile).toContain('-generative-pronunciation-2');
     },
   );
 
@@ -77,10 +77,35 @@ describe('SSML pronunciation and pauses', () => {
 
   it('combines pronunciation aliases with separator pauses', () => {
     expect(prepareSpeechText('sb. / sth.', 'en')).toMatchObject({
-      audioProfile: 'Stephen-generative-pronunciation-1-slash-pause-25ms',
+      audioProfile: 'Stephen-generative-pronunciation-2-slash-pause-25ms',
       text: '<speak><sub alias="somebody">sb.</sub> <break time="25ms"/> <sub alias="something">sth.</sub></speak>',
       textType: 'ssml',
     });
+  });
+});
+
+describe('textbook markers and notation', () => {
+  it('reads gender and number markers as words', () => {
+    expect(prepareSpeechText("→ l'heure f.", 'fr')).toMatchObject({
+      audioProfile: 'Remi-generative-pronunciation-2-notation-pause-400ms',
+      text: '<speak>l&apos;heure <sub alias="féminin">f.</sub></speak>',
+    });
+    expect(prepareSpeechText('le chef m. / les chefs pl.', 'fr').text).toBe(
+      '<speak>le chef <sub alias="masculin">m.</sub> <break time="25ms"/> les chefs <sub alias="pluriel">pl.</sub></speak>',
+    );
+    expect(prepareSpeechText('la mesa f.', 'es').text).toBe(
+      '<speak>la mesa <sub alias="femenino">f.</sub></speak>',
+    );
+    expect(prepareSpeechText('das Kind n.', 'de').text).toBe(
+      '<speak>das Kind <sub alias="neutrum">n.</sub></speak>',
+    );
+  });
+
+  it('leaves a marker letter inside a word alone', () => {
+    expect(prepareSpeechText('le chef.', 'fr').textType).toBe('text');
+    expect(
+      prepareSpeechText('Ich komme am Montag um 8 Uhr an.', 'de').textType,
+    ).toBe('text');
   });
 
   it('turns textbook notation between two parts into a longer pause', () => {
@@ -104,7 +129,7 @@ describe('SSML pronunciation and pauses', () => {
 
   it('drops a notation symbol that opens or closes the text', () => {
     expect(prepareSpeechText('→ organiser qc', 'fr')).toMatchObject({
-      audioProfile: 'Remi-generative-pronunciation-1-notation-pause-400ms',
+      audioProfile: 'Remi-generative-pronunciation-2-notation-pause-400ms',
       text: '<speak>organiser <sub alias="quelque chose">qc</sub></speak>',
       textType: 'ssml',
     });

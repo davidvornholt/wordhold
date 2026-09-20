@@ -33,7 +33,7 @@ const notationSeparator = /\s*(?:<->|<=>|->|<-|=|→|↔|←)\s*/u;
 type SpeechProfile = (typeof speechProfiles)[TtsLanguage];
 
 // Increment this when a dictionary change can alter existing speech.
-const pronunciationRevision = 1;
+const pronunciationRevision = 2;
 const wordCharacterPattern = String.raw`\p{L}\p{N}`;
 const wordCharacter = new RegExp(`[${wordCharacterPattern}]`, 'u');
 const abbreviationMarkers = new Set(['ª', 'º', '°']);
