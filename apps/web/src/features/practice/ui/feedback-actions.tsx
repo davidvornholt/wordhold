@@ -36,7 +36,9 @@ const WordAudioFallback = ({
 };
 
 // "Weiter" takes the place "Prüfen" had, so the hand does not move between
-// answering and continuing. Everything else is secondary and sits beneath.
+// answering and continuing. Everything else is secondary and sits beneath in
+// a row that keeps its height, so "Audio stoppen" appearing while the
+// sentence plays and disappearing when it ends moves nothing.
 export const FeedbackActions = ({
   audioPlaying,
   busy,
@@ -90,7 +92,7 @@ export const FeedbackActions = ({
       >
         {resolution === 'again' ? 'Wird gespeichert …' : 'Weiter'}
       </Button>
-      <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1">
+      <div className="flex min-h-11 flex-wrap items-center justify-center gap-x-6 gap-y-1">
         {secondary}
       </div>
     </div>
