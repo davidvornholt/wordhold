@@ -20,6 +20,7 @@ import {
 } from '../services/session-queue';
 import { CardPractice } from './card-practice';
 import { SectionCheckpoint, SessionSummary } from './session-summary';
+import { useExampleWarmup } from './use-example-warmup';
 
 type SessionRunnerProps = {
   readonly session: PracticeSession;
@@ -62,7 +63,19 @@ export const SessionRunner = ({
 }: SessionRunnerProps) => {
   const [queue, setQueue] = useState(() => createSessionQueue(session.items));
   const [judged, setJudged] = useState<RailOutcome | null>(null);
-  const card = queue.pending.at(0);
+  const warmup = useExampleWarmup(session.items, prepareExamples);
+  const head = queue.pending.at(0);
+  const card =
+    head === undefined
+      ? undefined
+      : {
+          ...head,
+          example:
+            head.example ??
+            warmup.items.find((item) => item.entryId === head.entryId)
+              ?.example ??
+            null,
+        };
   const remainingReady = remainingReadyCount(session);
   let content: ReactNode;
   if (queue.phase === 'checkpoint') {
@@ -96,7 +109,7 @@ export const SessionRunner = ({
           setJudged(null);
           setQueue((current) => advanceQueue(current, card, result));
         }}
-        prepareExamples={prepareExamples}
+        prepareExamples={warmup.prepareExamples}
         repeated={queue.phase === 'after-round'}
         submit={submit}
         targetLabel={targetLabel}

@@ -4,12 +4,15 @@ import type {
   PrepareExamples,
 } from '../../../shared/examples/example-model';
 
+// The example may arrive after mount from the sitting's background warm-up;
+// whichever source answers first wins, and a later prop is adopted.
 export const usePreparedExample = (
   entryId: string,
   initialExample: PreparedExampleSentence | null,
   prepareExamples: PrepareExamples,
 ) => {
-  const [example, setExample] = useState(initialExample);
+  const [loaded, setExample] = useState(initialExample);
+  const example = loaded ?? initialExample;
   const pendingRef = useRef<Promise<PreparedExampleSentence | null> | null>(
     null,
   );

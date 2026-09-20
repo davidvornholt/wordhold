@@ -155,6 +155,11 @@ export const FeedbackPanel = ({
           targetLanguage={targetLanguage}
         />
       ) : null}
+      {result.graded && example === null && busy ? (
+        <p className="text-muted-foreground text-sm">
+          Beispielsatz wird vorbereitet …
+        </p>
+      ) : null}
       {result.graded && result.stored ? (
         <ScheduleNote repeated={repeated} result={result} />
       ) : null}

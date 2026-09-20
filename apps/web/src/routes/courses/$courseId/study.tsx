@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, useRouterState } from '@tanstack/react-router';
 import { answerDirections } from '@wordhold/db/schema/directions';
 import type { ReactNode } from 'react';
 import { prepareVocabularyExamples } from '../../../features/courses/services/server-fns';
@@ -56,6 +56,7 @@ const StudyScreen = () => {
     unit,
   } = Route.useLoaderData();
   const targetLabel = germanLabels[course.targetLanguage];
+  const navigating = useRouterState({ select: (state) => state.isLoading });
   const backControl =
     unit === undefined ? (
       <BackLink
@@ -117,6 +118,7 @@ const StudyScreen = () => {
           preferenceKey={`${course.id}:study`}
           renderStartAction={(option, rememberDirection) => (
             <ActionLink
+              aria-busy={navigating}
               className="w-fit"
               onClick={rememberDirection}
               params={{ courseId: course.id }}
@@ -128,7 +130,9 @@ const StudyScreen = () => {
               }}
               to="/courses/$courseId/study"
             >
-              {countNoun(option.cards, 'Karte', 'Karten')} starten
+              {navigating
+                ? 'Wird vorbereitet …'
+                : `${countNoun(option.cards, 'Karte', 'Karten')} starten`}
             </ActionLink>
           )}
         />
