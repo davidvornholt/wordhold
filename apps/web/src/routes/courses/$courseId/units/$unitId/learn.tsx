@@ -18,6 +18,7 @@ import { directionLabel } from '../../../../../shared/directions';
 import { attachPreparedExamples } from '../../../../../shared/examples/example-model';
 import { countNoun } from '../../../../../shared/format/count';
 import { germanLabels } from '../../../../../shared/languages';
+import { focusShell } from '../../../../../shared/routing/shell';
 import { itemsInNextSection } from '../../../../../shared/session/section-policy';
 import { ActionLink } from '../../../../../shared/ui/action-link';
 import { BackLink } from '../../../../../shared/ui/back-link';
@@ -144,6 +145,7 @@ const LearnUnitScreen = () => {
 };
 
 export const Route = createFileRoute('/courses/$courseId/units/$unitId/learn')({
+  staticData: focusShell,
   validateSearch: parsePracticeSearch,
   loaderDeps: ({ search }) => ({ direction: search.direction }),
   loader: async ({ params, deps }) => {

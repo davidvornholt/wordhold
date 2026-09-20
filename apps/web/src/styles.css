@@ -35,6 +35,47 @@
   --radius: var(--radius);
   --font-display: var(--font-display);
   --font-body: var(--font-body);
+  --default-transition-duration: var(--motion-base);
+  --default-transition-timing-function: var(--motion-ease);
+  --ease-out: var(--motion-ease);
+  --ease-settle: var(--motion-ease-settle);
+  --animate-rise: rise var(--motion-slow) var(--motion-ease) both;
+  --animate-settle: settle var(--motion-base) var(--motion-ease-settle) both;
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(0.75rem);
+    }
+  }
+
+  @keyframes settle {
+    from {
+      transform: scale(0.985);
+    }
+  }
+}
+
+/*
+ * Route changes cross-fade through the View Transitions API (enabled on the
+ * router). The header keeps its own group so it stays put while the page
+ * content fades. Reduced motion disables the captured animations outright;
+ * the duration tokens do not reach UA-generated pseudo-elements.
+ */
+@layer base {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: var(--motion-base);
+    animation-timing-function: var(--motion-ease);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    ::view-transition-group(*),
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
+      animation: none;
+    }
+  }
 }
 
 /*
@@ -49,6 +90,11 @@
 /* Small-caps style kicker above a value or heading. */
 @utility eyebrow {
   @apply text-muted-foreground text-xs uppercase tracking-wide;
+}
+
+/* The persistent top bar keeps its own view-transition group. */
+@utility app-header {
+  view-transition-name: app-header;
 }
 
 @utility verification-screen {

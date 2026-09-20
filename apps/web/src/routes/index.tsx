@@ -1,8 +1,14 @@
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router';
 import { HomeShell } from '../app/home-shell';
+import {
+  busiestCourse,
+  type DashboardData,
+  totalReady,
+} from '../features/dashboard/schemas/dashboard-models';
 import { getDashboard } from '../features/dashboard/services/server-fns';
 import { CourseGrid } from '../features/dashboard/ui/course-grid';
 import { FragileList } from '../features/dashboard/ui/fragile-list';
+import { TodayPanel } from '../features/dashboard/ui/today-panel';
 import {
   discardImportSession,
   listAudioRecoveryPages,
@@ -15,8 +21,38 @@ import { AudioRecoveryPages } from '../features/import/ui/audio-recovery-pages';
 import { PendingImportSessions } from '../features/import/ui/pending-import-sessions';
 import { authClient } from '../shared/auth/client';
 import { getSessionUser } from '../shared/auth/session-fn';
+import { earliestDate } from '../shared/dates/learning-date';
 import { countNoun } from '../shared/format/count';
 import { ActionLink } from '../shared/ui/action-link';
+
+const courseLinkClass =
+  'font-display text-xl underline decoration-border underline-offset-4 transition-colors hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring';
+
+const Today = ({ dashboard }: { readonly dashboard: DashboardData }) => {
+  const busiest = busiestCourse(dashboard.perCourse);
+  return (
+    <TodayPanel
+      action={
+        busiest === undefined ? null : (
+          <ActionLink
+            params={{ courseId: busiest.courseId }}
+            to="/courses/$courseId/practice"
+          >
+            Jetzt üben
+          </ActionLink>
+        )
+      }
+      cardsToday={dashboard.cardsToday}
+      nextDueAt={earliestDate(
+        dashboard.perCourse.map((stats) => stats.nextDueAt),
+      )}
+      ready={totalReady(dashboard.perCourse)}
+      reviewsToday={dashboard.reviewsToday}
+      streak={dashboard.streak}
+      week={dashboard.week}
+    />
+  );
+};
 
 const Home = () => {
   const { user, courses, pendingImportSessions, audioRecovery, dashboard } =
@@ -35,15 +71,17 @@ const Home = () => {
         await authClient.signOut();
         await router.invalidate();
       }}
-      signedIn={user !== null && dashboard !== null}
+      user={dashboard === null ? null : user}
     >
       {dashboard === null ? null : (
         <>
+          <Today dashboard={dashboard} />
+
           <CourseGrid
             courses={courses}
             renderCourseLink={(course) => (
               <Link
-                className="font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
+                className={courseLinkClass}
                 params={{ courseId: course.id }}
                 to="/courses/$courseId"
               >
@@ -71,6 +109,7 @@ const Home = () => {
               <ActionLink
                 params={{ courseId: course.id }}
                 to="/courses/$courseId/practice"
+                variant="outline"
               >
                 {countNoun(
                   dashboard.perCourse.find(
@@ -82,8 +121,6 @@ const Home = () => {
                 üben
               </ActionLink>
             )}
-            reviewsToday={dashboard.reviewsToday}
-            cardsToday={dashboard.cardsToday}
             stats={dashboard.perCourse}
           />
 

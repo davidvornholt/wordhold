@@ -1,6 +1,6 @@
 import type { LanguageCode } from '@wordhold/db/schema/courses';
 import { useEffect, useId, useRef } from 'react';
-import { formatLearningDate } from '../../../shared/dates/learning-date';
+import { formatLearningDateInline } from '../../../shared/dates/learning-date';
 import type { PreparedExampleSentence } from '../../../shared/examples/example-model';
 import { normalizeAnswerForComparison } from '../../../shared/grading/normalize';
 import { Callout } from '../../../shared/ui/callout';
@@ -86,9 +86,7 @@ const ScheduleNote = ({
         <>
           {scheduleLead(result, repeated)}
           <time dateTime={result.schedule.dueAt.toISOString()}>
-            {formatLearningDate(result.schedule.dueAt).toLocaleLowerCase(
-              'de-DE',
-            )}
+            {formatLearningDateInline(result.schedule.dueAt)}
           </time>
           .
         </>

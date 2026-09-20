@@ -1,8 +1,10 @@
 import {
   createRootRoute,
   HeadContent,
+  Link,
   Outlet,
   Scripts,
+  useMatches,
 } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { getSessionUser } from '../shared/auth/session-fn';
@@ -13,6 +15,9 @@ import {
   RootPending,
 } from '../shared/routing/root-feedback';
 import { redirectExpiredOwnerRoute } from '../shared/routing/root-guard';
+import { usesFocusShell } from '../shared/routing/shell';
+import { AppShell } from '../shared/ui/app-shell';
+import { wordmarkClass } from '../shared/ui/shell-styles';
 import appCss from '../styles.css?url';
 
 type RootDocumentProps = {
@@ -31,6 +36,24 @@ const RootDocument = ({ children }: RootDocumentProps) => (
   </html>
 );
 
+const RootLayout = () => {
+  const matches = useMatches();
+  if (usesFocusShell(matches)) {
+    return <Outlet />;
+  }
+  return (
+    <AppShell
+      home={
+        <Link className={wordmarkClass} to="/">
+          Wordhold
+        </Link>
+      }
+    >
+      <Outlet />
+    </AppShell>
+  );
+};
+
 export const Route = createRootRoute({
   head: () => ({
     meta: [
@@ -43,7 +66,7 @@ export const Route = createRootRoute({
   beforeLoad: ({ location }) =>
     redirectExpiredOwnerRoute(location.pathname, getSessionUser),
   shellComponent: RootDocument,
-  component: Outlet,
+  component: RootLayout,
   errorComponent: RootError,
   notFoundComponent: RootNotFound,
   pendingComponent: RootPending,

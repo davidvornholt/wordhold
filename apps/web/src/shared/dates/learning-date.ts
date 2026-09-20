@@ -44,6 +44,15 @@ export const formatLearningDate = (dueAt: Date, now = new Date()): string => {
   return dateTime.format(dueAt).replace(',', ' um');
 };
 
+// The same phrase mid-sentence: "Nächster Termin morgen um 12:40".
+export const formatLearningDateInline = (
+  dueAt: Date,
+  now = new Date(),
+): string => {
+  const phrase = formatLearningDate(dueAt, now);
+  return `${phrase.charAt(0).toLocaleLowerCase('de-DE')}${phrase.slice(1)}`;
+};
+
 export const earliestDate = (dates: ReadonlyArray<Date | null>): Date | null =>
   dates.reduce<Date | null>(
     (earliest, date) =>

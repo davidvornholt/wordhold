@@ -23,6 +23,7 @@ import { prepareItemExamples } from '../../../shared/examples/example-model';
 import { countNoun } from '../../../shared/format/count';
 import { germanLabels } from '../../../shared/languages';
 import { readyCardsInNextSection } from '../../../shared/practice/session-policy';
+import { focusShell } from '../../../shared/routing/shell';
 import { itemsInNextSection } from '../../../shared/session/section-policy';
 import { ActionLink } from '../../../shared/ui/action-link';
 import { BackLink } from '../../../shared/ui/back-link';
@@ -118,6 +119,7 @@ const PracticeScreen = () => {
 };
 
 export const Route = createFileRoute('/courses/$courseId/practice')({
+  staticData: focusShell,
   validateSearch: parsePracticeSearch,
   loaderDeps: ({ search }) => ({
     direction: search.direction,

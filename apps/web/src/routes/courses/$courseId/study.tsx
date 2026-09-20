@@ -9,6 +9,7 @@ import { SessionRunner } from '../../../features/practice/ui/session-runner';
 import { SessionStart } from '../../../features/practice/ui/session-start';
 import { countNoun } from '../../../shared/format/count';
 import { germanLabels } from '../../../shared/languages';
+import { focusShell } from '../../../shared/routing/shell';
 import { ActionLink } from '../../../shared/ui/action-link';
 import { BackLink } from '../../../shared/ui/back-link';
 import { PageLayout } from '../../../shared/ui/page-layout';
@@ -157,6 +158,7 @@ const StudyScreen = () => {
 };
 
 export const Route = createFileRoute('/courses/$courseId/study')({
+  staticData: focusShell,
   validateSearch: parseStudySearch,
   loaderDeps: ({ search }) => search,
   loader: ({ params, deps }) => loadStudyData(params.courseId, deps),
