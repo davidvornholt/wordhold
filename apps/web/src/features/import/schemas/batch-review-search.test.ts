@@ -65,7 +65,7 @@ describe('batch review search', () => {
         step: 1,
       },
     });
-    if (!('pageId' in destination)) {
+    if (destination === null) {
       return;
     }
     const finalSession = resolveBatchReviewSession(
@@ -76,6 +76,6 @@ describe('batch review search', () => {
     if (finalSession === null) {
       throw new Error('Expected the second review page to resolve.');
     }
-    expect(advanceBatchReview(finalSession)).toEqual({ total: 2 });
+    expect(advanceBatchReview(finalSession)).toBeNull();
   });
 });

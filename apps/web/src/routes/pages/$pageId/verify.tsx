@@ -16,12 +16,10 @@ import type {
   Unit,
   UnitEntry,
 } from '../../../features/import/services/repository';
-import { BatchReviewComplete } from '../../../features/import/ui/batch-review-complete';
 import type { DraftEntry } from '../../../features/import/ui/entry-row';
 import { useVerificationFlow } from '../../../features/import/ui/use-verification-flow';
 import { VerificationWorkbench } from '../../../features/import/ui/verification-workbench';
 import { germanLabels } from '../../../shared/languages';
-import { ActionLink } from '../../../shared/ui/action-link';
 import { BackLink } from '../../../shared/ui/back-link';
 
 const draftsFromExtraction = (
@@ -84,8 +82,7 @@ const VerificationPageScreen = ({
           Seitenstapel
         </BackLink>
         <h1 className="font-display font-semibold text-2xl">
-          {course.name}:{' '}
-          {flow.batchSummary === null ? 'Seite überprüfen' : 'Seiten geprüft'}
+          {course.name}: Seite überprüfen
         </h1>
         {flow.error === null || flow.completed !== null ? null : (
           <p className="text-destructive text-sm" role="alert">
@@ -93,48 +90,33 @@ const VerificationPageScreen = ({
           </p>
         )}
       </div>
-      {flow.batchSummary === null ? null : (
-        <BatchReviewComplete
-          overviewAction={
-            <ActionLink
-              params={{ sessionId: page.importSessionId }}
-              to="/imports/$sessionId"
-            >
-              Zum Seitenstapel
-            </ActionLink>
-          }
-          total={flow.batchSummary.total}
-        />
-      )}
-      {flow.batchSummary === null ? (
-        <VerificationWorkbench
-          batchIsLastPage={flow.batchIsLastPage}
-          batchSession={flow.batchSession}
-          busy={flow.busy}
-          completed={flow.completed}
-          error={flow.error}
-          existingEntries={unitEntries}
-          extractionKey={
-            flow.extraction === null
-              ? null
-              : flow.extraction.modelId +
-                String(flow.extraction.page.entries.length)
-          }
-          generateExample={(targetText, nativeText) =>
-            generateDraftExample({
-              data: { pageId: page.id, targetText, nativeText },
-            })
-          }
-          initialEntries={draftsFromExtraction(flow.extraction)}
-          initialUnitName={flow.extraction?.page.unitName}
-          onExtractionRetry={flow.retryPageExtraction}
-          onRetryAudio={flow.retryPageAudio}
-          onSubmit={flow.submitPage}
-          pageImageSource={`/api/pages/${page.id}/image`}
-          targetLabel={targetLabel}
-          units={units}
-        />
-      ) : null}
+      <VerificationWorkbench
+        batchIsLastPage={flow.batchIsLastPage}
+        batchSession={flow.batchSession}
+        busy={flow.busy}
+        completed={flow.completed}
+        error={flow.error}
+        existingEntries={unitEntries}
+        extractionKey={
+          flow.extraction === null
+            ? null
+            : flow.extraction.modelId +
+              String(flow.extraction.page.entries.length)
+        }
+        generateExample={(targetText, nativeText) =>
+          generateDraftExample({
+            data: { pageId: page.id, targetText, nativeText },
+          })
+        }
+        initialEntries={draftsFromExtraction(flow.extraction)}
+        initialUnitName={flow.extraction?.page.unitName}
+        onExtractionRetry={flow.retryPageExtraction}
+        onRetryAudio={flow.retryPageAudio}
+        onSubmit={flow.submitPage}
+        pageImageSource={`/api/pages/${page.id}/image`}
+        targetLabel={targetLabel}
+        units={units}
+      />
     </main>
   );
 };
