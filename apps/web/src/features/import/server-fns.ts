@@ -2,7 +2,7 @@ import { createServerFn } from '@tanstack/react-start';
 import { getRequest } from '@tanstack/react-start/server';
 import type { ExtractionResult } from '@wordhold/ai/extraction';
 import { SentenceGen } from '@wordhold/ai/sentence';
-import { Effect } from 'effect';
+import { Cause, Effect } from 'effect';
 import { sentenceRuntime } from '../../shared/ai/runtime';
 import { requireSession } from '../../shared/auth/require-session';
 import { englishNames } from '../../shared/languages';
@@ -25,8 +25,14 @@ import { discardPendingImportSession } from './services/discard-page';
 import { retryPendingExtraction } from './services/extraction-retry';
 import { ImportRepository } from './services/repository';
 
+// Every failure is logged with its full cause before it leaves the server:
+// the learner sees the typed message, the log keeps the provider's answer.
 const authenticated = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
-  Effect.zipRight(requireSession(getRequest().headers), effect);
+  Effect.zipRight(requireSession(getRequest().headers), effect).pipe(
+    Effect.tapErrorCause((cause) =>
+      Effect.logError('import request failed', Cause.pretty(cause)),
+    ),
+  );
 
 export const listCourses = createServerFn().handler(() =>
   importRuntime.runPromise(
