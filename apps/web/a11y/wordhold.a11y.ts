@@ -52,12 +52,8 @@ test('authenticated routes remain reachable through their user transitions', asy
     .getByRole('button', { name: '2 Seiten hochladen und auslesen' })
     .click();
   await expect(page.getByText('2 von 2 Seiten verarbeitet')).toBeVisible();
+  // Reviewing starts on the first page; the stack overview is not a stop.
   await page.getByRole('button', { name: 'Stapel prüfen' }).click();
-  await expect(page.locator('body')).toHaveAttribute(
-    'data-fixture',
-    'import-session',
-  );
-  await page.getByRole('button', { name: 'Prüfung beginnen' }).click();
   await expect(page.locator('body')).toHaveAttribute(
     'data-fixture',
     'verification-batch-first',
