@@ -25,7 +25,7 @@
   "dependencies": {
     "@ai-sdk/google-vertex": "^5.0.86",
     "@ai-sdk/openai": "^4.0.69",
-    "@aws-sdk/client-polly": "^3.1134.0",
+    "@aws-sdk/client-polly": "^3.1135.0",
     "ai": "^7.0.105",
     "effect": "^3.22.1"
   },
