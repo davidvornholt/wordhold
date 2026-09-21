@@ -5,6 +5,7 @@ import { sessionOptions } from '../src/features/practice/services/session-option
 import { SessionStart } from '../src/features/practice/ui/session-start';
 import { countNoun } from '../src/shared/format/count';
 import { Button } from '../src/shared/ui/button';
+import { FocusLayout } from '../src/shared/ui/focus-layout';
 import { PageLayout } from '../src/shared/ui/page-layout';
 import { fixtureBackControl } from './fixture-controls';
 import { navigateToFixture } from './fixture-state';
@@ -28,7 +29,7 @@ type PracticeStartFixtureProps = {
 export const PracticeStartFixture = ({
   partial = false,
 }: PracticeStartFixtureProps) => (
-  <PageLayout backControl={backControl} title="English A2: Üben">
+  <FocusLayout exit={backControl} title="English A2 · Üben">
     <SessionStart
       itemNoun={{ singular: 'Karte', plural: 'Karten' }}
       options={sessionOptions(
@@ -49,7 +50,7 @@ export const PracticeStartFixture = ({
         </Button>
       )}
     />
-  </PageLayout>
+  </FocusLayout>
 );
 
 // Saving is instant here, so the status line reaches "Gespeichert." the way it

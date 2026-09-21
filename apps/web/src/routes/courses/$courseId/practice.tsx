@@ -1,4 +1,8 @@
-import { createFileRoute, useRouter } from '@tanstack/react-router';
+import {
+  createFileRoute,
+  useRouter,
+  useRouterState,
+} from '@tanstack/react-router';
 import { useState } from 'react';
 import {
   getCourseDirections,
@@ -19,7 +23,6 @@ import {
 } from '../../../features/practice/services/session-options';
 import { SessionRunner } from '../../../features/practice/ui/session-runner';
 import { SessionStart } from '../../../features/practice/ui/session-start';
-import { prepareItemExamples } from '../../../shared/examples/example-model';
 import { countNoun } from '../../../shared/format/count';
 import { germanLabels } from '../../../shared/languages';
 import { readyCardsInNextSection } from '../../../shared/practice/session-policy';
@@ -28,12 +31,13 @@ import { itemsInNextSection } from '../../../shared/session/section-policy';
 import { ActionLink } from '../../../shared/ui/action-link';
 import { BackLink } from '../../../shared/ui/back-link';
 import { Button } from '../../../shared/ui/button';
-import { PageLayout } from '../../../shared/ui/page-layout';
+import { FocusLayout } from '../../../shared/ui/focus-layout';
 
 const PracticeScreen = () => {
   const { availability, course, directions, direction, session, unit } =
     Route.useLoaderData();
   const router = useRouter();
+  const navigating = useRouterState({ select: (state) => state.isLoading });
   const [sessionGeneration, setSessionGeneration] = useState(0);
   const targetLabel = germanLabels[course.targetLanguage];
   const pageBackControl =
@@ -63,9 +67,9 @@ const PracticeScreen = () => {
     );
 
   return (
-    <PageLayout
-      backControl={pageBackControl}
-      title={`${unit?.name ?? course.name}: Üben`}
+    <FocusLayout
+      exit={pageBackControl}
+      title={`${unit?.name ?? course.name} · Üben`}
     >
       {session === null ? (
         <SessionStart
@@ -77,13 +81,16 @@ const PracticeScreen = () => {
           preferenceKey={`${course.id}:practice`}
           renderStartAction={(option, rememberDirection) => (
             <ActionLink
+              aria-busy={navigating}
               className="w-fit"
               onClick={rememberDirection}
               params={{ courseId: course.id }}
               search={{ direction: option.value, unit: unit?.id }}
               to="/courses/$courseId/practice"
             >
-              {countNoun(option.cards, 'Karte', 'Karten')} starten
+              {navigating
+                ? 'Wird vorbereitet …'
+                : `${countNoun(option.cards, 'Karte', 'Karten')} starten`}
             </ActionLink>
           )}
         />
@@ -114,7 +121,7 @@ const PracticeScreen = () => {
           targetLanguage={course.targetLanguage}
         />
       )}
-    </PageLayout>
+    </FocusLayout>
   );
 };
 
@@ -163,7 +170,10 @@ export const Route = createFileRoute('/courses/$courseId/practice')({
       directions,
       readyDirections,
     );
-    const loadedSession =
+    // Example sentences are prepared in the background once the sitting is
+    // on screen (see useExampleWarmup); waiting for them here made the start
+    // button appear to do nothing for seconds.
+    const session =
       direction === undefined
         ? null
         : await getPracticeSession({
@@ -173,16 +183,6 @@ export const Route = createFileRoute('/courses/$courseId/practice')({
               unitId: unit?.id,
             },
           });
-    const session =
-      loadedSession === null
-        ? null
-        : {
-            ...loadedSession,
-            items: await prepareItemExamples(
-              loadedSession.items,
-              prepareVocabularyExamples,
-            ),
-          };
     return {
       availability: { directions: directionAvailability, ready },
       course,

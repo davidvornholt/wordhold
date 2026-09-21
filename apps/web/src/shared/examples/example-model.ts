@@ -39,17 +39,3 @@ export const attachPreparedExamples = <
     example: byEntry.get(item.entryId) ?? item.example,
   }));
 };
-
-export const prepareItemExamples = async <
-  T extends {
-    readonly entryId: string;
-    readonly example: PreparedExampleSentence | null;
-  },
->(
-  items: ReadonlyArray<T>,
-  prepareExamples: PrepareExamples,
-) =>
-  attachPreparedExamples(
-    items,
-    await prepareExamples({ data: items.map((item) => item.entryId) }),
-  );

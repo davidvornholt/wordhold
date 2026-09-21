@@ -2,14 +2,14 @@ import { sessionOptions } from '../src/features/practice/services/session-option
 import { SessionStart } from '../src/features/practice/ui/session-start';
 import { countNoun } from '../src/shared/format/count';
 import { Button } from '../src/shared/ui/button';
-import { PageLayout } from '../src/shared/ui/page-layout';
+import { FocusLayout } from '../src/shared/ui/focus-layout';
 import { fixtureBackControl } from './fixture-controls';
 import { navigateToFixture } from './fixture-state';
 
 export const StudyStartFixture = () => (
-  <PageLayout
-    backControl={fixtureBackControl('Unit 3 – Holidays', 'unit')}
-    title="Unit 3 – Holidays üben"
+  <FocusLayout
+    exit={fixtureBackControl('Unit 3 – Holidays', 'unit')}
+    title="Unit 3 – Holidays · Üben"
   >
     <SessionStart
       itemNoun={{ singular: 'Karte', plural: 'Karten' }}
@@ -31,5 +31,5 @@ export const StudyStartFixture = () => (
         </Button>
       )}
     />
-  </PageLayout>
+  </FocusLayout>
 );

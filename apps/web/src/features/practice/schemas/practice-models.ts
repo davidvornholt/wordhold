@@ -1,7 +1,11 @@
 import type { JudgeVerdictData } from '@wordhold/ai/judge/schema';
 import type { LanguageCode } from '@wordhold/db/schema/courses';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
-import type { cards, ReviewMode } from '@wordhold/db/schema/practice';
+import type {
+  CardState,
+  cards,
+  ReviewMode,
+} from '@wordhold/db/schema/practice';
 import type { PreparedExampleSentence } from '../../../shared/examples/example-model';
 import type {
   DerivedRating,
@@ -16,6 +20,9 @@ export type PracticeItem = {
   readonly targetText: string;
   readonly nativeText: string;
   readonly hasAudio: boolean;
+  // Where the card stands before this sitting, so the summary can count the
+  // cards that graduated to review during it.
+  readonly state: CardState;
   readonly example: PreparedExampleSentence | null;
   readonly prompt: string;
 };

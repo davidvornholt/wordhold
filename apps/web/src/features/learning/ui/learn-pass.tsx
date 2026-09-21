@@ -1,6 +1,6 @@
 import type { LanguageCode } from '@wordhold/db/schema/courses';
 import { type ReactNode, useState } from 'react';
-import { ProgressMeter } from '../../../shared/ui/progress-meter';
+import { CardRail } from '../../../shared/ui/card-rail';
 import type { LearnItem } from '../schemas/learning-models';
 import { LearnDone } from './learn-done';
 import { LearnEntry } from './learn-entry';
@@ -30,11 +30,14 @@ export const LearnPass = ({
   return (
     <>
       {items.length === 0 ? null : (
-        <ProgressMeter
-          accessibleName="Lernfortschritt"
+        <CardRail
+          activeIndex={item === undefined ? null : index}
+          activeOutcome={null}
           description={`${index} von ${items.length} Vokabeln kennengelernt · ${directionLabel}`}
-          total={items.length}
-          value={index}
+          label="Kennenlernen"
+          ticks={items.map((_, position) =>
+            position < index ? ('correct' as const) : null,
+          )}
         />
       )}
       {item === undefined ? (
@@ -45,6 +48,7 @@ export const LearnPass = ({
         />
       ) : (
         <LearnEntry
+          deck={items.length - index - 1}
           item={item}
           key={item.cardId}
           onLearned={async () => {

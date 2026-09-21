@@ -15,10 +15,7 @@ import {
   resolveAnswerDirection,
   resolveSessionDirection,
 } from '../../../features/practice/services/session-options';
-import {
-  attachPreparedExamples,
-  prepareItemExamples,
-} from '../../../shared/examples/example-model';
+import { attachPreparedExamples } from '../../../shared/examples/example-model';
 import type { VocabularySelectionData } from '../../../shared/session/vocabulary-selection';
 
 const loadLearningMode = async (
@@ -73,15 +70,6 @@ const loadPracticeMode = async (
     session = await getStudySession({
       data: { courseId, direction, selection },
     });
-  }
-  if (session !== null) {
-    session = {
-      ...session,
-      items: await prepareItemExamples(
-        session.items,
-        prepareVocabularyExamples,
-      ),
-    };
   }
   return {
     availableDirections,

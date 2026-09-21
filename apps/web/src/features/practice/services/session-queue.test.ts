@@ -22,6 +22,7 @@ const item = (index: number): PracticeItem => ({
   targetText: `word-${index}`,
   nativeText: `Wort-${index}`,
   hasAudio: false,
+  state: 'learning',
   example: null,
   prompt: `Wort-${index}`,
 });
@@ -175,6 +176,41 @@ describe('session queue', () => {
     expect(advanceQueue(advanced, expected, result(true, minuteLater))).toEqual(
       advanced,
     );
+  });
+});
+
+describe('session queue rail', () => {
+  const outcomes = (queue: ReturnType<typeof createSessionQueue>) =>
+    queue.rail.map((tick) => tick.outcome);
+
+  it('records one outcome per section card and lets the after-round repair it', () => {
+    const roundSize = 3;
+    const missed = answerHead(
+      createSessionQueue(items(roundSize)),
+      result(false, minuteLater),
+    );
+    const ungradedNext = answerHead(missed, ungraded);
+    expect(outcomes(ungradedNext)).toEqual(['wrong', 'ungraded', null]);
+    const afterRound = answerHead(ungradedNext, result(true, minuteLater));
+    expect(afterRound.phase).toBe('after-round');
+    expect(outcomes(afterRound)).toEqual(['wrong', 'ungraded', 'correct']);
+    const missedAgain = answerHead(afterRound, result(false, minuteLater, 2));
+    expect(outcomes(missedAgain)).toEqual(['wrong', 'ungraded', 'correct']);
+    const repaired = answerHead(
+      missedAgain,
+      result(true, minuteLater, thirdRevision),
+    );
+    expect(repaired.phase).toBe('complete');
+    expect(outcomes(repaired)).toEqual(['correct', 'ungraded', 'correct']);
+  });
+
+  it('counts cards that graduate to review during the sitting', () => {
+    const queue = answerHead(
+      createSessionQueue([item(0), { ...item(1), state: 'review' }]),
+      result(true, minuteLater),
+    );
+    const done = answerHead(queue, result(true, minuteLater));
+    expect(done.graduatedCardIds).toEqual(['card-0']);
   });
 });
 

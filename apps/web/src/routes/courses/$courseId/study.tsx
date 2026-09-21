@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, useRouterState } from '@tanstack/react-router';
 import { answerDirections } from '@wordhold/db/schema/directions';
 import type { ReactNode } from 'react';
 import { prepareVocabularyExamples } from '../../../features/courses/services/server-fns';
@@ -12,7 +12,7 @@ import { germanLabels } from '../../../shared/languages';
 import { focusShell } from '../../../shared/routing/shell';
 import { ActionLink } from '../../../shared/ui/action-link';
 import { BackLink } from '../../../shared/ui/back-link';
-import { PageLayout } from '../../../shared/ui/page-layout';
+import { FocusLayout } from '../../../shared/ui/focus-layout';
 import { cardClass } from '../../../shared/ui/surface-styles';
 import { StudyLearning } from './-study-learning';
 import { loadStudyData } from './-study-loader';
@@ -56,6 +56,7 @@ const StudyScreen = () => {
     unit,
   } = Route.useLoaderData();
   const targetLabel = germanLabels[course.targetLanguage];
+  const navigating = useRouterState({ select: (state) => state.isLoading });
   const backControl =
     unit === undefined ? (
       <BackLink
@@ -74,7 +75,7 @@ const StudyScreen = () => {
       </BackLink>
     );
   const titleSubject = unit === undefined ? 'Auswahl' : unit.name;
-  const title = `${titleSubject} ${mode === 'learn' ? 'kennenlernen' : 'üben'}`;
+  const title = `${titleSubject} · ${mode === 'learn' ? 'Kennenlernen' : 'Üben'}`;
   let content: ReactNode;
   if (selection === null) {
     content = (
@@ -117,6 +118,7 @@ const StudyScreen = () => {
           preferenceKey={`${course.id}:study`}
           renderStartAction={(option, rememberDirection) => (
             <ActionLink
+              aria-busy={navigating}
               className="w-fit"
               onClick={rememberDirection}
               params={{ courseId: course.id }}
@@ -128,7 +130,9 @@ const StudyScreen = () => {
               }}
               to="/courses/$courseId/study"
             >
-              {countNoun(option.cards, 'Karte', 'Karten')} starten
+              {navigating
+                ? 'Wird vorbereitet …'
+                : `${countNoun(option.cards, 'Karte', 'Karten')} starten`}
             </ActionLink>
           )}
         />
@@ -151,9 +155,9 @@ const StudyScreen = () => {
   }
 
   return (
-    <PageLayout backControl={backControl} title={title}>
+    <FocusLayout exit={backControl} title={title}>
       {content}
-    </PageLayout>
+    </FocusLayout>
   );
 };
 

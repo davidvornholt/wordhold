@@ -2,8 +2,8 @@ import type { LanguageCode } from '@wordhold/db/schema/courses';
 import { type SubmitEvent, useEffect, useId, useRef, useState } from 'react';
 import { directionLabel } from '../../../shared/directions';
 import { Button } from '../../../shared/ui/button';
-import { fieldClass } from '../../../shared/ui/field-styles';
-import { cardClass } from '../../../shared/ui/surface-styles';
+import { answerFieldClass } from '../../../shared/ui/field-styles';
+import { WordCard } from '../../../shared/ui/word-card';
 import {
   type LearnItem,
   learnAnswer,
@@ -14,6 +14,8 @@ import { LearnExampleAudio } from './learn-example-audio';
 
 type LearnEntryProps = {
   readonly item: LearnItem;
+  // Entries still waiting behind this one in the section.
+  readonly deck: number;
   readonly targetLanguage: LanguageCode;
   readonly targetLabel: string;
   // Records that this direction has been met. Only called once the learner has
@@ -26,6 +28,7 @@ type LearnEntryProps = {
 // wrong only asks again.
 export const LearnEntry = ({
   item,
+  deck,
   targetLanguage,
   targetLabel,
   onLearned,
@@ -82,19 +85,16 @@ export const LearnEntry = ({
 
   return (
     <>
-      <div className={`flex flex-col gap-2 ${cardClass}`}>
-        <h2
-          className="font-display text-xl"
-          id={promptId}
-          lang={item.direction === 'to_native' ? targetLanguage : undefined}
-        >
-          {prompt}
-        </h2>
-        <p className="text-muted-foreground text-sm">
-          {directionLabel(item.direction, targetLabel)}
-        </p>
+      <WordCard
+        deck={deck}
+        eyebrow={directionLabel(item.direction, targetLabel)}
+        tone={missed ? 'warning' : 'neutral'}
+        word={prompt}
+        wordId={promptId}
+        wordLang={item.direction === 'to_native' ? targetLanguage : undefined}
+      >
         <LearnExampleAudio item={item} targetLanguage={targetLanguage} />
-      </div>
+      </WordCard>
       <form
         aria-busy={busy}
         className="flex flex-col gap-3"
@@ -115,7 +115,9 @@ export const LearnEntry = ({
           autoCapitalize="off"
           autoComplete="off"
           autoCorrect="off"
-          className={fieldClass}
+          className={`${answerFieldClass} ${
+            missed ? 'border-warning-foreground' : 'border-input'
+          }`}
           disabled={busy}
           id={inputId}
           onChange={(event) => {
@@ -130,7 +132,7 @@ export const LearnEntry = ({
           {actionLabel}
         </Button>
       </form>
-      <p aria-live="polite" className="text-sm">
+      <p aria-live="polite" className="text-center text-sm">
         {missed ? 'Noch nicht ganz. Schreib die Vokabel genau so ab.' : null}
       </p>
       {saveFailed ? (
