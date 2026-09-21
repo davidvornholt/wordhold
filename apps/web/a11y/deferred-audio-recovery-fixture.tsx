@@ -21,14 +21,14 @@ const makeDeferred = (): Deferred => {
 type RecoveryView = 'dashboard' | 'stack' | 'verification';
 
 export const DeferredAudioRecoveryFixture = () => {
-  const active = useRef<boolean>(true);
-  const deferred = useRef<Deferred | null>(null);
+  const activeRef = useRef<boolean>(true);
+  const deferredRef = useRef<Deferred | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<RecoveryView>('verification');
   const retry = () => {
     const pending = makeDeferred();
-    deferred.current = pending;
+    deferredRef.current = pending;
     setBusy(true);
     setError(null);
     finishAudioRecovery({
@@ -38,7 +38,7 @@ export const DeferredAudioRecoveryFixture = () => {
       },
       refreshOverview: () => Promise.resolve(),
       retry: () => pending.promise,
-      shouldNavigate: () => active.current,
+      shouldNavigate: () => activeRef.current,
     })
       .catch(() => setError('Pronunciation unavailable'))
       .finally(() => setBusy(false));
@@ -58,7 +58,7 @@ export const DeferredAudioRecoveryFixture = () => {
         <h1 className="font-display font-semibold text-2xl">
           Seiten im Stapel
         </h1>
-        <button onClick={() => deferred.current?.resolve()} type="button">
+        <button onClick={() => deferredRef.current?.resolve()} type="button">
           Resolve pronunciation
         </button>
       </main>
@@ -70,7 +70,7 @@ export const DeferredAudioRecoveryFixture = () => {
       <button
         className="text-muted-foreground text-sm underline"
         onClick={() => {
-          active.current = false;
+          activeRef.current = false;
           setView('stack');
         }}
         type="button"
@@ -83,11 +83,13 @@ export const DeferredAudioRecoveryFixture = () => {
       <AudioRecovery busy={busy} error={error} imported={1} onRetry={retry} />
       <fieldset>
         <legend>Test controls</legend>
-        <button onClick={() => deferred.current?.resolve()} type="button">
+        <button onClick={() => deferredRef.current?.resolve()} type="button">
           Resolve pronunciation
         </button>
         <button
-          onClick={() => deferred.current?.reject(new Error('Test rejection'))}
+          onClick={() =>
+            deferredRef.current?.reject(new Error('Test rejection'))
+          }
           type="button"
         >
           Reject pronunciation

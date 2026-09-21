@@ -10,12 +10,14 @@ export const usePreparedExample = (
   prepareExamples: PrepareExamples,
 ) => {
   const [example, setExample] = useState(initialExample);
-  const pending = useRef<Promise<PreparedExampleSentence | null> | null>(null);
+  const pendingRef = useRef<Promise<PreparedExampleSentence | null> | null>(
+    null,
+  );
   const loadExample = () => {
     if (example !== null) {
       return Promise.resolve(example);
     }
-    pending.current ??= prepareExamples({ data: [entryId] })
+    pendingRef.current ??= prepareExamples({ data: [entryId] })
       .then(
         (prepared) =>
           prepared.find((candidate) => candidate.entryId === entryId)
@@ -26,7 +28,7 @@ export const usePreparedExample = (
         setExample(prepared);
         return prepared;
       });
-    return pending.current;
+    return pendingRef.current;
   };
   return { example, loadExample } as const;
 };

@@ -30,11 +30,11 @@ export const Checkbox = ({
   ref,
   ...props
 }: CheckboxProps) => {
-  const control = useRef<HTMLInputElement>(null);
+  const controlRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (control.current !== null) {
-      control.current.indeterminate = indeterminate;
+    if (controlRef.current !== null) {
+      controlRef.current.indeterminate = indeterminate;
     }
   }, [indeterminate]);
 
@@ -44,7 +44,7 @@ export const Checkbox = ({
         {...props}
         className={`${boxClass} checked:bg-primary indeterminate:border-primary indeterminate:bg-primary`}
         ref={(node) => {
-          control.current = node;
+          controlRef.current = node;
           if (typeof ref === 'function') {
             ref(node);
           } else if (ref !== null && ref !== undefined) {

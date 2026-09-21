@@ -135,8 +135,8 @@ describe('DashboardStore fragile-entry contract', () => {
             insert into reviews
               (card_id, reviewed_at, rating, mode, answer_text)
             values
-              (${card.id}, ${fixtureNow}, ${ratings.again}, 'scheduled', 'falsch'),
-              (${card.id}, ${fixtureNow}, ${ratings.again}, 'scheduled', 'immer noch falsch')
+              (${card.id}, now(), ${ratings.again}, 'scheduled', 'falsch'),
+              (${card.id}, now(), ${ratings.again}, 'scheduled', 'immer noch falsch')
           `;
 
           expect(yield* store.fragileEntries()).toContainEqual(

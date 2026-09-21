@@ -1,20 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 export const useAudioPlayback = () => {
-  const audio = useRef<HTMLAudioElement | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState(false);
 
   useEffect(
     () => () => {
-      audio.current?.pause();
-      audio.current = null;
+      audioRef.current?.pause();
+      audioRef.current = null;
     },
     [],
   );
 
   const stopAudio = useCallback(() => {
-    const { current } = audio;
-    audio.current = null;
+    const { current } = audioRef;
+    audioRef.current = null;
     current?.pause();
     setPlaying(false);
   }, []);
@@ -23,19 +23,19 @@ export const useAudioPlayback = () => {
     if (audioUrl === null) {
       return;
     }
-    audio.current?.pause();
+    audioRef.current?.pause();
     const current = new Audio(audioUrl);
-    audio.current = current;
+    audioRef.current = current;
     current.onended = () => {
-      if (audio.current === current) {
-        audio.current = null;
+      if (audioRef.current === current) {
+        audioRef.current = null;
         setPlaying(false);
       }
     };
     setPlaying(true);
     await current.play().catch(() => {
-      if (audio.current === current) {
-        audio.current = null;
+      if (audioRef.current === current) {
+        audioRef.current = null;
         setPlaying(false);
       }
     });
