@@ -192,3 +192,19 @@ test('VerifyForm translates a rewrite blurred while an older request is pending'
   await expect(translation).toHaveValue('');
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
 });
+
+test('VerifyForm fills every missing example sentence with one click', async ({
+  page,
+}) => {
+  await page.goto('/?state=verification');
+  await expect(page.getByText('2 Einträge ohne Beispielsatz')).toBeVisible();
+  await page.getByRole('button', { name: 'Beispielsätze erzeugen' }).click();
+  await expect(page.getByText('ohne Beispielsatz')).toHaveCount(0);
+  await expect(
+    page.getByRole('button', { name: 'Beispielsatz erzeugen' }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByLabel('Beispielsatz', { exact: true }).nth(generatedExampleIndex),
+  ).toHaveValue('This memory makes me smile.');
+  assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
+});

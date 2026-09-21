@@ -36,6 +36,12 @@ describe('normalizeAnswerForComparison', () => {
     expect(normalizeAnswerForComparison('hello ,  world')).toBe('hello world');
   });
 
+  it('ignores spacing around a slash', () => {
+    for (const text of ['el/la tenista', 'el / la tenista', 'el/ la tenista']) {
+      expect(normalizeAnswerForComparison(text)).toBe('el/la tenista');
+    }
+  });
+
   it('keeps textbook notation for the variant parser', () => {
     expect(normalizeAnswerForComparison('amigo/a; estudiante(s)')).toBe(
       'amigo/a; estudiante(s)',
