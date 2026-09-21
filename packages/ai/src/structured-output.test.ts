@@ -35,6 +35,10 @@ describe('providerJsonSchema', () => {
       expect(Object.keys(converted.properties ?? {}).length).toBeGreaterThan(0);
       // Providers reject cross-references in structured output schemas.
       expect(JSON.stringify(converted)).not.toContain('$ref');
+      // Gemini rejects array length bounds in responseJsonSchema.
+      const keys = objectNodes(converted).flatMap((node) => Object.keys(node));
+      expect(keys).not.toContain('maxItems');
+      expect(keys).not.toContain('minItems');
     });
   }
 

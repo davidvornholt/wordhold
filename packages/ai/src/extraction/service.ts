@@ -74,7 +74,12 @@ export class Extraction extends Effect.Service<Extraction>()(
             });
             return output;
           },
-          catch: (cause) => new ExtractionError({ cause }),
+          catch: (cause) =>
+            new ExtractionError({
+              reason: 'provider',
+              message: `The reading service rejected or did not answer the request for ${modelId}.`,
+              cause,
+            }),
         });
 
       const runModel = (
@@ -84,7 +89,14 @@ export class Extraction extends Effect.Service<Extraction>()(
         callModel(modelId, input).pipe(
           Effect.flatMap((output) =>
             decodePage(output).pipe(
-              Effect.mapError((cause) => new ExtractionError({ cause })),
+              Effect.mapError(
+                (cause) =>
+                  new ExtractionError({
+                    reason: 'invalidOutput',
+                    message: `${modelId} answered outside the page schema.`,
+                    cause,
+                  }),
+              ),
             ),
           ),
         );
