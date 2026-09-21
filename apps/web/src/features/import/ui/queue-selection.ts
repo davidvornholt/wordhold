@@ -69,3 +69,76 @@ export const queueSelectedFiles = async ({
   });
   return { added, notice: selectionNotice(selection) };
 };
+
+// Selections share one lifetime so each sees the preceding committed pages.
+export const createQueueSelection = ({
+  getPages,
+  onAdded,
+  onBusy,
+  onError,
+  digests,
+  previewUrls,
+}: Pick<QueueSelectionInput, 'digests' | 'previewUrls'> & {
+  readonly getPages: () => ReadonlyArray<QueuedPage>;
+  readonly onAdded: (pages: ReadonlyArray<QueuedPage>) => void;
+  readonly onBusy: (busy: boolean) => void;
+  readonly onError: (error: string | null) => void;
+}) => {
+  let tail = Promise.resolve();
+  let pending = 0;
+  let disposed = false;
+  const select = async (files: ReadonlyArray<File>) => {
+    if (disposed) {
+      return;
+    }
+    const { added, notice } = await queueSelectedFiles({
+      files,
+      pages: getPages(),
+      digests,
+      previewUrls,
+    });
+    if (disposed) {
+      for (const page of added) {
+        URL.revokeObjectURL(page.previewUrl);
+        previewUrls.delete(page.previewUrl);
+        digests.delete(page.id);
+      }
+      return;
+    }
+    onAdded(added);
+    onError(notice);
+  };
+  return {
+    get pending() {
+      return pending > 0;
+    },
+    dispose: () => {
+      disposed = true;
+    },
+    addFiles: (files: ReadonlyArray<File>): Promise<void> => {
+      if (disposed) {
+        return Promise.resolve();
+      }
+      pending += 1;
+      onBusy(true);
+      onError(null);
+      tail = tail.then(async () => {
+        try {
+          await select(files);
+        } catch {
+          if (!disposed) {
+            onError(
+              'Das Foto konnte nicht gelesen werden. Wähle die Datei erneut.',
+            );
+          }
+        } finally {
+          pending -= 1;
+          if (!disposed) {
+            onBusy(pending > 0);
+          }
+        }
+      });
+      return tail;
+    },
+  };
+};
