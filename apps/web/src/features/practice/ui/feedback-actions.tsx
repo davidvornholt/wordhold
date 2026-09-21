@@ -10,6 +10,8 @@ type FeedbackActionsProps = {
   readonly feedbackDescriptionId: string;
   readonly graded: boolean;
   readonly nextButton: RefObject<HTMLButtonElement | null>;
+  // "Weiter" waits until the answer has been written out after a mistake.
+  readonly nextDisabled: boolean;
   readonly onNext: () => void;
   readonly onResolveWrong: (
     resolution: Exclude<WrongAnswerResolution, 'defer'>,
@@ -47,6 +49,7 @@ export const FeedbackActions = ({
   feedbackDescriptionId,
   graded,
   nextButton,
+  nextDisabled,
   onNext,
   onResolveWrong,
   pendingWrong,
@@ -67,14 +70,8 @@ export const FeedbackActions = ({
     <div className="flex flex-col gap-3">
       <Button
         aria-describedby={feedbackDescriptionId}
-        disabled={busy || resolution !== null}
-        onClick={() => {
-          if (pendingWrong) {
-            onResolveWrong('again');
-          } else {
-            onNext();
-          }
-        }}
+        disabled={busy || resolution !== null || nextDisabled}
+        onClick={onNext}
         ref={nextButton}
       >
         {resolution === 'again' ? 'Wird gespeichert …' : 'Weiter'}

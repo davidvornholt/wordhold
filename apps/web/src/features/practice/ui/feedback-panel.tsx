@@ -116,6 +116,13 @@ export const FeedbackPanel = ({
   );
   const tone = feedbackTone(result);
   const pendingWrong = result.graded && !result.stored;
+  // The field below now asks for the answer to be written out, so the
+  // attempt is kept here for comparison.
+  const showsAttempt =
+    result.graded &&
+    !result.correct &&
+    !repeatsSubmittedAnswer &&
+    submittedAnswer.trim() !== '';
 
   return (
     <div
@@ -139,6 +146,11 @@ export const FeedbackPanel = ({
           </span>
         </p>
       )}
+      {showsAttempt ? (
+        <p className="text-muted-foreground text-sm">
+          Deine Antwort: <span lang={answerLanguage}>{submittedAnswer}</span>
+        </p>
+      ) : null}
       {result.graded && result.explanation !== null ? (
         <p className="text-sm">{result.explanation}</p>
       ) : null}
