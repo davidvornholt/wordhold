@@ -173,7 +173,7 @@ const Home = () => {
                 <ActionLink
                   aria-label={`${label} fortsetzen`}
                   params={{ sessionId: session.id }}
-                  to="/imports/$sessionId"
+                  to="/imports/$sessionId/review"
                 >
                   Stapel fortsetzen
                 </ActionLink>
