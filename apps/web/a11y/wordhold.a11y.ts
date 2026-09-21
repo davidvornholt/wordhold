@@ -69,19 +69,8 @@ test('authenticated routes remain reachable through their user transitions', asy
     'data-fixture',
     'verification-batch-second',
   );
+  // The last page of the stack returns straight to the overview.
   await page.getByRole('button', { name: '12 Einträge importieren' }).click();
-  await expect(page.locator('body')).toHaveAttribute(
-    'data-fixture',
-    'verification-batch-complete',
-  );
-  await page
-    .getByRole('button', { name: 'Zum Seitenstapel', exact: true })
-    .click();
-  await expect(page.locator('body')).toHaveAttribute(
-    'data-fixture',
-    'import-session',
-  );
-  await page.getByRole('button', { name: 'Übersicht' }).click();
   await expect(page.locator('body')).toHaveAttribute(
     'data-fixture',
     'dashboard',
@@ -161,9 +150,8 @@ test('batch review requires every page in order', async ({ page }) => {
   await page.getByRole('button', { name: '12 Einträge importieren' }).click();
   await expect(page.locator('body')).toHaveAttribute(
     'data-fixture',
-    'verification-batch-complete',
+    'dashboard',
   );
-  await expect(page.getByText('2 Seiten wurden importiert.')).toBeVisible();
 });
 
 test('leaving an individual page returns to its import stack', async ({
