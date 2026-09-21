@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { countNoun } from '../../../shared/format/count';
 import { Button } from '../../../shared/ui/button';
+import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { ProgressMeter } from '../../../shared/ui/progress-meter';
 
 type PendingImportSession = {
@@ -43,21 +44,7 @@ export const PendingImportSessions = ({
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [discardingId, setDiscardingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const confirmationActionRef = useRef<HTMLButtonElement>(null);
-  const discardActionRefsRef = useRef(new Map<string, HTMLButtonElement>());
-  const restoreFocusIdRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (confirmingId !== null) {
-      confirmationActionRef.current?.focus();
-      return;
-    }
-    const restoreFocusId = restoreFocusIdRef.current;
-    if (restoreFocusId !== null) {
-      discardActionRefsRef.current.get(restoreFocusId)?.focus();
-      restoreFocusIdRef.current = null;
-    }
-  }, [confirmingId]);
+  const confirming = sessions.find((session) => session.id === confirmingId);
 
   if (sessions.length === 0) {
     return null;
@@ -70,12 +57,12 @@ export const PendingImportSessions = ({
     setError(null);
     try {
       await onDiscard(session);
-      setConfirmingId(null);
     } catch {
       setError(
         'Der Stapel konnte nicht gelöscht werden. Versuche es noch einmal.',
       );
     } finally {
+      setConfirmingId(null);
       setDiscardingId(null);
     }
   };
@@ -95,8 +82,6 @@ export const PendingImportSessions = ({
             'Seite',
             'Seiten',
           )}, ${new Date(session.capturedAt).toLocaleDateString('de-DE')}`;
-          const confirming = confirmingId === session.id;
-          const discarding = discardingId === session.id;
           return (
             <li className="relative mt-2 ml-2" key={session.id}>
               <div
@@ -123,56 +108,20 @@ export const PendingImportSessions = ({
                     value={session.verifiedCount}
                   />
                 </div>
-                {confirming ? (
-                  <fieldset className="flex flex-col gap-3 border-destructive border-l-4 bg-destructive/10 p-3 text-sm">
-                    <legend className="float-left">
-                      {countNoun(session.pendingCount, 'Seite', 'Seiten')} und
-                      die Fotos werden endgültig gelöscht.
-                    </legend>
-                    <div className="flex flex-wrap gap-3">
-                      <Button
-                        disabled={discarding}
-                        onClick={() => discardSession(session)}
-                        ref={confirmationActionRef}
-                        variant="destructive"
-                      >
-                        {discarding ? 'Wird gelöscht …' : 'Endgültig löschen'}
-                      </Button>
-                      <Button
-                        disabled={discarding}
-                        onClick={() => {
-                          restoreFocusIdRef.current = session.id;
-                          setConfirmingId(null);
-                        }}
-                        variant="quiet"
-                      >
-                        Behalten
-                      </Button>
-                    </div>
-                  </fieldset>
-                ) : (
-                  <div className="flex flex-wrap items-center gap-3">
-                    {renderSessionAction(session, label)}
-                    <Button
-                      aria-label={`${label} löschen`}
-                      disabled={discardingId !== null}
-                      onClick={() => {
-                        setError(null);
-                        setConfirmingId(session.id);
-                      }}
-                      ref={(element) => {
-                        if (element === null) {
-                          discardActionRefsRef.current.delete(session.id);
-                        } else {
-                          discardActionRefsRef.current.set(session.id, element);
-                        }
-                      }}
-                      variant="quiet-muted"
-                    >
-                      Stapel löschen
-                    </Button>
-                  </div>
-                )}
+                <div className="flex flex-wrap items-center gap-3">
+                  {renderSessionAction(session, label)}
+                  <Button
+                    aria-label={`${label} löschen`}
+                    disabled={discardingId !== null}
+                    onClick={() => {
+                      setError(null);
+                      setConfirmingId(session.id);
+                    }}
+                    variant="quiet-muted"
+                  >
+                    Stapel löschen
+                  </Button>
+                </div>
               </div>
             </li>
           );
@@ -183,6 +132,30 @@ export const PendingImportSessions = ({
           {error}
         </p>
       )}
+      <ConfirmDialog
+        busy={discardingId !== null}
+        cancelLabel="Behalten"
+        confirmLabel={
+          discardingId === null ? 'Endgültig löschen' : 'Wird gelöscht …'
+        }
+        description={
+          confirming === undefined
+            ? ''
+            : `${countNoun(confirming.pendingCount, 'Seite', 'Seiten')} und die Fotos werden endgültig gelöscht.`
+        }
+        onCancel={() => setConfirmingId(null)}
+        onConfirm={() => {
+          if (confirming !== undefined) {
+            discardSession(confirming).catch(() => undefined);
+          }
+        }}
+        open={confirming !== undefined}
+        title={
+          confirming === undefined
+            ? 'Stapel löschen'
+            : `${confirming.courseName}: Stapel löschen?`
+        }
+      />
     </section>
   );
 };

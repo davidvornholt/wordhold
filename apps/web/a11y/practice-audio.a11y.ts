@@ -107,3 +107,33 @@ test('pending feedback preparation cannot outlive its practice card', async ({
     .poll(() => page.evaluate(() => Reflect.get(globalThis, '__audioUrls')))
     .toEqual([]);
 });
+
+test('stopping the audio leaves the card actions where they were', async ({
+  page,
+}) => {
+  await page.addInitScript(audioRecorderScript);
+  await page.goto('/?state=practice-session&audio=true');
+  await page.getByLabel('Deine Antwort').fill('wrong');
+  await page.getByRole('button', { name: 'Prüfen' }).click();
+  const countAsCorrect = page.getByRole('button', {
+    name: 'Als richtig werten',
+  });
+  const stop = page.getByRole('button', { name: 'Audio stoppen' });
+  await expect(stop).toBeVisible();
+  // Document coordinates: the click may scroll the phone viewport by a pixel,
+  // which is not a layout shift.
+  const documentBox = () =>
+    countAsCorrect.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return {
+        x: rect.x + window.scrollX,
+        y: rect.y + window.scrollY,
+        width: rect.width,
+        height: rect.height,
+      };
+    });
+  const before = await documentBox();
+  await stop.click();
+  await expect(stop).toHaveCount(0);
+  expect(await documentBox()).toEqual(before);
+});
