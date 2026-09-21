@@ -23,10 +23,55 @@ const speechProfiles = {
 const speechEngine = 'generative' as const;
 const slashPauseMilliseconds = 25;
 const slashPauseTag = `<break time="${slashPauseMilliseconds}ms"/>`;
+// Textbook notation between two spoken parts: "gaming -> game" (word
+// family), "= a definition", "ask <-> explain" (opposites), "→ organiser qc"
+// (derivation). Read aloud these symbols come out as "minus greater than";
+// a pause says the same thing without words.
+const notationPauseMilliseconds = 400;
+const notationPauseTag = `<break time="${notationPauseMilliseconds}ms"/>`;
+const notationSeparator = /\s*(?:<->|<=>|->|<-|=|→|↔|←)\s*/u;
+// Cross-language notes label each part with a language letter: "E violence
+// F la violence", "F le ciel L caelum". The letters are read as notation, so
+// they become pauses too. A note starts with a marker and uses at least two
+// different ones; an English sentence like "I liked the countries I visited"
+// repeats one letter and stays as it is.
+const languageMarkers = new Set([
+  'D',
+  'E',
+  'F',
+  'G',
+  'I',
+  'L',
+  'N',
+  'P',
+  'R',
+  'S',
+]);
+const languageMarkerPattern = /(?:^|\s)(?<letter>[A-Z])\s+(?=\S)/gu;
+const leadingMarkerPattern = /^[A-Z]\s/u;
+
+const isLanguageNote = (text: string): boolean => {
+  if (!leadingMarkerPattern.test(text)) {
+    return false;
+  }
+  const letters = [...text.matchAll(languageMarkerPattern)]
+    .map((match) => match.groups?.letter ?? '')
+    .filter((letter) => languageMarkers.has(letter));
+  return new Set(letters).size >= 2;
+};
+
+const replaceLanguageMarkers = (text: string): string =>
+  isLanguageNote(text)
+    ? text
+        .replace(languageMarkerPattern, (match, letter: string) =>
+          languageMarkers.has(letter) ? ' → ' : match,
+        )
+        .trim()
+    : text;
 type SpeechProfile = (typeof speechProfiles)[TtsLanguage];
 
 // Increment this when a dictionary change can alter existing speech.
-const pronunciationRevision = 1;
+const pronunciationRevision = 2;
 const wordCharacterPattern = String.raw`\p{L}\p{N}`;
 const wordCharacter = new RegExp(`[${wordCharacterPattern}]`, 'u');
 const abbreviationMarkers = new Set(['ª', 'º', '°']);
@@ -80,13 +125,43 @@ const escapeSsml = (value: string): string =>
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&apos;');
 
-const prepareLiteralText = (
-  value: string,
-): { readonly text: string; readonly usesSlashPause: boolean } => {
+type LiteralText = {
+  readonly text: string;
+  readonly usesSlashPause: boolean;
+  readonly usesNotationPause: boolean;
+};
+
+const prepareSlashText = (value: string): LiteralText => {
   const segments = value.split('/');
   return {
     text: segments.map(escapeSsml).join(slashPauseTag),
     usesSlashPause: segments.length > 1,
+    usesNotationPause: false,
+  };
+};
+
+// A notation symbol at the very start or end has nothing to separate, so it
+// disappears without a pause ("= a definition" is read as the definition).
+// A literal fragment beside an alias still has speech on that side.
+const prepareLiteralText = (
+  value: string,
+  atStart: boolean,
+  atEnd: boolean,
+): LiteralText => {
+  const parts = value
+    .split(notationSeparator)
+    .filter(
+      (segment, index, segments) =>
+        segment.trim() !== '' ||
+        (index === 0 && !atStart) ||
+        (index === segments.length - 1 && !atEnd),
+    )
+    .map(prepareSlashText);
+  const usesNotationPause = notationSeparator.test(value);
+  return {
+    text: parts.map((part) => part.text).join(` ${notationPauseTag} `),
+    usesSlashPause: parts.some((part) => part.usesSlashPause),
+    usesNotationPause,
   };
 };
 
@@ -135,9 +210,10 @@ export type PreparedSpeechText = {
 };
 
 export const prepareSpeechText = (
-  text: string,
+  source: string,
   language: TtsLanguage,
 ): PreparedSpeechText => {
+  const text = replaceLanguageMarkers(source);
   const safeText = removeForbiddenXml10Characters(text);
   const aliases = aliasesByLanguage[language];
   const matcher = matchers[language];
@@ -146,10 +222,16 @@ export const prepareSpeechText = (
   let cursor = 0;
   let usesPronunciation = false;
   let usesSlashPause = false;
-  const pushLiteralText = (value: string): void => {
-    const literal = prepareLiteralText(value);
+  let usesNotationPause = false;
+  const pushLiteralText = (end: number): void => {
+    const literal = prepareLiteralText(
+      text.slice(cursor, end),
+      cursor === 0,
+      end === text.length,
+    );
     parts.push(literal.text);
     usesSlashPause ||= literal.usesSlashPause;
+    usesNotationPause ||= literal.usesNotationPause;
   };
   // Match the imported text before sanitizing it so forbidden characters cannot
   // create a new abbreviation boundary.
@@ -157,7 +239,7 @@ export const prepareSpeechText = (
     const [writtenForm] = match;
     const spokenForm = aliases.get(writtenForm.toLocaleLowerCase());
     if (match.index !== undefined && spokenForm !== undefined) {
-      pushLiteralText(text.slice(cursor, match.index));
+      pushLiteralText(match.index);
       parts.push(
         `<sub alias="${escapeSsml(spokenForm)}">${escapeSsml(writtenForm)}</sub>`,
       );
@@ -165,13 +247,16 @@ export const prepareSpeechText = (
       cursor = match.index + writtenForm.length;
     }
   }
-  pushLiteralText(text.slice(cursor));
+  pushLiteralText(text.length);
 
   const baseAudioProfile = `${profile.voice}-${speechEngine}`;
   const audioProfile = [
     baseAudioProfile,
     usesPronunciation ? `pronunciation-${pronunciationRevision}` : undefined,
     usesSlashPause ? `slash-pause-${slashPauseMilliseconds}ms` : undefined,
+    usesNotationPause
+      ? `notation-pause-${notationPauseMilliseconds}ms`
+      : undefined,
   ]
     .filter((part) => part !== undefined)
     .join('-');
@@ -181,7 +266,7 @@ export const prepareSpeechText = (
     languageCode: profile.languageCode,
     voice: profile.voice,
   };
-  if (!(usesPronunciation || usesSlashPause)) {
+  if (!(usesPronunciation || usesSlashPause || usesNotationPause)) {
     return { ...shared, text: safeText, textType: 'text' };
   }
   return {
