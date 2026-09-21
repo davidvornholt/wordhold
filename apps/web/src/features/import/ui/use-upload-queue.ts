@@ -3,13 +3,12 @@ import { type SubmitEvent, useRef, useState } from 'react';
 import { retryExtraction } from '../server-fns';
 import {
   hasStoredUpload,
-  maximumUploadBatchSize,
-  nextUploadPosition,
   type ProcessableQueuedPage,
   processQueuedPage,
   processQueuedPages,
   type QueuedPage,
 } from '../services/upload-queue';
+import { queueSelectedFiles } from './queue-selection';
 import { useUploadQueuePersistence } from './use-upload-queue-persistence';
 
 const UploadResponse = Schema.Struct({
@@ -63,6 +62,9 @@ export const useUploadQueue = (courseId: string) => {
     crypto.randomUUID(),
   );
   const previewUrlsRef = useRef(new Set<string>());
+  // Content digests of queued pages, by page id; restored pages are hashed
+  // the first time a selection has to be compared against them.
+  const digestsRef = useRef(new Map<string, string>());
   const [pages, setPages] = useState<ReadonlyArray<QueuedPage>>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -118,34 +120,20 @@ export const useUploadQueue = (courseId: string) => {
     );
   };
 
-  const addFiles = (files: ReadonlyArray<File>): void => {
+  const addFiles = async (files: ReadonlyArray<File>): Promise<void> => {
     if (!hydrated || processingStarted || hasStoredUpload(pages)) {
       setError(
         'Die Fotoauswahl ist nach dem ersten Verarbeitungsversuch gesperrt. Versuche fehlgeschlagene Seiten erneut.',
       );
       return;
     }
-    const remaining = maximumUploadBatchSize - pages.length;
-    const accepted = files.slice(0, remaining);
-    setError(
-      files.length > remaining
-        ? `${accepted.length} von ${files.length} Fotos wurden hinzugefügt. Pro Durchgang sind höchstens ${maximumUploadBatchSize} möglich.`
-        : null,
-    );
-    const usedPositions = new Set(pages.map((page) => page.position));
-    const added = accepted.map((file): QueuedPage => {
-      const position = nextUploadPosition(usedPositions);
-      usedPositions.add(position);
-      const previewUrl = URL.createObjectURL(file);
-      previewUrlsRef.current.add(previewUrl);
-      return {
-        id: crypto.randomUUID(),
-        file,
-        position,
-        previewUrl,
-        stage: 'waiting',
-      };
+    const { added, notice } = await queueSelectedFiles({
+      files,
+      pages,
+      digests: digestsRef.current,
+      previewUrls: previewUrlsRef.current,
     });
+    setError(notice);
     setPages((current) => [...current, ...added]);
   };
 
