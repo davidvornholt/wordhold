@@ -1,47 +1,44 @@
 import type { LanguageCode } from '@wordhold/db/schema/courses';
 import type { ReviewMode } from '@wordhold/db/schema/practice';
-import {
-  type SubmitEvent,
-  useCallback,
-  useEffect,
-  useId,
-  useRef,
-  useState,
-} from 'react';
-import { useAudioPlayback } from '../../../shared/audio/use-pronunciation-audio';
+import { type SubmitEvent, useId, useRef } from 'react';
 import type { PrepareExamples } from '../../../shared/examples/example-model';
-import { cardClass } from '../../../shared/ui/surface-styles';
+import type { RailOutcome } from '../../../shared/session/rail-outcome';
+import { WordCard } from '../../../shared/ui/word-card';
 import type {
   PracticeSession,
   ResolvedSubmitResult,
   SubmitResult,
 } from '../schemas/practice-models';
 import type { SubmitPayloadData } from '../schemas/submission-schema';
+import { FeedbackActions } from './feedback-actions';
 import { FeedbackPanel } from './feedback-panel';
+import { feedbackTone } from './feedback-tone';
 import { PracticeAnswerForm } from './practice-answer-form';
+import { useCardFlow } from './use-card-flow';
 import { useCardSubmission } from './use-card-submission';
+import { usePracticeAudio } from './use-practice-audio';
 import { usePreparedExample } from './use-prepared-example';
 
 type SessionItem = PracticeSession['items'][number];
-
-const useLifetime = () => {
-  const [lifetime] = useState(() => new AbortController());
-  useEffect(() => () => lifetime.abort(), [lifetime]);
-  return lifetime.signal;
-};
 
 // "auf" takes the plain language name, so every target language declines
 // correctly ("auf Französisch", "auf Latein" — never "ins Lateine").
 const practiceInstruction = (
   direction: SessionItem['direction'],
   targetLabel: string,
-) =>
-  direction === 'to_target'
-    ? `Übersetze auf ${targetLabel}`
-    : 'Übersetze auf Deutsch';
+  repeated: boolean,
+) => {
+  const instruction =
+    direction === 'to_target'
+      ? `Übersetze auf ${targetLabel}`
+      : 'Übersetze auf Deutsch';
+  return repeated ? `${instruction} · Noch einmal` : instruction;
+};
 
 type CardPracticeProps = {
   readonly item: SessionItem;
+  // Cards still waiting behind this one in the round.
+  readonly deck: number;
   readonly repeated: boolean;
   readonly targetLabel: string;
   readonly targetLanguage: LanguageCode;
@@ -50,141 +47,128 @@ type CardPracticeProps = {
   readonly submit: (input: {
     readonly data: SubmitPayloadData;
   }) => Promise<SubmitResult>;
+  // Fires as soon as an answer is judged, before "Weiter" moves on.
+  readonly onJudged: (outcome: RailOutcome) => void;
   readonly onNext: (result: ResolvedSubmitResult) => void;
 };
 
 export const CardPractice = ({
   item,
+  deck,
   repeated,
   targetLabel,
   targetLanguage,
   mode,
   prepareExamples,
   submit,
+  onJudged,
   onNext,
 }: CardPracticeProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
-  const lifetime = useLifetime();
+  const nextButtonRef = useRef<HTMLButtonElement>(null);
   const promptId = useId();
+  const feedbackDescriptionId = useId();
   const { example, loadExample } = usePreparedExample(
     item.entryId,
     item.example,
     prepareExamples,
   );
-  const wordAudioUrl = item.hasAudio
-    ? `/api/entries/${item.entryId}/audio`
-    : null;
-  const sentenceAudioUrl = example?.hasAudio
-    ? `/api/entries/${item.entryId}/example-audio`
-    : null;
-  const { playAudio, playing: audioPlaying, stopAudio } = useAudioPlayback();
-  const playSentence = useCallback(
-    () => playAudio(sentenceAudioUrl),
-    [playAudio, sentenceAudioUrl],
-  );
-  const playWord = useCallback(
-    () => playAudio(wordAudioUrl),
-    [playAudio, wordAudioUrl],
-  );
-  const playFeedbackAudio = useCallback(async () => {
-    const prepared = await loadExample();
-    if (lifetime.aborted) {
-      return;
-    }
-    const preparedSentenceUrl = prepared?.hasAudio
-      ? `/api/entries/${item.entryId}/example-audio`
-      : null;
-    await playAudio(preparedSentenceUrl ?? wordAudioUrl);
-  }, [item.entryId, lifetime, loadExample, playAudio, wordAudioUrl]);
-  const {
-    answer,
-    setAnswer,
-    submittedAnswer,
-    skipped,
-    result,
-    busy,
-    resolution,
-    error,
-    submitAnswer,
-    skipCard,
-    resolveWrongAnswer,
-  } = useCardSubmission({
+  const audio = usePracticeAudio({
+    entryId: item.entryId,
+    hasWordAudio: item.hasAudio,
+    example,
+    loadExample,
+  });
+  const submission = useCardSubmission({
     cardId: item.cardId,
     revision: item.revision,
     mode,
-    playFeedbackAudio,
+    playFeedbackAudio: audio.playFeedbackAudio,
     submit,
     onNext,
   });
-
-  useEffect(() => {
-    if (busy || result !== null) {
-      return;
-    }
-    const focusTask = globalThis.setTimeout(() => inputRef.current?.focus());
-    return () => globalThis.clearTimeout(focusTask);
-  }, [busy, result]);
-
-  useEffect(() => {
-    if (!result?.graded || example !== null) {
-      return;
-    }
-    loadExample().catch(() => undefined);
-  }, [example, loadExample, result]);
+  const { result, busy, resolution } = submission;
+  useCardFlow({
+    busy,
+    result,
+    example,
+    loadExample,
+    onJudged,
+    inputRef,
+    nextButtonRef,
+  });
 
   const onSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
-    await submitAnswer();
+    await submission.submitAnswer();
   };
+  const tone = result === null ? 'neutral' : feedbackTone(result);
+  const pendingWrong = result?.graded === true && !result.stored;
 
   return (
     <>
-      <p className="text-muted-foreground text-sm">
-        {practiceInstruction(item.direction, targetLabel)}
-        {repeated ? ' · Noch einmal' : null}
-      </p>
-      <div className={cardClass}>
-        <h2 className="font-display text-xl" id={promptId}>
-          {item.prompt}
-        </h2>
-      </div>
+      <WordCard
+        deck={deck}
+        eyebrow={practiceInstruction(item.direction, targetLabel, repeated)}
+        tone={tone}
+        word={item.prompt}
+        wordId={promptId}
+        wordLang={item.direction === 'to_native' ? targetLanguage : undefined}
+      >
+        {result === null ? null : (
+          <FeedbackPanel
+            answerLanguage={
+              item.direction === 'to_target' ? targetLanguage : 'de'
+            }
+            busy={busy || resolution !== null}
+            example={example}
+            id={feedbackDescriptionId}
+            playSentence={audio.playSentence}
+            playWord={audio.playWord}
+            repeated={repeated}
+            result={result}
+            skipped={submission.skipped}
+            submittedAnswer={submission.submittedAnswer ?? ''}
+            targetLanguage={targetLanguage}
+          />
+        )}
+      </WordCard>
       <PracticeAnswerForm
-        answer={answer}
+        answer={submission.answer}
         busy={busy}
         disabled={result !== null}
         inputRef={inputRef}
-        onAnswerChange={setAnswer}
-        onSkip={skipCard}
+        onAnswerChange={submission.setAnswer}
+        onSkip={submission.skipCard}
         onSubmit={onSubmit}
         promptId={promptId}
-        skipping={busy && skipped}
-        submittedAnswer={submittedAnswer}
+        skipping={busy && submission.skipped}
+        submittedAnswer={submission.submittedAnswer}
+        tone={tone}
       />
-      {error === null ? null : (
+      {submission.error === null ? null : (
         <p className="text-destructive text-sm" role="alert">
-          {error}
+          {submission.error}
         </p>
       )}
       {result === null ? null : (
-        <FeedbackPanel
-          audioPlaying={audioPlaying}
+        <FeedbackActions
+          audioPlaying={audio.playing}
           busy={busy}
           example={example}
+          feedbackDescriptionId={feedbackDescriptionId}
+          graded={result.graded}
+          nextButton={nextButtonRef}
           onNext={() => {
             if (!result.graded || result.stored) {
               onNext(result);
             }
           }}
-          playSentence={sentenceAudioUrl === null ? null : playSentence}
-          playWord={wordAudioUrl === null ? null : playWord}
-          onResolveWrong={resolveWrongAnswer}
-          repeated={repeated}
+          onResolveWrong={submission.resolveWrongAnswer}
+          pendingWrong={pendingWrong}
+          playWord={audio.playWord}
           resolution={resolution}
-          result={result}
-          skipped={skipped}
-          submittedAnswer={submittedAnswer ?? ''}
-          targetLanguage={targetLanguage}
-          stopAudio={stopAudio}
+          stopAudio={audio.stopAudio}
         />
       )}
     </>

@@ -14,6 +14,7 @@ describe('DashboardService', () => {
       courseCounts: () => Effect.fail(failure),
       fragileEntries: () => Effect.fail(failure),
       activityBetween: () => Effect.fail(failure),
+      practicedDays: () => Effect.fail(failure),
     });
     const result = await Effect.runPromise(
       Effect.flatMap(DashboardService, (service) =>

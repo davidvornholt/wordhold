@@ -2,41 +2,41 @@ import type { ReactNode } from 'react';
 import { Button } from '../shared/ui/button';
 
 type HomeShellProps = {
-  readonly signedIn: boolean;
+  readonly user: { readonly name: string } | null;
   readonly onSignIn: () => void;
   readonly onSignOut: () => void;
   readonly children: ReactNode;
 };
 
 export const HomeShell = ({
-  signedIn,
+  user,
   onSignIn,
   onSignOut,
   children,
-}: HomeShellProps) => (
-  <main className="page-column flex flex-col gap-8 p-6">
-    <header className="flex items-baseline justify-between border-border border-b pb-5">
-      <div>
-        <h1 className="font-display font-semibold text-3xl">Wordhold</h1>
-        <p className="text-muted-foreground text-sm" lang="en">
-          From page to memory.
-        </p>
-      </div>
-      {signedIn ? (
+}: HomeShellProps) =>
+  user === null ? (
+    <main className="page-column flex flex-col items-start gap-6 px-6 py-16">
+      <h1
+        className="text-balance font-display font-semibold text-4xl sm:text-5xl"
+        lang="en"
+      >
+        From page to memory.
+      </h1>
+      <p className="max-w-prose text-muted-foreground">
+        Fotografiere die Vokabelseiten deines Buchs. Wordhold liest sie aus,
+        fragt sie im richtigen Abstand ab und spricht sie dir vor. Melde dich
+        an, um deine Kurse zu sehen.
+      </p>
+      <Button onClick={onSignIn}>Mit GitHub anmelden</Button>
+    </main>
+  ) : (
+    <main className="page-column flex flex-col gap-10 px-6 py-8">
+      {children}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-border border-t pt-5 text-muted-foreground text-sm">
+        <p>Angemeldet als {user.name}</p>
         <Button onClick={onSignOut} variant="quiet-muted">
           Abmelden
         </Button>
-      ) : null}
-    </header>
-    {signedIn ? (
-      children
-    ) : (
-      <div className="flex flex-col items-start gap-4">
-        <p className="text-muted-foreground text-sm">
-          Melde dich an, um deine Kurse zu sehen.
-        </p>
-        <Button onClick={onSignIn}>Mit GitHub anmelden</Button>
       </div>
-    )}
-  </main>
-);
+    </main>
+  );

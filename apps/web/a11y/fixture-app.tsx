@@ -1,3 +1,5 @@
+import { AppShell } from '../src/shared/ui/app-shell';
+import { wordmarkClass } from '../src/shared/ui/shell-styles';
 import { BatchReviewFixture } from './batch-review-fixtures';
 import { ImportFixture } from './capture-fixtures';
 import { CourseFixture, UnitFixture } from './course-fixtures';
@@ -30,6 +32,32 @@ import { rootFixture } from './root-fixtures';
 import { StudyStartFixture } from './study-fixtures';
 import { verificationFixture } from './verification-fixture-router';
 import { VocabularyFixture } from './vocabulary-fixtures';
+
+// States that production renders without the home shell: focus routes and
+// the root feedback screens, which replace the root layout entirely.
+const bareStates: ReadonlySet<FixtureState> = new Set<FixtureState>([
+  'learn',
+  'learn-audio',
+  'learn-start',
+  'learn-native',
+  'learn-retry',
+  'learn-done',
+  'learn-section-done',
+  'study-start',
+  'practice',
+  'practice-start',
+  'practice-start-partial',
+  'practice-session',
+  'study-session',
+  'practice-feedback',
+  'practice-empty',
+  'practice-complete-one-card',
+  'practice-ungraded-one-card',
+  'practice-deferred',
+  'loading',
+  'error',
+  'not-found',
+]);
 
 const batchReviewFixture = (state: FixtureState) => {
   switch (state) {
@@ -82,11 +110,11 @@ const dashboardFixture = (state: FixtureState) => (
     empty={state === 'dashboard-empty'}
     pending={state === 'dashboard-pending'}
     resting={state === 'dashboard-learning'}
+    twoCourses={state === 'dashboard-two-courses'}
   />
 );
 
-export const FixtureApp = () => {
-  const state = readFixtureState();
+const fixtureContent = (state: FixtureState) => {
   switch (state) {
     case 'signed-out':
       return <SignedOutFixture />;
@@ -95,6 +123,7 @@ export const FixtureApp = () => {
     case 'dashboard-learning':
     case 'dashboard-audio-recovery':
     case 'dashboard-pending':
+    case 'dashboard-two-courses':
       return dashboardFixture(state);
     case 'import':
       return <ImportFixture />;
@@ -180,4 +209,22 @@ export const FixtureApp = () => {
     default:
       return state satisfies never;
   }
+};
+
+export const FixtureApp = () => {
+  const state = readFixtureState();
+  const content = fixtureContent(state);
+  return bareStates.has(state) ? (
+    content
+  ) : (
+    <AppShell
+      home={
+        <a className={wordmarkClass} href="/?state=dashboard">
+          Wordhold
+        </a>
+      }
+    >
+      {content}
+    </AppShell>
+  );
 };

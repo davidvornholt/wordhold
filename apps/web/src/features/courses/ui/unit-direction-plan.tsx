@@ -1,5 +1,5 @@
 import { type ReactNode, useId } from 'react';
-import { formatLearningDate } from '../../../shared/dates/learning-date';
+import { formatLearningDateInline } from '../../../shared/dates/learning-date';
 import {
   directionDescription,
   directionLabel,
@@ -47,7 +47,7 @@ const practiceStatus = (progress: UnitDirectionProgress): string | null => {
     return `Üben: ${countNoun(progress.firstReviews, 'Karte', 'Karten')} zum ersten Mal`;
   }
   if (progress.nextDueAt !== null) {
-    return `Üben: nächster Termin ${formatLearningDate(progress.nextDueAt).toLocaleLowerCase('de-DE')}`;
+    return `Üben: nächster Termin ${formatLearningDateInline(progress.nextDueAt)}`;
   }
   if (progress.introduced === 0) {
     return null;

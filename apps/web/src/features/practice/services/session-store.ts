@@ -72,7 +72,7 @@ export class PracticeSessionStore extends Context.Tag(
         return Effect.all(
           {
             items: sql<ItemRow>`
-              select c.id as "cardId", c.revision, c.direction,
+              select c.id as "cardId", c.revision, c.direction, c.state,
                 e.id as "entryId",
                 e.target_text as "targetText", e.native_text as "nativeText",
                 exists(select 1 from entry_audio a where a.entry_id = e.id) as "hasAudio"
@@ -150,7 +150,7 @@ export class PracticeSessionStore extends Context.Tag(
             ? sql`e.unit_id = ${selection.unitId}`
             : sql`e.id = any(${`{${selection.entryIds.join(',')}}`}::uuid[])`;
         return sql<ItemRow>`
-          select c.id as "cardId", c.revision, c.direction,
+          select c.id as "cardId", c.revision, c.direction, c.state,
             e.id as "entryId",
             e.target_text as "targetText", e.native_text as "nativeText",
             exists(select 1 from entry_audio a where a.entry_id = e.id) as "hasAudio"

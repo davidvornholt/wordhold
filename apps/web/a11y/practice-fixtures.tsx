@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import type { SubmitResult } from '../src/features/practice/schemas/practice-models';
 import type { SubmitPayloadData } from '../src/features/practice/schemas/submission-schema';
 import {
@@ -8,8 +8,10 @@ import {
 import { CardPractice } from '../src/features/practice/ui/card-practice';
 import { FeedbackPanel } from '../src/features/practice/ui/feedback-panel';
 import { SessionSummary } from '../src/features/practice/ui/session-summary';
-import { PageLayout } from '../src/shared/ui/page-layout';
-import { ProgressMeter } from '../src/shared/ui/progress-meter';
+import { Button } from '../src/shared/ui/button';
+import { CardRail } from '../src/shared/ui/card-rail';
+import { FocusLayout } from '../src/shared/ui/focus-layout';
+import { WordCard } from '../src/shared/ui/word-card';
 import { fixtureBackControl, fixtureControl } from './fixture-controls';
 import { navigateToFixture } from './fixture-state';
 
@@ -23,6 +25,7 @@ const item = {
   targetText: 'memory',
   nativeText: 'Erinnerung',
   hasAudio: false,
+  state: 'learning' as const,
   example: {
     targetText: 'This memory still makes me smile.',
     nativeText: 'Diese Erinnerung bringt mich noch immer zum Lächeln.',
@@ -47,19 +50,19 @@ const prepareExamples = ({ data }: { readonly data: Array<string> }) =>
   Promise.resolve(data.map((entryId) => ({ entryId, example: item.example })));
 
 export const PracticeFixture = () => (
-  <PageLayout backControl={backControl} title="English A2: Üben">
-    <div className="flex flex-col gap-1.5">
-      <p className="font-medium text-sm">Abschnitt 1</p>
-      <ProgressMeter
-        accessibleName="Fortschritt"
-        description="0 von 1 Karte bearbeitet"
-        total={1}
-        value={0}
-      />
-    </div>
+  <FocusLayout exit={backControl} title="English A2 · Üben">
+    <CardRail
+      activeIndex={0}
+      activeOutcome={null}
+      description="0 von 1 Karte bearbeitet"
+      label="Abschnitt 1"
+      ticks={[null]}
+    />
     <CardPractice
+      deck={0}
       item={item}
       mode="scheduled"
+      onJudged={() => undefined}
       onNext={() => undefined}
       prepareExamples={prepareExamples}
       repeated={true}
@@ -70,32 +73,45 @@ export const PracticeFixture = () => (
       targetLabel="Englisch"
       targetLanguage="en"
     />
-  </PageLayout>
+  </FocusLayout>
 );
 
-export const PracticeFeedbackFixture = () => (
-  <PageLayout backControl={backControl} title="English A2: Üben">
-    <FeedbackPanel
-      audioPlaying={false}
-      busy={false}
-      example={item.example}
-      onNext={() => navigateToFixture('practice-empty')}
-      onResolveWrong={() => navigateToFixture('practice-empty')}
-      playSentence={null}
-      playWord={null}
-      resolution={null}
-      repeated={false}
-      result={result}
-      skipped={false}
-      submittedAnswer="wrong"
-      targetLanguage="en"
-      stopAudio={() => undefined}
-    />
-  </PageLayout>
-);
+export const PracticeFeedbackFixture = () => {
+  const promptId = useId();
+  const feedbackId = useId();
+  return (
+    <FocusLayout exit={backControl} title="English A2 · Üben">
+      <WordCard
+        deck={1}
+        eyebrow="Übersetze auf Englisch"
+        tone="destructive"
+        word={item.prompt}
+        wordId={promptId}
+        wordLang={undefined}
+      >
+        <FeedbackPanel
+          answerLanguage="en"
+          busy={false}
+          example={item.example}
+          id={feedbackId}
+          playSentence={null}
+          playWord={null}
+          repeated={false}
+          result={result}
+          skipped={false}
+          submittedAnswer="wrong"
+          targetLanguage="en"
+        />
+      </WordCard>
+      <Button onClick={() => navigateToFixture('practice-empty')}>
+        Weiter
+      </Button>
+    </FocusLayout>
+  );
+};
 
 export const PracticeEmptyFixture = () => (
-  <PageLayout backControl={backControl} title="English A2: Üben">
+  <FocusLayout exit={backControl} title="English A2 · Üben">
     <SessionSummary
       backControl={fixtureControl(
         'Zurück zur Übersicht',
@@ -106,7 +122,7 @@ export const PracticeEmptyFixture = () => (
       queue={createSessionQueue([])}
       remainingReady={0}
     />
-  </PageLayout>
+  </FocusLayout>
 );
 
 type PracticeOneCardSummaryFixtureProps = {
@@ -142,7 +158,7 @@ export const PracticeOneCardSummaryFixture = ({
     ungraded ? unavailable : correctResult,
   );
   return (
-    <PageLayout backControl={backControl} title="English A2: Üben">
+    <FocusLayout exit={backControl} title="English A2 · Üben">
       <SessionSummary
         backControl={backControl}
         continueControl={fixtureControl('Weiter üben', 'practice', 'primary')}
@@ -150,7 +166,7 @@ export const PracticeOneCardSummaryFixture = ({
         queue={queue}
         remainingReady={0}
       />
-    </PageLayout>
+    </FocusLayout>
   );
 };
 
@@ -182,10 +198,12 @@ export const DeferredPracticeFixture = () => {
     return pending.promise;
   };
   return (
-    <PageLayout backControl={backControl} title="English A2: Üben">
+    <FocusLayout exit={backControl} title="English A2 · Üben">
       <CardPractice
+        deck={0}
         item={{ ...item, hasAudio: true }}
         mode="scheduled"
+        onJudged={() => undefined}
         onNext={() => undefined}
         prepareExamples={prepareExamples}
         repeated={false}
@@ -212,6 +230,6 @@ export const DeferredPracticeFixture = () => {
           Reject submission
         </button>
       </fieldset>
-    </PageLayout>
+    </FocusLayout>
   );
 };

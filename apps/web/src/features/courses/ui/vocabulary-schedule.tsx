@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import {
   earliestDate,
   formatLearningDate,
+  formatLearningDateInline,
 } from '../../../shared/dates/learning-date';
 import { directionLabel } from '../../../shared/directions';
 import { germanLabels } from '../../../shared/languages';
@@ -50,7 +51,7 @@ const scheduleSummary = (
   }
   return nextDueAt === null
     ? 'Noch kein weiterer Termin'
-    : `Nächste Wiederholung ${formatLearningDate(nextDueAt, now).toLocaleLowerCase('de-DE')}`;
+    : `Nächste Wiederholung ${formatLearningDateInline(nextDueAt, now)}`;
 };
 
 const cardStatus = (card: VocabularyCard, now: Date): string => {
@@ -65,7 +66,7 @@ const cardStatus = (card: VocabularyCard, now: Date): string => {
   }
   return card.dueAt <= now
     ? formatLearningDate(card.dueAt, now)
-    : `Nächste Wiederholung ${formatLearningDate(card.dueAt, now).toLocaleLowerCase('de-DE')}`;
+    : `Nächste Wiederholung ${formatLearningDateInline(card.dueAt, now)}`;
 };
 
 const CardSchedule = ({

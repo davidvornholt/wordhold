@@ -23,6 +23,7 @@ type MutableCourseStats = {
   firstReviews: number;
   unintroduced: number;
   entries: number;
+  known: number;
   directions: Array<CardCountRow & { readonly ready: number }>;
 };
 
@@ -49,6 +50,12 @@ export class DashboardStore extends Context.Tag('wordhold/DashboardStore')<
       { readonly answers: number; readonly cards: number },
       DashboardDatabaseError
     >;
+    // Distinct owner-local calendar days (ISO dates) with at least one
+    // answer since the given instant.
+    readonly practicedDays: (
+      sinceInclusive: Date,
+      timeZone: string,
+    ) => Effect.Effect<ReadonlyArray<string>, DashboardDatabaseError>;
   }
 >() {
   static readonly live = Layer.effect(
@@ -93,10 +100,25 @@ export class DashboardStore extends Context.Tag('wordhold/DashboardStore')<
               select course_id as "courseId", count(*)::int as count
               from entries group by course_id
             `,
+            // An entry is known once every enabled direction has a card in
+            // the review state; a missing card counts as not known.
+            known: sql<CountRow>`
+              select e.course_id as "courseId", count(*)::int as count
+              from entries e
+              join courses co on co.id = e.course_id
+              where not exists (
+                select 1
+                from unnest(co.directions) as d(direction)
+                left join cards c on c.entry_id = e.id
+                  and c.direction = d.direction
+                where c.state is distinct from 'review'
+              )
+              group by e.course_id
+            `,
           },
           { concurrency: 'unbounded' },
         ).pipe(
-          Effect.map(({ cards, unintroduced, entries }) => {
+          Effect.map(({ cards, unintroduced, entries, known }) => {
             const counts = new Map<string, MutableCourseStats>();
             const slot = (courseId: string) => {
               const existing = counts.get(courseId);
@@ -108,6 +130,7 @@ export class DashboardStore extends Context.Tag('wordhold/DashboardStore')<
                 firstReviews: 0,
                 unintroduced: 0,
                 entries: 0,
+                known: 0,
                 directions: [],
               };
               counts.set(courseId, created);
@@ -127,6 +150,9 @@ export class DashboardStore extends Context.Tag('wordhold/DashboardStore')<
             }
             for (const row of entries) {
               slot(row.courseId).entries = row.count;
+            }
+            for (const row of known) {
+              slot(row.courseId).known = row.count;
             }
             return [...counts].map(([courseId, value]) => {
               const { directions, ...totals } = value;
@@ -170,7 +196,22 @@ export class DashboardStore extends Context.Tag('wordhold/DashboardStore')<
           Effect.map((rows) => rows[0] ?? { answers: 0, cards: 0 }),
           Effect.mapError(databaseError),
         );
-      return { courseCounts, fragileEntries, activityBetween } as const;
+      const practicedDays = (sinceInclusive: Date, timeZone: string) =>
+        sql<{ readonly day: string }>`
+          select distinct
+            to_char(reviewed_at at time zone ${timeZone}, 'YYYY-MM-DD') as day
+          from reviews
+          where reviewed_at >= ${sinceInclusive}
+        `.pipe(
+          Effect.map((rows) => rows.map((row) => row.day)),
+          Effect.mapError(databaseError),
+        );
+      return {
+        courseCounts,
+        fragileEntries,
+        activityBetween,
+        practicedDays,
+      } as const;
     }),
   );
 }

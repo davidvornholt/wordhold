@@ -1,4 +1,4 @@
-import { formatLearningDate } from '../../../shared/dates/learning-date';
+import { formatLearningDateInline } from '../../../shared/dates/learning-date';
 import { directionLabel } from '../../../shared/directions';
 import { countNoun } from '../../../shared/format/count';
 import type { CourseUnit } from '../schemas/course-units';
@@ -13,7 +13,7 @@ export const unitPracticeStatus = (unit: CourseUnit): string => {
   if (unit.nextDueAt === null) {
     return 'Für jetzt geschafft';
   }
-  return `Nächster Termin ${formatLearningDate(unit.nextDueAt).toLocaleLowerCase('de-DE')}`;
+  return `Nächster Termin ${formatLearningDateInline(unit.nextDueAt)}`;
 };
 
 // One sentence describing how far a unit has come. The course list and the

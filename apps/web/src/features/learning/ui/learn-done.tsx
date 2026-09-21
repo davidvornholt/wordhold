@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import { countNoun } from '../../../shared/format/count';
 import { ManagedHeading } from '../../../shared/ui/managed-heading';
-import { cardClass } from '../../../shared/ui/surface-styles';
 
 type LearnDoneProps = {
   readonly learned: number;
@@ -24,13 +23,15 @@ export const LearnDone = ({
   directionLabel,
   controls,
 }: LearnDoneProps) => (
-  <div className={`flex flex-col gap-3 ${cardClass}`}>
-    <ManagedHeading className="font-display text-xl">
+  <section className="flex animate-rise flex-col gap-6">
+    <ManagedHeading className="text-balance font-display text-3xl sm:text-4xl">
       {doneHeading(learned, directionLabel)}
     </ManagedHeading>
     {learned === 0 ? null : (
-      <p className="text-sm">Diese Richtung ist jetzt zum Üben bereit.</p>
+      <p className="text-muted-foreground">
+        Diese Richtung ist jetzt zum Üben bereit.
+      </p>
     )}
     {controls}
-  </div>
+  </section>
 );
