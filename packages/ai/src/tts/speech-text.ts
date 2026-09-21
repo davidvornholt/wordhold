@@ -142,10 +142,20 @@ const prepareSlashText = (value: string): LiteralText => {
 
 // A notation symbol at the very start or end has nothing to separate, so it
 // disappears without a pause ("= a definition" is read as the definition).
-const prepareLiteralText = (value: string): LiteralText => {
+// A literal fragment beside an alias still has speech on that side.
+const prepareLiteralText = (
+  value: string,
+  atStart: boolean,
+  atEnd: boolean,
+): LiteralText => {
   const parts = value
     .split(notationSeparator)
-    .filter((segment) => segment.trim() !== '')
+    .filter(
+      (segment, index, segments) =>
+        segment.trim() !== '' ||
+        (index === 0 && !atStart) ||
+        (index === segments.length - 1 && !atEnd),
+    )
     .map(prepareSlashText);
   const usesNotationPause = notationSeparator.test(value);
   return {
@@ -213,8 +223,12 @@ export const prepareSpeechText = (
   let usesPronunciation = false;
   let usesSlashPause = false;
   let usesNotationPause = false;
-  const pushLiteralText = (value: string): void => {
-    const literal = prepareLiteralText(value);
+  const pushLiteralText = (end: number): void => {
+    const literal = prepareLiteralText(
+      text.slice(cursor, end),
+      cursor === 0,
+      end === text.length,
+    );
     parts.push(literal.text);
     usesSlashPause ||= literal.usesSlashPause;
     usesNotationPause ||= literal.usesNotationPause;
@@ -225,7 +239,7 @@ export const prepareSpeechText = (
     const [writtenForm] = match;
     const spokenForm = aliases.get(writtenForm.toLocaleLowerCase());
     if (match.index !== undefined && spokenForm !== undefined) {
-      pushLiteralText(text.slice(cursor, match.index));
+      pushLiteralText(match.index);
       parts.push(
         `<sub alias="${escapeSsml(spokenForm)}">${escapeSsml(writtenForm)}</sub>`,
       );
@@ -233,7 +247,7 @@ export const prepareSpeechText = (
       cursor = match.index + writtenForm.length;
     }
   }
-  pushLiteralText(text.slice(cursor));
+  pushLiteralText(text.length);
 
   const baseAudioProfile = `${profile.voice}-${speechEngine}`;
   const audioProfile = [

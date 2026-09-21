@@ -75,13 +75,41 @@ describe('SSML pronunciation and pauses', () => {
     );
   });
 
-  it('combines pronunciation aliases with separator pauses', () => {
-    expect(prepareSpeechText('sb. / sth.', 'en')).toMatchObject({
-      audioProfile: 'Stephen-generative-pronunciation-2-slash-pause-25ms',
-      text: '<speak><sub alias="somebody">sb.</sub> <break time="25ms"/> <sub alias="something">sth.</sub></speak>',
-      textType: 'ssml',
-    });
-  });
+  it.each([
+    [
+      'en',
+      'sb. / sth.',
+      'Stephen-generative-pronunciation-2-slash-pause-25ms',
+      '<sub alias="somebody">sb.</sub> <break time="25ms"/> <sub alias="something">sth.</sub>',
+    ],
+    [
+      'fr',
+      'organiser qc → planifier',
+      'Remi-generative-pronunciation-2-notation-pause-400ms',
+      'organiser <sub alias="quelque chose">qc</sub> <break time="400ms"/> planifier',
+    ],
+    [
+      'en',
+      '→ sb. -> sth. ←',
+      'Stephen-generative-pronunciation-2-notation-pause-400ms',
+      '<sub alias="somebody">sb.</sub> <break time="400ms"/> <sub alias="something">sth.</sub>',
+    ],
+    [
+      'en',
+      'someone -> sb.',
+      'Stephen-generative-pronunciation-2-notation-pause-400ms',
+      'someone <break time="400ms"/> <sub alias="somebody">sb.</sub>',
+    ],
+  ] as const)(
+    'combines pronunciation aliases with separator pauses in %s: %s',
+    (language, source, audioProfile, text) => {
+      expect(prepareSpeechText(source, language)).toMatchObject({
+        audioProfile,
+        text: `<speak>${text}</speak>`,
+        textType: 'ssml',
+      });
+    },
+  );
 });
 
 describe('textbook markers and notation', () => {
