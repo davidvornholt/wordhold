@@ -57,7 +57,7 @@ export const PracticeSessionFixture = ({
   const fixtureSearch = new URLSearchParams(globalThis.location.search);
   const lateExample = fixtureSearch.get('late-example') === 'true';
   const deferredExample = fixtureSearch.get('deferred-example') === 'true';
-  const deferred = useRef<DeferredExamples | null>(null);
+  const deferredRef = useRef<DeferredExamples | null>(null);
   const [showSession, setShowSession] = useState(true);
   let activeItems: ReadonlyArray<FixtureCard> = sessionItems ?? items;
   if (sessionItems === undefined && (lateExample || deferredExample)) {
@@ -96,7 +96,7 @@ export const PracticeSessionFixture = ({
       return Promise.resolve(prepared);
     }
     const pending = makeDeferredExamples();
-    deferred.current = pending;
+    deferredRef.current = pending;
     return pending.promise;
   };
   return (
@@ -120,7 +120,7 @@ export const PracticeSessionFixture = ({
         <DeferredExampleControls
           onHide={() => setShowSession(false)}
           onResolve={() =>
-            deferred.current?.resolve(
+            deferredRef.current?.resolve(
               preparedExamples(activeItems.map((item) => item.entryId)),
             )
           }

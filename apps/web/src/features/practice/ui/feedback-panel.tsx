@@ -118,13 +118,13 @@ export const FeedbackPanel = ({
     (expectedAnswer) =>
       normalizeAnswerForComparison(expectedAnswer) === normalizedSubmission,
   );
-  const nextButton = useRef<HTMLButtonElement>(null);
+  const nextButtonRef = useRef<HTMLButtonElement>(null);
   const feedbackDescriptionId = useId();
   const pendingWrong = result.graded && !result.stored;
 
   useEffect(() => {
     if (!busy) {
-      nextButton.current?.focus();
+      nextButtonRef.current?.focus();
     }
   }, [busy]);
 
@@ -180,7 +180,7 @@ export const FeedbackPanel = ({
         example={example}
         feedbackDescriptionId={feedbackDescriptionId}
         graded={result.graded}
-        nextButton={nextButton}
+        nextButton={nextButtonRef}
         onNext={onNext}
         onResolveWrong={onResolveWrong}
         pendingWrong={pendingWrong}

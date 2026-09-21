@@ -1,81 +1,25 @@
 # Wordhold
 
-Wordhold is a private language-learning application. It imports course material, schedules practice, and uses configured AI providers to prepare and grade exercises. The web app lives in `apps/web`; the database schema and migrations live in `packages/db`.
+Vocabulary practice from photographed textbook pages, with spaced repetition and pronunciation audio.
 
 ## Development
 
-Install dependencies, generate the development environment, and start the app:
+Use the Bun version in `package.json`:
 
-```bash
-bun install --frozen-lockfile
-just dev-env-generate
-just dev-db-start
-bun run dev
+```sh
+bun install
+just dev
 ```
 
-Run the complete repository gate before opening a pull request:
+`just dev` generates the environment, starts PostgreSQL, applies migrations, and starts the app at `http://localhost:3000`. Keep port 3000 free for the configured GitHub OAuth callback. Configuration lives in `config/dev.yaml`, encrypted values in `secrets/dev.yaml`, and machine overrides in ignored `config/dev.local.yaml`; secret shapes are in `secrets/dev.example.yaml`.
 
-```bash
-bun run check:fix
-```
+Run `bun run check:fix` for the full gate. See [database operations](packages/db/README.md) for backfills required when upgrading old databases and [provider operations](apps/web/README.md) for credential rotation and verification. Run `provider:verify` in `apps/web` before deploying a changed judge or sentence provider.
 
-See [`apps/web/README.md`](apps/web/README.md) for the application configuration and production secret contract.
+## Deployment
 
-## Pull request screenshots
+[personal-infra](https://github.com/davidvornholt/personal-infra) owns `https://wordhold.vornholt.online`. Back up PostgreSQL and `WORDHOLD_DATA_DIR` together; the latter contains original page images and generated audio.
 
-`config/screenshots.yaml` opts this repository into the shared personal R2 screenshot bucket. It declares the bucket, upload endpoint, public base URL, and the `assets:assets.screenshots_rw` credential reference consumed by `bun standards screenshots publish`. These values have no defaults.
-
-`secrets/assets.yaml` holds that brokered bucket-scoped S3 write pair. Publishing requires both `access_key_id` and `secret_access_key`; ordinary builds, tests, and deployments do not consume them. The broker owns rotation and revocation, and the command keeps decrypted values in memory only.
-
-## Production releases
-
-A successful exact-`main` run of `Publish container` publishes `ghcr.io/davidvornholt/wordhold:main`, proves anonymous access to its digest, and sends that digest to `davidvornholt/personal-infra`. The infrastructure repository opens a promotion pull request that changes its committed Wordhold image pin. Production changes only after that pull request passes its own gates, merges, deploys, and reads back the exact healthy digest at `https://wordhold.vornholt.online`.
-
-The `standards-broker` GitHub App must be installed on both `wordhold` and `personal-infra`. Its Wordhold workflow token requests only Contents write access to `personal-infra`. The Wordhold GHCR package must grant this repository Write access under its Manage Actions access settings.
-
-Follow a release with:
-
-```bash
-gh run list --repo davidvornholt/wordhold --workflow publish-container.yml --branch main --limit 5
-gh pr list --repo davidvornholt/personal-infra --search 'head:image-bump/wordhold/'
-curl --fail --silent --show-error https://wordhold.vornholt.online/api/health
-```
-
-## Pull request previews
-
-An open, non-draft, same-repository pull request targeting `main` gets a preview when it carries the `pr-preview` label. Its URL is `https://<pull-request-number>.pr.wordhold.vornholt.online`. Removing the label, converting the pull request to draft, retargeting it, closing it, or failing its replacement build removes the preview. Destroy is idempotent, so a later lifecycle event retries a failed removal.
-
-Create the label once:
-
-```bash
-gh label create pr-preview --repo davidvornholt/wordhold --color 1d76db --description 'Deploy an isolated pull request preview'
-```
-
-The `pr-preview` GitHub environment allows only the `main` deployment branch and contains exactly one environment secret, `SOPS_AGE_KEY`. That age identity decrypts only `secrets/pr-preview.yaml`. The file contains the SSH private key restricted by `personal-infra` to the Wordhold preview controller. The wildcard DNS record, host key, public deploy key, preview databases, containers, and Caddy routes belong to `personal-infra`.
-
-Create the environment and its branch policy once:
-
-```bash
-gh api --method PUT repos/davidvornholt/wordhold/environments/pr-preview \
-  -f 'deployment_branch_policy[protected_branches]=false' \
-  -f 'deployment_branch_policy[custom_branch_policies]=true'
-gh api --method POST repos/davidvornholt/wordhold/environments/pr-preview/deployment-branch-policies -f name=main
-gh secret set SOPS_AGE_KEY --repo davidvornholt/wordhold --env pr-preview < /secure/path/to/preview-age-identity.txt
-```
-
-Audit the policy and its sole secret with:
-
-```bash
-gh api repos/davidvornholt/wordhold/environments/pr-preview/deployment-branch-policies
-gh secret list --repo davidvornholt/wordhold --env pr-preview
-```
-
-If teardown fails, rerun the failed trusted consumer run. Do not invoke the host controller directly:
-
-```bash
-gh run list --repo davidvornholt/wordhold --workflow pr-preview-deploy.yml --limit 10
-gh run rerun --repo davidvornholt/wordhold --failed <run-id>
-```
+Label a same-repository, non-draft PR `pr-preview` for `https://<number>.pr.wordhold.vornholt.online`. Remove the label to tear it down. If teardown fails, rerun the failed `pr-preview-deploy.yml` workflow through GitHub Actions.
 
 ## Preview credential rotation
 

@@ -30,17 +30,17 @@ export const DirectionSettings = ({
 }: DirectionSettingsProps) => {
   const [directions, setDirections] =
     useState<ReadonlyArray<AnswerDirection>>(initial);
-  const restoreFocus = useRef<HTMLInputElement | null>(null);
+  const restoreFocusRef = useRef<HTMLInputElement | null>(null);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState('');
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    if (saving || restoreFocus.current === null) {
+    if (saving || restoreFocusRef.current === null) {
       return;
     }
-    restoreFocus.current.focus();
-    restoreFocus.current = null;
+    restoreFocusRef.current.focus();
+    restoreFocusRef.current = null;
   }, [saving]);
 
   const toggle = async (
@@ -60,7 +60,7 @@ export const DirectionSettings = ({
       setStatus('Eine Richtung bleibt immer an, sonst gibt es nichts zu üben.');
       return;
     }
-    restoreFocus.current = trigger;
+    restoreFocusRef.current = trigger;
     setDirections(next);
     setSaving(true);
     setFailed(false);

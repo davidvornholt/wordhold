@@ -12,8 +12,8 @@ export const AudioRecoveryPagesFixture = () => {
     useState<ReadonlyArray<(typeof recoveryPages)[number]>>(recoveryPages);
   const [attempts, setAttempts] = useState(0);
   const [maximumConcurrentAttempts, setMaximumConcurrentAttempts] = useState(0);
-  const activeAttempts = useRef(0);
-  const firstPageFailed = useRef(false);
+  const activeAttemptsRef = useRef(0);
+  const firstPageFailedRef = useRef(false);
 
   return (
     <div className="flex flex-col gap-4">
@@ -21,21 +21,21 @@ export const AudioRecoveryPagesFixture = () => {
         onRecovered={() => Promise.resolve()}
         onRetry={(page) => {
           setAttempts((current) => current + 1);
-          activeAttempts.current += 1;
+          activeAttemptsRef.current += 1;
           setMaximumConcurrentAttempts((current) =>
-            Math.max(current, activeAttempts.current),
+            Math.max(current, activeAttemptsRef.current),
           );
           return new Promise((resolve) => {
             globalThis.setTimeout(() => {
               const firstFailure =
-                page.id === recoveryPages[0].id && !firstPageFailed.current;
-              firstPageFailed.current ||= firstFailure;
+                page.id === recoveryPages[0].id && !firstPageFailedRef.current;
+              firstPageFailedRef.current ||= firstFailure;
               if (!firstFailure) {
                 setPages((current) =>
                   current.filter((candidate) => candidate.id !== page.id),
                 );
               }
-              activeAttempts.current -= 1;
+              activeAttemptsRef.current -= 1;
               resolve({ pending: firstFailure ? 1 : 0 });
             });
           });

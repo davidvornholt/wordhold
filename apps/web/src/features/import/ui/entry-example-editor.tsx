@@ -31,18 +31,18 @@ export const EntryExampleEditor = ({
 }: EntryExampleEditorProps) => {
   const [generationError, setGenerationError] = useState(false);
   const [generating, setGenerating] = useState(false);
-  const generatedTranslation = useRef<HTMLInputElement>(null);
-  const previousGeneratedExample = useRef(entry.generatedExample);
+  const generatedTranslationRef = useRef<HTMLInputElement>(null);
+  const previousGeneratedExampleRef = useRef(entry.generatedExample);
   const canGenerate =
     entry.targetText.trim() !== '' && entry.nativeText.trim() !== '';
 
   useEffect(() => {
     const translationAppeared =
-      previousGeneratedExample.current === undefined &&
+      previousGeneratedExampleRef.current === undefined &&
       entry.generatedExample !== undefined;
-    previousGeneratedExample.current = entry.generatedExample;
+    previousGeneratedExampleRef.current = entry.generatedExample;
     if (translationAppeared) {
-      generatedTranslation.current?.focus();
+      generatedTranslationRef.current?.focus();
     }
   }, [entry.generatedExample]);
 
@@ -90,7 +90,7 @@ export const EntryExampleEditor = ({
             })
           }
           placeholder="Deutsche Übersetzung"
-          ref={generatedTranslation}
+          ref={generatedTranslationRef}
           value={entry.generatedExample.nativeText}
         />
       )}

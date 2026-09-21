@@ -63,7 +63,7 @@ export const CardPractice = ({
   submit,
   onNext,
 }: CardPracticeProps) => {
-  const answerInput = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const lifetime = useLifetime();
   const promptId = useId();
   const { example, loadExample } = usePreparedExample(
@@ -121,7 +121,7 @@ export const CardPractice = ({
     if (busy || result !== null) {
       return;
     }
-    const focusTask = globalThis.setTimeout(() => answerInput.current?.focus());
+    const focusTask = globalThis.setTimeout(() => inputRef.current?.focus());
     return () => globalThis.clearTimeout(focusTask);
   }, [busy, result]);
 
@@ -152,7 +152,7 @@ export const CardPractice = ({
         answer={answer}
         busy={busy}
         disabled={result !== null}
-        inputRef={answerInput}
+        inputRef={inputRef}
         onAnswerChange={setAnswer}
         onSkip={skipCard}
         onSubmit={onSubmit}

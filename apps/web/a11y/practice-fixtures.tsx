@@ -171,12 +171,12 @@ const makeDeferred = (): DeferredResult => {
 };
 
 export const DeferredPracticeFixture = () => {
-  const deferred = useRef<DeferredResult | null>(null);
+  const deferredRef = useRef<DeferredResult | null>(null);
   const [calls, setCalls] = useState(0);
   const [submittedAnswer, setSubmittedAnswer] = useState('none');
   const submit = ({ data }: { readonly data: SubmitPayloadData }) => {
     const pending = makeDeferred();
-    deferred.current = pending;
+    deferredRef.current = pending;
     setCalls((count) => count + 1);
     setSubmittedAnswer(data.skipped === true ? '(übersprungen)' : data.answer);
     return pending.promise;
@@ -197,11 +197,16 @@ export const DeferredPracticeFixture = () => {
       <output aria-label="Submitted answer">{submittedAnswer}</output>
       <fieldset>
         <legend>Test controls</legend>
-        <button onClick={() => deferred.current?.resolve(result)} type="button">
+        <button
+          onClick={() => deferredRef.current?.resolve(result)}
+          type="button"
+        >
           Resolve submission
         </button>
         <button
-          onClick={() => deferred.current?.reject(new Error('Test rejection'))}
+          onClick={() =>
+            deferredRef.current?.reject(new Error('Test rejection'))
+          }
           type="button"
         >
           Reject submission

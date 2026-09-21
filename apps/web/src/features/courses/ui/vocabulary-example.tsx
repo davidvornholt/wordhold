@@ -17,11 +17,11 @@ export const VocabularyExample = ({
   const [example, setExample] = useState(entry.example);
   const [generating, setGenerating] = useState(false);
   const [failed, setFailed] = useState(false);
-  const generatedResult = useRef<HTMLDivElement>(null);
+  const generatedResultRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (entry.example === null && example !== null) {
-      generatedResult.current?.focus();
+      generatedResultRef.current?.focus();
     }
   }, [entry.example, example]);
 
@@ -29,7 +29,7 @@ export const VocabularyExample = ({
     return (
       <div
         className="grid gap-1 border-border border-l pl-3 text-sm focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
-        ref={generatedResult}
+        ref={generatedResultRef}
         role={entry.example === null ? 'status' : undefined}
         tabIndex={entry.example === null ? -1 : undefined}
       >
