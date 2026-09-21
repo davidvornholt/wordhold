@@ -20,6 +20,7 @@ type EntryExampleEditorProps = {
     targetText: string,
   ) => Promise<{ readonly native: string }>;
   readonly onChange: (entry: DraftEntry) => void;
+  readonly onTranslated: (sentence: string, native: string) => void;
   readonly onGenerated: (
     source: ExampleGenerationSource,
     generated: GeneratedExample,
@@ -38,11 +39,12 @@ export const EntryExampleEditor = ({
   translate,
   onChange,
   onGenerated,
+  onTranslated,
 }: EntryExampleEditorProps) => {
   const [generationError, setGenerationError] = useState(false);
   const [generating, setGenerating] = useState(false);
   const { translating, translationError, translateSentence } =
-    useExampleTranslation({ entry, disabled, translate, onChange });
+    useExampleTranslation({ entry, disabled, translate, onTranslated });
   const translationRef = useRef<HTMLInputElement>(null);
   const previousGeneratedRef = useRef(entry.exampleGenerated);
   const sentence = entry.example.trim();

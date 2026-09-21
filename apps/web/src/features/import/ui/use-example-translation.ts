@@ -7,53 +7,58 @@ type ExampleTranslationInput = {
   readonly translate: (
     targetText: string,
   ) => Promise<{ readonly native: string }>;
-  readonly onChange: (entry: DraftEntry) => void;
+  readonly onTranslated: (sentence: string, native: string) => void;
 };
 
-// Fills a missing German translation for the example sentence: once when the
-// row appears (pages read before translations were part of the reading, or a
-// model that skipped one) and whenever the sentence field is left after a
-// rewrite cleared the translation.
+// Translate on mount and on blur, never on every keystroke. A later blur can
+// supersede an unfinished request without losing the learner's rewrite.
 export const useExampleTranslation = ({
   entry,
   disabled,
   translate,
-  onChange,
+  onTranslated,
 }: ExampleTranslationInput) => {
   const [translating, setTranslating] = useState(false);
   const [translationError, setTranslationError] = useState(false);
-  const latestEntryRef = useRef(entry);
-  latestEntryRef.current = entry;
+  const activeRequestRef = useRef<{ readonly sentence: string } | null>(null);
   const sentence = entry.example.trim();
   const needsTranslation = sentence !== '' && entry.exampleNativeText === '';
 
   const translateSentence = async () => {
-    if (!needsTranslation || translating || disabled) {
+    if (
+      !needsTranslation ||
+      disabled ||
+      activeRequestRef.current?.sentence === sentence
+    ) {
       return;
     }
+    const request = { sentence };
+    activeRequestRef.current = request;
     setTranslating(true);
     setTranslationError(false);
     try {
       const translated = await translate(sentence);
-      const latest = latestEntryRef.current;
-      // The learner may have gone on typing; a translation of an older
-      // sentence must not land next to a newer one.
-      if (
-        latest.example.trim() === sentence &&
-        latest.exampleNativeText === ''
-      ) {
-        onChange({ ...latest, exampleNativeText: translated.native });
+      if (activeRequestRef.current === request) {
+        onTranslated(sentence, translated.native);
       }
     } catch {
-      setTranslationError(true);
+      if (activeRequestRef.current === request) {
+        setTranslationError(true);
+      }
     } finally {
-      setTranslating(false);
+      if (activeRequestRef.current === request) {
+        activeRequestRef.current = null;
+        setTranslating(false);
+      }
     }
   };
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: Runs once per row on purpose; later requests come from leaving the sentence field.
   useEffect(() => {
     translateSentence().catch(() => undefined);
+    return () => {
+      activeRequestRef.current = null;
+    };
   }, []);
 
   return { translating, translationError, translateSentence };

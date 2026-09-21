@@ -82,6 +82,20 @@ export const rowWithEntry = (
       : row,
   );
 
+export const rowWithTranslatedExample = (
+  rows: ReadonlyArray<IdentifiedDraftRow>,
+  rowId: string,
+  sentence: string,
+  native: string,
+): ReadonlyArray<IdentifiedDraftRow> =>
+  rows.map((row) =>
+    row.rowId === rowId &&
+    row.example.trim() === sentence &&
+    row.exampleNativeText === ''
+      ? { ...row, exampleNativeText: native }
+      : row,
+  );
+
 export const rowWithGeneratedExample = (
   rows: ReadonlyArray<IdentifiedDraftRow>,
   rowId: string,

@@ -15,6 +15,7 @@ import {
   rowWithConfirmation,
   rowWithEntry,
   rowWithGeneratedExample,
+  rowWithTranslatedExample,
   rowWithUnit,
   withoutRow,
 } from './draft-rows';
@@ -48,6 +49,27 @@ type VerifyFormProps = {
   readonly submitLabel?: (entryCount: number) => string;
 };
 
+const useDraftForm = (
+  initialEntries: ReadonlyArray<DraftEntry>,
+  units: ReadonlyArray<Unit>,
+  initialUnitName: string | undefined,
+  { existingEntries, busy }: Pick<VerifyFormProps, 'existingEntries' | 'busy'>,
+) => {
+  const [bulkUnit, setBulkUnit] = useState<UnitSelectionData>(() =>
+    initialUnitSelection(units, initialUnitName),
+  );
+  const [draftEntries, setDraftEntries] = useState<
+    ReadonlyArray<IdentifiedDraftRow>
+  >(() =>
+    identifiedRows(
+      initialEntries,
+      initialUnitSelection(units, initialUnitName),
+    ),
+  );
+  const formState = draftFormState(draftEntries, units, existingEntries, busy);
+  return { bulkUnit, setBulkUnit, draftEntries, setDraftEntries, formState };
+};
+
 export const VerifyForm = ({
   initialEntries,
   initialUnitName,
@@ -63,19 +85,11 @@ export const VerifyForm = ({
       ? 'Seite abschließen'
       : `${countNoun(entryCount, 'Eintrag', 'Einträge')} importieren`,
 }: VerifyFormProps) => {
-  const [bulkUnit, setBulkUnit] = useState<UnitSelectionData>(() =>
-    initialUnitSelection(units, initialUnitName),
-  );
-  const [draftEntries, setDraftEntries] = useState<
-    ReadonlyArray<IdentifiedDraftRow>
-  >(() =>
-    identifiedRows(
-      initialEntries,
-      initialUnitSelection(units, initialUnitName),
-    ),
-  );
-
-  const formState = draftFormState(draftEntries, units, existingEntries, busy);
+  const { bulkUnit, setBulkUnit, draftEntries, setDraftEntries, formState } =
+    useDraftForm(initialEntries, units, initialUnitName, {
+      existingEntries,
+      busy,
+    });
 
   return (
     <form
@@ -125,6 +139,16 @@ export const VerifyForm = ({
                   entry.rowId,
                   source,
                   generated,
+                ),
+              )
+            }
+            onTranslatedExample={(sentence, native) =>
+              setDraftEntries((current) =>
+                rowWithTranslatedExample(
+                  current,
+                  entry.rowId,
+                  sentence,
+                  native,
                 ),
               )
             }

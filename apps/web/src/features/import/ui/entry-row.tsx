@@ -94,6 +94,7 @@ type EntryRowProps = {
   readonly duplicate: DuplicateVerdict;
   readonly duplicateConfirmed: boolean;
   readonly onChange: (entry: DraftEntry) => void;
+  readonly onTranslatedExample: (sentence: string, native: string) => void;
   readonly onGeneratedExample: (
     source: ExampleGenerationSource,
     generated: GeneratedExample,
@@ -114,6 +115,7 @@ export const EntryRow = ({
   duplicateConfirmed,
   onChange,
   onGeneratedExample,
+  onTranslatedExample,
   onDuplicateConfirmedChange,
   onRemove,
 }: EntryRowProps) => {
@@ -184,6 +186,7 @@ export const EntryRow = ({
         generate={generateExample}
         onChange={onChange}
         onGenerated={onGeneratedExample}
+        onTranslated={onTranslatedExample}
         translate={translateExample}
       />
       {grammar === '' ? null : (

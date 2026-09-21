@@ -6,6 +6,7 @@ import {
   rowsWithUnitFrom,
   rowWithEntry,
   rowWithGeneratedExample,
+  rowWithTranslatedExample,
   rowWithUnit,
   withoutRow,
 } from './draft-rows';
@@ -106,3 +107,64 @@ describe('draft rows', () => {
     ]);
   });
 });
+
+it.each([
+  'preceding removed',
+  'requested removed',
+  'rewritten',
+  'manual translation',
+])(
+  'applies pending translations only to the unchanged surviving row: %s',
+  async (scenario) => {
+    const requested = {
+      ...confirmedRow('requested', firstUnit),
+      example: 'The word appears in a sentence.',
+    };
+    const original = [
+      confirmedRow('preceding', firstUnit),
+      requested,
+      { ...confirmedRow('following', secondUnit), targetText: 'voyage' },
+    ];
+    let rows: ReadonlyArray<IdentifiedDraftRow> = original;
+    let resolveTranslation: (native: string) => void = () => undefined;
+    const translation = new Promise<string>((resolve) => {
+      resolveTranslation = resolve;
+    });
+    const finishTranslation = async () => {
+      const native = await translation;
+      rows = rowWithTranslatedExample(
+        rows,
+        requested.rowId,
+        requested.example,
+        native,
+      );
+    };
+    const pending = finishTranslation();
+    if (scenario === 'preceding removed') {
+      rows = withoutRow(rows, 0);
+    } else if (scenario === 'requested removed') {
+      rows = withoutRow(rows, 1);
+    } else {
+      rows = rowWithEntry(rows, 1, {
+        ...requested,
+        ...(scenario === 'rewritten'
+          ? { example: 'A rewritten sentence.' }
+          : { exampleNativeText: 'Manuelle Übersetzung.' }),
+      });
+    }
+    const beforeCompletion = rows;
+    resolveTranslation('Das Wort steht in einem Satz.');
+    await pending;
+    expect(rows).toEqual(
+      scenario === 'preceding removed'
+        ? [
+            {
+              ...requested,
+              exampleNativeText: 'Das Wort steht in einem Satz.',
+            },
+            original[2],
+          ]
+        : beforeCompletion,
+    );
+  },
+);

@@ -158,3 +158,37 @@ test('VerifyForm shows a printed example with its translation and re-translates 
   await expect(translation).toHaveValue('Die Reise dauert zwei Stunden.');
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
 });
+
+test('VerifyForm translates a rewrite blurred while an older request is pending', async ({
+  page,
+}) => {
+  await page.goto('/?state=verification-deferred');
+  const row = page.locator('form > ul > li').first();
+  const sentence = row.getByLabel('Beispielsatz', { exact: true });
+  const translation = row.getByLabel('Deutsche Übersetzung des Beispielsatzes');
+  await sentence.fill('An older rewrite.');
+  await sentence.blur();
+  await expect(translation).toBeDisabled();
+  await sentence.fill('The latest rewrite.');
+  await sentence.blur();
+  const latest = page.getByRole('button', {
+    name: 'Resolve translation 2: The latest rewrite.',
+    exact: true,
+  });
+  await expect(latest).toBeVisible();
+  await page
+    .getByRole('button', {
+      name: 'Resolve translation 1: An older rewrite.',
+      exact: true,
+    })
+    .click();
+  await expect(translation).toHaveValue('');
+  await expect(translation).toBeDisabled();
+  await latest.click();
+  await expect(translation).toHaveValue('Übersetzt: The latest rewrite.');
+  await expect(translation).toBeEnabled();
+  await translation.fill('');
+  await translation.blur();
+  await expect(translation).toHaveValue('');
+  assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
+});
