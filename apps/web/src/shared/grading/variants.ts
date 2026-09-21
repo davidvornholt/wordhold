@@ -26,7 +26,23 @@ const compactSuffixReplacements: ReadonlyArray<{
   { fullEnding: 'o', shorthand: 'a', alternativeEnding: 'a' },
   { fullEnding: 'or', shorthand: 'a', alternativeEnding: 'ora' },
 ];
-const compactWordAlternatives = new Set(['be/get', 'der/die']);
+// Article pairs the books write compactly ("el/la tenista", "un/une ami"),
+// besides the verb pair English lists use.
+const compactWordAlternatives = new Set([
+  'be/get',
+  'der/die',
+  'die/der',
+  'ein/eine',
+  'eine/ein',
+  'el/la',
+  'la/el',
+  'un/una',
+  'una/un',
+  'le/la',
+  'la/le',
+  'un/une',
+  'une/un',
+]);
 const compactSlashReadings = (
   left: string,
   right: string,
