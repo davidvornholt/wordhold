@@ -67,7 +67,7 @@ const CaptureScreen = () => {
           <ActionLink
             onClick={queue.clearPersistedQueue}
             params={{ sessionId: queue.importSessionId }}
-            to="/imports/$sessionId"
+            to="/imports/$sessionId/review"
           >
             Stapel prüfen
           </ActionLink>

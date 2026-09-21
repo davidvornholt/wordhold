@@ -168,3 +168,15 @@ export const appendedRow = (
     duplicateConfirmed: false,
   },
 ];
+
+// Rows that can receive a generated sentence: no sentence yet, both words
+// present.
+export const rowsWithoutExample = (
+  rows: ReadonlyArray<IdentifiedDraftRow>,
+): ReadonlyArray<IdentifiedDraftRow> =>
+  rows.filter(
+    (row) =>
+      row.example.trim() === '' &&
+      row.targetText.trim() !== '' &&
+      row.nativeText.trim() !== '',
+  );

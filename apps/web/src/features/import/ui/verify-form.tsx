@@ -1,9 +1,10 @@
 import { maximumEntriesPerPage } from '@wordhold/ai/extraction/schema';
-import { useState } from 'react';
+import { type Dispatch, type SetStateAction, useState } from 'react';
 import { countNoun } from '../../../shared/format/count';
 import { Button } from '../../../shared/ui/button';
 import type { UnitSelectionData } from '../schemas/import-payload';
 import type { Unit, UnitEntry } from '../services/repository';
+import { BulkExampleGeneration } from './bulk-example-generation';
 import { BulkUnitAssignment } from './bulk-unit-assignment';
 import {
   appendedRow,
@@ -70,6 +71,84 @@ const useDraftForm = (
   return { bulkUnit, setBulkUnit, draftEntries, setDraftEntries, formState };
 };
 
+type DraftEntryListProps = Pick<
+  VerifyFormProps,
+  'busy' | 'generateExample' | 'translateExample' | 'targetLabel' | 'units'
+> & {
+  readonly draftEntries: ReadonlyArray<IdentifiedDraftRow>;
+  readonly setDraftEntries: Dispatch<
+    SetStateAction<ReadonlyArray<IdentifiedDraftRow>>
+  >;
+  readonly verdicts: ReturnType<typeof draftFormState>['verdicts'];
+};
+
+const DraftEntryList = ({
+  busy,
+  draftEntries,
+  generateExample,
+  setDraftEntries,
+  targetLabel,
+  translateExample,
+  units,
+  verdicts,
+}: DraftEntryListProps) => (
+  <ul className="flex flex-col gap-3">
+    {draftEntries.map((entry, index) => (
+      <EntryRow
+        disabled={busy}
+        duplicate={verdicts[index] ?? 'none'}
+        duplicateConfirmed={entry.duplicateConfirmed}
+        entry={entry}
+        entryNumber={index + 1}
+        generateExample={generateExample}
+        key={entry.rowId}
+        translateExample={translateExample}
+        onChange={(next) =>
+          setDraftEntries((current) => rowWithEntry(current, index, next))
+        }
+        onDuplicateConfirmedChange={(confirmed) =>
+          setDraftEntries((current) =>
+            rowWithConfirmation(current, index, confirmed),
+          )
+        }
+        onGeneratedExample={(source, generated) =>
+          setDraftEntries((current) =>
+            rowWithGeneratedExample(current, entry.rowId, source, generated),
+          )
+        }
+        onTranslatedExample={(sentence, native) =>
+          setDraftEntries((current) =>
+            rowWithTranslatedExample(current, entry.rowId, sentence, native),
+          )
+        }
+        onRemove={() =>
+          setDraftEntries((current) => withoutRow(current, index))
+        }
+        targetLabel={targetLabel}
+        unitControl={
+          <EntryUnitAssignment
+            disabled={busy}
+            entryNumber={index + 1}
+            hasFollowing={index < draftEntries.length - 1}
+            onApplyFollowing={() =>
+              setDraftEntries((current) =>
+                rowsWithUnitFrom(current, index, entry.unit),
+              )
+            }
+            onChange={(unit) =>
+              setDraftEntries((current) => rowWithUnit(current, index, unit))
+            }
+            required={entryIsComplete(entry)}
+            selection={entry.unit}
+            selectionComplete={unitSelectionIsComplete(entry.unit)}
+            units={units}
+          />
+        }
+      />
+    ))}
+  </ul>
+);
+
 export const VerifyForm = ({
   initialEntries,
   initialUnitName,
@@ -113,73 +192,26 @@ export const VerifyForm = ({
         selection={bulkUnit}
         units={units}
       />
-      <ul className="flex flex-col gap-3">
-        {draftEntries.map((entry, index) => (
-          <EntryRow
-            disabled={busy}
-            duplicate={formState.verdicts[index] ?? 'none'}
-            duplicateConfirmed={entry.duplicateConfirmed}
-            entry={entry}
-            entryNumber={index + 1}
-            generateExample={generateExample}
-            key={entry.rowId}
-            translateExample={translateExample}
-            onChange={(next) =>
-              setDraftEntries((current) => rowWithEntry(current, index, next))
-            }
-            onDuplicateConfirmedChange={(confirmed) =>
-              setDraftEntries((current) =>
-                rowWithConfirmation(current, index, confirmed),
-              )
-            }
-            onGeneratedExample={(source, generated) =>
-              setDraftEntries((current) =>
-                rowWithGeneratedExample(
-                  current,
-                  entry.rowId,
-                  source,
-                  generated,
-                ),
-              )
-            }
-            onTranslatedExample={(sentence, native) =>
-              setDraftEntries((current) =>
-                rowWithTranslatedExample(
-                  current,
-                  entry.rowId,
-                  sentence,
-                  native,
-                ),
-              )
-            }
-            onRemove={() =>
-              setDraftEntries((current) => withoutRow(current, index))
-            }
-            targetLabel={targetLabel}
-            unitControl={
-              <EntryUnitAssignment
-                disabled={busy}
-                entryNumber={index + 1}
-                hasFollowing={index < draftEntries.length - 1}
-                onApplyFollowing={() =>
-                  setDraftEntries((current) =>
-                    rowsWithUnitFrom(current, index, entry.unit),
-                  )
-                }
-                onChange={(unit) =>
-                  setDraftEntries((current) =>
-                    rowWithUnit(current, index, unit),
-                  )
-                }
-                required={entryIsComplete(entry)}
-                selection={entry.unit}
-                selectionComplete={unitSelectionIsComplete(entry.unit)}
-                units={units}
-              />
-            }
-          />
-        ))}
-      </ul>
+      <BulkExampleGeneration
+        disabled={busy}
+        generate={generateExample}
+        onGenerated={(rowId, source, generated) =>
+          setDraftEntries((current) =>
+            rowWithGeneratedExample(current, rowId, source, generated),
+          )
+        }
+        rows={draftEntries}
+      />
+      <DraftEntryList
+        busy={busy}
+        draftEntries={draftEntries}
+        generateExample={generateExample}
+        setDraftEntries={setDraftEntries}
+        targetLabel={targetLabel}
+        translateExample={translateExample}
+        units={units}
+        verdicts={formState.verdicts}
+      />
       {formState.selection.skipped > 0 ? (
         <p className="text-muted-foreground text-sm">
           {skippedSummary(formState.selection.skipped)}
