@@ -84,6 +84,15 @@ describe('answerVariants punctuation and separators', () => {
       _tag: 'Expanded',
       readings: ['un ami', 'une ami'],
     });
+    expect(answerVariants('eine/ein Angestellte(r)')).toEqual({
+      _tag: 'Expanded',
+      readings: [
+        'eine angestellter',
+        'ein angestellter',
+        'eine angestellte',
+        'ein angestellte',
+      ],
+    });
   });
 
   it('expands explicit and conservative compact phrase alternatives', () => {

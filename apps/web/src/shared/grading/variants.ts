@@ -33,6 +33,7 @@ const compactWordAlternatives = new Set([
   'der/die',
   'die/der',
   'ein/eine',
+  'eine/ein',
   'el/la',
   'la/el',
   'un/una',
