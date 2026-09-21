@@ -3,13 +3,12 @@ import { type SubmitEvent, useRef, useState } from 'react';
 import { retryExtraction } from '../server-fns';
 import {
   hasStoredUpload,
-  maximumUploadBatchSize,
-  nextUploadPosition,
   type ProcessableQueuedPage,
   processQueuedPage,
   processQueuedPages,
   type QueuedPage,
 } from '../services/upload-queue';
+import { useQueueSelection } from './use-queue-selection';
 import { useUploadQueuePersistence } from './use-upload-queue-persistence';
 
 const UploadResponse = Schema.Struct({
@@ -58,14 +57,38 @@ const extractStoredPage = (pageId: string) =>
     catch: asError,
   });
 
+const processPage =
+  (
+    courseId: string,
+    importSessionId: string,
+    expectedPageCount: number,
+    updatePage: (updated: QueuedPage) => void,
+  ) =>
+  (page: ProcessableQueuedPage) =>
+    processQueuedPage(page, {
+      store: () =>
+        storePagePhoto(courseId, importSessionId, expectedPageCount, page),
+      extract: extractStoredPage,
+      onStageChange: updatePage,
+    }).pipe(Effect.tap((updated) => Effect.sync(() => updatePage(updated))));
+
 export const useUploadQueue = (courseId: string) => {
   const [importSessionId, setImportSessionId] = useState<string>(() =>
     crypto.randomUUID(),
   );
-  const previewUrlsRef = useRef(new Set<string>());
-  const [pages, setPages] = useState<ReadonlyArray<QueuedPage>>([]);
+  const {
+    pages,
+    pagesRef,
+    setPages,
+    previewUrlsRef,
+    removePage,
+    selectionsRef,
+    selecting,
+    error,
+    setError,
+  } = useQueueSelection();
+  const processingRef = useRef({ busy: false, started: false });
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [processingStarted, setProcessingStarted] = useState(false);
 
   const { clearPersistedQueue, hydrated } = useUploadQueuePersistence({
@@ -85,90 +108,82 @@ export const useUploadQueue = (courseId: string) => {
     );
   };
 
-  const processPage = (
-    page: ProcessableQueuedPage,
-    expectedPageCount: number,
-  ) =>
-    processQueuedPage(page, {
-      store: () =>
-        storePagePhoto(courseId, importSessionId, expectedPageCount, page),
-      extract: extractStoredPage,
-      onStageChange: updatePage,
-    }).pipe(Effect.tap((updated) => Effect.sync(() => updatePage(updated))));
-
   const runPages = async (
     selected: ReadonlyArray<ProcessableQueuedPage>,
   ): Promise<void> => {
+    if (
+      !hydrated ||
+      selectionsRef.current === null ||
+      selectionsRef.current.pending ||
+      processingRef.current.busy ||
+      selected.length === 0
+    ) {
+      return;
+    }
+    processingRef.current = { busy: true, started: true };
     setProcessingStarted(true);
     setBusy(true);
     setError(null);
-    await Effect.runPromise(
-      processQueuedPages(selected, (page) => processPage(page, pages.length)),
-    );
-    setBusy(false);
+    const expectedPageCount = pagesRef.current.length;
+    try {
+      await Effect.runPromise(
+        processQueuedPages(
+          selected,
+          processPage(courseId, importSessionId, expectedPageCount, updatePage),
+        ),
+      );
+    } finally {
+      processingRef.current.busy = false;
+      if (selectionsRef.current !== null) {
+        setBusy(false);
+      }
+    }
   };
 
   const onSubmit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     return runPages(
-      pages.filter(
+      pagesRef.current.filter(
         (page): page is Extract<QueuedPage, { readonly stage: 'waiting' }> =>
           page.stage === 'waiting',
       ),
     );
   };
 
-  const addFiles = (files: ReadonlyArray<File>): void => {
-    if (!hydrated || processingStarted || hasStoredUpload(pages)) {
+  const addFiles = async (files: ReadonlyArray<File>): Promise<void> => {
+    if (
+      !hydrated ||
+      processingRef.current.started ||
+      processingStarted ||
+      hasStoredUpload(pagesRef.current)
+    ) {
       setError(
         'Die Fotoauswahl ist nach dem ersten Verarbeitungsversuch gesperrt. Versuche fehlgeschlagene Seiten erneut.',
       );
       return;
     }
-    const remaining = maximumUploadBatchSize - pages.length;
-    const accepted = files.slice(0, remaining);
-    setError(
-      files.length > remaining
-        ? `${accepted.length} von ${files.length} Fotos wurden hinzugefügt. Pro Durchgang sind höchstens ${maximumUploadBatchSize} möglich.`
-        : null,
-    );
-    const usedPositions = new Set(pages.map((page) => page.position));
-    const added = accepted.map((file): QueuedPage => {
-      const position = nextUploadPosition(usedPositions);
-      usedPositions.add(position);
-      const previewUrl = URL.createObjectURL(file);
-      previewUrlsRef.current.add(previewUrl);
-      return {
-        id: crypto.randomUUID(),
-        file,
-        position,
-        previewUrl,
-        stage: 'waiting',
-      };
-    });
-    setPages((current) => [...current, ...added]);
-  };
-
-  const removePage = (pageId: string): void => {
-    setPages((current) => {
-      const removed = current.find((page) => page.id === pageId);
-      if (removed !== undefined) {
-        URL.revokeObjectURL(removed.previewUrl);
-        previewUrlsRef.current.delete(removed.previewUrl);
-      }
-      return current.filter((page) => page.id !== pageId);
-    });
+    await selectionsRef.current?.addFiles(files);
   };
 
   return {
-    busy: busy || !hydrated,
+    busy: busy || selecting || !hydrated,
     clearPersistedQueue,
     error,
     importSessionId,
     pages,
     processingStarted,
     addFiles,
-    removePage,
+    removePage: (pageId: string) => {
+      if (
+        !(
+          processingRef.current.started ||
+          processingStarted ||
+          hasStoredUpload(pagesRef.current)
+        )
+      ) {
+        removePage(pageId);
+      }
+    },
     retryPage: (page: ProcessableQueuedPage) => runPages([page]),
     onSubmit,
   };

@@ -30,6 +30,53 @@ export type ProcessableQueuedPage = Extract<
 export const hasStoredUpload = (pages: ReadonlyArray<QueuedPage>): boolean =>
   pages.some((page) => 'pageId' in page && page.pageId !== null);
 
+// Photos are told apart by their bytes, not their names: a pasted screenshot
+// is always called "image.png", and the same file picked twice must not
+// become two pages.
+const hexadecimal = 16;
+
+export const fileDigest = async (file: Blob): Promise<string> => {
+  const hash = await crypto.subtle.digest('SHA-256', await file.arrayBuffer());
+  return Array.from(new Uint8Array(hash), (byte) =>
+    byte.toString(hexadecimal).padStart(2, '0'),
+  ).join('');
+};
+
+export type FileSelection = {
+  readonly accepted: ReadonlyArray<{
+    readonly file: File;
+    readonly digest: string;
+  }>;
+  readonly duplicates: number;
+  readonly overLimit: number;
+};
+
+// Applies the batch rules to a selection: drop bytes already in the queue or
+// earlier in the same selection, then cut at the batch size.
+export const selectFiles = async (
+  files: ReadonlyArray<File>,
+  knownDigests: ReadonlySet<string>,
+  remaining: number,
+): Promise<FileSelection> => {
+  const seen = new Set(knownDigests);
+  const fresh: Array<{ readonly file: File; readonly digest: string }> = [];
+  for (const file of files) {
+    // Sequential on purpose: a duplicate within the selection is only known
+    // once the earlier file has been hashed.
+    // biome-ignore lint/performance/noAwaitInLoops: See above.
+    const digest = await fileDigest(file);
+    if (!seen.has(digest)) {
+      seen.add(digest);
+      fresh.push({ file, digest });
+    }
+  }
+  return {
+    accepted: fresh.slice(0, Math.max(remaining, 0)),
+    duplicates: files.length - fresh.length,
+    overLimit: Math.max(fresh.length - remaining, 0),
+  };
+};
+
 type UploadQueueOperations = {
   readonly store: (file: File) => Effect.Effect<string, unknown>;
   readonly extract: (pageId: string) => Effect.Effect<void, unknown>;

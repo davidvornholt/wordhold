@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'bun:test';
 import { Effect } from 'effect';
 import {
+  fileDigest,
   hasStoredUpload,
+  maximumUploadBatchSize,
   nextUploadPosition,
   type ProcessableQueuedPage,
   processQueuedPage,
   processQueuedPages,
   type QueuedPage,
+  selectFiles,
   uploadConcurrency,
 } from './upload-queue';
 
@@ -146,5 +149,45 @@ describe('hasStoredUpload', () => {
         },
       ]),
     ).toBe(true);
+  });
+});
+
+describe('selectFiles', () => {
+  const photo = (name: string, bytes: string) =>
+    new File([bytes], name, { type: 'image/png' });
+
+  it('drops bytes already queued or repeated within the selection, whatever the name', async () => {
+    const queued = await fileDigest(photo('page-1.png', 'first'));
+    const selection = await selectFiles(
+      [
+        photo('image.png', 'first'),
+        photo('image.png', 'second'),
+        photo('copy.png', 'second'),
+        photo('image.png', 'third'),
+      ],
+      new Set([queued]),
+      maximumUploadBatchSize,
+    );
+    expect(selection.accepted.map((item) => item.file.name)).toEqual([
+      'image.png',
+      'image.png',
+    ]);
+    expect(selection.accepted.map((item) => item.file.size)).toEqual([
+      'second'.length,
+      'third'.length,
+    ]);
+    expect(selection.duplicates).toBe(2);
+    expect(selection.overLimit).toBe(0);
+  });
+
+  it('cuts fresh files at the remaining batch size', async () => {
+    const selection = await selectFiles(
+      [photo('a.png', 'a'), photo('b.png', 'b'), photo('c.png', 'c')],
+      new Set(),
+      2,
+    );
+    expect(selection.accepted).toHaveLength(2);
+    expect(selection.overLimit).toBe(1);
+    expect(selection.duplicates).toBe(0);
   });
 });
