@@ -25,12 +25,15 @@ import { discardPendingImportSession } from './services/discard-page';
 import { retryPendingExtraction } from './services/extraction-retry';
 import { ImportRepository } from './services/repository';
 
-// Every failure is logged with its full cause before it leaves the server:
-// the learner sees the typed message, the log keeps the provider's answer.
+// Log nested error messages before a failure leaves the server:
+// the learner sees the typed message, the log keeps the provider diagnostic.
 const authenticated = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
   Effect.zipRight(requireSession(getRequest().headers), effect).pipe(
     Effect.tapErrorCause((cause) =>
-      Effect.logError('import request failed', Cause.pretty(cause)),
+      Effect.logError(
+        'import request failed',
+        Cause.pretty(cause, { renderErrorCause: true }),
+      ),
     ),
   );
 
