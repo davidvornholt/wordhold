@@ -1,6 +1,6 @@
 import type { Database } from '@wordhold/db/client';
 import { Effect } from 'effect';
-import { normalizeAnswer } from '../../../shared/grading/normalize';
+import { insertVocabularyEntries } from '../../../shared/vocabulary/insert-entries';
 import { ImportInvariantError } from '../errors/import-invariant-error';
 import type { ImportPayloadData } from '../schemas/import-payload';
 
@@ -16,75 +16,22 @@ export const persistVerifiedEntries = (
   entriesToInsert: ReadonlyArray<ResolvedEntry>,
 ) =>
   Effect.gen(function* () {
-    const inserted =
-      entriesToInsert.length === 0
-        ? []
-        : yield* sql<{
-            id: string;
-            targetText: string;
-          }>`insert into entries ${sql.insert(
-            entriesToInsert.map(({ entry, unitId }) => ({
-              courseId,
-              unitId,
-              pageId,
-              targetText: entry.targetText,
-              nativeText: entry.nativeText,
-              grammar: entry.grammar ?? null,
-            })),
-          )} returning id, target_text as "targetText"`;
+    const inserted = yield* insertVocabularyEntries(
+      sql,
+      entriesToInsert.map(({ entry, unitId }) => ({
+        courseId,
+        unitId,
+        pageId,
+        targetText: entry.targetText,
+        nativeText: entry.nativeText,
+        grammar: entry.grammar ?? null,
+        example: entry.example,
+      })),
+    );
     if (inserted.length !== entriesToInsert.length) {
       return yield* new ImportInvariantError({
         message: 'Not every verified entry was inserted.',
       });
-    }
-    const examples = entriesToInsert.flatMap(({ entry }, index) => {
-      const entryId = inserted[index]?.id;
-      return entryId === undefined ||
-        entry.example === undefined ||
-        entry.example.targetText === ''
-        ? []
-        : [
-            {
-              entryId,
-              targetText: entry.example.targetText,
-              nativeText: entry.example.nativeText ?? null,
-              source: entry.example.source,
-            },
-          ];
-    });
-    if (examples.length > 0) {
-      yield* sql`insert into entry_examples ${sql.insert(examples)}`;
-    }
-    const answers = entriesToInsert.flatMap(({ entry }, index) => {
-      const entryId = inserted[index]?.id;
-      return entryId === undefined
-        ? []
-        : [
-            {
-              entryId,
-              direction: 'to_target',
-              text: entry.targetText,
-              normalized: normalizeAnswer(entry.targetText),
-              source: 'textbook',
-            },
-            {
-              entryId,
-              direction: 'to_native',
-              text: entry.nativeText,
-              normalized: normalizeAnswer(entry.nativeText),
-              source: 'textbook',
-            },
-          ];
-    });
-    if (answers.length > 0) {
-      yield* sql`insert into accepted_answers ${sql.insert(answers)} on conflict do nothing`;
-    }
-    const cardRows = inserted.flatMap((entry) => [
-      { entryId: entry.id, direction: 'to_target' },
-      { entryId: entry.id, direction: 'to_native' },
-    ]);
-    if (cardRows.length > 0) {
-      yield* sql`insert into cards ${sql.insert(cardRows)}`;
     }
     return inserted;
   });

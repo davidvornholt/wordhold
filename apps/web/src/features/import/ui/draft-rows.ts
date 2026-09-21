@@ -1,11 +1,13 @@
+import {
+  awaitsTranslationFor,
+  type ExampleGenerationSource,
+  type GeneratedExample,
+  matchesGenerationSource,
+} from '../../../shared/examples/example-draft';
 import type { UnitSelectionData } from '../schemas/import-payload';
 import type { Unit, UnitEntry } from '../services/repository';
 import { assessDraftDuplicates } from './draft-duplicates';
-import type {
-  DraftEntry,
-  ExampleGenerationSource,
-  GeneratedExample,
-} from './entry-row';
+import type { DraftEntry } from './entry-row';
 import {
   canCompleteWithoutImport,
   type DraftRow,
@@ -89,9 +91,7 @@ export const rowWithTranslatedExample = (
   native: string,
 ): ReadonlyArray<IdentifiedDraftRow> =>
   rows.map((row) =>
-    row.rowId === rowId &&
-    row.example.trim() === sentence &&
-    row.exampleNativeText === ''
+    row.rowId === rowId && awaitsTranslationFor(row, sentence)
       ? { ...row, exampleNativeText: native }
       : row,
   );
@@ -103,10 +103,7 @@ export const rowWithGeneratedExample = (
   generated: GeneratedExample,
 ): ReadonlyArray<IdentifiedDraftRow> =>
   rows.map((row) =>
-    row.rowId === rowId &&
-    row.targetText.trim() === source.targetText &&
-    row.nativeText.trim() === source.nativeText &&
-    row.example === source.example
+    row.rowId === rowId && matchesGenerationSource(row, source)
       ? {
           ...row,
           example: generated.target,

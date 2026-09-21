@@ -1,5 +1,5 @@
+import type { DuplicateVerdict } from '../../../shared/vocabulary/entry-identity';
 import type { UnitSelectionData } from '../schemas/import-payload';
-import type { DuplicateVerdict } from '../services/entry-identity';
 import type { DraftEntry } from './entry-row';
 
 export type VerificationEntry = DraftEntry & {

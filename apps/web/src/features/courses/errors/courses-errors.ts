@@ -26,9 +26,22 @@ export class CourseUnitOrderChangedError extends Data.TaggedError(
   readonly message: string;
 }> {}
 
+export class CourseUnitNotFoundError extends Data.TaggedError(
+  'CourseUnitNotFoundError',
+)<{
+  readonly message: string;
+}> {}
+
 export class VocabularyEntryNotFoundError extends Data.TaggedError(
   'VocabularyEntryNotFoundError',
 )<{
+  readonly message: string;
+}> {}
+
+export class VocabularyEntryConflictError extends Data.TaggedError(
+  'VocabularyEntryConflictError',
+)<{
+  readonly targetText: string;
   readonly message: string;
 }> {}
 

@@ -1,34 +1,20 @@
 import type { GrammarInfo } from '@wordhold/ai/extraction/schema';
 import { maximumEntryTextLength } from '@wordhold/ai/extraction/schema';
 import type { ReactNode } from 'react';
+import type {
+  ExampleDraft,
+  ExampleGenerationSource,
+  GeneratedExample,
+} from '../../../shared/examples/example-draft';
 import { Button } from '../../../shared/ui/button';
+import { ExampleDraftEditor } from '../../../shared/ui/example-draft-editor';
 import { fieldCompactClass } from '../../../shared/ui/field-styles';
 import { Checkbox } from '../../../shared/ui/selection-controls';
-import type { DuplicateVerdict } from '../services/entry-identity';
-import { EntryExampleEditor } from './entry-example-editor';
+import type { DuplicateVerdict } from '../../../shared/vocabulary/entry-identity';
 
-export type DraftEntry = {
-  readonly targetText: string;
-  readonly nativeText: string;
-  readonly example: string;
-  // German translation of the example; '' while none exists yet.
-  readonly exampleNativeText: string;
-  // Set once "Beispielsatz erzeugen" wrote the sentence, so the import
-  // records the source and the review says the sentence itself is AI text.
-  readonly exampleGenerated?: true;
+export type DraftEntry = ExampleDraft & {
   readonly grammar?: GrammarInfo;
   readonly confidence?: number;
-};
-
-export type ExampleGenerationSource = {
-  readonly targetText: string;
-  readonly nativeText: string;
-  readonly example: string;
-};
-
-export type GeneratedExample = {
-  readonly target: string;
-  readonly native: string;
 };
 
 const lowConfidence = 0.8;
@@ -180,14 +166,16 @@ export const EntryRow = ({
           value={entry.nativeText}
         />
       </div>
-      <EntryExampleEditor
+      <ExampleDraftEditor
         disabled={disabled}
         entry={entry}
         generate={generateExample}
         onChange={onChange}
         onGenerated={onGeneratedExample}
         onTranslated={onTranslatedExample}
+        reviewStep="Import"
         translate={translateExample}
+        variant="row"
       />
       {grammar === '' ? null : (
         <p className="text-muted-foreground text-xs">{grammar}</p>

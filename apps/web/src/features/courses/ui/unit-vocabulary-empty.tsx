@@ -1,26 +1,25 @@
-import { type ReactNode, useId } from 'react';
+import type { ReactNode } from 'react';
 import { cardClass } from '../../../shared/ui/surface-styles';
 
 type UnitVocabularyEmptyProps = {
   readonly importAction: ReactNode;
+  readonly addAction: ReactNode;
 };
 
+// The two ways vocabulary enters a unit, side by side: a photographed page
+// for a whole list, typing for the odd word.
 export const UnitVocabularyEmpty = ({
   importAction,
-}: UnitVocabularyEmptyProps) => {
-  const headingId = useId();
-  return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-3">
-      <h2 className="font-display text-xl" id={headingId}>
-        Vokabeln hinzufügen
-      </h2>
-      <div className={`${cardClass} flex flex-col items-start gap-4`}>
-        <p className="hyphens-auto text-sm">
-          Fotografiere eine Vokabelseite. Beim Prüfen ordnest du die erkannten
-          Vokabeln dieser Einheit zu.
-        </p>
-        {importAction}
-      </div>
-    </section>
-  );
-};
+  addAction,
+}: UnitVocabularyEmptyProps) => (
+  <div className={`${cardClass} flex flex-col items-start gap-4`}>
+    <p className="hyphens-auto text-sm">
+      Fotografiere eine Vokabelseite und ordne die erkannten Vokabeln beim
+      Prüfen dieser Einheit zu. Einzelne Vokabeln trägst du direkt hier ein.
+    </p>
+    <div className="flex flex-wrap items-center gap-4">
+      {importAction}
+      {addAction}
+    </div>
+  </div>
+);

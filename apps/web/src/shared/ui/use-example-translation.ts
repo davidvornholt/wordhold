@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import type { DraftEntry } from './entry-row';
+import type { ExampleDraft } from '../examples/example-draft';
 
 type ExampleTranslationInput = {
-  readonly entry: DraftEntry;
+  readonly entry: ExampleDraft;
   readonly disabled: boolean;
   readonly translate: (
     targetText: string,
