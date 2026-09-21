@@ -133,7 +133,7 @@ export const ImportFixture = ({
         pages.length > 0 && pages.every((page) => page.stage === 'ready') ? (
           <button
             className="bg-primary px-4 py-2 text-primary-foreground text-sm"
-            onClick={() => navigateToFixture('import-session')}
+            onClick={() => navigateToFixture('verification-batch-first')}
             type="button"
           >
             Stapel prüfen
