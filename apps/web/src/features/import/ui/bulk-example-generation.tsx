@@ -1,8 +1,12 @@
 import { useState } from 'react';
+import {
+  type ExampleGenerationSource,
+  exampleGenerationSource,
+  type GeneratedExample,
+} from '../../../shared/examples/example-draft';
 import { countNoun } from '../../../shared/format/count';
 import { Button } from '../../../shared/ui/button';
 import { type IdentifiedDraftRow, rowsWithoutExample } from './draft-rows';
-import type { ExampleGenerationSource, GeneratedExample } from './entry-row';
 
 type BulkExampleGenerationProps = {
   readonly rows: ReadonlyArray<IdentifiedDraftRow>;
@@ -49,11 +53,7 @@ export const BulkExampleGeneration = ({
     setProgress({ done: 0, total: queue.length });
     const lane = async () => {
       for (let row = queue.shift(); row !== undefined; row = queue.shift()) {
-        const source = {
-          targetText: row.targetText.trim(),
-          nativeText: row.nativeText.trim(),
-          example: row.example,
-        };
+        const source = exampleGenerationSource(row);
         try {
           // biome-ignore lint/performance/noAwaitInLoops: Sequential within a lane on purpose; lanes run in parallel.
           const generated = await generate(

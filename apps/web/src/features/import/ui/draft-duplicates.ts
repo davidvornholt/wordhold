@@ -1,9 +1,9 @@
-import type { UnitSelectionData } from '../schemas/import-payload';
 import {
   type DuplicateVerdict,
   duplicateVerdict,
   type ExistingEntry,
-} from '../services/entry-identity';
+} from '../../../shared/vocabulary/entry-identity';
+import type { UnitSelectionData } from '../schemas/import-payload';
 import type { Unit, UnitEntry } from '../services/repository';
 
 export type AssessableDraft = {

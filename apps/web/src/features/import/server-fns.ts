@@ -7,6 +7,7 @@ import { sentenceRuntime } from '../../shared/ai/runtime';
 import { requireSession } from '../../shared/auth/require-session';
 import { englishNames } from '../../shared/languages';
 import { requireString } from '../../shared/validate/input';
+import { decodeGeneratedExample } from '../../shared/vocabulary/entry-fields';
 import { CourseNotFoundError } from './errors/course-not-found-error';
 import { ExampleGenerationError } from './errors/example-generation-error';
 import { ImportSessionNotFoundError } from './errors/import-session-not-found-error';
@@ -14,7 +15,6 @@ import { PageNotFoundError } from './errors/page-not-found-error';
 import { importRuntime } from './runtime';
 import {
   decodeExampleRequest,
-  decodeGeneratedExample,
   decodeTranslationRequest,
 } from './schemas/example-request';
 import {

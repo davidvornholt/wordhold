@@ -13,8 +13,15 @@ import {
   decodeCreateCourseUnit,
   decodeReorderCourseUnits,
 } from '../schemas/course-unit-management';
+import {
+  decodeCreateVocabularyEntry,
+  decodeVocabularyExampleRequest,
+  decodeVocabularyTranslationRequest,
+} from '../schemas/vocabulary-entry-creation';
 import { CourseService } from './course-service';
 import { CourseStore } from './course-store';
+import { VocabularyEntryService } from './vocabulary-entry-service';
+import { VocabularyEntryStore } from './vocabulary-entry-store';
 import { VocabularyExampleService } from './vocabulary-example-service';
 import { VocabularyExampleStore } from './vocabulary-example-store';
 
@@ -24,18 +31,20 @@ const courseLive = CourseService.Default.pipe(
 
 const courseRuntime = ManagedRuntime.make(courseLive);
 
-const vocabularyExampleDependencies = Layer.merge(
+// Examples and typed entries share one runtime: both talk to the sentence
+// generator, text-to-speech and file storage.
+const vocabularyDependencies = Layer.mergeAll(
   VocabularyExampleStore.live.pipe(Layer.provide(PgLive)),
-  Layer.mergeAll(
-    SentenceGen.Default.pipe(Layer.provide(BedrockProvider.live)),
-    StorageLive,
-    Tts.Default,
-  ),
+  VocabularyEntryStore.live.pipe(Layer.provide(PgLive)),
+  SentenceGen.Default.pipe(Layer.provide(BedrockProvider.live)),
+  StorageLive,
+  Tts.Default,
 );
-const vocabularyExampleRuntime = ManagedRuntime.make(
-  VocabularyExampleService.Default.pipe(
-    Layer.provide(vocabularyExampleDependencies),
-  ),
+const vocabularyRuntime = ManagedRuntime.make(
+  Layer.merge(
+    VocabularyExampleService.Default,
+    VocabularyEntryService.Default,
+  ).pipe(Layer.provide(vocabularyDependencies)),
 );
 
 const decodeId = Schema.decodeUnknownSync(Schema.UUID);
@@ -103,7 +112,7 @@ export const generateVocabularyExample = createServerFn({ method: 'POST' })
   .validator(decodeId)
   .handler(async ({ data: entryId }) => {
     await authRuntime.runPromise(requireSession(getRequest().headers));
-    return vocabularyExampleRuntime.runPromise(
+    return vocabularyRuntime.runPromise(
       Effect.flatMap(VocabularyExampleService, (service) =>
         service.generate(entryId),
       ),
@@ -114,9 +123,44 @@ export const prepareVocabularyExamples = createServerFn({ method: 'POST' })
   .validator(decodeIds)
   .handler(async ({ data: entryIds }) => {
     await authRuntime.runPromise(requireSession(getRequest().headers));
-    return vocabularyExampleRuntime.runPromise(
+    return vocabularyRuntime.runPromise(
       Effect.flatMap(VocabularyExampleService, (service) =>
         service.prepare(entryIds),
+      ),
+    );
+  });
+
+export const createVocabularyEntry = createServerFn({ method: 'POST' })
+  .validator(decodeCreateVocabularyEntry)
+  .handler(async ({ data }) => {
+    await authRuntime.runPromise(requireSession(getRequest().headers));
+    return vocabularyRuntime.runPromise(
+      Effect.flatMap(VocabularyEntryService, (service) => service.create(data)),
+    );
+  });
+
+export const generateVocabularyDraftExample = createServerFn({
+  method: 'POST',
+})
+  .validator(decodeVocabularyExampleRequest)
+  .handler(async ({ data }) => {
+    await authRuntime.runPromise(requireSession(getRequest().headers));
+    return vocabularyRuntime.runPromise(
+      Effect.flatMap(VocabularyEntryService, (service) =>
+        service.generateExample(data),
+      ),
+    );
+  });
+
+export const translateVocabularyDraftExample = createServerFn({
+  method: 'POST',
+})
+  .validator(decodeVocabularyTranslationRequest)
+  .handler(async ({ data }) => {
+    await authRuntime.runPromise(requireSession(getRequest().headers));
+    return vocabularyRuntime.runPromise(
+      Effect.flatMap(VocabularyEntryService, (service) =>
+        service.translateExample(data),
       ),
     );
   });

@@ -1,41 +1,20 @@
-import {
-  maximumEntryTextLength,
-  maximumExampleLength,
-} from '@wordhold/ai/extraction/schema';
 import { Schema } from 'effect';
+import {
+  EntryText,
+  ExampleText,
+} from '../../../shared/vocabulary/entry-fields';
 
 export const ExampleRequest = Schema.Struct({
   pageId: Schema.UUID,
-  targetText: Schema.Trim.pipe(
-    Schema.minLength(1),
-    Schema.maxLength(maximumEntryTextLength),
-  ),
-  nativeText: Schema.Trim.pipe(
-    Schema.minLength(1),
-    Schema.maxLength(maximumEntryTextLength),
-  ),
-});
-
-export const GeneratedExample = Schema.Struct({
-  target: Schema.Trim.pipe(
-    Schema.minLength(1),
-    Schema.maxLength(maximumExampleLength),
-  ),
-  native: Schema.Trim.pipe(
-    Schema.minLength(1),
-    Schema.maxLength(maximumExampleLength),
-  ),
+  targetText: EntryText,
+  nativeText: EntryText,
 });
 
 export const decodeExampleRequest = Schema.decodeUnknownSync(ExampleRequest);
-export const decodeGeneratedExample = Schema.decodeUnknown(GeneratedExample);
 
 export const TranslationRequest = Schema.Struct({
   pageId: Schema.UUID,
-  targetText: Schema.Trim.pipe(
-    Schema.minLength(1),
-    Schema.maxLength(maximumExampleLength),
-  ),
+  targetText: ExampleText,
 });
 
 export const decodeTranslationRequest =

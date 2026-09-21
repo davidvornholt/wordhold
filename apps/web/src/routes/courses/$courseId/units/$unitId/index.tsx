@@ -1,14 +1,16 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, useRouter } from '@tanstack/react-router';
 import {
+  createVocabularyEntry,
+  generateVocabularyDraftExample,
   generateVocabularyExample,
   getCourseDirections,
   listCourseUnits,
   listCourseVocabulary,
+  translateVocabularyDraftExample,
 } from '../../../../../features/courses/services/server-fns';
 import { UnitDirectionPlan } from '../../../../../features/courses/ui/unit-direction-plan';
 import { unitProgressSummary } from '../../../../../features/courses/ui/unit-status';
-import { UnitVocabularyEmpty } from '../../../../../features/courses/ui/unit-vocabulary-empty';
-import { VocabularyLibrary } from '../../../../../features/courses/ui/vocabulary-library';
+import { UnitVocabulary } from '../../../../../features/courses/ui/unit-vocabulary';
 import { getCourse } from '../../../../../features/import/server-fns';
 import { directionLabel } from '../../../../../shared/directions';
 import { countNoun } from '../../../../../shared/format/count';
@@ -24,6 +26,7 @@ import { cardClass } from '../../../../../shared/ui/surface-styles';
 // selectable list — no separate filtered Vokabelliste to jump to.
 const UnitScreen = () => {
   const { course, directions, unit, unitEntries } = Route.useLoaderData();
+  const router = useRouter();
   const backControl = (
     <BackLink params={{ courseId: course.id }} to="/courses/$courseId">
       {course.name}
@@ -87,45 +90,53 @@ const UnitScreen = () => {
           unit={unit}
         />
       )}
-      {unitEntries.length === 0 ? (
-        <UnitVocabularyEmpty
-          importAction={
-            <ActionLink
-              params={{ courseId: course.id }}
-              to="/courses/$courseId/import"
-            >
-              Seite fotografieren
-            </ActionLink>
-          }
-        />
-      ) : (
-        <>
-          <h2 className="font-display text-xl">Vokabeln</h2>
-          <VocabularyLibrary
-            enabledDirections={directions}
-            entries={unitEntries}
-            generateExample={(entryId) =>
-              generateVocabularyExample({ data: entryId })
+      <UnitVocabulary
+        createEntry={async (draft) => {
+          const created = await createVocabularyEntry({
+            data: { courseId: course.id, unitId: unit.id, ...draft },
+          });
+          await router.invalidate();
+          return created;
+        }}
+        enabledDirections={directions}
+        entries={unitEntries}
+        generateDraftExample={(targetText, nativeText) =>
+          generateVocabularyDraftExample({
+            data: { courseId: course.id, targetText, nativeText },
+          })
+        }
+        generateExample={(entryId) =>
+          generateVocabularyExample({ data: entryId })
+        }
+        importAction={
+          <ActionLink
+            params={{ courseId: course.id }}
+            to="/courses/$courseId/import"
+          >
+            Seite fotografieren
+          </ActionLink>
+        }
+        renderStudyAction={(entryIds, intent) => (
+          <ActionLink
+            params={{ courseId: course.id }}
+            search={
+              entryIds.length === unitEntries.length
+                ? { mode: intent, unit: unit.id }
+                : { entries: entryIds.join(','), mode: intent }
             }
-            initialFilter="all"
-            renderStudyAction={(entryIds, intent) => (
-              <ActionLink
-                params={{ courseId: course.id }}
-                search={
-                  entryIds.length === unitEntries.length
-                    ? { mode: intent, unit: unit.id }
-                    : { entries: entryIds.join(','), mode: intent }
-                }
-                to="/courses/$courseId/study"
-              >
-                Auswahl {intent === 'learn' ? 'kennenlernen' : 'üben'}
-              </ActionLink>
-            )}
-            scope="unit"
-            targetLanguage={course.targetLanguage}
-          />
-        </>
-      )}
+            to="/courses/$courseId/study"
+          >
+            Auswahl {intent === 'learn' ? 'kennenlernen' : 'üben'}
+          </ActionLink>
+        )}
+        targetLabel={targetLabel}
+        targetLanguage={course.targetLanguage}
+        translateDraftExample={(targetText) =>
+          translateVocabularyDraftExample({
+            data: { courseId: course.id, targetText },
+          })
+        }
+      />
     </PageLayout>
   );
 };

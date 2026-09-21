@@ -1,9 +1,9 @@
+import { useState } from 'react';
 import type { VocabularyEntry } from '../src/features/courses/schemas/course-units';
 import { CourseOverview } from '../src/features/courses/ui/course-overview';
 import { UnitDirectionPlan } from '../src/features/courses/ui/unit-direction-plan';
 import { unitProgressSummary } from '../src/features/courses/ui/unit-status';
-import { UnitVocabularyEmpty } from '../src/features/courses/ui/unit-vocabulary-empty';
-import { VocabularyLibrary } from '../src/features/courses/ui/vocabulary-library';
+import { UnitVocabulary } from '../src/features/courses/ui/unit-vocabulary';
 import { directionLabel } from '../src/shared/directions';
 import { countNoun } from '../src/shared/format/count';
 import { itemsInNextSection } from '../src/shared/session/section-policy';
@@ -142,8 +142,11 @@ const entriesByState: Record<
 };
 
 // One unit screen holds both learning paths and its selectable vocabulary.
+// Typed entries join the list in memory so the add flow can be exercised
+// end to end without a server.
 export const UnitFixture = ({ state = 'mixed' }: UnitFixtureProps) => {
   const unit = unitsByState[state];
+  const [entries, setEntries] = useState(entriesByState[state]);
   return (
     <PageLayout
       backControl={fixtureBackControl('English A2', 'course')}
@@ -172,42 +175,65 @@ export const UnitFixture = ({ state = 'mixed' }: UnitFixtureProps) => {
           unit={unit}
         />
       )}
-      {entriesByState[state].length === 0 ? (
-        <UnitVocabularyEmpty
-          importAction={fixtureControl(
-            'Seite fotografieren',
-            'import',
-            'primary',
-          )}
-        />
-      ) : (
-        <>
-          <h2 className="font-display text-xl">Vokabeln</h2>
-          <VocabularyLibrary
-            enabledDirections={['to_target', 'to_native']}
-            entries={entriesByState[state]}
-            generateExample={async () => ({
-              targetText: 'This is a useful example.',
-              nativeText: 'Das ist ein hilfreiches Beispiel.',
-              source: 'generated',
-            })}
-            initialFilter="all"
-            renderStudyAction={(_, intent) => (
-              <Button
-                onClick={() =>
-                  navigateToFixture(
-                    intent === 'learn' ? 'learn-start' : 'study-start',
-                  )
-                }
-              >
-                Auswahl {intent === 'learn' ? 'kennenlernen' : 'üben'}
-              </Button>
-            )}
-            scope="unit"
-            targetLanguage="en"
-          />
-        </>
-      )}
+      <UnitVocabulary
+        createEntry={(draft) => {
+          const added = {
+            ...unitEntry(
+              entries.length + 1,
+              draft.targetText,
+              draft.nativeText,
+              false,
+            ),
+            unitId: unit.id,
+            unitName: unit.name,
+            example:
+              draft.example === undefined
+                ? null
+                : {
+                    targetText: draft.example.targetText,
+                    nativeText: draft.example.nativeText ?? null,
+                    source: draft.example.source,
+                  },
+          };
+          setEntries((current) => [...current, added]);
+          return Promise.resolve({
+            entryId: added.id,
+            audio: draft.targetText === 'silence' ? 'failed' : 'generated',
+          } as const);
+        }}
+        enabledDirections={['to_target', 'to_native']}
+        entries={entries}
+        generateDraftExample={async (targetText) => ({
+          target: `We packed our bags for the ${targetText}.`,
+          native: 'Wir packten unsere Koffer für die Reise.',
+        })}
+        generateExample={async () => ({
+          targetText: 'This is a useful example.',
+          nativeText: 'Das ist ein hilfreiches Beispiel.',
+          source: 'generated',
+        })}
+        importAction={fixtureControl(
+          'Seite fotografieren',
+          'import',
+          'primary',
+        )}
+        renderStudyAction={(_, intent) => (
+          <Button
+            onClick={() =>
+              navigateToFixture(
+                intent === 'learn' ? 'learn-start' : 'study-start',
+              )
+            }
+          >
+            Auswahl {intent === 'learn' ? 'kennenlernen' : 'üben'}
+          </Button>
+        )}
+        targetLabel={targetLabel}
+        targetLanguage="en"
+        translateDraftExample={async () => ({
+          native: 'Wir packten unsere Koffer für die Reise.',
+        })}
+      />
     </PageLayout>
   );
 };

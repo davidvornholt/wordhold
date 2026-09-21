@@ -1,11 +1,10 @@
 import {
   Grammar,
   maximumEntriesPerPage,
-  maximumEntryTextLength,
-  maximumExampleLength,
   maximumUnitNameLength,
 } from '@wordhold/ai/extraction/schema';
 import { Schema } from 'effect';
+import { EntryText, NewExample } from '../../../shared/vocabulary/entry-fields';
 import { ImportPayloadValidationError } from '../errors/import-payload-validation-error';
 
 // Vocabulary entries are filed into a chapter of the textbook, either one that already
@@ -27,34 +26,14 @@ export const UnitSelection = Schema.Union(
 );
 export type UnitSelectionData = typeof UnitSelection.Type;
 
-const VerifiedExample = Schema.Struct({
-  targetText: Schema.Trim.pipe(
-    Schema.minLength(1),
-    Schema.maxLength(maximumExampleLength),
-  ),
-  nativeText: Schema.optional(
-    Schema.Trim.pipe(
-      Schema.minLength(1),
-      Schema.maxLength(maximumExampleLength),
-    ),
-  ),
-  source: Schema.Literal('textbook', 'generated'),
-});
-
 // The human-verified shape of one entry, as submitted from the verify screen.
 // Confidence is dropped: after verification the human is the authority.
 export const VerifiedEntry = Schema.Struct({
   unit: UnitSelection,
-  targetText: Schema.Trim.pipe(
-    Schema.minLength(1),
-    Schema.maxLength(maximumEntryTextLength),
-  ),
-  nativeText: Schema.Trim.pipe(
-    Schema.minLength(1),
-    Schema.maxLength(maximumEntryTextLength),
-  ),
+  targetText: EntryText,
+  nativeText: EntryText,
   grammar: Schema.optional(Grammar),
-  example: Schema.optional(VerifiedExample),
+  example: Schema.optional(NewExample),
   // Present only when the learner confirmed importing a word that already
   // exists in the unit with a different casing or example sentence. The
   // server refuses such an entry without this consent, so a stale verify

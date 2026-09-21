@@ -1,13 +1,13 @@
 import type { Database } from '@wordhold/db/client';
 import { Effect } from 'effect';
-import { DuplicateEntryError } from '../errors/duplicate-entry-error';
-import type { ImportPayloadData } from '../schemas/import-payload';
 import {
   type DuplicateVerdict,
   duplicateVerdict,
   type ExistingEntry,
   entryIdentityKey,
-} from './entry-identity';
+} from '../../../shared/vocabulary/entry-identity';
+import { DuplicateEntryError } from '../errors/duplicate-entry-error';
+import type { ImportPayloadData } from '../schemas/import-payload';
 import { selectUnitEntries } from './unit-entries';
 
 type PayloadEntry = ImportPayloadData['entries'][number];
