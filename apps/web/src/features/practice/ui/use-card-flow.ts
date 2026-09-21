@@ -18,6 +18,8 @@ type CardFlowInput = {
   readonly onJudged: (outcome: RailOutcome) => void;
   readonly inputRef: RefObject<HTMLInputElement | null>;
   readonly nextButtonRef: RefObject<HTMLButtonElement | null>;
+  // After a mistake the field asks for the answer again, so focus stays there.
+  readonly retypeRequired: boolean;
 };
 
 // What happens around a card between answering and moving on: focus follows
@@ -31,15 +33,16 @@ export const useCardFlow = ({
   onJudged,
   inputRef,
   nextButtonRef,
+  retypeRequired,
 }: CardFlowInput) => {
   useEffect(() => {
     if (busy) {
       return;
     }
-    const target = result === null ? inputRef : nextButtonRef;
+    const target = result === null || retypeRequired ? inputRef : nextButtonRef;
     const focusTask = globalThis.setTimeout(() => target.current?.focus());
     return () => globalThis.clearTimeout(focusTask);
-  }, [busy, result, inputRef, nextButtonRef]);
+  }, [busy, result, retypeRequired, inputRef, nextButtonRef]);
 
   useEffect(() => {
     if (result !== null) {
