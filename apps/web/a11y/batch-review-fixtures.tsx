@@ -1,4 +1,3 @@
-import { BatchReviewComplete } from '../src/features/import/ui/batch-review-complete';
 import { BatchReviewProgress } from '../src/features/import/ui/batch-review-progress';
 import { VerificationImage } from '../src/features/import/ui/verification-image';
 import { VerifyForm } from '../src/features/import/ui/verify-form';
@@ -13,10 +12,11 @@ type BatchReviewFixtureProps = {
   readonly position: 1 | 2;
 };
 
+// The last page of a batch returns to the overview like a single page does.
 const nextState = (position: 1 | 2) =>
   position === 1
     ? ('verification-batch-second' as const)
-    : ('verification-batch-complete' as const);
+    : ('dashboard' as const);
 
 export const BatchReviewFixture = ({ position }: BatchReviewFixtureProps) => (
   <main className="verification-screen">
@@ -58,34 +58,5 @@ export const BatchReviewFixture = ({ position }: BatchReviewFixtureProps) => (
         />
       </div>
     </div>
-  </main>
-);
-
-export const BatchReviewCompleteFixture = () => (
-  <main className="verification-screen">
-    <div className="verification-header">
-      <button
-        className="text-muted-foreground text-sm underline"
-        onClick={() => navigateToFixture('import-session')}
-        type="button"
-      >
-        ← Zum Seitenstapel
-      </button>
-      <h1 className="font-display font-semibold text-2xl">
-        English A2: Seiten geprüft
-      </h1>
-    </div>
-    <BatchReviewComplete
-      overviewAction={
-        <button
-          className="inline-flex min-h-11 items-center bg-primary px-4 py-2 text-primary-foreground text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
-          onClick={() => navigateToFixture('import-session')}
-          type="button"
-        >
-          Zum Seitenstapel
-        </button>
-      }
-      total={2}
-    />
   </main>
 );

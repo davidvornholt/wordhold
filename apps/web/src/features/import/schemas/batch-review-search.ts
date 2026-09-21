@@ -26,10 +26,6 @@ export type BatchReviewSession = {
   readonly position: number;
 };
 
-export type BatchReviewSummary = {
-  readonly total: number;
-};
-
 type BatchReviewDestination = {
   readonly pageId: string;
   readonly search: Required<BatchReviewSearchData>;
@@ -68,13 +64,14 @@ export const resolveBatchReviewSession = (
   return { pageIds, position };
 };
 
+// The next page to review, or null once the batch is finished.
 export const advanceBatchReview = (
   session: BatchReviewSession,
-): BatchReviewDestination | BatchReviewSummary => {
+): BatchReviewDestination | null => {
   const nextPosition = session.position + 1;
   const nextPageId = session.pageIds[nextPosition];
   if (nextPageId === undefined) {
-    return { total: session.pageIds.length };
+    return null;
   }
   return {
     pageId: nextPageId,
