@@ -45,6 +45,7 @@ export const BatchReviewFixture = ({ position }: BatchReviewFixtureProps) => (
             target: 'This memory makes me smile.',
             native: 'Diese Erinnerung bringt mich zum Lächeln.',
           })}
+          translateExample={async () => ({ native: 'Übersetzt.' })}
           initialEntries={verificationEntries}
           initialUnitName="Unit 2"
           onSubmit={() => navigateToFixture(nextState(position))}

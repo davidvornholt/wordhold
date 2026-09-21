@@ -39,6 +39,9 @@ type VerifyFormProps = {
     targetText: string,
     nativeText: string,
   ) => Promise<{ readonly target: string; readonly native: string }>;
+  readonly translateExample: (
+    targetText: string,
+  ) => Promise<{ readonly native: string }>;
   readonly onSubmit: (
     verifiedEntries: ReadonlyArray<VerificationEntry>,
   ) => void;
@@ -50,6 +53,7 @@ export const VerifyForm = ({
   initialUnitName,
   existingEntries,
   generateExample,
+  translateExample,
   targetLabel,
   units,
   busy,
@@ -105,6 +109,7 @@ export const VerifyForm = ({
             entryNumber={index + 1}
             generateExample={generateExample}
             key={entry.rowId}
+            translateExample={translateExample}
             onChange={(next) =>
               setDraftEntries((current) => rowWithEntry(current, index, next))
             }

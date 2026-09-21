@@ -114,12 +114,12 @@ test('VerifyForm generates an editable sentence and German translation', async (
     .first();
   await generate.click();
   const generatedExample = page
-    .getByLabel('Beispielsatz')
+    .getByLabel('Beispielsatz', { exact: true })
     .nth(generatedExampleIndex);
   await expect(generatedExample).toHaveValue('This memory makes me smile.');
   const generatedTranslation = page
     .getByLabel('Deutsche Übersetzung des Beispielsatzes')
-    .first();
+    .nth(generatedExampleIndex);
   await expect(generatedTranslation).toHaveValue(
     'Diese Erinnerung bringt mich zum Lächeln.',
   );
@@ -129,5 +129,32 @@ test('VerifyForm generates an editable sentence and German translation', async (
       'Mit KI erzeugt. Prüfe Satz und Übersetzung vor dem Import.',
     ),
   ).toBeVisible();
+  assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
+});
+
+test('VerifyForm shows a printed example with its translation and re-translates a rewrite', async ({
+  page,
+}) => {
+  await page.goto('/?state=verification');
+  const rows = page.locator('form > ul > li');
+  const first = rows.first();
+  const translation = first.getByLabel(
+    'Deutsche Übersetzung des Beispielsatzes',
+  );
+  const sentence = first.getByLabel('Beispielsatz', { exact: true });
+  await expect(sentence).toHaveValue('The journey takes three hours.');
+  await expect(translation).toHaveValue('Die Reise dauert drei Stunden.');
+  await expect(
+    first.getByText('Übersetzung mit KI erzeugt. Prüfe sie vor dem Import.'),
+  ).toBeVisible();
+
+  await sentence.fill('The journey takes two hours.');
+  await expect(translation).toHaveValue('');
+  await sentence.blur();
+  await expect(translation).toHaveValue(
+    'Übersetzt: The journey takes two hours.',
+  );
+  await translation.fill('Die Reise dauert zwei Stunden.');
+  await expect(translation).toHaveValue('Die Reise dauert zwei Stunden.');
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
 });

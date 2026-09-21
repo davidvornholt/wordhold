@@ -26,14 +26,13 @@ const toPayloadEntry = (
     : {
         example: {
           targetText: draft.example.trim(),
-          ...(draft.generatedExample?.nativeText.trim() === '' ||
-          draft.generatedExample === undefined
+          ...(draft.exampleNativeText.trim() === ''
             ? {}
-            : { nativeText: draft.generatedExample.nativeText.trim() }),
+            : { nativeText: draft.exampleNativeText.trim() }),
           source:
-            draft.generatedExample === undefined
-              ? ('textbook' as const)
-              : ('generated' as const),
+            draft.exampleGenerated === true
+              ? ('generated' as const)
+              : ('textbook' as const),
         },
       }),
   ...(draft.duplicateException === true ? { duplicateException: true } : {}),

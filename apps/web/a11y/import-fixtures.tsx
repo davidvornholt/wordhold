@@ -28,6 +28,7 @@ const deferredEntries: ReadonlyArray<DraftEntry> = [
     targetText: 'memory',
     nativeText: 'Erinnerung',
     example: 'A lasting memory.',
+    exampleNativeText: 'Eine bleibende Erinnerung.',
   },
 ];
 
@@ -108,6 +109,9 @@ export const VerificationFixture = ({
                 target: 'This memory makes me smile.',
                 native: 'Diese Erinnerung bringt mich zum Lächeln.',
               })}
+              translateExample={async (sentence) => ({
+                native: `Übersetzt: ${sentence}`,
+              })}
               initialEntries={verificationEntries}
               initialUnitName={noUnits ? undefined : '  UNIT   2  '}
               onSubmit={() => navigateToFixture('dashboard')}
@@ -152,6 +156,9 @@ export const DeferredVerificationFixture = () => {
         generateExample={async () => ({
           target: 'This memory makes me smile.',
           native: 'Diese Erinnerung bringt mich zum Lächeln.',
+        })}
+        translateExample={async (sentence) => ({
+          native: `Übersetzt: ${sentence}`,
         })}
         initialEntries={deferredEntries}
         initialUnitName={undefined}

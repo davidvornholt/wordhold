@@ -11,9 +11,11 @@ export type DraftEntry = {
   readonly targetText: string;
   readonly nativeText: string;
   readonly example: string;
-  readonly generatedExample?: {
-    readonly nativeText: string;
-  };
+  // German translation of the example; '' while none exists yet.
+  readonly exampleNativeText: string;
+  // Set once "Beispielsatz erzeugen" wrote the sentence, so the import
+  // records the source and the review says the sentence itself is AI text.
+  readonly exampleGenerated?: true;
   readonly grammar?: GrammarInfo;
   readonly confidence?: number;
 };
@@ -86,6 +88,9 @@ type EntryRowProps = {
     targetText: string,
     nativeText: string,
   ) => Promise<{ readonly target: string; readonly native: string }>;
+  readonly translateExample: (
+    targetText: string,
+  ) => Promise<{ readonly native: string }>;
   readonly duplicate: DuplicateVerdict;
   readonly duplicateConfirmed: boolean;
   readonly onChange: (entry: DraftEntry) => void;
@@ -104,6 +109,7 @@ export const EntryRow = ({
   targetLabel,
   unitControl,
   generateExample,
+  translateExample,
   duplicate,
   duplicateConfirmed,
   onChange,
@@ -178,6 +184,7 @@ export const EntryRow = ({
         generate={generateExample}
         onChange={onChange}
         onGenerated={onGeneratedExample}
+        translate={translateExample}
       />
       {grammar === '' ? null : (
         <p className="text-muted-foreground text-xs">{grammar}</p>

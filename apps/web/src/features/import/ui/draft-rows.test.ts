@@ -27,6 +27,7 @@ const confirmedRow = (
   targetText: 'word',
   nativeText: 'Wort',
   example: '',
+  exampleNativeText: '',
   unit,
   duplicateConfirmed: true,
 });

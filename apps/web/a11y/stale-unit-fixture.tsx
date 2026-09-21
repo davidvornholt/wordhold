@@ -7,6 +7,7 @@ const entries: ReadonlyArray<DraftEntry> = [
     targetText: 'memory',
     nativeText: 'Erinnerung',
     example: '',
+    exampleNativeText: '',
   },
 ];
 
@@ -38,6 +39,7 @@ export const StaleUnitVerificationFixture = () => {
           target: 'This memory makes me smile.',
           native: 'Diese Erinnerung bringt mich zum Lächeln.',
         })}
+        translateExample={async () => ({ native: 'Übersetzt.' })}
         initialEntries={entries}
         initialUnitName="Unit 3"
         onSubmit={() => {

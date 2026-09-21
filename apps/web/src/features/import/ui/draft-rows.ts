@@ -22,6 +22,7 @@ const emptyEntry: DraftEntry = {
   targetText: '',
   nativeText: '',
   example: '',
+  exampleNativeText: '',
 };
 
 export const identifiedRows = (
@@ -95,7 +96,8 @@ export const rowWithGeneratedExample = (
       ? {
           ...row,
           example: generated.target,
-          generatedExample: { nativeText: generated.native },
+          exampleNativeText: generated.native,
+          exampleGenerated: true,
           duplicateConfirmed: false,
         }
       : row,

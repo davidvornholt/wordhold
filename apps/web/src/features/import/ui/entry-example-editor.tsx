@@ -7,6 +7,7 @@ import type {
   ExampleGenerationSource,
   GeneratedExample,
 } from './entry-row';
+import { useExampleTranslation } from './use-example-translation';
 
 type EntryExampleEditorProps = {
   readonly disabled: boolean;
@@ -15,6 +16,9 @@ type EntryExampleEditorProps = {
     targetText: string,
     nativeText: string,
   ) => Promise<{ readonly target: string; readonly native: string }>;
+  readonly translate: (
+    targetText: string,
+  ) => Promise<{ readonly native: string }>;
   readonly onChange: (entry: DraftEntry) => void;
   readonly onGenerated: (
     source: ExampleGenerationSource,
@@ -22,29 +26,38 @@ type EntryExampleEditorProps = {
   ) => void;
 };
 
+// The example sentence and its German translation, side by side and both
+// editable. A printed sentence gets its translation from the page reading
+// or, failing that, from a translation requested here; rewriting the
+// sentence clears the translation and requests a new one when the field is
+// left, so what is imported always belongs together.
 export const EntryExampleEditor = ({
   disabled,
   entry,
   generate,
+  translate,
   onChange,
   onGenerated,
 }: EntryExampleEditorProps) => {
   const [generationError, setGenerationError] = useState(false);
   const [generating, setGenerating] = useState(false);
-  const generatedTranslationRef = useRef<HTMLInputElement>(null);
-  const previousGeneratedExampleRef = useRef(entry.generatedExample);
+  const { translating, translationError, translateSentence } =
+    useExampleTranslation({ entry, disabled, translate, onChange });
+  const translationRef = useRef<HTMLInputElement>(null);
+  const previousGeneratedRef = useRef(entry.exampleGenerated);
+  const sentence = entry.example.trim();
   const canGenerate =
     entry.targetText.trim() !== '' && entry.nativeText.trim() !== '';
 
   useEffect(() => {
-    const translationAppeared =
-      previousGeneratedExampleRef.current === undefined &&
-      entry.generatedExample !== undefined;
-    previousGeneratedExampleRef.current = entry.generatedExample;
-    if (translationAppeared) {
-      generatedTranslationRef.current?.focus();
+    const generatedNow =
+      previousGeneratedRef.current === undefined &&
+      entry.exampleGenerated === true;
+    previousGeneratedRef.current = entry.exampleGenerated;
+    if (generatedNow) {
+      translationRef.current?.focus();
     }
-  }, [entry.generatedExample]);
+  }, [entry.exampleGenerated]);
 
   const generateExample = async () => {
     setGenerating(true);
@@ -71,30 +84,37 @@ export const EntryExampleEditor = ({
         className={fieldCompactClass}
         disabled={disabled}
         maxLength={maximumExampleLength}
+        onBlur={() => {
+          translateSentence().catch(() => undefined);
+        }}
         onChange={(event) =>
-          onChange({ ...entry, example: event.target.value })
+          onChange({
+            ...entry,
+            example: event.target.value,
+            exampleNativeText: '',
+          })
         }
         placeholder="Beispielsatz (optional)"
         value={entry.example}
       />
-      {entry.generatedExample === undefined ? null : (
+      {sentence === '' ? null : (
         <input
+          aria-busy={translating}
           aria-label="Deutsche Übersetzung des Beispielsatzes"
           className={fieldCompactClass}
-          disabled={disabled || generating}
+          disabled={disabled || translating}
           maxLength={maximumExampleLength}
           onChange={(event) =>
-            onChange({
-              ...entry,
-              generatedExample: { nativeText: event.target.value },
-            })
+            onChange({ ...entry, exampleNativeText: event.target.value })
           }
-          placeholder="Deutsche Übersetzung"
-          ref={generatedTranslationRef}
-          value={entry.generatedExample.nativeText}
+          placeholder={
+            translating ? 'Übersetzung wird erzeugt …' : 'Deutsche Übersetzung'
+          }
+          ref={translationRef}
+          value={entry.exampleNativeText}
         />
       )}
-      {entry.example.trim() === '' ? (
+      {sentence === '' ? (
         <Button
           className="w-fit"
           disabled={disabled || generating || !canGenerate}
@@ -103,16 +123,22 @@ export const EntryExampleEditor = ({
         >
           {generating ? 'Satz wird erzeugt …' : 'Beispielsatz erzeugen'}
         </Button>
-      ) : null}
-      {entry.generatedExample === undefined ||
-      entry.example.trim() === '' ? null : (
+      ) : (
         <p className="text-muted-foreground text-xs">
-          Mit KI erzeugt. Prüfe Satz und Übersetzung vor dem Import.
+          {entry.exampleGenerated === true
+            ? 'Mit KI erzeugt. Prüfe Satz und Übersetzung vor dem Import.'
+            : 'Übersetzung mit KI erzeugt. Prüfe sie vor dem Import.'}
         </p>
       )}
       {generationError ? (
         <p className="text-destructive text-sm" role="alert">
           Der Beispielsatz konnte nicht erzeugt werden. Versuche es noch einmal.
+        </p>
+      ) : null}
+      {translationError ? (
+        <p className="text-destructive text-sm" role="alert">
+          Die Übersetzung konnte nicht erzeugt werden. Trage sie ein oder
+          versuche es noch einmal, indem du den Satz erneut verlässt.
         </p>
       ) : null}
     </div>
