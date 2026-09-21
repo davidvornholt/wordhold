@@ -62,7 +62,9 @@ test('VerifyForm turns an exact duplicate into an exception when the example cha
   await expect(
     journeyRow.getByRole('checkbox', { name: exceptionCheckbox }),
   ).toHaveCount(0);
-  await journeyRow.getByLabel('Beispielsatz').fill('A long journey home.');
+  await journeyRow
+    .getByLabel('Beispielsatz', { exact: true })
+    .fill('A long journey home.');
   await journeyRow.getByRole('checkbox', { name: exceptionCheckbox }).check();
   await expect(
     page.getByRole('button', { name: '11 Einträge importieren' }),

@@ -22,6 +22,7 @@ const emptyEntry: DraftEntry = {
   targetText: '',
   nativeText: '',
   example: '',
+  exampleNativeText: '',
 };
 
 export const identifiedRows = (
@@ -81,6 +82,20 @@ export const rowWithEntry = (
       : row,
   );
 
+export const rowWithTranslatedExample = (
+  rows: ReadonlyArray<IdentifiedDraftRow>,
+  rowId: string,
+  sentence: string,
+  native: string,
+): ReadonlyArray<IdentifiedDraftRow> =>
+  rows.map((row) =>
+    row.rowId === rowId &&
+    row.example.trim() === sentence &&
+    row.exampleNativeText === ''
+      ? { ...row, exampleNativeText: native }
+      : row,
+  );
+
 export const rowWithGeneratedExample = (
   rows: ReadonlyArray<IdentifiedDraftRow>,
   rowId: string,
@@ -95,7 +110,8 @@ export const rowWithGeneratedExample = (
       ? {
           ...row,
           example: generated.target,
-          generatedExample: { nativeText: generated.native },
+          exampleNativeText: generated.native,
+          exampleGenerated: true,
           duplicateConfirmed: false,
         }
       : row,

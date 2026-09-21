@@ -10,6 +10,7 @@ import {
   generateDraftExample,
   getImportSession,
   getPage,
+  translateDraftExample,
 } from '../../../features/import/server-fns';
 import type {
   Course,
@@ -31,6 +32,7 @@ const draftsFromExtraction = (
         targetText: entry.targetText,
         nativeText: entry.nativeText,
         example: entry.example ?? '',
+        exampleNativeText: entry.exampleTranslation ?? '',
         ...(entry.grammar === undefined ? {} : { grammar: entry.grammar }),
         confidence: entry.confidence,
       }));
@@ -109,6 +111,9 @@ const VerificationPageScreen = ({
           })
         }
         initialEntries={draftsFromExtraction(flow.extraction)}
+        translateExample={(targetText) =>
+          translateDraftExample({ data: { pageId: page.id, targetText } })
+        }
         initialUnitName={flow.extraction?.page.unitName}
         onExtractionRetry={flow.retryPageExtraction}
         onRetryAudio={flow.retryPageAudio}

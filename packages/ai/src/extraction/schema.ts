@@ -50,6 +50,11 @@ export const ExtractedEntry = Schema.Struct({
   example: Schema.optional(
     Schema.String.pipe(Schema.maxLength(maximumExampleLength)),
   ),
+  // The model's German rendering of the printed example. Not on the page,
+  // so it is reviewed and editable before import like a generated sentence.
+  exampleTranslation: Schema.optional(
+    Schema.String.pipe(Schema.maxLength(maximumExampleLength)),
+  ),
   confidence: Schema.Number.pipe(Schema.between(0, 1)),
 });
 export type ExtractedEntryData = typeof ExtractedEntry.Type;

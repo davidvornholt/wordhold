@@ -15,6 +15,7 @@ import { importRuntime } from './runtime';
 import {
   decodeExampleRequest,
   decodeGeneratedExample,
+  decodeTranslationRequest,
 } from './schemas/example-request';
 import {
   retryPageAudio,
@@ -157,26 +158,48 @@ export const retryAudio = createServerFn({ method: 'POST' })
     ),
   );
 
+// A draft can only be worked on while its page awaits verification.
+const editablePage = (pageId: string) =>
+  importRuntime.runPromise(
+    authenticated(
+      Effect.gen(function* () {
+        const repository = yield* ImportRepository;
+        const found = yield* repository.getPage(pageId);
+        if (
+          found === undefined ||
+          found.page.status !== 'awaiting_verification'
+        ) {
+          return yield* new PageNotFoundError({
+            message: 'Diese Seite kann nicht mehr bearbeitet werden.',
+          });
+        }
+        return found;
+      }),
+    ),
+  );
+
+// Fills the German translation of a printed example the extraction did not
+// deliver, or that the learner rewrote during review.
+export const translateDraftExample = createServerFn({ method: 'POST' })
+  .validator(decodeTranslationRequest)
+  .handler(async ({ data }) => {
+    const page = await editablePage(data.pageId);
+    return sentenceRuntime.runPromise(
+      Effect.gen(function* () {
+        const generator = yield* SentenceGen;
+        const translated = yield* generator.translate({
+          targetText: data.targetText,
+          targetLanguage: englishNames[page.course.targetLanguage],
+        });
+        return { native: translated.native };
+      }),
+    );
+  });
+
 export const generateDraftExample = createServerFn({ method: 'POST' })
   .validator(decodeExampleRequest)
   .handler(async ({ data }) => {
-    const page = await importRuntime.runPromise(
-      authenticated(
-        Effect.gen(function* () {
-          const repository = yield* ImportRepository;
-          const found = yield* repository.getPage(data.pageId);
-          if (
-            found === undefined ||
-            found.page.status !== 'awaiting_verification'
-          ) {
-            return yield* new PageNotFoundError({
-              message: 'Diese Seite kann nicht mehr bearbeitet werden.',
-            });
-          }
-          return found;
-        }),
-      ),
-    );
+    const page = await editablePage(data.pageId);
     return sentenceRuntime.runPromise(
       Effect.gen(function* () {
         const generator = yield* SentenceGen;

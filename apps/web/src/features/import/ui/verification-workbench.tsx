@@ -25,6 +25,9 @@ type VerificationWorkbenchProps = {
     targetText: string,
     nativeText: string,
   ) => Promise<{ readonly target: string; readonly native: string }>;
+  readonly translateExample: (
+    targetText: string,
+  ) => Promise<{ readonly native: string }>;
   readonly initialEntries: ReadonlyArray<DraftEntry>;
   readonly initialUnitName: string | undefined;
   readonly onExtractionRetry: () => void;
@@ -59,6 +62,7 @@ export const VerificationWorkbench = ({
   existingEntries,
   extractionKey,
   generateExample,
+  translateExample,
   initialEntries,
   initialUnitName,
   onExtractionRetry,
@@ -96,6 +100,7 @@ export const VerificationWorkbench = ({
           existingEntries={existingEntries}
           generateExample={generateExample}
           initialEntries={initialEntries}
+          translateExample={translateExample}
           initialUnitName={initialUnitName}
           key={extractionKey}
           onSubmit={onSubmit}

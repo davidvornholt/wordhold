@@ -16,6 +16,7 @@ const row = (targetText: string): DraftRow => ({
   targetText,
   nativeText: 'Wort',
   example: '',
+  exampleNativeText: '',
   unit,
   duplicateConfirmed: false,
 });
