@@ -120,6 +120,9 @@ test('stopping the audio leaves the card actions where they were', async ({
   });
   const stop = page.getByRole('button', { name: 'Audio stoppen' });
   await expect(stop).toBeVisible();
+  // Measure with the web font in place, or a late font swap would look like
+  // a shift.
+  await page.evaluate(() => document.fonts.ready);
   // Document coordinates: the click may scroll the phone viewport by a pixel,
   // which is not a layout shift.
   const documentBox = () =>

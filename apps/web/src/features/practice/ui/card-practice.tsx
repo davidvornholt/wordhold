@@ -1,6 +1,6 @@
 import type { LanguageCode } from '@wordhold/db/schema/courses';
 import type { ReviewMode } from '@wordhold/db/schema/practice';
-import { type SubmitEvent, useId, useRef } from 'react';
+import { useId, useRef } from 'react';
 import type { PrepareExamples } from '../../../shared/examples/example-model';
 import type { RailOutcome } from '../../../shared/session/rail-outcome';
 import { WordCard } from '../../../shared/ui/word-card';
@@ -14,10 +14,12 @@ import { FeedbackActions } from './feedback-actions';
 import { FeedbackPanel } from './feedback-panel';
 import { feedbackTone } from './feedback-tone';
 import { PracticeAnswerForm } from './practice-answer-form';
+import { useCardContinuation } from './use-card-continuation';
 import { useCardFlow } from './use-card-flow';
 import { useCardSubmission } from './use-card-submission';
 import { usePracticeAudio } from './use-practice-audio';
 import { usePreparedExample } from './use-prepared-example';
+import { useRetype } from './use-retype';
 
 type SessionItem = PracticeSession['items'][number];
 
@@ -88,6 +90,8 @@ export const CardPractice = ({
     onNext,
   });
   const { result, busy, resolution } = submission;
+  const answerLanguage = item.direction === 'to_target' ? targetLanguage : 'de';
+  const retype = useRetype(result, answerLanguage);
   useCardFlow({
     busy,
     result,
@@ -96,14 +100,16 @@ export const CardPractice = ({
     onJudged,
     inputRef,
     nextButtonRef,
+    retypeRequired: retype.required,
   });
-
-  const onSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    await submission.submitAnswer();
-  };
   const tone = result === null ? 'neutral' : feedbackTone(result);
   const pendingWrong = result?.graded === true && !result.stored;
+  const { continueCard, onSubmit } = useCardContinuation({
+    submission,
+    checkRetype: retype.check,
+    inputRef,
+    onNext,
+  });
 
   return (
     <>
@@ -117,9 +123,7 @@ export const CardPractice = ({
       >
         {result === null ? null : (
           <FeedbackPanel
-            answerLanguage={
-              item.direction === 'to_target' ? targetLanguage : 'de'
-            }
+            answerLanguage={answerLanguage}
             busy={busy || resolution !== null}
             example={example}
             id={feedbackDescriptionId}
@@ -142,6 +146,7 @@ export const CardPractice = ({
         onSkip={submission.skipCard}
         onSubmit={onSubmit}
         promptId={promptId}
+        retype={retype.field}
         skipping={busy && submission.skipped}
         submittedAnswer={submission.submittedAnswer}
         tone={tone}
@@ -159,11 +164,8 @@ export const CardPractice = ({
           feedbackDescriptionId={feedbackDescriptionId}
           graded={result.graded}
           nextButton={nextButtonRef}
-          onNext={() => {
-            if (!result.graded || result.stored) {
-              onNext(result);
-            }
-          }}
+          nextDisabled={retype.required && retype.empty}
+          onNext={continueCard}
           onResolveWrong={submission.resolveWrongAnswer}
           pendingWrong={pendingWrong}
           playWord={audio.playWord}
