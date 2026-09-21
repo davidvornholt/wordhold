@@ -85,15 +85,16 @@ export const ImportFixture = ({
           : null
       }
       onFilesSelected={(files) => {
-        setPages(
-          files.map((file, index) => ({
-            id: `selected-page-${index + 1}`,
+        setPages((current) => [
+          ...current,
+          ...files.map((file, index) => ({
+            id: `selected-page-${current.length + index + 1}`,
             file,
-            position: index,
+            position: current.length + index,
             previewUrl: photographedPage,
-            stage: 'waiting',
+            stage: 'waiting' as const,
           })),
-        );
+        ]);
       }}
       onRemove={(pageId) =>
         setPages((current) => current.filter((page) => page.id !== pageId))

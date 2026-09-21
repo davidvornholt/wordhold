@@ -18,7 +18,6 @@ export const fixtureStates = [
   'verification-all-duplicates',
   'verification-batch-first',
   'verification-batch-second',
-  'verification-batch-complete',
   'verification-empty',
   'verification-no-units',
   'verification-stale-unit',

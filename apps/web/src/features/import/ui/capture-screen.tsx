@@ -8,6 +8,7 @@ import {
   type QueuedPage,
 } from '../services/upload-queue';
 import { CaptureUploadQueue } from './capture-upload-queue';
+import { usePastedImages } from './use-pasted-images';
 
 type CaptureScreenProps = {
   readonly backControl: ReactNode;
@@ -48,15 +49,18 @@ export const CaptureScreen = ({
   reviewAction,
 }: CaptureScreenProps) => {
   const batchLocked = batchStarted || hasStoredUpload(pages);
+  const acceptsPhotos =
+    !(busy || batchLocked) && pages.length < maximumUploadBatchSize;
+  usePastedImages(onFilesSelected, acceptsPhotos);
   return (
     <PageLayout
       backControl={backControl}
       title={`${courseName}: Seiten erfassen`}
     >
       <p className="text-muted-foreground text-sm">
-        Fotografiere eine Vokabelseite oder wähle bis zu zehn vorhandene Fotos.
-        Wordhold speichert und liest jede Seite einzeln. Danach prüfst du die
-        erkannten Einträge.
+        Fotografiere eine Vokabelseite, wähle bis zu zehn vorhandene Fotos oder
+        füge ein Bild aus der Zwischenablage ein (Strg+V). Wordhold speichert
+        und liest jede Seite einzeln. Danach prüfst du die erkannten Einträge.
       </p>
       <form
         aria-busy={busy}
@@ -65,9 +69,7 @@ export const CaptureScreen = ({
       >
         <fieldset
           className="grid gap-3 sm:grid-cols-2"
-          disabled={
-            busy || pages.length >= maximumUploadBatchSize || batchLocked
-          }
+          disabled={!acceptsPhotos}
         >
           <legend className="sr-only">Fotos hinzufügen</legend>
           <label className="flex flex-col gap-2 border border-input bg-card p-4 text-sm">

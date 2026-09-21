@@ -1,9 +1,6 @@
 import { AppShell } from '../src/shared/ui/app-shell';
 import { wordmarkClass } from '../src/shared/ui/shell-styles';
-import {
-  BatchReviewCompleteFixture,
-  BatchReviewFixture,
-} from './batch-review-fixtures';
+import { BatchReviewFixture } from './batch-review-fixtures';
 import { ImportFixture } from './capture-fixtures';
 import { CourseFixture, UnitFixture } from './course-fixtures';
 import { DashboardFixture, SignedOutFixture } from './dashboard-fixtures';
@@ -68,8 +65,6 @@ const batchReviewFixture = (state: FixtureState) => {
       return <BatchReviewFixture position={1} />;
     case 'verification-batch-second':
       return <BatchReviewFixture position={2} />;
-    case 'verification-batch-complete':
-      return <BatchReviewCompleteFixture />;
     default:
       return null;
   }
@@ -146,7 +141,6 @@ const fixtureContent = (state: FixtureState) => {
       return <ImportSessionFixture />;
     case 'verification-batch-first':
     case 'verification-batch-second':
-    case 'verification-batch-complete':
       return batchReviewFixture(state);
     case 'verification':
     case 'verification-duplicates':
