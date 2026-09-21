@@ -27,7 +27,22 @@ test('a missed card returns in the end-of-section after-round', async ({
   await answer.fill('wrong');
   await page.getByRole('button', { name: 'Prüfen' }).click();
   await expect(page.getByText('Noch nicht sicher')).toBeVisible();
-  await page.getByRole('button', { name: 'Weiter' }).dblclick();
+  // A mistake is written out before the card moves on, as when learning it.
+  const retype = page.getByLabel('Schreib die Antwort ab');
+  await expect(retype).toBeFocused();
+  await expect(retype).toHaveAttribute('placeholder', 'memory');
+  const next = page.getByRole('button', { name: 'Weiter' });
+  await expect(next).toBeDisabled();
+  await retype.fill('memorie');
+  await next.click();
+  await expect(
+    page.getByText('Noch nicht ganz. Schreib die Vokabel genau so ab.'),
+  ).toBeVisible();
+  await expect(retype).toHaveValue('');
+  await expect(retype).toBeFocused();
+  assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
+  await retype.fill('memory');
+  await retype.press('Enter');
   await expect(page.getByText('1 von 2 Karten bearbeitet')).toBeVisible();
   await expect(answer).toBeFocused();
 
@@ -66,6 +81,7 @@ test('an unknown card reveals its solution and returns in the after-round', asyn
   await expect(page.getByText('Nicht gewusst')).toBeVisible();
   await expect(page.getByText('Erwartet: memory')).toBeVisible();
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
+  await page.getByLabel('Schreib die Antwort ab').fill('memory');
   await page.getByRole('button', { name: 'Weiter' }).click();
   await expect(page.getByText('1 von 2 Karten bearbeitet')).toBeVisible();
 
