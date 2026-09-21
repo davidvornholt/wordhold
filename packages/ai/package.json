@@ -27,7 +27,7 @@
     "@ai-sdk/openai": "^4.0.69",
     "@aws-sdk/client-polly": "^3.1135.0",
     "ai": "^7.0.105",
-    "effect": "^3.22.1"
+    "effect": "^3.22.2"
   },
   "devDependencies": {
     "@davidvornholt/typescript-config": "workspace:*",
