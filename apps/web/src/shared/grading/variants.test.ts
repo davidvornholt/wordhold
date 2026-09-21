@@ -69,6 +69,32 @@ describe('answerVariants punctuation and separators', () => {
     });
   });
 
+  it('reads compact article pairs as alternatives however they are spaced', () => {
+    for (const notation of [
+      'el/la tenista',
+      'el / la tenista',
+      'el/ la tenista',
+    ]) {
+      expect(answerVariants(notation)).toEqual({
+        _tag: 'Expanded',
+        readings: ['el tenista', 'la tenista'],
+      });
+    }
+    expect(answerVariants('un/une ami')).toEqual({
+      _tag: 'Expanded',
+      readings: ['un ami', 'une ami'],
+    });
+    expect(answerVariants('eine/ein Angestellte(r)')).toEqual({
+      _tag: 'Expanded',
+      readings: [
+        'eine angestellter',
+        'ein angestellter',
+        'eine angestellte',
+        'ein angestellte',
+      ],
+    });
+  });
+
   it('expands explicit and conservative compact phrase alternatives', () => {
     for (const notation of [
       'die Straße/der Weg',

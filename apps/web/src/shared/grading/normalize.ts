@@ -6,6 +6,7 @@ const leadingMarks = /^[¿¡\s]+/u;
 const trailingPunctuation = /[.,;:!?\s]+$/u;
 const innerWhitespace = /\s+/gu;
 const ignorableInnerPunctuation = /,+/gu;
+const slashSpacing = /\s*\/\s*/gu;
 
 export const normalizeAnswer = (text: string): string =>
   text
@@ -19,7 +20,10 @@ export const normalizeAnswer = (text: string): string =>
     .trim();
 
 // Stored answers and judge-cache keys keep their existing canonical form.
-// Grading additionally treats commas as spacing so punctuation copied from a
-// textbook never becomes part of what the learner must reproduce.
+// Grading additionally treats commas as spacing and ignores spacing around a
+// slash, so punctuation copied from a textbook never becomes part of what
+// the learner must reproduce: "el / la tenista" is "el/la tenista".
 export const normalizeAnswerForComparison = (text: string): string =>
-  normalizeAnswer(text.replace(ignorableInnerPunctuation, ' '));
+  normalizeAnswer(
+    text.replace(ignorableInnerPunctuation, ' ').replace(slashSpacing, '/'),
+  );
