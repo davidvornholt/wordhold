@@ -83,13 +83,21 @@ type UploadQueueOperations = {
   readonly onStageChange: (page: QueuedPage) => void;
 };
 
-const errorMessage = (cause: unknown): string =>
-  typeof cause === 'object' &&
-  cause !== null &&
-  'message' in cause &&
-  typeof cause.message === 'string'
-    ? cause.message
-    : String(cause);
+const fallbackMessage =
+  'Die Seite konnte nicht verarbeitet werden. Versuche es noch einmal.';
+
+// Server failures arrive as errors with the typed German message; anything
+// without a usable message gets a sentence the learner can act on.
+const errorMessage = (cause: unknown): string => {
+  const message =
+    typeof cause === 'object' &&
+    cause !== null &&
+    'message' in cause &&
+    typeof cause.message === 'string'
+      ? cause.message
+      : String(cause);
+  return message.trim() === '' ? fallbackMessage : message;
+};
 
 const reportStage = (
   page: QueuedPage,

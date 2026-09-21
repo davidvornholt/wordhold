@@ -4,6 +4,7 @@ import { ExtractionError } from '@wordhold/ai/extraction/error';
 import { Effect } from 'effect';
 import { Storage } from '../../../shared/storage/server';
 import { StorageError } from '../../../shared/storage/storage-error';
+import { ExtractionFailedError } from '../errors/extraction-failed-error';
 import { ImportDatabaseError } from '../errors/import-database-error';
 import { PageNotPendingError } from '../errors/page-not-pending-error';
 import { retryPendingExtraction } from './extraction-retry';
@@ -104,6 +105,8 @@ describe('retryPendingExtraction', () => {
 
   it('retains the provider failure after loading the pending image', async () => {
     const providerError = new ExtractionError({
+      reason: 'provider',
+      message: 'provider unavailable',
       cause: new Error('provider unavailable'),
     });
     const failure = await Effect.runPromise(
@@ -118,7 +121,12 @@ describe('retryPendingExtraction', () => {
         ),
       ),
     );
-    expect(failure).toBe(providerError);
+    expect(failure).toBeInstanceOf(ExtractionFailedError);
+    expect(failure).toMatchObject({
+      message:
+        'Der Lesedienst konnte die Seite nicht auslesen. Versuche es in ein paar Minuten noch einmal.',
+      cause: providerError,
+    });
   });
 });
 

@@ -29,3 +29,14 @@ export const GeneratedExample = Schema.Struct({
 
 export const decodeExampleRequest = Schema.decodeUnknownSync(ExampleRequest);
 export const decodeGeneratedExample = Schema.decodeUnknown(GeneratedExample);
+
+export const TranslationRequest = Schema.Struct({
+  pageId: Schema.UUID,
+  targetText: Schema.Trim.pipe(
+    Schema.minLength(1),
+    Schema.maxLength(maximumExampleLength),
+  ),
+});
+
+export const decodeTranslationRequest =
+  Schema.decodeUnknownSync(TranslationRequest);

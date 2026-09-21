@@ -22,7 +22,9 @@ export const extractionPrompt = (targetLanguage: string): string =>
     'translation, grammar details when printed (gender, plural, irregular',
     'forms), and the printed',
     'example sentence if there is one. Copy text exactly as printed,',
-    'including accents. Report a confidence between 0 and 1 per entry and',
+    'including accents. When an entry has an example sentence, also give a',
+    'faithful German translation of it as exampleTranslation; never invent',
+    'an example that is not printed. Report a confidence between 0 and 1 per entry and',
     'overall; lower it whenever print is unclear or cropped. If one printed',
     'page number is visible, report its integer value as pageNumber and your',
     'confidence in that reading as pageNumberConfidence. Do not infer a page',
@@ -72,7 +74,12 @@ export class Extraction extends Effect.Service<Extraction>()(
             });
             return output;
           },
-          catch: (cause) => new ExtractionError({ cause }),
+          catch: (cause) =>
+            new ExtractionError({
+              reason: 'provider',
+              message: `The reading service rejected or did not answer the request for ${modelId}.`,
+              cause,
+            }),
         });
 
       const runModel = (
@@ -82,7 +89,14 @@ export class Extraction extends Effect.Service<Extraction>()(
         callModel(modelId, input).pipe(
           Effect.flatMap((output) =>
             decodePage(output).pipe(
-              Effect.mapError((cause) => new ExtractionError({ cause })),
+              Effect.mapError(
+                (cause) =>
+                  new ExtractionError({
+                    reason: 'invalidOutput',
+                    message: `${modelId} answered outside the page schema.`,
+                    cause,
+                  }),
+              ),
             ),
           ),
         );

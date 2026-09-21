@@ -28,6 +28,7 @@ const deferredEntries: ReadonlyArray<DraftEntry> = [
     targetText: 'memory',
     nativeText: 'Erinnerung',
     example: 'A lasting memory.',
+    exampleNativeText: 'Eine bleibende Erinnerung.',
   },
 ];
 
@@ -108,6 +109,9 @@ export const VerificationFixture = ({
                 target: 'This memory makes me smile.',
                 native: 'Diese Erinnerung bringt mich zum Lächeln.',
               })}
+              translateExample={async (sentence) => ({
+                native: `Übersetzt: ${sentence}`,
+              })}
               initialEntries={verificationEntries}
               initialUnitName={noUnits ? undefined : '  UNIT   2  '}
               onSubmit={() => navigateToFixture('dashboard')}
@@ -139,6 +143,12 @@ const makeDeferred = (): Deferred => {
 
 export const DeferredVerificationFixture = () => {
   const deferredRef = useRef<Deferred | null>(null);
+  const [translations, setTranslations] = useState<
+    ReadonlyArray<{
+      readonly sentence: string;
+      readonly pending: Deferred;
+    }>
+  >([]);
   const [busy, setBusy] = useState(false);
   const [calls, setCalls] = useState(0);
   const [snapshot, setSnapshot] = useState('none');
@@ -153,6 +163,12 @@ export const DeferredVerificationFixture = () => {
           target: 'This memory makes me smile.',
           native: 'Diese Erinnerung bringt mich zum Lächeln.',
         })}
+        translateExample={async (sentence) => {
+          const pending = makeDeferred();
+          setTranslations((current) => [...current, { sentence, pending }]);
+          await pending.promise;
+          return { native: `Übersetzt: ${sentence}` };
+        }}
         initialEntries={deferredEntries}
         initialUnitName={undefined}
         onSubmit={(entries) => {
@@ -175,6 +191,11 @@ export const DeferredVerificationFixture = () => {
       <output aria-label="Verification status">{status}</output>
       <fieldset>
         <legend>Test controls</legend>
+        {translations.map(({ sentence, pending }, index) => (
+          <button key={sentence} onClick={pending.resolve} type="button">
+            Resolve translation {index + 1}: {sentence}
+          </button>
+        ))}
         <button onClick={() => deferredRef.current?.resolve()} type="button">
           Resolve verification
         </button>

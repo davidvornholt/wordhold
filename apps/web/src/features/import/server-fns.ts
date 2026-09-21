@@ -2,7 +2,7 @@ import { createServerFn } from '@tanstack/react-start';
 import { getRequest } from '@tanstack/react-start/server';
 import type { ExtractionResult } from '@wordhold/ai/extraction';
 import { SentenceGen } from '@wordhold/ai/sentence';
-import { Effect } from 'effect';
+import { Cause, Effect } from 'effect';
 import { sentenceRuntime } from '../../shared/ai/runtime';
 import { requireSession } from '../../shared/auth/require-session';
 import { englishNames } from '../../shared/languages';
@@ -15,6 +15,7 @@ import { importRuntime } from './runtime';
 import {
   decodeExampleRequest,
   decodeGeneratedExample,
+  decodeTranslationRequest,
 } from './schemas/example-request';
 import {
   retryPageAudio,
@@ -25,8 +26,17 @@ import { discardPendingImportSession } from './services/discard-page';
 import { retryPendingExtraction } from './services/extraction-retry';
 import { ImportRepository } from './services/repository';
 
+// Log nested error messages before a failure leaves the server:
+// the learner sees the typed message, the log keeps the provider diagnostic.
 const authenticated = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
-  Effect.zipRight(requireSession(getRequest().headers), effect);
+  Effect.zipRight(requireSession(getRequest().headers), effect).pipe(
+    Effect.tapErrorCause((cause) =>
+      Effect.logError(
+        'import request failed',
+        Cause.pretty(cause, { renderErrorCause: true }),
+      ),
+    ),
+  );
 
 export const listCourses = createServerFn().handler(() =>
   importRuntime.runPromise(
@@ -148,26 +158,48 @@ export const retryAudio = createServerFn({ method: 'POST' })
     ),
   );
 
+// A draft can only be worked on while its page awaits verification.
+const editablePage = (pageId: string) =>
+  importRuntime.runPromise(
+    authenticated(
+      Effect.gen(function* () {
+        const repository = yield* ImportRepository;
+        const found = yield* repository.getPage(pageId);
+        if (
+          found === undefined ||
+          found.page.status !== 'awaiting_verification'
+        ) {
+          return yield* new PageNotFoundError({
+            message: 'Diese Seite kann nicht mehr bearbeitet werden.',
+          });
+        }
+        return found;
+      }),
+    ),
+  );
+
+// Fills the German translation of a printed example the extraction did not
+// deliver, or that the learner rewrote during review.
+export const translateDraftExample = createServerFn({ method: 'POST' })
+  .validator(decodeTranslationRequest)
+  .handler(async ({ data }) => {
+    const page = await editablePage(data.pageId);
+    return sentenceRuntime.runPromise(
+      Effect.gen(function* () {
+        const generator = yield* SentenceGen;
+        const translated = yield* generator.translate({
+          targetText: data.targetText,
+          targetLanguage: englishNames[page.course.targetLanguage],
+        });
+        return { native: translated.native };
+      }),
+    );
+  });
+
 export const generateDraftExample = createServerFn({ method: 'POST' })
   .validator(decodeExampleRequest)
   .handler(async ({ data }) => {
-    const page = await importRuntime.runPromise(
-      authenticated(
-        Effect.gen(function* () {
-          const repository = yield* ImportRepository;
-          const found = yield* repository.getPage(data.pageId);
-          if (
-            found === undefined ||
-            found.page.status !== 'awaiting_verification'
-          ) {
-            return yield* new PageNotFoundError({
-              message: 'Diese Seite kann nicht mehr bearbeitet werden.',
-            });
-          }
-          return found;
-        }),
-      ),
-    );
+    const page = await editablePage(data.pageId);
     return sentenceRuntime.runPromise(
       Effect.gen(function* () {
         const generator = yield* SentenceGen;

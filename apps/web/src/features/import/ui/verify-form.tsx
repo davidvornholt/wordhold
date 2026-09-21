@@ -15,6 +15,7 @@ import {
   rowWithConfirmation,
   rowWithEntry,
   rowWithGeneratedExample,
+  rowWithTranslatedExample,
   rowWithUnit,
   withoutRow,
 } from './draft-rows';
@@ -39,26 +40,21 @@ type VerifyFormProps = {
     targetText: string,
     nativeText: string,
   ) => Promise<{ readonly target: string; readonly native: string }>;
+  readonly translateExample: (
+    targetText: string,
+  ) => Promise<{ readonly native: string }>;
   readonly onSubmit: (
     verifiedEntries: ReadonlyArray<VerificationEntry>,
   ) => void;
   readonly submitLabel?: (entryCount: number) => string;
 };
 
-export const VerifyForm = ({
-  initialEntries,
-  initialUnitName,
-  existingEntries,
-  generateExample,
-  targetLabel,
-  units,
-  busy,
-  onSubmit,
-  submitLabel = (entryCount) =>
-    entryCount === 0
-      ? 'Seite abschließen'
-      : `${countNoun(entryCount, 'Eintrag', 'Einträge')} importieren`,
-}: VerifyFormProps) => {
+const useDraftForm = (
+  initialEntries: ReadonlyArray<DraftEntry>,
+  units: ReadonlyArray<Unit>,
+  initialUnitName: string | undefined,
+  { existingEntries, busy }: Pick<VerifyFormProps, 'existingEntries' | 'busy'>,
+) => {
   const [bulkUnit, setBulkUnit] = useState<UnitSelectionData>(() =>
     initialUnitSelection(units, initialUnitName),
   );
@@ -70,8 +66,30 @@ export const VerifyForm = ({
       initialUnitSelection(units, initialUnitName),
     ),
   );
-
   const formState = draftFormState(draftEntries, units, existingEntries, busy);
+  return { bulkUnit, setBulkUnit, draftEntries, setDraftEntries, formState };
+};
+
+export const VerifyForm = ({
+  initialEntries,
+  initialUnitName,
+  existingEntries,
+  generateExample,
+  translateExample,
+  targetLabel,
+  units,
+  busy,
+  onSubmit,
+  submitLabel = (entryCount) =>
+    entryCount === 0
+      ? 'Seite abschließen'
+      : `${countNoun(entryCount, 'Eintrag', 'Einträge')} importieren`,
+}: VerifyFormProps) => {
+  const { bulkUnit, setBulkUnit, draftEntries, setDraftEntries, formState } =
+    useDraftForm(initialEntries, units, initialUnitName, {
+      existingEntries,
+      busy,
+    });
 
   return (
     <form
@@ -105,6 +123,7 @@ export const VerifyForm = ({
             entryNumber={index + 1}
             generateExample={generateExample}
             key={entry.rowId}
+            translateExample={translateExample}
             onChange={(next) =>
               setDraftEntries((current) => rowWithEntry(current, index, next))
             }
@@ -120,6 +139,16 @@ export const VerifyForm = ({
                   entry.rowId,
                   source,
                   generated,
+                ),
+              )
+            }
+            onTranslatedExample={(sentence, native) =>
+              setDraftEntries((current) =>
+                rowWithTranslatedExample(
+                  current,
+                  entry.rowId,
+                  sentence,
+                  native,
                 ),
               )
             }
