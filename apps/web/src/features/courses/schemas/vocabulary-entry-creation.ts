@@ -30,6 +30,17 @@ export const VocabularyTranslationRequest = Schema.Struct({
 export type VocabularyTranslationRequestData =
   typeof VocabularyTranslationRequest.Type;
 
+// One typed side of a word pair; the other is proposed in the course's
+// language or German. The unit gives the proposal its context.
+export const VocabularyTranslationSuggestion = Schema.Struct({
+  courseId: Schema.UUID,
+  unitId: Schema.UUID,
+  text: EntryText,
+  given: Schema.Literal('target', 'native'),
+});
+export type VocabularyTranslationSuggestionData =
+  typeof VocabularyTranslationSuggestion.Type;
+
 export const decodeCreateVocabularyEntry = Schema.decodeUnknownSync(
   CreateVocabularyEntry,
 );
@@ -38,4 +49,7 @@ export const decodeVocabularyExampleRequest = Schema.decodeUnknownSync(
 );
 export const decodeVocabularyTranslationRequest = Schema.decodeUnknownSync(
   VocabularyTranslationRequest,
+);
+export const decodeVocabularyTranslationSuggestion = Schema.decodeUnknownSync(
+  VocabularyTranslationSuggestion,
 );

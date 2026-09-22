@@ -88,6 +88,7 @@ const runService = (
           onTranslate();
           return Effect.succeed({ native: generated.nativeText ?? '' });
         },
+        translateWord: () => Effect.succeed({ translation: 'Buch' }),
       }),
     ),
     Layer.succeed(Storage, storage),

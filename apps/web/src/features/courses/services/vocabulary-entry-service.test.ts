@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'bun:test';
-import { SentenceGen } from '@wordhold/ai/sentence';
+import {
+  SentenceGen,
+  type WordTranslationRequest,
+} from '@wordhold/ai/sentence';
 import { SentenceGenError } from '@wordhold/ai/sentence/error';
 import { Tts } from '@wordhold/ai/tts';
 import { TtsError } from '@wordhold/ai/tts/error';
@@ -47,6 +50,7 @@ const runService = <A, E>(
 ) => {
   const written: Array<string> = [];
   const audioReferences: Array<string> = [];
+  const wordRequests: Array<WordTranslationRequest> = [];
   const storage: StorageShape = {
     read: () => Effect.succeed(new Uint8Array()),
     reconcile: () => Effect.succeed([]),
@@ -61,6 +65,12 @@ const runService = <A, E>(
     Layer.succeed(VocabularyEntryStore, {
       readTargetLanguage: () =>
         Effect.succeed(courseKnown ? ('fr' as const) : undefined),
+      readUnit: () =>
+        Effect.succeed(
+          courseKnown
+            ? { targetLanguage: 'fr' as const, unitName: 'Unité 1' }
+            : undefined,
+        ),
       create: () => Effect.succeed(createResult),
       storeAudio: (_entryId, profile) => {
         audioReferences.push(profile);
@@ -83,6 +93,10 @@ const runService = <A, E>(
               }),
         translate: () =>
           Effect.succeed({ native: 'Diese Reise ist eine schöne Erinnerung.' }),
+        translateWord: (request) => {
+          wordRequests.push(request);
+          return Effect.succeed({ translation: 'die Erinnerung' });
+        },
       }),
     ),
     Layer.succeed(Storage, storage),
@@ -101,7 +115,12 @@ const runService = <A, E>(
     Effect.flatMap(VocabularyEntryService, use).pipe(
       Effect.provide(live),
       Effect.either,
-      Effect.map((result) => ({ result, written, audioReferences })),
+      Effect.map((result) => ({
+        result,
+        written,
+        audioReferences,
+        wordRequests,
+      })),
     ),
   );
 };
@@ -185,5 +204,40 @@ describe('VocabularyEntryService', () => {
     expect(
       failed.result._tag === 'Left' ? failed.result.left._tag : undefined,
     ).toBe('CourseExampleGenerationError');
+  });
+
+  it('proposes the missing side of a word pair with the unit as context', async () => {
+    const suggested = await runService((service) =>
+      service.suggestTranslation({
+        courseId,
+        unitId,
+        text: 'la mémoire',
+        given: 'target',
+      }),
+    );
+    expect(Either.getOrNull(suggested.result)).toEqual({
+      translation: 'die Erinnerung',
+    });
+    expect(suggested.wordRequests).toEqual([
+      {
+        text: 'la mémoire',
+        given: 'target',
+        targetLanguage: 'French',
+        context: 'Unité 1',
+      },
+    ]);
+    const unitMissing = await runService(
+      (service) =>
+        service.suggestTranslation({
+          courseId,
+          unitId,
+          text: 'la mémoire',
+          given: 'target',
+        }),
+      { courseKnown: false },
+    );
+    expect(
+      unitMissing.result._tag === 'Left' ? unitMissing.result.left : undefined,
+    ).toBeInstanceOf(CourseUnitNotFoundError);
   });
 });

@@ -43,6 +43,28 @@ export const generateDraftExample = (
     );
   });
 
+// The missing side of a word pair, in the form a textbook list prints, for
+// the learner to review in the form before saving.
+export const suggestDraftTranslation = (
+  generator: SentenceGenerator,
+  language: LanguageCode,
+  unitName: string,
+  word: { readonly text: string; readonly given: 'target' | 'native' },
+) =>
+  generator
+    .translateWord({
+      text: word.text,
+      given: word.given,
+      targetLanguage: englishNames[language],
+      context: unitName,
+    })
+    .pipe(
+      Effect.map((translated) => ({ translation: translated.translation })),
+      Effect.mapError(() =>
+        generationFailed('Die Übersetzung konnte nicht vorgeschlagen werden.'),
+      ),
+    );
+
 export const translateDraftExample = (
   generator: SentenceGenerator,
   language: LanguageCode,

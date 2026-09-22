@@ -228,6 +228,11 @@ export const UnitFixture = ({ state = 'mixed' }: UnitFixtureProps) => {
             Auswahl {intent === 'learn' ? 'kennenlernen' : 'üben'}
           </Button>
         )}
+        suggestTranslation={(text, given) =>
+          Promise.resolve({
+            translation: given === 'target' ? 'die Reise' : `the ${text}`,
+          })
+        }
         targetLabel={targetLabel}
         targetLanguage="en"
         translateDraftExample={async () => ({

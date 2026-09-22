@@ -9,6 +9,7 @@ import { NewVocabularyForm } from './new-vocabulary-form';
 import { UnitVocabularyEmpty } from './unit-vocabulary-empty';
 import type { NewVocabularyEntryDraft } from './use-new-vocabulary-entry';
 import { VocabularyLibrary } from './vocabulary-library';
+import type { SuggestTranslation } from './word-pair-fields';
 
 type UnitVocabularyProps = {
   readonly entries: ReadonlyArray<VocabularyEntry>;
@@ -33,6 +34,7 @@ type UnitVocabularyProps = {
   readonly translateDraftExample: (
     targetText: string,
   ) => Promise<{ readonly native: string }>;
+  readonly suggestTranslation: SuggestTranslation;
 };
 
 // The unit's vocabulary with the one way to grow it by hand. The form sits
@@ -50,6 +52,7 @@ export const UnitVocabulary = ({
   createEntry,
   generateDraftExample,
   translateDraftExample,
+  suggestTranslation,
 }: UnitVocabularyProps) => {
   const [adding, setAdding] = useState(false);
   const headingId = useId();
@@ -59,6 +62,7 @@ export const UnitVocabulary = ({
       createEntry={createEntry}
       entries={entries}
       generateExample={generateDraftExample}
+      suggestTranslation={suggestTranslation}
       targetLabel={targetLabel}
       targetLanguage={targetLanguage}
       translateExample={translateDraftExample}
