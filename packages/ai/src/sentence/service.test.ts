@@ -5,6 +5,8 @@ import {
   SentenceBatch,
   SentenceTranslation,
   sentenceTranslationPrompt,
+  WordTranslation,
+  wordTranslationPrompt,
 } from './service';
 
 const decode = Schema.decodeUnknownSync(SentenceBatch);
@@ -49,5 +51,32 @@ describe('sentence translation', () => {
     ).toEqual({
       native: 'Wenn du Fleisch isst, ist deine Ernährung nicht vegetarisch.',
     });
+  });
+});
+
+describe('word translation', () => {
+  it('asks for the missing side in textbook form and names the unit', () => {
+    const toGerman = wordTranslationPrompt({
+      text: 'memory',
+      given: 'target',
+      targetLanguage: 'English',
+      context: 'Unit 3 – Holidays',
+    });
+    expect(toGerman).toContain('German translation of the English');
+    expect(toGerman).toContain('"memory"');
+    expect(toGerman).toContain('Unit 3 – Holidays');
+    const toTarget = wordTranslationPrompt({
+      text: 'die Reise',
+      given: 'native',
+      targetLanguage: 'French',
+    });
+    expect(toTarget).toContain('French translation of the German');
+    expect(toTarget).not.toContain('unit');
+    expect(
+      Schema.decodeUnknownSync(WordTranslation)({ translation: ' le voyage ' }),
+    ).toEqual({ translation: 'le voyage' });
+    expect(() =>
+      Schema.decodeUnknownSync(WordTranslation)({ translation: '  ' }),
+    ).toThrow();
   });
 });

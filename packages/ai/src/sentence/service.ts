@@ -1,7 +1,10 @@
 import { generateText, Output } from 'ai';
 import { Effect, Schema } from 'effect';
 import { sentenceModel } from '../config';
-import { maximumExampleLength } from '../extraction/schema';
+import {
+  maximumEntryTextLength,
+  maximumExampleLength,
+} from '../extraction/schema';
 import { BedrockProvider } from '../providers/bedrock';
 import {
   providerJsonSchema,
@@ -26,6 +29,25 @@ export type SentenceBatchData = typeof SentenceBatch.Type;
 
 export const SentenceTranslation = Schema.Struct({ native: SentenceText });
 export type SentenceTranslationData = typeof SentenceTranslation.Type;
+
+const WordText = Schema.Trim.pipe(
+  Schema.minLength(1),
+  Schema.maxLength(maximumEntryTextLength),
+);
+
+export const WordTranslation = Schema.Struct({ translation: WordText });
+export type WordTranslationData = typeof WordTranslation.Type;
+
+// Which side of a vocabulary pair the learner typed. The other side is
+// completed in the form a textbook vocabulary list prints.
+export type WordTranslationRequest = {
+  readonly text: string;
+  readonly given: 'target' | 'native';
+  readonly targetLanguage: string;
+  // The unit name, when known: "Unit 3 – Holidays" tells "memory" apart from
+  // computer memory.
+  readonly context?: string;
+};
 
 export const sentenceGenerationProviderOptions = {
   openai: {
@@ -71,6 +93,28 @@ export const sentenceTranslationPrompt = (
     "needs a quotation, use single quotes ('wort').",
   ].join(' ');
 
+export const wordTranslationPrompt = (
+  request: WordTranslationRequest,
+): string => {
+  const [from, to] =
+    request.given === 'target'
+      ? [request.targetLanguage, 'German']
+      : ['German', request.targetLanguage];
+  return [
+    `Give the ${to} translation of the ${from} vocabulary item`,
+    `"${request.text}" as a school textbook vocabulary list would print it.`,
+    request.context === undefined
+      ? ''
+      : `The item belongs to the unit "${request.context}"; pick the meaning that fits it.`,
+    'Nouns carry their article, verbs are infinitives (English verbs with',
+    "'to'). Return exactly one translation as `translation`, without",
+    'explanations or alternatives. Never use double quotes or typographic',
+    'quotation marks.',
+  ]
+    .filter((part) => part !== '')
+    .join(' ');
+};
+
 export class SentenceGen extends Effect.Service<SentenceGen>()(
   '@wordhold/ai/SentenceGen',
   {
@@ -115,7 +159,12 @@ export class SentenceGen extends Effect.Service<SentenceGen>()(
           sentenceTranslationPrompt(request.targetText, request.targetLanguage),
         );
 
-      return { generate, translate } as const;
+      const translateWord = (
+        request: WordTranslationRequest,
+      ): Effect.Effect<WordTranslationData, SentenceGenError> =>
+        generateStructured(WordTranslation, wordTranslationPrompt(request));
+
+      return { generate, translate, translateWord } as const;
     }),
   },
 ) {}

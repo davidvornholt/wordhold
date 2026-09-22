@@ -6,6 +6,7 @@ import {
   getCourseDirections,
   listCourseUnits,
   listCourseVocabulary,
+  suggestVocabularyTranslation,
   translateVocabularyDraftExample,
 } from '../../../../../features/courses/services/server-fns';
 import { UnitDirectionPlan } from '../../../../../features/courses/ui/unit-direction-plan';
@@ -129,6 +130,11 @@ const UnitScreen = () => {
             Auswahl {intent === 'learn' ? 'kennenlernen' : 'üben'}
           </ActionLink>
         )}
+        suggestTranslation={(text, given) =>
+          suggestVocabularyTranslation({
+            data: { courseId: course.id, unitId: unit.id, text, given },
+          })
+        }
         targetLabel={targetLabel}
         targetLanguage={course.targetLanguage}
         translateDraftExample={(targetText) =>

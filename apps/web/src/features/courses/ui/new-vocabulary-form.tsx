@@ -1,4 +1,3 @@
-import { maximumEntryTextLength } from '@wordhold/ai/extraction/schema';
 import type { LanguageCode } from '@wordhold/db/schema/courses';
 import type { SubmitEvent } from 'react';
 import {
@@ -8,7 +7,6 @@ import {
 } from '../../../shared/examples/example-draft';
 import { Button } from '../../../shared/ui/button';
 import { ExampleDraftEditor } from '../../../shared/ui/example-draft-editor';
-import { fieldOnCardClass } from '../../../shared/ui/field-styles';
 import { cardCompactClass } from '../../../shared/ui/surface-styles';
 import {
   type DuplicateVerdict,
@@ -21,6 +19,7 @@ import {
   quoted,
   useNewVocabularyEntry,
 } from './use-new-vocabulary-entry';
+import { type SuggestTranslation, WordPairFields } from './word-pair-fields';
 
 type NewVocabularyFormProps = {
   readonly targetLabel: string;
@@ -37,6 +36,7 @@ type NewVocabularyFormProps = {
   readonly translateExample: (
     targetText: string,
   ) => Promise<{ readonly native: string }>;
+  readonly suggestTranslation: SuggestTranslation;
 };
 
 const duplicateHint = (
@@ -63,6 +63,7 @@ export const NewVocabularyForm = ({
   createEntry,
   generateExample,
   translateExample,
+  suggestTranslation,
 }: NewVocabularyFormProps) => {
   const { draft, setDraft, busy, failed, status, targetRef, save } =
     useNewVocabularyEntry(createEntry);
@@ -87,36 +88,15 @@ export const NewVocabularyForm = ({
 
   return (
     <form className={`${cardCompactClass} grid gap-3`} onSubmit={submit}>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium">{targetLabel}</span>
-          <input
-            // biome-ignore lint/a11y/noAutofocus: The form appears on request; the learner asked to type, so the first field takes focus.
-            autoFocus={true}
-            className={fieldOnCardClass}
-            disabled={busy}
-            lang={targetLanguage}
-            maxLength={maximumEntryTextLength}
-            onChange={(event) =>
-              setDraft({ ...draft, targetText: event.target.value })
-            }
-            ref={targetRef}
-            value={draft.targetText}
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium">Deutsch</span>
-          <input
-            className={fieldOnCardClass}
-            disabled={busy}
-            maxLength={maximumEntryTextLength}
-            onChange={(event) =>
-              setDraft({ ...draft, nativeText: event.target.value })
-            }
-            value={draft.nativeText}
-          />
-        </label>
-      </div>
+      <WordPairFields
+        busy={busy}
+        draft={draft}
+        setDraft={setDraft}
+        suggestTranslation={suggestTranslation}
+        targetLabel={targetLabel}
+        targetLanguage={targetLanguage}
+        targetRef={targetRef}
+      />
       {hint === null ? null : (
         <p className="text-sm text-warning-foreground">{hint}</p>
       )}

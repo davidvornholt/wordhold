@@ -9,6 +9,11 @@ import { insertVocabularyEntries } from '../../../shared/vocabulary/insert-entri
 import { CourseDatabaseError } from '../errors/courses-errors';
 import type { CreateVocabularyEntryData } from '../schemas/vocabulary-entry-creation';
 
+export type UnitContext = {
+  readonly targetLanguage: LanguageCode;
+  readonly unitName: string;
+};
+
 export type CreateVocabularyEntryResult =
   | { readonly kind: 'created'; readonly entryId: string }
   | { readonly kind: 'unit-missing' }
@@ -55,6 +60,11 @@ export class VocabularyEntryStore extends Context.Tag(
     readonly readTargetLanguage: (
       courseId: string,
     ) => Effect.Effect<LanguageCode | undefined, CourseDatabaseError>;
+    // Undefined when the unit does not belong to the course.
+    readonly readUnit: (
+      courseId: string,
+      unitId: string,
+    ) => Effect.Effect<UnitContext | undefined, CourseDatabaseError>;
     readonly create: (
       input: CreateVocabularyEntryData,
     ) => Effect.Effect<CreateVocabularyEntryResult, CourseDatabaseError>;
@@ -79,6 +89,18 @@ export class VocabularyEntryStore extends Context.Tag(
           Effect.mapError((cause) =>
             databaseError('read course language', cause),
           ),
+        );
+
+      const readUnit = (courseId: string, unitId: string) =>
+        sql<UnitContext>`
+          select co.target_language as "targetLanguage", u.name as "unitName"
+          from units u
+          join courses co on co.id = u.course_id
+          where u.id = ${unitId} and u.course_id = ${courseId}
+          limit 1
+        `.pipe(
+          Effect.map((rows) => rows[0]),
+          Effect.mapError((cause) => databaseError('read unit', cause)),
         );
 
       // The same per-course lock the import takes, so a typed word and a
@@ -157,7 +179,7 @@ export class VocabularyEntryStore extends Context.Tag(
           Effect.mapError((cause) => databaseError('store entry audio', cause)),
         );
 
-      return { readTargetLanguage, create, storeAudio } as const;
+      return { readTargetLanguage, readUnit, create, storeAudio } as const;
     }),
   );
 }

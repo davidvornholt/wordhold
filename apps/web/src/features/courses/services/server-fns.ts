@@ -17,6 +17,7 @@ import {
   decodeCreateVocabularyEntry,
   decodeVocabularyExampleRequest,
   decodeVocabularyTranslationRequest,
+  decodeVocabularyTranslationSuggestion,
 } from '../schemas/vocabulary-entry-creation';
 import { CourseService } from './course-service';
 import { CourseStore } from './course-store';
@@ -161,6 +162,17 @@ export const translateVocabularyDraftExample = createServerFn({
     return vocabularyRuntime.runPromise(
       Effect.flatMap(VocabularyEntryService, (service) =>
         service.translateExample(data),
+      ),
+    );
+  });
+
+export const suggestVocabularyTranslation = createServerFn({ method: 'POST' })
+  .validator(decodeVocabularyTranslationSuggestion)
+  .handler(async ({ data }) => {
+    await authRuntime.runPromise(requireSession(getRequest().headers));
+    return vocabularyRuntime.runPromise(
+      Effect.flatMap(VocabularyEntryService, (service) =>
+        service.suggestTranslation(data),
       ),
     );
   });

@@ -147,3 +147,35 @@ test('an empty unit offers typing next to photographing', async ({ page }) => {
   await expect(page.getByLabel('Vokabel suchen')).toBeVisible();
   await expect(page.getByLabel('journey auswählen')).toBeVisible();
 });
+
+test('the missing side of a word pair can be proposed from either side', async ({
+  page,
+}) => {
+  await page.goto('/?state=unit');
+  await page.getByRole('button', { name: 'Vokabel eintragen' }).click();
+  const suggest = page.getByRole('button', { name: 'Übersetzung vorschlagen' });
+  await expect(suggest).toHaveCount(0);
+  await targetField(page).fill('journey');
+  await expect(suggest).toBeVisible();
+  await suggest.click();
+  await expect(nativeField(page)).toHaveValue('die Reise');
+  await expect(nativeField(page)).toBeFocused();
+  await expect(
+    page.getByText(
+      'Übersetzung mit KI vorgeschlagen. Prüfe sie vor dem Eintragen.',
+    ),
+  ).toBeVisible();
+  await expect(suggest).toHaveCount(0);
+  assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
+  await nativeField(page).fill('die Fahrt');
+  await expect(page.getByText('Übersetzung mit KI vorgeschlagen')).toHaveCount(
+    0,
+  );
+  await page.getByRole('button', { exact: true, name: 'Eintragen' }).click();
+  await expect(status(page)).toHaveText('„journey“ eingetragen.');
+
+  await nativeField(page).fill('die Stille');
+  await suggest.click();
+  await expect(targetField(page)).toHaveValue('the die Stille');
+  await expect(targetField(page)).toBeFocused();
+});
