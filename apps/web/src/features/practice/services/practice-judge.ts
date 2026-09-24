@@ -17,7 +17,7 @@ export class PracticeJudge extends Context.Tag('wordhold/PracticeJudge')<
     PracticeJudge,
     Effect.gen(function* () {
       const judgeService = yield* Judge;
-      const model = `bedrock-mantle:${judgeService.modelId}`;
+      const model = `vertex:${judgeService.modelId}`;
       const judge = (input: JudgeInput) =>
         judgeService.judge(input).pipe(
           Effect.map(

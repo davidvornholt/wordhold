@@ -4,7 +4,6 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./providers/bedrock": "./src/providers/bedrock.ts",
     "./providers/vertex": "./src/providers/vertex.ts",
     "./extraction": "./src/extraction/service.ts",
     "./extraction/error": "./src/extraction/error.ts",

@@ -5,10 +5,10 @@ import {
   maximumEntryTextLength,
   maximumExampleLength,
 } from '../extraction/schema';
-import { BedrockProvider } from '../providers/bedrock';
+import { VertexProvider } from '../providers/vertex';
 import {
+  geminiHighProviderOptions,
   providerJsonSchema,
-  structuredOutputOptions,
 } from '../structured-output';
 import { SentenceGenError } from './error';
 
@@ -49,17 +49,6 @@ export type WordTranslationRequest = {
   readonly context?: string;
 };
 
-export const sentenceGenerationProviderOptions = {
-  openai: {
-    ...structuredOutputOptions.openai,
-    // Mantle requires the Bedrock-prefixed model ID, which the OpenAI provider
-    // cannot classify from its usual gpt-* name.
-    forceReasoning: true,
-    reasoningEffort: 'medium',
-    reasoningSummary: null,
-  },
-} as const;
-
 export type SentenceRequest = {
   readonly targetText: string;
   readonly nativeText: string;
@@ -69,17 +58,10 @@ export type SentenceRequest = {
 
 export const sentencePrompt = (request: SentenceRequest): string =>
   [
-    `Write ${request.count} short, natural example sentences in`,
-    `${request.targetLanguage} for the vocabulary item`,
-    `"${request.targetText}" (German: "${request.nativeText}").`,
-    'Use everyday school-life contexts a teenage learner knows. Each sentence',
-    'must contain the vocabulary item in a natural form. Provide a faithful',
-    'German translation as `native` for every sentence.',
-    // Like the judge rule, this is only a best-effort mitigation. Model output
-    // remains untrusted and may ignore the instruction or repeat quotation
-    // marks from prompt inputs.
-    'Never use double quotes or typographic quotation marks; if a sentence',
-    "needs a quotation, use single quotes ('wort').",
+    `Write ${request.count} short, natural ${request.targetLanguage} example sentences using`,
+    `"${request.targetText}" (German: "${request.nativeText}") in a natural form.`,
+    'Use everyday school-life contexts for teenagers. Translate each faithfully into German as native.',
+    'Use single quotes for quotations, never double or typographic quotes.',
   ].join(' ');
 
 export const sentenceTranslationPrompt = (
@@ -119,7 +101,7 @@ export class SentenceGen extends Effect.Service<SentenceGen>()(
   '@wordhold/ai/SentenceGen',
   {
     effect: Effect.gen(function* () {
-      const bedrock = yield* BedrockProvider;
+      const vertex = yield* VertexProvider;
       const modelId = yield* sentenceModel;
 
       const generateStructured = <A, I>(
@@ -129,10 +111,10 @@ export class SentenceGen extends Effect.Service<SentenceGen>()(
         Effect.tryPromise({
           try: async () => {
             const { output } = await generateText({
-              model: bedrock.responses(modelId),
+              model: vertex(modelId),
               output: Output.object({ schema: providerJsonSchema(schema) }),
               prompt,
-              providerOptions: sentenceGenerationProviderOptions,
+              providerOptions: geminiHighProviderOptions,
             });
             return output;
           },
