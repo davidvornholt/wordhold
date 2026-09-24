@@ -44,8 +44,8 @@ export const runSample = (
   Effect.gen(function* () {
     const started = performance.now();
     const result = yield* Effect.tryPromise({
-      try: () =>
-        generateText({
+      try: async () => {
+        const generated = await generateText({
           model: model.model,
           messages: workload.messages,
           output: Output.object({ schema: workload.schema }),
@@ -53,7 +53,14 @@ export const runSample = (
           maxOutputTokens,
           maxRetries: 0,
           abortSignal: AbortSignal.timeout(timeoutMs),
-        }),
+        });
+        return {
+          usage: generated.usage,
+          output: generated.output,
+          finishReason: generated.finishReason,
+          response: generated.response,
+        };
+      },
       catch: (cause) =>
         new BenchmarkRequestError({ message: safeError(cause), cause }),
     }).pipe(Effect.either);

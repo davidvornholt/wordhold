@@ -1,6 +1,7 @@
 import { createOpenAI } from '@ai-sdk/openai';
 import { Config, Effect, Redacted } from 'effect';
 import { VertexProvider } from '../providers/vertex';
+import { geminiHighProviderOptions } from '../structured-output';
 import type { BenchmarkModel } from './runner';
 
 export const benchmarkModels = Effect.gen(function* () {
@@ -20,9 +21,7 @@ export const benchmarkModels = Effect.gen(function* () {
       name: 'gemini-3.8-flash',
       region: yield* Config.string('GOOGLE_VERTEX_LOCATION'),
       model: vertex('gemini-3.8-flash'),
-      providerOptions: {
-        googleVertex: { thinkingConfig: { thinkingLevel: 'high' } },
-      },
+      providerOptions: geminiHighProviderOptions,
     },
     ...(
       [
