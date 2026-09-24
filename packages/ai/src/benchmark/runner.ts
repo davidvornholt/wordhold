@@ -36,6 +36,36 @@ const safeError = (cause: unknown): string => {
   return 'Request failed; inspect provider access and timeout';
 };
 
+const completionSample = (
+  generated: Pick<
+    Awaited<ReturnType<typeof generateText>>,
+    'usage' | 'output' | 'finishReason' | 'response' | 'text'
+  >,
+  workload: Workload,
+) =>
+  Effect.gen(function* () {
+    // The SDK's output getter can throw after a provider response was received.
+    // Read it separately so that known usage and completion metadata survive.
+    const parsed = yield* Effect.try({
+      try: () => generated.output,
+      catch: (cause) =>
+        new BenchmarkRequestError({ message: safeError(cause), cause }),
+    }).pipe(Effect.either);
+    const error = parsed._tag === 'Left' ? parsed.left.message : null;
+    return {
+      ...tokenCounts(generated.usage),
+      qualityFailures:
+        parsed._tag === 'Right' ? workload.qualityFailures(parsed.right) : [],
+      error:
+        generated.finishReason === 'length'
+          ? 'Output token limit reached'
+          : error,
+      output: parsed._tag === 'Right' ? parsed.right : generated.text,
+      finishReason: generated.finishReason,
+      responseModelId: generated.response.modelId,
+    };
+  });
+
 export const runSample = (
   model: BenchmarkModel,
   workload: Workload,
@@ -44,8 +74,8 @@ export const runSample = (
   Effect.gen(function* () {
     const started = performance.now();
     const result = yield* Effect.tryPromise({
-      try: async () => {
-        const generated = await generateText({
+      try: () =>
+        generateText({
           model: model.model,
           messages: workload.messages,
           output: Output.object({ schema: workload.schema }),
@@ -53,14 +83,7 @@ export const runSample = (
           maxOutputTokens,
           maxRetries: 0,
           abortSignal: AbortSignal.timeout(timeoutMs),
-        });
-        return {
-          usage: generated.usage,
-          output: generated.output,
-          finishReason: generated.finishReason,
-          response: generated.response,
-        };
-      },
+        }),
       catch: (cause) =>
         new BenchmarkRequestError({ message: safeError(cause), cause }),
     }).pipe(Effect.either);
@@ -90,22 +113,14 @@ export const runSample = (
               totalTokens: null,
             }),
         qualityFailures: [],
-        error: result.left.message,
+        error:
+          generatedError?.finishReason === 'length'
+            ? 'Output token limit reached'
+            : result.left.message,
         output: generatedError?.text ?? null,
         finishReason: generatedError?.finishReason ?? null,
         responseModelId: generatedError?.response?.modelId ?? null,
       };
     }
-    return {
-      ...base,
-      ...tokenCounts(result.right.usage),
-      qualityFailures: workload.qualityFailures(result.right.output),
-      error:
-        result.right.finishReason === 'length'
-          ? 'Output token limit reached'
-          : null,
-      output: result.right.output,
-      finishReason: result.right.finishReason,
-      responseModelId: result.right.response.modelId,
-    };
+    return { ...base, ...(yield* completionSample(result.right, workload)) };
   });
