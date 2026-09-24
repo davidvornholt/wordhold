@@ -20,7 +20,8 @@
     "check-types": "tsc --noEmit",
     "lint": "biome check --error-on-warnings .",
     "lint:fix": "biome check --write --error-on-warnings .",
-    "test": "bun test"
+    "test": "bun test",
+    "benchmark:models": "bun src/benchmark/cli.ts"
   },
   "dependencies": {
     "@ai-sdk/google-vertex": "^5.0.87",
