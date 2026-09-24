@@ -13,13 +13,8 @@ const textbookReadings = (text: string): ReadonlyArray<string> => {
   // Dictionary labels describe the answer; they are not part of the phrase.
   // Only textbook answers get these omissions, never learned alternatives.
   const expansion = answerVariants(text.replace(dictionaryGenderLabel, ''));
-  return expansion._tag === 'Expanded'
-    ? expansion.readings.flatMap((reading) =>
-        reading.startsWith('to ')
-          ? [reading, reading.slice('to '.length)]
-          : [reading],
-      )
-    : [];
+  // The judge distinguishes optional infinitive markers from prepositions.
+  return expansion._tag === 'Expanded' ? expansion.readings : [];
 };
 
 export const isDeterministicMatch = (

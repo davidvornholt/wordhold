@@ -112,7 +112,6 @@ describe('isDeterministicMatch dictionary notation regressions', () => {
     ['determinada', 'determinado/-a'],
     ['determinado', 'determinado/-a'],
     ['el programa', 'el programa m.'],
-    ['ask for directions', 'to ask for directions'],
     ['obtener algo', 'obtener algo (e → ie)'],
     ['AC/DC', 'AC/DC'],
   ])('accepts %s for %s', (submitted, expected) => {
@@ -127,6 +126,8 @@ describe('isDeterministicMatch dictionary notation regressions', () => {
     ['a', 'determinado/-a'],
     ['programa', 'el programa m.'],
     ['el programa f.', 'el programa m.'],
+    ['ask for directions', 'to ask for directions'],
+    ['some extent', 'to some extent'],
     ['ask directions', 'to ask for directions'],
     ['ask for directions (wrong)', 'to ask for directions'],
     ['obtener algo (como tener)', 'obtener algo (e → ie)'],
