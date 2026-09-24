@@ -11,11 +11,18 @@ const whitespace = /\s+/u;
 const spacedPhraseSeparator = /(?:\s+\/\s*|\s*\/\s+)/u;
 const semicolonSeparator = /\s*;\s*/u;
 const lowercaseWord = /^\p{Ll}+$/u;
+const suffixWord = /^-?\p{Ll}+$/u;
+const articlePair =
+  /^(?:el\/la|la\/el|un\/una|una\/un|le\/la|la\/le|un\/une|une\/un|der\/die|die\/der|ein\/eine|eine\/ein)$/u;
+const optionalArticle = /^(?:ein\(e\)|un\(e\))\s/u;
+const feminineFirst = /^(?:la|una|une|die|eine)\//u;
+const phraseArticle = /^(?:el|la|un|una|le|une|der|die|ein|eine)$/u;
 const uppercaseStart = /^\p{Lu}/u;
 const phraseEnd = /^[\s]*(?:;|$)/u;
 const whitespaceCharacter = /\s/u;
+// Consume only the separator so adjacent slashes can share a word.
 const compactSlashWithFlexibleSpacing =
-  /(?<left>\p{Ll}+)\s*\/\s*(?<right>\p{Ll}+)/gu;
+  /(?<=(?<left>\p{Ll}+))\s*\/\s*(?=(?<right>-?\p{Ll}+))/gu;
 const compactSuffixReplacements: ReadonlyArray<{
   readonly fullEnding: string;
   readonly shorthand: string;
@@ -49,7 +56,8 @@ const compactSlashReadings = (
 ): ReadonlyArray<string> | undefined => {
   const suffixReplacement = compactSuffixReplacements.find(
     ({ fullEnding, shorthand }) =>
-      right === shorthand && left.endsWith(fullEnding),
+      (right.startsWith('-') ? right.slice(1) : right) === shorthand &&
+      left.endsWith(fullEnding),
   );
   if (suffixReplacement !== undefined) {
     return [
@@ -78,16 +86,28 @@ const normalizeCompactSlashSpacing = (text: string): string => {
       whitespaceCharacter.test(match[0].slice(0, slashIndex)) !==
       whitespaceCharacter.test(match[0].slice(slashIndex + 1));
     const endsPhrase = phraseEnd.test(
-      text.slice(match.index + match[0].length),
+      text.slice(match.index + match[0].length + right.length),
     );
     const isAmbiguousOneSidedSpacing =
       readings === undefined &&
       hasOneSidedWhitespace &&
       !right.startsWith(left);
+    const currentPhraseStart =
+      (normalized + text.slice(cursor, match.index))
+        .split(semicolonSeparator)
+        .at(-1)
+        ?.split(spacedPhraseSeparator)
+        .at(-1)
+        ?.trim()
+        .split(whitespace)[0] ?? '';
+    // A suffix after paired articles stays attached even inside a phrase,
+    // so the agreement guard can delegate longer chains to the judge.
     const preserveSpacing =
       (readings === undefined && !isAmbiguousOneSidedSpacing) ||
-      (isSuffixShorthand && !endsPhrase);
-    const replacement = preserveSpacing ? match[0] : `${left}/${right}`;
+      (isSuffixShorthand &&
+        !endsPhrase &&
+        !articlePair.test(currentPhraseStart));
+    const replacement = preserveSpacing ? match[0] : '/';
     normalized += text.slice(cursor, match.index) + replacement;
     cursor = match.index + match[0].length;
   }
@@ -113,6 +133,15 @@ const hasSimpleParentheses = (text: string): boolean => {
 };
 
 const expandOptionalGroups = (text: string): ExpansionState => {
+  // Agreement in compound shorthand is not an independent optional choice.
+  // Delegate ambiguous forms such as eine/ein Angestellte(r) to the judge.
+  if (
+    optionalArticle.test(text.trim()) ||
+    (articlePair.test(text.trim().split(whitespace)[0] ?? '') &&
+      optionalGroup.test(text))
+  ) {
+    return { _tag: 'Overflow' };
+  }
   if (!hasSimpleParentheses(text)) {
     return { _tag: 'Values', values: [text] };
   }
@@ -157,7 +186,9 @@ const splitPhraseAlternatives = (text: string): ReadonlyArray<string> => {
   if (
     leftWords.length > 1 &&
     rightWords.length > 1 &&
-    uppercaseStart.test(leftLast)
+    (uppercaseStart.test(leftLast) ||
+      (phraseArticle.test(leftWords[0] ?? '') &&
+        phraseArticle.test(rightWords[0] ?? '')))
   ) {
     return [left, right];
   }
@@ -170,7 +201,7 @@ const expandSlashWord = (word: string): ExpansionState => {
     return { _tag: 'Values', values: [word] };
   }
   const [left = '', right = ''] = parts;
-  if (!(lowercaseWord.test(left) && lowercaseWord.test(right))) {
+  if (!(lowercaseWord.test(left) && suffixWord.test(right))) {
     return { _tag: 'Values', values: [word] };
   }
   const readings = compactSlashReadings(left, right);
@@ -179,9 +210,39 @@ const expandSlashWord = (word: string): ExpansionState => {
     : { _tag: 'Values', values: readings };
 };
 
+const expandArticleAndNoun = (words: ReadonlyArray<string>): ExpansionState => {
+  const first = words[0] ?? '';
+  // A noun's masculine/feminine endings must stay paired with its article.
+  // Longer agreement chains require grammar knowledge, so fail closed.
+  if (words.length !== 2) {
+    return { _tag: 'Overflow' };
+  }
+  const noun = expandSlashWord(words[1] ?? '');
+  if (noun._tag === 'Overflow' || noun.values.length !== 2) {
+    return { _tag: 'Overflow' };
+  }
+  const nouns = feminineFirst.test(first)
+    ? [...noun.values].reverse()
+    : noun.values;
+  return {
+    _tag: 'Values',
+    values: first
+      .split('/')
+      .map((article, index) => `${article} ${nouns[index]}`),
+  };
+};
+
 const expandWordAlternatives = (text: string): ExpansionState => {
+  const words = text.split(whitespace).filter((part) => part !== '');
+  const first = words[0] ?? '';
+  if (
+    articlePair.test(first) &&
+    words.slice(1).some((word) => word.includes('/'))
+  ) {
+    return expandArticleAndNoun(words);
+  }
   let state: ExpansionState = { _tag: 'Values', values: [''] };
-  for (const word of text.split(whitespace).filter((part) => part !== '')) {
+  for (const word of words) {
     if (state._tag === 'Overflow') {
       return state;
     }

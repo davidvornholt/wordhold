@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import type { JudgeVerdictData } from '@wordhold/ai/judge/schema';
 import { Effect, Layer } from 'effect';
-import { judgeWithCache } from './judge-cache';
+import { judgeCacheIdentity, judgeWithCache } from './judge-cache';
 import { JudgeCacheStore } from './judge-cache-store';
 import { PracticeJudge } from './practice-judge';
 
@@ -30,6 +30,8 @@ const request = {
   },
 };
 
+const activeIdentity = await judgeCacheIdentity(activeModel, request.input);
+
 describe('judge cache validity', () => {
   it('returns a verdict cached by the active provider and model', async () => {
     let judgeCalls = 0;
@@ -40,7 +42,7 @@ describe('judge cache validity', () => {
             Layer.succeed(JudgeCacheStore, {
               read: (_key, selector) =>
                 Effect.succeed(
-                  'model' in selector && selector.model === activeModel
+                  'model' in selector && selector.model === activeIdentity
                     ? { assessmentId, verdict, model: selector.model }
                     : undefined,
                 ),
@@ -60,8 +62,29 @@ describe('judge cache validity', () => {
       ),
     );
 
-    expect(result).toEqual({ assessmentId, verdict, model: activeModel });
+    expect(result).toEqual({
+      assessmentId,
+      verdict,
+      model: activeIdentity,
+    });
     expect(judgeCalls).toBe(0);
+  });
+
+  it('changes identity when task or accepted answers change, and rejects pre-policy keys', async () => {
+    const identity = activeIdentity;
+    expect(identity).not.toBe(activeModel);
+    expect(
+      await judgeCacheIdentity(activeModel, {
+        ...request.input,
+        prompt: 'andere Bedeutung',
+      }),
+    ).not.toBe(identity);
+    expect(
+      await judgeCacheIdentity(activeModel, {
+        ...request.input,
+        expectedAnswers: ['different'],
+      }),
+    ).not.toBe(identity);
   });
 
   it('replaces the assessment identity with an obsolete model', async () => {
@@ -104,6 +127,6 @@ describe('judge cache validity', () => {
     expect(result.verdict).toEqual(verdict);
     expect(result.assessmentId).not.toBe(assessmentId);
     expect(judgeCalls).toBe(1);
-    expect(cached.model).toBe(activeModel);
+    expect(cached.model).toBe(activeIdentity);
   });
 });
