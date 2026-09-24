@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="850" viewBox="0 0 1200 850">
+  <title>Synthetic Spanish textbook vocabulary page for benchmark</title>
+  <rect width="1200" height="850" fill="white"/>
+  <g font-family="Arial, sans-serif" fill="#111">
+    <text x="70" y="90" font-size="36">Unidad 3: La vida cotidiana</text>
+    <text x="70" y="160" font-size="26">Español</text><text x="620" y="160" font-size="26">Deutsch</text>
+    <g font-size="28">
+      <text x="70" y="230">el/la abogado/-a</text><text x="620" y="230">der Anwalt / die Anwältin</text>
+      <text x="70" y="300">obtener algo (como tener)</text><text x="620" y="300">etwas bekommen</text>
+      <text x="70" y="370">determinado/-a</text><text x="620" y="370">bestimmt</text>
+      <text x="70" y="440">el programa m.</text><text x="620" y="440">das Programm</text>
+      <text x="70" y="510">la dirección</text><text x="620" y="510">die Adresse</text>
+      <text x="70" y="580">preguntar</text><text x="620" y="580">fragen</text>
+    </g>
+    <text x="70" y="660" font-size="24">La abogada pregunta por la dirección.</text>
+    <text x="1090" y="800" font-size="24">42</text>
+  </g>
+</svg>
