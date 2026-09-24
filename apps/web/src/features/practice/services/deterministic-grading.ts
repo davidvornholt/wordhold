@@ -7,6 +7,21 @@ export type AcceptedAnswer = {
   readonly source: AnswerSource;
 };
 
+const dictionaryGenderLabel = /\s+(?:m|f|mf)\.$/u;
+
+const textbookReadings = (text: string): ReadonlyArray<string> => {
+  // Dictionary labels describe the answer; they are not part of the phrase.
+  // Only textbook answers get these omissions, never learned alternatives.
+  const expansion = answerVariants(text.replace(dictionaryGenderLabel, ''));
+  return expansion._tag === 'Expanded'
+    ? expansion.readings.flatMap((reading) =>
+        reading.startsWith('to ')
+          ? [reading, reading.slice('to '.length)]
+          : [reading],
+      )
+    : [];
+};
+
 export const isDeterministicMatch = (
   submittedAnswer: string,
   accepted: ReadonlyArray<AcceptedAnswer>,
@@ -25,11 +40,8 @@ export const isDeterministicMatch = (
   );
   for (const answer of accepted) {
     if (answer.source === 'textbook') {
-      const expansion = answerVariants(answer.text);
-      if (expansion._tag === 'Expanded') {
-        for (const reading of expansion.readings) {
-          acceptedReadings.add(reading);
-        }
+      for (const reading of textbookReadings(answer.text)) {
+        acceptedReadings.add(reading);
       }
     }
   }

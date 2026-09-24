@@ -100,3 +100,60 @@ describe('isDeterministicMatch', () => {
     ).toBe(false);
   });
 });
+
+describe('isDeterministicMatch dictionary notation regressions', () => {
+  it.each([
+    ['el abogado', 'el/la abogado/-a'],
+    ['la abogada', 'el/la abogado/-a'],
+    ['el abogado/la abogada', 'el/la abogado/-a'],
+    ['el abogado /la abogada', 'el/la abogado/-a'],
+    ['el abogado/ la abogada', 'el/la abogado/-a'],
+    ['el abogado / la abogada', 'el/la abogado/-a'],
+    ['determinada', 'determinado/-a'],
+    ['determinado', 'determinado/-a'],
+    ['el programa', 'el programa m.'],
+    ['ask for directions', 'to ask for directions'],
+    ['obtener algo', 'obtener algo (e → ie)'],
+    ['AC/DC', 'AC/DC'],
+  ])('accepts %s for %s', (submitted, expected) => {
+    expect(isDeterministicMatch(submitted, [answer(expected)])).toBe(true);
+  });
+
+  it.each([
+    ['la abogado', 'el/la abogado/a'],
+    ['el abogada', 'el/la abogado/-a'],
+    ['el abogado / la abogado', 'el/la abogado/-a'],
+    ['la abogado/el abogada', 'el/la abogado/-a'],
+    ['a', 'determinado/-a'],
+    ['programa', 'el programa m.'],
+    ['el programa f.', 'el programa m.'],
+    ['ask directions', 'to ask for directions'],
+    ['ask for directions (wrong)', 'to ask for directions'],
+    ['obtener algo (como tener)', 'obtener algo (e → ie)'],
+    ['eine Angestellter', 'eine/ein Angestellte(r)'],
+    ['ein Angestellte', 'eine/ein Angestellte(r)'],
+    ['AC', 'AC/DC'],
+    ['DC', 'AC/DC'],
+  ])('sends %s for %s to the judge', (submitted, expected) => {
+    expect(isDeterministicMatch(submitted, [answer(expected)])).toBe(false);
+  });
+
+  it.each(['judge', 'manual'] as const)(
+    'does not infer dictionary omissions from %s answers',
+    (source) => {
+      expect(
+        isDeterministicMatch('ask for directions', [
+          answer('to ask for directions', source),
+        ]),
+      ).toBe(false);
+      expect(
+        isDeterministicMatch('el programa', [answer('el programa m.', source)]),
+      ).toBe(false);
+      expect(
+        isDeterministicMatch('la abogada', [
+          answer('el/la abogado/-a', source),
+        ]),
+      ).toBe(false);
+    },
+  );
+});

@@ -84,15 +84,6 @@ describe('answerVariants punctuation and separators', () => {
       _tag: 'Expanded',
       readings: ['un ami', 'une ami'],
     });
-    expect(answerVariants('eine/ein Angestellte(r)')).toEqual({
-      _tag: 'Expanded',
-      readings: [
-        'eine angestellter',
-        'ein angestellter',
-        'eine angestellte',
-        'ein angestellte',
-      ],
-    });
   });
 
   it('expands explicit and conservative compact phrase alternatives', () => {
@@ -198,5 +189,50 @@ describe('answerVariants combinations and bounds', () => {
     expect(answerVariants('aa/bb cc/dd ee/ff gg/hh ii/jj')).toEqual({
       _tag: 'Overflow',
     });
+  });
+});
+
+describe('answerVariants gender agreement', () => {
+  it.each([
+    'el/la abogado/a',
+    'el/la abogado/-a',
+    'el / la abogado / -a',
+    'el/ la abogado/ -a',
+    'el /la abogado /-a',
+  ])('pairs articles and noun endings in %s', (text) => {
+    expect(answerVariants(text)).toEqual({
+      _tag: 'Expanded',
+      readings: ['el abogado', 'la abogada'],
+    });
+  });
+
+  it.each([
+    ['la/el abogado/-a', ['la abogada', 'el abogado']],
+    ['un/una profesor/-a', ['un profesor', 'una profesora']],
+    ['un/une acteur/trice', ['un acteur', 'une actrice']],
+    ['determinado/-a', ['determinado', 'determinada']],
+  ] as const)('expands registered suffixes in %s', (text, readings) => {
+    expect(answerVariants(text)).toEqual({ _tag: 'Expanded', readings });
+  });
+
+  it.each([
+    'el abogado/la abogada',
+    'el abogado /la abogada',
+    'el abogado/ la abogada',
+    'el abogado / la abogada',
+  ])('recognizes complete phrases in %s', (text) => {
+    expect(answerVariants(text)).toEqual({
+      _tag: 'Expanded',
+      readings: ['el abogado', 'la abogada'],
+    });
+  });
+
+  it.each([
+    'eine/ein Angestellte(r)',
+    'ein/eine Angestellte(r)',
+    'ein(e) Angestellte(r)',
+    'el/la abogado/a determinado/a',
+  ])('delegates ambiguous agreement in %s to the judge', (text) => {
+    expect(answerVariants(text)).toEqual({ _tag: 'Overflow' });
   });
 });
