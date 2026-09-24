@@ -235,6 +235,7 @@ describe('answerVariants gender agreement', () => {
     'el/la abogado / a determinado/a',
     'el / la abogado / -a determinado/-a',
     'correct; el/la abogado / a determinado/a',
+    'correct / el/la abogado / a determinado/a',
   ])('delegates ambiguous agreement in %s to the judge', (text) => {
     expect(answerVariants(text)).toEqual({ _tag: 'Overflow' });
   });

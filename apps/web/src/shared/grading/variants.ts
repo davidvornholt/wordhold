@@ -20,8 +20,9 @@ const phraseArticle = /^(?:el|la|un|una|le|une|der|die|ein|eine)$/u;
 const uppercaseStart = /^\p{Lu}/u;
 const phraseEnd = /^[\s]*(?:;|$)/u;
 const whitespaceCharacter = /\s/u;
+// Consume only the separator so adjacent slashes can share a word.
 const compactSlashWithFlexibleSpacing =
-  /(?<left>\p{Ll}+)\s*\/\s*(?<right>-?\p{Ll}+)/gu;
+  /(?<=(?<left>\p{Ll}+))\s*\/\s*(?=(?<right>-?\p{Ll}+))/gu;
 const compactSuffixReplacements: ReadonlyArray<{
   readonly fullEnding: string;
   readonly shorthand: string;
@@ -85,16 +86,19 @@ const normalizeCompactSlashSpacing = (text: string): string => {
       whitespaceCharacter.test(match[0].slice(0, slashIndex)) !==
       whitespaceCharacter.test(match[0].slice(slashIndex + 1));
     const endsPhrase = phraseEnd.test(
-      text.slice(match.index + match[0].length),
+      text.slice(match.index + match[0].length + right.length),
     );
     const isAmbiguousOneSidedSpacing =
       readings === undefined &&
       hasOneSidedWhitespace &&
       !right.startsWith(left);
     const currentPhraseStart =
-      normalized
-        .slice(normalized.lastIndexOf(';') + 1)
-        .trim()
+      (normalized + text.slice(cursor, match.index))
+        .split(semicolonSeparator)
+        .at(-1)
+        ?.split(spacedPhraseSeparator)
+        .at(-1)
+        ?.trim()
         .split(whitespace)[0] ?? '';
     // A suffix after paired articles stays attached even inside a phrase,
     // so the agreement guard can delegate longer chains to the judge.
@@ -103,7 +107,7 @@ const normalizeCompactSlashSpacing = (text: string): string => {
       (isSuffixShorthand &&
         !endsPhrase &&
         !articlePair.test(currentPhraseStart));
-    const replacement = preserveSpacing ? match[0] : `${left}/${right}`;
+    const replacement = preserveSpacing ? match[0] : '/';
     normalized += text.slice(cursor, match.index) + replacement;
     cursor = match.index + match[0].length;
   }
