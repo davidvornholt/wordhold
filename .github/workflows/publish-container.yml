@@ -113,7 +113,7 @@ jobs:
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             io.personal-infra.wordhold-preview=true
 
-      - name: Verify migrations and database-backed health
+      - name: Verify maintenance commands, migrations, and database-backed health
         run: |
           set -euo pipefail
           env_file="$RUNNER_TEMP/wordhold-smoke.env"
@@ -139,6 +139,13 @@ jobs:
           GOOGLE_SERVICE_ACCOUNT_JSON={}
           PORT=3100
           ENV
+
+          repair_status=0
+          repair_output=$(docker run --rm --network none wordhold:pull-request \
+            bun run --cwd apps/web practice:repair:production 2>&1) || repair_status=$?
+          printf '%s\n' "$repair_output"
+          test "$repair_status" -eq 1
+          [[ "$repair_output" == *"Usage: bun run practice:repair [--apply] <card UUID> ..."* ]]
 
           for _ in 1 2; do
             docker run --rm --network host --env-file "$env_file" \
