@@ -7,6 +7,7 @@ import type {
   SubmissionRecord,
 } from '../schemas/practice-models';
 import type { WrongAnswerResolution } from '../schemas/submission-schema';
+import { judgeCacheIdentity } from './judge-cache';
 import { JudgeCacheStore } from './judge-cache-store';
 import { PracticeJudge } from './practice-judge';
 import { PracticeService } from './practice-service';
@@ -49,7 +50,7 @@ const rejectedTypo = {
 } as const;
 
 const assessmentId = '00000000-0000-0000-0000-000000000003';
-const runSubmit = (
+const runSubmit = async (
   commit: PracticeReviewStore['Type']['commit'],
   wrongAnswerResolution: WrongAnswerResolution,
   acceptedText = 'correct',
@@ -57,7 +58,13 @@ const runSubmit = (
   const cachedAssessment = {
     assessmentId,
     verdict: rejectedTypo,
-    model: 'bedrock-mantle:test-model',
+    model: await judgeCacheIdentity('bedrock-mantle:test-model', {
+      direction: 'to_target',
+      targetLanguage: 'English',
+      prompt: 'richtig',
+      expectedAnswers: [acceptedText],
+      givenAnswer: 'corect',
+    }),
   };
   const stores = Layer.mergeAll(
     Layer.succeed(PracticeSessionStore, {

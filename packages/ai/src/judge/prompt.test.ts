@@ -3,6 +3,8 @@ import { Schema } from 'effect';
 import { isAcceptedAlternative, JudgeVerdict } from './schema';
 import { judgePrompt } from './service';
 
+const representativePromptCharacterBudget = 1500;
+
 describe('judgePrompt', () => {
   it('names the answer language from the direction', () => {
     const base = {
@@ -19,6 +21,20 @@ describe('judgePrompt', () => {
     );
   });
 
+  it('keeps the instruction compact while distinguishing task requirements from notation', () => {
+    const prompt = judgePrompt({
+      direction: 'to_target',
+      targetLanguage: 'Spanish',
+      prompt: 'der Rechtsanwalt, die Rechtsanwältin',
+      expectedAnswers: ['el/la abogado/-a'],
+      givenAnswer: 'el abogado / la abogada',
+    });
+    expect(prompt.length).toBeLessThan(representativePromptCharacterBudget);
+    expect(prompt).toContain('do not impose hidden meanings');
+    expect(prompt).toContain('expanded gender forms');
+    expect(prompt).toContain('explicit in the shown task');
+  });
+
   it('quotes every expected answer and the given answer', () => {
     const prompt = judgePrompt({
       direction: 'to_target',
@@ -27,7 +43,7 @@ describe('judgePrompt', () => {
       expectedAnswers: ['freedom', 'liberty'],
       givenAnswer: 'fredom',
     });
-    expect(prompt).toContain('"freedom", "liberty"');
+    expect(prompt).toContain('"expected":["freedom","liberty"]');
     expect(prompt).toContain('"fredom"');
   });
 });

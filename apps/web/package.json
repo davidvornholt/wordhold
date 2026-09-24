@@ -13,7 +13,8 @@
     "provider:rotate-bedrock-key": "bun scripts/rotate-bedrock-api-key-cli.ts",
     "provider:verify": "bun scripts/verify-ai-provider.ts",
     "test": "bun test",
-    "test:a11y": "playwright install chromium && playwright test"
+    "test:a11y": "playwright install chromium && playwright test",
+    "practice:repair": "bun --env-file=.env.local scripts/repair-practice-reviews.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
