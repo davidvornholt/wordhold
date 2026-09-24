@@ -58,7 +58,7 @@ const runSubmit = async (
   const cachedAssessment = {
     assessmentId,
     verdict: rejectedTypo,
-    model: await judgeCacheIdentity('bedrock-mantle:test-model', {
+    model: await judgeCacheIdentity('vertex:test-model', {
       direction: 'to_target',
       targetLanguage: 'English',
       prompt: 'richtig',
@@ -104,11 +104,11 @@ const runSubmit = async (
       commit,
     }),
     Layer.succeed(PracticeJudge, {
-      model: 'bedrock-mantle:test-model',
+      model: 'vertex:test-model',
       judge: () =>
         Effect.succeed({
           verdict: rejectedTypo,
-          model: 'bedrock-mantle:test-model',
+          model: 'vertex:test-model',
         }),
     }),
   );

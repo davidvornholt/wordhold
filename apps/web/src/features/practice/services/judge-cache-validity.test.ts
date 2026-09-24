@@ -6,7 +6,7 @@ import { JudgeCacheStore } from './judge-cache-store';
 import { PracticeJudge } from './practice-judge';
 
 const assessmentId = '00000000-0000-0000-0000-000000000003';
-const activeModel = 'bedrock-mantle:test-model';
+const activeModel = 'vertex:test-model';
 const verdict: JudgeVerdictData = {
   correct: false,
   acceptAsAlternative: false,

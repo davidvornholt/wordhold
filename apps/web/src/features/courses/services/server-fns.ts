@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start';
 import { getRequest } from '@tanstack/react-start/server';
-import { BedrockProvider } from '@wordhold/ai/providers/bedrock';
+import { VertexProvider } from '@wordhold/ai/providers/vertex';
 import { SentenceGen } from '@wordhold/ai/sentence';
 import { Tts } from '@wordhold/ai/tts';
 import { PgLive } from '@wordhold/db/client';
@@ -37,7 +37,7 @@ const courseRuntime = ManagedRuntime.make(courseLive);
 const vocabularyDependencies = Layer.mergeAll(
   VocabularyExampleStore.live.pipe(Layer.provide(PgLive)),
   VocabularyEntryStore.live.pipe(Layer.provide(PgLive)),
-  SentenceGen.Default.pipe(Layer.provide(BedrockProvider.live)),
+  SentenceGen.Default.pipe(Layer.provide(VertexProvider.live)),
   StorageLive,
   Tts.Default,
 );

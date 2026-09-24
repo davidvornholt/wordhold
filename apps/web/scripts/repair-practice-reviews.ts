@@ -1,5 +1,5 @@
 import { Judge } from '@wordhold/ai/judge';
-import { BedrockProvider } from '@wordhold/ai/providers/bedrock';
+import { VertexProvider } from '@wordhold/ai/providers/vertex';
 import { PgLive } from '@wordhold/db/client';
 import { Effect, Layer } from 'effect';
 import { PracticeJudge } from '../src/features/practice/services/practice-judge';
@@ -13,7 +13,7 @@ const apply = args.includes('--apply');
 const ids = args.filter((arg) => arg !== '--apply');
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
 const services = PracticeJudge.live.pipe(
-  Layer.provide(Judge.Default.pipe(Layer.provide(BedrockProvider.live))),
+  Layer.provide(Judge.Default.pipe(Layer.provide(VertexProvider.live))),
   Layer.merge(PgLive),
 );
 

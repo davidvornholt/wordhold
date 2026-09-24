@@ -33,11 +33,9 @@ export const providerJsonSchema = <A, I>(schema: Schema.Schema<A, I>) =>
     >,
   );
 
-// These calls are stateless. Disabling response storage preserves that behavior
-// on the Responses API.
-export const structuredOutputOptions = {
-  openai: {
-    strictJsonSchema: true,
-    store: false,
+// Vertex forwards this to generationConfig.thinkingConfig for every workload.
+export const geminiHighProviderOptions = {
+  googleVertex: {
+    thinkingConfig: { thinkingLevel: 'high' },
   },
-};
+} as const;

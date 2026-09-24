@@ -127,14 +127,11 @@ jobs:
           GITHUB_CLIENT_SECRET=preview-inert
           GITHUB_ALLOWED_USER_ID=1
           AWS_REGION=eu-central-1
-          AWS_BEDROCK_REGION=us-east-1
-          AWS_BEDROCK_API_KEY=preview-inert
           AWS_ACCESS_KEY_ID=preview-inert
           AWS_SECRET_ACCESS_KEY=preview-inert
           AI_JUDGE_MODEL=preview-inert
           AI_SENTENCE_MODEL=preview-inert
           AI_EXTRACTION_MODEL=preview-inert
-          AI_EXTRACTION_ESCALATION_MODEL=preview-inert
           GOOGLE_VERTEX_LOCATION=global
           GOOGLE_SERVICE_ACCOUNT_JSON={}
           PORT=3100

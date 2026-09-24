@@ -50,7 +50,7 @@ describe('judgeWithCache', () => {
             withCriticalSection: (_key, effect) => effect,
           }),
           Layer.succeed(PracticeJudge, {
-            model: 'bedrock-mantle:test-model',
+            model: 'vertex:test-model',
             judge: () =>
               Effect.sync(() => {
                 judgeCalls += 1;
@@ -83,7 +83,7 @@ describe('judgeWithCache', () => {
               withCriticalSection: (_key, effect) => effect,
             }),
             Layer.succeed(PracticeJudge, {
-              model: 'bedrock-mantle:test-model',
+              model: 'vertex:test-model',
               judge: () => Effect.fail(failure),
             }),
           ),
@@ -115,7 +115,7 @@ describe('judgeWithCache', () => {
         withCriticalSection: (_key, effect) => mutex.withPermits(1)(effect),
       }),
       Layer.succeed(PracticeJudge, {
-        model: 'bedrock-mantle:test-model',
+        model: 'vertex:test-model',
         judge: () =>
           Effect.sync(() => {
             judgeCalls += 1;

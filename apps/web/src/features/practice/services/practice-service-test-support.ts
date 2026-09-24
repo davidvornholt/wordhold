@@ -51,7 +51,7 @@ export const unavailableJudge = (cause: string) =>
 export const testJudge = (
   judge: PracticeJudge['Type']['judge'],
 ): PracticeJudge['Type'] => ({
-  model: 'bedrock-mantle:test-model',
+  model: 'vertex:test-model',
   judge,
 });
 
