@@ -91,9 +91,18 @@ const normalizeCompactSlashSpacing = (text: string): string => {
       readings === undefined &&
       hasOneSidedWhitespace &&
       !right.startsWith(left);
+    const currentPhraseStart =
+      normalized
+        .slice(normalized.lastIndexOf(';') + 1)
+        .trim()
+        .split(whitespace)[0] ?? '';
+    // A suffix after paired articles stays attached even inside a phrase,
+    // so the agreement guard can delegate longer chains to the judge.
     const preserveSpacing =
       (readings === undefined && !isAmbiguousOneSidedSpacing) ||
-      (isSuffixShorthand && !endsPhrase);
+      (isSuffixShorthand &&
+        !endsPhrase &&
+        !articlePair.test(currentPhraseStart));
     const replacement = preserveSpacing ? match[0] : `${left}/${right}`;
     normalized += text.slice(cursor, match.index) + replacement;
     cursor = match.index + match[0].length;
