@@ -18,9 +18,9 @@
     "test:a11y": "turbo run test:a11y"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.13",
+    "@biomejs/biome": "2.5.14",
     "@davidvornholt/standards": "0.27.0",
-    "turbo": "^2.10.13",
+    "turbo": "^2.11.4",
     "typescript": "7.0.2"
   },
   "engines": {

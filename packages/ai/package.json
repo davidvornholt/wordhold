@@ -24,15 +24,15 @@
     "benchmark:models": "bun src/benchmark/cli.ts"
   },
   "dependencies": {
-    "@ai-sdk/google-vertex": "^5.0.87",
-    "@ai-sdk/openai": "^4.0.69",
-    "@aws-sdk/client-polly": "^3.1135.0",
-    "ai": "^7.0.105",
+    "@ai-sdk/google-vertex": "^5.0.93",
+    "@ai-sdk/openai": "^4.0.75",
+    "@aws-sdk/client-polly": "^3.1140.0",
+    "ai": "^7.0.114",
     "effect": "^3.22.2"
   },
   "devDependencies": {
     "@davidvornholt/typescript-config": "workspace:*",
-    "@types/bun": "^1.4.0",
+    "@types/bun": "^1.4.2",
     "typescript": "^7.0.2"
   }
 }

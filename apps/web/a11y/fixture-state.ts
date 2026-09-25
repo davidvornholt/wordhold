@@ -67,7 +67,7 @@ export const readFixtureState = (): FixtureState => {
   const requested = new URLSearchParams(globalThis.location.search).get(
     'state',
   );
-  if (allFixtureStates.some((state) => state === requested)) {
+  if ((allFixtureStates as ReadonlyArray<string | null>).includes(requested)) {
     return requested as FixtureState;
   }
   throw new Error(`Unknown accessibility fixture state: ${String(requested)}`);
