@@ -2,6 +2,7 @@ import { Database } from '@wordhold/db/client';
 import { Effect } from 'effect';
 
 export const fixtureCourseId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+export const fixtureBookId = 'b00cb00c-b00c-4b00-8b00-b00cb00cb00c';
 export const fixtureUnitId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 export const unintroducedEntryId = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
 export const firstReviewEntryId = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
@@ -15,8 +16,12 @@ export const seedIntroducedCardFixture = Effect.gen(function* () {
     values (${fixtureCourseId}, 'French', 'fr')
   `;
   yield* sql`
-    insert into units (id, course_id, name, position)
-    values (${fixtureUnitId}, ${fixtureCourseId}, 'Unit 1', 0)
+    insert into books (id, course_id, name, position)
+    values (${fixtureBookId}, ${fixtureCourseId}, 'Découvertes 3', 0)
+  `;
+  yield* sql`
+    insert into units (id, course_id, book_id, name, position)
+    values (${fixtureUnitId}, ${fixtureCourseId}, ${fixtureBookId}, 'Unit 1', 0)
   `;
   yield* sql`
     insert into entries (

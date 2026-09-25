@@ -27,8 +27,15 @@ const course = {
   createdAt: new Date(0),
 };
 
+const book = {
+  id: 'd9428888-122b-41e1-b85c-61cd3cbb3213',
+  name: 'Découvertes 3',
+  lastImportedAt: null,
+};
+
 const unit = {
   id: 'd9428888-122b-41e1-b85c-61cd3cbb3212',
+  bookId: book.id,
   name: 'Unité 3',
   position: 0,
   isHolding: false,
@@ -64,6 +71,7 @@ export const makeImportRepository = (
     listAudioRecoveryPages: Effect.succeed([]),
     getPage: () => Effect.succeed({ page, course }),
     getPageUpload: () => Effect.succeed(undefined),
+    listBooks: () => Effect.succeed([book]),
     listUnits: () => Effect.succeed([unit]),
     listUnitEntries: () => Effect.succeed([]),
     loadPendingExtraction: () =>

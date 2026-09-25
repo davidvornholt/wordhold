@@ -9,6 +9,7 @@ export default defineConfig({
     './src/schema/directions.ts',
     './src/schema/import-sessions.ts',
     './src/schema/pages.ts',
+    './src/schema/books.ts',
     './src/schema/units.ts',
     './src/schema/entries.ts',
     './src/schema/practice.ts',

@@ -13,6 +13,8 @@ import type { SuggestTranslation } from './word-pair-fields';
 
 type UnitVocabularyProps = {
   readonly entries: ReadonlyArray<VocabularyEntry>;
+  // Every entry of the course, which a typed word is checked against.
+  readonly courseEntries: ReadonlyArray<VocabularyEntry>;
   readonly enabledDirections: ReadonlyArray<AnswerDirection>;
   readonly targetLanguage: LanguageCode;
   readonly targetLabel: string;
@@ -43,6 +45,7 @@ type UnitVocabularyProps = {
 // saved. An empty unit offers typing next to photographing.
 export const UnitVocabulary = ({
   entries,
+  courseEntries,
   enabledDirections,
   targetLanguage,
   targetLabel,
@@ -60,7 +63,7 @@ export const UnitVocabulary = ({
   const form = adding ? (
     <NewVocabularyForm
       createEntry={createEntry}
-      entries={entries}
+      entries={courseEntries}
       generateExample={generateDraftExample}
       suggestTranslation={suggestTranslation}
       targetLabel={targetLabel}

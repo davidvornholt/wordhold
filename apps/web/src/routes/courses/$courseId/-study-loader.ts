@@ -1,5 +1,5 @@
 import {
-  listCourseUnits,
+  getCourseOutline,
   prepareVocabularyExamples,
 } from '../../../features/courses/services/server-fns';
 import { getCourse } from '../../../features/import/server-fns';
@@ -85,9 +85,9 @@ export const loadStudyData = async (
   courseId: string,
   deps: StudySearchData,
 ) => {
-  const [course, units] = await Promise.all([
+  const [course, { units }] = await Promise.all([
     getCourse({ data: courseId }),
-    listCourseUnits({ data: courseId }),
+    getCourseOutline({ data: courseId }),
   ]);
   const unit = units.find((candidate) => candidate.id === deps.unit);
   const entryIds = selectedEntryIds(deps.entries);

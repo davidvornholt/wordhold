@@ -2,11 +2,25 @@ import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import type { CardState } from '@wordhold/db/schema/practice';
 import type { ExampleSentence } from '../../../shared/examples/example-model';
 
+// A book of the course, in the order the course page lists them.
+export type CourseBook = {
+  readonly id: string;
+  readonly name: string;
+};
+
+// The course's books and units, which the course page and the practice
+// screens read together.
+export type CourseOutline = {
+  readonly books: ReadonlyArray<CourseBook>;
+  readonly units: ReadonlyArray<CourseUnit>;
+};
+
 // A unit as the course page lists it. Introduced entries participate in the
 // regular learning plan. An explicit vocabulary selection may also practise
 // entries before their learning pass.
 export type CourseUnit = {
   readonly id: string;
+  readonly bookId: string;
   readonly name: string;
   readonly entries: number;
   readonly introduced: number;
@@ -43,6 +57,8 @@ export type VocabularyCard = {
 
 export type VocabularyEntry = {
   readonly id: string;
+  readonly bookId: string;
+  readonly bookName: string;
   readonly unitId: string;
   readonly unitName: string;
   readonly targetText: string;
@@ -110,3 +126,17 @@ export const courseTotals = (
     }),
     { entries: 0, unintroduced: 0 },
   );
+
+// Each book with its units, in course order. A book without units is kept so
+// a freshly added book shows up before its first import.
+export const unitsByBook = (
+  books: ReadonlyArray<CourseBook>,
+  units: ReadonlyArray<CourseUnit>,
+): ReadonlyArray<{
+  readonly book: CourseBook;
+  readonly units: ReadonlyArray<CourseUnit>;
+}> =>
+  books.map((book) => ({
+    book,
+    units: units.filter((unit) => unit.bookId === book.id),
+  }));

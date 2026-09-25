@@ -4,6 +4,7 @@ import { VerifyForm } from '../src/features/import/ui/verify-form';
 import { navigateToFixture } from './fixture-state';
 import {
   photographedPage,
+  verificationBooks,
   verificationEntries,
   verificationUnits,
 } from './verification-fixture-data';
@@ -39,6 +40,7 @@ export const BatchReviewFixture = ({ position }: BatchReviewFixtureProps) => (
       <div className="verification-form-pane">
         <BatchReviewProgress position={position} total={2} />
         <VerifyForm
+          books={verificationBooks}
           busy={false}
           existingEntries={[]}
           generateExample={async () => ({

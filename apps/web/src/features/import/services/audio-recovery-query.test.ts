@@ -98,6 +98,7 @@ describe('audioRecoveryPages', () => {
       provide(
         importVerifiedPage({
           pageId,
+          book: { kind: 'new', name: 'Green Line 3' },
           entries: [
             {
               unit: { kind: 'new', name: 'Unité 3' },

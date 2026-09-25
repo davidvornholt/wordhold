@@ -45,7 +45,15 @@ const verify = (
   Effect.gen(function* () {
     const sql = yield* Database;
     return yield* Effect.either(
-      verifyPageLive(sql, decodeImportPayload({ pageId, entries }), courseId),
+      verifyPageLive(
+        sql,
+        decodeImportPayload({
+          pageId,
+          book: { kind: 'new', name: 'Découvertes 3' },
+          entries,
+        }),
+        courseId,
+      ),
     );
   });
 

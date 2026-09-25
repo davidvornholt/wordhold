@@ -4,10 +4,11 @@ import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
 import { Button } from '../../../shared/ui/button';
 import { cardClass } from '../../../shared/ui/surface-styles';
+import { unitLocation } from '../../../shared/vocabulary/book-name';
 import type { VocabularyEntry } from '../schemas/course-units';
 import type { VocabularyFilter } from '../schemas/vocabulary-search';
 import { matchesFilter } from './vocabulary-filter-logic';
-import { VocabularyFilters } from './vocabulary-filters';
+import { type UnitOptionGroup, VocabularyFilters } from './vocabulary-filters';
 import { VocabularySelectionBar } from './vocabulary-selection-bar';
 import { VocabularyUnitSection } from './vocabulary-unit-section';
 
@@ -17,7 +18,8 @@ type VocabularyLibraryProps = {
   readonly initialFilter: VocabularyFilter;
   // Course scope only: preselects the unit dropdown when arriving via a link.
   readonly initialUnitId?: string;
-  // Course scope groups entries under unit headings with a unit dropdown; unit
+  // Course scope groups entries under "book · unit" headings with a unit
+  // dropdown, since two books may each have a unit with the same name; unit
   // scope shows one flat list because every entry belongs to the same unit.
   readonly scope: 'course' | 'unit';
   readonly targetLanguage: LanguageCode;
@@ -29,6 +31,37 @@ type VocabularyLibraryProps = {
     entryId: string,
   ) => Promise<NonNullable<VocabularyEntry['example']>>;
 };
+
+type VocabularySection = readonly [string, ReadonlyArray<VocabularyEntry>];
+
+// One section per unit, headed "book · unit" because two books may each have
+// a unit with the same name.
+const unitSections = (
+  entries: ReadonlyArray<VocabularyEntry>,
+): ReadonlyArray<VocabularySection> =>
+  [...Map.groupBy(entries, (entry) => entry.unitId).values()].map(
+    (unitEntries) => {
+      const [first] = unitEntries;
+      return [
+        first === undefined ? '' : unitLocation(first.bookName, first.unitName),
+        unitEntries,
+      ] as const;
+    },
+  );
+
+const unitOptionGroups = (
+  entries: ReadonlyArray<VocabularyEntry>,
+): ReadonlyArray<UnitOptionGroup> =>
+  [...Map.groupBy(entries, (entry) => entry.bookId).values()].map(
+    (bookEntries) => ({
+      bookName: bookEntries[0]?.bookName ?? '',
+      units: [
+        ...new Map(
+          bookEntries.map((entry) => [entry.unitId, entry.unitName] as const),
+        ).entries(),
+      ],
+    }),
+  );
 
 export const VocabularyLibrary = ({
   enabledDirections,
@@ -61,17 +94,9 @@ export const VocabularyLibrary = ({
       matchesFilter(entry, enabledDirections, filter, now)
     );
   });
-  const sections: ReadonlyArray<
-    readonly [string, ReadonlyArray<VocabularyEntry>]
-  > =
-    scope === 'course'
-      ? [...Map.groupBy(visible, (entry) => entry.unitName)]
-      : [['Alle auswählen', visible]];
-  const unitOptions = [
-    ...new Map(
-      entries.map((entry) => [entry.unitId, entry.unitName] as const),
-    ).entries(),
-  ];
+  const sections: ReadonlyArray<VocabularySection> =
+    scope === 'course' ? unitSections(visible) : [['Alle auswählen', visible]];
+  const unitOptions = unitOptionGroups(entries);
   const toggleEntry = (entryId: string) =>
     setSelected((current) =>
       current.includes(entryId)

@@ -20,6 +20,8 @@ const card = (overrides: Partial<Card>): Card => ({
 
 const entry = (cards: ReadonlyArray<Card>): VocabularyEntry => ({
   id: '00000000-0000-0000-0000-000000000011',
+  bookId: '00000000-0000-0000-0000-000000000009',
+  bookName: 'Green Line 3',
   unitId: '00000000-0000-0000-0000-000000000003',
   unitName: 'Unit 3',
   targetText: 'memory',

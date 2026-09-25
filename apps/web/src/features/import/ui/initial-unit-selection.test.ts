@@ -5,6 +5,7 @@ import { initialUnitSelection } from './initial-unit-selection';
 const units: ReadonlyArray<Unit> = [
   {
     id: '11111111-1111-4111-8111-111111111111',
+    bookId: '66666666-6666-4666-8666-666666666666',
     name: 'Unité 2',
     position: 0,
     isHolding: false,
@@ -12,6 +13,7 @@ const units: ReadonlyArray<Unit> = [
   },
   {
     id: '22222222-2222-4222-8222-222222222222',
+    bookId: '66666666-6666-4666-8666-666666666666',
     name: 'Unité 3',
     position: 1,
     isHolding: false,
@@ -19,6 +21,7 @@ const units: ReadonlyArray<Unit> = [
   },
   {
     id: '33333333-3333-4333-8333-333333333333',
+    bookId: '66666666-6666-4666-8666-666666666666',
     name: 'Ohne Einheit',
     position: 2,
     isHolding: true,

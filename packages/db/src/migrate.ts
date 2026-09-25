@@ -60,6 +60,39 @@ const validateImportPositionConstraint = (
     catch: migrationError,
   });
 
+// Units created before books existed are filed into one book per course. The
+// book gets a placeholder name the learner renames on the course page. Safe
+// to rerun: it only touches units without a book.
+export const placeholderBookName = 'Buch 1';
+
+const fileUnitsIntoBooks = (database: ReturnType<typeof makeDrizzle>) =>
+  Effect.tryPromise({
+    try: () =>
+      database.transaction(async (transaction) => {
+        await transaction.execute(sql`
+          insert into books (course_id, name, position)
+          select distinct unit.course_id, ${placeholderBookName}, 0
+          from units as unit
+          where unit.book_id is null
+            and not exists (
+              select 1 from books as book where book.course_id = unit.course_id
+            )
+        `);
+        await transaction.execute(sql`
+          update units as unit
+          set book_id = (
+            select book.id
+            from books as book
+            where book.course_id = unit.course_id
+            order by book.position, book.id
+            limit 1
+          )
+          where unit.book_id is null
+        `);
+      }),
+    catch: migrationError,
+  });
+
 export const migrateDatabase = (url: string) =>
   Effect.acquireUseRelease(
     Effect.try({
@@ -76,6 +109,7 @@ export const migrateDatabase = (url: string) =>
         ),
         Effect.flatMap(() => backfillImportExpectedCounts(database)),
         Effect.flatMap(() => validateImportPositionConstraint(database)),
+        Effect.flatMap(() => fileUnitsIntoBooks(database)),
       ),
     (database) => Effect.promise(() => database.$client.end()),
   );

@@ -5,7 +5,11 @@ import {
   withTestDatabase,
 } from '@wordhold/db/testing/postgres-test-database';
 import { Effect } from 'effect';
-import { DatabaseMigrationError, migrateDatabase } from './migrate';
+import {
+  DatabaseMigrationError,
+  migrateDatabase,
+  placeholderBookName,
+} from './migrate';
 
 // Replay the final migrations from their pre-DDL state.
 const importPositionConstraintMigrationHash =
@@ -16,6 +20,8 @@ const reviewPositionMigrationHash =
   '667da7736b64b0656bc94e13aa92a626ee11d920ef4a49b55660274959306df1';
 const exampleAudioMigrationHash =
   'aface4b435b2dafbc5c9edefed79481429abecc375d5cd26d416759672671b24';
+const booksMigrationHash =
+  '6cc265987ae1824f43fac61dc5cf25089f1d948265afab509f63a33169ff0538';
 const fullMigrationTestTimeoutMs = 15_000;
 
 const getMigrationError = (url: string) =>
@@ -53,13 +59,18 @@ it(
           yield* sql`alter table entry_examples drop constraint entry_examples_audio_complete`;
           yield* sql`alter table entry_examples drop column audio_profile`;
           yield* sql`alter table entry_examples drop column audio_path`;
+          yield* sql`alter table units drop column book_id`;
+          yield* sql`drop table books`;
+          yield* sql`create unique index units_course_name on units (course_id, name)`;
+          yield* sql`create unique index units_course_position on units (course_id, position)`;
           yield* sql`
           delete from drizzle.__drizzle_migrations
           where hash in (
             ${importPositionConstraintMigrationHash},
             ${reviewOrderMigrationHash},
             ${reviewPositionMigrationHash},
-            ${exampleAudioMigrationHash}
+            ${exampleAudioMigrationHash},
+            ${booksMigrationHash}
           )
         `;
           yield* migrateDatabase(database.url);
@@ -88,6 +99,50 @@ it(
   },
   fullMigrationTestTimeoutMs,
 );
+
+it('files units without a book into one placeholder book per course', async () => {
+  const units = await Effect.runPromise(
+    withTestDatabase((database) =>
+      Effect.gen(function* () {
+        yield* migrateDatabase(database.url);
+        const sql = yield* Database;
+        yield* sql`
+          insert into courses (id, name, target_language)
+          values
+            ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'Spanisch', 'es'),
+            ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'Englisch', 'en')
+        `;
+        yield* sql`
+          insert into units (course_id, name, position)
+          values
+            ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'U1 Acércate', 0),
+            ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'U2 Descubre', 1),
+            ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'Unit 1', 0)
+        `;
+        yield* migrateDatabase(database.url);
+        yield* migrateDatabase(database.url);
+        return yield* sql<{
+          readonly unit: string;
+          readonly book: string;
+          readonly courseName: string;
+        }>`
+          select unit.name as unit, book.name as book, course.name as "courseName"
+          from units as unit
+          join books as book
+            on book.id = unit.book_id and book.course_id = unit.course_id
+          join courses as course on course.id = unit.course_id
+          order by course.name, unit.position
+        `;
+      }).pipe(Effect.provide(testDatabaseLayer(database.url))),
+    ),
+  );
+
+  expect(units).toEqual([
+    { unit: 'Unit 1', book: placeholderBookName, courseName: 'Englisch' },
+    { unit: 'U1 Acércate', book: placeholderBookName, courseName: 'Spanisch' },
+    { unit: 'U2 Descubre', book: placeholderBookName, courseName: 'Spanisch' },
+  ]);
+});
 
 it('reports a malformed database URL as a typed migration error', async () => {
   const error = await getMigrationError('not a database URL');

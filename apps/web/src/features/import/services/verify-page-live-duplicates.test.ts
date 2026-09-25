@@ -38,14 +38,21 @@ const seedCourse = Effect.gen(function* () {
   `;
 });
 
+const currentBook = { kind: 'new', name: 'Découvertes 3' } as const;
+
 const importEntries = (
   pageId: string,
   entries: ReadonlyArray<Record<string, unknown>>,
+  book: Record<string, unknown> = currentBook,
 ) =>
   Effect.gen(function* () {
     const sql = yield* Database;
     return yield* Effect.either(
-      verifyPageLive(sql, decodeImportPayload({ pageId, entries }), courseId),
+      verifyPageLive(
+        sql,
+        decodeImportPayload({ pageId, book, entries }),
+        courseId,
+      ),
     );
   });
 
@@ -128,6 +135,27 @@ describe('verifyPageLive duplicates', () => {
           ]);
           expect(exampleVariant._tag).toBe('Right');
           expect(yield* entryCount).toBe(originalPlusTwoExceptions);
+        }).pipe(Effect.provide(testDatabaseLayer(database.url))),
+      ),
+    );
+  });
+});
+
+describe('verifyPageLive course-wide duplicates', () => {
+  it('rejects a word already stored in another book of the course', async () => {
+    await Effect.runPromise(
+      withMigratedTestDatabase((database) =>
+        Effect.gen(function* () {
+          yield* seedCourse;
+          yield* importEntries(pageIds[0], [entry('mémoire')], {
+            kind: 'new',
+            name: 'Découvertes 2',
+          });
+          const repeated = yield* importEntries(pageIds[1], [entry('mémoire')]);
+          expect(
+            repeated._tag === 'Left' ? repeated.left : null,
+          ).toBeInstanceOf(DuplicateEntryError);
+          expect(yield* entryCount).toBe(1);
         }).pipe(Effect.provide(testDatabaseLayer(database.url))),
       ),
     );

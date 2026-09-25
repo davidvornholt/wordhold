@@ -9,29 +9,36 @@ const databaseError = (operation: string, cause: unknown) =>
     message: 'Die Einheit konnte nicht gespeichert werden.',
   });
 
+export type CreateUnitResult = 'created' | 'duplicate' | 'book-missing';
+
+// Units are named and ordered within their book: two books of one course may
+// each start with a unit called "U1".
 export const makeCourseUnitMutations = (sql: Database) => {
-  const createUnit = (courseId: string, name: string) =>
+  const createUnit = (courseId: string, bookId: string, name: string) =>
     sql
       .withTransaction(
         Effect.gen(function* () {
           yield* sql`select pg_advisory_xact_lock(hashtextextended(${courseId}, 0))`;
-          const course = yield* sql<{ readonly id: string }>`
-            select id from courses where id = ${courseId} limit 1
+          const book = yield* sql<{ readonly id: string }>`
+            select id from books
+            where id = ${bookId} and course_id = ${courseId}
+            limit 1
           `;
-          if (course.length === 0) {
-            return 'course-missing' as const;
+          if (book.length === 0) {
+            return 'book-missing' as const;
           }
           const inserted = yield* sql<{ readonly id: string }>`
-            insert into units (course_id, name, position)
+            insert into units (course_id, book_id, name, position)
             values (
               ${courseId},
+              ${bookId},
               ${name},
               coalesce(
-                (select max(position) + 1 from units where course_id = ${courseId}),
+                (select max(position) + 1 from units where book_id = ${bookId}),
                 0
               )
             )
-            on conflict (course_id, name) do nothing
+            on conflict (book_id, name) do nothing
             returning id
           `;
           return inserted.length === 0
@@ -43,6 +50,7 @@ export const makeCourseUnitMutations = (sql: Database) => {
 
   const reorderUnits = (
     courseId: string,
+    bookId: string,
     expectedUnitIds: ReadonlyArray<string>,
     unitIds: ReadonlyArray<string>,
   ) =>
@@ -52,7 +60,7 @@ export const makeCourseUnitMutations = (sql: Database) => {
           yield* sql`select pg_advisory_xact_lock(hashtextextended(${courseId}, 0))`;
           const current = yield* sql<{ readonly id: string }>`
             select id from units
-            where course_id = ${courseId}
+            where course_id = ${courseId} and book_id = ${bookId}
             order by position, name, id
           `;
           const currentUnitIds = current.map((unit) => unit.id);
@@ -76,14 +84,14 @@ export const makeCourseUnitMutations = (sql: Database) => {
           yield* sql`
             update units
             set position = -(position + 1)
-            where course_id = ${courseId}
+            where course_id = ${courseId} and book_id = ${bookId}
           `;
           yield* Effect.forEach(
             unitIds,
             (unitId, position) => sql`
               update units
               set position = ${position}
-              where id = ${unitId} and course_id = ${courseId}
+              where id = ${unitId} and book_id = ${bookId}
             `,
             { concurrency: 1 },
           );

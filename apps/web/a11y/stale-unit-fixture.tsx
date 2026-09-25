@@ -11,9 +11,16 @@ const entries: ReadonlyArray<DraftEntry> = [
   },
 ];
 
+const book = {
+  id: '66666666-6666-4666-8666-666666666666',
+  name: 'Green Line 3',
+  lastImportedAt: null,
+};
+
 const units = [
   {
     id: '22222222-2222-4222-8222-222222222222',
+    bookId: book.id,
     name: 'Unit 3',
     position: 1,
     isHolding: false,
@@ -33,6 +40,7 @@ export const StaleUnitVerificationFixture = () => {
         </p>
       )}
       <VerifyForm
+        books={[book]}
         busy={busy}
         existingEntries={[]}
         generateExample={async () => ({

@@ -43,6 +43,7 @@ const extractionWithoutPageNumber = JSON.stringify({
 const payload = (pageId: string, targetText = 'memory') =>
   decodeImportPayload({
     pageId,
+    book: { kind: 'new', name: 'Découvertes 3' },
     entries: [
       {
         unit: { kind: 'new', name: 'Unit 1' },

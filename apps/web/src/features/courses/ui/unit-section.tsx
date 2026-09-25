@@ -1,34 +1,75 @@
 import { type ReactNode, useId, useState } from 'react';
 import { Button } from '../../../shared/ui/button';
-import type { CourseUnit } from '../schemas/course-units';
+import { cardClass } from '../../../shared/ui/surface-styles';
+import {
+  type CourseOutline,
+  type CourseUnit,
+  unitsByBook,
+} from '../schemas/course-units';
+import { type CourseBookActions, CourseBookEditor } from './course-book-editor';
 import { UnitList } from './unit-list';
-import { UnitOrderEditor } from './unit-order-editor';
+import { bookSummary, initiallyOpenBooks } from './unit-status';
 
-type UnitSectionProps = {
-  readonly units: ReadonlyArray<CourseUnit>;
+type UnitSectionProps = CourseBookActions & {
+  readonly outline: CourseOutline;
   readonly targetLabel: string;
   readonly renderUnitLink: (unit: CourseUnit) => ReactNode;
-  readonly createUnit: (name: string) => Promise<ReadonlyArray<CourseUnit>>;
-  readonly reorderUnits: (
-    expectedUnitIds: ReadonlyArray<string>,
-    unitIds: ReadonlyArray<string>,
-  ) => Promise<ReadonlyArray<CourseUnit>>;
 };
 
 export const UnitSection = ({
-  units,
+  outline,
   targetLabel,
   renderUnitLink,
-  createUnit,
-  reorderUnits,
+  ...actions
 }: UnitSectionProps) => {
   const [editing, setEditing] = useState(false);
   const headingId = useId();
+  const groups = unitsByBook(outline.books, outline.units);
+  const initiallyOpen = initiallyOpenBooks(groups);
+  let content: ReactNode;
+  if (editing) {
+    content = <CourseBookEditor initialOutline={outline} {...actions} />;
+  } else if (groups.length === 0) {
+    content = (
+      <p className={`${cardClass} text-sm`}>
+        Dieser Kurs hat noch keine Bücher. Fotografiere eine Vokabelseite und
+        gib beim Prüfen an, aus welchem Buch sie stammt.
+      </p>
+    );
+  } else {
+    content = groups.map(({ book, units }) => (
+      <details
+        className="group"
+        key={book.id}
+        open={initiallyOpen.has(book.id)}
+      >
+        <summary className="flex min-h-11 cursor-pointer list-none flex-wrap items-baseline gap-x-3 focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
+          <span
+            aria-hidden="true"
+            className="text-muted-foreground group-open:rotate-90"
+          >
+            ▸
+          </span>
+          <span className="font-display text-lg">{book.name}</span>
+          <span className="text-muted-foreground text-sm">
+            {bookSummary(units)}
+          </span>
+        </summary>
+        <div className="pt-3">
+          <UnitList
+            renderUnitLink={renderUnitLink}
+            targetLabel={targetLabel}
+            units={units}
+          />
+        </div>
+      </details>
+    ));
+  }
   return (
     <section aria-labelledby={headingId} className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-4">
         <h2 className="font-display text-xl" id={headingId}>
-          Einheiten
+          Bücher und Einheiten
         </h2>
         <Button
           aria-expanded={editing}
@@ -38,19 +79,7 @@ export const UnitSection = ({
           {editing ? 'Fertig' : 'Bearbeiten'}
         </Button>
       </div>
-      {editing ? (
-        <UnitOrderEditor
-          createUnit={createUnit}
-          initialUnits={units}
-          reorderUnits={reorderUnits}
-        />
-      ) : (
-        <UnitList
-          renderUnitLink={renderUnitLink}
-          targetLabel={targetLabel}
-          units={units}
-        />
-      )}
+      {content}
     </section>
   );
 };

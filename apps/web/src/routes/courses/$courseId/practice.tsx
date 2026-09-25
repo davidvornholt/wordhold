@@ -6,7 +6,7 @@ import {
 import { useState } from 'react';
 import {
   getCourseDirections,
-  listCourseUnits,
+  getCourseOutline,
   prepareVocabularyExamples,
 } from '../../../features/courses/services/server-fns';
 import { getDashboard } from '../../../features/dashboard/services/server-fns';
@@ -133,11 +133,11 @@ export const Route = createFileRoute('/courses/$courseId/practice')({
     unit: search.unit,
   }),
   loader: async ({ params, deps }) => {
-    const [course, directions, dashboard, units] = await Promise.all([
+    const [course, directions, dashboard, { units }] = await Promise.all([
       getCourse({ data: params.courseId }),
       getCourseDirections({ data: params.courseId }),
       getDashboard(),
-      listCourseUnits({ data: params.courseId }),
+      getCourseOutline({ data: params.courseId }),
     ]);
     const unit = units.find((candidate) => candidate.id === deps.unit);
     const stats = dashboard.perCourse.find(

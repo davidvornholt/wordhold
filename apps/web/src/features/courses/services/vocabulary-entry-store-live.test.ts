@@ -12,9 +12,11 @@ const courseId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const unitId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const otherUnitId = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
 const missingUnitId = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+const bookId = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
+const otherBookId = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
 const directionsPerEntry = 2;
-// "vous", its casing variant "Vous", and "vous" in the other unit.
-const storedVariants = 3;
+// "vous" and its casing variant "Vous".
+const storedVariants = 2;
 
 const runStoreTest = <A, E>(
   effect: Effect.Effect<A, E, Database | VocabularyEntryStore | CourseStore>,
@@ -41,9 +43,14 @@ const seedCourse = Effect.gen(function* () {
     values (${courseId}, 'French', 'fr')
   `;
   yield* sql`
-    insert into units (id, course_id, name, position)
-    values (${unitId}, ${courseId}, 'Unité 1', 0),
-      (${otherUnitId}, ${courseId}, 'Unité 2', 1)
+    insert into books (id, course_id, name, position)
+    values (${bookId}, ${courseId}, 'Découvertes 3', 0),
+      (${otherBookId}, ${courseId}, 'Découvertes 4', 1)
+  `;
+  yield* sql`
+    insert into units (id, course_id, book_id, name, position)
+    values (${unitId}, ${courseId}, ${bookId}, 'Unité 1', 0),
+      (${otherUnitId}, ${courseId}, ${otherBookId}, 'Unité 1', 0)
   `;
 });
 
@@ -109,7 +116,7 @@ describe('VocabularyEntryStore PostgreSQL contract', () => {
     );
   });
 
-  it('refuses an exact repeat but stores a casing variant and the same word in another unit', async () => {
+  it('refuses an exact repeat anywhere in the course but stores a casing variant', async () => {
     await runStoreTest(
       Effect.gen(function* () {
         yield* seedCourse;
@@ -120,8 +127,8 @@ describe('VocabularyEntryStore PostgreSQL contract', () => {
         expect((yield* store.create(word(' vous! '))).kind).toBe('duplicate');
         expect((yield* store.create(word('Vous'))).kind).toBe('created');
         expect(
-          (yield* store.create({ ...word('vous'), unitId: otherUnitId })).kind,
-        ).toBe('created');
+          yield* store.create({ ...word('vous'), unitId: otherUnitId }),
+        ).toEqual({ kind: 'duplicate', location: 'Découvertes 3 · Unité 1' });
         const count = yield* sql<{
           readonly count: number;
         }>`select count(*)::int as count from entries`;

@@ -14,13 +14,15 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
+import { maximumUnitNameLength } from '@wordhold/ai/extraction/schema';
 import { useState } from 'react';
 import { cardListClass } from '../../../shared/ui/surface-styles';
 import type { CourseUnit } from '../schemas/course-units';
-import { NewUnitForm } from './new-unit-form';
+import { NameForm } from './name-form';
 import { SortableUnitRow } from './sortable-unit-row';
 
 type UnitOrderEditorProps = {
+  readonly bookName: string;
   readonly initialUnits: ReadonlyArray<CourseUnit>;
   readonly createUnit: (name: string) => Promise<ReadonlyArray<CourseUnit>>;
   readonly reorderUnits: (
@@ -34,7 +36,37 @@ const screenReaderInstructions = {
     'Drücke die Leertaste, um eine Einheit aufzunehmen. Verschiebe sie mit den Pfeiltasten. Lege sie mit der Leertaste ab oder brich mit Escape ab.',
 };
 
+type DragItem = { readonly id: string | number };
+type DragMove = {
+  readonly active: DragItem;
+  readonly over: DragItem | null;
+};
+
+const unitAnnouncements = (units: ReadonlyArray<CourseUnit>): Announcements => {
+  const unitName = (id: string | number): string =>
+    units.find((unit) => unit.id === id)?.name ?? 'Einheit';
+  const position = (id: string | number): number =>
+    units.findIndex((unit) => unit.id === id) + 1;
+  return {
+    onDragStart: ({ active }: { readonly active: DragItem }) =>
+      `${unitName(active.id)} aufgenommen. Position ${position(active.id)} von ${units.length}.`,
+    onDragOver: ({ active, over }: DragMove) =>
+      over === null
+        ? undefined
+        : `${unitName(active.id)} auf Position ${position(over.id)} von ${units.length}.`,
+    onDragEnd: ({ active, over }: DragMove) =>
+      over === null
+        ? `${unitName(active.id)} nicht verschoben.`
+        : `${unitName(active.id)} auf Position ${position(over.id)} abgelegt.`,
+    onDragCancel: ({ active }: { readonly active: DragItem }) =>
+      `Verschieben von ${unitName(active.id)} abgebrochen.`,
+  };
+};
+
+// Arranges and extends the units of one book. Each book is ordered on its own,
+// so a unit never moves into a different book here.
 export const UnitOrderEditor = ({
+  bookName,
   initialUnits,
   createUnit,
   reorderUnits,
@@ -50,36 +82,9 @@ export const UnitOrderEditor = ({
     }),
   );
 
-  const unitName = (id: string | number): string =>
-    units.find((unit) => unit.id === id)?.name ?? 'Einheit';
   const position = (id: string | number): number =>
     units.findIndex((unit) => unit.id === id) + 1;
-  const announcements: Announcements = {
-    onDragStart: ({ active }: { active: { id: string | number } }) =>
-      `${unitName(active.id)} aufgenommen. Position ${position(active.id)} von ${units.length}.`,
-    onDragOver: ({
-      active,
-      over,
-    }: {
-      active: { id: string | number };
-      over: { id: string | number } | null;
-    }) =>
-      over === null
-        ? undefined
-        : `${unitName(active.id)} auf Position ${position(over.id)} von ${units.length}.`,
-    onDragEnd: ({
-      active,
-      over,
-    }: {
-      active: { id: string | number };
-      over: { id: string | number } | null;
-    }) =>
-      over === null
-        ? `${unitName(active.id)} nicht verschoben.`
-        : `${unitName(active.id)} auf Position ${position(over.id)} abgelegt.`,
-    onDragCancel: ({ active }: { active: { id: string | number } }) =>
-      `Verschieben von ${unitName(active.id)} abgebrochen.`,
-  };
+  const announcements = unitAnnouncements(units);
 
   const persistOrder = async (
     previous: ReadonlyArray<CourseUnit>,
@@ -125,10 +130,6 @@ export const UnitOrderEditor = ({
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-muted-foreground text-sm">
-        Ziehe Einheiten in die Reihenfolge des Buchs. Du kannst sie auch mit den
-        Pfeiltasten verschieben. Änderungen werden sofort gespeichert.
-      </p>
       <DndContext
         accessibility={{ announcements, screenReaderInstructions }}
         collisionDetection={closestCenter}
@@ -139,7 +140,7 @@ export const UnitOrderEditor = ({
           items={units.map((unit) => unit.id)}
           strategy={verticalListSortingStrategy}
         >
-          <ul className={cardListClass}>
+          <ul aria-label={`Einheiten in ${bookName}`} className={cardListClass}>
             {units.map((unit, index) => (
               <SortableUnitRow
                 busy={busy}
@@ -153,15 +154,26 @@ export const UnitOrderEditor = ({
           </ul>
         </SortableContext>
       </DndContext>
-      <NewUnitForm
+      <NameForm
         busy={busy}
-        createUnit={createUnit}
+        conflict={(name) =>
+          units.some((unit) => unit.name === name)
+            ? `Die Einheit "${name}" gibt es in diesem Buch bereits.`
+            : null
+        }
+        failedStatus="Die Einheit wurde nicht hinzugefügt. Versuche es noch einmal."
+        label="Neue Einheit"
+        maxLength={maximumUnitNameLength}
         onBusyChange={setBusy}
-        onCreated={setUnits}
-        units={units}
+        pendingStatus="Einheit wird hinzugefügt …"
+        placeholder="z. B. Unité 2 Volet 1"
+        save={async (name) => setUnits(await createUnit(name))}
+        savedStatus={(name) => `${name} hinzugefügt.`}
+        statusLabel={`Status beim Hinzufügen einer Einheit zu ${bookName}`}
+        submitLabel="Einheit hinzufügen"
       />
       <output
-        aria-label="Status der Einheitenverwaltung"
+        aria-label={`Status der Einheiten in ${bookName}`}
         className={failed ? 'text-destructive text-sm' : 'text-sm'}
       >
         {status}

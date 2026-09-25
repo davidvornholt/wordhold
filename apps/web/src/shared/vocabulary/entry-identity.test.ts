@@ -1,9 +1,15 @@
 import { describe, expect, it } from 'bun:test';
 import {
   comparableEntryText,
-  duplicateVerdict,
+  type ExistingEntry,
   entryIdentityKey,
+  findDuplicate,
 } from './entry-identity';
+
+const duplicateVerdict = (
+  draft: { readonly targetText: string; readonly example: string },
+  existing: ReadonlyArray<ExistingEntry>,
+) => findDuplicate(draft, existing).verdict;
 
 const stored = (targetText: string, examples: ReadonlyArray<string> = []) => ({
   targetText,
@@ -27,7 +33,7 @@ describe('comparableEntryText', () => {
   });
 });
 
-describe('duplicateVerdict', () => {
+describe('findDuplicate', () => {
   const draft = (targetText: string, example = '') => ({
     targetText,
     example,
@@ -83,5 +89,18 @@ describe('duplicateVerdict', () => {
     expect(duplicateVerdict(draft('sie'), [stored('Sie'), stored('sie')])).toBe(
       'exact',
     );
+  });
+
+  it('names the stored entry the draft repeats, preferring an exact match', () => {
+    const variant = { ...stored('Sie'), location: 'Buch 1 · U1' };
+    const exact = { ...stored('sie'), location: 'Buch 2 · U1' };
+    expect(findDuplicate(draft('sie'), [variant, exact])).toEqual({
+      verdict: 'exact',
+      entry: exact,
+    });
+    expect(findDuplicate(draft('SIE'), [variant, exact])).toEqual({
+      verdict: 'exception',
+      entry: variant,
+    });
   });
 });

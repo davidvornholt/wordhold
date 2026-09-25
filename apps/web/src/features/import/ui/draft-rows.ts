@@ -5,7 +5,7 @@ import {
   matchesGenerationSource,
 } from '../../../shared/examples/example-draft';
 import type { UnitSelectionData } from '../schemas/import-payload';
-import type { Unit, UnitEntry } from '../services/repository';
+import type { UnitEntry } from '../services/repository';
 import { assessDraftDuplicates } from './draft-duplicates';
 import type { DraftEntry } from './entry-row';
 import {
@@ -40,12 +40,14 @@ export const identifiedRows = (
 
 export const draftFormState = (
   draftEntries: ReadonlyArray<IdentifiedDraftRow>,
-  units: ReadonlyArray<Unit>,
   existingEntries: ReadonlyArray<UnitEntry>,
   busy: boolean,
 ) => {
-  const verdicts = assessDraftDuplicates(draftEntries, units, existingEntries);
-  const selection = selectImportableEntries(draftEntries, verdicts);
+  const duplicates = assessDraftDuplicates(draftEntries, existingEntries);
+  const selection = selectImportableEntries(
+    draftEntries,
+    duplicates.map((duplicate) => duplicate.verdict),
+  );
   const entriesToSubmit = entriesForSubmission(selection);
   const unitsNamed = entriesToSubmit.every((entry) =>
     unitSelectionIsComplete(entry.unit),
@@ -62,7 +64,7 @@ export const draftFormState = (
       !busy &&
       unitsNamed &&
       (selection.entries.length > 0 || completionWithoutImport),
-    verdicts,
+    duplicates,
   };
 };
 

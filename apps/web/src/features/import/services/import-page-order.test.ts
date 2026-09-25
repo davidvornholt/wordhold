@@ -15,6 +15,30 @@ import {
 const earlierPageId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const currentPageId = 'd9428888-122b-41e1-b85c-61cd3cbb3210';
 
+const importCurrentPage = (repository: ImportRepository['Type']) =>
+  Effect.runPromise(
+    importVerifiedPage({
+      pageId: currentPageId,
+      book: { kind: 'new', name: 'Green Line 3' },
+      entries: [
+        {
+          unit: { kind: 'new', name: 'Unité 1' },
+          targetText: 'mémoire',
+          nativeText: 'Erinnerung',
+        },
+      ],
+    }).pipe(
+      Effect.provideService(ImportRepository, repository),
+      Effect.provideService(AudioGenerationStore, makeAudioGenerationStore()),
+      Effect.provideService(Storage, makeStorage()),
+      Effect.provideService(
+        Tts,
+        Tts.make({ synthesize: () => Effect.dieMessage('unexpected TTS') }),
+      ),
+      Effect.either,
+    ),
+  );
+
 describe('import page order', () => {
   it('rejects a later page while an earlier page remains unchecked', async () => {
     let verified = false;
@@ -52,27 +76,7 @@ describe('import page order', () => {
         }),
     });
 
-    const result = await Effect.runPromise(
-      importVerifiedPage({
-        pageId: currentPageId,
-        entries: [
-          {
-            unit: { kind: 'new', name: 'Unité 1' },
-            targetText: 'mémoire',
-            nativeText: 'Erinnerung',
-          },
-        ],
-      }).pipe(
-        Effect.provideService(ImportRepository, repository),
-        Effect.provideService(AudioGenerationStore, makeAudioGenerationStore()),
-        Effect.provideService(Storage, makeStorage()),
-        Effect.provideService(
-          Tts,
-          Tts.make({ synthesize: () => Effect.dieMessage('unexpected TTS') }),
-        ),
-        Effect.either,
-      ),
-    );
+    const result = await importCurrentPage(repository);
 
     expect(Option.getOrUndefined(Either.getLeft(result))).toBeInstanceOf(
       PageReviewOrderError,
@@ -109,27 +113,7 @@ describe('import page order', () => {
         }),
     });
 
-    const result = await Effect.runPromise(
-      importVerifiedPage({
-        pageId: currentPageId,
-        entries: [
-          {
-            unit: { kind: 'new', name: 'Unité 1' },
-            targetText: 'mémoire',
-            nativeText: 'Erinnerung',
-          },
-        ],
-      }).pipe(
-        Effect.provideService(ImportRepository, repository),
-        Effect.provideService(AudioGenerationStore, makeAudioGenerationStore()),
-        Effect.provideService(Storage, makeStorage()),
-        Effect.provideService(
-          Tts,
-          Tts.make({ synthesize: () => Effect.dieMessage('unexpected TTS') }),
-        ),
-        Effect.either,
-      ),
-    );
+    const result = await importCurrentPage(repository);
 
     expect(Option.getOrUndefined(Either.getLeft(result))).toBeInstanceOf(
       PageReviewOrderError,

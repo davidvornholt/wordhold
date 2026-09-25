@@ -2,6 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import { Database } from '@wordhold/db/client';
 import { Effect } from 'effect';
 import {
+  fixtureBookId,
   fixtureCourseId,
   fixtureNow,
   fixtureUnitId,
@@ -26,15 +27,16 @@ describe('CourseStore PostgreSQL course contents', () => {
         const sql = yield* Database;
         const store = yield* CourseStore;
         yield* sql`
-          insert into units (id, course_id, name, position)
+          insert into units (id, course_id, book_id, name, position)
           values
-            ('ffffffff-ffff-4fff-8fff-ffffffffffff', ${fixtureCourseId}, 'Unit 3', 2),
-            ('99999999-9999-4999-8999-999999999999', ${fixtureCourseId}, 'Unit 2', 1)
+            ('ffffffff-ffff-4fff-8fff-ffffffffffff', ${fixtureCourseId}, ${fixtureBookId}, 'Unit 3', 2),
+            ('99999999-9999-4999-8999-999999999999', ${fixtureCourseId}, ${fixtureBookId}, 'Unit 2', 1)
         `;
 
         expect(yield* store.listUnits(fixtureCourseId, fixtureNow)).toEqual([
           {
             id: fixtureUnitId,
+            bookId: fixtureBookId,
             name: 'Unit 1',
             entries: 3,
             introduced: 2,
@@ -46,6 +48,7 @@ describe('CourseStore PostgreSQL course contents', () => {
           },
           {
             id: '99999999-9999-4999-8999-999999999999',
+            bookId: fixtureBookId,
             name: 'Unit 2',
             entries: 0,
             introduced: 0,
@@ -57,6 +60,7 @@ describe('CourseStore PostgreSQL course contents', () => {
           },
           {
             id: 'ffffffff-ffff-4fff-8fff-ffffffffffff',
+            bookId: fixtureBookId,
             name: 'Unit 3',
             entries: 0,
             introduced: 0,
@@ -110,6 +114,8 @@ describe('CourseStore PostgreSQL entry contents', () => {
               source: 'textbook',
             },
             introduced: true,
+            bookId: fixtureBookId,
+            bookName: 'Découvertes 3',
             unitId: fixtureUnitId,
             unitName: 'Unit 1',
           },
@@ -119,6 +125,8 @@ describe('CourseStore PostgreSQL entry contents', () => {
             nativeText: 'Erinnerung',
             example: null,
             introduced: true,
+            bookId: fixtureBookId,
+            bookName: 'Découvertes 3',
             unitId: fixtureUnitId,
             unitName: 'Unit 1',
           },
@@ -128,6 +136,8 @@ describe('CourseStore PostgreSQL entry contents', () => {
             nativeText: 'neu',
             example: null,
             introduced: true,
+            bookId: fixtureBookId,
+            bookName: 'Découvertes 3',
             unitId: fixtureUnitId,
             unitName: 'Unit 1',
           },
@@ -137,6 +147,7 @@ describe('CourseStore PostgreSQL entry contents', () => {
           yield* store.listUnits(fixtureCourseId, fixtureNow),
         ).toContainEqual({
           id: fixtureUnitId,
+          bookId: fixtureBookId,
           name: 'Unit 1',
           entries: 3,
           introduced: 3,
@@ -158,6 +169,8 @@ describe('CourseStore PostgreSQL entry contents', () => {
           nativeText: 'neu',
           example: null,
           introduced: true,
+          bookId: fixtureBookId,
+          bookName: 'Découvertes 3',
           unitId: fixtureUnitId,
           unitName: 'Unit 1',
           cards: expect.any(Array),
@@ -166,6 +179,7 @@ describe('CourseStore PostgreSQL entry contents', () => {
           yield* store.listUnits(fixtureCourseId, fixtureNow),
         ).toContainEqual({
           id: fixtureUnitId,
+          bookId: fixtureBookId,
           name: 'Unit 1',
           entries: 3,
           introduced: 3,

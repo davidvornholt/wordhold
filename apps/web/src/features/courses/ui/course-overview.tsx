@@ -1,14 +1,19 @@
 import type { ReactNode } from 'react';
 import { countNoun } from '../../../shared/format/count';
-import { type CourseUnit, courseTotals } from '../schemas/course-units';
+import {
+  type CourseOutline,
+  type CourseUnit,
+  courseTotals,
+} from '../schemas/course-units';
+import type { CourseBookActions } from './course-book-editor';
 import { UnitSection } from './unit-section';
 
-type CourseOverviewProps = {
+type CourseOverviewProps = CourseBookActions & {
   // Null when the course is named after its language, which would otherwise
   // print the same entry twice under its own heading.
   readonly languageLabel: string | null;
   readonly targetLabel: string;
-  readonly units: ReadonlyArray<CourseUnit>;
+  readonly outline: CourseOutline;
   readonly primaryAction: ReactNode | null;
   // Null when the empty course already leads with importing as its primary
   // action, so the same link is not offered twice.
@@ -16,11 +21,6 @@ type CourseOverviewProps = {
   readonly settingsAction: ReactNode;
   readonly vocabularyAction: ReactNode;
   readonly renderUnitLink: (unit: CourseUnit) => ReactNode;
-  readonly createUnit: (name: string) => Promise<ReadonlyArray<CourseUnit>>;
-  readonly reorderUnits: (
-    expectedUnitIds: ReadonlyArray<string>,
-    unitIds: ReadonlyArray<string>,
-  ) => Promise<ReadonlyArray<CourseUnit>>;
 };
 
 const courseSummary = (
@@ -42,16 +42,15 @@ const courseSummary = (
 export const CourseOverview = ({
   languageLabel,
   targetLabel,
-  units,
+  outline,
   primaryAction,
   importAction,
   settingsAction,
   vocabularyAction,
   renderUnitLink,
-  createUnit,
-  reorderUnits,
+  ...actions
 }: CourseOverviewProps) => {
-  const totals = courseTotals(units);
+  const totals = courseTotals(outline.units);
   return (
     <>
       <p className="text-muted-foreground text-sm">
@@ -66,11 +65,10 @@ export const CourseOverview = ({
         {settingsAction}
       </div>
       <UnitSection
-        createUnit={createUnit}
+        outline={outline}
         renderUnitLink={renderUnitLink}
-        reorderUnits={reorderUnits}
         targetLabel={targetLabel}
-        units={units}
+        {...actions}
       />
     </>
   );
