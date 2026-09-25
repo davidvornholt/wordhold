@@ -6,6 +6,8 @@ test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
 const unitActionPattern = /kennenlernen$|üben$/u;
 const coursePracticePattern = /Karten üben$/u;
+// The unit's recommended step names its direction; inline steps do not.
+const recommendedPattern = / · (?:Deutsch|Englisch) → /u;
 
 test('the course offers practice when its queue has work', async ({ page }) => {
   await page.goto('/?state=course');
@@ -58,17 +60,21 @@ test('an untouched unit exposes both learning paths before the session', async (
   await expect(
     page.getByRole('heading', { name: 'Lernstand nach Richtung' }),
   ).toBeVisible();
-  await expect(page.getByText('Deutsch → Englisch 0/25')).toBeVisible();
-  await expect(page.getByText('Englisch → Deutsch 0/25')).toBeVisible();
-  await expect(page.getByText('25 Vokabeln noch kennenlernen')).toBeVisible();
+  await expect(
+    page.getByText('Green Line 3 · 25 Vokabeln · 25 noch kennenlernen'),
+  ).toBeVisible();
   await expect(page.getByText('Für jetzt geschafft')).toHaveCount(0);
-  await expect(page.getByText('Als Nächstes')).toHaveCount(0);
+  await expect(
+    page.getByRole('button', { name: recommendedPattern }),
+  ).toHaveCount(0);
   const forwardPath = page
     .getByRole('listitem')
     .filter({ has: page.getByRole('heading', { name: 'Deutsch → Englisch' }) });
   const reversePath = page
     .getByRole('listitem')
     .filter({ has: page.getByRole('heading', { name: 'Englisch → Deutsch' }) });
+  await expect(forwardPath.getByText('0 von 25 kennengelernt')).toBeVisible();
+  await expect(reversePath.getByText('0 von 25 kennengelernt')).toBeVisible();
   await expect(
     forwardPath.getByRole('button', {
       exact: true,
@@ -93,12 +99,14 @@ test('a partly learned unit explains why only one path still needs learning', as
   page,
 }) => {
   await page.goto('/?state=unit');
-  await expect(page.getByText('Deutsch → Englisch 18/18')).toBeVisible();
-  await expect(page.getByText('Englisch → Deutsch 16/18')).toBeVisible();
+  const forwardPath = page
+    .getByRole('listitem')
+    .filter({ has: page.getByRole('heading', { name: 'Deutsch → Englisch' }) });
   const reversePath = page
     .getByRole('listitem')
     .filter({ has: page.getByRole('heading', { name: 'Englisch → Deutsch' }) });
-  await expect(page.getByText('Als Nächstes')).toBeVisible();
+  await expect(forwardPath.getByText('18 von 18 kennengelernt')).toBeVisible();
+  await expect(reversePath.getByText('16 von 18 kennengelernt')).toBeVisible();
   const recommendedAction = page.getByRole('button', {
     name: '2 Vokabeln kennenlernen · Englisch → Deutsch',
   });
@@ -122,7 +130,6 @@ test('a due unit keeps scheduled work separate from custom selection', async ({
   page,
 }) => {
   await page.goto('/?state=unit-due');
-  await expect(page.getByText('Als Nächstes')).toBeVisible();
   await expect(
     page.getByRole('button', {
       name: '1 Karte üben · Deutsch → Englisch',

@@ -1,4 +1,5 @@
 import { ImportSessionStack } from '../src/features/import/ui/import-session-stack';
+import { fixtureBackControl } from './fixture-controls';
 import { navigateToFixture } from './fixture-state';
 import { photographedPage } from './verification-fixture-data';
 
@@ -22,13 +23,7 @@ const pages = [
 export const ImportSessionFixture = () => (
   <main className="page-column flex flex-col gap-8 p-6">
     <header className="flex flex-col gap-3 border-border border-b pb-5">
-      <button
-        className="w-fit text-muted-foreground text-sm underline"
-        onClick={() => navigateToFixture('dashboard')}
-        type="button"
-      >
-        ← Übersicht
-      </button>
+      {fixtureBackControl('Übersicht', 'dashboard')}
       <div>
         <p className="text-muted-foreground text-sm">Import vom 24.8.2026</p>
         <h1 className="font-display font-semibold text-2xl">

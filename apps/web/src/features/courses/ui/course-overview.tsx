@@ -12,7 +12,6 @@ type CourseOverviewProps = CourseBookActions & {
   // Null when the course is named after its language, which would otherwise
   // print the same entry twice under its own heading.
   readonly languageLabel: string | null;
-  readonly targetLabel: string;
   readonly outline: CourseOutline;
   readonly primaryAction: ReactNode | null;
   // Null when the empty course already leads with importing as its primary
@@ -41,7 +40,6 @@ const courseSummary = (
 // alternatives remain in the list below.
 export const CourseOverview = ({
   languageLabel,
-  targetLabel,
   outline,
   primaryAction,
   importAction,
@@ -67,7 +65,6 @@ export const CourseOverview = ({
       <UnitSection
         outline={outline}
         renderUnitLink={renderUnitLink}
-        targetLabel={targetLabel}
         {...actions}
       />
     </>

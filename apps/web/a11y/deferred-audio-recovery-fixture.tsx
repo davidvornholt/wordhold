@@ -68,7 +68,7 @@ export const DeferredAudioRecoveryFixture = () => {
   return (
     <main className="page-column flex flex-col gap-4 p-6">
       <button
-        className="text-muted-foreground text-sm underline"
+        className="inline-flex min-h-11 w-fit items-center text-muted-foreground text-sm underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
         onClick={() => {
           activeRef.current = false;
           setView('stack');

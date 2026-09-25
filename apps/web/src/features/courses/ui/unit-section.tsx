@@ -12,13 +12,11 @@ import { bookSummary, initiallyOpenBooks } from './unit-status';
 
 type UnitSectionProps = CourseBookActions & {
   readonly outline: CourseOutline;
-  readonly targetLabel: string;
   readonly renderUnitLink: (unit: CourseUnit) => ReactNode;
 };
 
 export const UnitSection = ({
   outline,
-  targetLabel,
   renderUnitLink,
   ...actions
 }: UnitSectionProps) => {
@@ -56,11 +54,7 @@ export const UnitSection = ({
           </span>
         </summary>
         <div className="pt-3">
-          <UnitList
-            renderUnitLink={renderUnitLink}
-            targetLabel={targetLabel}
-            units={units}
-          />
+          <UnitList renderUnitLink={renderUnitLink} units={units} />
         </div>
       </details>
     ));

@@ -64,8 +64,6 @@ const items: ReadonlyArray<LearnItem> = [
 
 const backControl = fixtureBackControl('Unit 3 – Holidays', 'unit');
 
-const practiceControl = fixtureControl('Jetzt üben', 'practice', 'quiet');
-
 const completionControls = (
   direction: LearnItem['direction'],
   chooseDirection: (direction: LearnItem['direction']) => void,
@@ -176,7 +174,11 @@ export const LearnStartFixture = () => (
 export const LearnDoneFixture = () => (
   <FocusLayout exit={backControl} title="Unit 3: Holidays · Kennenlernen">
     <LearnDone
-      controls={practiceControl}
+      controls={fixtureControl(
+        'Jetzt üben · Deutsch → Englisch',
+        'practice',
+        'primary',
+      )}
       directionLabel="Deutsch → Englisch"
       learned={2}
     />
@@ -207,7 +209,9 @@ export const LearnSectionDoneFixture = () => {
         directionLabel="Deutsch → Englisch"
         learned={sessionSectionSize}
       />
-      <output aria-label="Continued learning sections">{continuations}</output>
+      <output aria-label="Continued learning sections" className="sr-only">
+        {continuations}
+      </output>
     </FocusLayout>
   );
 };

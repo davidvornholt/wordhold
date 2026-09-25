@@ -4,6 +4,7 @@ import type { DraftEntry } from '../src/features/import/ui/entry-row';
 import { ExtractionRecovery } from '../src/features/import/ui/extraction-recovery';
 import { VerificationImage } from '../src/features/import/ui/verification-image';
 import { VerifyForm } from '../src/features/import/ui/verify-form';
+import { fixtureBackControl } from './fixture-controls';
 import { completeAudioRecovery, navigateToFixture } from './fixture-state';
 import {
   allDuplicateUnitEntries,
@@ -13,16 +14,6 @@ import {
   verificationUnitEntries,
   verificationUnits,
 } from './verification-fixture-data';
-
-const backControl = (
-  <button
-    className="text-muted-foreground text-sm underline"
-    onClick={() => navigateToFixture('dashboard')}
-    type="button"
-  >
-    ← Übersicht
-  </button>
-);
 
 const deferredEntries: ReadonlyArray<DraftEntry> = [
   {
@@ -65,16 +56,9 @@ export const VerificationFixture = ({
   return (
     <main className="verification-screen">
       <div className="verification-header">
-        {audioRecovery ? (
-          <button
-            className="text-muted-foreground text-sm underline"
-            onClick={() => navigateToFixture('dashboard-audio-recovery')}
-            type="button"
-          >
-            ← Übersicht
-          </button>
-        ) : (
-          backControl
+        {fixtureBackControl(
+          'Übersicht',
+          audioRecovery ? 'dashboard-audio-recovery' : 'dashboard',
         )}
         <h1 className="font-display font-semibold text-2xl">
           English A2: Seite überprüfen

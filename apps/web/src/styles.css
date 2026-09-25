@@ -102,15 +102,19 @@
 }
 
 @utility verification-header {
-  @apply page-column flex flex-col gap-4 px-6;
+  @apply page-column flex flex-col gap-4 px-6 xl:max-w-7xl;
 }
 
 @utility verification-workbench {
   @apply mx-auto grid w-full max-w-7xl gap-6 px-6 xl:grid-cols-2;
 }
 
+/*
+ * On wide screens the photograph stays in view beside the entries it is
+ * checked against, capped to the viewport so the whole page stays visible.
+ */
 @utility verification-image-pane {
-  @apply w-full max-w-xl justify-self-center xl:max-w-none;
+  @apply w-full max-w-xl justify-self-center xl:sticky xl:top-6 xl:max-w-none xl:self-start;
 }
 
 @utility verification-form-pane {

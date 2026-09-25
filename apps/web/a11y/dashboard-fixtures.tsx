@@ -12,6 +12,7 @@ import { FragileList } from '../src/features/dashboard/ui/fragile-list';
 import { TodayPanel } from '../src/features/dashboard/ui/today-panel';
 import { AudioRecoveryPages } from '../src/features/import/ui/audio-recovery-pages';
 import { PendingImportSessions } from '../src/features/import/ui/pending-import-sessions';
+import { actionClass } from '../src/shared/ui/action-styles';
 import { AudioRecoveryPagesFixture } from './audio-recovery-pages-fixture';
 import { audioRecoveryIsComplete, navigateToFixture } from './fixture-state';
 
@@ -77,19 +78,19 @@ const fixtureDestination = (destination: FixtureAction) => {
   return destination === 'learn' ? 'course' : destination;
 };
 
-const actionClass = (destination: FixtureAction) => {
-  if (destination === 'practice' || destination === 'learn') {
-    return 'inline-flex min-h-11 items-center bg-primary px-4 py-2 font-medium text-primary-foreground text-sm';
+// The fixture mirrors the variants the dashboard route gives each action.
+const fixtureActionClass = (destination: FixtureAction) => {
+  if (destination === 'course') {
+    return 'font-display text-xl underline decoration-border underline-offset-4 hover:decoration-current';
   }
-  if (destination === 'today' || destination === 'import') {
-    return 'inline-flex min-h-11 items-center border border-input px-4 py-2 text-sm underline-offset-4 hover:underline';
-  }
-  return 'font-display text-xl underline decoration-border underline-offset-4 hover:decoration-current';
+  return actionClass(
+    destination === 'today' || destination === 'import' ? 'primary' : 'outline',
+  );
 };
 
 const action = (label: string, destination: FixtureAction) => (
   <button
-    className={actionClass(destination)}
+    className={fixtureActionClass(destination)}
     onClick={() => navigateToFixture(fixtureDestination(destination))}
     type="button"
   >
@@ -206,9 +207,7 @@ export const DashboardFixture = ({
       <CourseGrid
         courses={courses}
         renderCourseLink={(candidate) => action(candidate.name, 'course')}
-        renderImportAction={() =>
-          action('fotografiere die erste Seite', 'import')
-        }
+        renderImportAction={() => action('Erste Seite fotografieren', 'import')}
         renderLearnAction={() => action('Neue Vokabeln kennenlernen', 'learn')}
         renderPracticeAction={(candidate) =>
           action(

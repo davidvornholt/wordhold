@@ -33,7 +33,7 @@ export const VocabularyEntryRow = ({
       className="mt-1"
       onChange={onToggle}
     />
-    <div className="grid min-w-0 flex-1 gap-2 sm:grid-cols-2 sm:items-start">
+    <div className="flex min-w-0 flex-1 flex-col">
       <p>
         <span className="font-medium" lang={targetLanguage}>
           {entry.targetText}

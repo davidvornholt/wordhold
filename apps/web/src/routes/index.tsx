@@ -52,7 +52,6 @@ const Today = ({ dashboard, courses }: TodayProps) => {
           <ActionLink
             params={{ courseId: busiest.courseId }}
             to="/courses/$courseId/practice"
-            variant="outline"
           >
             {todayActionLabel(
               { name: busiestName, ready: busiest.ready },
@@ -111,7 +110,6 @@ const Home = () => {
               <ActionLink
                 params={{ courseId: course.id }}
                 to="/courses/$courseId/import"
-                variant="outline"
               >
                 Erste Seite fotografieren
               </ActionLink>
@@ -120,6 +118,7 @@ const Home = () => {
               <ActionLink
                 params={{ courseId: course.id }}
                 to="/courses/$courseId"
+                variant="outline"
               >
                 Neue Vokabeln kennenlernen
               </ActionLink>
@@ -128,6 +127,7 @@ const Home = () => {
               <ActionLink
                 params={{ courseId: course.id }}
                 to="/courses/$courseId/practice"
+                variant="outline"
               >
                 {countNoun(
                   dashboard.perCourse.find(

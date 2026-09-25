@@ -8,7 +8,6 @@ import {
 } from './unit-status';
 
 const vocabularyCount = 12;
-const reverseIntroduced = 9;
 
 const unit = (overrides: Partial<CourseUnit>): CourseUnit => ({
   bookId: '00000000-0000-0000-0000-000000000009',
@@ -22,20 +21,6 @@ const unit = (overrides: Partial<CourseUnit>): CourseUnit => ({
   nextDueAt: null,
   directions: [],
   ...overrides,
-});
-
-const progress = (
-  direction: CourseUnit['directions'][number]['direction'],
-  introduced: number,
-  total: number,
-): CourseUnit['directions'][number] => ({
-  direction,
-  total,
-  introduced,
-  unintroduced: total - introduced,
-  due: 0,
-  firstReviews: 0,
-  nextDueAt: null,
 });
 
 describe('unitPracticeStatus', () => {
@@ -64,12 +49,12 @@ describe('unitPracticeStatus', () => {
 
 describe('unitProgressSummary', () => {
   it('reports an empty unit without practice status', () => {
-    expect(
-      unitProgressSummary(unit({ entries: 0, introduced: 0 }), 'Englisch'),
-    ).toBe('Noch keine Vokabeln');
+    expect(unitProgressSummary(unit({ entries: 0, introduced: 0 }))).toBe(
+      'Noch keine Vokabeln',
+    );
   });
 
-  it('makes different progress in both directions visible', () => {
+  it('names what is left to learn and to review', () => {
     expect(
       unitProgressSummary(
         unit({
@@ -77,16 +62,9 @@ describe('unitProgressSummary', () => {
           introduced: vocabularyCount,
           unintroduced: 3,
           due: 2,
-          directions: [
-            progress('to_target', vocabularyCount, vocabularyCount),
-            progress('to_native', reverseIntroduced, vocabularyCount),
-          ],
         }),
-        'Englisch',
       ),
-    ).toBe(
-      '12 Vokabeln · Deutsch → Englisch 12/12 · Englisch → Deutsch 9/12 · 3 Vokabeln noch kennenlernen · 2 Wiederholungen offen',
-    );
+    ).toBe('12 Vokabeln · 3 noch kennenlernen · 2 Wiederholungen offen');
   });
 
   it('does not call an untouched unit finished', () => {
@@ -96,29 +74,15 @@ describe('unitProgressSummary', () => {
           entries: vocabularyCount,
           introduced: 0,
           unintroduced: vocabularyCount,
-          directions: [
-            progress('to_target', 0, vocabularyCount),
-            progress('to_native', 0, vocabularyCount),
-          ],
         }),
-        'Englisch',
       ),
-    ).toBe(
-      '12 Vokabeln · Deutsch → Englisch 0/12 · Englisch → Deutsch 0/12 · 12 Vokabeln noch kennenlernen',
-    );
+    ).toBe('12 Vokabeln · 12 noch kennenlernen');
   });
 
-  it('summarizes a fully introduced single-direction unit', () => {
-    expect(
-      unitProgressSummary(
-        unit({
-          entries: 1,
-          introduced: 1,
-          directions: [progress('to_target', 1, 1)],
-        }),
-        'Englisch',
-      ),
-    ).toBe('1 Vokabel · Deutsch → Englisch 1/1 · Für jetzt geschafft');
+  it('summarizes a fully introduced unit', () => {
+    expect(unitProgressSummary(unit({ entries: 1, introduced: 1 }))).toBe(
+      '1 Vokabel · Für jetzt geschafft',
+    );
   });
 });
 
