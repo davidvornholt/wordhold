@@ -50,8 +50,8 @@ const UnitScreen = () => {
     <PageLayout backControl={backControl} title={unit.name}>
       <p className="text-muted-foreground text-sm">
         {book === undefined
-          ? unitProgressSummary(unit, targetLabel)
-          : `${book.name} · ${unitProgressSummary(unit, targetLabel)}`}
+          ? unitProgressSummary(unit)
+          : `${book.name} · ${unitProgressSummary(unit)}`}
       </p>
       {unit.directions.length === 0 ? null : (
         <UnitDirectionPlan

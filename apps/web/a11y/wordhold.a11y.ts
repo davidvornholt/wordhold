@@ -154,7 +154,7 @@ test('leaving an individual page returns to its import stack', async ({
   page,
 }) => {
   await page.goto('/?state=verification-batch-first');
-  await page.getByRole('button', { name: 'Zum Seitenstapel' }).click();
+  await page.getByRole('button', { name: '← Seitenstapel' }).click();
   await expect(page.locator('body')).toHaveAttribute(
     'data-fixture',
     'import-session',

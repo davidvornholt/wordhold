@@ -162,7 +162,6 @@ const CourseScreen = () => {
             Einstellungen
           </ActionLink>
         }
-        targetLabel={targetLabel}
         vocabularyAction={
           <ActionLink
             params={{ courseId: course.id }}

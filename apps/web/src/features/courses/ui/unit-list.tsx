@@ -5,17 +5,12 @@ import { unitProgressSummary } from './unit-status';
 
 type UnitListProps = {
   readonly units: ReadonlyArray<CourseUnit>;
-  readonly targetLabel: string;
   // The unit's name as a link into the unit itself. The row carries no other
   // control, so opening a unit is the one thing this list does.
   readonly renderUnitLink: (unit: CourseUnit) => ReactNode;
 };
 
-export const UnitList = ({
-  units,
-  targetLabel,
-  renderUnitLink,
-}: UnitListProps) =>
+export const UnitList = ({ units, renderUnitLink }: UnitListProps) =>
   units.length === 0 ? (
     <p className={`${cardClass} text-sm`}>
       Dieses Buch hat noch keine Einheiten. Fotografiere eine Vokabelseite und
@@ -30,7 +25,7 @@ export const UnitList = ({
         >
           {renderUnitLink(unit)}
           <span className="text-muted-foreground text-sm">
-            {unitProgressSummary(unit, targetLabel)}
+            {unitProgressSummary(unit)}
           </span>
         </li>
       ))}

@@ -143,7 +143,6 @@ export const CourseFixture = ({
           'course-settings',
           'quiet',
         )}
-        targetLabel={targetLabel}
         vocabularyAction={fixtureControl('Vokabelliste', 'vocabulary', 'quiet')}
       />
     </PageLayout>
@@ -227,7 +226,7 @@ export const UnitFixture = ({ state = 'mixed' }: UnitFixtureProps) => {
       title={unit.name}
     >
       <p className="text-muted-foreground text-sm">
-        {`${currentBook.name} · ${unitProgressSummary(unit, targetLabel)}`}
+        {`${currentBook.name} · ${unitProgressSummary(unit)}`}
       </p>
       {unit.directions.length === 0 ? null : (
         <UnitDirectionPlan

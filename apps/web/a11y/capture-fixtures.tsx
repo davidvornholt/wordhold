@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { QueuedPage } from '../src/features/import/services/upload-queue';
 import { CaptureScreen } from '../src/features/import/ui/capture-screen';
+import { fixtureBackControl } from './fixture-controls';
 import { navigateToFixture } from './fixture-state';
 import { photographedPage } from './verification-fixture-data';
 
@@ -67,15 +68,7 @@ export const ImportFixture = ({
   const busy = initialState === 'progress';
   return (
     <CaptureScreen
-      backControl={
-        <button
-          className="text-muted-foreground text-sm underline"
-          onClick={() => navigateToFixture('dashboard')}
-          type="button"
-        >
-          ← Übersicht
-        </button>
-      }
+      backControl={fixtureBackControl('Übersicht', 'dashboard')}
       busy={busy}
       batchStarted={false}
       courseName="English A2"

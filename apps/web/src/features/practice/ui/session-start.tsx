@@ -91,7 +91,7 @@ export const SessionStart = ({
         </legend>
         {options.map((candidate) => (
           <label
-            className={`grid min-h-11 gap-2 border border-border bg-card p-4 sm:grid-cols-2 sm:items-center ${
+            className={`grid min-h-11 gap-2 border border-border bg-card p-4 sm:grid-cols-[1fr_auto] sm:items-center sm:gap-6 ${
               candidate.availability === 'available'
                 ? 'cursor-pointer'
                 : 'opacity-50'

@@ -1,6 +1,7 @@
 import { BatchReviewProgress } from '../src/features/import/ui/batch-review-progress';
 import { VerificationImage } from '../src/features/import/ui/verification-image';
 import { VerifyForm } from '../src/features/import/ui/verify-form';
+import { fixtureBackControl } from './fixture-controls';
 import { navigateToFixture } from './fixture-state';
 import {
   photographedPage,
@@ -22,13 +23,7 @@ const nextState = (position: 1 | 2) =>
 export const BatchReviewFixture = ({ position }: BatchReviewFixtureProps) => (
   <main className="verification-screen">
     <div className="verification-header">
-      <button
-        className="text-muted-foreground text-sm underline"
-        onClick={() => navigateToFixture('import-session')}
-        type="button"
-      >
-        ← Zum Seitenstapel
-      </button>
+      {fixtureBackControl('Seitenstapel', 'import-session')}
       <h1 className="font-display font-semibold text-2xl">
         English A2: Seite überprüfen
       </h1>
