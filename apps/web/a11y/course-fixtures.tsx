@@ -5,6 +5,7 @@ import type {
 } from '../src/features/courses/schemas/course-units';
 import { CourseOverview } from '../src/features/courses/ui/course-overview';
 import { UnitDirectionPlan } from '../src/features/courses/ui/unit-direction-plan';
+import { unitLinkClass } from '../src/features/courses/ui/unit-link-styles';
 import { unitProgressSummary } from '../src/features/courses/ui/unit-status';
 import { UnitVocabulary } from '../src/features/courses/ui/unit-vocabulary';
 import { directionLabel } from '../src/shared/directions';
@@ -128,7 +129,15 @@ export const CourseFixture = ({
         }
         languageLabel="Englisch"
         primaryAction={coursePrimaryAction(noVocabulary, practiceAvailable)}
-        renderUnitLink={(unit) => fixtureControl(unit.name, 'unit', 'quiet')}
+        renderUnitLink={(unit) => (
+          <button
+            className={unitLinkClass}
+            onClick={() => navigateToFixture('unit')}
+            type="button"
+          >
+            {unit.name}
+          </button>
+        )}
         settingsAction={fixtureControl(
           'Einstellungen',
           'course-settings',

@@ -13,6 +13,7 @@ import {
   reorderCourseUnits,
 } from '../../../features/courses/services/server-fns';
 import { CourseOverview } from '../../../features/courses/ui/course-overview';
+import { unitLinkClass } from '../../../features/courses/ui/unit-link-styles';
 import { getDashboard } from '../../../features/dashboard/services/server-fns';
 import { getCourse } from '../../../features/import/server-fns';
 import { directionLabel } from '../../../shared/directions';
@@ -133,7 +134,7 @@ const CourseScreen = () => {
         })}
         renderUnitLink={(unit) => (
           <Link
-            className="w-fit font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
+            className={unitLinkClass}
             params={{ courseId: course.id, unitId: unit.id }}
             to="/courses/$courseId/units/$unitId"
           >
