@@ -102,9 +102,10 @@ test('VerifyForm remains usable in its existing and new-unit mobile states', asy
 }) => {
   await page.setViewportSize({ width: 320, height: 720 });
   await page.goto('/?state=verification');
-  await expect(
-    page.getByRole('group', { name: 'Einheit zuordnen' }),
-  ).toBeInViewport();
+  await expect(page.getByRole('group', { name: 'Buch' })).toBeInViewport();
+  const bulkUnit = page.getByRole('group', { name: 'Einheit zuordnen' });
+  await bulkUnit.scrollIntoViewIfNeeded();
+  await expect(bulkUnit).toBeInViewport();
   const firstRow = page.locator('form > ul > li').first();
   const changeUnit = firstRow.getByRole('button', {
     name: 'Einheit für Eintrag 1 ändern',

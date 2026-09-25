@@ -1,61 +1,44 @@
 import {
   type DuplicateVerdict,
-  duplicateVerdict,
   type ExistingEntry,
+  findDuplicate,
 } from '../../../shared/vocabulary/entry-identity';
-import type { UnitSelectionData } from '../schemas/import-payload';
-import type { Unit, UnitEntry } from '../services/repository';
+import type { UnitEntry } from '../services/repository';
 
 export type AssessableDraft = {
   readonly targetText: string;
   readonly nativeText: string;
   readonly example: string;
-  readonly unit: UnitSelectionData;
 };
 
-// The server resolves a new unit name by exact match against the course's
-// units, so the assessment mirrors that: a typed name that equals an existing
-// unit's name lands in that unit's pool, any other name starts an empty one.
-const unitPoolKey = (
-  unit: UnitSelectionData,
-  units: ReadonlyArray<Unit>,
-): string | undefined => {
-  if (unit.kind === 'existing') {
-    return unit.unitId;
-  }
-  const name = unit.name.trim();
-  if (name === '') {
-    return undefined;
-  }
-  return (
-    units.find((candidate) => candidate.name === name)?.id ?? `new:${name}`
-  );
-};
+// Where the repeated word already is: a stored entry's "book · unit", or null
+// when it is an earlier row of this same page.
+export type DraftDuplicate =
+  | { readonly verdict: 'none' }
+  | {
+      readonly verdict: Exclude<DuplicateVerdict, 'none'>;
+      readonly location: string | null;
+    };
+
+type PooledEntry = ExistingEntry & { readonly location: string | null };
 
 const draftIsImported = (draft: AssessableDraft): boolean =>
   draft.targetText.trim() !== '' && draft.nativeText.trim() !== '';
 
-// Verdicts for every row of the verify form, in order. Earlier importable
-// rows join their unit's pool so a page listing one word twice flags the
-// second occurrence, matching the server-side check.
+// Duplicates are checked across the whole course, whichever book or unit a
+// row is filed into, matching the server-side check. Earlier importable rows
+// join the pool, so a page listing one word twice flags the second occurrence.
 export const assessDraftDuplicates = (
   drafts: ReadonlyArray<AssessableDraft>,
-  units: ReadonlyArray<Unit>,
-  unitEntries: ReadonlyArray<UnitEntry>,
-): ReadonlyArray<DuplicateVerdict> => {
-  const pools = new Map<string, Array<ExistingEntry>>();
-  for (const entry of unitEntries) {
-    const pool = pools.get(entry.unitId) ?? [];
-    pool.push({ targetText: entry.targetText, examples: entry.examples });
-    pools.set(entry.unitId, pool);
-  }
+  storedEntries: ReadonlyArray<UnitEntry>,
+): ReadonlyArray<DraftDuplicate> => {
+  const pool: Array<PooledEntry> = storedEntries.map((entry) => ({
+    targetText: entry.targetText,
+    examples: entry.examples,
+    location: entry.location,
+  }));
   return drafts.map((draft) => {
-    const key = unitPoolKey(draft.unit, units);
-    if (key === undefined) {
-      return 'none';
-    }
-    const pool = pools.get(key) ?? [];
-    const verdict = duplicateVerdict(
+    const duplicate = findDuplicate(
       { targetText: draft.targetText, example: draft.example },
       pool,
     );
@@ -63,9 +46,11 @@ export const assessDraftDuplicates = (
       pool.push({
         targetText: draft.targetText,
         examples: draft.example.trim() === '' ? [] : [draft.example],
+        location: null,
       });
-      pools.set(key, pool);
     }
-    return verdict;
+    return duplicate.verdict === 'none'
+      ? duplicate
+      : { verdict: duplicate.verdict, location: duplicate.entry.location };
   });
 };

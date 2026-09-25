@@ -29,6 +29,7 @@ describe('verifyPageLive generated example persistence', () => {
             sql,
             decodeImportPayload({
               pageId,
+              book: { kind: 'new', name: 'Découvertes 3' },
               entries: [
                 {
                   unit: { kind: 'new', name: 'Unit 3' },

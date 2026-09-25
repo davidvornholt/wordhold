@@ -125,6 +125,7 @@ export const getPage = createServerFn()
               extraction: row.page.extraction as ExtractionResult | null,
             },
             course: row.course,
+            books: yield* repository.listBooks(row.page.courseId),
             units: yield* repository.listUnits(row.page.courseId),
             unitEntries: yield* repository.listUnitEntries(row.page.courseId),
           };

@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'bun:test';
 import type { UnitDirectionProgress } from './course-units';
-import { courseTotals, recommendedUnitAction } from './course-units';
+import {
+  courseTotals,
+  recommendedUnitAction,
+  unitsByBook,
+} from './course-units';
 
 // A unit part-way through the learning pass, and one that is finished with it.
 const mixedEntries = 18;
@@ -23,6 +27,7 @@ const progress = (
 });
 
 const unit = (entries: number, introduced: number, unintroduced: number) => ({
+  bookId: '00000000-0000-0000-0000-000000000009',
   id: '00000000-0000-0000-0000-000000000001',
   name: 'Unit 3 – Holidays',
   entries,
@@ -141,5 +146,41 @@ describe('recommendedUnitAction', () => {
         ],
       }),
     ).toBeNull();
+  });
+});
+
+describe('unitsByBook', () => {
+  it('keeps same-named units apart and lists books without units', () => {
+    const earlier = {
+      id: '00000000-0000-0000-0000-000000000011',
+      name: 'Encuentros hoy 2',
+    };
+    const current = {
+      id: '00000000-0000-0000-0000-000000000012',
+      name: 'Encuentros hoy 3',
+    };
+    const later = {
+      id: '00000000-0000-0000-0000-000000000013',
+      name: 'Encuentros hoy 4',
+    };
+    const earlierUnit = {
+      ...unit(1, 1, 0),
+      bookId: earlier.id,
+      id: '00000000-0000-0000-0000-000000000021',
+      name: 'U1 Acércate',
+    };
+    const currentUnit = {
+      ...unit(1, 1, 0),
+      bookId: current.id,
+      id: '00000000-0000-0000-0000-000000000022',
+      name: 'U1 Acércate',
+    };
+    expect(
+      unitsByBook([earlier, current, later], [currentUnit, earlierUnit]),
+    ).toEqual([
+      { book: earlier, units: [earlierUnit] },
+      { book: current, units: [currentUnit] },
+      { book: later, units: [] },
+    ]);
   });
 });

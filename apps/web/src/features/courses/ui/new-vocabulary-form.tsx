@@ -8,9 +8,11 @@ import {
 import { Button } from '../../../shared/ui/button';
 import { ExampleDraftEditor } from '../../../shared/ui/example-draft-editor';
 import { cardCompactClass } from '../../../shared/ui/surface-styles';
+import { unitLocation } from '../../../shared/vocabulary/book-name';
 import {
-  type DuplicateVerdict,
-  duplicateVerdict,
+  type DuplicateMatch,
+  type ExistingEntry,
+  findDuplicate,
 } from '../../../shared/vocabulary/entry-identity';
 import type { VocabularyEntry } from '../schemas/course-units';
 import type { CreatedVocabularyEntry } from '../services/vocabulary-entry-service';
@@ -24,7 +26,8 @@ import { type SuggestTranslation, WordPairFields } from './word-pair-fields';
 type NewVocabularyFormProps = {
   readonly targetLabel: string;
   readonly targetLanguage: LanguageCode;
-  // The unit's stored entries, so a repeat is pointed out while typing.
+  // Every stored entry of the course, in any book, so a repeat is pointed out
+  // while typing.
   readonly entries: ReadonlyArray<VocabularyEntry>;
   readonly createEntry: (
     draft: NewVocabularyEntryDraft,
@@ -39,15 +42,17 @@ type NewVocabularyFormProps = {
   readonly suggestTranslation: SuggestTranslation;
 };
 
+type LocatedEntry = ExistingEntry & { readonly location: string };
+
 const duplicateHint = (
-  verdict: DuplicateVerdict,
+  duplicate: DuplicateMatch<LocatedEntry>,
   targetText: string,
 ): string | null => {
-  switch (verdict) {
+  switch (duplicate.verdict) {
     case 'exact':
-      return `${quoted(targetText)} ist schon in dieser Einheit.`;
+      return `${quoted(targetText)} ist schon in ${duplicate.entry.location}.`;
     case 'exception':
-      return `${quoted(targetText)} ist schon in dieser Einheit, mit anderer Schreibweise oder anderem Beispielsatz.`;
+      return `${quoted(targetText)} ist schon in ${duplicate.entry.location}, mit anderer Schreibweise oder anderem Beispielsatz.`;
     default:
       return null;
   }
@@ -69,15 +74,16 @@ export const NewVocabularyForm = ({
     useNewVocabularyEntry(createEntry);
   const targetText = draft.targetText.trim();
   const complete = targetText !== '' && draft.nativeText.trim() !== '';
-  const verdict = duplicateVerdict(
+  const duplicate = findDuplicate(
     { targetText, example: draft.example },
     entries.map((entry) => ({
       targetText: entry.targetText,
       examples: entry.example === null ? [] : [entry.example.targetText],
+      location: unitLocation(entry.bookName, entry.unitName),
     })),
   );
-  const hint = duplicateHint(verdict, targetText);
-  const submittable = !busy && complete && verdict !== 'exact';
+  const hint = duplicateHint(duplicate, targetText);
+  const submittable = !busy && complete && duplicate.verdict !== 'exact';
 
   const submit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();

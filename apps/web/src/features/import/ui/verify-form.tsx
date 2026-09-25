@@ -2,8 +2,12 @@ import { maximumEntriesPerPage } from '@wordhold/ai/extraction/schema';
 import { type Dispatch, type SetStateAction, useState } from 'react';
 import { countNoun } from '../../../shared/format/count';
 import { Button } from '../../../shared/ui/button';
-import type { UnitSelectionData } from '../schemas/import-payload';
-import type { Unit, UnitEntry } from '../services/repository';
+import type {
+  BookSelectionData,
+  UnitSelectionData,
+} from '../schemas/import-payload';
+import type { Book, Unit, UnitEntry } from '../services/repository';
+import { BookAssignment } from './book-assignment';
 import { BulkExampleGeneration } from './bulk-example-generation';
 import { BulkUnitAssignment } from './bulk-unit-assignment';
 import {
@@ -22,6 +26,12 @@ import {
 } from './draft-rows';
 import { type DraftEntry, EntryRow } from './entry-row';
 import { EntryUnitAssignment } from './entry-unit-assignment';
+import {
+  bookChanged,
+  bookSelectionIsComplete,
+  initialBookSelection,
+  unitsInBook,
+} from './initial-book-selection';
 import { initialUnitSelection } from './initial-unit-selection';
 import {
   entryIsComplete,
@@ -35,6 +45,7 @@ type VerifyFormProps = {
   readonly initialUnitName: string | undefined;
   readonly existingEntries: ReadonlyArray<UnitEntry>;
   readonly targetLabel: string;
+  readonly books: ReadonlyArray<Book>;
   readonly units: ReadonlyArray<Unit>;
   readonly busy: boolean;
   readonly generateExample: (
@@ -45,30 +56,64 @@ type VerifyFormProps = {
     targetText: string,
   ) => Promise<{ readonly native: string }>;
   readonly onSubmit: (
+    book: BookSelectionData,
     verifiedEntries: ReadonlyArray<VerificationEntry>,
   ) => void;
   readonly submitLabel?: (entryCount: number) => string;
 };
 
+// The rows offer only the chosen book's units. Picking another book files
+// every row, and the bulk choice, into that book's most likely unit again.
 const useDraftForm = (
   initialEntries: ReadonlyArray<DraftEntry>,
-  units: ReadonlyArray<Unit>,
   initialUnitName: string | undefined,
-  { existingEntries, busy }: Pick<VerifyFormProps, 'existingEntries' | 'busy'>,
+  {
+    books,
+    units,
+    existingEntries,
+    busy,
+  }: Pick<VerifyFormProps, 'books' | 'units' | 'existingEntries' | 'busy'>,
 ) => {
+  const [book, setBook] = useState<BookSelectionData>(() =>
+    initialBookSelection(books),
+  );
+  const bookUnits = unitsInBook(units, book);
   const [bulkUnit, setBulkUnit] = useState<UnitSelectionData>(() =>
-    initialUnitSelection(units, initialUnitName),
+    initialUnitSelection(unitsInBook(units, book), initialUnitName),
   );
   const [draftEntries, setDraftEntries] = useState<
     ReadonlyArray<IdentifiedDraftRow>
   >(() =>
     identifiedRows(
       initialEntries,
-      initialUnitSelection(units, initialUnitName),
+      initialUnitSelection(unitsInBook(units, book), initialUnitName),
     ),
   );
-  const formState = draftFormState(draftEntries, units, existingEntries, busy);
-  return { bulkUnit, setBulkUnit, draftEntries, setDraftEntries, formState };
+  const changeBook = (next: BookSelectionData) => {
+    setBook(next);
+    if (bookChanged(book, next)) {
+      const unit = initialUnitSelection(
+        unitsInBook(units, next),
+        initialUnitName,
+      );
+      setBulkUnit(unit);
+      setDraftEntries((current) => rowsWithUnit(current, unit));
+    }
+  };
+  const formState = draftFormState(draftEntries, existingEntries, busy);
+  return {
+    book,
+    changeBook,
+    bookUnits,
+    bulkUnit,
+    setBulkUnit,
+    draftEntries,
+    setDraftEntries,
+    formState: {
+      ...formState,
+      submittable: formState.submittable && bookSelectionIsComplete(book),
+    },
+  };
 };
 
 type DraftEntryListProps = Pick<
@@ -79,7 +124,7 @@ type DraftEntryListProps = Pick<
   readonly setDraftEntries: Dispatch<
     SetStateAction<ReadonlyArray<IdentifiedDraftRow>>
   >;
-  readonly verdicts: ReturnType<typeof draftFormState>['verdicts'];
+  readonly duplicates: ReturnType<typeof draftFormState>['duplicates'];
 };
 
 const DraftEntryList = ({
@@ -90,13 +135,13 @@ const DraftEntryList = ({
   targetLabel,
   translateExample,
   units,
-  verdicts,
+  duplicates,
 }: DraftEntryListProps) => (
   <ul className="flex flex-col gap-3">
     {draftEntries.map((entry, index) => (
       <EntryRow
         disabled={busy}
-        duplicate={verdicts[index] ?? 'none'}
+        duplicate={duplicates[index] ?? { verdict: 'none' }}
         duplicateConfirmed={entry.duplicateConfirmed}
         entry={entry}
         entryNumber={index + 1}
@@ -156,6 +201,7 @@ export const VerifyForm = ({
   generateExample,
   translateExample,
   targetLabel,
+  books,
   units,
   busy,
   onSubmit,
@@ -164,11 +210,21 @@ export const VerifyForm = ({
       ? 'Seite abschließen'
       : `${countNoun(entryCount, 'Eintrag', 'Einträge')} importieren`,
 }: VerifyFormProps) => {
-  const { bulkUnit, setBulkUnit, draftEntries, setDraftEntries, formState } =
-    useDraftForm(initialEntries, units, initialUnitName, {
-      existingEntries,
-      busy,
-    });
+  const {
+    book,
+    changeBook,
+    bookUnits,
+    bulkUnit,
+    setBulkUnit,
+    draftEntries,
+    setDraftEntries,
+    formState,
+  } = useDraftForm(initialEntries, initialUnitName, {
+    books,
+    units,
+    existingEntries,
+    busy,
+  });
 
   return (
     <form
@@ -179,9 +235,15 @@ export const VerifyForm = ({
         if (!formState.submittable) {
           return;
         }
-        onSubmit(formState.entriesToSubmit);
+        onSubmit(book, formState.entriesToSubmit);
       }}
     >
+      <BookAssignment
+        books={books}
+        disabled={busy}
+        onChange={changeBook}
+        selection={book}
+      />
       <BulkUnitAssignment
         canApply={draftEntries.length > 0 && unitSelectionIsComplete(bulkUnit)}
         disabled={busy}
@@ -190,7 +252,7 @@ export const VerifyForm = ({
         }
         onChange={setBulkUnit}
         selection={bulkUnit}
-        units={units}
+        units={bookUnits}
       />
       <BulkExampleGeneration
         disabled={busy}
@@ -209,8 +271,8 @@ export const VerifyForm = ({
         setDraftEntries={setDraftEntries}
         targetLabel={targetLabel}
         translateExample={translateExample}
-        units={units}
-        verdicts={formState.verdicts}
+        units={bookUnits}
+        duplicates={formState.duplicates}
       />
       {formState.selection.skipped > 0 ? (
         <p className="text-muted-foreground text-sm">
@@ -224,7 +286,7 @@ export const VerifyForm = ({
             setDraftEntries((current) =>
               appendedRow(
                 current,
-                initialUnitSelection(units, initialUnitName),
+                initialUnitSelection(bookUnits, initialUnitName),
               ),
             )
           }

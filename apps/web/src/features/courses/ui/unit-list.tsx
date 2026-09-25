@@ -18,8 +18,8 @@ export const UnitList = ({
 }: UnitListProps) =>
   units.length === 0 ? (
     <p className={`${cardClass} text-sm`}>
-      Dieser Kurs hat noch keine Einheiten. Fotografiere eine Vokabelseite und
-      gib ihr beim Prüfen einen Einheitennamen.
+      Dieses Buch hat noch keine Einheiten. Fotografiere eine Vokabelseite und
+      wähle beim Prüfen dieses Buch.
     </p>
   ) : (
     <ul className={cardListClass}>

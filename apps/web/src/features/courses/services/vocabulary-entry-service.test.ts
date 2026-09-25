@@ -149,7 +149,7 @@ describe('VocabularyEntryService', () => {
 
   it('names a repeated word and a vanished unit as typed failures', async () => {
     const duplicate = await runService((service) => service.create(input), {
-      createResult: { kind: 'duplicate' },
+      createResult: { kind: 'duplicate', location: 'Green Line 3 · Unit 1' },
     });
     expect(duplicate.result._tag).toBe('Left');
     expect(

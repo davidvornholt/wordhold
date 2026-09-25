@@ -1,5 +1,8 @@
-import { useState } from 'react';
-import type { VocabularyEntry } from '../src/features/courses/schemas/course-units';
+import { useRef, useState } from 'react';
+import type {
+  CourseOutline,
+  VocabularyEntry,
+} from '../src/features/courses/schemas/course-units';
 import { CourseOverview } from '../src/features/courses/ui/course-overview';
 import { UnitDirectionPlan } from '../src/features/courses/ui/unit-direction-plan';
 import { unitProgressSummary } from '../src/features/courses/ui/unit-status';
@@ -10,7 +13,8 @@ import { itemsInNextSection } from '../src/shared/session/section-policy';
 import { Button } from '../src/shared/ui/button';
 import { PageLayout } from '../src/shared/ui/page-layout';
 import {
-  courseUnits,
+  courseOutline,
+  currentBook,
   dueUnit,
   emptyUnit,
   mixedUnit,
@@ -36,47 +40,106 @@ const coursePrimaryAction = (
       );
 };
 
+type CourseFixtureProps = {
+  readonly emptyVocabulary?: boolean;
+  readonly practiceAvailable?: boolean;
+  readonly withoutBooks?: boolean;
+};
+
+const initialOutline = ({
+  emptyVocabulary,
+  withoutBooks,
+}: CourseFixtureProps): CourseOutline => {
+  if (withoutBooks === true) {
+    return { books: [], units: [] };
+  }
+  return emptyVocabulary === true
+    ? { books: [currentBook], units: [emptyUnit] }
+    : courseOutline;
+};
+
+// Book and unit edits change an in-memory outline, the way the server returns
+// the course's new outline after each change.
+const useFixtureOutline = (props: CourseFixtureProps) => {
+  const outlineRef = useRef(initialOutline(props));
+  const update = (
+    change: (current: CourseOutline) => CourseOutline,
+  ): Promise<CourseOutline> => {
+    outlineRef.current = change(outlineRef.current);
+    return Promise.resolve(outlineRef.current);
+  };
+  return {
+    outline: outlineRef.current,
+    createBook: (name: string) =>
+      update((current) => ({
+        ...current,
+        books: [...current.books, { id: crypto.randomUUID(), name }],
+      })),
+    renameBook: (bookId: string, name: string) =>
+      update((current) => ({
+        ...current,
+        books: current.books.map((book) =>
+          book.id === bookId ? { ...book, name } : book,
+        ),
+      })),
+    createUnit: (bookId: string, name: string) =>
+      update((current) => ({
+        ...current,
+        units: [
+          ...current.units,
+          { ...emptyUnit, bookId, id: crypto.randomUUID(), name },
+        ],
+      })),
+    reorderUnits: (
+      bookId: string,
+      _expectedUnitIds: ReadonlyArray<string>,
+      unitIds: ReadonlyArray<string>,
+    ) =>
+      update((current) => ({
+        ...current,
+        units: [
+          ...current.units.filter((unit) => unit.bookId !== bookId),
+          ...unitIds.flatMap((unitId) =>
+            current.units.filter((unit) => unit.id === unitId),
+          ),
+        ],
+      })),
+  };
+};
+
 export const CourseFixture = ({
   emptyVocabulary = false,
   practiceAvailable = true,
-}: {
-  readonly emptyVocabulary?: boolean;
-  readonly practiceAvailable?: boolean;
-}) => (
-  <PageLayout
-    backControl={fixtureBackControl('Übersicht', 'dashboard')}
-    title="English A2"
-  >
-    <CourseOverview
-      createUnit={async (name) => [
-        ...courseUnits,
-        { ...emptyUnit, id: crypto.randomUUID(), name },
-      ]}
-      importAction={
-        emptyVocabulary
-          ? null
-          : fixtureControl('Seite fotografieren', 'import', 'quiet')
-      }
-      languageLabel="Englisch"
-      primaryAction={coursePrimaryAction(emptyVocabulary, practiceAvailable)}
-      renderUnitLink={(unit) => fixtureControl(unit.name, 'unit', 'quiet')}
-      reorderUnits={async (_expectedUnitIds, unitIds) =>
-        unitIds.flatMap((unitId) => {
-          const unit = courseUnits.find((candidate) => candidate.id === unitId);
-          return unit === undefined ? [] : [unit];
-        })
-      }
-      settingsAction={fixtureControl(
-        'Einstellungen',
-        'course-settings',
-        'quiet',
-      )}
-      targetLabel={targetLabel}
-      vocabularyAction={fixtureControl('Vokabelliste', 'vocabulary', 'quiet')}
-      units={emptyVocabulary ? [emptyUnit] : courseUnits}
-    />
-  </PageLayout>
-);
+  withoutBooks = false,
+}: CourseFixtureProps) => {
+  const outline = useFixtureOutline({ emptyVocabulary, withoutBooks });
+  const noVocabulary = emptyVocabulary || withoutBooks;
+  return (
+    <PageLayout
+      backControl={fixtureBackControl('Übersicht', 'dashboard')}
+      title="English A2"
+    >
+      <CourseOverview
+        {...outline}
+        importAction={
+          noVocabulary
+            ? null
+            : fixtureControl('Seite fotografieren', 'import', 'quiet')
+        }
+        languageLabel="Englisch"
+        primaryAction={coursePrimaryAction(noVocabulary, practiceAvailable)}
+        renderUnitLink={(unit) => fixtureControl(unit.name, 'unit', 'quiet')}
+        settingsAction={fixtureControl(
+          'Einstellungen',
+          'course-settings',
+          'quiet',
+        )}
+        targetLabel={targetLabel}
+        vocabularyAction={fixtureControl('Vokabelliste', 'vocabulary', 'quiet')}
+      />
+    </PageLayout>
+  );
+};
 
 const uuidTailLength = 12;
 const entryIdOffset = 100;
@@ -92,6 +155,8 @@ const unitEntry = (
   introduced: boolean,
 ): VocabularyEntry => ({
   id: fixtureId(entryIdOffset, index),
+  bookId: currentBook.id,
+  bookName: currentBook.name,
   unitId: mixedUnit.id,
   unitName: mixedUnit.name,
   targetText: target,
@@ -153,7 +218,7 @@ export const UnitFixture = ({ state = 'mixed' }: UnitFixtureProps) => {
       title={unit.name}
     >
       <p className="text-muted-foreground text-sm">
-        {unitProgressSummary(unit, targetLabel)}
+        {`${currentBook.name} · ${unitProgressSummary(unit, targetLabel)}`}
       </p>
       {unit.directions.length === 0 ? null : (
         <UnitDirectionPlan
@@ -176,6 +241,7 @@ export const UnitFixture = ({ state = 'mixed' }: UnitFixtureProps) => {
         />
       )}
       <UnitVocabulary
+        courseEntries={entries}
         createEntry={(draft) => {
           const added = {
             ...unitEntry(

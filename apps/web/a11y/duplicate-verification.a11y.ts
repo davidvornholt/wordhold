@@ -11,7 +11,8 @@ test('VerifyForm flags stored duplicates and skips them by default', async ({
   page,
 }) => {
   await page.goto('/?state=verification-duplicates');
-  await expect(page.getByText('Schon in dieser Einheit')).toHaveCount(2);
+  await expect(page.getByText('Schon in Green Line 3 · Unit 2')).toBeVisible();
+  await expect(page.getByText('Schon in Green Line 2 · Unit 2')).toBeVisible();
   const journeyRow = page.locator('form > ul > li').first();
   await expect(
     journeyRow.getByText('Wird nicht erneut importiert'),
@@ -84,4 +85,14 @@ test('VerifyForm voids a confirmed exception when the text is edited again', asy
   await expect(
     page.getByRole('button', { name: '10 Einträge importieren' }),
   ).toBeEnabled();
+});
+
+test('VerifyForm flags a word the page lists twice', async ({ page }) => {
+  await page.goto('/?state=verification');
+  const lastRow = page.locator('form > ul > li').last();
+  await lastRow.getByLabel('Englisch').fill('journey');
+  await lastRow
+    .getByLabel('Beispielsatz', { exact: true })
+    .fill('The journey takes three hours.');
+  await expect(lastRow.getByText('Schon auf dieser Seite')).toBeVisible();
 });

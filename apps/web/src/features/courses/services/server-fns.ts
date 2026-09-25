@@ -10,7 +10,9 @@ import { authRuntime } from '../../../shared/auth/runtime';
 import { StorageLive } from '../../../shared/storage/server';
 import { decodeSetCourseDirections } from '../schemas/course-directions';
 import {
+  decodeCreateCourseBook,
   decodeCreateCourseUnit,
+  decodeRenameCourseBook,
   decodeReorderCourseUnits,
 } from '../schemas/course-unit-management';
 import {
@@ -71,12 +73,30 @@ export const setCourseDirections = createServerFn({ method: 'POST' })
     );
   });
 
-export const listCourseUnits = createServerFn()
+export const getCourseOutline = createServerFn()
   .validator(decodeId)
   .handler(async ({ data: courseId }) => {
     await authRuntime.runPromise(requireSession(getRequest().headers));
     return courseRuntime.runPromise(
-      Effect.flatMap(CourseService, (service) => service.listUnits(courseId)),
+      Effect.flatMap(CourseService, (service) => service.getOutline(courseId)),
+    );
+  });
+
+export const createCourseBook = createServerFn({ method: 'POST' })
+  .validator(decodeCreateCourseBook)
+  .handler(async ({ data }) => {
+    await authRuntime.runPromise(requireSession(getRequest().headers));
+    return courseRuntime.runPromise(
+      Effect.flatMap(CourseService, (service) => service.createBook(data)),
+    );
+  });
+
+export const renameCourseBook = createServerFn({ method: 'POST' })
+  .validator(decodeRenameCourseBook)
+  .handler(async ({ data }) => {
+    await authRuntime.runPromise(requireSession(getRequest().headers));
+    return courseRuntime.runPromise(
+      Effect.flatMap(CourseService, (service) => service.renameBook(data)),
     );
   });
 

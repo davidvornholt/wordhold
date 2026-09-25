@@ -10,7 +10,7 @@ import { Button } from '../../../shared/ui/button';
 import { ExampleDraftEditor } from '../../../shared/ui/example-draft-editor';
 import { fieldCompactClass } from '../../../shared/ui/field-styles';
 import { Checkbox } from '../../../shared/ui/selection-controls';
-import type { DuplicateVerdict } from '../../../shared/vocabulary/entry-identity';
+import type { DraftDuplicate } from './draft-duplicates';
 
 export type DraftEntry = ExampleDraft & {
   readonly grammar?: GrammarInfo;
@@ -77,7 +77,7 @@ type EntryRowProps = {
   readonly translateExample: (
     targetText: string,
   ) => Promise<{ readonly native: string }>;
-  readonly duplicate: DuplicateVerdict;
+  readonly duplicate: DraftDuplicate;
   readonly duplicateConfirmed: boolean;
   readonly onChange: (entry: DraftEntry) => void;
   readonly onTranslatedExample: (sentence: string, native: string) => void;
@@ -108,7 +108,7 @@ export const EntryRow = ({
   const duplicateConfirmationId = `duplicate-confirmation-${entryNumber}`;
   const uncertain =
     entry.confidence !== undefined && entry.confidence < lowConfidence;
-  const flagged = uncertain || duplicate !== 'none';
+  const flagged = uncertain || duplicate.verdict !== 'none';
   const grammar =
     entry.grammar === undefined ? '' : grammarSummary(entry.grammar);
   const inputClass = fieldCompactClass;
@@ -127,9 +127,11 @@ export const EntryRow = ({
             Unsicher gelesen – bitte prüfen
           </span>
         ) : null}
-        {duplicate === 'none' ? null : (
+        {duplicate.verdict === 'none' ? null : (
           <span className="font-medium text-warning-foreground text-xs">
-            Schon in dieser Einheit
+            {duplicate.location === null
+              ? 'Schon auf dieser Seite'
+              : `Schon in ${duplicate.location}`}
           </span>
         )}
         <Button
@@ -180,13 +182,13 @@ export const EntryRow = ({
       {grammar === '' ? null : (
         <p className="text-muted-foreground text-xs">{grammar}</p>
       )}
-      {duplicate === 'exact' ? (
+      {duplicate.verdict === 'exact' ? (
         <p className="text-warning-foreground text-xs">
           Wird nicht erneut importiert. Für eine Ausnahme ändere die
           Schreibweise oder den Beispielsatz.
         </p>
       ) : null}
-      {duplicate === 'exception' ? (
+      {duplicate.verdict === 'exception' ? (
         <label
           className="flex items-center gap-2 text-sm"
           htmlFor={duplicateConfirmationId}

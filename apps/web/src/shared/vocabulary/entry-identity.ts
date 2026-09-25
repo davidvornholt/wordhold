@@ -29,30 +29,40 @@ export type ExistingEntry = {
 // only with explicit confirmation.
 export type DuplicateVerdict = 'none' | 'exception' | 'exact';
 
+// The stored entry a draft repeats, so the learner can be told where the word
+// already is. An exact match wins over a variant.
+export type DuplicateMatch<Entry extends ExistingEntry> =
+  | { readonly verdict: 'none' }
+  | { readonly verdict: 'exception' | 'exact'; readonly entry: Entry };
+
+const noDuplicate = { verdict: 'none' } as const;
+
 const exampleKeys = (examples: ReadonlyArray<string>): ReadonlyArray<string> =>
   examples.length === 0 ? [''] : examples.map(entryIdentityKey);
 
-export const duplicateVerdict = (
+export const findDuplicate = <Entry extends ExistingEntry>(
   draft: { readonly targetText: string; readonly example: string },
-  existing: ReadonlyArray<ExistingEntry>,
-): DuplicateVerdict => {
+  existing: ReadonlyArray<Entry>,
+): DuplicateMatch<Entry> => {
   const identity = entryIdentityKey(draft.targetText);
   if (identity === '') {
-    return 'none';
+    return noDuplicate;
   }
   const sameWord = existing.filter(
     (entry) => entryIdentityKey(entry.targetText) === identity,
   );
-  if (sameWord.length === 0) {
-    return 'none';
+  const [firstVariant] = sameWord;
+  if (firstVariant === undefined) {
+    return noDuplicate;
   }
   const draftCasing = canonicalEntryText(draft.targetText);
   const draftExample = entryIdentityKey(draft.example);
-  return sameWord.some(
+  const exact = sameWord.find(
     (entry) =>
       canonicalEntryText(entry.targetText) === draftCasing &&
       exampleKeys(entry.examples).includes(draftExample),
-  )
-    ? 'exact'
-    : 'exception';
+  );
+  return exact === undefined
+    ? { verdict: 'exception', entry: firstVariant }
+    : { verdict: 'exact', entry: exact };
 };

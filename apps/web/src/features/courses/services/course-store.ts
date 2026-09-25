@@ -5,12 +5,23 @@ import {
   type CourseDirectionsData,
   decodeStoredDirections,
 } from '../schemas/course-directions';
-import type { CourseUnit, VocabularyEntry } from '../schemas/course-units';
+import type {
+  CourseBook,
+  CourseUnit,
+  VocabularyEntry,
+} from '../schemas/course-units';
 import {
   groupVocabularyRows,
   type VocabularyRow,
 } from '../schemas/vocabulary-rows';
-import { makeCourseUnitMutations } from './course-unit-mutations';
+import {
+  type CreateBookResult,
+  makeCourseBookMutations,
+} from './course-book-mutations';
+import {
+  type CreateUnitResult,
+  makeCourseUnitMutations,
+} from './course-unit-mutations';
 import { type CourseUnitRow, courseUnitFromRow } from './course-unit-rows';
 
 const databaseError = (operation: string, cause: unknown) =>
@@ -19,8 +30,6 @@ const databaseError = (operation: string, cause: unknown) =>
     cause,
     message: 'Der Kurs konnte nicht geladen werden.',
   });
-
-type CreateUnitResult = 'created' | 'duplicate' | 'course-missing';
 
 export class CourseStore extends Context.Tag('wordhold/CourseStore')<
   CourseStore,
@@ -33,16 +42,34 @@ export class CourseStore extends Context.Tag('wordhold/CourseStore')<
       courseId: string,
       directions: CourseDirectionsData,
     ) => Effect.Effect<boolean, CourseDatabaseError>;
+    readonly listBooks: (
+      courseId: string,
+    ) => Effect.Effect<ReadonlyArray<CourseBook>, CourseDatabaseError>;
+    readonly createBook: (
+      courseId: string,
+      name: string,
+    ) => Effect.Effect<CreateBookResult, CourseDatabaseError>;
+    readonly renameBook: (
+      courseId: string,
+      bookId: string,
+      name: string,
+    ) => Effect.Effect<
+      'renamed' | 'duplicate' | 'book-missing',
+      CourseDatabaseError
+    >;
+    // Units in course order: book by book, then within each book.
     readonly listUnits: (
       courseId: string,
       now: Date,
     ) => Effect.Effect<ReadonlyArray<CourseUnit>, CourseDatabaseError>;
     readonly createUnit: (
       courseId: string,
+      bookId: string,
       name: string,
     ) => Effect.Effect<CreateUnitResult, CourseDatabaseError>;
     readonly reorderUnits: (
       courseId: string,
+      bookId: string,
       expectedUnitIds: ReadonlyArray<string>,
       unitIds: ReadonlyArray<string>,
     ) => Effect.Effect<boolean, CourseDatabaseError>;
@@ -99,12 +126,18 @@ export class CourseStore extends Context.Tag('wordhold/CourseStore')<
             databaseError('write course directions', cause),
           ),
         );
+      const listBooks = (courseId: string) =>
+        sql<CourseBook>`
+          select id, name from books
+          where course_id = ${courseId}
+          order by position, id
+        `.pipe(Effect.mapError((cause) => databaseError('list books', cause)));
       // An entry remains unintroduced while one of the course's enabled
       // directions has not been introduced. A disabled direction stays out of
       // the learner's way until it is enabled again.
       const listUnits = (courseId: string, now: Date) =>
         sql<CourseUnitRow>`
-          select u.id, u.name,
+          select u.id, u.book_id as "bookId", u.name,
             count(distinct e.id)::int as entries,
             count(distinct e.id) filter (
               where exists (
@@ -191,20 +224,23 @@ export class CourseStore extends Context.Tag('wordhold/CourseStore')<
                 and cards.due_at > ${now}
             ) as "toNativeNextDueAt"
           from units u
+          join books b on b.id = u.book_id
           join courses co on co.id = u.course_id
           left join entries e on e.unit_id = u.id
           left join cards on cards.entry_id = e.id
           where u.course_id = ${courseId}
-          group by u.id, co.directions
-          order by u.position, u.name, u.id
+          group by u.id, b.id, co.directions
+          order by b.position, u.position, u.name, u.id
         `.pipe(
           Effect.map((rows) => rows.map(courseUnitFromRow)),
           Effect.mapError((cause) => databaseError('list units', cause)),
         );
+      const { createBook, renameBook } = makeCourseBookMutations(sql);
       const { createUnit, reorderUnits } = makeCourseUnitMutations(sql);
       const listVocabulary = (courseId: string) =>
         sql<VocabularyRow>`
-          select e.id, e.unit_id as "unitId", u.name as "unitName",
+          select e.id, u.book_id as "bookId", b.name as "bookName",
+            e.unit_id as "unitId", u.name as "unitName",
             e.target_text as "targetText", e.native_text as "nativeText",
             example.target_text as "exampleTargetText",
             example.native_text as "exampleNativeText",
@@ -215,6 +251,7 @@ export class CourseStore extends Context.Tag('wordhold/CourseStore')<
               where r.card_id = c.id and r.rating = 1) as failures
           from entries e
           join units u on u.id = e.unit_id
+          join books b on b.id = u.book_id
           join cards c on c.entry_id = e.id
           left join lateral (
             select target_text, native_text, source
@@ -224,7 +261,8 @@ export class CourseStore extends Context.Tag('wordhold/CourseStore')<
             limit 1
           ) example on true
           where e.course_id = ${courseId}
-          order by u.position, e.created_at, e.target_text, c.direction
+          order by b.position, u.position, e.created_at, e.target_text,
+            c.direction
         `.pipe(
           Effect.map(groupVocabularyRows),
           Effect.mapError((cause) => databaseError('list vocabulary', cause)),
@@ -232,6 +270,9 @@ export class CourseStore extends Context.Tag('wordhold/CourseStore')<
       return {
         readDirections,
         writeDirections,
+        listBooks,
+        createBook,
+        renameBook,
         listUnits,
         createUnit,
         reorderUnits,

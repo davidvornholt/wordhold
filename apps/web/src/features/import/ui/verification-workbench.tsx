@@ -1,6 +1,7 @@
 import { countNoun } from '../../../shared/format/count';
 import type { BatchReviewSession } from '../schemas/batch-review-search';
-import type { Unit, UnitEntry } from '../services/repository';
+import type { BookSelectionData } from '../schemas/import-payload';
+import type { Book, Unit, UnitEntry } from '../services/repository';
 import { AudioRecovery } from './audio-recovery';
 import { BatchReviewProgress } from './batch-review-progress';
 import type { DraftEntry } from './entry-row';
@@ -16,6 +17,7 @@ type CompletedPage = {
 type VerificationWorkbenchProps = {
   readonly batchIsLastPage: boolean;
   readonly batchSession: BatchReviewSession | null;
+  readonly books: ReadonlyArray<Book>;
   readonly busy: boolean;
   readonly completed: CompletedPage | null;
   readonly error: string | null;
@@ -32,7 +34,10 @@ type VerificationWorkbenchProps = {
   readonly initialUnitName: string | undefined;
   readonly onExtractionRetry: () => void;
   readonly onRetryAudio: () => void;
-  readonly onSubmit: (entries: ReadonlyArray<VerificationEntry>) => void;
+  readonly onSubmit: (
+    book: BookSelectionData,
+    entries: ReadonlyArray<VerificationEntry>,
+  ) => void;
   readonly pageImageSource: string;
   readonly targetLabel: string;
   readonly units: ReadonlyArray<Unit>;
@@ -56,6 +61,7 @@ const formSubmitLabel = (
 export const VerificationWorkbench = ({
   batchIsLastPage,
   batchSession,
+  books,
   busy,
   completed,
   error,
@@ -96,6 +102,7 @@ export const VerificationWorkbench = ({
       ) : null}
       {completed === null && extractionKey !== null ? (
         <VerifyForm
+          books={books}
           busy={busy}
           existingEntries={existingEntries}
           generateExample={generateExample}

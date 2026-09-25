@@ -4,10 +4,11 @@ import { entries } from './entries';
 import { units } from './units';
 
 describe('units', () => {
-  // Two photos of the same chapter must land in one unit. Import resolves a
+  // Two photos of the same chapter must land in one unit, while two books of
+  // one course may each have a chapter with the same name. Import resolves a
   // typed name to the existing unit, and this constraint is what makes that
   // resolution safe instead of a race that creates a duplicate chapter.
-  it('keeps names and positions unique inside a course', () => {
+  it('keeps names and positions unique inside a book', () => {
     const unique = getTableConfig(units)
       .indexes.filter((index) => index.config.unique)
       .map((index) =>
@@ -16,8 +17,8 @@ describe('units', () => {
           .join(','),
       );
 
-    expect(unique).toContain('course_id,name');
-    expect(unique).toContain('course_id,position');
+    expect(unique).toContain('book_id,name');
+    expect(unique).toContain('book_id,position');
     expect(unique).toContain('id,course_id');
   });
 

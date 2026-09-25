@@ -2,9 +2,9 @@ import type { Database } from '@wordhold/db/client';
 import { Effect } from 'effect';
 import {
   type DuplicateVerdict,
-  duplicateVerdict,
   type ExistingEntry,
   entryIdentityKey,
+  findDuplicate,
 } from '../../../shared/vocabulary/entry-identity';
 import { DuplicateEntryError } from '../errors/duplicate-entry-error';
 import type { ImportPayloadData } from '../schemas/import-payload';
@@ -25,15 +25,10 @@ const isBlockedDuplicate = (
       (verdict === 'exception' && entry.duplicateException !== true);
 
 const inspectEntry = (
-  pools: Map<string, Array<ExistingEntry>>,
+  pool: Array<ExistingEntry>,
   entry: PayloadEntry,
-  unitId: string | undefined,
 ): string | undefined => {
-  if (unitId === undefined) {
-    return undefined;
-  }
-  const pool = pools.get(unitId) ?? [];
-  const verdict = duplicateVerdict(
+  const { verdict } = findDuplicate(
     {
       targetText: entry.targetText,
       example: entry.example?.targetText ?? '',
@@ -49,30 +44,27 @@ const inspectEntry = (
           ? []
           : [entry.example.targetText],
     });
-    pools.set(unitId, pool);
   }
   return blocked ? entry.targetText : undefined;
 };
 
 // Runs inside the verify transaction, after the per-course advisory lock, so
-// it sees every entry a concurrent import committed. Entries earlier in the
-// same payload join the pool, catching a page that lists one word twice.
+// it sees every entry a concurrent import committed. The pool spans the whole
+// course, every book included, and entries earlier in the same payload join
+// it, catching a page that lists one word twice.
 export const ensureNoDuplicateEntries = (
   sql: Database,
   courseId: string,
   payload: ImportPayloadData,
-  unitIds: ReadonlyArray<string>,
 ) =>
   Effect.gen(function* () {
     const stored = yield* selectUnitEntries(sql, courseId);
-    const pools = new Map<string, Array<ExistingEntry>>();
-    for (const entry of stored) {
-      const pool = pools.get(entry.unitId) ?? [];
-      pool.push({ targetText: entry.targetText, examples: entry.examples });
-      pools.set(entry.unitId, pool);
-    }
-    const blocked = payload.entries.flatMap((entry, index) => {
-      const blockedWord = inspectEntry(pools, entry, unitIds[index]);
+    const pool: Array<ExistingEntry> = stored.map((entry) => ({
+      targetText: entry.targetText,
+      examples: entry.examples,
+    }));
+    const blocked = payload.entries.flatMap((entry) => {
+      const blockedWord = inspectEntry(pool, entry);
       return blockedWord === undefined ? [] : [blockedWord];
     });
     if (blocked.length > 0) {
@@ -81,7 +73,7 @@ export const ensureNoDuplicateEntries = (
       ].map(([, word]) => word);
       return yield* new DuplicateEntryError({
         duplicates: unique,
-        message: `Schon in der Einheit gespeichert: ${quoted(unique)}. Lade die Seite neu, um die markierten Einträge zu prüfen.`,
+        message: `Schon im Kurs gespeichert: ${quoted(unique)}. Lade die Seite neu, um die markierten Einträge zu prüfen.`,
       });
     }
   });

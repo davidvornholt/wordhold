@@ -59,7 +59,7 @@ test('a repeated word is pointed out before it is sent', async ({ page }) => {
   await targetField(page).fill('memory');
   await nativeField(page).fill('das Gedächtnis');
   await expect(
-    page.getByText('„memory“ ist schon in dieser Einheit.'),
+    page.getByText('„memory“ ist schon in Green Line 3 · Unit 3 – Holidays.'),
   ).toBeVisible();
   await expect(
     page.getByRole('button', { exact: true, name: 'Eintragen' }),
@@ -67,7 +67,7 @@ test('a repeated word is pointed out before it is sent', async ({ page }) => {
   await targetField(page).fill('Memory');
   await expect(
     page.getByText(
-      '„Memory“ ist schon in dieser Einheit, mit anderer Schreibweise oder anderem Beispielsatz.',
+      '„Memory“ ist schon in Green Line 3 · Unit 3 – Holidays, mit anderer Schreibweise oder anderem Beispielsatz.',
     ),
   ).toBeVisible();
   await expect(

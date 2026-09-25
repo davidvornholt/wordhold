@@ -26,6 +26,18 @@ export class CourseUnitOrderChangedError extends Data.TaggedError(
   readonly message: string;
 }> {}
 
+export class CourseBookConflictError extends Data.TaggedError(
+  'CourseBookConflictError',
+)<{
+  readonly message: string;
+}> {}
+
+export class CourseBookNotFoundError extends Data.TaggedError(
+  'CourseBookNotFoundError',
+)<{
+  readonly message: string;
+}> {}
+
 export class CourseUnitNotFoundError extends Data.TaggedError(
   'CourseUnitNotFoundError',
 )<{

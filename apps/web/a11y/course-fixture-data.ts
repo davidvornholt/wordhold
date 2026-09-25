@@ -1,4 +1,6 @@
 import type {
+  CourseBook,
+  CourseOutline,
   CourseUnit,
   UnitDirectionProgress,
 } from '../src/features/courses/schemas/course-units';
@@ -9,6 +11,18 @@ const holidaysCount = 18;
 const holidaysReverseIntroduced = 16;
 const sportCount = 25;
 const schoolCount = 16;
+
+// The earlier book is there to revisit; the learner works through the later
+// one, which the course page opens.
+export const earlierBook: CourseBook = {
+  id: '00000000-0000-0000-0000-000000000011',
+  name: 'Green Line 2',
+};
+
+export const currentBook: CourseBook = {
+  id: '00000000-0000-0000-0000-000000000012',
+  name: 'Green Line 3',
+};
 
 const directionProgress = (
   direction: UnitDirectionProgress['direction'],
@@ -27,6 +41,7 @@ const directionProgress = (
 });
 
 export const mixedUnit: CourseUnit = {
+  bookId: currentBook.id,
   id: '00000000-0000-0000-0000-000000000003',
   name: 'Unit 3 – Holidays',
   entries: holidaysCount,
@@ -42,6 +57,7 @@ export const mixedUnit: CourseUnit = {
 };
 
 export const unintroducedUnit: CourseUnit = {
+  bookId: currentBook.id,
   id: '00000000-0000-0000-0000-000000000004',
   name: 'Unit 4 – Sport',
   entries: sportCount,
@@ -57,6 +73,7 @@ export const unintroducedUnit: CourseUnit = {
 };
 
 export const finishedUnit: CourseUnit = {
+  bookId: earlierBook.id,
   id: '00000000-0000-0000-0000-000000000002',
   name: 'Unit 2 – School',
   entries: schoolCount,
@@ -73,6 +90,7 @@ export const finishedUnit: CourseUnit = {
 
 export const dueUnit: CourseUnit = {
   ...finishedUnit,
+  bookId: currentBook.id,
   id: '00000000-0000-0000-0000-000000000006',
   name: 'Unit 6 – Travel',
   due: 1,
@@ -84,6 +102,7 @@ export const dueUnit: CourseUnit = {
 };
 
 export const emptyUnit: CourseUnit = {
+  bookId: currentBook.id,
   id: '00000000-0000-0000-0000-000000000005',
   name: 'Unit 5 – Empty',
   entries: 0,
@@ -95,9 +114,7 @@ export const emptyUnit: CourseUnit = {
   directions: [],
 };
 
-export const courseUnits: ReadonlyArray<CourseUnit> = [
-  mixedUnit,
-  unintroducedUnit,
-  finishedUnit,
-  emptyUnit,
-];
+export const courseOutline: CourseOutline = {
+  books: [earlierBook, currentBook],
+  units: [finishedUnit, mixedUnit, unintroducedUnit, emptyUnit],
+};

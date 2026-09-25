@@ -69,7 +69,7 @@ export class VocabularyEntryService extends Effect.Service<VocabularyEntryServic
             case 'duplicate':
               return yield* new VocabularyEntryConflictError({
                 targetText: input.targetText,
-                message: `„${input.targetText}“ ist schon in dieser Einheit gespeichert.`,
+                message: `„${input.targetText}“ ist schon in ${result.location} gespeichert.`,
               });
             case 'created':
               return {

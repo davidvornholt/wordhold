@@ -1,12 +1,42 @@
 import type {
+  Book,
   Unit,
   UnitEntry,
 } from '../src/features/import/services/repository';
 import type { DraftEntry } from '../src/features/import/ui/entry-row';
 
+const unitTwoId = '11111111-1111-4111-8111-111111111111';
+const earlierUnitId = '44444444-4444-4444-8444-444444444444';
+
+// Words were last filed into Green Line 3, so the page starts in that book.
+// Green Line 2 has a unit with the same name to keep the two apart.
+export const verificationBooks: ReadonlyArray<Book> = [
+  {
+    id: '55555555-5555-4555-8555-555555555555',
+    name: 'Green Line 2',
+    lastImportedAt: new Date('2026-06-12T10:00:00Z'),
+  },
+  {
+    id: '66666666-6666-4666-8666-666666666666',
+    name: 'Green Line 3',
+    lastImportedAt: new Date('2026-09-20T10:00:00Z'),
+  },
+];
+
+const [earlierBook, currentBook] = verificationBooks as readonly [Book, Book];
+
 export const verificationUnits: ReadonlyArray<Unit> = [
   {
-    id: '11111111-1111-4111-8111-111111111111',
+    id: earlierUnitId,
+    bookId: earlierBook.id,
+    name: 'Unit 2',
+    position: 0,
+    isHolding: false,
+    entryCount: 21,
+  },
+  {
+    id: unitTwoId,
+    bookId: currentBook.id,
     name: 'Unit 2',
     position: 0,
     isHolding: false,
@@ -14,6 +44,7 @@ export const verificationUnits: ReadonlyArray<Unit> = [
   },
   {
     id: '22222222-2222-4222-8222-222222222222',
+    bookId: currentBook.id,
     name: 'Unit 3',
     position: 1,
     isHolding: false,
@@ -21,6 +52,7 @@ export const verificationUnits: ReadonlyArray<Unit> = [
   },
   {
     id: '33333333-3333-4333-8333-333333333333',
+    bookId: currentBook.id,
     name: 'Ohne Einheit',
     position: 2,
     isHolding: true,
@@ -28,18 +60,21 @@ export const verificationUnits: ReadonlyArray<Unit> = [
   },
 ];
 
-// Vocabulary already stored in Unit 2 for the duplicate states: "journey" is
-// an exact duplicate of the first extracted entry (same casing, same
-// example), "Luggage!" only matches "luggage" after punctuation stripping and
-// differs in casing and example, so it is importable as an exception.
+// Vocabulary already stored for the duplicate states: "journey" is an exact
+// duplicate of the first extracted entry (same casing, same example) in this
+// book, "Luggage!" only matches "luggage" after punctuation stripping and
+// differs in casing and example, so it is importable as an exception. It sits
+// in the earlier book: duplicates are checked across the whole course.
 export const verificationUnitEntries: ReadonlyArray<UnitEntry> = [
   {
-    unitId: '11111111-1111-4111-8111-111111111111',
+    unitId: unitTwoId,
+    location: 'Green Line 3 · Unit 2',
     targetText: 'journey',
     examples: ['The journey takes three hours.'],
   },
   {
-    unitId: '11111111-1111-4111-8111-111111111111',
+    unitId: earlierUnitId,
+    location: 'Green Line 2 · Unit 2',
     targetText: 'Luggage!',
     examples: ['Pack your luggage.'],
   },
@@ -146,7 +181,8 @@ export const verificationEntries: ReadonlyArray<DraftEntry> = [
 
 export const allDuplicateUnitEntries: ReadonlyArray<UnitEntry> =
   verificationEntries.map((entry) => ({
-    unitId: '11111111-1111-4111-8111-111111111111',
+    unitId: unitTwoId,
+    location: 'Green Line 3 · Unit 2',
     targetText: entry.targetText,
     examples: entry.example === '' ? [] : [entry.example],
   }));

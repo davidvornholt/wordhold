@@ -10,11 +10,10 @@ bun run db:migrate    # apply generated structure and code-owned data repairs
 bun run db:migrate:production # apply committed migrations from an OCI image
 ```
 
-The unit rollout has two deployable phases so existing vocabulary remains readable while it is filed. Phase one applied the nullable `entries.unit_id` column and the composite course/unit integrity constraint, then new imports began writing a unit.
+The books rollout has two deployable phases so existing units stay readable while they are filed. Phase one adds the `books` table and a nullable `units.book_id`. `db:migrate` then files every unit without a book into one book per course, named `Buch 1`, which the learner renames on the course page. The step is idempotent and runs on every migration.
 
-After phase one is deployed, run `bun run db:backfill-units` once in each deployed database. This code-owned command preserves page provenance, files page-backed vocabulary into real units, files vocabulary without a page into explicit holding units, and fails through its typed Effect error channel if it finds cross-course ownership or cannot prove completion.
+Before deploying phase two, run `SELECT count(*) FROM units WHERE book_id IS NULL;` in every deployed database and record that it returns exactly `0`. The generated phase-two migration makes `units.book_id` required.
 
-Before deploying phase two, run `SELECT count(*) FROM entries WHERE unit_id IS NULL;` in every deployed database and record that it returns exactly `0`. The generated phase-two migration makes `entries.unit_id` required and PostgreSQL refuses to apply it while any legacy row remains unfiled.
 The learning-pass migration adds nullable `cards.introduced_at`. After applying it, run `bun run --cwd packages/db db:backfill-introductions` once in each deployed database. The command preserves the review timestamp for every card already answered, leaves untouched cards null so they enter the learning pass, supports safe retries, and fails through a typed Effect error if it cannot prove completion.
 
 The import-session migration also repairs batches created before the expected page count was persisted. `db:migrate` runs that idempotent repair after Drizzle migrations, so existing pages in one session receive their observed session count before the ordered review checks use it.

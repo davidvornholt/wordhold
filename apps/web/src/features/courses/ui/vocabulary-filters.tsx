@@ -2,9 +2,14 @@ import { fieldOnCardClass } from '../../../shared/ui/field-styles';
 import { cardCompactClass } from '../../../shared/ui/surface-styles';
 import type { VocabularyFilter } from '../schemas/vocabulary-search';
 
+export type UnitOptionGroup = {
+  readonly bookName: string;
+  readonly units: ReadonlyArray<readonly [string, string]>;
+};
+
 type UnitSelect = {
   readonly value: string;
-  readonly options: ReadonlyArray<readonly [string, string]>;
+  readonly options: ReadonlyArray<UnitOptionGroup>;
   readonly onChange: (value: string) => void;
 };
 
@@ -62,10 +67,14 @@ export const VocabularyFilters = ({
           value={unitSelect.value}
         >
           <option value="all">Alle Einheiten</option>
-          {unitSelect.options.map(([unitId, unitName]) => (
-            <option key={unitId} value={unitId}>
-              {unitName}
-            </option>
+          {unitSelect.options.map((group) => (
+            <optgroup key={group.bookName} label={group.bookName}>
+              {group.units.map(([unitId, unitName]) => (
+                <option key={unitId} value={unitId}>
+                  {unitName}
+                </option>
+              ))}
+            </optgroup>
           ))}
         </select>
       </label>

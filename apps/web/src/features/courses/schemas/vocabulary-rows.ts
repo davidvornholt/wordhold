@@ -5,6 +5,8 @@ import type { VocabularyEntry } from './course-units';
 
 export type VocabularyRow = {
   readonly id: string;
+  readonly bookId: string;
+  readonly bookName: string;
   readonly unitId: string;
   readonly unitName: string;
   readonly targetText: string;
@@ -37,6 +39,8 @@ export const groupVocabularyRows = (
     if (entry === undefined) {
       entries.set(row.id, {
         id: row.id,
+        bookId: row.bookId,
+        bookName: row.bookName,
         unitId: row.unitId,
         unitName: row.unitName,
         targetText: row.targetText,

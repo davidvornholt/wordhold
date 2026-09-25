@@ -7,9 +7,11 @@ import {
   maximumIrregularForms,
   maximumUnitNameLength,
 } from '@wordhold/ai/extraction/schema';
+import { maximumBookNameLength } from '../../../shared/vocabulary/book-name';
 import { decodeImportPayload } from './import-payload';
 
 const pageId = 'd9428888-122b-41e1-b85c-61cd3cbb3210';
+const book = { kind: 'new', name: 'Découvertes 3' } as const;
 const unit = { kind: 'new', name: 'Unité 3' } as const;
 const validEntry = {
   unit,
@@ -18,18 +20,21 @@ const validEntry = {
 } as const;
 const over = (maximum: number): string => 'x'.repeat(maximum + 1);
 
-describe('decodeImportPayload', () => {
+describe('decodeImportPayload limits', () => {
   it.each([
     {
       pageId,
+      book,
       entries: [{ ...validEntry, targetText: over(maximumEntryTextLength) }],
     },
     {
       pageId,
+      book,
       entries: [{ ...validEntry, nativeText: over(maximumEntryTextLength) }],
     },
     {
       pageId,
+      book,
       entries: [
         {
           ...validEntry,
@@ -42,6 +47,7 @@ describe('decodeImportPayload', () => {
     },
     {
       pageId,
+      book,
       entries: [
         {
           ...validEntry,
@@ -51,6 +57,7 @@ describe('decodeImportPayload', () => {
     },
     {
       pageId,
+      book,
       entries: [
         {
           ...validEntry,
@@ -66,6 +73,7 @@ describe('decodeImportPayload', () => {
     },
     {
       pageId,
+      book,
       entries: Array.from(
         { length: maximumEntriesPerPage + 1 },
         () => validEntry,
@@ -83,10 +91,13 @@ describe('decodeImportPayload', () => {
     expect(writes).toBe(0);
     expect(providerCalls).toBe(0);
   });
+});
 
+describe('decodeImportPayload entries', () => {
   it('files each entry into the selected unit', () => {
     const decoded = decodeImportPayload({
       pageId,
+      book,
       entries: [
         {
           ...validEntry,
@@ -104,6 +115,7 @@ describe('decodeImportPayload', () => {
   it('trims the name of a unit being started', () => {
     const decoded = decodeImportPayload({
       pageId,
+      book,
       entries: [{ ...validEntry, unit: { kind: 'new', name: '  Unité 4  ' } }],
     });
 
@@ -121,6 +133,7 @@ describe('decodeImportPayload', () => {
     expect(() =>
       decodeImportPayload({
         pageId,
+        book,
         entries: [{ ...validEntry, unit: selection }],
       }),
     ).toThrow();
@@ -129,6 +142,7 @@ describe('decodeImportPayload', () => {
   it('carries an explicit duplicate exception through decoding', () => {
     const decoded = decodeImportPayload({
       pageId,
+      book,
       entries: [{ ...validEntry, duplicateException: true }],
     });
 
@@ -138,6 +152,7 @@ describe('decodeImportPayload', () => {
   it('carries an explicit duplicate skip through decoding', () => {
     const decoded = decodeImportPayload({
       pageId,
+      book,
       entries: [{ ...validEntry, skipDuplicate: true }],
     });
 
@@ -148,7 +163,35 @@ describe('decodeImportPayload', () => {
     expect(() =>
       decodeImportPayload({
         pageId,
+        book,
         entries: [{ ...validEntry, duplicateException: false }],
+      }),
+    ).toThrow();
+  });
+});
+
+describe('decodeImportPayload book', () => {
+  it('trims the name of a book being started', () => {
+    const decoded = decodeImportPayload({
+      pageId,
+      book: { kind: 'new', name: '  Découvertes 4 ' },
+      entries: [validEntry],
+    });
+
+    expect(decoded.book).toEqual({ kind: 'new', name: 'Découvertes 4' });
+  });
+
+  it.each([
+    undefined,
+    { kind: 'new', name: '   ' },
+    { kind: 'new', name: over(maximumBookNameLength) },
+    { kind: 'existing', bookId: 'not-a-uuid' },
+  ])('refuses a page without a usable book', (selection) => {
+    expect(() =>
+      decodeImportPayload({
+        pageId,
+        book: selection,
+        entries: [validEntry],
       }),
     ).toThrow();
   });

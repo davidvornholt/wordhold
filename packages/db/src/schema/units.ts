@@ -1,5 +1,6 @@
 import {
   boolean,
+  foreignKey,
   integer,
   pgTable,
   text,
@@ -7,6 +8,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
+import { books } from './books';
 import { courses } from './courses';
 
 // A unit is one chapter of a textbook: the grouping a teacher names when
@@ -20,6 +22,10 @@ export const units = pgTable(
     courseId: uuid('course_id')
       .notNull()
       .references(() => courses.id, { onDelete: 'cascade' }),
+    // Nullable only while deployed databases file their existing units into a
+    // book; see the books rollout in the package README. A book that still
+    // holds units cannot be deleted, while deleting the course removes both.
+    bookId: uuid('book_id'),
     name: text('name').notNull(),
     position: integer('position').notNull().default(0),
     isHolding: boolean('is_holding').notNull().default(false),
@@ -28,8 +34,13 @@ export const units = pgTable(
       .defaultNow(),
   },
   (table) => [
-    uniqueIndex('units_course_name').on(table.courseId, table.name),
-    uniqueIndex('units_course_position').on(table.courseId, table.position),
+    foreignKey({
+      name: 'units_book_course_books_id_course_fk',
+      columns: [table.bookId, table.courseId],
+      foreignColumns: [books.id, books.courseId],
+    }),
+    uniqueIndex('units_book_name').on(table.bookId, table.name),
+    uniqueIndex('units_book_position').on(table.bookId, table.position),
     uniqueIndex('units_id_course').on(table.id, table.courseId),
   ],
 );

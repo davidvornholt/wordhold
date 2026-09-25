@@ -13,6 +13,7 @@ import {
   translateDraftExample,
 } from '../../../features/import/server-fns';
 import type {
+  Book,
   Course,
   Unit,
   UnitEntry,
@@ -46,6 +47,7 @@ type VerificationPageScreenProps = {
     readonly status: 'awaiting_verification' | 'verified';
   };
   readonly search: BatchReviewSearchData;
+  readonly books: ReadonlyArray<Book>;
   readonly units: ReadonlyArray<Unit>;
   readonly unitEntries: ReadonlyArray<UnitEntry>;
 };
@@ -54,6 +56,7 @@ const VerificationPageScreen = ({
   course,
   page,
   search,
+  books,
   units,
   unitEntries,
 }: VerificationPageScreenProps) => {
@@ -95,6 +98,7 @@ const VerificationPageScreen = ({
       <VerificationWorkbench
         batchIsLastPage={flow.batchIsLastPage}
         batchSession={flow.batchSession}
+        books={books}
         busy={flow.busy}
         completed={flow.completed}
         error={flow.error}
@@ -127,12 +131,13 @@ const VerificationPageScreen = ({
 };
 
 const VerifyScreen = () => {
-  const { course, page, reviewSearch, units, unitEntries } =
+  const { books, course, page, reviewSearch, units, unitEntries } =
     Route.useLoaderData();
   const routeSearch = Route.useSearch();
   const search = reviewSearch ?? routeSearch ?? {};
   return (
     <VerificationPageScreen
+      books={books}
       course={course}
       key={page.id}
       page={page}

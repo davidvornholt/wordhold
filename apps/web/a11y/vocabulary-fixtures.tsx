@@ -8,6 +8,8 @@ import { navigateToFixture } from './fixture-state';
 const entries: ReadonlyArray<VocabularyEntry> = [
   {
     id: '00000000-0000-0000-0000-000000000011',
+    bookId: '00000000-0000-0000-0000-000000000031',
+    bookName: 'Green Line 3',
     unitId: '00000000-0000-0000-0000-000000000003',
     unitName: 'Unit 3: Holidays',
     targetText: 'memory',
@@ -39,6 +41,8 @@ const entries: ReadonlyArray<VocabularyEntry> = [
   },
   {
     id: '00000000-0000-0000-0000-000000000012',
+    bookId: '00000000-0000-0000-0000-000000000031',
+    bookName: 'Green Line 3',
     unitId: '00000000-0000-0000-0000-000000000004',
     unitName: 'Unit 4: Sport',
     targetText: 'the referee',

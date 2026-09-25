@@ -1,9 +1,10 @@
 import { Database } from '@wordhold/db/client';
 import type { LanguageCode } from '@wordhold/db/schema/courses';
 import { Context, Effect, Layer } from 'effect';
+import { unitLocation } from '../../../shared/vocabulary/book-name';
 import {
-  duplicateVerdict,
   type ExistingEntry,
+  findDuplicate,
 } from '../../../shared/vocabulary/entry-identity';
 import { insertVocabularyEntries } from '../../../shared/vocabulary/insert-entries';
 import { CourseDatabaseError } from '../errors/courses-errors';
@@ -17,13 +18,17 @@ export type UnitContext = {
 export type CreateVocabularyEntryResult =
   | { readonly kind: 'created'; readonly entryId: string }
   | { readonly kind: 'unit-missing' }
-  | { readonly kind: 'duplicate' };
+  | { readonly kind: 'duplicate'; readonly location: string };
 
-type UnitEntryRow = {
+type CourseEntryRow = {
   readonly id: string;
   readonly targetText: string;
   readonly example: string | null;
+  readonly bookName: string;
+  readonly unitName: string;
 };
+
+type LocatedEntry = ExistingEntry & { readonly location: string };
 
 const databaseError = (operation: string, cause: unknown) =>
   new CourseDatabaseError({
@@ -32,16 +37,21 @@ const databaseError = (operation: string, cause: unknown) =>
     message: 'Die Vokabel konnte nicht gespeichert werden.',
   });
 
-const groupUnitEntries = (
-  rows: ReadonlyArray<UnitEntryRow>,
-): ReadonlyArray<ExistingEntry> => {
+const groupCourseEntries = (
+  rows: ReadonlyArray<CourseEntryRow>,
+): ReadonlyArray<LocatedEntry> => {
   const byEntry = new Map<
     string,
-    { readonly targetText: string; examples: Array<string> }
+    {
+      readonly targetText: string;
+      readonly location: string;
+      examples: Array<string>;
+    }
   >();
   for (const row of rows) {
     const entry = byEntry.get(row.id) ?? {
       targetText: row.targetText,
+      location: unitLocation(row.bookName, row.unitName),
       examples: [],
     };
     if (row.example !== null) {
@@ -104,8 +114,8 @@ export class VocabularyEntryStore extends Context.Tag(
         );
 
       // The same per-course lock the import takes, so a typed word and a
-      // verified page never both pass the duplicate check for one unit. An
-      // exact repeat is refused. A word that differs only in casing or
+      // verified page never both pass the duplicate check. The check spans the
+      // whole course, every book included: an exact repeat is refused. A word that differs only in casing or
       // example sentence is stored: the learner typed it on purpose, which
       // is the confirmation the verify screen has to ask for separately.
       const create = (input: CreateVocabularyEntryData) =>
@@ -121,23 +131,28 @@ export class VocabularyEntryStore extends Context.Tag(
               if (unit.length === 0) {
                 return { kind: 'unit-missing' } as const;
               }
-              const rows = yield* sql<UnitEntryRow>`
+              const rows = yield* sql<CourseEntryRow>`
                 select e.id, e.target_text as "targetText",
-                  x.target_text as example
+                  x.target_text as example,
+                  b.name as "bookName", u.name as "unitName"
                 from entries e
+                join units u on u.id = e.unit_id
+                join books b on b.id = u.book_id
                 left join entry_examples x on x.entry_id = e.id
-                where e.unit_id = ${input.unitId}
-                  and e.course_id = ${input.courseId}
+                where e.course_id = ${input.courseId}
               `;
-              const verdict = duplicateVerdict(
+              const duplicate = findDuplicate(
                 {
                   targetText: input.targetText,
                   example: input.example?.targetText ?? '',
                 },
-                groupUnitEntries(rows),
+                groupCourseEntries(rows),
               );
-              if (verdict === 'exact') {
-                return { kind: 'duplicate' } as const;
+              if (duplicate.verdict === 'exact') {
+                return {
+                  kind: 'duplicate',
+                  location: duplicate.entry.location,
+                } as const;
               }
               const inserted = yield* insertVocabularyEntries(sql, [
                 {

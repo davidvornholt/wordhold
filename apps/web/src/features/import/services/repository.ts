@@ -1,6 +1,7 @@
 import type { ExtractionResult } from '@wordhold/ai/extraction';
 import type { LanguageCode } from '@wordhold/db/schema/courses';
 import { Context, type Effect } from 'effect';
+import type { BookNotFoundError } from '../errors/book-not-found-error';
 import type { DuplicateEntryError } from '../errors/duplicate-entry-error';
 import type { ImportDatabaseError } from '../errors/import-database-error';
 import type { ImportInvariantError } from '../errors/import-invariant-error';
@@ -17,8 +18,18 @@ export type Course = {
   readonly createdAt: Date;
 };
 
+export type Book = {
+  readonly id: string;
+  readonly name: string;
+  // When a word was last filed into this book, so the verify screen can
+  // preselect the book the learner is working through. Null for a book
+  // without vocabulary.
+  readonly lastImportedAt: Date | null;
+};
+
 export type Unit = {
   readonly id: string;
+  readonly bookId: string;
   readonly name: string;
   readonly position: number;
   readonly isHolding: boolean;
@@ -107,10 +118,12 @@ export type InsertedEntry = {
   readonly targetText: string;
 };
 
-// One stored word with its example sentences: what the verify screen needs
-// to flag a re-scanned page's entries as already present in their unit.
+// One stored word with its example sentences and where it is filed: what the
+// verify screen needs to flag a word the course already has, in any book.
 export type UnitEntry = {
   readonly unitId: string;
+  // "Book · Unit", as the learner reads it.
+  readonly location: string;
   readonly targetText: string;
   readonly examples: ReadonlyArray<string>;
 };
@@ -125,6 +138,9 @@ export type ImportRepositoryShape = {
   readonly getCourse: (
     courseId: string,
   ) => Effect.Effect<Course | undefined, ImportDatabaseError>;
+  readonly listBooks: (
+    courseId: string,
+  ) => Effect.Effect<ReadonlyArray<Book>, ImportDatabaseError>;
   readonly listUnits: (
     courseId: string,
   ) => Effect.Effect<ReadonlyArray<Unit>, ImportDatabaseError>;
@@ -171,6 +187,7 @@ export type ImportRepositoryShape = {
     ReadonlyArray<InsertedEntry>,
     | RepositoryFailure
     | PageAlreadyVerifiedError
+    | BookNotFoundError
     | UnitNotFoundError
     | DuplicateEntryError
   >;

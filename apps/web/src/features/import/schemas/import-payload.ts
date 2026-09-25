@@ -4,11 +4,27 @@ import {
   maximumUnitNameLength,
 } from '@wordhold/ai/extraction/schema';
 import { Schema } from 'effect';
+import { BookName } from '../../../shared/vocabulary/book-name';
 import { EntryText, NewExample } from '../../../shared/vocabulary/entry-fields';
 import { ImportPayloadValidationError } from '../errors/import-payload-validation-error';
 
-// Vocabulary entries are filed into a chapter of the textbook, either one that already
-// exists or one being started with this page. The tag keeps the two apart at
+// A page comes from one textbook of the course. The extraction rarely sees the
+// book's title on a vocabulary page, so the learner picks the book or names a
+// new one on the verify screen.
+export const BookSelection = Schema.Union(
+  Schema.Struct({
+    kind: Schema.Literal('existing'),
+    bookId: Schema.UUID,
+  }),
+  Schema.Struct({
+    kind: Schema.Literal('new'),
+    name: BookName,
+  }),
+);
+export type BookSelectionData = typeof BookSelection.Type;
+
+// Vocabulary entries are filed into a chapter of the page's book, either one
+// that already exists or one being started with this page. The tag keeps the two apart at
 // the boundary, so the server never has to guess whether a name means "find
 // this" or "create this".
 export const UnitSelection = Schema.Union(
@@ -35,7 +51,7 @@ export const VerifiedEntry = Schema.Struct({
   grammar: Schema.optional(Grammar),
   example: Schema.optional(NewExample),
   // Present only when the learner confirmed importing a word that already
-  // exists in the unit with a different casing or example sentence. The
+  // exists in the course with a different casing or example sentence. The
   // server refuses such an entry without this consent, so a stale verify
   // screen cannot slip a duplicate through.
   duplicateException: Schema.optional(Schema.Literal(true)),
@@ -48,6 +64,8 @@ export type VerifiedEntryData = typeof VerifiedEntry.Type;
 
 export const ImportPayload = Schema.Struct({
   pageId: Schema.UUID,
+  book: BookSelection,
+  // Every existing unit named here must belong to the selected book.
   entries: Schema.Array(VerifiedEntry).pipe(
     Schema.minItems(1),
     Schema.maxItems(maximumEntriesPerPage),

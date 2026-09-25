@@ -8,6 +8,7 @@ import { completeAudioRecovery, navigateToFixture } from './fixture-state';
 import {
   allDuplicateUnitEntries,
   photographedPage,
+  verificationBooks,
   verificationEntries,
   verificationUnitEntries,
   verificationUnits,
@@ -103,6 +104,7 @@ export const VerificationFixture = ({
           ) : null}
           {audioRecovery || empty ? null : (
             <VerifyForm
+              books={noUnits ? [] : verificationBooks}
               busy={false}
               existingEntries={existingEntries}
               generateExample={async () => ({
@@ -157,6 +159,7 @@ export const DeferredVerificationFixture = () => {
     <main className="page-column flex flex-col gap-4 p-6">
       <h1 className="font-semibold text-2xl">Seite überprüfen</h1>
       <VerifyForm
+        books={verificationBooks}
         busy={busy}
         existingEntries={[]}
         generateExample={async () => ({
@@ -171,12 +174,12 @@ export const DeferredVerificationFixture = () => {
         }}
         initialEntries={deferredEntries}
         initialUnitName={undefined}
-        onSubmit={(entries) => {
+        onSubmit={(book, entries) => {
           const pending = makeDeferred();
           deferredRef.current = pending;
           setBusy(true);
           setCalls((count) => count + 1);
-          setSnapshot(JSON.stringify({ entries }));
+          setSnapshot(JSON.stringify({ book, entries }));
           setStatus('pending');
           pending.promise
             .then(() => setStatus('resolved'))

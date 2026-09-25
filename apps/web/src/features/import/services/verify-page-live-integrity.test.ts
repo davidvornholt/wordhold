@@ -5,6 +5,7 @@ import {
   withMigratedTestDatabase,
 } from '@wordhold/db/testing/postgres-test-database';
 import { Effect } from 'effect';
+import { BookNotFoundError } from '../errors/book-not-found-error';
 import { UnitNotFoundError } from '../errors/unit-not-found-error';
 import { decodeImportPayload } from '../schemas/import-payload';
 import { verifyPageLive } from './verify-page-live';
@@ -52,6 +53,7 @@ describe('verifyPageLive integrity', () => {
                 sql,
                 decodeImportPayload({
                   pageId,
+                  book: { kind: 'new', name: 'Découvertes 3' },
                   entries: [selectedEntry(unitId)],
                 }),
                 courseId,
@@ -104,6 +106,7 @@ describe('verifyPageLive integrity', () => {
               sql,
               decodeImportPayload({
                 pageId,
+                book: { kind: 'new', name: 'Découvertes 3' },
                 entries: [
                   {
                     unit: { kind: 'new', name: 'Unit 4' },
@@ -119,18 +122,82 @@ describe('verifyPageLive integrity', () => {
           const residue = yield* sql<{
             readonly entries: number;
             readonly newUnits: number;
+            readonly newBooks: number;
             readonly verifiedPages: number;
           }>`
             select
               (select count(*)::integer from entries) as entries,
               (select count(*)::integer from units where course_id = ${courseId}) as "newUnits",
+              (select count(*)::integer from books where course_id = ${courseId}) as "newBooks",
               (select count(*)::integer from pages where status = 'verified') as "verifiedPages"
           `;
           expect(residue[0]).toEqual({
             entries: 0,
             newUnits: 0,
+            newBooks: 0,
             verifiedPages: 0,
           });
+        }).pipe(Effect.provide(testDatabaseLayer(database.url))),
+      ),
+    );
+  });
+});
+
+describe('verifyPageLive book integrity', () => {
+  it('rejects a book of another course and a unit of another book', async () => {
+    await Effect.runPromise(
+      withMigratedTestDatabase((database) =>
+        Effect.gen(function* () {
+          yield* seed;
+          const sql = yield* Database;
+          const [otherBook] = yield* sql<{ readonly id: string }>`
+            insert into books (course_id, name, position)
+            values (${otherCourseId}, 'Green Line 2', 0)
+            returning id
+          `;
+          const books = yield* sql<{ readonly id: string }>`
+            insert into books (course_id, name, position)
+            values
+              (${courseId}, 'Découvertes 2', 0),
+              (${courseId}, 'Découvertes 3', 1)
+            returning id
+          `;
+          const [earlierUnit] = yield* sql<{ readonly id: string }>`
+            insert into units (course_id, book_id, name, position)
+            values (${courseId}, ${books[0]?.id ?? ''}, 'Unit 1', 0)
+            returning id
+          `;
+          const verify = (bookId: string, unitId: string) =>
+            Effect.either(
+              verifyPageLive(
+                sql,
+                decodeImportPayload({
+                  pageId,
+                  book: { kind: 'existing', bookId },
+                  entries: [selectedEntry(unitId)],
+                }),
+                courseId,
+              ),
+            );
+          const foreignBook = yield* verify(
+            otherBook?.id ?? '',
+            earlierUnit?.id ?? '',
+          );
+          expect(
+            foreignBook._tag === 'Left' ? foreignBook.left : null,
+          ).toBeInstanceOf(BookNotFoundError);
+          const otherBookUnit = yield* verify(
+            books[1]?.id ?? '',
+            earlierUnit?.id ?? '',
+          );
+          expect(
+            otherBookUnit._tag === 'Left' ? otherBookUnit.left : null,
+          ).toBeInstanceOf(UnitNotFoundError);
+          const sameBook = yield* verify(
+            books[0]?.id ?? '',
+            earlierUnit?.id ?? '',
+          );
+          expect(sameBook._tag).toBe('Right');
         }).pipe(Effect.provide(testDatabaseLayer(database.url))),
       ),
     );

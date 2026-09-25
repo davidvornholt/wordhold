@@ -4,7 +4,7 @@ import {
   generateVocabularyDraftExample,
   generateVocabularyExample,
   getCourseDirections,
-  listCourseUnits,
+  getCourseOutline,
   listCourseVocabulary,
   suggestVocabularyTranslation,
   translateVocabularyDraftExample,
@@ -26,7 +26,8 @@ import { cardClass } from '../../../../../shared/ui/surface-styles';
 // One screen per unit: progress, the unit's actions, and its vocabulary as a
 // selectable list — no separate filtered Vokabelliste to jump to.
 const UnitScreen = () => {
-  const { course, directions, unit, unitEntries } = Route.useLoaderData();
+  const { book, course, courseEntries, directions, unit, unitEntries } =
+    Route.useLoaderData();
   const router = useRouter();
   const backControl = (
     <BackLink params={{ courseId: course.id }} to="/courses/$courseId">
@@ -48,7 +49,9 @@ const UnitScreen = () => {
   return (
     <PageLayout backControl={backControl} title={unit.name}>
       <p className="text-muted-foreground text-sm">
-        {unitProgressSummary(unit, targetLabel)}
+        {book === undefined
+          ? unitProgressSummary(unit, targetLabel)
+          : `${book.name} · ${unitProgressSummary(unit, targetLabel)}`}
       </p>
       {unit.directions.length === 0 ? null : (
         <UnitDirectionPlan
@@ -99,6 +102,7 @@ const UnitScreen = () => {
           await router.invalidate();
           return created;
         }}
+        courseEntries={courseEntries}
         enabledDirections={directions}
         entries={unitEntries}
         generateDraftExample={(targetText, nativeText) =>
@@ -151,15 +155,19 @@ export const Route = createFileRoute('/courses/$courseId/units/$unitId/')({
   // The unit comes from the course's own list, which is what confirms it
   // belongs to this course before its entries are read.
   loader: async ({ params }) => {
-    const [course, units, directions, entries] = await Promise.all([
+    const [course, outline, directions, entries] = await Promise.all([
       getCourse({ data: params.courseId }),
-      listCourseUnits({ data: params.courseId }),
+      getCourseOutline({ data: params.courseId }),
       getCourseDirections({ data: params.courseId }),
       listCourseVocabulary({ data: params.courseId }),
     ]);
-    const unit = units.find((candidate) => candidate.id === params.unitId);
+    const unit = outline.units.find(
+      (candidate) => candidate.id === params.unitId,
+    );
     return {
+      book: outline.books.find((candidate) => candidate.id === unit?.bookId),
       course,
+      courseEntries: entries,
       directions,
       unit,
       unitEntries: entries.filter((entry) => entry.unitId === params.unitId),

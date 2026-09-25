@@ -99,6 +99,8 @@ const courseFixture = (state: FixtureState) => {
       return <CourseFixture practiceAvailable={false} />;
     case 'course-empty-units':
       return <CourseFixture emptyVocabulary={true} />;
+    case 'course-no-books':
+      return <CourseFixture withoutBooks={true} />;
     default:
       return null;
   }
@@ -155,6 +157,7 @@ const fixtureContent = (state: FixtureState) => {
     case 'course':
     case 'course-no-practice':
     case 'course-empty-units':
+    case 'course-no-books':
       return courseFixture(state);
     case 'unit':
       return <UnitFixture />;

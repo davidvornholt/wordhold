@@ -1,7 +1,44 @@
 import { formatLearningDateInline } from '../../../shared/dates/learning-date';
 import { directionLabel } from '../../../shared/directions';
 import { countNoun } from '../../../shared/format/count';
-import type { CourseUnit } from '../schemas/course-units';
+import type { CourseBook, CourseUnit } from '../schemas/course-units';
+
+// The line under a book's name while its units are folded away.
+export const bookSummary = (units: ReadonlyArray<CourseUnit>): string =>
+  [
+    countNoun(units.length, 'Einheit', 'Einheiten'),
+    countNoun(
+      units.reduce((total, unit) => total + unit.entries, 0),
+      'Vokabel',
+      'Vokabeln',
+    ),
+  ].join(' · ');
+
+const hasOpenWork = (units: ReadonlyArray<CourseUnit>): boolean =>
+  units.some(
+    (unit) => unit.due > 0 || unit.firstReviews > 0 || unit.unintroduced > 0,
+  );
+
+// Books are listed in course order. A book starts open while it has work left
+// or no units yet; finished books fold away. Books are added at the end, so
+// "the last book" is not necessarily the current one. When every book is
+// finished, the last one stays open so the list never looks empty.
+export const initiallyOpenBooks = (
+  groups: ReadonlyArray<{
+    readonly book: CourseBook;
+    readonly units: ReadonlyArray<CourseUnit>;
+  }>,
+): ReadonlySet<string> => {
+  const open = groups.filter(
+    ({ units }) => units.length === 0 || hasOpenWork(units),
+  );
+  const fallback = groups.at(-1);
+  return new Set(
+    (open.length === 0 && fallback !== undefined ? [fallback] : open).map(
+      ({ book }) => book.id,
+    ),
+  );
+};
 
 export const unitPracticeStatus = (unit: CourseUnit): string => {
   if (unit.due > 0) {

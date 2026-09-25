@@ -44,6 +44,7 @@ describe('verifyPageLive persistence', () => {
             sql,
             decodeImportPayload({
               pageId: firstPageId,
+              book: { kind: 'new', name: 'Découvertes 3' },
               entries: [
                 entry('Unit 3', 'mémoire'),
                 entry('Unit 4', 'livre'),
@@ -56,6 +57,7 @@ describe('verifyPageLive persistence', () => {
             sql,
             decodeImportPayload({
               pageId: secondPageId,
+              book: { kind: 'new', name: 'Découvertes 3' },
               entries: [entry('Unit 3', 'répéter')],
             }),
             courseId,
@@ -103,6 +105,7 @@ describe('verifyPageLive persistence', () => {
                 sql,
                 decodeImportPayload({
                   pageId: firstPageId,
+                  book: { kind: 'new', name: 'Découvertes 3' },
                   entries: [entry('Unit 3', 'mémoire')],
                 }),
                 courseId,
@@ -111,6 +114,7 @@ describe('verifyPageLive persistence', () => {
                 sql,
                 decodeImportPayload({
                   pageId: secondPageId,
+                  book: { kind: 'new', name: 'Découvertes 3' },
                   entries: [entry('Unit 4', 'livre')],
                 }),
                 courseId,

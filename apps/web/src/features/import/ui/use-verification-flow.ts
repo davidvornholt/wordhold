@@ -2,7 +2,10 @@ import type { ExtractionResult } from '@wordhold/ai/extraction';
 import { useEffect, useRef, useState } from 'react';
 import { importPage } from '../import-fn';
 import type { BatchReviewSearchData } from '../schemas/batch-review-search';
-import type { UnitSelectionData } from '../schemas/import-payload';
+import type {
+  BookSelectionData,
+  UnitSelectionData,
+} from '../schemas/import-payload';
 import { retryAudio, retryExtraction } from '../server-fns';
 import { finishAudioRecovery } from './audio-recovery-navigation';
 import { useVerificationNavigation } from './use-verification-navigation';
@@ -92,11 +95,15 @@ export const useVerificationFlow = (
         shouldNavigate: () => activeRef.current,
       }),
     );
-  const submitPage = (verified: ReadonlyArray<VerificationEntry>) =>
+  const submitPage = (
+    book: BookSelectionData,
+    verified: ReadonlyArray<VerificationEntry>,
+  ) =>
     actions.run(async () => {
       const result = await importPage({
         data: {
           pageId: page.id,
+          book,
           entries: verified.map(toPayloadEntry),
         },
       });
