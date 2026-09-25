@@ -8,7 +8,7 @@ The root `Dockerfile` builds the app with TanStack Start's Nitro Bun preset and 
 
 ## Provider credentials
 
-The AWS SigV4 pair belongs to the dedicated `WordholdDevelopment` IAM user and permits only `polly:SynthesizeSpeech`.
+The AWS SigV4 pair belongs to the dedicated `WordholdDevelopment` IAM user and is used for `polly:SynthesizeSpeech`. The user and its `WordholdAiInference` inline policy have one declarative owner: [personal-infra’s AWS AI workspace](https://github.com/davidvornholt/personal-infra/tree/main/infra/opentofu/aws-ai). Its [exact policy document](https://github.com/davidvornholt/personal-infra/blob/main/infra/opentofu/aws-ai/wordhold-policy.json) also preserves the existing Bedrock and Mantle permissions; this does not change the application’s current Google Vertex provider. Use that workspace’s reviewed current-main reconciliation for recovery or policy changes. It imports the existing identity without replacing its in-use keys; access keys and bearer credentials remain outside OpenTofu state.
 
 Rotate the Polly SigV4 pair with the same replace, verify, revoke order. Store both replacement values in `secrets/dev.yaml`, run `just dev-env-generate`, verify Polly through the web import flow, then call `aws iam delete-access-key --user-name WordholdDevelopment --access-key-id '<predecessor access key ID>'`. Never put either secret value in a shell argument or terminal output.
 
