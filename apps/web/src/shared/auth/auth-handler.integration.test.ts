@@ -1,7 +1,7 @@
 import { expect, it } from 'bun:test';
 import process from 'node:process';
 import { withTestDatabase } from '@wordhold/db/testing/postgres-test-database';
-import { env, spawn } from 'bun';
+import { spawn } from 'bun';
 import { Effect } from 'effect';
 
 const integrationTimeoutMs = 30_000;
@@ -17,7 +17,7 @@ it(
           const child = spawn([process.execPath, 'scripts/oauth-check.ts'], {
             cwd: `${import.meta.dir}/../../..`,
             env: {
-              ...env,
+              NODE_ENV: 'test',
               DATABASE_URL: database.url,
               WORDHOLD_PUBLIC_URL: 'http://localhost:3199',
               AUTH_SECRET: 'public-auth-fixture-secret-32-characters',
