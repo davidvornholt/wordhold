@@ -46,10 +46,9 @@ export const account = pgTable(
     id: text('id').primaryKey(),
     accountId: text('account_id').notNull(),
     providerId: text('provider_id').notNull(),
-    // The identity provider that owns `account_id`. OAuth providers without an
-    // issuer of their own get the synthetic `local:oauth:<providerId>` form, so
-    // one provider's user ID can never be mistaken for another's.
-    issuer: text('issuer').notNull(),
+    // Preserve values written by Better Auth 1.7.0–1.7.2. Later versions
+    // identify accounts by provider/account ID and no longer write issuer.
+    issuer: text('issuer'),
     userId: text('user_id')
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
@@ -67,8 +66,8 @@ export const account = pgTable(
   },
   (table) => [
     index('account_userId_idx').on(table.userId),
-    uniqueIndex('account_issuer_accountId_idx').on(
-      table.issuer,
+    uniqueIndex('account_providerId_accountId_idx').on(
+      table.providerId,
       table.accountId,
     ),
   ],

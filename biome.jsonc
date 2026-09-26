@@ -16,6 +16,25 @@
   },
   "overrides": [
     {
+      // Isolated OAuth fixture runs in Bun and uses Node filesystem/assertion
+      // APIs; it never enters the browser bundle.
+      "includes": [
+        "apps/web/scripts/oauth-check.ts",
+        "apps/web/src/shared/auth/auth-handler.integration.test.ts"
+      ],
+      "linter": {
+        "rules": {
+          "correctness": { "noNodejsModules": "off" },
+          "nursery": { "noBunModules": "off" }
+        }
+      }
+    },
+    {
+      // The child process receives the application's exact environment names.
+      "includes": ["apps/web/src/shared/auth/auth-handler.integration.test.ts"],
+      "linter": { "rules": { "style": { "useNamingConvention": "off" } } }
+    },
+    {
       // Designated server environment boundary: the one application file
       // allowed to read process.env. Everything else imports from it.
       "includes": [

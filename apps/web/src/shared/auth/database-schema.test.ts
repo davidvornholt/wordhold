@@ -64,6 +64,21 @@ describe('better-auth database schema', () => {
       ).toEqual([]);
     });
 
+    it(`does not require extra columns Better Auth never writes on ${model}`, () => {
+      const columns = getTableColumns(drizzleTableFor(definition.modelName));
+      expect(
+        Object.entries(columns)
+          .filter(
+            ([field, column]) =>
+              column.notNull &&
+              !column.hasDefault &&
+              !column.primary &&
+              definition.fields[field] === undefined,
+          )
+          .map(([field]) => field),
+      ).toEqual([]);
+    });
+
     for (const index of (definition.indexes ?? []).filter(
       (entry) => entry.unique,
     )) {
