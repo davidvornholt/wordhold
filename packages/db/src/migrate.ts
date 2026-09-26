@@ -3,7 +3,7 @@ import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import { Data, Effect } from 'effect';
 import { makeDrizzle } from './drizzle';
 
-const migrationsFolder = `${import.meta.dir}/../drizzle`;
+export const migrationsFolder = `${import.meta.dir}/../drizzle`;
 
 export class DatabaseMigrationError extends Data.TaggedError(
   'DatabaseMigrationError',

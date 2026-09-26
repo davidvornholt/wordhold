@@ -15,7 +15,8 @@
     "./schema/units": "./src/schema/units.ts",
     "./schema/entries": "./src/schema/entries.ts",
     "./schema/practice": "./src/schema/practice.ts",
-    "./testing/postgres-test-database": "./src/testing/postgres-test-database.ts"
+    "./testing/postgres-test-database": "./src/testing/postgres-test-database.ts",
+    "./migrate": "./src/migrate.ts"
   },
   "scripts": {
     "check-types": "tsc --noEmit",
