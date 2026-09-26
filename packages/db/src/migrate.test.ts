@@ -22,6 +22,8 @@ const exampleAudioMigrationHash =
   'aface4b435b2dafbc5c9edefed79481429abecc375d5cd26d416759672671b24';
 const booksMigrationHash =
   '6cc265987ae1824f43fac61dc5cf25089f1d948265afab509f63a33169ff0538';
+const accountIdentityMigrationHash =
+  '2d232a381883d666ddcdff21161b303eb8c2e0b4bc4576085c55ee0977914ae8';
 const fullMigrationTestTimeoutMs = 15_000;
 
 const getMigrationError = (url: string) =>
@@ -45,6 +47,9 @@ it(
             ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', 0, 2, 'pages/one.png'),
             ('dddddddd-dddd-4ddd-8ddd-dddddddddddd', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', 1, 2, 'pages/two.png')
         `;
+          yield* sql`drop index "account_providerId_accountId_idx"`;
+          yield* sql`alter table account alter column issuer set not null`;
+          yield* sql`create unique index "account_issuer_accountId_idx" on account (issuer, account_id)`;
           yield* sql`alter table pages drop constraint pages_import_position_within_expected_count`;
           yield* sql`
           update pages
@@ -70,7 +75,8 @@ it(
             ${reviewOrderMigrationHash},
             ${reviewPositionMigrationHash},
             ${exampleAudioMigrationHash},
-            ${booksMigrationHash}
+            ${booksMigrationHash},
+            ${accountIdentityMigrationHash}
           )
         `;
           yield* migrateDatabase(database.url);
