@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { getTableConfig } from 'drizzle-orm/pg-core';
+import { books } from './books';
 import { entries } from './entries';
 import { units } from './units';
 
@@ -20,33 +21,43 @@ describe('units', () => {
     expect(unique).toContain('book_id,name');
     expect(unique).toContain('book_id,position');
     expect(unique).toContain('id,course_id');
+    expect(unique).toContain('id,book_id');
   });
 
-  it('requires every vocabulary entry to belong to a unit', () => {
+  // A novel has no chapters worth naming, so its words live directly in the
+  // book.
+  it('lets a vocabulary entry live directly in its book', () => {
     const unitId = getTableConfig(entries).columns.find(
       (column) => column.name === 'unit_id',
     );
 
-    expect(unitId?.notNull).toBe(true);
+    expect(unitId?.notNull).toBe(false);
   });
 
-  // Deleting a chapter must not be a way to lose vocabulary by accident, so
-  // the database refuses the delete while entries still point at it.
-  it('refuses to delete a unit that still holds vocabulary', () => {
-    const [key] = getTableConfig(entries).foreignKeys.filter((foreignKey) =>
-      foreignKey
+  // Deleting a book or chapter must not be a way to lose vocabulary by
+  // accident, so the database refuses the delete while entries still point at
+  // it. The unit key also keeps a word's unit inside the word's book.
+  it('refuses to delete a book or unit that still holds vocabulary', () => {
+    const keys = getTableConfig(entries).foreignKeys.map((foreignKey) => ({
+      table: foreignKey.reference().foreignTable,
+      columns: foreignKey.reference().columns.map((column) => column.name),
+      foreignColumns: foreignKey
         .reference()
-        .columns.some((column) => column.name === 'unit_id'),
-    );
+        .foreignColumns.map((column) => column.name),
+      onDelete: foreignKey.onDelete,
+    }));
 
-    expect(key?.reference().foreignTable).toBe(units);
-    expect(key?.reference().columns.map((column) => column.name)).toEqual([
-      'unit_id',
-      'course_id',
-    ]);
-    expect(
-      key?.reference().foreignColumns.map((column) => column.name),
-    ).toEqual(['id', 'course_id']);
-    expect(key?.onDelete).toBe('restrict');
+    expect(keys).toContainEqual({
+      table: books,
+      columns: ['book_id', 'course_id'],
+      foreignColumns: ['id', 'course_id'],
+      onDelete: 'restrict',
+    });
+    expect(keys).toContainEqual({
+      table: units,
+      columns: ['unit_id', 'book_id'],
+      foreignColumns: ['id', 'book_id'],
+      onDelete: 'restrict',
+    });
   });
 });

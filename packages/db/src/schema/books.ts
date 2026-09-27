@@ -8,10 +8,11 @@ import {
 } from 'drizzle-orm/pg-core';
 import { courses } from './courses';
 
-// A book is one textbook inside a language course, such as "Encuentros hoy 2"
-// next to "Encuentros hoy 3" in the Spanish course. Practice and duplicate
-// detection stay course-wide; the book keeps chapters of different volumes
-// apart when they share a name.
+// A book is one source of words inside a language course: a textbook such as
+// "Encuentros hoy 2" next to "Encuentros hoy 3" in the Spanish course, or a
+// novel the learner is reading. Words live directly in the book or in one of
+// its units. Practice and duplicate detection stay course-wide; the book keeps
+// chapters of different volumes apart when they share a name.
 export const books = pgTable(
   'books',
   {

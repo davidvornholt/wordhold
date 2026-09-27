@@ -42,5 +42,6 @@ export const units = pgTable(
     uniqueIndex('units_book_name').on(table.bookId, table.name),
     uniqueIndex('units_book_position').on(table.bookId, table.position),
     uniqueIndex('units_id_course').on(table.id, table.courseId),
+    uniqueIndex('units_id_book').on(table.id, table.bookId),
   ],
 );
