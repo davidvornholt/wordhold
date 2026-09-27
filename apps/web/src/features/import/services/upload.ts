@@ -117,7 +117,7 @@ export const storeUploadedPage = (input: {
     const course = yield* repository.getCourse(input.courseId);
     if (course === undefined) {
       return yield* new CourseNotFoundError({
-        message: 'Kurs nicht gefunden.',
+        message: 'Sprache nicht gefunden.',
       });
     }
     yield* reconcileStoredFiles;

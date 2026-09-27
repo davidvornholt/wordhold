@@ -20,7 +20,7 @@ import type { CourseOutline } from '../schemas/course-units';
 import { CourseStore } from './course-store';
 
 const notFound = new CourseSettingsNotFoundError({
-  message: 'Kurs nicht gefunden.',
+  message: 'Sprache nicht gefunden.',
 });
 
 const bookMissing = new CourseBookNotFoundError({
@@ -80,7 +80,7 @@ export class CourseService extends Effect.Service<CourseService>()(
           if (result.kind === 'duplicate') {
             return yield* bookTaken(name);
           }
-          return yield* getOutline(courseId);
+          return { bookId: result.bookId };
         });
       const renameBook = ({ courseId, bookId, name }: RenameCourseBookData) =>
         Effect.gen(function* () {

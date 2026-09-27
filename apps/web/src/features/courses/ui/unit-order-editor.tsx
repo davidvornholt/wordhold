@@ -140,18 +140,23 @@ export const UnitOrderEditor = ({
           items={units.map((unit) => unit.id)}
           strategy={verticalListSortingStrategy}
         >
-          <ul aria-label={`Einheiten in ${bookName}`} className={cardListClass}>
-            {units.map((unit, index) => (
-              <SortableUnitRow
-                busy={busy}
-                index={index}
-                key={unit.id}
-                onMove={move}
-                total={units.length}
-                unit={unit}
-              />
-            ))}
-          </ul>
+          {units.length === 0 ? null : (
+            <ul
+              aria-label={`Einheiten in ${bookName}`}
+              className={cardListClass}
+            >
+              {units.map((unit, index) => (
+                <SortableUnitRow
+                  busy={busy}
+                  index={index}
+                  key={unit.id}
+                  onMove={move}
+                  total={units.length}
+                  unit={unit}
+                />
+              ))}
+            </ul>
+          )}
         </SortableContext>
       </DndContext>
       <NameForm

@@ -25,7 +25,7 @@ export const HomeShell = ({
       <p className="max-w-prose text-muted-foreground">
         Fotografiere die Vokabelseiten deines Buchs. Wordhold liest sie aus,
         fragt sie im richtigen Abstand ab und spricht sie dir vor. Melde dich
-        an, um deine Kurse zu sehen.
+        an, um deine Sprachen zu sehen.
       </p>
       <Button onClick={onSignIn}>Mit GitHub anmelden</Button>
     </main>

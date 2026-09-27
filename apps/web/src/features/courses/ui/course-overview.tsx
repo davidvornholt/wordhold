@@ -7,9 +7,8 @@ import {
   courseTotals,
 } from '../schemas/course-units';
 import { BookSection } from './book-section';
-import type { CourseBookActions } from './course-book-editor';
 
-type CourseOverviewProps = CourseBookActions & {
+type CourseOverviewProps = {
   // Null when the course is named after its language, which would otherwise
   // print the same entry twice under its own heading.
   readonly languageLabel: string | null;
@@ -24,6 +23,8 @@ type CourseOverviewProps = CourseBookActions & {
   readonly settingsAction: ReactNode;
   readonly vocabularyAction: ReactNode;
   readonly renderBookLink: (book: CourseBook) => ReactNode;
+  // Creates a book and opens its page.
+  readonly createBook: (name: string) => Promise<void>;
 };
 
 const courseSummary = (
@@ -51,7 +52,7 @@ export const CourseOverview = ({
   settingsAction,
   vocabularyAction,
   renderBookLink,
-  ...actions
+  createBook,
 }: CourseOverviewProps) => {
   const [adding, setAdding] = useState(false);
   const quickEntryId = useId();
@@ -83,9 +84,9 @@ export const CourseOverview = ({
         <div id={quickEntryId}>{quickEntry}</div>
       ) : null}
       <BookSection
+        createBook={createBook}
         outline={outline}
         renderBookLink={renderBookLink}
-        {...actions}
       />
     </>
   );

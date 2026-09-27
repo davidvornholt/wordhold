@@ -32,7 +32,7 @@ const databaseError = (operation: string, cause: unknown) =>
   new CourseDatabaseError({
     operation,
     cause,
-    message: 'Der Kurs konnte nicht geladen werden.',
+    message: 'Die Sprache konnte nicht geladen werden.',
   });
 
 export class CourseStore extends Context.Tag('wordhold/CourseStore')<

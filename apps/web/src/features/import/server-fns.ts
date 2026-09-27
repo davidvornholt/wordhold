@@ -59,7 +59,7 @@ export const getCourse = createServerFn()
           const course = yield* repository.getCourse(data);
           return course === undefined
             ? yield* new CourseNotFoundError({
-                message: 'Kurs nicht gefunden.',
+                message: 'Sprache nicht gefunden.',
               })
             : course;
         }),
