@@ -6,13 +6,20 @@ import type { ImportPayloadData } from '../schemas/import-payload';
 
 type ResolvedEntry = {
   readonly entry: ImportPayloadData['entries'][number];
-  readonly unitId: string;
+  // Null for a word filed directly into the book.
+  readonly unitId: string | null;
+};
+
+// The course, book and page every verified word of the page shares.
+type VerifiedPage = {
+  readonly courseId: string;
+  readonly bookId: string;
+  readonly pageId: string;
 };
 
 export const persistVerifiedEntries = (
   sql: Database,
-  courseId: string,
-  pageId: string,
+  { courseId, bookId, pageId }: VerifiedPage,
   entriesToInsert: ReadonlyArray<ResolvedEntry>,
 ) =>
   Effect.gen(function* () {
@@ -20,6 +27,7 @@ export const persistVerifiedEntries = (
       sql,
       entriesToInsert.map(({ entry, unitId }) => ({
         courseId,
+        bookId,
         unitId,
         pageId,
         targetText: entry.targetText,

@@ -8,6 +8,7 @@ export const unintroducedEntryId = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
 export const firstReviewEntryId = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
 export const dueEntryId = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
 export const fixtureNow = new Date('2026-08-20T12:00:00.000Z');
+export const fixtureAddedAt = new Date('2026-08-01T12:00:00.000Z');
 
 export const seedIntroducedCardFixture = Effect.gen(function* () {
   const sql = yield* Database;
@@ -25,11 +26,11 @@ export const seedIntroducedCardFixture = Effect.gen(function* () {
   `;
   yield* sql`
     insert into entries (
-      id, course_id, unit_id, target_text, native_text
+      id, course_id, book_id, unit_id, target_text, native_text, created_at
     ) values
-      (${unintroducedEntryId}, ${fixtureCourseId}, ${fixtureUnitId}, 'neuf', 'neu'),
-      (${firstReviewEntryId}, ${fixtureCourseId}, ${fixtureUnitId}, 'livre', 'Buch'),
-      (${dueEntryId}, ${fixtureCourseId}, ${fixtureUnitId}, 'mémoire', 'Erinnerung')
+      (${unintroducedEntryId}, ${fixtureCourseId}, ${fixtureBookId}, ${fixtureUnitId}, 'neuf', 'neu', ${fixtureAddedAt}),
+      (${firstReviewEntryId}, ${fixtureCourseId}, ${fixtureBookId}, ${fixtureUnitId}, 'livre', 'Buch', ${fixtureAddedAt}),
+      (${dueEntryId}, ${fixtureCourseId}, ${fixtureBookId}, ${fixtureUnitId}, 'mémoire', 'Erinnerung', ${fixtureAddedAt})
   `;
   yield* sql`
     insert into cards (

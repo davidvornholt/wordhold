@@ -27,6 +27,8 @@ export const fixtureStates = [
   'course-no-practice',
   'course-empty-units',
   'course-no-books',
+  'book',
+  'book-novel',
   'unit',
   'unit-unintroduced',
   'unit-due',

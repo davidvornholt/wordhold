@@ -15,8 +15,8 @@ const missingUnitId = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
 const bookId = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
 const otherBookId = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
 const directionsPerEntry = 2;
-// "vous" and its casing variant "Vous".
-const storedVariants = 2;
+// "vous", its casing variant "Vous", and "merci" filed directly in a book.
+const storedWords = 3;
 
 const runStoreTest = <A, E>(
   effect: Effect.Effect<A, E, Database | VocabularyEntryStore | CourseStore>,
@@ -56,17 +56,44 @@ const seedCourse = Effect.gen(function* () {
 
 const word = (targetText: string, nativeText = `Deutsch ${targetText}`) => ({
   courseId,
-  unitId,
+  bookId,
+  unitId: unitId as string | null,
   targetText,
   nativeText,
 });
+
+// The rows an entry brings along: its place, cards, answers and example.
+const storedCompanions = (entryId: string) =>
+  Effect.gen(function* () {
+    const sql = yield* Database;
+    const entries = yield* sql<{
+      readonly pageId: string | null;
+      readonly bookId: string;
+      readonly unitId: string | null;
+    }>`select page_id as "pageId", book_id as "bookId", unit_id as "unitId" from entries where id = ${entryId}`;
+    const cards = yield* sql<{
+      readonly direction: string;
+    }>`select direction from cards where entry_id = ${entryId}`;
+    const answers = yield* sql<{
+      readonly text: string;
+    }>`select text from accepted_answers where entry_id = ${entryId} order by text`;
+    const examples = yield* sql<{
+      readonly targetText: string;
+      readonly source: string;
+    }>`select target_text as "targetText", source from entry_examples where entry_id = ${entryId}`;
+    return {
+      entries,
+      directions: cards.map((card) => card.direction).sort(),
+      answers: answers.map((answer) => answer.text),
+      examples,
+    };
+  });
 
 describe('VocabularyEntryStore PostgreSQL contract', () => {
   it('stores a typed entry with the same companions an import creates', async () => {
     await runStoreTest(
       Effect.gen(function* () {
         yield* seedCourse;
-        const sql = yield* Database;
         const store = yield* VocabularyEntryStore;
         const created = yield* store.create({
           ...word('la mémoire', 'die Erinnerung'),
@@ -78,32 +105,17 @@ describe('VocabularyEntryStore PostgreSQL contract', () => {
         });
         expect(created.kind).toBe('created');
         const entryId = created.kind === 'created' ? created.entryId : '';
-        const entries = yield* sql<{
-          readonly pageId: string | null;
-          readonly unitId: string;
-        }>`select page_id as "pageId", unit_id as "unitId" from entries where id = ${entryId}`;
-        expect(entries).toEqual([{ pageId: null, unitId }]);
-        const cards = yield* sql<{
-          readonly direction: string;
-        }>`select direction from cards where entry_id = ${entryId}`;
-        expect(cards.map((card) => card.direction).sort()).toEqual([
-          'to_native',
-          'to_target',
-        ]);
-        const answers = yield* sql<{
-          readonly text: string;
-        }>`select text from accepted_answers where entry_id = ${entryId} order by text`;
-        expect(answers.map((answer) => answer.text)).toEqual([
-          'die Erinnerung',
-          'la mémoire',
-        ]);
-        const examples = yield* sql<{
-          readonly targetText: string;
-          readonly source: string;
-        }>`select target_text as "targetText", source from entry_examples where entry_id = ${entryId}`;
-        expect(examples).toEqual([
-          { targetText: 'Ce voyage est un bon souvenir.', source: 'textbook' },
-        ]);
+        expect(yield* storedCompanions(entryId)).toEqual({
+          entries: [{ pageId: null, bookId, unitId }],
+          directions: ['to_native', 'to_target'],
+          answers: ['die Erinnerung', 'la mémoire'],
+          examples: [
+            {
+              targetText: 'Ce voyage est un bon souvenir.',
+              source: 'textbook',
+            },
+          ],
+        });
         const listed = yield* Effect.flatMap(CourseStore, (courses) =>
           courses.listVocabulary(courseId),
         );
@@ -127,17 +139,33 @@ describe('VocabularyEntryStore PostgreSQL contract', () => {
         expect((yield* store.create(word(' vous! '))).kind).toBe('duplicate');
         expect((yield* store.create(word('Vous'))).kind).toBe('created');
         expect(
-          yield* store.create({ ...word('vous'), unitId: otherUnitId }),
+          yield* store.create({
+            ...word('vous'),
+            bookId: otherBookId,
+            unitId: otherUnitId,
+          }),
         ).toEqual({ kind: 'duplicate', location: 'Découvertes 3 · Unité 1' });
+        const directWord = {
+          ...word('merci'),
+          bookId: otherBookId,
+          unitId: null,
+        };
+        expect((yield* store.create(directWord)).kind).toBe('created');
+        expect(yield* store.create(word('merci'))).toEqual({
+          kind: 'duplicate',
+          location: 'Découvertes 4',
+        });
         const count = yield* sql<{
           readonly count: number;
         }>`select count(*)::int as count from entries`;
-        expect(count[0]?.count).toBe(storedVariants);
+        expect(count[0]?.count).toBe(storedWords);
       }),
     );
   });
+});
 
-  it('reports a unit that no longer belongs to the course without writing', async () => {
+describe('VocabularyEntryStore PostgreSQL places', () => {
+  it('reports a book or unit that does not belong to the course without writing', async () => {
     await runStoreTest(
       Effect.gen(function* () {
         yield* seedCourse;
@@ -156,12 +184,23 @@ describe('VocabularyEntryStore PostgreSQL contract', () => {
           ...word('hola'),
           unitId: foreignUnit[0]?.id ?? missingUnitId,
         });
-        expect(result.kind).toBe('unit-missing');
+        expect(result.kind).toBe('place-missing');
         const missing = yield* store.create({
           ...word('hola'),
           unitId: missingUnitId,
         });
-        expect(missing.kind).toBe('unit-missing');
+        expect(missing.kind).toBe('place-missing');
+        const otherBooksUnit = yield* store.create({
+          ...word('hola'),
+          unitId: otherUnitId,
+        });
+        expect(otherBooksUnit.kind).toBe('place-missing');
+        const missingBook = yield* store.create({
+          ...word('hola'),
+          bookId: missingUnitId,
+          unitId: null,
+        });
+        expect(missingBook.kind).toBe('place-missing');
         const count = yield* sql<{
           readonly count: number;
         }>`select count(*)::int as count from entries`;

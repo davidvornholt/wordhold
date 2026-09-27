@@ -9,6 +9,7 @@ import { sessionSectionSize } from '../../../shared/session/section-policy';
 import {
   dueEntryId,
   firstReviewEntryId,
+  fixtureBookId,
   fixtureCourseId,
   fixtureNow,
   fixtureUnitId,
@@ -44,18 +45,26 @@ describe('PracticeSessionStore introduction contract', () => {
           const unitSession = yield* store.loadScheduled(
             fixtureCourseId,
             'both',
-            fixtureUnitId,
+            { unitId: fixtureUnitId },
             fixtureNow,
           );
           expect(unitSession.items).toHaveLength(session.items.length);
           const outsideUnit = yield* store.loadScheduled(
             fixtureCourseId,
             'both',
-            dueEntryId,
+            { unitId: dueEntryId },
             fixtureNow,
           );
           expect(outsideUnit.items).toEqual([]);
           expect(outsideUnit.availability.ready).toBe(0);
+          // The book's own words leave out the words filed in its units.
+          const bookSession = yield* store.loadScheduled(
+            fixtureCourseId,
+            'both',
+            { bookId: fixtureBookId },
+            fixtureNow,
+          );
+          expect(bookSession.items).toEqual([]);
         }).pipe(
           Effect.provide(
             PracticeSessionStore.live.pipe(Layer.provide(databaseLayer)),
@@ -119,9 +128,9 @@ describe('PracticeSessionStore queue policy', () => {
           const store = yield* PracticeSessionStore;
           yield* sql`
             insert into entries (
-              course_id, unit_id, target_text, native_text
+              course_id, book_id, unit_id, target_text, native_text
             )
-            select ${fixtureCourseId}, ${fixtureUnitId},
+            select ${fixtureCourseId}, ${fixtureBookId}, ${fixtureUnitId},
               'overdue-' || number, 'überfällig-' || number
             from generate_series(1, 25) as number
           `;

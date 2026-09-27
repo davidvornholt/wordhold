@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import type { LearnSelectionPass } from '../../../features/learning/schemas/learning-models';
 import { introduceCard } from '../../../features/learning/services/server-fns';
 import { LearnPass } from '../../../features/learning/ui/learn-pass';
+import type { SessionDirection } from '../../../features/practice/schemas/session-request';
 import { directionOptions } from '../../../features/practice/services/session-options';
 import { SessionStart } from '../../../features/practice/ui/session-start';
 import { directionLabel } from '../../../shared/directions';
@@ -24,12 +25,13 @@ type StudyLearningProps = {
   readonly targetLanguage: LanguageCode;
 };
 
-const selectionSearch = (
+export const selectionSearch = (
   selection: VocabularySelectionData,
   mode: 'learn' | 'practice',
-  direction?: AnswerDirection,
+  direction?: SessionDirection,
 ) => ({
   direction,
+  book: 'bookId' in selection ? selection.bookId : undefined,
   entries: 'entryIds' in selection ? selection.entryIds.join(',') : undefined,
   mode,
   unit: 'unitId' in selection ? selection.unitId : undefined,
@@ -153,11 +155,7 @@ export const StudyLearning = ({
         key={`${direction}:${items.map((item) => item.cardId).join('|')}`}
         onIntroduce={async (item) => {
           await introduceCard({
-            data: {
-              cardId: item.cardId,
-              courseId,
-              unitId: item.unitId,
-            },
+            data: { cardId: item.cardId, courseId },
           });
         }}
         targetLabel={targetLabel}

@@ -11,6 +11,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
+import { books } from './books';
 import { courses } from './courses';
 import { answerDirectionEnum } from './directions';
 import { pages } from './pages';
@@ -26,10 +27,15 @@ export const entries = pgTable(
     courseId: uuid('course_id')
       .notNull()
       .references(() => courses.id, { onDelete: 'cascade' }),
-    // A unit outlives the photo it was captured from, so deleting a page only
-    // clears provenance. Deleting a unit that still holds vocabulary is refused
-    // rather than silently taking the vocabulary entries with it.
-    unitId: uuid('unit_id').notNull(),
+    // Every word belongs to a book. Nullable only while deployed databases
+    // file their existing words into their unit's book; see the entries
+    // rollout in the package README.
+    bookId: uuid('book_id'),
+    // A unit is optional: a novel's words live directly in the book. A book
+    // or unit outlives the photo it was captured from, so deleting a page
+    // only clears provenance. Deleting a book or unit that still holds
+    // vocabulary is refused rather than silently taking the words with it.
+    unitId: uuid('unit_id'),
     pageId: uuid('page_id').references(() => pages.id, {
       onDelete: 'set null',
     }),
@@ -43,9 +49,15 @@ export const entries = pgTable(
   },
   (table) => [
     foreignKey({
-      name: 'entries_unit_course_units_id_course_fk',
-      columns: [table.unitId, table.courseId],
-      foreignColumns: [units.id, units.courseId],
+      name: 'entries_book_course_books_id_course_fk',
+      columns: [table.bookId, table.courseId],
+      foreignColumns: [books.id, books.courseId],
+    }).onDelete('restrict'),
+    // A word's unit must belong to the word's book.
+    foreignKey({
+      name: 'entries_unit_book_units_id_book_fk',
+      columns: [table.unitId, table.bookId],
+      foreignColumns: [units.id, units.bookId],
     }).onDelete('restrict'),
   ],
 );

@@ -121,8 +121,7 @@ export type InsertedEntry = {
 // One stored word with its example sentences and where it is filed: what the
 // verify screen needs to flag a word the course already has, in any book.
 export type UnitEntry = {
-  readonly unitId: string;
-  // "Book · Unit", as the learner reads it.
+  // "Book · Unit", or the book alone, as the learner reads it.
   readonly location: string;
   readonly targetText: string;
   readonly examples: ReadonlyArray<string>;

@@ -48,7 +48,9 @@ export const generateDraftExample = (
 export const suggestDraftTranslation = (
   generator: SentenceGenerator,
   language: LanguageCode,
-  unitName: string,
+  // A textbook unit names the topic that decides between meanings; a word
+  // directly in a book has no such hint.
+  unitName: string | null,
   word: { readonly text: string; readonly given: 'target' | 'native' },
 ) =>
   generator
@@ -56,7 +58,7 @@ export const suggestDraftTranslation = (
       text: word.text,
       given: word.given,
       targetLanguage: englishNames[language],
-      context: unitName,
+      ...(unitName === null ? {} : { context: unitName }),
     })
     .pipe(
       Effect.map((translated) => ({ translation: translated.translation })),

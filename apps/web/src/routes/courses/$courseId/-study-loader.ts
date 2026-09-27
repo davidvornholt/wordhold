@@ -17,6 +17,7 @@ import {
 } from '../../../features/practice/services/session-options';
 import { attachPreparedExamples } from '../../../shared/examples/example-model';
 import type { VocabularySelectionData } from '../../../shared/session/vocabulary-selection';
+import { type CoursePlace, findCoursePlace } from './-course-place';
 
 const loadLearningMode = async (
   courseId: string,
@@ -81,24 +82,28 @@ const loadPracticeMode = async (
   };
 };
 
+// A book or unit named in the search wins over a hand-picked list of words.
+const studySelection = (
+  place: CoursePlace | undefined,
+  entryIds: ReadonlyArray<string>,
+): VocabularySelectionData | null => {
+  if (place !== undefined) {
+    return place.selection;
+  }
+  const [first, ...rest] = entryIds;
+  return first === undefined ? null : { entryIds: [first, ...rest] };
+};
+
 export const loadStudyData = async (
   courseId: string,
   deps: StudySearchData,
 ) => {
-  const [course, { units }] = await Promise.all([
+  const [course, outline] = await Promise.all([
     getCourse({ data: courseId }),
     getCourseOutline({ data: courseId }),
   ]);
-  const unit = units.find((candidate) => candidate.id === deps.unit);
-  const entryIds = selectedEntryIds(deps.entries);
-  let selection: VocabularySelectionData | null = null;
-  if (unit !== undefined) {
-    selection = { unitId: unit.id };
-  } else if (entryIds.length > 0) {
-    selection = {
-      entryIds: [entryIds[0] as string, ...entryIds.slice(1)],
-    };
-  }
+  const place = findCoursePlace(outline, deps);
+  const selection = studySelection(place, selectedEntryIds(deps.entries));
   if (selection === null) {
     return {
       availableDirections: [],
@@ -107,14 +112,14 @@ export const loadStudyData = async (
       learningPass: null,
       mode: 'practice' as const,
       preview: { items: [] },
+      place,
       selection,
       session: null,
-      unit,
     };
   }
   const mode =
     deps.mode === 'learn'
       ? await loadLearningMode(course.id, selection, deps)
       : await loadPracticeMode(course.id, selection, deps);
-  return { ...mode, course, selection, unit };
+  return { ...mode, course, place, selection };
 };

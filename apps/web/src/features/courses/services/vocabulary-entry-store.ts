@@ -1,7 +1,7 @@
 import { Database } from '@wordhold/db/client';
 import type { LanguageCode } from '@wordhold/db/schema/courses';
 import { Context, Effect, Layer } from 'effect';
-import { unitLocation } from '../../../shared/vocabulary/book-name';
+import { wordLocation } from '../../../shared/vocabulary/book-name';
 import {
   type ExistingEntry,
   findDuplicate,
@@ -10,14 +10,19 @@ import { insertVocabularyEntries } from '../../../shared/vocabulary/insert-entri
 import { CourseDatabaseError } from '../errors/courses-errors';
 import type { CreateVocabularyEntryData } from '../schemas/vocabulary-entry-creation';
 
-export type UnitContext = {
+export type WordPlace = {
+  readonly bookId: string;
+  readonly unitId: string | null;
+};
+
+export type PlaceContext = {
   readonly targetLanguage: LanguageCode;
-  readonly unitName: string;
+  readonly unitName: string | null;
 };
 
 export type CreateVocabularyEntryResult =
   | { readonly kind: 'created'; readonly entryId: string }
-  | { readonly kind: 'unit-missing' }
+  | { readonly kind: 'place-missing' }
   | { readonly kind: 'duplicate'; readonly location: string };
 
 type CourseEntryRow = {
@@ -25,7 +30,7 @@ type CourseEntryRow = {
   readonly targetText: string;
   readonly example: string | null;
   readonly bookName: string;
-  readonly unitName: string;
+  readonly unitName: string | null;
 };
 
 type LocatedEntry = ExistingEntry & { readonly location: string };
@@ -51,7 +56,7 @@ const groupCourseEntries = (
   for (const row of rows) {
     const entry = byEntry.get(row.id) ?? {
       targetText: row.targetText,
-      location: unitLocation(row.bookName, row.unitName),
+      location: wordLocation(row.bookName, row.unitName),
       examples: [],
     };
     if (row.example !== null) {
@@ -70,11 +75,12 @@ export class VocabularyEntryStore extends Context.Tag(
     readonly readTargetLanguage: (
       courseId: string,
     ) => Effect.Effect<LanguageCode | undefined, CourseDatabaseError>;
-    // Undefined when the unit does not belong to the course.
-    readonly readUnit: (
+    // Undefined when the book does not belong to the course or the unit
+    // not to the book.
+    readonly readPlace: (
       courseId: string,
-      unitId: string,
-    ) => Effect.Effect<UnitContext | undefined, CourseDatabaseError>;
+      place: WordPlace,
+    ) => Effect.Effect<PlaceContext | undefined, CourseDatabaseError>;
     readonly create: (
       input: CreateVocabularyEntryData,
     ) => Effect.Effect<CreateVocabularyEntryResult, CourseDatabaseError>;
@@ -101,43 +107,46 @@ export class VocabularyEntryStore extends Context.Tag(
           ),
         );
 
-      const readUnit = (courseId: string, unitId: string) =>
-        sql<UnitContext>`
+      // A book without the unit yields no row when a unit was asked for,
+      // because the unit's name is then required to match.
+      const selectPlace = (courseId: string, { bookId, unitId }: WordPlace) =>
+        sql<PlaceContext>`
           select co.target_language as "targetLanguage", u.name as "unitName"
-          from units u
-          join courses co on co.id = u.course_id
-          where u.id = ${unitId} and u.course_id = ${courseId}
+          from books b
+          join courses co on co.id = b.course_id
+          left join units u on u.id = ${unitId}::uuid and u.book_id = b.id
+          where b.id = ${bookId} and b.course_id = ${courseId}
+            and (${unitId}::uuid is null or u.id is not null)
           limit 1
-        `.pipe(
-          Effect.map((rows) => rows[0]),
-          Effect.mapError((cause) => databaseError('read unit', cause)),
+        `.pipe(Effect.map((rows) => rows[0]));
+
+      const readPlace = (courseId: string, place: WordPlace) =>
+        selectPlace(courseId, place).pipe(
+          Effect.mapError((cause) => databaseError('read place', cause)),
         );
 
       // The same per-course lock the import takes, so a typed word and a
       // verified page never both pass the duplicate check. The check spans the
-      // whole course, every book included: an exact repeat is refused. A word that differs only in casing or
-      // example sentence is stored: the learner typed it on purpose, which
-      // is the confirmation the verify screen has to ask for separately.
+      // whole course, every book included: an exact repeat is refused. A word
+      // that differs only in casing or example sentence is stored: the
+      // learner typed it on purpose, which is the confirmation the verify
+      // screen has to ask for separately.
       const create = (input: CreateVocabularyEntryData) =>
         sql
           .withTransaction(
             Effect.gen(function* () {
               yield* sql`select pg_advisory_xact_lock(hashtextextended(${input.courseId}, 0))`;
-              const unit = yield* sql<{ readonly id: string }>`
-                select id from units
-                where id = ${input.unitId} and course_id = ${input.courseId}
-                limit 1
-              `;
-              if (unit.length === 0) {
-                return { kind: 'unit-missing' } as const;
+              const place = yield* selectPlace(input.courseId, input);
+              if (place === undefined) {
+                return { kind: 'place-missing' } as const;
               }
               const rows = yield* sql<CourseEntryRow>`
                 select e.id, e.target_text as "targetText",
                   x.target_text as example,
                   b.name as "bookName", u.name as "unitName"
                 from entries e
-                join units u on u.id = e.unit_id
-                join books b on b.id = u.book_id
+                join books b on b.id = e.book_id
+                left join units u on u.id = e.unit_id
                 left join entry_examples x on x.entry_id = e.id
                 where e.course_id = ${input.courseId}
               `;
@@ -157,6 +166,7 @@ export class VocabularyEntryStore extends Context.Tag(
               const inserted = yield* insertVocabularyEntries(sql, [
                 {
                   courseId: input.courseId,
+                  bookId: input.bookId,
                   unitId: input.unitId,
                   pageId: null,
                   targetText: input.targetText,
@@ -194,7 +204,7 @@ export class VocabularyEntryStore extends Context.Tag(
           Effect.mapError((cause) => databaseError('store entry audio', cause)),
         );
 
-      return { readTargetLanguage, readUnit, create, storeAudio } as const;
+      return { readTargetLanguage, readPlace, create, storeAudio } as const;
     }),
   );
 }

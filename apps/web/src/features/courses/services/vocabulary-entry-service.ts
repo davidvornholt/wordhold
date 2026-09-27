@@ -4,6 +4,7 @@ import type { LanguageCode } from '@wordhold/db/schema/courses';
 import { Effect } from 'effect';
 import { Storage } from '../../../shared/storage/server';
 import {
+  CourseBookNotFoundError,
   CourseSettingsNotFoundError,
   CourseUnitNotFoundError,
   VocabularyEntryConflictError,
@@ -20,7 +21,7 @@ import {
   translateDraftExample,
 } from './vocabulary-draft-examples';
 import { prepareEntryAudio } from './vocabulary-entry-audio';
-import { VocabularyEntryStore } from './vocabulary-entry-store';
+import { VocabularyEntryStore, type WordPlace } from './vocabulary-entry-store';
 
 export type CreatedVocabularyEntry = {
   readonly entryId: string;
@@ -32,9 +33,14 @@ const courseMissing = new CourseSettingsNotFoundError({
   message: 'Kurs nicht gefunden.',
 });
 
-const unitMissing = new CourseUnitNotFoundError({
-  message: 'Diese Einheit gibt es nicht mehr. Lade die Seite neu.',
-});
+const placeMissing = ({ unitId }: WordPlace) =>
+  unitId === null
+    ? new CourseBookNotFoundError({
+        message: 'Dieses Buch gibt es nicht mehr. Lade die Seite neu.',
+      })
+    : new CourseUnitNotFoundError({
+        message: 'Diese Einheit gibt es nicht mehr. Lade die Seite neu.',
+      });
 
 export class VocabularyEntryService extends Effect.Service<VocabularyEntryService>()(
   'wordhold/VocabularyEntryService',
@@ -61,11 +67,8 @@ export class VocabularyEntryService extends Effect.Service<VocabularyEntryServic
           const language = yield* targetLanguage(input.courseId);
           const result = yield* store.create(input);
           switch (result.kind) {
-            case 'unit-missing':
-              return yield* new CourseUnitNotFoundError({
-                message:
-                  'Diese Einheit gibt es nicht mehr. Lade die Seite neu.',
-              });
+            case 'place-missing':
+              return yield* placeMissing(input);
             case 'duplicate':
               return yield* new VocabularyEntryConflictError({
                 targetText: input.targetText,
@@ -104,18 +107,19 @@ export class VocabularyEntryService extends Effect.Service<VocabularyEntryServic
 
       const suggestTranslation = ({
         courseId,
+        bookId,
         unitId,
         ...word
       }: VocabularyTranslationSuggestionData) =>
         Effect.gen(function* () {
-          const unit = yield* store.readUnit(courseId, unitId);
-          if (unit === undefined) {
-            return yield* unitMissing;
+          const place = yield* store.readPlace(courseId, { bookId, unitId });
+          if (place === undefined) {
+            return yield* placeMissing({ bookId, unitId });
           }
           return yield* suggestDraftTranslation(
             generator,
-            unit.targetLanguage,
-            unit.unitName,
+            place.targetLanguage,
+            place.unitName,
             word,
           );
         });

@@ -18,7 +18,7 @@ export const entryIsComplete = (entry: DraftEntry): boolean =>
 
 export const unitSelectionIsComplete = (
   selection: UnitSelectionData,
-): boolean => selection.kind === 'existing' || selection.name.trim() !== '';
+): boolean => selection.kind !== 'new' || selection.name.trim() !== '';
 
 export const skippedSummary = (count: number): string =>
   count === 1

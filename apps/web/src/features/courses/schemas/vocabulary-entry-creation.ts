@@ -5,11 +5,17 @@ import {
   NewExample,
 } from '../../../shared/vocabulary/entry-fields';
 
-// One vocabulary entry typed on the unit screen. The unit is fixed by the
-// screen, so unlike the verify screen there is nothing to resolve by name.
+// Where a typed word goes: a book, and optionally one of its units.
+const WordPlaceFields = {
+  bookId: Schema.UUID,
+  unitId: Schema.NullOr(Schema.UUID),
+};
+
+// One typed vocabulary entry. The place is picked from existing books and
+// units, so unlike the verify screen there is nothing to resolve by name.
 export const CreateVocabularyEntry = Schema.Struct({
   courseId: Schema.UUID,
-  unitId: Schema.UUID,
+  ...WordPlaceFields,
   targetText: EntryText,
   nativeText: EntryText,
   example: Schema.optional(NewExample),
@@ -31,10 +37,10 @@ export type VocabularyTranslationRequestData =
   typeof VocabularyTranslationRequest.Type;
 
 // One typed side of a word pair; the other is proposed in the course's
-// language or German. The unit gives the proposal its context.
+// language or German. A unit gives the proposal its context.
 export const VocabularyTranslationSuggestion = Schema.Struct({
   courseId: Schema.UUID,
-  unitId: Schema.UUID,
+  ...WordPlaceFields,
   text: EntryText,
   given: Schema.Literal('target', 'native'),
 });

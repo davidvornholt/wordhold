@@ -8,8 +8,8 @@ export class LearningDatabaseError extends Data.TaggedError(
   readonly message: string;
 }> {}
 
-export class LearningUnitNotFoundError extends Data.TaggedError(
-  'LearningUnitNotFoundError',
+export class LearningPlaceNotFoundError extends Data.TaggedError(
+  'LearningPlaceNotFoundError',
 )<{
   readonly message: string;
 }> {}

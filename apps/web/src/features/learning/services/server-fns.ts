@@ -4,7 +4,10 @@ import { PgLive } from '@wordhold/db/client';
 import { Effect, Layer, ManagedRuntime, Schema } from 'effect';
 import { requireSession } from '../../../shared/auth/require-session';
 import { authRuntime } from '../../../shared/auth/runtime';
-import { VocabularySelection } from '../../../shared/session/vocabulary-selection';
+import {
+  PlaceSelection,
+  VocabularySelection,
+} from '../../../shared/session/vocabulary-selection';
 import { LearningService } from './learning-service';
 import { LearningStore } from './learning-store';
 
@@ -15,12 +18,11 @@ const learningLive = LearningService.Default.pipe(
 const learningRuntime = ManagedRuntime.make(learningLive);
 
 const decodePassRequest = Schema.decodeUnknownSync(
-  Schema.Struct({ courseId: Schema.UUID, unitId: Schema.UUID }),
+  Schema.Struct({ courseId: Schema.UUID, place: PlaceSelection }),
 );
 const decodeIntroductionRequest = Schema.decodeUnknownSync(
   Schema.Struct({
     courseId: Schema.UUID,
-    unitId: Schema.UUID,
     cardId: Schema.UUID,
   }),
 );
@@ -37,7 +39,7 @@ export const getLearnPass = createServerFn()
     await authRuntime.runPromise(requireSession(getRequest().headers));
     return learningRuntime.runPromise(
       Effect.flatMap(LearningService, (service) =>
-        service.getPass(data.courseId, data.unitId),
+        service.getPass(data.courseId, data.place),
       ),
     );
   });
@@ -59,7 +61,7 @@ export const introduceCard = createServerFn({ method: 'POST' })
     await authRuntime.runPromise(requireSession(getRequest().headers));
     return learningRuntime.runPromise(
       Effect.flatMap(LearningService, (service) =>
-        service.introduce(data.courseId, data.unitId, data.cardId),
+        service.introduce(data.courseId, data.cardId),
       ),
     );
   });

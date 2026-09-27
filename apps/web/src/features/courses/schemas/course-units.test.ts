@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'bun:test';
-import type { UnitDirectionProgress } from './course-units';
-import {
-  courseTotals,
-  recommendedUnitAction,
-  unitsByBook,
-} from './course-units';
+import type { DirectionProgress } from './course-units';
+import { courseTotals, recommendedAction, unitsByBook } from './course-units';
 
 // A unit part-way through the learning pass, and one that is finished with it.
 const mixedEntries = 18;
@@ -13,9 +9,9 @@ const introducedEntries = 16;
 const bothUnits = mixedEntries + introducedEntries;
 
 const progress = (
-  direction: UnitDirectionProgress['direction'],
-  overrides: Partial<UnitDirectionProgress>,
-): UnitDirectionProgress => ({
+  direction: DirectionProgress['direction'],
+  overrides: Partial<DirectionProgress>,
+): DirectionProgress => ({
   direction,
   total: mixedEntries,
   introduced: 0,
@@ -26,38 +22,73 @@ const progress = (
   ...overrides,
 });
 
-const unit = (entries: number, introduced: number, unintroduced: number) => ({
-  bookId: '00000000-0000-0000-0000-000000000009',
-  id: '00000000-0000-0000-0000-000000000001',
-  name: 'Unit 3 – Holidays',
+const words = (entries: number, introduced: number, unintroduced: number) => ({
   entries,
   introduced,
   unintroduced,
   due: 0,
   firstReviews: 0,
   nextDueAt: null,
+  lastAddedAt: null,
   directions: [],
+});
+
+const book = (id: string, name: string, entries = 0) => ({
+  ...words(entries, entries, 0),
+  id,
+  name,
+});
+
+const unit = (entries: number, introduced: number, unintroduced: number) => ({
+  ...words(entries, introduced, unintroduced),
+  bookId: '00000000-0000-0000-0000-000000000009',
+  id: '00000000-0000-0000-0000-000000000001',
+  name: 'Unit 3 – Holidays',
 });
 
 describe('courseTotals', () => {
   it('sums the units of the course', () => {
     expect(
-      courseTotals([
-        unit(mixedEntries, introducedEntries, mixedUnintroduced),
-        unit(introducedEntries, introducedEntries, 0),
-      ]),
+      courseTotals({
+        books: [],
+        units: [
+          unit(mixedEntries, introducedEntries, mixedUnintroduced),
+          unit(introducedEntries, introducedEntries, 0),
+        ],
+      }),
     ).toEqual({ entries: bothUnits, unintroduced: mixedUnintroduced });
   });
 
-  it('reports zero for a course without units', () => {
-    expect(courseTotals([])).toEqual({ entries: 0, unintroduced: 0 });
+  it("counts the words that live directly in a book alongside its units' words", () => {
+    const novelWords = 7;
+    expect(
+      courseTotals({
+        books: [
+          {
+            ...book('00000000-0000-0000-0000-000000000009', 'Novel'),
+            ...words(novelWords, 0, novelWords),
+          },
+        ],
+        units: [unit(mixedEntries, introducedEntries, mixedUnintroduced)],
+      }),
+    ).toEqual({
+      entries: novelWords + mixedEntries,
+      unintroduced: novelWords + mixedUnintroduced,
+    });
+  });
+
+  it('reports zero for a course without books', () => {
+    expect(courseTotals({ books: [], units: [] })).toEqual({
+      entries: 0,
+      unintroduced: 0,
+    });
   });
 });
 
-describe('recommendedUnitAction', () => {
+describe('recommendedAction', () => {
   it('recommends due practice before opening another learning path', () => {
     expect(
-      recommendedUnitAction({
+      recommendedAction({
         ...unit(mixedEntries, mixedEntries, mixedUnintroduced),
         directions: [
           progress('to_target', { introduced: mixedEntries, due: 2 }),
@@ -69,7 +100,7 @@ describe('recommendedUnitAction', () => {
 
   it('does not invent an order when both paths have due reviews', () => {
     expect(
-      recommendedUnitAction({
+      recommendedAction({
         ...unit(mixedEntries, mixedEntries, 0),
         directions: [
           progress('to_target', { introduced: mixedEntries, due: 2 }),
@@ -81,7 +112,7 @@ describe('recommendedUnitAction', () => {
 
   it('does not invent an order when both paths have first reviews', () => {
     expect(
-      recommendedUnitAction({
+      recommendedAction({
         ...unit(mixedEntries, mixedEntries, 0),
         directions: [
           progress('to_target', {
@@ -99,7 +130,7 @@ describe('recommendedUnitAction', () => {
 
   it('recommends the direction that still needs learning', () => {
     expect(
-      recommendedUnitAction({
+      recommendedAction({
         ...unit(mixedEntries, mixedEntries, mixedUnintroduced),
         directions: [
           progress('to_target', { introduced: mixedEntries }),
@@ -111,7 +142,7 @@ describe('recommendedUnitAction', () => {
 
   it('does not invent an order for two untouched learning paths', () => {
     expect(
-      recommendedUnitAction({
+      recommendedAction({
         ...unit(mixedEntries, 0, mixedEntries),
         directions: [
           progress('to_target', { unintroduced: mixedEntries }),
@@ -123,7 +154,7 @@ describe('recommendedUnitAction', () => {
 
   it('recommends continuing the only started path', () => {
     expect(
-      recommendedUnitAction({
+      recommendedAction({
         ...unit(mixedEntries, introducedEntries, mixedUnintroduced),
         directions: [
           progress('to_target', {
@@ -138,7 +169,7 @@ describe('recommendedUnitAction', () => {
 
   it('recommends nothing while every learned path is resting', () => {
     expect(
-      recommendedUnitAction({
+      recommendedAction({
         ...unit(mixedEntries, mixedEntries, 0),
         directions: [
           progress('to_target', { introduced: mixedEntries }),
@@ -151,18 +182,18 @@ describe('recommendedUnitAction', () => {
 
 describe('unitsByBook', () => {
   it('keeps same-named units apart and lists books without units', () => {
-    const earlier = {
-      id: '00000000-0000-0000-0000-000000000011',
-      name: 'Encuentros hoy 2',
-    };
-    const current = {
-      id: '00000000-0000-0000-0000-000000000012',
-      name: 'Encuentros hoy 3',
-    };
-    const later = {
-      id: '00000000-0000-0000-0000-000000000013',
-      name: 'Encuentros hoy 4',
-    };
+    const earlier = book(
+      '00000000-0000-0000-0000-000000000011',
+      'Encuentros hoy 2',
+    );
+    const current = book(
+      '00000000-0000-0000-0000-000000000012',
+      'Encuentros hoy 3',
+    );
+    const later = book(
+      '00000000-0000-0000-0000-000000000013',
+      'Encuentros hoy 4',
+    );
     const earlierUnit = {
       ...unit(1, 1, 0),
       bookId: earlier.id,

@@ -8,7 +8,6 @@ export type LearnItem = {
   readonly cardId: string;
   readonly direction: AnswerDirection;
   readonly entryId: string;
-  readonly unitId: string;
   readonly targetText: string;
   readonly nativeText: string;
   readonly hasAudio: boolean;
@@ -30,6 +29,8 @@ export type LearnSelectionPass = {
   }>;
 };
 
+// The learning pass of one book's own words or one unit, named for the
+// screen's title.
 export type LearnPass = LearnSelectionPass & {
-  readonly unit: { readonly id: string; readonly name: string };
+  readonly name: string;
 };

@@ -5,8 +5,9 @@ const cardStartPattern = /Karten? starten/u;
 
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
-// The night-before path: the course page leads into a unit page that carries
-// the unit's actions and its vocabulary as one selectable list.
+// The night-before path: the course page leads through the book into a unit
+// page that carries the unit's actions and its vocabulary as one selectable
+// list.
 test('selected practice reaches a unit sitting through the course page', async ({
   page,
 }) => {
@@ -14,6 +15,8 @@ test('selected practice reaches a unit sitting through the course page', async (
   await page.getByRole('button', { name: 'English A2' }).click();
   await expect(page.locator('body')).toHaveAttribute('data-fixture', 'course');
 
+  await page.getByRole('button', { name: 'Green Line 3' }).click();
+  await expect(page.locator('body')).toHaveAttribute('data-fixture', 'book');
   await page.getByRole('button', { name: 'Unit 3 – Holidays' }).click();
   await expect(page.locator('body')).toHaveAttribute('data-fixture', 'unit');
   await expect(page.getByRole('heading', { name: 'Vokabeln' })).toBeVisible();

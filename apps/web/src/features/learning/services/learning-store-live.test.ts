@@ -11,6 +11,8 @@ import { LearningStore } from './learning-store';
 
 const courseA = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const courseB = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+const bookA = 'abababab-abab-4bab-8bab-abababababab';
+const bookB = 'babababa-baba-4aba-8aba-babababababa';
 const unitA = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
 const unitB = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
 const entryA = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
@@ -28,16 +30,22 @@ const seed = Effect.gen(function* () {
       (${courseB}, 'English', 'en', '{to_target,to_native}')
   `;
   yield* sql`
-    insert into units (id, course_id, name, position)
+    insert into books (id, course_id, name, position)
     values
-      (${unitA}, ${courseA}, 'Unit A', 0),
-      (${unitB}, ${courseB}, 'Unit B', 0)
+      (${bookA}, ${courseA}, 'Book A', 0),
+      (${bookB}, ${courseB}, 'Book B', 0)
+  `;
+  yield* sql`
+    insert into units (id, course_id, book_id, name, position)
+    values
+      (${unitA}, ${courseA}, ${bookA}, 'Unit A', 0),
+      (${unitB}, ${courseB}, ${bookB}, 'Unit B', 0)
   `;
   yield* sql`
     insert into entries (
-      id, course_id, unit_id, target_text, native_text
+      id, course_id, book_id, unit_id, target_text, native_text
     ) values (
-      ${entryA}, ${courseA}, ${unitA}, 'to look (at)', 'ansehen'
+      ${entryA}, ${courseA}, ${bookA}, ${unitA}, 'to look (at)', 'ansehen'
     )
   `;
   yield* sql`
@@ -74,10 +82,7 @@ describe('Learning selection store live', () => {
             { direction: 'to_target', unintroduced: 1 },
           ]);
           expect(selection.items).toEqual([
-            expect.objectContaining({
-              cardId: targetCard,
-              unitId: unitA,
-            }),
+            expect.objectContaining({ cardId: targetCard }),
           ]);
           const wrongCourse = yield* service.getSelection(courseB, {
             entryIds: [entryA],
@@ -100,7 +105,8 @@ describe('LearningStore live', () => {
         return Effect.gen(function* () {
           yield* seed.pipe(Effect.provide(databaseLayer));
           const service = yield* LearningService;
-          const pass = yield* service.getPass(courseA, unitA);
+          const pass = yield* service.getPass(courseA, { unitId: unitA });
+          expect(pass.name).toBe('Unit A');
           expect(pass.items).toHaveLength(1);
           expect(pass.directions).toEqual([
             { direction: 'to_target', unintroduced: 1 },
@@ -108,25 +114,11 @@ describe('LearningStore live', () => {
           expect(pass.items[0]).toMatchObject({
             cardId: targetCard,
             direction: 'to_target',
-            unitId: unitA,
             textbookAnswers: ['to look (at)'],
           });
 
-          const wrongCourse = yield* Effect.either(
-            service.getPass(courseB, unitA),
-          );
-          const wrongUnit = yield* Effect.either(
-            service.introduce(courseA, unitB, targetCard),
-          );
-          expect(wrongCourse._tag === 'Left' && wrongCourse.left._tag).toBe(
-            'LearningUnitNotFoundError',
-          );
-          expect(wrongUnit._tag === 'Left' && wrongUnit.left._tag).toBe(
-            'LearningCardNotFoundError',
-          );
-
-          yield* service.introduce(courseA, unitA, targetCard);
-          yield* service.introduce(courseA, unitA, targetCard);
+          yield* service.introduce(courseA, targetCard);
+          yield* service.introduce(courseA, targetCard);
           const cards = yield* Effect.gen(function* () {
             const sql = yield* Database;
             return yield* sql<{
@@ -155,7 +147,9 @@ describe('LearningStore live', () => {
               where id = ${courseA}
             `;
           }).pipe(Effect.provide(databaseLayer));
-          const reversePass = yield* service.getPass(courseA, unitA);
+          const reversePass = yield* service.getPass(courseA, {
+            unitId: unitA,
+          });
           expect(reversePass.directions).toEqual([
             { direction: 'to_native', unintroduced: 1 },
           ]);
@@ -166,6 +160,79 @@ describe('LearningStore live', () => {
               textbookAnswers: ['ansehen'],
             }),
           ]);
+        }).pipe(Effect.provide(serviceLayer));
+      }),
+    );
+  });
+});
+
+describe('LearningStore live places', () => {
+  it('refuses a unit or card from another course', async () => {
+    await Effect.runPromise(
+      withMigratedTestDatabase((database) => {
+        const databaseLayer = testDatabaseLayer(database.url);
+        const serviceLayer = LearningService.Default.pipe(
+          Layer.provide(LearningStore.live.pipe(Layer.provide(databaseLayer))),
+        );
+        return Effect.gen(function* () {
+          yield* seed.pipe(Effect.provide(databaseLayer));
+          const service = yield* LearningService;
+          const wrongCourse = yield* Effect.either(
+            service.getPass(courseB, { unitId: unitA }),
+          );
+          const wrongCourseCard = yield* Effect.either(
+            service.introduce(courseB, targetCard),
+          );
+          expect(wrongCourse._tag === 'Left' && wrongCourse.left._tag).toBe(
+            'LearningPlaceNotFoundError',
+          );
+          expect(
+            wrongCourseCard._tag === 'Left' && wrongCourseCard.left._tag,
+          ).toBe('LearningCardNotFoundError');
+        }).pipe(Effect.provide(serviceLayer));
+      }),
+    );
+  });
+
+  it("keeps a book's own words apart from the words in its units", async () => {
+    const directEntry = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
+    await Effect.runPromise(
+      withMigratedTestDatabase((database) => {
+        const databaseLayer = testDatabaseLayer(database.url);
+        const serviceLayer = LearningService.Default.pipe(
+          Layer.provide(LearningStore.live.pipe(Layer.provide(databaseLayer))),
+        );
+        return Effect.gen(function* () {
+          yield* seed.pipe(Effect.provide(databaseLayer));
+          yield* Effect.gen(function* () {
+            const sql = yield* Database;
+            yield* sql`
+              insert into entries (
+                id, course_id, book_id, target_text, native_text
+              ) values (
+                ${directEntry}, ${courseA}, ${bookA}, 'to stare', 'starren'
+              )
+            `;
+            yield* sql`
+              insert into cards (entry_id, direction)
+              values (${directEntry}, 'to_target')
+            `;
+          }).pipe(Effect.provide(databaseLayer));
+          const service = yield* LearningService;
+
+          const bookPass = yield* service.getPass(courseA, { bookId: bookA });
+          expect(bookPass.name).toBe('Book A');
+          expect(bookPass.items.map((item) => item.entryId)).toEqual([
+            directEntry,
+          ]);
+          const unitPass = yield* service.getPass(courseA, { unitId: unitA });
+          expect(unitPass.items.map((item) => item.entryId)).toEqual([entryA]);
+          const wrongCourse = yield* Effect.either(
+            service.getPass(courseB, { bookId: bookA }),
+          );
+          expect(wrongCourse._tag === 'Left' && wrongCourse.left._tag).toBe(
+            'LearningPlaceNotFoundError',
+          );
         }).pipe(Effect.provide(serviceLayer));
       }),
     );
@@ -184,12 +251,12 @@ describe('LearningStore live', () => {
             const sql = yield* Database;
             yield* sql`
               insert into entries (
-                id, course_id, unit_id, target_text, native_text
+                id, course_id, book_id, unit_id, target_text, native_text
               )
               select (
                   '30000000-0000-4000-8000-' || lpad(n::text, 12, '0')
                 )::uuid,
-                ${courseB}, ${unitB}, 'target ' || n, 'native ' || n
+                ${courseB}, ${bookB}, ${unitB}, 'target ' || n, 'native ' || n
               from generate_series(1, ${largeBatchCount}) as n
             `;
             yield* sql`
@@ -204,7 +271,7 @@ describe('LearningStore live', () => {
           }).pipe(Effect.provide(databaseLayer));
 
           const service = yield* LearningService;
-          const first = yield* service.getPass(courseB, unitB);
+          const first = yield* service.getPass(courseB, { unitId: unitB });
           expect(first.directions).toEqual([
             { direction: 'to_target', unintroduced: largeBatchCount },
             { direction: 'to_native', unintroduced: largeBatchCount },
@@ -216,10 +283,10 @@ describe('LearningStore live', () => {
 
           yield* Effect.forEach(
             targetItems,
-            (item) => service.introduce(courseB, unitB, item.cardId),
+            (item) => service.introduce(courseB, item.cardId),
             { concurrency: 'unbounded' },
           );
-          const second = yield* service.getPass(courseB, unitB);
+          const second = yield* service.getPass(courseB, { unitId: unitB });
           expect(
             second.items.filter((item) => item.direction === 'to_target'),
           ).toHaveLength(remainingBatchCount);

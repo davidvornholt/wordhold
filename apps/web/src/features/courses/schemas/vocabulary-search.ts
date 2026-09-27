@@ -4,7 +4,8 @@ const VocabularySearch = Schema.Struct({
   filter: Schema.optional(
     Schema.Literal('all', 'due', 'first-reviews', 'difficult'),
   ),
-  unit: Schema.optional(Schema.UUID),
+  // A book or unit to show on arrival.
+  place: Schema.optional(Schema.UUID),
 });
 
 export type VocabularyFilter = NonNullable<typeof VocabularySearch.Type.filter>;

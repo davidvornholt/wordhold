@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "units_id_book" ON "units" USING btree ("id","book_id");

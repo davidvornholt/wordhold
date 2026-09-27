@@ -6,12 +6,13 @@ import { Button } from '../../../shared/ui/button';
 import type { VocabularyEntry } from '../schemas/course-units';
 import type { CreatedVocabularyEntry } from '../services/vocabulary-entry-service';
 import { NewVocabularyForm } from './new-vocabulary-form';
-import { UnitVocabularyEmpty } from './unit-vocabulary-empty';
+import { PlaceVocabularyEmpty } from './place-vocabulary-empty';
 import type { NewVocabularyEntryDraft } from './use-new-vocabulary-entry';
 import { VocabularyLibrary } from './vocabulary-library';
 import type { SuggestTranslation } from './word-pair-fields';
 
-type UnitVocabularyProps = {
+type PlaceVocabularyProps = {
+  readonly place: 'book' | 'unit';
   readonly entries: ReadonlyArray<VocabularyEntry>;
   // Every entry of the course, which a typed word is checked against.
   readonly courseEntries: ReadonlyArray<VocabularyEntry>;
@@ -39,11 +40,13 @@ type UnitVocabularyProps = {
   readonly suggestTranslation: SuggestTranslation;
 };
 
-// The unit's vocabulary with the one way to grow it by hand. The form sits
-// under the heading, above the list, and stays open until the learner is
-// done, so several words can be typed in a row and appear below as they are
-// saved. An empty unit offers typing next to photographing.
-export const UnitVocabulary = ({
+// A unit's vocabulary, or the words directly in a book, with the one way to
+// grow it by hand. The form sits under the heading, above the list, and stays
+// open until the learner is done, so several words can be typed in a row and
+// appear below as they are saved. An empty book or unit offers typing next to
+// photographing.
+export const PlaceVocabulary = ({
+  place,
   entries,
   courseEntries,
   enabledDirections,
@@ -56,7 +59,7 @@ export const UnitVocabulary = ({
   generateDraftExample,
   translateDraftExample,
   suggestTranslation,
-}: UnitVocabularyProps) => {
+}: PlaceVocabularyProps) => {
   const [adding, setAdding] = useState(false);
   const headingId = useId();
   const isEmpty = entries.length === 0;
@@ -80,19 +83,20 @@ export const UnitVocabulary = ({
         generateExample={generateExample}
         initialFilter="all"
         renderStudyAction={renderStudyAction}
-        scope="unit"
+        scope="place"
         targetLanguage={targetLanguage}
       />
     );
   } else if (!adding) {
     content = (
-      <UnitVocabularyEmpty
+      <PlaceVocabularyEmpty
         addAction={
           <Button onClick={() => setAdding(true)} variant="outline">
             Vokabel eintragen
           </Button>
         }
         importAction={importAction}
+        place={place}
       />
     );
   }

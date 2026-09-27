@@ -9,6 +9,7 @@ import { TtsError } from '@wordhold/ai/tts/error';
 import { Effect, Either, Layer } from 'effect';
 import { Storage, type StorageShape } from '../../../shared/storage/server';
 import {
+  CourseBookNotFoundError,
   CourseSettingsNotFoundError,
   CourseUnitNotFoundError,
   VocabularyEntryConflictError,
@@ -20,11 +21,13 @@ import {
 } from './vocabulary-entry-store';
 
 const courseId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+const bookId = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
 const unitId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const entryId = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
 
 const input = {
   courseId,
+  bookId,
   unitId,
   targetText: 'la mémoire',
   nativeText: 'die Erinnerung',
@@ -65,7 +68,7 @@ const runService = <A, E>(
     Layer.succeed(VocabularyEntryStore, {
       readTargetLanguage: () =>
         Effect.succeed(courseKnown ? ('fr' as const) : undefined),
-      readUnit: () =>
+      readPlace: () =>
         Effect.succeed(
           courseKnown
             ? { targetLanguage: 'fr' as const, unitName: 'Unité 1' }
@@ -147,7 +150,7 @@ describe('VocabularyEntryService', () => {
     expect(audioReferences).toHaveLength(0);
   });
 
-  it('names a repeated word and a vanished unit as typed failures', async () => {
+  it('names a repeated word and a vanished place as typed failures', async () => {
     const duplicate = await runService((service) => service.create(input), {
       createResult: { kind: 'duplicate', location: 'Green Line 3 · Unit 1' },
     });
@@ -156,11 +159,18 @@ describe('VocabularyEntryService', () => {
       duplicate.result._tag === 'Left' ? duplicate.result.left : undefined,
     ).toBeInstanceOf(VocabularyEntryConflictError);
     const unitMissing = await runService((service) => service.create(input), {
-      createResult: { kind: 'unit-missing' },
+      createResult: { kind: 'place-missing' },
     });
     expect(
       unitMissing.result._tag === 'Left' ? unitMissing.result.left : undefined,
     ).toBeInstanceOf(CourseUnitNotFoundError);
+    const bookMissing = await runService(
+      (service) => service.create({ ...input, unitId: null }),
+      { createResult: { kind: 'place-missing' } },
+    );
+    expect(
+      bookMissing.result._tag === 'Left' ? bookMissing.result.left : undefined,
+    ).toBeInstanceOf(CourseBookNotFoundError);
     const courseMissing = await runService((service) => service.create(input), {
       courseKnown: false,
     });
@@ -210,6 +220,7 @@ describe('VocabularyEntryService', () => {
     const suggested = await runService((service) =>
       service.suggestTranslation({
         courseId,
+        bookId,
         unitId,
         text: 'la mémoire',
         given: 'target',
@@ -230,6 +241,7 @@ describe('VocabularyEntryService', () => {
       (service) =>
         service.suggestTranslation({
           courseId,
+          bookId,
           unitId,
           text: 'la mémoire',
           given: 'target',

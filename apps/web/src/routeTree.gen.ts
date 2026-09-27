@@ -25,6 +25,8 @@ import { Route as PagesPageIdVerifyRouteImport } from './routes/pages/$pageId/ve
 import { Route as ApiEntriesEntryIdAudioRouteImport } from './routes/api/entries/$entryId/audio'
 import { Route as ApiEntriesEntryIdExampleAudioRouteImport } from './routes/api/entries/$entryId/example-audio'
 import { Route as ApiPagesPageIdImageRouteImport } from './routes/api/pages/$pageId/image'
+import { Route as CoursesCourseIdBooksBookIdIndexRouteImport } from './routes/courses/$courseId/books/$bookId/index'
+import { Route as CoursesCourseIdBooksBookIdLearnRouteImport } from './routes/courses/$courseId/books/$bookId/learn'
 import { Route as CoursesCourseIdUnitsUnitIdIndexRouteImport } from './routes/courses/$courseId/units/$unitId/index'
 import { Route as CoursesCourseIdUnitsUnitIdLearnRouteImport } from './routes/courses/$courseId/units/$unitId/learn'
 
@@ -110,6 +112,18 @@ const ApiPagesPageIdImageRoute = ApiPagesPageIdImageRouteImport.update({
   path: '/$pageId/image',
   getParentRoute: () => ApiPagesRoute,
 } as any)
+const CoursesCourseIdBooksBookIdIndexRoute =
+  CoursesCourseIdBooksBookIdIndexRouteImport.update({
+    id: '/courses/$courseId/books/$bookId/',
+    path: '/courses/$courseId/books/$bookId/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const CoursesCourseIdBooksBookIdLearnRoute =
+  CoursesCourseIdBooksBookIdLearnRouteImport.update({
+    id: '/courses/$courseId/books/$bookId/learn',
+    path: '/courses/$courseId/books/$bookId/learn',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const CoursesCourseIdUnitsUnitIdIndexRoute =
   CoursesCourseIdUnitsUnitIdIndexRouteImport.update({
     id: '/courses/$courseId/units/$unitId/',
@@ -140,7 +154,9 @@ export interface FileRoutesByFullPath {
   '/api/entries/$entryId/audio': typeof ApiEntriesEntryIdAudioRoute
   '/api/entries/$entryId/example-audio': typeof ApiEntriesEntryIdExampleAudioRoute
   '/api/pages/$pageId/image': typeof ApiPagesPageIdImageRoute
+  '/courses/$courseId/books/$bookId/learn': typeof CoursesCourseIdBooksBookIdLearnRoute
   '/courses/$courseId/units/$unitId/learn': typeof CoursesCourseIdUnitsUnitIdLearnRoute
+  '/courses/$courseId/books/$bookId/': typeof CoursesCourseIdBooksBookIdIndexRoute
   '/courses/$courseId/units/$unitId/': typeof CoursesCourseIdUnitsUnitIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -160,7 +176,9 @@ export interface FileRoutesByTo {
   '/api/entries/$entryId/audio': typeof ApiEntriesEntryIdAudioRoute
   '/api/entries/$entryId/example-audio': typeof ApiEntriesEntryIdExampleAudioRoute
   '/api/pages/$pageId/image': typeof ApiPagesPageIdImageRoute
+  '/courses/$courseId/books/$bookId/learn': typeof CoursesCourseIdBooksBookIdLearnRoute
   '/courses/$courseId/units/$unitId/learn': typeof CoursesCourseIdUnitsUnitIdLearnRoute
+  '/courses/$courseId/books/$bookId': typeof CoursesCourseIdBooksBookIdIndexRoute
   '/courses/$courseId/units/$unitId': typeof CoursesCourseIdUnitsUnitIdIndexRoute
 }
 export interface FileRoutesById {
@@ -181,7 +199,9 @@ export interface FileRoutesById {
   '/api/entries/$entryId/audio': typeof ApiEntriesEntryIdAudioRoute
   '/api/entries/$entryId/example-audio': typeof ApiEntriesEntryIdExampleAudioRoute
   '/api/pages/$pageId/image': typeof ApiPagesPageIdImageRoute
+  '/courses/$courseId/books/$bookId/learn': typeof CoursesCourseIdBooksBookIdLearnRoute
   '/courses/$courseId/units/$unitId/learn': typeof CoursesCourseIdUnitsUnitIdLearnRoute
+  '/courses/$courseId/books/$bookId/': typeof CoursesCourseIdBooksBookIdIndexRoute
   '/courses/$courseId/units/$unitId/': typeof CoursesCourseIdUnitsUnitIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -203,7 +223,9 @@ export interface FileRouteTypes {
     | '/api/entries/$entryId/audio'
     | '/api/entries/$entryId/example-audio'
     | '/api/pages/$pageId/image'
+    | '/courses/$courseId/books/$bookId/learn'
     | '/courses/$courseId/units/$unitId/learn'
+    | '/courses/$courseId/books/$bookId/'
     | '/courses/$courseId/units/$unitId/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -223,7 +245,9 @@ export interface FileRouteTypes {
     | '/api/entries/$entryId/audio'
     | '/api/entries/$entryId/example-audio'
     | '/api/pages/$pageId/image'
+    | '/courses/$courseId/books/$bookId/learn'
     | '/courses/$courseId/units/$unitId/learn'
+    | '/courses/$courseId/books/$bookId'
     | '/courses/$courseId/units/$unitId'
   id:
     | '__root__'
@@ -243,7 +267,9 @@ export interface FileRouteTypes {
     | '/api/entries/$entryId/audio'
     | '/api/entries/$entryId/example-audio'
     | '/api/pages/$pageId/image'
+    | '/courses/$courseId/books/$bookId/learn'
     | '/courses/$courseId/units/$unitId/learn'
+    | '/courses/$courseId/books/$bookId/'
     | '/courses/$courseId/units/$unitId/'
   fileRoutesById: FileRoutesById
 }
@@ -263,7 +289,9 @@ export interface RootRouteChildren {
   CoursesCourseIdIndexRoute: typeof CoursesCourseIdIndexRoute
   ApiEntriesEntryIdAudioRoute: typeof ApiEntriesEntryIdAudioRoute
   ApiEntriesEntryIdExampleAudioRoute: typeof ApiEntriesEntryIdExampleAudioRoute
+  CoursesCourseIdBooksBookIdLearnRoute: typeof CoursesCourseIdBooksBookIdLearnRoute
   CoursesCourseIdUnitsUnitIdLearnRoute: typeof CoursesCourseIdUnitsUnitIdLearnRoute
+  CoursesCourseIdBooksBookIdIndexRoute: typeof CoursesCourseIdBooksBookIdIndexRoute
   CoursesCourseIdUnitsUnitIdIndexRoute: typeof CoursesCourseIdUnitsUnitIdIndexRoute
 }
 
@@ -381,6 +409,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPagesPageIdImageRouteImport
       parentRoute: typeof ApiPagesRoute
     }
+    '/courses/$courseId/books/$bookId/': {
+      id: '/courses/$courseId/books/$bookId/'
+      path: '/courses/$courseId/books/$bookId'
+      fullPath: '/courses/$courseId/books/$bookId/'
+      preLoaderRoute: typeof CoursesCourseIdBooksBookIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/courses/$courseId/books/$bookId/learn': {
+      id: '/courses/$courseId/books/$bookId/learn'
+      path: '/courses/$courseId/books/$bookId/learn'
+      fullPath: '/courses/$courseId/books/$bookId/learn'
+      preLoaderRoute: typeof CoursesCourseIdBooksBookIdLearnRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/courses/$courseId/units/$unitId/': {
       id: '/courses/$courseId/units/$unitId/'
       path: '/courses/$courseId/units/$unitId'
@@ -426,7 +468,9 @@ const rootRouteChildren: RootRouteChildren = {
   CoursesCourseIdIndexRoute: CoursesCourseIdIndexRoute,
   ApiEntriesEntryIdAudioRoute: ApiEntriesEntryIdAudioRoute,
   ApiEntriesEntryIdExampleAudioRoute: ApiEntriesEntryIdExampleAudioRoute,
+  CoursesCourseIdBooksBookIdLearnRoute: CoursesCourseIdBooksBookIdLearnRoute,
   CoursesCourseIdUnitsUnitIdLearnRoute: CoursesCourseIdUnitsUnitIdLearnRoute,
+  CoursesCourseIdBooksBookIdIndexRoute: CoursesCourseIdBooksBookIdIndexRoute,
   CoursesCourseIdUnitsUnitIdIndexRoute: CoursesCourseIdUnitsUnitIdIndexRoute,
 }
 export const routeTree = rootRouteImport

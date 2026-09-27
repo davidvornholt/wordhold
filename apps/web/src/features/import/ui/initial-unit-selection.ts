@@ -20,8 +20,10 @@ export const initialUnitSelection = (
       : { kind: 'existing', unitId: existingUnit.id };
   }
 
+  // Without a heading on the page, words go where the last page went: the
+  // latest unit, or directly into a book that has no units, like a novel.
   const latestRealUnit = units.findLast((unit) => !unit.isHolding);
   return latestRealUnit === undefined
-    ? { kind: 'new', name: '' }
+    ? { kind: 'none' }
     : { kind: 'existing', unitId: latestRealUnit.id };
 };

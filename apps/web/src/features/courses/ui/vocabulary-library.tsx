@@ -4,11 +4,11 @@ import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
 import { Button } from '../../../shared/ui/button';
 import { cardClass } from '../../../shared/ui/surface-styles';
-import { unitLocation } from '../../../shared/vocabulary/book-name';
+import { wordLocation } from '../../../shared/vocabulary/book-name';
 import type { VocabularyEntry } from '../schemas/course-units';
 import type { VocabularyFilter } from '../schemas/vocabulary-search';
 import { matchesFilter } from './vocabulary-filter-logic';
-import { type UnitOptionGroup, VocabularyFilters } from './vocabulary-filters';
+import { type PlaceOption, VocabularyFilters } from './vocabulary-filters';
 import { VocabularySelectionBar } from './vocabulary-selection-bar';
 import { VocabularyUnitSection } from './vocabulary-unit-section';
 
@@ -16,12 +16,14 @@ type VocabularyLibraryProps = {
   readonly enabledDirections: ReadonlyArray<AnswerDirection>;
   readonly entries: ReadonlyArray<VocabularyEntry>;
   readonly initialFilter: VocabularyFilter;
-  // Course scope only: preselects the unit dropdown when arriving via a link.
-  readonly initialUnitId?: string;
-  // Course scope groups entries under "book · unit" headings with a unit
-  // dropdown, since two books may each have a unit with the same name; unit
-  // scope shows one flat list because every entry belongs to the same unit.
-  readonly scope: 'course' | 'unit';
+  // Course scope only: preselects the book or unit dropdown when arriving via
+  // a link.
+  readonly initialPlaceId?: string;
+  // Course scope groups entries under "book · unit" headings, or the book's
+  // name for words directly in a book, with a book and unit dropdown, since
+  // two books may each have a unit with the same name. Place scope shows one
+  // flat list because every entry lives in the same book or unit.
+  readonly scope: 'course' | 'place';
   readonly targetLanguage: LanguageCode;
   readonly renderStudyAction: (
     entryIds: ReadonlyArray<string>,
@@ -34,40 +36,52 @@ type VocabularyLibraryProps = {
 
 type VocabularySection = readonly [string, ReadonlyArray<VocabularyEntry>];
 
-// One section per unit, headed "book · unit" because two books may each have
-// a unit with the same name.
-const unitSections = (
+const placeOf = (entry: VocabularyEntry): string =>
+  entry.unitId ?? entry.bookId;
+
+// One section per unit and one for the words directly in a book, headed
+// "book · unit" or the book's name, because two books may each have a unit
+// with the same name.
+const placeSections = (
   entries: ReadonlyArray<VocabularyEntry>,
 ): ReadonlyArray<VocabularySection> =>
-  [...Map.groupBy(entries, (entry) => entry.unitId).values()].map(
-    (unitEntries) => {
-      const [first] = unitEntries;
-      return [
-        first === undefined ? '' : unitLocation(first.bookName, first.unitName),
-        unitEntries,
-      ] as const;
-    },
-  );
+  [...Map.groupBy(entries, placeOf).values()].map((placeEntries) => {
+    const [first] = placeEntries;
+    return [
+      first === undefined ? '' : wordLocation(first.bookName, first.unitName),
+      placeEntries,
+    ] as const;
+  });
 
-const unitOptionGroups = (
+// Each book, followed by its units. Choosing a book shows every word in it.
+const placeOptions = (
   entries: ReadonlyArray<VocabularyEntry>,
-): ReadonlyArray<UnitOptionGroup> =>
-  [...Map.groupBy(entries, (entry) => entry.bookId).values()].map(
-    (bookEntries) => ({
-      bookName: bookEntries[0]?.bookName ?? '',
-      units: [
-        ...new Map(
-          bookEntries.map((entry) => [entry.unitId, entry.unitName] as const),
-        ).entries(),
+): ReadonlyArray<PlaceOption> => [
+  ...new Map(
+    entries.flatMap(
+      (entry): ReadonlyArray<PlaceOption> => [
+        [entry.bookId, entry.bookName],
+        ...(entry.unitId === null || entry.unitName === null
+          ? []
+          : [
+              [
+                entry.unitId,
+                wordLocation(entry.bookName, entry.unitName),
+              ] as const,
+            ]),
       ],
-    }),
-  );
+    ),
+  ).entries(),
+];
+
+const isInPlace = (entry: VocabularyEntry, placeId: string): boolean =>
+  entry.bookId === placeId || entry.unitId === placeId;
 
 export const VocabularyLibrary = ({
   enabledDirections,
   entries,
   initialFilter,
-  initialUnitId,
+  initialPlaceId,
   scope,
   targetLanguage,
   renderStudyAction,
@@ -75,8 +89,11 @@ export const VocabularyLibrary = ({
 }: VocabularyLibraryProps) => {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<VocabularyFilter>(initialFilter);
-  const [unitFilter, setUnitFilter] = useState(
-    entries.find((entry) => entry.unitId === initialUnitId)?.unitId ?? 'all',
+  const [placeFilter, setPlaceFilter] = useState(
+    initialPlaceId !== undefined &&
+      entries.some((entry) => isInPlace(entry, initialPlaceId))
+      ? initialPlaceId
+      : 'all',
   );
   const [selected, setSelected] = useState<ReadonlyArray<string>>([]);
   const now = useMemo(() => new Date(), []);
@@ -86,17 +103,18 @@ export const VocabularyLibrary = ({
       needle === '' ||
       entry.targetText.toLocaleLowerCase('de-DE').includes(needle) ||
       entry.nativeText.toLocaleLowerCase('de-DE').includes(needle);
-    const matchesUnit =
-      scope === 'unit' || unitFilter === 'all' || entry.unitId === unitFilter;
+    const matchesPlace =
+      scope === 'place' ||
+      placeFilter === 'all' ||
+      isInPlace(entry, placeFilter);
     return (
       matchesQuery &&
-      matchesUnit &&
+      matchesPlace &&
       matchesFilter(entry, enabledDirections, filter, now)
     );
   });
   const sections: ReadonlyArray<VocabularySection> =
-    scope === 'course' ? unitSections(visible) : [['Alle auswählen', visible]];
-  const unitOptions = unitOptionGroups(entries);
+    scope === 'course' ? placeSections(visible) : [['Alle auswählen', visible]];
   const toggleEntry = (entryId: string) =>
     setSelected((current) =>
       current.includes(entryId)
@@ -127,12 +145,12 @@ export const VocabularyLibrary = ({
         onFilterChange={setFilter}
         onQueryChange={setQuery}
         query={query}
-        unitSelect={
+        placeSelect={
           scope === 'course'
             ? {
-                value: unitFilter,
-                options: unitOptions,
-                onChange: setUnitFilter,
+                value: placeFilter,
+                options: placeOptions(entries),
+                onChange: setPlaceFilter,
               }
             : undefined
         }

@@ -14,6 +14,10 @@ The books rollout has two deployable phases so existing units stay readable whil
 
 Before deploying phase two, run `SELECT count(*) FROM units WHERE book_id IS NULL;` in every deployed database and record that it returns exactly `0`. The generated phase-two migration makes `units.book_id` required.
 
+The entries rollout follows the same two phases so a word can live directly in a book without a unit. Phase one adds a nullable `entries.book_id` and makes `entries.unit_id` optional. `db:migrate` then files every word without a book into its unit's book, after filing units into books. The step is idempotent and runs on every migration.
+
+Before deploying phase two, run `SELECT count(*) FROM entries WHERE book_id IS NULL;` in every deployed database and record that it returns exactly `0`. The generated phase-two migration makes `entries.book_id` required.
+
 The learning-pass migration adds nullable `cards.introduced_at`. After applying it, run `bun run --cwd packages/db db:backfill-introductions` once in each deployed database. The command preserves the review timestamp for every card already answered, leaves untouched cards null so they enter the learning pass, supports safe retries, and fails through a typed Effect error if it cannot prove completion.
 
 The import-session migration also repairs batches created before the expected page count was persisted. `db:migrate` runs that idempotent repair after Drizzle migrations, so existing pages in one session receive their observed session count before the ordered review checks use it.

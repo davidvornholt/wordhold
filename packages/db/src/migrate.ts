@@ -93,6 +93,21 @@ const fileUnitsIntoBooks = (database: ReturnType<typeof makeDrizzle>) =>
     catch: migrationError,
   });
 
+// Runs after units are filed, so every unit already has its book.
+const fileEntriesIntoBooks = (database: ReturnType<typeof makeDrizzle>) =>
+  Effect.tryPromise({
+    try: () =>
+      database.execute(sql`
+        update entries as entry
+        set book_id = unit.book_id
+        from units as unit
+        where entry.book_id is null
+          and unit.id = entry.unit_id
+          and unit.book_id is not null
+      `),
+    catch: migrationError,
+  });
+
 export const migrateDatabase = (url: string) =>
   Effect.acquireUseRelease(
     Effect.try({
@@ -110,6 +125,7 @@ export const migrateDatabase = (url: string) =>
         Effect.flatMap(() => backfillImportExpectedCounts(database)),
         Effect.flatMap(() => validateImportPositionConstraint(database)),
         Effect.flatMap(() => fileUnitsIntoBooks(database)),
+        Effect.flatMap(() => fileEntriesIntoBooks(database)),
       ),
     (database) => Effect.promise(() => database.$client.end()),
   );

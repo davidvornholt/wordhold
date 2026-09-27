@@ -115,16 +115,9 @@ test('books can be added and renamed while editing the course', async ({
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
 });
 
-test('the course page opens books with work left and folds finished ones', async ({
+test('the course page explains how a course without books starts', async ({
   page,
 }) => {
-  await page.goto('/?state=course');
-  await expect(page.getByText('Unit 3 – Holidays')).toBeVisible();
-  await expect(page.getByText('Unit 2 – School')).toBeHidden();
-  await page.getByText('Green Line 2').click();
-  await expect(page.getByText('Unit 2 – School')).toBeVisible();
-  assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
-
   await page.goto('/?state=course-no-books');
   await expect(
     page.getByText('Dieser Kurs hat noch keine Bücher.', { exact: false }),

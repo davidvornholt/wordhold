@@ -1,39 +1,35 @@
-import { createFileRoute, useRouter } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
 import {
-  createVocabularyEntry,
-  generateVocabularyDraftExample,
-  generateVocabularyExample,
   getCourseDirections,
   getCourseOutline,
   listCourseVocabulary,
-  suggestVocabularyTranslation,
-  translateVocabularyDraftExample,
 } from '../../../../../features/courses/services/server-fns';
-import { UnitDirectionPlan } from '../../../../../features/courses/ui/unit-direction-plan';
-import { unitProgressSummary } from '../../../../../features/courses/ui/unit-status';
-import { UnitVocabulary } from '../../../../../features/courses/ui/unit-vocabulary';
+import { progressSummary } from '../../../../../features/courses/ui/progress-status';
 import { getCourse } from '../../../../../features/import/server-fns';
-import { directionLabel } from '../../../../../shared/directions';
-import { countNoun } from '../../../../../shared/format/count';
 import { germanLabels } from '../../../../../shared/languages';
-import { readyCardsInNextSection } from '../../../../../shared/practice/session-policy';
-import { itemsInNextSection } from '../../../../../shared/session/section-policy';
-import { ActionLink } from '../../../../../shared/ui/action-link';
 import { BackLink } from '../../../../../shared/ui/back-link';
 import { PageLayout } from '../../../../../shared/ui/page-layout';
 import { cardClass } from '../../../../../shared/ui/surface-styles';
+import { PlaceDirectionPlan, PlaceWords } from '../../-place-screen';
 
 // One screen per unit: progress, the unit's actions, and its vocabulary as a
 // selectable list — no separate filtered Vokabelliste to jump to.
 const UnitScreen = () => {
   const { book, course, courseEntries, directions, unit, unitEntries } =
     Route.useLoaderData();
-  const router = useRouter();
-  const backControl = (
-    <BackLink params={{ courseId: course.id }} to="/courses/$courseId">
-      {course.name}
-    </BackLink>
-  );
+  const backControl =
+    book === undefined ? (
+      <BackLink params={{ courseId: course.id }} to="/courses/$courseId">
+        {course.name}
+      </BackLink>
+    ) : (
+      <BackLink
+        params={{ courseId: course.id, bookId: book.id }}
+        to="/courses/$courseId/books/$bookId"
+      >
+        {book.name}
+      </BackLink>
+    );
 
   if (unit === undefined) {
     return (
@@ -46,106 +42,30 @@ const UnitScreen = () => {
   }
 
   const targetLabel = germanLabels[course.targetLanguage];
+  const place = { bookId: unit.bookId, unitId: unit.id };
   return (
     <PageLayout backControl={backControl} title={unit.name}>
       <p className="text-muted-foreground text-sm">
         {book === undefined
-          ? unitProgressSummary(unit)
-          : `${book.name} · ${unitProgressSummary(unit)}`}
+          ? progressSummary(unit)
+          : `${book.name} · ${progressSummary(unit)}`}
       </p>
       {unit.directions.length === 0 ? null : (
-        <UnitDirectionPlan
-          renderLearnAction={(progress, variant) => (
-            <ActionLink
-              className="w-full sm:w-fit"
-              params={{ courseId: course.id, unitId: unit.id }}
-              search={{ direction: progress.direction }}
-              to="/courses/$courseId/units/$unitId/learn"
-              variant={variant}
-            >
-              {`${countNoun(
-                itemsInNextSection(progress.unintroduced),
-                'Vokabel',
-                'Vokabeln',
-              )} kennenlernen${
-                variant === 'primary'
-                  ? ` · ${directionLabel(progress.direction, targetLabel)}`
-                  : ''
-              }`}
-            </ActionLink>
-          )}
-          renderScheduledAction={(progress, variant) => (
-            <ActionLink
-              className="w-full sm:w-fit"
-              params={{ courseId: course.id }}
-              search={{ direction: progress.direction, unit: unit.id }}
-              to="/courses/$courseId/practice"
-              variant={variant}
-            >
-              {countNoun(
-                readyCardsInNextSection(progress.due, progress.firstReviews),
-                'Karte',
-                'Karten',
-              )}{' '}
-              üben · {directionLabel(progress.direction, targetLabel)}
-            </ActionLink>
-          )}
+        <PlaceDirectionPlan
+          courseId={course.id}
+          place={place}
+          progress={unit}
           targetLabel={targetLabel}
-          unit={unit}
         />
       )}
-      <UnitVocabulary
-        createEntry={async (draft) => {
-          const created = await createVocabularyEntry({
-            data: { courseId: course.id, unitId: unit.id, ...draft },
-          });
-          await router.invalidate();
-          return created;
-        }}
+      <PlaceWords
         courseEntries={courseEntries}
+        courseId={course.id}
         enabledDirections={directions}
         entries={unitEntries}
-        generateDraftExample={(targetText, nativeText) =>
-          generateVocabularyDraftExample({
-            data: { courseId: course.id, targetText, nativeText },
-          })
-        }
-        generateExample={(entryId) =>
-          generateVocabularyExample({ data: entryId })
-        }
-        importAction={
-          <ActionLink
-            params={{ courseId: course.id }}
-            to="/courses/$courseId/import"
-          >
-            Seite fotografieren
-          </ActionLink>
-        }
-        renderStudyAction={(entryIds, intent) => (
-          <ActionLink
-            params={{ courseId: course.id }}
-            search={
-              entryIds.length === unitEntries.length
-                ? { mode: intent, unit: unit.id }
-                : { entries: entryIds.join(','), mode: intent }
-            }
-            to="/courses/$courseId/study"
-          >
-            Auswahl {intent === 'learn' ? 'kennenlernen' : 'üben'}
-          </ActionLink>
-        )}
-        suggestTranslation={(text, given) =>
-          suggestVocabularyTranslation({
-            data: { courseId: course.id, unitId: unit.id, text, given },
-          })
-        }
+        place={place}
         targetLabel={targetLabel}
         targetLanguage={course.targetLanguage}
-        translateDraftExample={(targetText) =>
-          translateVocabularyDraftExample({
-            data: { courseId: course.id, targetText },
-          })
-        }
       />
     </PageLayout>
   );

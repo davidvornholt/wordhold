@@ -13,8 +13,9 @@ export const languageCodes = ['de', 'en', 'es', 'fr'] as const;
 export type LanguageCode = (typeof languageCodes)[number];
 export const languageEnum = pgEnum('language', languageCodes);
 
-// A course is one physical textbook: the organizing unit for pages, entries,
-// and practice sessions. Sessions are always course-scoped.
+// A course is one language the learner studies: the organizing unit for
+// books, pages, entries, and practice sessions. Sessions are always
+// course-scoped.
 export const courses = pgTable(
   'courses',
   {

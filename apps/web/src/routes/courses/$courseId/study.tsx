@@ -14,17 +14,22 @@ import { ActionLink } from '../../../shared/ui/action-link';
 import { BackLink } from '../../../shared/ui/back-link';
 import { FocusLayout } from '../../../shared/ui/focus-layout';
 import { cardClass } from '../../../shared/ui/surface-styles';
-import { StudyLearning } from './-study-learning';
+import {
+  type CoursePlace,
+  PlaceBackLink,
+  PlacePageLink,
+} from './-course-place';
+import { StudyLearning, selectionSearch } from './-study-learning';
 import { loadStudyData } from './-study-loader';
 
 const StudySelectionControl = ({
   courseId,
-  unit,
+  place,
 }: {
   readonly courseId: string;
-  readonly unit: { readonly id: string } | undefined;
+  readonly place: CoursePlace | undefined;
 }) =>
-  unit === undefined ? (
+  place === undefined ? (
     <ActionLink
       params={{ courseId }}
       search={{ filter: 'all' }}
@@ -34,13 +39,13 @@ const StudySelectionControl = ({
       Neue Auswahl treffen
     </ActionLink>
   ) : (
-    <ActionLink
-      params={{ courseId, unitId: unit.id }}
-      to="/courses/$courseId/units/$unitId"
+    <PlacePageLink
+      courseId={courseId}
+      selection={place.selection}
       variant="quiet-muted"
     >
       Neue Auswahl treffen
-    </ActionLink>
+    </PlacePageLink>
   );
 
 const StudyScreen = () => {
@@ -50,15 +55,15 @@ const StudyScreen = () => {
     direction,
     learningPass,
     mode,
+    place,
     preview,
     selection,
     session,
-    unit,
   } = Route.useLoaderData();
   const targetLabel = germanLabels[course.targetLanguage];
   const navigating = useRouterState({ select: (state) => state.isLoading });
   const backControl =
-    unit === undefined ? (
+    place === undefined ? (
       <BackLink
         params={{ courseId: course.id }}
         search={{ filter: 'all' }}
@@ -67,20 +72,17 @@ const StudyScreen = () => {
         Vokabelliste
       </BackLink>
     ) : (
-      <BackLink
-        params={{ courseId: course.id, unitId: unit.id }}
-        to="/courses/$courseId/units/$unitId"
-      >
-        {unit.name}
-      </BackLink>
+      <PlaceBackLink courseId={course.id} selection={place.selection}>
+        {place.name}
+      </PlaceBackLink>
     );
-  const titleSubject = unit === undefined ? 'Auswahl' : unit.name;
+  const titleSubject = place === undefined ? 'Auswahl' : place.name;
   const title = `${titleSubject} · ${mode === 'learn' ? 'Kennenlernen' : 'Üben'}`;
   let content: ReactNode;
   if (selection === null) {
     content = (
       <p className={`${cardClass} text-sm`}>
-        Wähle zuerst mindestens eine Vokabel oder eine Einheit aus.
+        Wähle zuerst mindestens eine Vokabel, ein Buch oder eine Einheit aus.
       </p>
     );
   } else if (mode === 'learn') {
@@ -95,9 +97,6 @@ const StudyScreen = () => {
       />
     );
   } else if (session === null) {
-    const entriesSearch =
-      'entryIds' in selection ? selection.entryIds.join(',') : undefined;
-    const unitSearch = 'unitId' in selection ? selection.unitId : undefined;
     content = (
       <>
         <p className="text-muted-foreground text-sm">
@@ -122,12 +121,7 @@ const StudyScreen = () => {
               className="w-fit"
               onClick={rememberDirection}
               params={{ courseId: course.id }}
-              search={{
-                direction: option.value,
-                entries: entriesSearch,
-                mode: 'practice',
-                unit: unitSearch,
-              }}
+              search={selectionSearch(selection, 'practice', option.value)}
               to="/courses/$courseId/study"
             >
               {navigating
@@ -141,7 +135,9 @@ const StudyScreen = () => {
   } else {
     content = (
       <SessionRunner
-        backControl={<StudySelectionControl courseId={course.id} unit={unit} />}
+        backControl={
+          <StudySelectionControl courseId={course.id} place={place} />
+        }
         emptyMessage="Diese Auswahl enthält keine Vokabeln."
         key={direction}
         mode="drill"

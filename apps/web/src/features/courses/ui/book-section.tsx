@@ -1,29 +1,29 @@
 import { type ReactNode, useId, useState } from 'react';
 import { Button } from '../../../shared/ui/button';
-import { cardClass } from '../../../shared/ui/surface-styles';
+import { cardClass, cardListClass } from '../../../shared/ui/surface-styles';
 import {
+  type CourseBook,
   type CourseOutline,
-  type CourseUnit,
   unitsByBook,
 } from '../schemas/course-units';
 import { type CourseBookActions, CourseBookEditor } from './course-book-editor';
-import { UnitList } from './unit-list';
-import { bookSummary, initiallyOpenBooks } from './unit-status';
+import { bookSummary } from './progress-status';
 
-type UnitSectionProps = CourseBookActions & {
+type BookSectionProps = CourseBookActions & {
   readonly outline: CourseOutline;
-  readonly renderUnitLink: (unit: CourseUnit) => ReactNode;
+  readonly renderBookLink: (book: CourseBook) => ReactNode;
 };
 
-export const UnitSection = ({
+// The course's books in course order. Each book's own page holds its words
+// and units.
+export const BookSection = ({
   outline,
-  renderUnitLink,
+  renderBookLink,
   ...actions
-}: UnitSectionProps) => {
+}: BookSectionProps) => {
   const [editing, setEditing] = useState(false);
   const headingId = useId();
   const groups = unitsByBook(outline.books, outline.units);
-  const initiallyOpen = initiallyOpenBooks(groups);
   let content: ReactNode;
   if (editing) {
     content = <CourseBookEditor initialOutline={outline} {...actions} />;
@@ -35,35 +35,27 @@ export const UnitSection = ({
       </p>
     );
   } else {
-    content = groups.map(({ book, units }) => (
-      <details
-        className="group"
-        key={book.id}
-        open={initiallyOpen.has(book.id)}
-      >
-        <summary className="flex min-h-11 cursor-pointer list-none flex-wrap items-baseline gap-x-3 focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
-          <span
-            aria-hidden="true"
-            className="text-muted-foreground group-open:rotate-90"
+    content = (
+      <ul className={cardListClass}>
+        {groups.map(({ book, units }) => (
+          <li
+            className="flex flex-col gap-1 px-4 py-3 hover:bg-muted/50"
+            key={book.id}
           >
-            ▸
-          </span>
-          <span className="font-display text-lg">{book.name}</span>
-          <span className="text-muted-foreground text-sm">
-            {bookSummary(units)}
-          </span>
-        </summary>
-        <div className="pt-3">
-          <UnitList renderUnitLink={renderUnitLink} units={units} />
-        </div>
-      </details>
-    ));
+            {renderBookLink(book)}
+            <span className="text-muted-foreground text-sm">
+              {bookSummary(book, units)}
+            </span>
+          </li>
+        ))}
+      </ul>
+    );
   }
   return (
     <section aria-labelledby={headingId} className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-4">
         <h2 className="font-display text-xl" id={headingId}>
-          Bücher und Einheiten
+          Bücher
         </h2>
         <Button
           aria-expanded={editing}

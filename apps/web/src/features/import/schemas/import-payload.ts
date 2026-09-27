@@ -23,11 +23,14 @@ export const BookSelection = Schema.Union(
 );
 export type BookSelectionData = typeof BookSelection.Type;
 
-// Vocabulary entries are filed into a chapter of the page's book, either one
-// that already exists or one being started with this page. The tag keeps the two apart at
-// the boundary, so the server never has to guess whether a name means "find
-// this" or "create this".
+// Vocabulary entries are filed directly into the page's book, or into one of
+// its chapters: either one that already exists or one being started with this
+// page. The tag keeps these apart at the boundary, so the server never has to
+// guess whether a name means "find this" or "create this".
 export const UnitSelection = Schema.Union(
+  Schema.Struct({
+    kind: Schema.Literal('none'),
+  }),
   Schema.Struct({
     kind: Schema.Literal('existing'),
     unitId: Schema.UUID,

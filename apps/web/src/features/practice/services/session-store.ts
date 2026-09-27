@@ -2,6 +2,10 @@ import { Database } from '@wordhold/db/client';
 import { Context, Effect, Layer } from 'effect';
 import { readyCardsInNextSection } from '../../../shared/practice/session-policy';
 import { sessionSectionSize } from '../../../shared/session/section-policy';
+import {
+  type PlaceSelectionData,
+  selectedEntries,
+} from '../../../shared/session/vocabulary-selection';
 import { PracticeDatabaseError } from '../errors/practice-errors';
 import type { PracticeItem } from '../schemas/practice-models';
 import type {
@@ -39,7 +43,7 @@ export class PracticeSessionStore extends Context.Tag(
     readonly loadScheduled: (
       courseId: string,
       direction: SessionDirection,
-      unitId: string | null,
+      place: PlaceSelectionData | null,
       now: Date,
     ) => Effect.Effect<
       {
@@ -65,10 +69,12 @@ export class PracticeSessionStore extends Context.Tag(
       const loadScheduled = (
         courseId: string,
         direction: SessionDirection,
-        unitId: string | null,
+        place: PlaceSelectionData | null,
         now: Date,
       ) => {
         const only = chosenDirection(direction);
+        const inPlace =
+          place === null ? sql`true` : selectedEntries(sql, place);
         return Effect.all(
           {
             items: sql<ItemRow>`
@@ -80,7 +86,7 @@ export class PracticeSessionStore extends Context.Tag(
               join entries e on e.id = c.entry_id
               join courses co on co.id = e.course_id
               where e.course_id = ${courseId}
-                and (${unitId}::uuid is null or e.unit_id = ${unitId}::uuid)
+                and ${inPlace}
                 and c.introduced_at is not null
                 and c.direction = any(co.directions)
                 and (${only}::answer_direction is null
@@ -105,7 +111,7 @@ export class PracticeSessionStore extends Context.Tag(
               join entries e on e.id = c.entry_id
               join courses co on co.id = e.course_id
               where e.course_id = ${courseId}
-                and (${unitId}::uuid is null or e.unit_id = ${unitId}::uuid)
+                and ${inPlace}
                 and c.introduced_at is not null
                 and c.direction = any(co.directions)
                 and (${only}::answer_direction is null
@@ -145,10 +151,7 @@ export class PracticeSessionStore extends Context.Tag(
         selection,
       }: StudyRequestData) => {
         const only = chosenDirection(direction);
-        const selectionClause =
-          'unitId' in selection
-            ? sql`e.unit_id = ${selection.unitId}`
-            : sql`e.id = any(${`{${selection.entryIds.join(',')}}`}::uuid[])`;
+        const selectionClause = selectedEntries(sql, selection);
         return sql<ItemRow>`
           select c.id as "cardId", c.revision, c.direction, c.state,
             e.id as "entryId",

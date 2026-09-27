@@ -12,7 +12,7 @@ import { BackLink } from '../../../shared/ui/back-link';
 import { PageLayout } from '../../../shared/ui/page-layout';
 
 const VocabularyScreen = () => {
-  const { course, directions, entries, filter, unit } = Route.useLoaderData();
+  const { course, directions, entries, filter, place } = Route.useLoaderData();
   return (
     <PageLayout
       backControl={
@@ -33,7 +33,7 @@ const VocabularyScreen = () => {
           generateVocabularyExample({ data: entryId })
         }
         initialFilter={filter}
-        initialUnitId={unit}
+        initialPlaceId={place}
         renderStudyAction={(entryIds, intent) => (
           <ActionLink
             params={{ courseId: course.id }}
@@ -54,7 +54,7 @@ export const Route = createFileRoute('/courses/$courseId/vocabulary')({
   validateSearch: parseVocabularySearch,
   loaderDeps: ({ search }) => ({
     filter: search.filter ?? 'all',
-    unit: search.unit,
+    place: search.place,
   }),
   loader: async ({ params, deps }) => {
     const [course, directions, entries] = await Promise.all([
@@ -67,7 +67,7 @@ export const Route = createFileRoute('/courses/$courseId/vocabulary')({
       directions,
       entries,
       filter: deps.filter,
-      unit: deps.unit,
+      place: deps.place,
     };
   },
   component: VocabularyScreen,
