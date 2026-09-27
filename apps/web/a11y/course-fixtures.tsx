@@ -1,4 +1,3 @@
-import { useRef } from 'react';
 import type {
   CourseOutline,
   VocabularyEntry,
@@ -23,7 +22,6 @@ import {
   mixedUnit,
   novelBook,
   novelEntries,
-  noWords,
   targetLabel,
   unintroducedUnit,
 } from './course-fixture-data';
@@ -59,7 +57,7 @@ type CourseFixtureProps = {
   readonly withoutBooks?: boolean;
 };
 
-const initialOutline = ({
+const fixtureOutline = ({
   emptyVocabulary,
   withoutBooks,
 }: CourseFixtureProps): CourseOutline => {
@@ -71,56 +69,10 @@ const initialOutline = ({
     : courseOutline;
 };
 
-// Book and unit edits change an in-memory outline, the way the server returns
-// the course's new outline after each change.
-const useFixtureOutline = (props: CourseFixtureProps) => {
-  const outlineRef = useRef(initialOutline(props));
-  const update = (
-    change: (current: CourseOutline) => CourseOutline,
-  ): Promise<CourseOutline> => {
-    outlineRef.current = change(outlineRef.current);
-    return Promise.resolve(outlineRef.current);
-  };
-  return {
-    outline: outlineRef.current,
-    createBook: (name: string) =>
-      update((current) => ({
-        ...current,
-        books: [
-          ...current.books,
-          { ...noWords, id: crypto.randomUUID(), name },
-        ],
-      })),
-    renameBook: (bookId: string, name: string) =>
-      update((current) => ({
-        ...current,
-        books: current.books.map((book) =>
-          book.id === bookId ? { ...book, name } : book,
-        ),
-      })),
-    createUnit: (bookId: string, name: string) =>
-      update((current) => ({
-        ...current,
-        units: [
-          ...current.units,
-          { ...emptyUnit, bookId, id: crypto.randomUUID(), name },
-        ],
-      })),
-    reorderUnits: (
-      bookId: string,
-      _expectedUnitIds: ReadonlyArray<string>,
-      unitIds: ReadonlyArray<string>,
-    ) =>
-      update((current) => ({
-        ...current,
-        units: [
-          ...current.units.filter((unit) => unit.bookId !== bookId),
-          ...unitIds.flatMap((unitId) =>
-            current.units.filter((unit) => unit.id === unitId),
-          ),
-        ],
-      })),
-  };
+// Whatever name is typed, the flow opens the one new book the fixtures have.
+const openNewBook = () => {
+  navigateToFixture('book-new');
+  return Promise.resolve();
 };
 
 export const CourseFixture = ({
@@ -128,25 +80,26 @@ export const CourseFixture = ({
   practiceAvailable = true,
   withoutBooks = false,
 }: CourseFixtureProps) => {
-  const outline = useFixtureOutline({ emptyVocabulary, withoutBooks });
+  const outline = fixtureOutline({ emptyVocabulary, withoutBooks });
   const noVocabulary = emptyVocabulary || withoutBooks;
   const { entries, createEntry } = useFixtureEntries(
     noVocabulary ? [] : novelEntries,
   );
-  const { books, units } = outline.outline;
+  const { books, units } = outline;
   return (
     <PageLayout
       backControl={fixtureBackControl('Übersicht', 'dashboard')}
       title="English A2"
     >
       <CourseOverview
-        {...outline}
+        createBook={openNewBook}
         importAction={
           noVocabulary
             ? null
             : fixtureControl('Seite fotografieren', 'import', 'quiet')
         }
         languageLabel="Englisch"
+        outline={outline}
         primaryAction={coursePrimaryAction(noVocabulary, practiceAvailable)}
         quickEntry={
           books.length === 0 ? null : (
@@ -160,7 +113,7 @@ export const CourseFixture = ({
               }
               entries={entries}
               generateExample={fixtureDraftExample}
-              outline={outline.outline}
+              outline={outline}
               suggestTranslation={(_, text, given) =>
                 fixtureTranslation(text, given)
               }

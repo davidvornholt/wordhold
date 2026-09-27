@@ -27,7 +27,7 @@ export const CourseGrid = ({
   renderImportAction,
 }: CourseGridProps) => (
   <section className="flex flex-col gap-4">
-    <h2 className="font-display text-xl">Kurse</h2>
+    <h2 className="font-display text-xl">Sprachen</h2>
     <ul className="grid gap-4 sm:grid-cols-2">
       {courses.map((course) => (
         <CourseCard

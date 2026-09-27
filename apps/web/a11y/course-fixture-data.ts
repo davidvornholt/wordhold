@@ -146,6 +146,13 @@ export const novelBook: CourseBook = {
   ],
 };
 
+// The book the course page opens after "Neues Buch": no words or units yet.
+export const newBook: CourseBook = {
+  ...noWords,
+  id: '00000000-0000-0000-0000-000000000014',
+  name: 'Harry Potter',
+};
+
 export const courseOutline: CourseOutline = {
   books: [earlierBook, currentBook, novelBook],
   units: [finishedUnit, mixedUnit, unintroducedUnit, emptyUnit],

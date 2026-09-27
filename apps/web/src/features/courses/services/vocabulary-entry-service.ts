@@ -30,7 +30,7 @@ export type CreatedVocabularyEntry = {
 };
 
 const courseMissing = new CourseSettingsNotFoundError({
-  message: 'Kurs nicht gefunden.',
+  message: 'Sprache nicht gefunden.',
 });
 
 const placeMissing = ({ unitId }: WordPlace) =>

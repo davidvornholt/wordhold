@@ -29,6 +29,7 @@ export const fixtureStates = [
   'course-no-books',
   'book',
   'book-novel',
+  'book-new',
   'unit',
   'unit-unintroduced',
   'unit-due',

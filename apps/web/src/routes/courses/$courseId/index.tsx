@@ -7,13 +7,10 @@ import {
 } from '../../../features/courses/schemas/course-units';
 import {
   createCourseBook,
-  createCourseUnit,
   createVocabularyEntry,
   generateVocabularyDraftExample,
   getCourseOutline,
   listCourseVocabulary,
-  renameCourseBook,
-  reorderCourseUnits,
   suggestVocabularyTranslation,
   translateVocabularyDraftExample,
 } from '../../../features/courses/services/server-fns';
@@ -97,8 +94,7 @@ const coursePrimaryAction = ({
 const CourseScreen = () => {
   const { course, entries, outline, stats } = Route.useLoaderData();
   const router = useRouter();
-  // Every edit returns the updated outline for the editor and refreshes the
-  // loader so the page behind the editor matches.
+  // A typed word refreshes the loader so the page's counts include it.
   const refreshed = async <A,>(update: Promise<A>): Promise<A> => {
     const next = await update;
     await router.invalidate();
@@ -113,14 +109,15 @@ const CourseScreen = () => {
       title={course.name}
     >
       <CourseOverview
-        createBook={(name) =>
-          refreshed(createCourseBook({ data: { courseId: course.id, name } }))
-        }
-        createUnit={(bookId, name) =>
-          refreshed(
-            createCourseUnit({ data: { courseId: course.id, bookId, name } }),
-          )
-        }
+        createBook={async (name) => {
+          const { bookId } = await createCourseBook({
+            data: { courseId: course.id, name },
+          });
+          await router.navigate({
+            params: { courseId: course.id, bookId },
+            to: '/courses/$courseId/books/$bookId',
+          });
+        }}
         importAction={
           isEmpty ? null : (
             <ActionLink
@@ -182,18 +179,6 @@ const CourseScreen = () => {
             {book.name}
           </Link>
         )}
-        renameBook={(bookId, name) =>
-          refreshed(
-            renameCourseBook({ data: { courseId: course.id, bookId, name } }),
-          )
-        }
-        reorderUnits={(bookId, expectedUnitIds, unitIds) =>
-          refreshed(
-            reorderCourseUnits({
-              data: { courseId: course.id, bookId, expectedUnitIds, unitIds },
-            }),
-          )
-        }
         settingsAction={
           <ActionLink
             params={{ courseId: course.id }}

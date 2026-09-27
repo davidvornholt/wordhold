@@ -35,7 +35,7 @@ const UnitScreen = () => {
     return (
       <PageLayout backControl={backControl} title={course.name}>
         <p className={`${cardClass} font-medium`}>
-          Diese Einheit gehört nicht zu diesem Kurs.
+          Diese Einheit gehört nicht zu dieser Sprache.
         </p>
       </PageLayout>
     );

@@ -1,11 +1,18 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute, Link, useRouter } from '@tanstack/react-router';
 import { useId } from 'react';
-import type { CourseUnit } from '../../../../../features/courses/schemas/course-units';
+import type {
+  CourseOutline,
+  CourseUnit,
+} from '../../../../../features/courses/schemas/course-units';
 import {
+  createCourseUnit,
   getCourseDirections,
   getCourseOutline,
   listCourseVocabulary,
+  renameCourseBook,
+  reorderCourseUnits,
 } from '../../../../../features/courses/services/server-fns';
+import { EditableBook } from '../../../../../features/courses/ui/book-editor';
 import { placeLinkClass } from '../../../../../features/courses/ui/place-link-styles';
 import { bookSummary } from '../../../../../features/courses/ui/progress-status';
 import { UnitList } from '../../../../../features/courses/ui/unit-list';
@@ -58,12 +65,20 @@ const BookUnits = ({ courseId, units, offerImport }: BookUnitsProps) => {
   );
 };
 
+const unitsOf = (
+  outline: CourseOutline,
+  bookId: string,
+): ReadonlyArray<CourseUnit> =>
+  outline.units.filter((unit) => unit.bookId === bookId);
+
 // One screen per book: the words that live directly in it, like a novel's,
 // followed by its units, like a textbook's. A book with units but no words of
-// its own shows only the units.
+// its own shows only the units. Editing renames the book and arranges or adds
+// its units.
 const BookScreen = () => {
-  const { book, course, courseEntries, directions, entries, units } =
+  const { book, books, course, courseEntries, directions, entries, units } =
     Route.useLoaderData();
+  const router = useRouter();
   const backControl = (
     <BackLink params={{ courseId: course.id }} to="/courses/$courseId">
       {course.name}
@@ -74,46 +89,74 @@ const BookScreen = () => {
     return (
       <PageLayout backControl={backControl} title={course.name}>
         <p className={`${cardClass} font-medium`}>
-          Dieses Buch gehört nicht zu diesem Kurs.
+          Dieses Buch gehört nicht zu dieser Sprache.
         </p>
       </PageLayout>
     );
   }
 
+  // Each edit refreshes the loader so the title and the page behind the
+  // editor match what was saved.
+  const bookUnits = async (
+    update: Promise<CourseOutline>,
+  ): Promise<ReadonlyArray<CourseUnit>> => {
+    const outline = await update;
+    await router.invalidate();
+    return unitsOf(outline, book.id);
+  };
+  const place = { courseId: course.id, bookId: book.id };
   const targetLabel = germanLabels[course.targetLanguage];
-  const place = { bookId: book.id, unitId: null };
+  const wordPlace = { bookId: book.id, unitId: null };
   const showWords = book.entries > 0 || units.length === 0;
   return (
     <PageLayout backControl={backControl} title={book.name}>
-      <p className="text-muted-foreground text-sm">
-        {bookSummary(book, units)}
-      </p>
-      {book.entries === 0 || book.directions.length === 0 ? null : (
-        <PlaceDirectionPlan
-          courseId={course.id}
-          place={place}
-          progress={book}
-          targetLabel={targetLabel}
-        />
-      )}
-      {showWords ? (
-        <PlaceWords
-          courseEntries={courseEntries}
-          courseId={course.id}
-          enabledDirections={directions}
-          entries={entries}
-          place={place}
-          targetLabel={targetLabel}
-          targetLanguage={course.targetLanguage}
-        />
-      ) : null}
-      {units.length === 0 ? null : (
-        <BookUnits
-          courseId={course.id}
-          offerImport={!showWords}
-          units={units}
-        />
-      )}
+      <EditableBook
+        book={book}
+        books={books}
+        createUnit={(name) =>
+          bookUnits(createCourseUnit({ data: { ...place, name } }))
+        }
+        renameBook={async (name) => {
+          await renameCourseBook({ data: { ...place, name } });
+          await router.invalidate();
+        }}
+        reorderUnits={(expectedUnitIds, unitIds) =>
+          bookUnits(
+            reorderCourseUnits({
+              data: { ...place, expectedUnitIds, unitIds },
+            }),
+          )
+        }
+        summary={bookSummary(book, units)}
+        units={units}
+      >
+        {book.entries === 0 || book.directions.length === 0 ? null : (
+          <PlaceDirectionPlan
+            courseId={course.id}
+            place={wordPlace}
+            progress={book}
+            targetLabel={targetLabel}
+          />
+        )}
+        {showWords ? (
+          <PlaceWords
+            courseEntries={courseEntries}
+            courseId={course.id}
+            enabledDirections={directions}
+            entries={entries}
+            place={wordPlace}
+            targetLabel={targetLabel}
+            targetLanguage={course.targetLanguage}
+          />
+        ) : null}
+        {units.length === 0 ? null : (
+          <BookUnits
+            courseId={course.id}
+            offerImport={!showWords}
+            units={units}
+          />
+        )}
+      </EditableBook>
     </PageLayout>
   );
 };
@@ -130,6 +173,7 @@ export const Route = createFileRoute('/courses/$courseId/books/$bookId/')({
     ]);
     return {
       book: outline.books.find((candidate) => candidate.id === params.bookId),
+      books: outline.books,
       course,
       courseEntries: entries,
       directions,

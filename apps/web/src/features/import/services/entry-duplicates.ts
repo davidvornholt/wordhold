@@ -73,7 +73,7 @@ export const ensureNoDuplicateEntries = (
       ].map(([, word]) => word);
       return yield* new DuplicateEntryError({
         duplicates: unique,
-        message: `Schon im Kurs gespeichert: ${quoted(unique)}. Lade die Seite neu, um die markierten Einträge zu prüfen.`,
+        message: `Schon gespeichert: ${quoted(unique)}. Lade die Seite neu, um die markierten Einträge zu prüfen.`,
       });
     }
   });

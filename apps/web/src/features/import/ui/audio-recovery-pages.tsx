@@ -116,7 +116,7 @@ export const AudioRecoveryPages = (props: AudioRecoveryPagesProps) => {
                 missing,
                 'Vokabel',
                 'Vokabeln',
-              )}. Du kannst die Kurse bereits nutzen.`
+              )}. Du kannst deine Sprachen bereits nutzen.`
             : `Für ${countNoun(
                 missing,
                 'Vokabel',

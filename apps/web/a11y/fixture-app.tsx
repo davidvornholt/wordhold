@@ -164,6 +164,8 @@ const fixtureContent = (state: FixtureState) => {
       return <BookFixture kind="textbook" />;
     case 'book-novel':
       return <BookFixture kind="novel" />;
+    case 'book-new':
+      return <BookFixture kind="new" />;
     case 'unit':
       return <UnitFixture />;
     case 'unit-unintroduced':
