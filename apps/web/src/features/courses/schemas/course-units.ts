@@ -2,8 +2,26 @@ import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import type { CardState } from '@wordhold/db/schema/practice';
 import type { ExampleSentence } from '../../../shared/examples/example-model';
 
-// A book of the course, in the order the course page lists them.
-export type CourseBook = {
+// How far the learner has come with one set of words: a unit's, or the words
+// that live directly in a book. Introduced entries participate in the regular
+// learning plan. An explicit vocabulary selection may also practise entries
+// before their learning pass.
+export type WordProgress = {
+  readonly entries: number;
+  readonly introduced: number;
+  readonly unintroduced: number;
+  readonly due: number;
+  readonly firstReviews: number;
+  readonly nextDueAt: Date | null;
+  // When a word was last added here, so a new word can default to the place
+  // the learner filled most recently. Null while there are no words.
+  readonly lastAddedAt: Date | null;
+  readonly directions: ReadonlyArray<DirectionProgress>;
+};
+
+// A book of the course, in the order the course page lists them. Its progress
+// covers only the words that live directly in it; each unit has its own.
+export type CourseBook = WordProgress & {
   readonly id: string;
   readonly name: string;
 };
@@ -15,23 +33,14 @@ export type CourseOutline = {
   readonly units: ReadonlyArray<CourseUnit>;
 };
 
-// A unit as the course page lists it. Introduced entries participate in the
-// regular learning plan. An explicit vocabulary selection may also practise
-// entries before their learning pass.
-export type CourseUnit = {
+// A unit as the course page lists it.
+export type CourseUnit = WordProgress & {
   readonly id: string;
   readonly bookId: string;
   readonly name: string;
-  readonly entries: number;
-  readonly introduced: number;
-  readonly unintroduced: number;
-  readonly due: number;
-  readonly firstReviews: number;
-  readonly nextDueAt: Date | null;
-  readonly directions: ReadonlyArray<UnitDirectionProgress>;
 };
 
-export type UnitDirectionProgress = {
+export type DirectionProgress = {
   readonly direction: AnswerDirection;
   readonly total: number;
   readonly introduced: number;
@@ -41,7 +50,7 @@ export type UnitDirectionProgress = {
   readonly nextDueAt: Date | null;
 };
 
-export type UnitAction = {
+export type RecommendedAction = {
   readonly kind: 'learn' | 'practice';
   readonly direction: AnswerDirection;
 };
@@ -59,8 +68,9 @@ export type VocabularyEntry = {
   readonly id: string;
   readonly bookId: string;
   readonly bookName: string;
-  readonly unitId: string;
-  readonly unitName: string;
+  // Null for a word that lives directly in its book.
+  readonly unitId: string | null;
+  readonly unitName: string | null;
   readonly targetText: string;
   readonly nativeText: string;
   readonly example: VocabularyExample | null;
@@ -71,12 +81,14 @@ export type VocabularyEntry = {
 export type VocabularyExample = ExampleSentence;
 
 export const openLearningDirections = (
-  unit: CourseUnit,
-): ReadonlyArray<UnitDirectionProgress> =>
-  unit.directions.filter((direction) => direction.unintroduced > 0);
+  progress: WordProgress,
+): ReadonlyArray<DirectionProgress> =>
+  progress.directions.filter((direction) => direction.unintroduced > 0);
 
-export const recommendedUnitAction = (unit: CourseUnit): UnitAction | null => {
-  const dueDirections = unit.directions.filter(
+export const recommendedAction = (
+  progress: WordProgress,
+): RecommendedAction | null => {
+  const dueDirections = progress.directions.filter(
     (direction) => direction.due > 0,
   );
   if (dueDirections.length > 0) {
@@ -85,7 +97,7 @@ export const recommendedUnitAction = (unit: CourseUnit): UnitAction | null => {
       ? null
       : { kind: 'practice', direction: due.direction };
   }
-  const firstReviewDirections = unit.directions.filter(
+  const firstReviewDirections = progress.directions.filter(
     (direction) => direction.firstReviews > 0,
   );
   if (firstReviewDirections.length > 0) {
@@ -97,7 +109,7 @@ export const recommendedUnitAction = (unit: CourseUnit): UnitAction | null => {
       ? null
       : { kind: 'practice', direction: firstReview.direction };
   }
-  const learning = openLearningDirections(unit);
+  const learning = openLearningDirections(progress);
   if (learning.length === 1) {
     const onlyDirection = learning.at(0);
     return onlyDirection === undefined
@@ -114,15 +126,20 @@ export const recommendedUnitAction = (unit: CourseUnit): UnitAction | null => {
     : { kind: 'learn', direction: started.direction };
 };
 
-// The course's own totals, summed from its units rather than queried again:
-// every entry belongs to exactly one unit, so the unit list already holds them.
-export const courseTotals = (
-  units: ReadonlyArray<CourseUnit>,
-): { readonly entries: number; readonly unintroduced: number } =>
-  units.reduce(
-    (totals, unit) => ({
-      entries: totals.entries + unit.entries,
-      unintroduced: totals.unintroduced + unit.unintroduced,
+// The course's own totals, summed from the outline rather than queried again:
+// every entry lives either directly in one book or in one unit, so the books'
+// and units' progress together already holds them.
+export const courseTotals = ({
+  books,
+  units,
+}: CourseOutline): {
+  readonly entries: number;
+  readonly unintroduced: number;
+} =>
+  [...books, ...units].reduce(
+    (totals, place) => ({
+      entries: totals.entries + place.entries,
+      unintroduced: totals.unintroduced + place.unintroduced,
     }),
     { entries: 0, unintroduced: 0 },
   );

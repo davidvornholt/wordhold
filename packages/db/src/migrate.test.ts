@@ -165,7 +165,7 @@ it('files units without a book into one placeholder book per course', async () =
   ]);
 });
 
-it('files entries without a book into their unit\'s book', async () => {
+it("files entries without a book into their unit's book", async () => {
   const entries = await Effect.runPromise(
     withTestDatabase((database) =>
       Effect.gen(function* () {

@@ -62,26 +62,22 @@ test('VerifyForm requires a name when switching to a new unit', async ({
   );
 });
 
-test('VerifyForm starts with a required new-unit name when a course has no units', async ({
+test('VerifyForm files the first page of a course directly into its new book', async ({
   page,
 }) => {
   await page.goto('/?state=verification-no-units');
-  await expect(
-    page.locator('form > ul > li').first().getByLabel('Einheit für Eintrag 1'),
-  ).toHaveValue('new');
-  const name = page
-    .locator('form > ul > li')
-    .first()
-    .getByLabel('Name der Einheit');
-  await expect(name).toBeVisible();
+  await page.getByLabel('Name des Buchs').fill('The Hobbit');
+  const firstRow = page.locator('form > ul > li').first();
+  await firstRow
+    .getByRole('button', { name: 'Einheit für Eintrag 1 ändern' })
+    .click();
+  await expect(firstRow.getByLabel('Einheit für Eintrag 1')).toHaveValue(
+    'none',
+  );
+  await expect(firstRow.getByLabel('Name der Einheit')).toHaveCount(0);
   await expect(
     page.getByRole('button', { name: '12 Einträge importieren' }),
-  ).toBeDisabled();
-  await name.press('Enter');
-  await expect(page.locator('body')).toHaveAttribute(
-    'data-fixture',
-    'verification-no-units',
-  );
+  ).toBeEnabled();
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
 });
 

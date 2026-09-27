@@ -1,6 +1,7 @@
 import { AppShell } from '../src/shared/ui/app-shell';
 import { wordmarkClass } from '../src/shared/ui/shell-styles';
 import { BatchReviewFixture } from './batch-review-fixtures';
+import { BookFixture } from './book-fixtures';
 import { ImportFixture } from './capture-fixtures';
 import { CourseFixture, UnitFixture } from './course-fixtures';
 import { DashboardFixture, SignedOutFixture } from './dashboard-fixtures';
@@ -159,6 +160,10 @@ const fixtureContent = (state: FixtureState) => {
     case 'course-empty-units':
     case 'course-no-books':
       return courseFixture(state);
+    case 'book':
+      return <BookFixture kind="textbook" />;
+    case 'book-novel':
+      return <BookFixture kind="novel" />;
     case 'unit':
       return <UnitFixture />;
     case 'unit-unintroduced':

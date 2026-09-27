@@ -8,7 +8,7 @@ import {
 import { Button } from '../../../shared/ui/button';
 import { ExampleDraftEditor } from '../../../shared/ui/example-draft-editor';
 import { cardCompactClass } from '../../../shared/ui/surface-styles';
-import { unitLocation } from '../../../shared/vocabulary/book-name';
+import { wordLocation } from '../../../shared/vocabulary/book-name';
 import {
   type DuplicateMatch,
   type ExistingEntry,
@@ -79,7 +79,7 @@ export const NewVocabularyForm = ({
     entries.map((entry) => ({
       targetText: entry.targetText,
       examples: entry.example === null ? [] : [entry.example.targetText],
-      location: unitLocation(entry.bookName, entry.unitName),
+      location: wordLocation(entry.bookName, entry.unitName),
     })),
   );
   const hint = duplicateHint(duplicate, targetText);

@@ -94,8 +94,13 @@ export const verifyPageLive = (
           Effect.map((rows) => rows[0]?.id),
         );
 
-  const resolveUnit = (bookId: string, unit: UnitSelectionData) =>
-    unit.kind === 'new'
+  // Resolves null for a word filed directly into the book, and undefined for
+  // a unit that is not in the book.
+  const resolveUnit = (bookId: string, unit: UnitSelectionData) => {
+    if (unit.kind === 'none') {
+      return Effect.succeed(null);
+    }
+    return unit.kind === 'new'
       ? sql<{ id: string }>`
           insert into units (course_id, book_id, name, position)
           values (
@@ -112,6 +117,7 @@ export const verifyPageLive = (
         }>`select id from units where id = ${unit.unitId} and course_id = ${courseId} and book_id = ${bookId} limit 1`.pipe(
           Effect.map((rows) => rows[0]?.id),
         );
+  };
 
   const insertEntries = Effect.gen(function* () {
     // One per-course lock serializes everything that must see the rows of
@@ -147,8 +153,7 @@ export const verifyPageLive = (
     );
     return yield* persistVerifiedEntries(
       sql,
-      courseId,
-      payload.pageId,
+      { courseId, bookId, pageId: payload.pageId },
       entriesToInsert,
     );
   });

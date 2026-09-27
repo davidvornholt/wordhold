@@ -2,6 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import { Database } from '@wordhold/db/client';
 import { Effect } from 'effect';
 import {
+  fixtureAddedAt,
   fixtureBookId,
   fixtureCourseId,
   fixtureNow,
@@ -44,6 +45,7 @@ describe('CourseStore PostgreSQL course contents', () => {
             due: 1,
             firstReviews: 2,
             nextDueAt: new Date('2026-08-21T12:00:00.000Z'),
+            lastAddedAt: fixtureAddedAt,
             directions: initialDirections,
           },
           {
@@ -56,6 +58,7 @@ describe('CourseStore PostgreSQL course contents', () => {
             due: 0,
             firstReviews: 0,
             nextDueAt: null,
+            lastAddedAt: null,
             directions: emptyDirections,
           },
           {
@@ -68,10 +71,61 @@ describe('CourseStore PostgreSQL course contents', () => {
             due: 0,
             firstReviews: 0,
             nextDueAt: null,
+            lastAddedAt: null,
             directions: emptyDirections,
           },
         ]);
         expect(yield* store.listUnits(missingCourseId, fixtureNow)).toEqual([]);
+      }),
+    );
+  });
+});
+
+describe('CourseStore PostgreSQL book contents', () => {
+  it("counts only a book's own words in its progress", async () => {
+    const directEntryId = '12121212-1212-4212-8212-121212121212';
+    const directAddedAt = new Date('2026-08-10T12:00:00.000Z');
+    await runCourseStoreTest(
+      Effect.gen(function* () {
+        yield* seedIntroducedCardFixture;
+        const sql = yield* Database;
+        const store = yield* CourseStore;
+        expect(yield* store.listBooks(fixtureCourseId, fixtureNow)).toEqual([
+          expect.objectContaining({
+            id: fixtureBookId,
+            entries: 0,
+            lastAddedAt: null,
+          }),
+        ]);
+
+        yield* sql`
+          insert into entries (
+            id, course_id, book_id, target_text, native_text, created_at
+          ) values (
+            ${directEntryId}, ${fixtureCourseId}, ${fixtureBookId},
+            'le souvenir', 'die Erinnerung', ${directAddedAt}
+          )
+        `;
+        yield* sql`
+          insert into cards (entry_id, direction)
+          values (${directEntryId}, 'to_target'), (${directEntryId}, 'to_native')
+        `;
+        expect(yield* store.listBooks(fixtureCourseId, fixtureNow)).toEqual([
+          expect.objectContaining({
+            id: fixtureBookId,
+            name: 'Découvertes 3',
+            entries: 1,
+            introduced: 0,
+            unintroduced: 1,
+            lastAddedAt: directAddedAt,
+          }),
+        ]);
+        expect(
+          yield* store.listUnits(fixtureCourseId, fixtureNow),
+        ).toContainEqual(
+          expect.objectContaining({ id: fixtureUnitId, entries: 3 }),
+        );
+        expect(yield* store.listBooks(missingCourseId, fixtureNow)).toEqual([]);
       }),
     );
   });
@@ -155,6 +209,7 @@ describe('CourseStore PostgreSQL entry contents', () => {
           due: 1,
           firstReviews: 3,
           nextDueAt: new Date('2026-08-21T12:00:00.000Z'),
+          lastAddedAt: fixtureAddedAt,
           directions: directionsAfterTargetIntroduced,
         });
 
@@ -187,6 +242,7 @@ describe('CourseStore PostgreSQL entry contents', () => {
           due: 1,
           firstReviews: 3,
           nextDueAt: new Date('2026-08-21T12:00:00.000Z'),
+          lastAddedAt: fixtureAddedAt,
           directions: directionsAfterNativeRemoved,
         });
       }),

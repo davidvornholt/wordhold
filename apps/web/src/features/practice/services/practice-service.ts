@@ -27,17 +27,13 @@ export class PracticeService extends Effect.Service<PracticeService>()(
       const reviews = yield* PracticeReviewStore;
       const cache = yield* JudgeCacheStore;
       const judge = yield* PracticeJudge;
-      const getSession = ({
-        courseId,
-        direction,
-        unitId,
-      }: SessionRequestData) =>
+      const getSession = ({ courseId, direction, place }: SessionRequestData) =>
         Effect.gen(function* () {
           const now = new Date(yield* Clock.currentTimeMillis);
           const { items, availability } = yield* sessions.loadScheduled(
             courseId,
             direction,
-            unitId ?? null,
+            place ?? null,
             now,
           );
           return {

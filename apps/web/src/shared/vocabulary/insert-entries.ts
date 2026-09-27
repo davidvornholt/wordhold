@@ -6,7 +6,9 @@ import type { NewExampleData } from './entry-fields';
 
 export type NewVocabularyEntry = {
   readonly courseId: string;
-  readonly unitId: string;
+  readonly bookId: string;
+  // Null for a word that lives directly in its book.
+  readonly unitId: string | null;
   // The photographed page the entry was read from; null for a typed entry.
   readonly pageId: string | null;
   readonly targetText: string;
@@ -36,6 +38,7 @@ export const insertVocabularyEntries = (
       yield* sql<InsertedVocabularyEntry>`insert into entries ${sql.insert(
         entries.map((entry) => ({
           courseId: entry.courseId,
+          bookId: entry.bookId,
           unitId: entry.unitId,
           pageId: entry.pageId,
           targetText: entry.targetText,

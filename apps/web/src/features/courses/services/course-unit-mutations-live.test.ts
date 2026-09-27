@@ -137,7 +137,9 @@ describe('CourseStore PostgreSQL book mutations', () => {
           { kind: 'course-missing' },
         );
         expect(
-          (yield* store.listBooks(fixtureCourseId)).map((book) => book.name),
+          (yield* store.listBooks(fixtureCourseId, fixtureNow)).map(
+            (book) => book.name,
+          ),
         ).toEqual(['Découvertes 3', 'Découvertes 4']);
 
         if (created.kind !== 'created') {
@@ -165,7 +167,9 @@ describe('CourseStore PostgreSQL book mutations', () => {
           ),
         ).toBe('book-missing');
         expect(
-          (yield* store.listBooks(fixtureCourseId)).map((book) => book.name),
+          (yield* store.listBooks(fixtureCourseId, fixtureNow)).map(
+            (book) => book.name,
+          ),
         ).toEqual(['Découvertes 3', 'Découvertes 4 (Cahier)']);
       }),
     );

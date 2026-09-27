@@ -2,7 +2,9 @@ import type {
   CourseBook,
   CourseOutline,
   CourseUnit,
-  UnitDirectionProgress,
+  DirectionProgress,
+  VocabularyEntry,
+  WordProgress,
 } from '../src/features/courses/schemas/course-units';
 
 export const targetLabel = 'Englisch';
@@ -11,25 +13,40 @@ const holidaysCount = 18;
 const holidaysReverseIntroduced = 16;
 const sportCount = 25;
 const schoolCount = 16;
+const novelCount = 12;
+const novelReverseIntroduced = 7;
 
-// The earlier book is there to revisit; the learner works through the later
-// one, which the course page opens.
+export const noWords: WordProgress = {
+  entries: 0,
+  introduced: 0,
+  unintroduced: 0,
+  due: 0,
+  firstReviews: 0,
+  nextDueAt: null,
+  lastAddedAt: null,
+  directions: [],
+};
+
+// The textbooks are filed in units. The earlier one is there to revisit; the
+// learner works through the later one.
 export const earlierBook: CourseBook = {
+  ...noWords,
   id: '00000000-0000-0000-0000-000000000011',
   name: 'Green Line 2',
 };
 
 export const currentBook: CourseBook = {
+  ...noWords,
   id: '00000000-0000-0000-0000-000000000012',
   name: 'Green Line 3',
 };
 
 const directionProgress = (
-  direction: UnitDirectionProgress['direction'],
+  direction: DirectionProgress['direction'],
   total: number,
   introduced: number,
-  overrides: Partial<UnitDirectionProgress> = {},
-): UnitDirectionProgress => ({
+  overrides: Partial<DirectionProgress> = {},
+): DirectionProgress => ({
   direction,
   total,
   introduced,
@@ -50,6 +67,7 @@ export const mixedUnit: CourseUnit = {
   due: 0,
   firstReviews: 0,
   nextDueAt: new Date('2026-09-01T10:40:00Z'),
+  lastAddedAt: new Date('2026-08-28T18:00:00Z'),
   directions: [
     directionProgress('to_target', holidaysCount, holidaysCount),
     directionProgress('to_native', holidaysCount, holidaysReverseIntroduced),
@@ -66,6 +84,7 @@ export const unintroducedUnit: CourseUnit = {
   due: 0,
   firstReviews: 0,
   nextDueAt: null,
+  lastAddedAt: new Date('2026-08-29T18:00:00Z'),
   directions: [
     directionProgress('to_target', sportCount, 0),
     directionProgress('to_native', sportCount, 0),
@@ -82,6 +101,7 @@ export const finishedUnit: CourseUnit = {
   due: 0,
   firstReviews: 0,
   nextDueAt: new Date('2026-09-01T10:40:00Z'),
+  lastAddedAt: new Date('2026-06-12T18:00:00Z'),
   directions: [
     directionProgress('to_target', schoolCount, schoolCount),
     directionProgress('to_native', schoolCount, schoolCount),
@@ -102,19 +122,83 @@ export const dueUnit: CourseUnit = {
 };
 
 export const emptyUnit: CourseUnit = {
+  ...noWords,
   bookId: currentBook.id,
   id: '00000000-0000-0000-0000-000000000005',
   name: 'Unit 5 – Empty',
-  entries: 0,
-  introduced: 0,
-  unintroduced: 0,
+};
+
+// A novel keeps its words directly in the book. It received the latest word,
+// so typing a new one starts there.
+export const novelBook: CourseBook = {
+  id: '00000000-0000-0000-0000-000000000013',
+  name: 'The Hobbit',
+  entries: novelCount,
+  introduced: novelCount,
+  unintroduced: novelCount - novelReverseIntroduced,
   due: 0,
   firstReviews: 0,
-  nextDueAt: null,
-  directions: [],
+  nextDueAt: new Date('2026-09-02T09:00:00Z'),
+  lastAddedAt: new Date('2026-08-31T21:00:00Z'),
+  directions: [
+    directionProgress('to_target', novelCount, novelCount),
+    directionProgress('to_native', novelCount, novelReverseIntroduced),
+  ],
 };
 
 export const courseOutline: CourseOutline = {
-  books: [earlierBook, currentBook],
+  books: [earlierBook, currentBook, novelBook],
   units: [finishedUnit, mixedUnit, unintroducedUnit, emptyUnit],
 };
+
+const uuidTailLength = 12;
+const entryIdOffset = 100;
+const cardIdOffset = 200;
+
+const fixtureId = (offset: number, index: number): string =>
+  `00000000-0000-4000-8000-${String(offset + index).padStart(uuidTailLength, '0')}`;
+
+export type FixtureWord = readonly [
+  target: string,
+  native: string,
+  introduced: boolean,
+];
+
+// A stored word in a unit, or directly in a book when no unit is given.
+export const fixtureEntry = (
+  index: number,
+  [target, native, introduced]: FixtureWord,
+  book: CourseBook,
+  unit: CourseUnit | null,
+): VocabularyEntry => ({
+  id: fixtureId(entryIdOffset, index),
+  bookId: book.id,
+  bookName: book.name,
+  unitId: unit?.id ?? null,
+  unitName: unit?.name ?? null,
+  targetText: target,
+  nativeText: native,
+  example: null,
+  introduced,
+  cards: [
+    {
+      cardId: fixtureId(cardIdOffset, index),
+      direction: 'to_target',
+      state: introduced ? 'review' : 'new',
+      dueAt: introduced ? new Date('2026-08-28T10:00:00Z') : null,
+      introducedAt: introduced ? new Date('2026-08-20T10:00:00Z') : null,
+      failures: 0,
+    },
+  ],
+});
+
+const novelWords: ReadonlyArray<FixtureWord> = [
+  ['burglar', 'der Einbrecher', true],
+  ['hobbit-hole', 'die Hobbithöhle', true],
+  ['riddle', 'das Rätsel', true],
+  ['to dwindle', 'schwinden', false],
+];
+
+export const novelEntries = novelWords.map((word, index) =>
+  fixtureEntry(index + 1, word, novelBook, null),
+);

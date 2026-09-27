@@ -18,8 +18,7 @@ export const unitRepositoryLive = (sql: Database) => ({
         books.name,
         max(entries.created_at) as "lastImportedAt"
       from books
-      left join units on units.book_id = books.id
-      left join entries on entries.unit_id = units.id
+      left join entries on entries.book_id = books.id
       where books.course_id = ${courseId}
       group by books.id
       order by books.position, books.id

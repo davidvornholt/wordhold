@@ -7,8 +7,8 @@ export type VocabularyRow = {
   readonly id: string;
   readonly bookId: string;
   readonly bookName: string;
-  readonly unitId: string;
-  readonly unitName: string;
+  readonly unitId: string | null;
+  readonly unitName: string | null;
   readonly targetText: string;
   readonly nativeText: string;
   readonly exampleTargetText: string | null;

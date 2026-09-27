@@ -67,13 +67,11 @@ export const verificationUnits: ReadonlyArray<Unit> = [
 // in the earlier book: duplicates are checked across the whole course.
 export const verificationUnitEntries: ReadonlyArray<UnitEntry> = [
   {
-    unitId: unitTwoId,
     location: 'Green Line 3 · Unit 2',
     targetText: 'journey',
     examples: ['The journey takes three hours.'],
   },
   {
-    unitId: earlierUnitId,
     location: 'Green Line 2 · Unit 2',
     targetText: 'Luggage!',
     examples: ['Pack your luggage.'],
@@ -181,7 +179,6 @@ export const verificationEntries: ReadonlyArray<DraftEntry> = [
 
 export const allDuplicateUnitEntries: ReadonlyArray<UnitEntry> =
   verificationEntries.map((entry) => ({
-    unitId: unitTwoId,
     location: 'Green Line 3 · Unit 2',
     targetText: entry.targetText,
     examples: entry.example === '' ? [] : [entry.example],

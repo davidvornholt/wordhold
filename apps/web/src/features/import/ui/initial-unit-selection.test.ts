@@ -51,10 +51,9 @@ describe('initialUnitSelection', () => {
     });
   });
 
-  it('requires a new unit name when no real unit or extraction exists', () => {
+  it('files words directly into the book when no real unit or extraction exists', () => {
     expect(initialUnitSelection(units.slice(2), undefined)).toEqual({
-      kind: 'new',
-      name: '',
+      kind: 'none',
     });
   });
 });

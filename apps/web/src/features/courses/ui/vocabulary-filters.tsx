@@ -2,14 +2,12 @@ import { fieldOnCardClass } from '../../../shared/ui/field-styles';
 import { cardCompactClass } from '../../../shared/ui/surface-styles';
 import type { VocabularyFilter } from '../schemas/vocabulary-search';
 
-export type UnitOptionGroup = {
-  readonly bookName: string;
-  readonly units: ReadonlyArray<readonly [string, string]>;
-};
+// A book or unit id with the label it is listed under.
+export type PlaceOption = readonly [string, string];
 
-type UnitSelect = {
+type PlaceSelect = {
   readonly value: string;
-  readonly options: ReadonlyArray<UnitOptionGroup>;
+  readonly options: ReadonlyArray<PlaceOption>;
   readonly onChange: (value: string) => void;
 };
 
@@ -18,8 +16,9 @@ type VocabularyFiltersProps = {
   readonly filter: VocabularyFilter;
   readonly onQueryChange: (value: string) => void;
   readonly onFilterChange: (value: VocabularyFilter) => void;
-  // The unit's own vocabulary view has no unit to switch, so it omits this.
-  readonly unitSelect?: UnitSelect;
+  // A book's or unit's own vocabulary view has nothing to switch, so it omits
+  // this.
+  readonly placeSelect?: PlaceSelect;
 };
 
 export const VocabularyFilters = ({
@@ -27,11 +26,11 @@ export const VocabularyFilters = ({
   filter,
   onQueryChange,
   onFilterChange,
-  unitSelect,
+  placeSelect,
 }: VocabularyFiltersProps) => (
   <div
     className={`grid gap-3 ${cardCompactClass} ${
-      unitSelect === undefined ? 'sm:grid-cols-2' : 'sm:grid-cols-3'
+      placeSelect === undefined ? 'sm:grid-cols-2' : 'sm:grid-cols-3'
     }`}
   >
     <label className="flex flex-col gap-1 text-sm">
@@ -58,23 +57,19 @@ export const VocabularyFilters = ({
         <option value="difficult">Schwierig</option>
       </select>
     </label>
-    {unitSelect === undefined ? null : (
+    {placeSelect === undefined ? null : (
       <label className="flex flex-col gap-1 text-sm">
-        <span className="font-medium">Einheit</span>
+        <span className="font-medium">Buch oder Einheit</span>
         <select
           className={fieldOnCardClass}
-          onChange={(event) => unitSelect.onChange(event.target.value)}
-          value={unitSelect.value}
+          onChange={(event) => placeSelect.onChange(event.target.value)}
+          value={placeSelect.value}
         >
-          <option value="all">Alle Einheiten</option>
-          {unitSelect.options.map((group) => (
-            <optgroup key={group.bookName} label={group.bookName}>
-              {group.units.map(([unitId, unitName]) => (
-                <option key={unitId} value={unitId}>
-                  {unitName}
-                </option>
-              ))}
-            </optgroup>
+          <option value="all">Alle</option>
+          {placeSelect.options.map(([placeId, label]) => (
+            <option key={placeId} value={placeId}>
+              {label}
+            </option>
           ))}
         </select>
       </label>

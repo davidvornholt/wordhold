@@ -140,7 +140,7 @@ test('a due unit keeps scheduled work separate from custom selection', async ({
 test('empty units do not claim to be learned or offer work', async ({
   page,
 }) => {
-  await page.goto('/?state=course');
+  await page.goto('/?state=book');
   const emptyUnit = page
     .getByRole('listitem')
     .filter({ hasText: 'Unit 5 – Empty' });

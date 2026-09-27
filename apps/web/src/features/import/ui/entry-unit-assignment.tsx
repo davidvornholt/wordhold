@@ -19,11 +19,15 @@ type EntryUnitAssignmentProps = {
 const selectionSummary = (
   units: ReadonlyArray<Unit>,
   selection: UnitSelectionData,
-): string =>
-  selection.kind === 'existing'
+): string => {
+  if (selection.kind === 'none') {
+    return 'keine';
+  }
+  return selection.kind === 'existing'
     ? (units.find((unit) => unit.id === selection.unitId)?.name ??
-      'Unbekannte Einheit')
+        'Unbekannte Einheit')
     : `${selection.name} (neu)`;
+};
 
 // Most pages file every word into one unit, so each entry shows its unit as a
 // quiet summary line and unfolds the picker only on request — or when the

@@ -66,7 +66,7 @@ export class CourseService extends Effect.Service<CourseService>()(
         Effect.gen(function* () {
           const now = new Date(yield* Clock.currentTimeMillis);
           const [books, units] = yield* Effect.all([
-            store.listBooks(courseId),
+            store.listBooks(courseId, now),
             store.listUnits(courseId, now),
           ]);
           return { books, units } satisfies CourseOutline;

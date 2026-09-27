@@ -20,16 +20,16 @@ const storeWith = (store: Partial<LearningStore['Type']>) =>
   );
 
 describe('LearningService', () => {
-  it('reports an unknown unit instead of an empty pass', async () => {
+  it('reports an unknown place instead of an empty pass', async () => {
     const result = await Effect.runPromise(
       Effect.flatMap(LearningService, (service) =>
-        service.getPass(courseId, unitId),
+        service.getPass(courseId, { unitId }),
       ).pipe(Effect.provide(storeWith({})), Effect.either),
     );
 
     expect(result._tag).toBe('Left');
     const failure = result._tag === 'Left' ? result.left : undefined;
-    expect(failure?._tag).toBe('LearningUnitNotFoundError');
+    expect(failure?._tag).toBe('LearningPlaceNotFoundError');
   });
 
   // The timestamp answers "has this person ever met this entry", so it comes
@@ -39,11 +39,11 @@ describe('LearningService', () => {
     const introduced: Array<{ cardId: string; at: Date }> = [];
     await Effect.runPromise(
       Effect.flatMap(LearningService, (service) =>
-        service.introduce(courseId, unitId, cardId),
+        service.introduce(courseId, cardId),
       ).pipe(
         Effect.provide(
           storeWith({
-            introduce: (_courseId, _unitId, id, at) =>
+            introduce: (_courseId, id, at) =>
               Effect.sync(() => {
                 introduced.push({ cardId: id, at });
               }).pipe(Effect.as(true)),
@@ -61,7 +61,7 @@ describe('LearningService', () => {
   it('reports a stale entry instead of accepting a mismatched entry', async () => {
     const result = await Effect.runPromise(
       Effect.flatMap(LearningService, (service) =>
-        service.introduce(courseId, unitId, cardId),
+        service.introduce(courseId, cardId),
       ).pipe(
         Effect.provide(storeWith({ introduce: () => Effect.succeed(false) })),
         Effect.provide(TestContext.TestContext),

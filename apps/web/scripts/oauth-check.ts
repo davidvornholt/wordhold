@@ -62,8 +62,11 @@ try {
   const journal = JSON.parse(
     await readFile(join(migrationFolder, 'meta/_journal.json'), 'utf8'),
   ) as { entries: Array<{ tag: string }> };
-  journal.entries = journal.entries.filter(
-    ({ tag }) => tag !== '0020_lush_photon',
+  // Later migrations belong to the upgraded schema: drizzle skips any
+  // migration older than the newest one already applied.
+  journal.entries = journal.entries.slice(
+    0,
+    journal.entries.findIndex(({ tag }) => tag === '0020_lush_photon'),
   );
   await mkdir(join(previousMigrations, 'meta'));
   await writeFile(

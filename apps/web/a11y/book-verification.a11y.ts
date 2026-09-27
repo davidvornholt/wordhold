@@ -8,6 +8,8 @@ const earlierBookId = '55555555-5555-4555-8555-555555555555';
 const currentBookId = '66666666-6666-4666-8666-666666666666';
 const earlierUnitId = '44444444-4444-4444-8444-444444444444';
 const currentUnitId = '11111111-1111-4111-8111-111111111111';
+// The earlier book's one unit, "Keine Einheit" and "Neue Einheit".
+const earlierBookUnitOptions = 3;
 
 test('VerifyForm starts in the book that received words last', async ({
   page,
@@ -34,7 +36,7 @@ test('VerifyForm files every row into the unit of a newly picked book', async ({
     .click();
   const rowUnit = firstRow.getByLabel('Einheit für Eintrag 1');
   await expect(rowUnit).toHaveValue(earlierUnitId);
-  await expect(rowUnit.locator('option')).toHaveCount(2);
+  await expect(rowUnit.locator('option')).toHaveCount(earlierBookUnitOptions);
 });
 
 test('VerifyForm asks for the name of a new book before importing', async ({
@@ -52,17 +54,20 @@ test('VerifyForm asks for the name of a new book before importing', async ({
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
 });
 
-test('VerifyForm sends the chosen book with the page', async ({ page }) => {
+test('VerifyForm files a page without a unit heading directly into a new book', async ({
+  page,
+}) => {
   await page.goto('/?state=verification-deferred');
   await page.getByLabel('Buch dieser Seite').selectOption('new');
-  await page.getByLabel('Name des Buchs').fill('Green Line 4');
-  const bulkAssignment = page.getByRole('group', { name: 'Einheit zuordnen' });
-  await bulkAssignment.getByLabel('Name der Einheit').fill('Unit 1');
-  await bulkAssignment
-    .getByRole('button', { name: 'Auf alle anwenden' })
-    .click();
-  await page.getByRole('button', { name: '1 Eintrag importieren' }).click();
-  await expect(page.getByLabel('Verification snapshot')).toContainText(
-    '"book":{"kind":"new","name":"Green Line 4"}',
+  await page.getByLabel('Name des Buchs').fill('The Hobbit');
+  await expect(page.getByLabel('Einheit für alle Vokabeln')).toHaveValue(
+    'none',
   );
+  await expect(page.getByLabel('Name der Einheit')).toHaveCount(0);
+  await page.getByRole('button', { name: '1 Eintrag importieren' }).click();
+  const snapshot = page.getByLabel('Verification snapshot');
+  await expect(snapshot).toContainText(
+    '"book":{"kind":"new","name":"The Hobbit"}',
+  );
+  await expect(snapshot).toContainText('"unit":{"kind":"none"}');
 });

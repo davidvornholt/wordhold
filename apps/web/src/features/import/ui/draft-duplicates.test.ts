@@ -2,10 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import type { UnitEntry } from '../services/repository';
 import { assessDraftDuplicates } from './draft-duplicates';
 
-const unitId = '11111111-1111-4111-8111-111111111111';
-
 const storedJourney: UnitEntry = {
-  unitId,
   location: 'Encuentros hoy 2 · U1 Acércate',
   targetText: 'journey',
   examples: ['The journey takes three hours.'],
@@ -64,7 +61,6 @@ describe('assessDraftDuplicates', () => {
         [incomplete],
         [
           {
-            unitId,
             location: 'Buch 1 · U1',
             targetText: 'voyage',
             examples: [],

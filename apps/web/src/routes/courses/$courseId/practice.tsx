@@ -32,44 +32,47 @@ import { ActionLink } from '../../../shared/ui/action-link';
 import { BackLink } from '../../../shared/ui/back-link';
 import { Button } from '../../../shared/ui/button';
 import { FocusLayout } from '../../../shared/ui/focus-layout';
+import {
+  findCoursePlace,
+  PlaceBackLink,
+  PlacePageLink,
+  placeSearch,
+} from './-course-place';
 
 const PracticeScreen = () => {
-  const { availability, course, directions, direction, session, unit } =
+  const { availability, course, directions, direction, place, session } =
     Route.useLoaderData();
   const router = useRouter();
   const navigating = useRouterState({ select: (state) => state.isLoading });
   const [sessionGeneration, setSessionGeneration] = useState(0);
   const targetLabel = germanLabels[course.targetLanguage];
   const pageBackControl =
-    unit === undefined ? (
+    place === undefined ? (
       <BackLink to="/">Übersicht</BackLink>
     ) : (
-      <BackLink
-        params={{ courseId: course.id, unitId: unit.id }}
-        to="/courses/$courseId/units/$unitId"
-      >
-        {unit.name}
-      </BackLink>
+      <PlaceBackLink courseId={course.id} selection={place.selection}>
+        {place.name}
+      </PlaceBackLink>
     );
   const sessionBackControl =
-    unit === undefined ? (
+    place === undefined ? (
       <ActionLink to="/" variant="quiet-muted">
         Zurück zur Übersicht
       </ActionLink>
     ) : (
-      <ActionLink
-        params={{ courseId: course.id, unitId: unit.id }}
-        to="/courses/$courseId/units/$unitId"
+      <PlacePageLink
+        courseId={course.id}
+        selection={place.selection}
         variant="quiet-muted"
       >
-        Zurück zu {unit.name}
-      </ActionLink>
+        Zurück zu {place.name}
+      </PlacePageLink>
     );
 
   return (
     <FocusLayout
       exit={pageBackControl}
-      title={`${unit?.name ?? course.name} · Üben`}
+      title={`${place?.name ?? course.name} · Üben`}
     >
       {session === null ? (
         <SessionStart
@@ -85,7 +88,10 @@ const PracticeScreen = () => {
               className="w-fit"
               onClick={rememberDirection}
               params={{ courseId: course.id }}
-              search={{ direction: option.value, unit: unit?.id }}
+              search={{
+                direction: option.value,
+                ...(place === undefined ? {} : placeSearch(place.selection)),
+              }}
               to="/courses/$courseId/practice"
             >
               {navigating
@@ -130,38 +136,39 @@ export const Route = createFileRoute('/courses/$courseId/practice')({
   validateSearch: parsePracticeSearch,
   loaderDeps: ({ search }) => ({
     direction: search.direction,
+    book: search.book,
     unit: search.unit,
   }),
   loader: async ({ params, deps }) => {
-    const [course, directions, dashboard, { units }] = await Promise.all([
+    const [course, directions, dashboard, outline] = await Promise.all([
       getCourse({ data: params.courseId }),
       getCourseDirections({ data: params.courseId }),
       getDashboard(),
       getCourseOutline({ data: params.courseId }),
     ]);
-    const unit = units.find((candidate) => candidate.id === deps.unit);
+    const place = findCoursePlace(outline, deps);
     const stats = dashboard.perCourse.find(
       (courseStats) => courseStats.courseId === course.id,
     );
     const directionAvailability =
-      unit?.directions.map((progress) => ({
+      place?.directions.map((progress) => ({
         direction: progress.direction,
         ready: readyCardsInNextSection(progress.due, progress.firstReviews),
       })) ??
       stats?.directions ??
       [];
-    const unitDue =
-      unit?.directions.reduce((total, progress) => total + progress.due, 0) ??
+    const placeDue =
+      place?.directions.reduce((total, progress) => total + progress.due, 0) ??
       0;
-    const unitFirstReviews =
-      unit?.directions.reduce(
+    const placeFirstReviews =
+      place?.directions.reduce(
         (total, progress) => total + progress.firstReviews,
         0,
       ) ?? 0;
     const ready =
-      unit === undefined
+      place === undefined
         ? (stats?.ready ?? 0)
-        : readyCardsInNextSection(unitDue, unitFirstReviews);
+        : readyCardsInNextSection(placeDue, placeFirstReviews);
     const readyDirections = directionAvailability
       .filter((candidate) => candidate.ready > 0)
       .map((candidate) => candidate.direction);
@@ -180,7 +187,7 @@ export const Route = createFileRoute('/courses/$courseId/practice')({
             data: {
               courseId: params.courseId,
               direction,
-              unitId: unit?.id,
+              place: place?.selection,
             },
           });
     return {
@@ -188,8 +195,8 @@ export const Route = createFileRoute('/courses/$courseId/practice')({
       course,
       directions,
       direction,
+      place,
       session,
-      unit,
     };
   },
   component: PracticeScreen,

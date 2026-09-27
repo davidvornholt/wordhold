@@ -2,7 +2,11 @@ import { Database } from '@wordhold/db/client';
 import { answerDirections } from '@wordhold/db/schema/directions';
 import { Context, Effect, Layer } from 'effect';
 import { sessionSectionSize } from '../../../shared/session/section-policy';
-import type { VocabularySelectionData } from '../../../shared/session/vocabulary-selection';
+import {
+  type PlaceSelectionData,
+  selectedEntries,
+  type VocabularySelectionData,
+} from '../../../shared/session/vocabulary-selection';
 import { LearningDatabaseError } from '../errors/learning-errors';
 import type {
   LearnItem,
@@ -10,7 +14,7 @@ import type {
   LearnSelectionPass,
 } from '../schemas/learning-models';
 
-type UnitRow = { readonly id: string; readonly name: string };
+type PlaceRow = { readonly name: string };
 type ItemRow = Omit<LearnItem, 'example' | 'textbookAnswers'> & {
   readonly directionTotal: number;
 };
@@ -47,7 +51,6 @@ const passFromRows = (
       cardId: item.cardId,
       direction: item.direction,
       entryId: item.entryId,
-      unitId: item.unitId,
       targetText: item.targetText,
       nativeText: item.nativeText,
       hasAudio: item.hasAudio,
@@ -65,7 +68,7 @@ export class LearningStore extends Context.Tag('wordhold/LearningStore')<
   {
     readonly loadPass: (
       courseId: string,
-      unitId: string,
+      place: PlaceSelectionData,
     ) => Effect.Effect<LearnPass | undefined, LearningDatabaseError>;
     readonly loadSelection: (
       courseId: string,
@@ -73,7 +76,6 @@ export class LearningStore extends Context.Tag('wordhold/LearningStore')<
     ) => Effect.Effect<LearnSelectionPass, LearningDatabaseError>;
     readonly introduce: (
       courseId: string,
-      unitId: string,
       cardId: string,
       at: Date,
     ) => Effect.Effect<boolean, LearningDatabaseError>;
@@ -87,18 +89,15 @@ export class LearningStore extends Context.Tag('wordhold/LearningStore')<
         courseId: string,
         selection: VocabularySelectionData,
       ) => {
-        const selected =
-          'unitId' in selection
-            ? sql`e.unit_id = ${selection.unitId}`
-            : sql`e.id = any(${`{${selection.entryIds.join(',')}}`}::uuid[])`;
+        const selected = selectedEntries(sql, selection);
         return Effect.all(
           {
             items: sql<ItemRow>`
-              select "cardId", direction, "entryId", "unitId", "targetText",
+              select "cardId", direction, "entryId", "targetText",
                 "nativeText", "hasAudio", "directionTotal"
               from (
                 select c.id as "cardId", c.direction,
-                  e.id as "entryId", e.unit_id as "unitId",
+                  e.id as "entryId",
                   e.target_text as "targetText",
                   e.native_text as "nativeText",
                   exists(
@@ -142,40 +141,41 @@ export class LearningStore extends Context.Tag('wordhold/LearningStore')<
             databaseError('load selected learning pass', cause),
           ),
         );
-      const loadPass = (courseId: string, unitId: string) =>
+      const loadPass = (courseId: string, place: PlaceSelectionData) =>
         Effect.all(
           {
-            units: sql<UnitRow>`
-              select id, name from units
-              where id = ${unitId} and course_id = ${courseId}
-            `,
-            pass: loadSelectionRows(courseId, { unitId }),
+            places:
+              'bookId' in place
+                ? sql<PlaceRow>`
+                    select name from books
+                    where id = ${place.bookId} and course_id = ${courseId}
+                  `
+                : sql<PlaceRow>`
+                    select name from units
+                    where id = ${place.unitId} and course_id = ${courseId}
+                  `,
+            pass: loadSelectionRows(courseId, place),
           },
           { concurrency: 'unbounded' },
         ).pipe(
-          Effect.map(({ units, pass }) => {
-            const unit = units.at(0);
-            return unit === undefined ? undefined : { ...pass, unit };
+          Effect.map(({ places, pass }) => {
+            const found = places.at(0);
+            return found === undefined
+              ? undefined
+              : { ...pass, name: found.name };
           }),
           Effect.mapError((cause) =>
             databaseError('load learning pass', cause),
           ),
         );
-      const introduce = (
-        courseId: string,
-        unitId: string,
-        cardId: string,
-        at: Date,
-      ) =>
+      const introduce = (courseId: string, cardId: string, at: Date) =>
         sql<CardMatchRow>`
           with matching_card as (
             select c.id
             from cards c
             join entries e on e.id = c.entry_id
-            join units u on u.id = e.unit_id and u.course_id = e.course_id
             join courses co on co.id = e.course_id
-            where c.id = ${cardId} and u.id = ${unitId}
-              and u.course_id = ${courseId}
+            where c.id = ${cardId} and e.course_id = ${courseId}
               and c.direction = any(co.directions)
           ), updated as (
             update cards set introduced_at = ${at}

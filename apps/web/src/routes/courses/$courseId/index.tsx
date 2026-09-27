@@ -1,19 +1,25 @@
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import {
-  type CourseUnit,
+  type CourseOutline,
   courseTotals,
-  recommendedUnitAction,
+  recommendedAction,
 } from '../../../features/courses/schemas/course-units';
 import {
   createCourseBook,
   createCourseUnit,
+  createVocabularyEntry,
+  generateVocabularyDraftExample,
   getCourseOutline,
+  listCourseVocabulary,
   renameCourseBook,
   reorderCourseUnits,
+  suggestVocabularyTranslation,
+  translateVocabularyDraftExample,
 } from '../../../features/courses/services/server-fns';
 import { CourseOverview } from '../../../features/courses/ui/course-overview';
-import { unitLinkClass } from '../../../features/courses/ui/unit-link-styles';
+import { placeLinkClass } from '../../../features/courses/ui/place-link-styles';
+import { QuickVocabularyEntry } from '../../../features/courses/ui/quick-vocabulary-entry';
 import { getDashboard } from '../../../features/dashboard/services/server-fns';
 import { getCourse } from '../../../features/import/server-fns';
 import { directionLabel } from '../../../shared/directions';
@@ -23,23 +29,27 @@ import { itemsInNextSection } from '../../../shared/session/section-policy';
 import { ActionLink } from '../../../shared/ui/action-link';
 import { BackLink } from '../../../shared/ui/back-link';
 import { PageLayout } from '../../../shared/ui/page-layout';
+import { coursePlaces, PlaceLearnLink } from './-course-place';
 
-// Practice comes first while cards are ready, then the next unit to learn,
-// and a course without vocabulary starts with a photographed page.
+// Practice comes first while cards are ready, then the next words to learn
+// in course order: each book's own words before its units. A course without
+// vocabulary starts with a photographed page.
 const coursePrimaryAction = ({
   courseId,
   isEmpty,
+  outline,
   ready,
   targetLabel,
-  units,
 }: {
   readonly courseId: string;
   readonly isEmpty: boolean;
+  readonly outline: CourseOutline;
   readonly ready: number;
   readonly targetLabel: string;
-  readonly units: ReadonlyArray<CourseUnit>;
 }): ReactNode => {
-  const nextUnit = units.find((unit) => unit.unintroduced > 0);
+  const nextPlace = coursePlaces(outline).find(
+    (place) => place.unintroduced > 0,
+  );
   if (ready > 0) {
     return (
       <ActionLink params={{ courseId }} to="/courses/$courseId/practice">
@@ -47,19 +57,19 @@ const coursePrimaryAction = ({
       </ActionLink>
     );
   }
-  if (nextUnit !== undefined) {
-    const recommendation = recommendedUnitAction(nextUnit);
+  if (nextPlace !== undefined) {
+    const recommendation = recommendedAction(nextPlace);
     const recommendedDirection =
       recommendation?.kind === 'learn'
-        ? nextUnit.directions.find(
+        ? nextPlace.directions.find(
             (progress) => progress.direction === recommendation.direction,
           )
         : undefined;
     return (
-      <ActionLink
-        params={{ courseId, unitId: nextUnit.id }}
-        search={{ direction: recommendedDirection?.direction }}
-        to="/courses/$courseId/units/$unitId/learn"
+      <PlaceLearnLink
+        courseId={courseId}
+        direction={recommendedDirection?.direction}
+        selection={nextPlace.selection}
       >
         {recommendedDirection === undefined
           ? 'Neue Vokabeln kennenlernen'
@@ -71,7 +81,7 @@ const coursePrimaryAction = ({
               recommendedDirection.direction,
               targetLabel,
             )}`}
-      </ActionLink>
+      </PlaceLearnLink>
     );
   }
   if (isEmpty) {
@@ -85,8 +95,7 @@ const coursePrimaryAction = ({
 };
 
 const CourseScreen = () => {
-  const { course, outline, stats } = Route.useLoaderData();
-  const { units } = outline;
+  const { course, entries, outline, stats } = Route.useLoaderData();
   const router = useRouter();
   // Every edit returns the updated outline for the editor and refreshes the
   // loader so the page behind the editor matches.
@@ -95,7 +104,7 @@ const CourseScreen = () => {
     await router.invalidate();
     return next;
   };
-  const isEmpty = courseTotals(units).entries === 0;
+  const isEmpty = courseTotals(outline).entries === 0;
   const targetLabel = germanLabels[course.targetLanguage];
 
   return (
@@ -128,17 +137,49 @@ const CourseScreen = () => {
         primaryAction={coursePrimaryAction({
           courseId: course.id,
           isEmpty,
+          outline,
           ready: stats?.ready ?? 0,
           targetLabel,
-          units,
         })}
-        renderUnitLink={(unit) => (
+        quickEntry={
+          outline.books.length === 0 ? null : (
+            <QuickVocabularyEntry
+              createEntry={(place, draft) =>
+                refreshed(
+                  createVocabularyEntry({
+                    data: { courseId: course.id, ...place, ...draft },
+                  }),
+                )
+              }
+              entries={entries}
+              generateExample={(targetText, nativeText) =>
+                generateVocabularyDraftExample({
+                  data: { courseId: course.id, targetText, nativeText },
+                })
+              }
+              outline={outline}
+              suggestTranslation={(place, text, given) =>
+                suggestVocabularyTranslation({
+                  data: { courseId: course.id, ...place, text, given },
+                })
+              }
+              targetLabel={targetLabel}
+              targetLanguage={course.targetLanguage}
+              translateExample={(targetText) =>
+                translateVocabularyDraftExample({
+                  data: { courseId: course.id, targetText },
+                })
+              }
+            />
+          )
+        }
+        renderBookLink={(book) => (
           <Link
-            className={unitLinkClass}
-            params={{ courseId: course.id, unitId: unit.id }}
-            to="/courses/$courseId/units/$unitId"
+            className={placeLinkClass}
+            params={{ courseId: course.id, bookId: book.id }}
+            to="/courses/$courseId/books/$bookId"
           >
-            {unit.name}
+            {book.name}
           </Link>
         )}
         renameBook={(bookId, name) =>
@@ -179,13 +220,15 @@ const CourseScreen = () => {
 
 export const Route = createFileRoute('/courses/$courseId/')({
   loader: async ({ params }) => {
-    const [course, outline, dashboard] = await Promise.all([
+    const [course, outline, entries, dashboard] = await Promise.all([
       getCourse({ data: params.courseId }),
       getCourseOutline({ data: params.courseId }),
+      listCourseVocabulary({ data: params.courseId }),
       getDashboard(),
     ]);
     return {
       course,
+      entries,
       outline,
       stats: dashboard.perCourse.find((stats) => stats.courseId === course.id),
     };

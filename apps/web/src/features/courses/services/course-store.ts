@@ -22,7 +22,11 @@ import {
   type CreateUnitResult,
   makeCourseUnitMutations,
 } from './course-unit-mutations';
-import { type CourseUnitRow, courseUnitFromRow } from './course-unit-rows';
+import {
+  type WordProgressRow,
+  wordProgressColumns,
+  wordProgressFromRow,
+} from './word-progress-rows';
 
 const databaseError = (operation: string, cause: unknown) =>
   new CourseDatabaseError({
@@ -44,6 +48,7 @@ export class CourseStore extends Context.Tag('wordhold/CourseStore')<
     ) => Effect.Effect<boolean, CourseDatabaseError>;
     readonly listBooks: (
       courseId: string,
+      now: Date,
     ) => Effect.Effect<ReadonlyArray<CourseBook>, CourseDatabaseError>;
     readonly createBook: (
       courseId: string,
@@ -126,103 +131,24 @@ export class CourseStore extends Context.Tag('wordhold/CourseStore')<
             databaseError('write course directions', cause),
           ),
         );
-      const listBooks = (courseId: string) =>
-        sql<CourseBook>`
-          select id, name from books
-          where course_id = ${courseId}
-          order by position, id
-        `.pipe(Effect.mapError((cause) => databaseError('list books', cause)));
-      // An entry remains unintroduced while one of the course's enabled
-      // directions has not been introduced. A disabled direction stays out of
-      // the learner's way until it is enabled again.
+      const listBooks = (courseId: string, now: Date) =>
+        sql<WordProgressRow<Pick<CourseBook, 'id' | 'name'>>>`
+          select b.id, b.name, ${wordProgressColumns(sql, now)}
+          from books b
+          join courses co on co.id = b.course_id
+          left join entries e on e.book_id = b.id and e.unit_id is null
+          left join cards on cards.entry_id = e.id
+          where b.course_id = ${courseId}
+          group by b.id, co.directions
+          order by b.position, b.id
+        `.pipe(
+          Effect.map((rows) => rows.map(wordProgressFromRow)),
+          Effect.mapError((cause) => databaseError('list books', cause)),
+        );
       const listUnits = (courseId: string, now: Date) =>
-        sql<CourseUnitRow>`
+        sql<WordProgressRow<Pick<CourseUnit, 'id' | 'bookId' | 'name'>>>`
           select u.id, u.book_id as "bookId", u.name,
-            count(distinct e.id)::int as entries,
-            count(distinct e.id) filter (
-              where exists (
-                select 1 from cards met
-                where met.entry_id = e.id
-                  and met.introduced_at is not null
-              )
-            )::int as introduced,
-            count(distinct e.id) filter (
-              where exists (
-                select 1 from cards pending
-                where pending.entry_id = e.id
-                  and pending.direction = any(co.directions)
-                  and pending.introduced_at is null
-              )
-            )::int as unintroduced,
-            count(cards.id) filter (
-              where cards.introduced_at is not null
-                and cards.direction = any(co.directions)
-                and cards.state <> 'new' and cards.due_at <= ${now}
-            )::int as due,
-            count(cards.id) filter (
-              where cards.introduced_at is not null
-                and cards.direction = any(co.directions)
-                and cards.state = 'new'
-            )::int as "firstReviews",
-            min(cards.due_at) filter (
-              where cards.introduced_at is not null
-                and cards.direction = any(co.directions)
-                and cards.due_at > ${now}
-            ) as "nextDueAt",
-            'to_target' = any(co.directions) as "toTargetEnabled",
-            count(cards.id) filter (
-              where cards.direction = 'to_target'
-            )::int as "toTargetTotal",
-            count(cards.id) filter (
-              where cards.direction = 'to_target'
-                and cards.introduced_at is not null
-            )::int as "toTargetIntroduced",
-            count(cards.id) filter (
-              where cards.direction = 'to_target'
-                and cards.introduced_at is null
-            )::int as "toTargetUnintroduced",
-            count(cards.id) filter (
-              where cards.direction = 'to_target'
-                and cards.introduced_at is not null
-                and cards.state <> 'new' and cards.due_at <= ${now}
-            )::int as "toTargetDue",
-            count(cards.id) filter (
-              where cards.direction = 'to_target'
-                and cards.introduced_at is not null
-                and cards.state = 'new'
-            )::int as "toTargetFirstReviews",
-            min(cards.due_at) filter (
-              where cards.direction = 'to_target'
-                and cards.introduced_at is not null
-                and cards.due_at > ${now}
-            ) as "toTargetNextDueAt",
-            'to_native' = any(co.directions) as "toNativeEnabled",
-            count(cards.id) filter (
-              where cards.direction = 'to_native'
-            )::int as "toNativeTotal",
-            count(cards.id) filter (
-              where cards.direction = 'to_native'
-                and cards.introduced_at is not null
-            )::int as "toNativeIntroduced",
-            count(cards.id) filter (
-              where cards.direction = 'to_native'
-                and cards.introduced_at is null
-            )::int as "toNativeUnintroduced",
-            count(cards.id) filter (
-              where cards.direction = 'to_native'
-                and cards.introduced_at is not null
-                and cards.state <> 'new' and cards.due_at <= ${now}
-            )::int as "toNativeDue",
-            count(cards.id) filter (
-              where cards.direction = 'to_native'
-                and cards.introduced_at is not null
-                and cards.state = 'new'
-            )::int as "toNativeFirstReviews",
-            min(cards.due_at) filter (
-              where cards.direction = 'to_native'
-                and cards.introduced_at is not null
-                and cards.due_at > ${now}
-            ) as "toNativeNextDueAt"
+            ${wordProgressColumns(sql, now)}
           from units u
           join books b on b.id = u.book_id
           join courses co on co.id = u.course_id
@@ -232,14 +158,14 @@ export class CourseStore extends Context.Tag('wordhold/CourseStore')<
           group by u.id, b.id, co.directions
           order by b.position, u.position, u.name, u.id
         `.pipe(
-          Effect.map((rows) => rows.map(courseUnitFromRow)),
+          Effect.map((rows) => rows.map(wordProgressFromRow)),
           Effect.mapError((cause) => databaseError('list units', cause)),
         );
       const { createBook, renameBook } = makeCourseBookMutations(sql);
       const { createUnit, reorderUnits } = makeCourseUnitMutations(sql);
       const listVocabulary = (courseId: string) =>
         sql<VocabularyRow>`
-          select e.id, u.book_id as "bookId", b.name as "bookName",
+          select e.id, e.book_id as "bookId", b.name as "bookName",
             e.unit_id as "unitId", u.name as "unitName",
             e.target_text as "targetText", e.native_text as "nativeText",
             example.target_text as "exampleTargetText",
@@ -250,8 +176,8 @@ export class CourseStore extends Context.Tag('wordhold/CourseStore')<
             (select count(*)::int from reviews r
               where r.card_id = c.id and r.rating = 1) as failures
           from entries e
-          join units u on u.id = e.unit_id
-          join books b on b.id = u.book_id
+          join books b on b.id = e.book_id
+          left join units u on u.id = e.unit_id
           join cards c on c.entry_id = e.id
           left join lateral (
             select target_text, native_text, source
@@ -261,8 +187,8 @@ export class CourseStore extends Context.Tag('wordhold/CourseStore')<
             limit 1
           ) example on true
           where e.course_id = ${courseId}
-          order by b.position, u.position, e.created_at, e.target_text,
-            c.direction
+          order by b.position, u.position nulls first, e.created_at,
+            e.target_text, c.direction
         `.pipe(
           Effect.map(groupVocabularyRows),
           Effect.mapError((cause) => databaseError('list vocabulary', cause)),

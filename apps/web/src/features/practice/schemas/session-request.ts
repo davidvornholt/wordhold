@@ -1,6 +1,9 @@
 import { answerDirections } from '@wordhold/db/schema/directions';
 import { Option, Schema } from 'effect';
-import { VocabularySelection } from '../../../shared/session/vocabulary-selection';
+import {
+  PlaceSelection,
+  VocabularySelection,
+} from '../../../shared/session/vocabulary-selection';
 
 // Which way round a sitting asks. The two single values narrow the queue to
 // one direction; `both` mixes whatever the course still practises.
@@ -10,10 +13,12 @@ export const SessionDirectionSchema = Schema.Literal(
 );
 export type SessionDirection = typeof SessionDirectionSchema.Type;
 
+// Scheduled practice covers the whole course, or only one book's own words or
+// one unit.
 export const SessionRequest = Schema.Struct({
   courseId: Schema.UUID,
   direction: SessionDirectionSchema,
-  unitId: Schema.optional(Schema.UUID),
+  place: Schema.optional(PlaceSelection),
 });
 
 export type SessionRequestData = typeof SessionRequest.Type;
@@ -32,6 +37,7 @@ export const decodeStudyRequest = Schema.decodeUnknownSync(StudyRequest);
 
 const PracticeSearch = Schema.Struct({
   direction: Schema.optional(SessionDirectionSchema),
+  book: Schema.optional(Schema.UUID),
   unit: Schema.optional(Schema.UUID),
 });
 
@@ -46,6 +52,7 @@ export const parsePracticeSearch = (input: unknown): PracticeSearchData =>
 
 const StudySearch = Schema.Struct({
   direction: Schema.optional(SessionDirectionSchema),
+  book: Schema.optional(Schema.UUID),
   unit: Schema.optional(Schema.UUID),
   entries: Schema.optional(Schema.String),
   mode: Schema.optional(Schema.Literal('learn', 'practice')),
