@@ -26,6 +26,7 @@ const entry = (cards: ReadonlyArray<Card>): VocabularyEntry => ({
   unitName: 'Unit 3',
   targetText: 'memory',
   nativeText: 'die Erinnerung',
+  keyPoints: null,
   example: null,
   introduced: true,
   cards,

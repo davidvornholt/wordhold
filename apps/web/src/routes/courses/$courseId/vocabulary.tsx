@@ -1,18 +1,20 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { parseVocabularySearch } from '../../../features/courses/schemas/vocabulary-search';
 import {
-  generateVocabularyExample,
   getCourseDirections,
   listCourseVocabulary,
 } from '../../../features/courses/services/server-fns';
 import { VocabularyLibrary } from '../../../features/courses/ui/vocabulary-library';
 import { getCourse } from '../../../features/import/server-fns';
+import { courseNouns } from '../../../shared/directions';
 import { ActionLink } from '../../../shared/ui/action-link';
 import { BackLink } from '../../../shared/ui/back-link';
 import { PageLayout } from '../../../shared/ui/page-layout';
+import { CourseEntryDetail } from './-entry-forms';
 
 const VocabularyScreen = () => {
   const { course, directions, entries, filter, place } = Route.useLoaderData();
+  const nouns = courseNouns(course);
   return (
     <PageLayout
       backControl={
@@ -20,20 +22,21 @@ const VocabularyScreen = () => {
           {course.name}
         </BackLink>
       }
-      title="Vokabelliste"
+      title={nouns.list}
     >
       <p className="text-muted-foreground text-sm">
-        Termine gelten pro Abfragerichtung. Wähle beliebige Vokabeln aus und übe
-        genau diese Auswahl.
+        {course.kind === 'terms'
+          ? 'Wähle beliebige Begriffe aus und übe genau diese Auswahl.'
+          : 'Termine gelten pro Abfragerichtung. Wähle beliebige Vokabeln aus und übe genau diese Auswahl.'}
       </p>
       <VocabularyLibrary
         enabledDirections={directions}
         entries={entries}
-        generateExample={(entryId) =>
-          generateVocabularyExample({ data: entryId })
-        }
         initialFilter={filter}
         initialPlaceId={place}
+        renderEntryDetail={(entry) => (
+          <CourseEntryDetail course={course} entry={entry} />
+        )}
         renderStudyAction={(entryIds, intent) => (
           <ActionLink
             params={{ courseId: course.id }}

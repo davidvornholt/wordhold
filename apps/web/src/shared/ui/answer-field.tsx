@@ -1,5 +1,6 @@
-import type { KeyboardEvent, RefObject } from 'react';
+import type { RefObject } from 'react';
 import { answerFieldClass } from './field-styles';
+import { submitOnEnter } from './submit-on-enter';
 
 export type AnswerFieldElement = HTMLInputElement | HTMLTextAreaElement;
 
@@ -17,28 +18,6 @@ type AnswerFieldProps = {
   readonly placeholder: string;
   readonly value: string;
   readonly onChange: (value: string) => void;
-};
-
-// requestSubmit ignores a disabled submit button, so the button is checked
-// here, as the browser does for Enter in a one-line field.
-const submitOnEnter = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-  if (
-    event.key !== 'Enter' ||
-    event.shiftKey ||
-    event.nativeEvent.isComposing
-  ) {
-    return;
-  }
-  event.preventDefault();
-  const { form } = event.currentTarget;
-  const submitter = [...(form?.elements ?? [])].find(
-    (element): element is HTMLButtonElement =>
-      element instanceof HTMLButtonElement && element.type === 'submit',
-  );
-  if (submitter?.disabled === true) {
-    return;
-  }
-  form?.requestSubmit(submitter ?? undefined);
 };
 
 // The one field a practice or learning card answers in.

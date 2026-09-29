@@ -3,9 +3,13 @@ import type {
   CourseUnit,
   VocabularyEntry,
 } from '../src/features/courses/schemas/course-units';
+import type { CreatedVocabularyEntry } from '../src/features/courses/services/vocabulary-entry-service';
+import { NewVocabularyForm } from '../src/features/courses/ui/new-vocabulary-form';
 import { PlaceVocabulary } from '../src/features/courses/ui/place-vocabulary';
+import type { NewVocabularyEntryDraft } from '../src/features/courses/ui/use-new-vocabulary-entry';
+import { VocabularyExample } from '../src/features/courses/ui/vocabulary-example';
 import { Button } from '../src/shared/ui/button';
-import { englishSubject } from './course-fixture-data';
+import { englishSubject, targetLabel } from './course-fixture-data';
 import { fixtureControl } from './fixture-controls';
 import { navigateToFixture } from './fixture-state';
 import {
@@ -14,6 +18,63 @@ import {
   fixtureTranslation,
   useFixtureEntries,
 } from './word-entry-fixture-data';
+
+type FixtureNewVocabularyFormProps = {
+  readonly entries: ReadonlyArray<VocabularyEntry>;
+  readonly createEntry: (
+    draft: NewVocabularyEntryDraft,
+  ) => Promise<CreatedVocabularyEntry>;
+};
+
+// The English course's entry form, with suggestions answered in memory.
+export const FixtureNewVocabularyForm = ({
+  entries,
+  createEntry,
+}: FixtureNewVocabularyFormProps) => (
+  <NewVocabularyForm
+    createEntry={createEntry}
+    entries={entries}
+    generateExample={fixtureDraftExample}
+    suggestTranslation={fixtureTranslation}
+    targetLabel={targetLabel}
+    targetLanguage="en"
+    translateExample={fixtureExampleTranslation}
+  />
+);
+
+// A word's example sentence, generated on request.
+export const FixtureVocabularyExample = ({
+  entry,
+}: {
+  readonly entry: VocabularyEntry;
+}) => (
+  <VocabularyExample
+    entry={entry}
+    generate={() =>
+      Promise.resolve({
+        targetText: 'This is a useful example.',
+        nativeText: 'Das ist ein hilfreiches Beispiel.',
+        source: 'generated',
+      })
+    }
+    targetLanguage="en"
+  />
+);
+
+// Starts learning or practicing the selected words.
+export const FixtureStudyAction = ({
+  intent,
+}: {
+  readonly intent: 'learn' | 'practice';
+}) => (
+  <Button
+    onClick={() =>
+      navigateToFixture(intent === 'learn' ? 'learn-start' : 'study-start')
+    }
+  >
+    Auswahl {intent === 'learn' ? 'kennenlernen' : 'üben'}
+  </Button>
+);
 
 type FixturePlaceVocabularyProps = {
   readonly book: CourseBook;
@@ -30,32 +91,19 @@ export const FixturePlaceVocabulary = ({
   const { entries, createEntry } = useFixtureEntries(initialEntries);
   return (
     <PlaceVocabulary
-      courseEntries={entries}
-      createEntry={(draft) => createEntry(draft, book, unit)}
       enabledDirections={['to_target', 'to_native']}
       entries={entries}
-      generateDraftExample={fixtureDraftExample}
-      generateExample={async () => ({
-        targetText: 'This is a useful example.',
-        nativeText: 'Das ist ein hilfreiches Beispiel.',
-        source: 'generated',
-      })}
+      entryForm={
+        <FixtureNewVocabularyForm
+          createEntry={(draft) => createEntry(draft, book, unit)}
+          entries={entries}
+        />
+      }
       importAction={fixtureControl('Seite fotografieren', 'import', 'primary')}
       place={unit === null ? 'book' : 'unit'}
-      renderStudyAction={(_, intent) => (
-        <Button
-          onClick={() =>
-            navigateToFixture(
-              intent === 'learn' ? 'learn-start' : 'study-start',
-            )
-          }
-        >
-          Auswahl {intent === 'learn' ? 'kennenlernen' : 'üben'}
-        </Button>
-      )}
-      suggestTranslation={fixtureTranslation}
+      renderEntryDetail={(entry) => <FixtureVocabularyExample entry={entry} />}
+      renderStudyAction={(_, intent) => <FixtureStudyAction intent={intent} />}
       subject={englishSubject}
-      translateDraftExample={fixtureExampleTranslation}
     />
   );
 };

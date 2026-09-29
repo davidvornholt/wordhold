@@ -1,10 +1,10 @@
 import type { VocabularyEntry } from '../src/features/courses/schemas/course-units';
+import { VocabularyExample } from '../src/features/courses/ui/vocabulary-example';
 import { VocabularyLibrary } from '../src/features/courses/ui/vocabulary-library';
-import { Button } from '../src/shared/ui/button';
 import { PageLayout } from '../src/shared/ui/page-layout';
 import { englishSubject } from './course-fixture-data';
 import { fixtureBackControl } from './fixture-controls';
-import { navigateToFixture } from './fixture-state';
+import { FixtureStudyAction } from './word-entry-fixture';
 
 const entries: ReadonlyArray<VocabularyEntry> = [
   {
@@ -15,6 +15,7 @@ const entries: ReadonlyArray<VocabularyEntry> = [
     unitName: 'Unit 3: Holidays',
     targetText: 'memory',
     nativeText: 'die Erinnerung',
+    keyPoints: null,
     example: {
       targetText: 'That trip is a happy memory.',
       nativeText: 'Diese Reise ist eine schöne Erinnerung.',
@@ -48,6 +49,7 @@ const entries: ReadonlyArray<VocabularyEntry> = [
     unitName: 'Unit 4: Sport',
     targetText: 'the referee',
     nativeText: 'der Schiedsrichter',
+    keyPoints: null,
     example: null,
     introduced: true,
     cards: [
@@ -87,23 +89,21 @@ export const VocabularyFixture = ({
     <VocabularyLibrary
       enabledDirections={['to_target', 'to_native']}
       entries={entries}
-      generateExample={async () => ({
-        targetText: 'The referee stopped the match.',
-        nativeText: 'Der Schiedsrichter unterbrach das Spiel.',
-        source: 'generated',
-      })}
       initialFilter={difficult ? 'difficult' : 'all'}
-      renderStudyAction={(_, intent) => (
-        <Button
-          onClick={() =>
-            navigateToFixture(
-              intent === 'learn' ? 'learn-start' : 'study-start',
-            )
+      renderEntryDetail={(entry) => (
+        <VocabularyExample
+          entry={entry}
+          generate={() =>
+            Promise.resolve({
+              targetText: 'The referee stopped the match.',
+              nativeText: 'Der Schiedsrichter unterbrach das Spiel.',
+              source: 'generated',
+            })
           }
-        >
-          Auswahl {intent === 'learn' ? 'kennenlernen' : 'üben'}
-        </Button>
+          targetLanguage="en"
+        />
       )}
+      renderStudyAction={(_, intent) => <FixtureStudyAction intent={intent} />}
       scope="course"
       subject={englishSubject}
     />

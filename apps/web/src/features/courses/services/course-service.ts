@@ -1,10 +1,12 @@
-import { Clock, Effect } from 'effect';
+import { Clock, type Context, Effect } from 'effect';
 import {
   CourseBookConflictError,
   CourseBookNotFoundError,
+  CourseKindMismatchError,
   CourseSettingsNotFoundError,
   CourseUnitConflictError,
   CourseUnitOrderChangedError,
+  SubjectConflictError,
 } from '../errors/courses-errors';
 import type {
   CourseDirectionsData,
@@ -17,10 +19,27 @@ import type {
   ReorderCourseUnitsData,
 } from '../schemas/course-unit-management';
 import type { CourseOutline } from '../schemas/course-units';
+import type {
+  CreateSubjectData,
+  RenameSubjectData,
+} from '../schemas/subject-management';
 import { CourseStore } from './course-store';
 
 const notFound = new CourseSettingsNotFoundError({
-  message: 'Sprache nicht gefunden.',
+  message: 'Sprache oder Fach nicht gefunden.',
+});
+
+const subjectMissing = new CourseSettingsNotFoundError({
+  message: 'Fach nicht gefunden.',
+});
+
+const subjectTaken = (name: string) =>
+  new SubjectConflictError({
+    message: `„${name}“ gibt es auf der Übersicht bereits.`,
+  });
+
+const directionsFixed = new CourseKindMismatchError({
+  message: 'Ein Fach fragt immer vom Begriff zur Definition.',
 });
 
 const bookMissing = new CourseBookNotFoundError({
@@ -32,11 +51,53 @@ const bookTaken = (name: string) =>
     message: `Das Buch "${name}" gibt es bereits.`,
   });
 
+// The settings a language and a subject differ in: a language chooses its
+// directions, a subject is created and renamed from the overview.
+const courseSettings = (store: Context.Tag.Service<typeof CourseStore>) => {
+  // Switching a direction off only stops it being asked, counted and
+  // scheduled. Its cards keep their schedule, so switching it back on
+  // resumes where it left off instead of starting the entries over. A
+  // subject has only the one direction.
+  const setDirections = ({ courseId, directions }: SetCourseDirectionsData) =>
+    Effect.gen(function* () {
+      const kind = yield* store.readKind(courseId);
+      if (kind === undefined) {
+        return yield* notFound;
+      }
+      if (kind === 'terms') {
+        return yield* directionsFixed;
+      }
+      const updated = yield* store.writeDirections(courseId, directions);
+      return updated ? directions : yield* notFound;
+    });
+  const createSubject = ({ name }: CreateSubjectData) =>
+    Effect.gen(function* () {
+      const result = yield* store.createSubject(name);
+      return result.kind === 'duplicate'
+        ? yield* subjectTaken(name)
+        : { courseId: result.courseId };
+    });
+  const renameSubject = ({ courseId, name }: RenameSubjectData) =>
+    Effect.gen(function* () {
+      const result = yield* store.renameSubject(courseId, name);
+      if (result === 'subject-missing') {
+        return yield* subjectMissing;
+      }
+      if (result === 'duplicate') {
+        return yield* subjectTaken(name);
+      }
+      return { name };
+    });
+  return { setDirections, createSubject, renameSubject } as const;
+};
+
 export class CourseService extends Effect.Service<CourseService>()(
   'wordhold/CourseService',
   {
     effect: Effect.gen(function* () {
       const store = yield* CourseStore;
+      const { setDirections, createSubject, renameSubject } =
+        courseSettings(store);
       const getDirections = (courseId: string) =>
         Effect.flatMap(
           store.readDirections(courseId),
@@ -49,18 +110,6 @@ export class CourseService extends Effect.Service<CourseService>()(
             directions === undefined
               ? Effect.fail(notFound)
               : Effect.succeed(directions),
-        );
-      // Switching a direction off only stops it being asked, counted and
-      // scheduled. Its cards keep their schedule, so switching it back on
-      // resumes where it left off instead of starting the entries over.
-      const setDirections = ({
-        courseId,
-        directions,
-      }: SetCourseDirectionsData) =>
-        Effect.flatMap(
-          store.writeDirections(courseId, directions),
-          (updated) =>
-            updated ? Effect.succeed(directions) : Effect.fail(notFound),
         );
       const getOutline = (courseId: string) =>
         Effect.gen(function* () {
@@ -132,6 +181,8 @@ export class CourseService extends Effect.Service<CourseService>()(
       return {
         getDirections,
         setDirections,
+        createSubject,
+        renameSubject,
         getOutline,
         createBook,
         renameBook,

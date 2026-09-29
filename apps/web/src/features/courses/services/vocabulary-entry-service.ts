@@ -1,10 +1,10 @@
 import { SentenceGen } from '@wordhold/ai/sentence';
 import { Tts } from '@wordhold/ai/tts';
-import type { LanguageCode } from '@wordhold/db/schema/courses';
 import { Effect } from 'effect';
 import { Storage } from '../../../shared/storage/server';
 import {
   CourseBookNotFoundError,
+  CourseKindMismatchError,
   CourseSettingsNotFoundError,
   CourseUnitNotFoundError,
   VocabularyEntryConflictError,
@@ -30,7 +30,13 @@ export type CreatedVocabularyEntry = {
 };
 
 const courseMissing = new CourseSettingsNotFoundError({
-  message: 'Sprache nicht gefunden.',
+  message: 'Sprache oder Fach nicht gefunden.',
+});
+
+// A subject's terms have a definition instead of a translation, and no
+// example sentences or pronunciation.
+const notLanguage = new CourseKindMismatchError({
+  message: 'In einem Fach trägst du Begriffe mit Definition ein.',
 });
 
 const placeMissing = ({ unitId }: WordPlace) =>
@@ -52,15 +58,15 @@ export class VocabularyEntryService extends Effect.Service<VocabularyEntryServic
       const tts = yield* Tts;
 
       const targetLanguage = (courseId: string) =>
-        Effect.flatMap(
-          store.readTargetLanguage(courseId),
-          (
-            language,
-          ): Effect.Effect<LanguageCode, CourseSettingsNotFoundError> =>
-            language === undefined
-              ? Effect.fail(courseMissing)
-              : Effect.succeed(language),
-        );
+        Effect.gen(function* () {
+          const course = yield* store.readCourse(courseId);
+          if (course === undefined) {
+            return yield* courseMissing;
+          }
+          return course.kind === 'terms'
+            ? yield* notLanguage
+            : course.targetLanguage;
+        });
 
       const create = (input: CreateVocabularyEntryData) =>
         Effect.gen(function* () {
@@ -115,6 +121,9 @@ export class VocabularyEntryService extends Effect.Service<VocabularyEntryServic
           const place = yield* store.readPlace(courseId, { bookId, unitId });
           if (place === undefined) {
             return yield* placeMissing({ bookId, unitId });
+          }
+          if (place.kind === 'terms') {
+            return yield* notLanguage;
           }
           return yield* suggestDraftTranslation(
             generator,

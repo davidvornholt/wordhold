@@ -1,3 +1,4 @@
+import type { CourseKind } from '@wordhold/db/schema/courses';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
 
 export type DirectionStats = {
@@ -25,6 +26,7 @@ export type CourseStats = {
 export type FragileEntry = {
   readonly entryId: string;
   readonly courseId: string;
+  readonly courseKind: CourseKind;
   readonly targetText: string;
   readonly nativeText: string;
   readonly courseName: string;

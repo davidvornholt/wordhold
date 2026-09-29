@@ -7,8 +7,12 @@ import { CourseOverview } from '../src/features/courses/ui/course-overview';
 import { DirectionPlan } from '../src/features/courses/ui/direction-plan';
 import { placeLinkClass } from '../src/features/courses/ui/place-link-styles';
 import { progressSummary } from '../src/features/courses/ui/progress-status';
-import { QuickVocabularyEntry } from '../src/features/courses/ui/quick-vocabulary-entry';
-import { directionLabel } from '../src/shared/directions';
+import { QuickEntry } from '../src/features/courses/ui/quick-entry';
+import {
+  type CourseSubject,
+  courseNouns,
+  directionLabel,
+} from '../src/shared/directions';
 import { countNoun } from '../src/shared/format/count';
 import { itemsInNextSection } from '../src/shared/session/section-policy';
 import { PageLayout } from '../src/shared/ui/page-layout';
@@ -23,18 +27,15 @@ import {
   mixedUnit,
   novelBook,
   novelEntries,
-  targetLabel,
   unintroducedUnit,
 } from './course-fixture-data';
 import { fixtureBackControl, fixtureControl } from './fixture-controls';
 import { navigateToFixture } from './fixture-state';
-import { FixturePlaceVocabulary } from './word-entry-fixture';
 import {
-  fixtureDraftExample,
-  fixtureExampleTranslation,
-  fixtureTranslation,
-  useFixtureEntries,
-} from './word-entry-fixture-data';
+  FixtureNewVocabularyForm,
+  FixturePlaceVocabulary,
+} from './word-entry-fixture';
+import { useFixtureEntries } from './word-entry-fixture-data';
 
 const coursePrimaryAction = (
   emptyVocabulary: boolean,
@@ -104,23 +105,21 @@ export const CourseFixture = ({
         primaryAction={coursePrimaryAction(noVocabulary, practiceAvailable)}
         quickEntry={
           books.length === 0 ? null : (
-            <QuickVocabularyEntry
-              createEntry={(place, draft) =>
-                createEntry(
-                  draft,
-                  books.find((book) => book.id === place.bookId) ?? currentBook,
-                  units.find((unit) => unit.id === place.unitId) ?? null,
-                )
-              }
-              entries={entries}
-              generateExample={fixtureDraftExample}
+            <QuickEntry
               outline={outline}
-              suggestTranslation={(_, text, given) =>
-                fixtureTranslation(text, given)
-              }
-              targetLabel={targetLabel}
-              targetLanguage="en"
-              translateExample={fixtureExampleTranslation}
+              renderForm={(place) => (
+                <FixtureNewVocabularyForm
+                  createEntry={(draft) =>
+                    createEntry(
+                      draft,
+                      books.find((book) => book.id === place.bookId) ??
+                        currentBook,
+                      units.find((unit) => unit.id === place.unitId) ?? null,
+                    )
+                  }
+                  entries={entries}
+                />
+              )}
             />
           )
         }
@@ -142,37 +141,46 @@ export const CourseFixture = ({
           'course-settings',
           'quiet',
         )}
+        subject={englishSubject}
         vocabularyAction={fixtureControl('Vokabelliste', 'vocabulary', 'quiet')}
       />
     </PageLayout>
   );
 };
 
+type FixtureDirectionPlanProps = {
+  readonly progress: WordProgress;
+  readonly subject?: CourseSubject;
+};
+
 // A book's or unit's learning paths, with its actions as fixture controls.
 export const FixtureDirectionPlan = ({
   progress,
-}: {
-  readonly progress: WordProgress;
-}) => (
-  <DirectionPlan
-    progress={progress}
-    renderLearnAction={(direction, variant) =>
-      fixtureControl(
-        `${countNoun(itemsInNextSection(direction.unintroduced), 'Vokabel', 'Vokabeln')} kennenlernen${variant === 'primary' ? ` · ${directionLabel(direction.direction, englishSubject)}` : ''}`,
-        'learn',
-        variant,
-      )
-    }
-    renderScheduledAction={(direction, variant) =>
-      fixtureControl(
-        `${countNoun(direction.due + direction.firstReviews, 'Karte', 'Karten')} üben · ${directionLabel(direction.direction, englishSubject)}`,
-        'practice',
-        variant,
-      )
-    }
-    subject={englishSubject}
-  />
-);
+  subject = englishSubject,
+}: FixtureDirectionPlanProps) => {
+  const nouns = courseNouns(subject);
+  const isTerms = subject.kind === 'terms';
+  return (
+    <DirectionPlan
+      progress={progress}
+      renderLearnAction={(direction, variant) =>
+        fixtureControl(
+          `${countNoun(itemsInNextSection(direction.unintroduced), nouns.singular, nouns.plural)} kennenlernen${variant === 'primary' ? ` · ${directionLabel(direction.direction, subject)}` : ''}`,
+          isTerms ? 'terms-learn' : 'learn',
+          variant,
+        )
+      }
+      renderScheduledAction={(direction, variant) =>
+        fixtureControl(
+          `${countNoun(direction.due + direction.firstReviews, 'Karte', 'Karten')} üben · ${directionLabel(direction.direction, subject)}`,
+          isTerms ? 'terms-practice' : 'practice',
+          variant,
+        )
+      }
+      subject={subject}
+    />
+  );
+};
 
 type UnitFixtureProps = {
   readonly state?: 'mixed' | 'unintroduced' | 'due' | 'empty';
@@ -216,7 +224,7 @@ export const UnitFixture = ({ state = 'mixed' }: UnitFixtureProps) => {
       title={unit.name}
     >
       <p className="text-muted-foreground text-sm">
-        {`${currentBook.name} · ${progressSummary(unit)}`}
+        {`${currentBook.name} · ${progressSummary(unit, courseNouns(englishSubject))}`}
       </p>
       {unit.directions.length === 0 ? null : (
         <FixtureDirectionPlan progress={unit} />

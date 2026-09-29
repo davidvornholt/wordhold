@@ -1,5 +1,12 @@
-import { createFileRoute, Link, useRouter } from '@tanstack/react-router';
+import {
+  createFileRoute,
+  Link,
+  useNavigate,
+  useRouter,
+} from '@tanstack/react-router';
 import { HomeShell } from '../app/home-shell';
+import { createSubject } from '../features/courses/services/server-fns';
+import { NewSubjectForm } from '../features/courses/ui/new-subject-form';
 import {
   busiestCourse,
   type DashboardData,
@@ -23,18 +30,21 @@ import { PendingImportSessions } from '../features/import/ui/pending-import-sess
 import { authClient } from '../shared/auth/client';
 import { getSessionUser } from '../shared/auth/session-fn';
 import { earliestDate } from '../shared/dates/learning-date';
+import { type CourseSubject, courseNouns } from '../shared/directions';
 import { countNoun } from '../shared/format/count';
 import { ActionLink } from '../shared/ui/action-link';
 
 const courseLinkClass =
   'font-display text-xl underline decoration-border underline-offset-4 transition-colors hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring';
 
+type CourseName = {
+  readonly id: string;
+  readonly name: string;
+};
+
 type TodayProps = {
   readonly dashboard: DashboardData;
-  readonly courses: ReadonlyArray<{
-    readonly id: string;
-    readonly name: string;
-  }>;
+  readonly courses: ReadonlyArray<CourseName>;
 };
 
 // The course cards start sittings; the "Heute" action is a shortcut to the
@@ -72,6 +82,85 @@ const Today = ({ dashboard, courses }: TodayProps) => {
   );
 };
 
+type CoursesProps = {
+  readonly dashboard: DashboardData;
+  readonly courses: ReadonlyArray<CourseSubject & CourseName>;
+};
+
+// Each course card starts its own sittings; a new subject is created from
+// below the cards and opens with its first term.
+const Courses = ({ dashboard, courses }: CoursesProps) => {
+  const navigate = useNavigate();
+  return (
+    <CourseGrid
+      courses={courses}
+      renderCourseLink={(course) => (
+        <Link
+          className={courseLinkClass}
+          params={{ courseId: course.id }}
+          to="/courses/$courseId"
+        >
+          {course.name}
+        </Link>
+      )}
+      renderLearnAction={(course) => (
+        <ActionLink
+          params={{ courseId: course.id }}
+          to="/courses/$courseId"
+          variant="outline"
+        >
+          Neue {courseNouns(course).plural} kennenlernen
+        </ActionLink>
+      )}
+      renderPracticeAction={(course) => (
+        <ActionLink
+          params={{ courseId: course.id }}
+          to="/courses/$courseId/practice"
+          variant="outline"
+        >
+          {countNoun(
+            dashboard.perCourse.find((item) => item.courseId === course.id)
+              ?.ready ?? 0,
+            'Karte',
+            'Karten',
+          )}{' '}
+          üben
+        </ActionLink>
+      )}
+      renderStartAction={(course) =>
+        course.kind === 'terms' ? (
+          <ActionLink params={{ courseId: course.id }} to="/courses/$courseId">
+            Ersten Begriff eintragen
+          </ActionLink>
+        ) : (
+          <ActionLink
+            params={{ courseId: course.id }}
+            to="/courses/$courseId/import"
+          >
+            Erste Seite fotografieren
+          </ActionLink>
+        )
+      }
+      stats={dashboard.perCourse}
+      subjectForm={
+        <NewSubjectForm
+          courses={courses}
+          createSubject={async (name) => {
+            const { courseId } = await createSubject({
+              data: { name },
+            });
+            await navigate({
+              to: '/courses/$courseId',
+              params: { courseId },
+            });
+          }}
+          hasSubjects={courses.some((course) => course.kind === 'terms')}
+        />
+      }
+    />
+  );
+};
+
 const Home = () => {
   const { user, courses, pendingImportSessions, audioRecovery, dashboard } =
     Route.useLoaderData();
@@ -95,52 +184,7 @@ const Home = () => {
         <>
           <Today courses={courses} dashboard={dashboard} />
 
-          <CourseGrid
-            courses={courses}
-            renderCourseLink={(course) => (
-              <Link
-                className={courseLinkClass}
-                params={{ courseId: course.id }}
-                to="/courses/$courseId"
-              >
-                {course.name}
-              </Link>
-            )}
-            renderImportAction={(course) => (
-              <ActionLink
-                params={{ courseId: course.id }}
-                to="/courses/$courseId/import"
-              >
-                Erste Seite fotografieren
-              </ActionLink>
-            )}
-            renderLearnAction={(course) => (
-              <ActionLink
-                params={{ courseId: course.id }}
-                to="/courses/$courseId"
-                variant="outline"
-              >
-                Neue Vokabeln kennenlernen
-              </ActionLink>
-            )}
-            renderPracticeAction={(course) => (
-              <ActionLink
-                params={{ courseId: course.id }}
-                to="/courses/$courseId/practice"
-                variant="outline"
-              >
-                {countNoun(
-                  dashboard.perCourse.find(
-                    (item) => item.courseId === course.id,
-                  )?.ready ?? 0,
-                  'Karte',
-                  'Karten',
-                )}{' '}
-                üben
-              </ActionLink>
-            )}
-            stats={dashboard.perCourse}
-          />
+          <Courses courses={courses} dashboard={dashboard} />
 
           <FragileList
             entries={dashboard.fragile}
@@ -151,7 +195,9 @@ const Home = () => {
                 search={{ filter: 'difficult' }}
                 to="/courses/$courseId/vocabulary"
               >
-                {entry.targetText} · {entry.nativeText}
+                {entry.courseKind === 'terms'
+                  ? entry.targetText
+                  : `${entry.targetText} · ${entry.nativeText}`}
               </Link>
             )}
           />

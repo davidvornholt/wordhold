@@ -1,6 +1,12 @@
+import type { CourseSubject } from '../../../shared/directions';
 import type { CourseBook } from '../schemas/course-units';
 
-// Book names are unique within a language. Returns the message to show
+// A language's books are novels and textbooks; a subject's are textbooks
+// and lecture notes.
+export const bookPlaceholder = ({ kind }: CourseSubject): string =>
+  kind === 'terms' ? 'z. B. Vorlesungsskript' : 'z. B. Harry Potter';
+
+// Book names are unique within a course. Returns the message to show
 // instead of saving, or null when the name is free.
 export const bookTaken = (
   books: ReadonlyArray<CourseBook>,

@@ -1,15 +1,17 @@
 import { type ReactNode, useId, useState } from 'react';
+import { type CourseSubject, courseNouns } from '../../../shared/directions';
 import { Button } from '../../../shared/ui/button';
 import { maximumBookNameLength } from '../../../shared/vocabulary/book-name';
 import type { CourseBook, CourseUnit } from '../schemas/course-units';
-import { bookTaken } from './book-names';
+import { bookPlaceholder, bookTaken } from './book-names';
 import { NameForm } from './name-form';
 import { UnitOrderEditor } from './unit-order-editor';
 
 type BookEditorProps = {
   readonly book: CourseBook;
-  // Every book of the language, so a new name is checked against the others.
+  // Every book of the course, so a new name is checked against the others.
   readonly books: ReadonlyArray<CourseBook>;
+  readonly subject: CourseSubject;
   readonly units: ReadonlyArray<CourseUnit>;
   readonly renameBook: (name: string) => Promise<void>;
   // Each unit change returns the book's units in their saved order.
@@ -23,6 +25,7 @@ type BookEditorProps = {
 const BookEditor = ({
   book,
   books,
+  subject,
   units,
   renameBook,
   createUnit,
@@ -42,7 +45,7 @@ const BookEditor = ({
           maxLength={maximumBookNameLength}
           onBusyChange={setRenaming}
           pendingStatus="Buch wird umbenannt …"
-          placeholder="z. B. Harry Potter"
+          placeholder={bookPlaceholder(subject)}
           save={renameBook}
           savedStatus={(name) => `Umbenannt in ${name}.`}
           statusLabel="Status beim Umbenennen des Buchs"
@@ -63,6 +66,7 @@ const BookEditor = ({
           bookName={book.name}
           createUnit={createUnit}
           initialUnits={units}
+          nouns={courseNouns(subject)}
           reorderUnits={reorderUnits}
         />
       </section>

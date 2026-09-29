@@ -16,6 +16,7 @@ import {
 } from '@dnd-kit/sortable';
 import { maximumUnitNameLength } from '@wordhold/ai/extraction/schema';
 import { useState } from 'react';
+import type { CourseNouns } from '../../../shared/directions';
 import { cardListClass } from '../../../shared/ui/surface-styles';
 import type { CourseUnit } from '../schemas/course-units';
 import { NameForm } from './name-form';
@@ -23,6 +24,7 @@ import { SortableUnitRow } from './sortable-unit-row';
 
 type UnitOrderEditorProps = {
   readonly bookName: string;
+  readonly nouns: CourseNouns;
   readonly initialUnits: ReadonlyArray<CourseUnit>;
   readonly createUnit: (name: string) => Promise<ReadonlyArray<CourseUnit>>;
   readonly reorderUnits: (
@@ -67,6 +69,7 @@ const unitAnnouncements = (units: ReadonlyArray<CourseUnit>): Announcements => {
 // so a unit never moves into a different book here.
 export const UnitOrderEditor = ({
   bookName,
+  nouns,
   initialUnits,
   createUnit,
   reorderUnits,
@@ -150,6 +153,7 @@ export const UnitOrderEditor = ({
                   busy={busy}
                   index={index}
                   key={unit.id}
+                  nouns={nouns}
                   onMove={move}
                   total={units.length}
                   unit={unit}

@@ -17,6 +17,10 @@ import { placeLinkClass } from '../../../../../features/courses/ui/place-link-st
 import { bookSummary } from '../../../../../features/courses/ui/progress-status';
 import { UnitList } from '../../../../../features/courses/ui/unit-list';
 import { getCourse } from '../../../../../features/import/server-fns';
+import {
+  type CourseNouns,
+  courseNouns,
+} from '../../../../../shared/directions';
 import { ActionLink } from '../../../../../shared/ui/action-link';
 import { BackLink } from '../../../../../shared/ui/back-link';
 import { PageLayout } from '../../../../../shared/ui/page-layout';
@@ -26,11 +30,13 @@ import { PlaceDirectionPlan, PlaceWords } from '../../-place-screen';
 type BookUnitsProps = {
   readonly courseId: string;
   readonly units: ReadonlyArray<CourseUnit>;
-  // A book without words of its own offers the photo import here instead.
+  readonly nouns: CourseNouns;
+  // A language's book without words of its own offers the photo import here
+  // instead.
   readonly offerImport: boolean;
 };
 
-const BookUnits = ({ courseId, units, offerImport }: BookUnitsProps) => {
+const BookUnits = ({ courseId, units, nouns, offerImport }: BookUnitsProps) => {
   const headingId = useId();
   return (
     <section aria-labelledby={headingId} className="flex flex-col gap-3">
@@ -49,6 +55,7 @@ const BookUnits = ({ courseId, units, offerImport }: BookUnitsProps) => {
         ) : null}
       </div>
       <UnitList
+        nouns={nouns}
         renderUnitLink={(unit) => (
           <Link
             className={placeLinkClass}
@@ -88,7 +95,8 @@ const BookScreen = () => {
     return (
       <PageLayout backControl={backControl} title={course.name}>
         <p className={`${cardClass} font-medium`}>
-          Dieses Buch gehört nicht zu dieser Sprache.
+          Dieses Buch gehört nicht zu{' '}
+          {course.kind === 'terms' ? 'diesem Fach' : 'dieser Sprache'}.
         </p>
       </PageLayout>
     );
@@ -106,6 +114,7 @@ const BookScreen = () => {
   const place = { courseId: course.id, bookId: book.id };
   const wordPlace = { bookId: book.id, unitId: null };
   const showWords = book.entries > 0 || units.length === 0;
+  const nouns = courseNouns(course);
   return (
     <PageLayout backControl={backControl} title={book.name}>
       <EditableBook
@@ -125,7 +134,8 @@ const BookScreen = () => {
             }),
           )
         }
-        summary={bookSummary(book, units)}
+        subject={course}
+        summary={bookSummary(book, units, nouns)}
         units={units}
       >
         {book.entries === 0 || book.directions.length === 0 ? null : (
@@ -138,18 +148,18 @@ const BookScreen = () => {
         )}
         {showWords ? (
           <PlaceWords
+            course={course}
             courseEntries={courseEntries}
-            courseId={course.id}
             enabledDirections={directions}
             entries={entries}
             place={wordPlace}
-            subject={course}
           />
         ) : null}
         {units.length === 0 ? null : (
           <BookUnits
             courseId={course.id}
-            offerImport={!showWords}
+            nouns={nouns}
+            offerImport={!showWords && course.kind === 'language'}
             units={units}
           />
         )}

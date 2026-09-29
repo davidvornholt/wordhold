@@ -87,6 +87,7 @@ export class VocabularyExampleStore extends Context.Tag(
         exampleAudioPath: row.exampleAudioPath,
       });
 
+      // A subject's term has no example sentence, so it reads as missing.
       const selectContext = (entryId: string) => sql<VocabularyExampleRow>`
         select e.id as "entryId", e.target_text as "targetText",
           e.native_text as "nativeText",
@@ -105,7 +106,7 @@ export class VocabularyExampleStore extends Context.Tag(
           order by position, id
           limit 1
         ) example on true
-        where e.id = ${entryId}
+        where e.id = ${entryId} and co.kind = 'language'
       `;
 
       const read = (entryId: string) =>

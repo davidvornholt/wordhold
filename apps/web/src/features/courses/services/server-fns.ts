@@ -16,6 +16,10 @@ import {
   decodeReorderCourseUnits,
 } from '../schemas/course-unit-management';
 import {
+  decodeCreateSubject,
+  decodeRenameSubject,
+} from '../schemas/subject-management';
+import {
   decodeCreateVocabularyEntry,
   decodeVocabularyExampleRequest,
   decodeVocabularyTranslationRequest,
@@ -70,6 +74,24 @@ export const setCourseDirections = createServerFn({ method: 'POST' })
     await authRuntime.runPromise(requireSession(getRequest().headers));
     return courseRuntime.runPromise(
       Effect.flatMap(CourseService, (service) => service.setDirections(data)),
+    );
+  });
+
+export const createSubject = createServerFn({ method: 'POST' })
+  .validator(decodeCreateSubject)
+  .handler(async ({ data }) => {
+    await authRuntime.runPromise(requireSession(getRequest().headers));
+    return courseRuntime.runPromise(
+      Effect.flatMap(CourseService, (service) => service.createSubject(data)),
+    );
+  });
+
+export const renameSubject = createServerFn({ method: 'POST' })
+  .validator(decodeRenameSubject)
+  .handler(async ({ data }) => {
+    await authRuntime.runPromise(requireSession(getRequest().headers));
+    return courseRuntime.runPromise(
+      Effect.flatMap(CourseService, (service) => service.renameSubject(data)),
     );
   });
 

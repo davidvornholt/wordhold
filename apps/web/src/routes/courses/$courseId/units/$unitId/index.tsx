@@ -6,6 +6,7 @@ import {
 } from '../../../../../features/courses/services/server-fns';
 import { progressSummary } from '../../../../../features/courses/ui/progress-status';
 import { getCourse } from '../../../../../features/import/server-fns';
+import { courseNouns } from '../../../../../shared/directions';
 import { BackLink } from '../../../../../shared/ui/back-link';
 import { PageLayout } from '../../../../../shared/ui/page-layout';
 import { cardClass } from '../../../../../shared/ui/surface-styles';
@@ -34,19 +35,19 @@ const UnitScreen = () => {
     return (
       <PageLayout backControl={backControl} title={course.name}>
         <p className={`${cardClass} font-medium`}>
-          Diese Einheit gehört nicht zu dieser Sprache.
+          Diese Einheit gehört nicht zu{' '}
+          {course.kind === 'terms' ? 'diesem Fach' : 'dieser Sprache'}.
         </p>
       </PageLayout>
     );
   }
 
   const place = { bookId: unit.bookId, unitId: unit.id };
+  const summary = progressSummary(unit, courseNouns(course));
   return (
     <PageLayout backControl={backControl} title={unit.name}>
       <p className="text-muted-foreground text-sm">
-        {book === undefined
-          ? progressSummary(unit)
-          : `${book.name} · ${progressSummary(unit)}`}
+        {book === undefined ? summary : `${book.name} · ${summary}`}
       </p>
       {unit.directions.length === 0 ? null : (
         <PlaceDirectionPlan
@@ -57,12 +58,11 @@ const UnitScreen = () => {
         />
       )}
       <PlaceWords
+        course={course}
         courseEntries={courseEntries}
-        courseId={course.id}
         enabledDirections={directions}
         entries={unitEntries}
         place={place}
-        subject={course}
       />
     </PageLayout>
   );

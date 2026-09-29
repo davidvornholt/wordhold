@@ -1,16 +1,8 @@
-import { useRouter } from '@tanstack/react-router';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import type {
   VocabularyEntry,
   WordProgress,
 } from '../../../features/courses/schemas/course-units';
-import {
-  createVocabularyEntry,
-  generateVocabularyDraftExample,
-  generateVocabularyExample,
-  suggestVocabularyTranslation,
-  translateVocabularyDraftExample,
-} from '../../../features/courses/services/server-fns';
 import { DirectionPlan } from '../../../features/courses/ui/direction-plan';
 import { PlaceVocabulary } from '../../../features/courses/ui/place-vocabulary';
 import type { WordPlace } from '../../../features/courses/ui/word-places';
@@ -25,6 +17,11 @@ import { itemsInNextSection } from '../../../shared/session/section-policy';
 import type { PlaceSelectionData } from '../../../shared/session/vocabulary-selection';
 import { ActionLink } from '../../../shared/ui/action-link';
 import { PlaceLearnLink, placeSearch } from './-course-place';
+import {
+  CourseEntryDetail,
+  CourseEntryForm,
+  type EntryCourse,
+} from './-entry-forms';
 
 // The screens of a book and of a unit share their learning paths and their
 // word list; only what they cover differs.
@@ -91,50 +88,46 @@ export const PlaceDirectionPlan = ({
 };
 
 type PlaceWordsProps = {
-  readonly courseId: string;
+  readonly course: EntryCourse;
   readonly place: WordPlace;
-  readonly subject: CourseSubject;
   readonly enabledDirections: ReadonlyArray<AnswerDirection>;
   readonly entries: ReadonlyArray<VocabularyEntry>;
   readonly courseEntries: ReadonlyArray<VocabularyEntry>;
 };
 
+// A subject's terms are only typed, so its books and units offer no photo
+// import.
 export const PlaceWords = ({
-  courseId,
+  course,
   place,
-  subject,
   enabledDirections,
   entries,
   courseEntries,
 }: PlaceWordsProps) => {
-  const router = useRouter();
+  const courseId = course.id;
   const selection = placeSelection(place);
   return (
     <PlaceVocabulary
-      courseEntries={courseEntries}
-      createEntry={async (draft) => {
-        const created = await createVocabularyEntry({
-          data: { courseId, ...place, ...draft },
-        });
-        await router.invalidate();
-        return created;
-      }}
       enabledDirections={enabledDirections}
       entries={entries}
-      generateDraftExample={(targetText, nativeText) =>
-        generateVocabularyDraftExample({
-          data: { courseId, targetText, nativeText },
-        })
-      }
-      generateExample={(entryId) =>
-        generateVocabularyExample({ data: entryId })
+      entryForm={
+        <CourseEntryForm
+          course={course}
+          entries={courseEntries}
+          place={place}
+        />
       }
       importAction={
-        <ActionLink params={{ courseId }} to="/courses/$courseId/import">
-          Seite fotografieren
-        </ActionLink>
+        course.kind === 'terms' ? null : (
+          <ActionLink params={{ courseId }} to="/courses/$courseId/import">
+            Seite fotografieren
+          </ActionLink>
+        )
       }
       place={place.unitId === null ? 'book' : 'unit'}
+      renderEntryDetail={(entry) => (
+        <CourseEntryDetail course={course} entry={entry} />
+      )}
       renderStudyAction={(entryIds, intent) => (
         <ActionLink
           params={{ courseId }}
@@ -148,15 +141,7 @@ export const PlaceWords = ({
           Auswahl {intent === 'learn' ? 'kennenlernen' : 'üben'}
         </ActionLink>
       )}
-      suggestTranslation={(text, given) =>
-        suggestVocabularyTranslation({
-          data: { courseId, ...place, text, given },
-        })
-      }
-      subject={subject}
-      translateDraftExample={(targetText) =>
-        translateVocabularyDraftExample({ data: { courseId, targetText } })
-      }
+      subject={course}
     />
   );
 };

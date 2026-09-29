@@ -1,7 +1,7 @@
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
-import type { CourseSubject } from '../../../shared/directions';
+import { type CourseSubject, courseNouns } from '../../../shared/directions';
 import { Button } from '../../../shared/ui/button';
 import { cardClass } from '../../../shared/ui/surface-styles';
 import { wordLocation } from '../../../shared/vocabulary/book-name';
@@ -29,9 +29,9 @@ type VocabularyLibraryProps = {
     entryIds: ReadonlyArray<string>,
     intent: 'learn' | 'practice',
   ) => ReactNode;
-  readonly generateExample: (
-    entryId: string,
-  ) => Promise<NonNullable<VocabularyEntry['example']>>;
+  // The example sentence of a word, or the key points of a term, shown with
+  // the entry's schedule.
+  readonly renderEntryDetail: (entry: VocabularyEntry) => ReactNode;
 };
 
 type VocabularySection = readonly [string, ReadonlyArray<VocabularyEntry>];
@@ -85,8 +85,9 @@ export const VocabularyLibrary = ({
   scope,
   subject,
   renderStudyAction,
-  generateExample,
+  renderEntryDetail,
 }: VocabularyLibraryProps) => {
+  const nouns = courseNouns(subject);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<VocabularyFilter>(initialFilter);
   const [placeFilter, setPlaceFilter] = useState(
@@ -142,6 +143,7 @@ export const VocabularyLibrary = ({
     <div className="flex flex-col gap-5">
       <VocabularyFilters
         filter={filter}
+        nouns={nouns}
         onFilterChange={setFilter}
         onQueryChange={setQuery}
         query={query}
@@ -167,32 +169,32 @@ export const VocabularyLibrary = ({
           }
           variant="outline"
         >
-          Schwierige Vokabeln auswählen
+          Schwierige {nouns.plural} auswählen
         </Button>
       ) : null}
       {visible.length === 0 ? (
         <p className={`${cardClass} text-sm`}>
-          Für diese Auswahl wurden keine Vokabeln gefunden.
+          Für diese Auswahl wurden keine {nouns.plural} gefunden.
         </p>
       ) : (
         sections.map(([label, sectionEntries]) => (
           <VocabularyUnitSection
             enabledDirections={enabledDirections}
             entries={sectionEntries}
-            generateExample={generateExample}
             key={label}
             label={label}
             labelStyle={scope === 'course' ? 'heading' : 'plain'}
             now={now}
             onToggleAll={toggleAll}
             onToggleEntry={toggleEntry}
+            renderEntryDetail={renderEntryDetail}
             selected={selected}
             subject={subject}
           />
         ))
       )}
       {selected.length === 0 ? null : (
-        <VocabularySelectionBar count={selected.length}>
+        <VocabularySelectionBar count={selected.length} nouns={nouns}>
           {renderStudyAction(selected, selectionIntent)}
         </VocabularySelectionBar>
       )}

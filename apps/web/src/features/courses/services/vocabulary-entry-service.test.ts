@@ -6,10 +6,12 @@ import {
 import { SentenceGenError } from '@wordhold/ai/sentence/error';
 import { Tts } from '@wordhold/ai/tts';
 import { TtsError } from '@wordhold/ai/tts/error';
+import type { CourseKind } from '@wordhold/db/schema/courses';
 import { Effect, Either, Layer } from 'effect';
 import { Storage, type StorageShape } from '../../../shared/storage/server';
 import {
   CourseBookNotFoundError,
+  CourseKindMismatchError,
   CourseSettingsNotFoundError,
   CourseUnitNotFoundError,
   VocabularyEntryConflictError,
@@ -36,6 +38,7 @@ const input = {
 type Stubs = {
   readonly createResult?: CreateVocabularyEntryResult;
   readonly courseKnown?: boolean;
+  readonly courseKind?: CourseKind;
   readonly ttsFails?: boolean;
   readonly generatorFails?: boolean;
 };
@@ -47,6 +50,7 @@ const runService = <A, E>(
   {
     createResult = { kind: 'created', entryId },
     courseKnown = true,
+    courseKind = 'language',
     ttsFails = false,
     generatorFails = false,
   }: Stubs = {},
@@ -66,12 +70,20 @@ const runService = <A, E>(
   };
   const dependencies = Layer.mergeAll(
     Layer.succeed(VocabularyEntryStore, {
-      readTargetLanguage: () =>
-        Effect.succeed(courseKnown ? ('fr' as const) : undefined),
+      readCourse: () =>
+        Effect.succeed(
+          courseKnown
+            ? { kind: courseKind, targetLanguage: 'fr' as const }
+            : undefined,
+        ),
       readPlace: () =>
         Effect.succeed(
           courseKnown
-            ? { targetLanguage: 'fr' as const, unitName: 'Unité 1' }
+            ? {
+                kind: courseKind,
+                targetLanguage: 'fr' as const,
+                unitName: 'Unité 1',
+              }
             : undefined,
         ),
       create: () => Effect.succeed(createResult),
@@ -251,5 +263,41 @@ describe('VocabularyEntryService', () => {
     expect(
       unitMissing.result._tag === 'Left' ? unitMissing.result.left : undefined,
     ).toBeInstanceOf(CourseUnitNotFoundError);
+  });
+});
+
+describe('VocabularyEntryService for a subject', () => {
+  it('refuses words, examples and translations for a subject', async () => {
+    const attempts: ReadonlyArray<
+      (service: VocabularyEntryService) => Effect.Effect<unknown, unknown>
+    > = [
+      (service) => service.create(input),
+      (service) =>
+        service.generateExample({
+          courseId,
+          targetText: input.targetText,
+          nativeText: input.nativeText,
+        }),
+      (service) =>
+        service.translateExample({ courseId, targetText: 'Ce voyage.' }),
+      (service) =>
+        service.suggestTranslation({
+          courseId,
+          bookId,
+          unitId,
+          text: 'la mémoire',
+          given: 'target',
+        }),
+    ];
+    const runs = await Promise.all(
+      attempts.map((attempt) => runService(attempt, { courseKind: 'terms' })),
+    );
+    for (const { result, written, wordRequests } of runs) {
+      expect(result._tag === 'Left' ? result.left : undefined).toBeInstanceOf(
+        CourseKindMismatchError,
+      );
+      expect(written).toHaveLength(0);
+      expect(wordRequests).toHaveLength(0);
+    }
   });
 });

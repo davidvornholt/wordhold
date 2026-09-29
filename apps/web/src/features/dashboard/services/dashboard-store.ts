@@ -172,7 +172,7 @@ export class DashboardStore extends Context.Tag('wordhold/DashboardStore')<
       const fragileEntries = () =>
         sql<FragileEntry>`
           select e.id as "entryId", e.course_id as "courseId",
-            e.target_text as "targetText",
+            co.kind as "courseKind", e.target_text as "targetText",
             e.native_text as "nativeText", co.name as "courseName",
             count(*)::int as failures
           from reviews r
@@ -182,7 +182,7 @@ export class DashboardStore extends Context.Tag('wordhold/DashboardStore')<
           where r.rating = ${ratings.again}
             and c.direction = any(co.directions)
             and r.reviewed_at >= now() - make_interval(days => ${fragileWindowDays})
-          group by e.id, e.target_text, e.native_text, co.name
+          group by e.id, e.target_text, e.native_text, co.name, co.kind
           having count(*) >= ${fragileMinFailures}
           order by failures desc limit ${fragileLimit}
         `.pipe(Effect.mapError(databaseError));

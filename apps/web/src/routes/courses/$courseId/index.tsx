@@ -7,16 +7,12 @@ import {
 } from '../../../features/courses/schemas/course-units';
 import {
   createCourseBook,
-  createVocabularyEntry,
-  generateVocabularyDraftExample,
   getCourseOutline,
   listCourseVocabulary,
-  suggestVocabularyTranslation,
-  translateVocabularyDraftExample,
 } from '../../../features/courses/services/server-fns';
 import { CourseOverview } from '../../../features/courses/ui/course-overview';
 import { placeLinkClass } from '../../../features/courses/ui/place-link-styles';
-import { QuickVocabularyEntry } from '../../../features/courses/ui/quick-vocabulary-entry';
+import { QuickEntry } from '../../../features/courses/ui/quick-entry';
 import { getDashboard } from '../../../features/dashboard/services/server-fns';
 import { getCourse } from '../../../features/import/server-fns';
 import {
@@ -25,16 +21,18 @@ import {
   directionLabel,
 } from '../../../shared/directions';
 import { countNoun } from '../../../shared/format/count';
-import { germanLabels, languageSubtitle } from '../../../shared/languages';
+import { languageSubtitle } from '../../../shared/languages';
 import { itemsInNextSection } from '../../../shared/session/section-policy';
 import { ActionLink } from '../../../shared/ui/action-link';
 import { BackLink } from '../../../shared/ui/back-link';
 import { PageLayout } from '../../../shared/ui/page-layout';
 import { coursePlaces, PlaceLearnLink } from './-course-place';
+import { CourseEntryForm } from './-entry-forms';
 
-// Practice comes first while cards are ready, then the next words to learn
-// in course order: each book's own words before its units. A course without
-// vocabulary starts with a photographed page.
+// Practice comes first while cards are ready, then the next entries to learn
+// in course order: each book's own entries before its units. A language
+// without vocabulary starts with a photographed page; an empty subject has
+// no action beyond typing its first term.
 const coursePrimaryAction = ({
   courseId,
   isEmpty,
@@ -86,7 +84,7 @@ const coursePrimaryAction = ({
       </PlaceLearnLink>
     );
   }
-  if (isEmpty) {
+  if (isEmpty && subject.kind === 'language') {
     return (
       <ActionLink params={{ courseId }} to="/courses/$courseId/import">
         Seite fotografieren
@@ -99,13 +97,8 @@ const coursePrimaryAction = ({
 const CourseScreen = () => {
   const { course, entries, outline, stats } = Route.useLoaderData();
   const router = useRouter();
-  // A typed word refreshes the loader so the page's counts include it.
-  const refreshed = async <A,>(update: Promise<A>): Promise<A> => {
-    const next = await update;
-    await router.invalidate();
-    return next;
-  };
   const isEmpty = courseTotals(outline).entries === 0;
+  const isSubject = course.kind === 'terms';
 
   return (
     <PageLayout
@@ -123,7 +116,7 @@ const CourseScreen = () => {
           });
         }}
         importAction={
-          isEmpty ? null : (
+          isEmpty || isSubject ? null : (
             <ActionLink
               params={{ courseId: course.id }}
               to="/courses/$courseId/import"
@@ -133,7 +126,11 @@ const CourseScreen = () => {
             </ActionLink>
           )
         }
-        languageLabel={languageSubtitle(course.name, course.targetLanguage)}
+        languageLabel={
+          isSubject
+            ? null
+            : languageSubtitle(course.name, course.targetLanguage)
+        }
         outline={outline}
         primaryAction={coursePrimaryAction({
           courseId: course.id,
@@ -144,33 +141,15 @@ const CourseScreen = () => {
         })}
         quickEntry={
           outline.books.length === 0 ? null : (
-            <QuickVocabularyEntry
-              createEntry={(place, draft) =>
-                refreshed(
-                  createVocabularyEntry({
-                    data: { courseId: course.id, ...place, ...draft },
-                  }),
-                )
-              }
-              entries={entries}
-              generateExample={(targetText, nativeText) =>
-                generateVocabularyDraftExample({
-                  data: { courseId: course.id, targetText, nativeText },
-                })
-              }
+            <QuickEntry
               outline={outline}
-              suggestTranslation={(place, text, given) =>
-                suggestVocabularyTranslation({
-                  data: { courseId: course.id, ...place, text, given },
-                })
-              }
-              targetLabel={germanLabels[course.targetLanguage]}
-              targetLanguage={course.targetLanguage}
-              translateExample={(targetText) =>
-                translateVocabularyDraftExample({
-                  data: { courseId: course.id, targetText },
-                })
-              }
+              renderForm={(place) => (
+                <CourseEntryForm
+                  course={course}
+                  entries={entries}
+                  place={place}
+                />
+              )}
             />
           )
         }
@@ -199,9 +178,10 @@ const CourseScreen = () => {
             to="/courses/$courseId/vocabulary"
             variant="quiet"
           >
-            Vokabelliste
+            {courseNouns(course).list}
           </ActionLink>
         }
+        subject={course}
       />
     </PageLayout>
   );

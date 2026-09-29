@@ -1,3 +1,4 @@
+import type { CourseNouns } from '../../../shared/directions';
 import { fieldOnCardClass } from '../../../shared/ui/field-styles';
 import { cardCompactClass } from '../../../shared/ui/surface-styles';
 import type { VocabularyFilter } from '../schemas/vocabulary-search';
@@ -14,6 +15,7 @@ type PlaceSelect = {
 type VocabularyFiltersProps = {
   readonly query: string;
   readonly filter: VocabularyFilter;
+  readonly nouns: CourseNouns;
   readonly onQueryChange: (value: string) => void;
   readonly onFilterChange: (value: VocabularyFilter) => void;
   // A book's or unit's own vocabulary view has nothing to switch, so it omits
@@ -24,6 +26,7 @@ type VocabularyFiltersProps = {
 export const VocabularyFilters = ({
   query,
   filter,
+  nouns,
   onQueryChange,
   onFilterChange,
   placeSelect,
@@ -34,7 +37,7 @@ export const VocabularyFilters = ({
     }`}
   >
     <label className="flex flex-col gap-1 text-sm">
-      <span className="font-medium">Vokabel suchen</span>
+      <span className="font-medium">{nouns.singular} suchen</span>
       <input
         className={fieldOnCardClass}
         onChange={(event) => onQueryChange(event.target.value)}

@@ -196,6 +196,7 @@ export const fixtureEntry = (
   unitName: unit?.name ?? null,
   targetText: target,
   nativeText: native,
+  keyPoints: null,
   example: null,
   introduced,
   cards: [

@@ -73,6 +73,9 @@ export type VocabularyEntry = {
   readonly unitName: string | null;
   readonly targetText: string;
   readonly nativeText: string;
+  // What a definition must state, for a term; null for a word, and for a
+  // term whose key points are not derived yet.
+  readonly keyPoints: ReadonlyArray<string> | null;
   readonly example: VocabularyExample | null;
   readonly introduced: boolean;
   readonly cards: ReadonlyArray<VocabularyCard>;
