@@ -29,11 +29,13 @@ it('stores derived key points only for the definition they came from', async () 
         const store = yield* PracticeReviewStore;
         yield* sql`update entries set native_text = 'Stoff, der Reaktionen beschleunigt' where id = ${firstReviewEntryId}`;
 
-        yield* store.saveKeyPoints(
-          firstReviewEntryId,
-          'eine ältere Definition',
-          ['ist ein Stoff'],
-        );
+        expect(
+          yield* store.saveKeyPoints(
+            firstReviewEntryId,
+            'eine ältere Definition',
+            ['ist ein Stoff'],
+          ),
+        ).toBeNull();
         expect(yield* storedKeyPoints).toBeNull();
 
         const keyPoints = [
@@ -41,20 +43,24 @@ it('stores derived key points only for the definition they came from', async () 
           'senkt die Aktivierungsenergie, "nicht" verbraucht',
           "{beschleunigt} die Reaktion's Ablauf",
         ];
-        yield* store.saveKeyPoints(
-          firstReviewEntryId,
-          'Stoff, der Reaktionen beschleunigt',
-          keyPoints,
-        );
+        expect(
+          yield* store.saveKeyPoints(
+            firstReviewEntryId,
+            'Stoff, der Reaktionen beschleunigt',
+            keyPoints,
+          ),
+        ).toEqual(keyPoints);
         expect(yield* storedKeyPoints).toEqual(keyPoints);
 
         // Points the learner already has are never replaced by a late
-        // derivation.
-        yield* store.saveKeyPoints(
-          firstReviewEntryId,
-          'Stoff, der Reaktionen beschleunigt',
-          ['etwas anderes'],
-        );
+        // derivation, which is told the points to grade against instead.
+        expect(
+          yield* store.saveKeyPoints(
+            firstReviewEntryId,
+            'Stoff, der Reaktionen beschleunigt',
+            ['etwas anderes'],
+          ),
+        ).toEqual(keyPoints);
         expect(yield* storedKeyPoints).toEqual(keyPoints);
       }).pipe(
         Effect.provide(

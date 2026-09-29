@@ -58,14 +58,22 @@ type Recorded = {
   readonly judged: Array<DefinitionJudgeInput>;
 };
 
+type SubmitOptions = {
+  readonly elapsedMs?: number;
+  // Key points another answer stored first, which a late save leaves alone.
+  readonly storedFirst?: ReadonlyArray<string>;
+};
+
 const reviewStore = (
   submission: SubmissionRecord,
   recorded: Recorded,
+  { storedFirst }: SubmitOptions,
 ): PracticeReviewStore['Type'] => ({
   findSubmission: () => Effect.succeed(submission),
   saveKeyPoints: (_entryId, _definition, points) =>
     Effect.sync(() => {
       recorded.saved.push(points);
+      return storedFirst ?? points;
     }),
   listAcceptedAnswers: () =>
     Effect.succeed([{ text: definition, source: 'manual' }]),
@@ -80,15 +88,17 @@ const submitDefinition = (
   stored: ReadonlyArray<string> | null,
   covered: ReadonlyArray<boolean>,
   answer: string,
+  options: SubmitOptions = {},
 ) => {
   const recorded: Recorded = { saved: [], commits: [], judged: [] };
   const result = runSubmitPayload(
-    reviewStore(termSubmission(stored), recorded),
+    reviewStore(termSubmission(stored), recorded, options),
     testJudge(() => unavailableJudge('translation judge must not run')),
     {
       cardId: testCard.id,
       revision: testCard.revision,
       answer,
+      elapsedMs: options.elapsedMs,
       wrongAnswerResolution: 'defer',
       mode: 'scheduled',
     },
@@ -134,6 +144,27 @@ describe('PracticeService definitions', () => {
     expect(recorded.commits).toHaveLength(0);
   });
 
+  it('grades against the key points another answer stored first', async () => {
+    const storedFirst = ['ist ein Stoff', 'beschleunigt Reaktionen', 'bleibt'];
+    const { result, recorded } = submitDefinition(
+      null,
+      [true, false, true],
+      'Ein Stoff, der Reaktionen beschleunigt.',
+      { storedFirst },
+    );
+    expect(await result).toMatchObject({
+      _tag: 'Right',
+      right: {
+        keyPoints: [
+          { text: 'ist ein Stoff' },
+          { text: 'beschleunigt Reaktionen' },
+          { text: 'bleibt' },
+        ],
+      },
+    });
+    expect(recorded.judged.at(0)?.keyPoints).toEqual(storedFirst);
+  });
+
   it('commits a definition that covers every key point as good', async () => {
     const { result, recorded } = submitDefinition(
       keyPoints,
@@ -151,13 +182,19 @@ describe('PracticeService definitions', () => {
     });
   });
 
-  it('accepts the stored definition without asking the judge', async () => {
-    const { result, recorded } = submitDefinition(null, [], definition);
+  it('accepts the stored definition without asking the judge, however fast', async () => {
+    const { result, recorded } = submitDefinition(null, [], definition, {
+      elapsedMs: 3000,
+    });
     expect(await result).toMatchObject({
       _tag: 'Right',
       right: { graded: true, correct: true, keyPoints: null },
     });
     expect(recorded.saved).toHaveLength(0);
     expect(recorded.judged).toHaveLength(0);
+    expect(recorded.commits.at(0)).toMatchObject({
+      rating: ratings.good,
+      elapsedMs: 3000,
+    });
   });
 });

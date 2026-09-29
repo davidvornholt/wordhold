@@ -14,10 +14,17 @@ export type CopyDifference =
   | { readonly kind: 'missing'; readonly rest: string }
   | { readonly kind: 'extra'; readonly rest: string };
 
-type Word = { readonly text: string; readonly normalized: string };
+type Word = {
+  readonly text: string;
+  readonly normalized: string;
+  // Closing punctuation, which the normalization drops from every word.
+  readonly closing: string;
+};
 
-// A comma also ends a word when no space follows it ("Stoff,der").
-const wordBoundary = /\s+|(?<=,)(?=\S)/u;
+// A comma also ends a word when a letter follows it ("Stoff,der"), but not
+// inside a number ("7,0").
+const wordBoundary = /\s+|(?<=,)(?=\p{L})/u;
+const closingMarks = /[.;:!?]+$/u;
 
 const words = (text: string): ReadonlyArray<Word> =>
   text
@@ -25,8 +32,15 @@ const words = (text: string): ReadonlyArray<Word> =>
     .map((word) => ({
       text: word,
       normalized: normalizeAnswerForComparison(word),
+      closing: word.match(closingMarks)?.[0] ?? '',
     }))
     .filter((word) => word.normalized !== '');
+
+// Grading drops closing punctuation only at the end of the whole text, so
+// between sentences it has to match. The last typed word may simply be where
+// the copy stops so far.
+const sameWord = (want: Word, got: Word, atEnd: boolean): boolean =>
+  want.normalized === got.normalized && (atEnd || want.closing === got.closing);
 
 const shownWords = 6;
 
@@ -46,10 +60,11 @@ export const copyDifference = (
   for (let index = 0; index < shared; index += 1) {
     const want = original[index];
     const got = copy[index];
+    const atEnd = index === original.length - 1 || index === copy.length - 1;
     if (
       want !== undefined &&
       got !== undefined &&
-      want.normalized !== got.normalized
+      !sameWord(want, got, atEnd)
     ) {
       return {
         kind: 'wrong-word',

@@ -160,7 +160,7 @@ test('the learning pass asks again for a wrong copy and records only the correct
     page.getByRole('heading', { level: 2, name: 'to look (at)' }),
   ).toBeVisible();
   await expect(
-    page.getByText('0 von 1 Vokabeln kennengelernt · Englisch → Deutsch'),
+    page.getByText('0 von 1 Vokabel kennengelernt · Englisch → Deutsch'),
   ).toBeVisible();
   await expect(page.getByLabel('Introduced directions')).toHaveText('2');
 

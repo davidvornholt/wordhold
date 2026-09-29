@@ -19,15 +19,26 @@ type AnswerFieldProps = {
   readonly onChange: (value: string) => void;
 };
 
+// requestSubmit ignores a disabled submit button, so the button is checked
+// here, as the browser does for Enter in a one-line field.
 const submitOnEnter = (event: KeyboardEvent<HTMLTextAreaElement>) => {
   if (
-    event.key === 'Enter' &&
-    !event.shiftKey &&
-    !event.nativeEvent.isComposing
+    event.key !== 'Enter' ||
+    event.shiftKey ||
+    event.nativeEvent.isComposing
   ) {
-    event.preventDefault();
-    event.currentTarget.form?.requestSubmit();
+    return;
   }
+  event.preventDefault();
+  const { form } = event.currentTarget;
+  const submitter = [...(form?.elements ?? [])].find(
+    (element): element is HTMLButtonElement =>
+      element instanceof HTMLButtonElement && element.type === 'submit',
+  );
+  if (submitter?.disabled === true) {
+    return;
+  }
+  form?.requestSubmit(submitter ?? undefined);
 };
 
 // The one field a practice or learning card answers in.

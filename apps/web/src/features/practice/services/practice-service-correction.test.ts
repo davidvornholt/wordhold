@@ -101,7 +101,7 @@ const runSubmit = async (
     }),
     Layer.succeed(PracticeReviewStore, {
       findSubmission: () => Effect.succeed(submission),
-      saveKeyPoints: () => Effect.void,
+      saveKeyPoints: (_entryId, _definition, points) => Effect.succeed(points),
       listAcceptedAnswers: () =>
         Effect.succeed([
           {

@@ -34,7 +34,7 @@ export const LearnPass = ({
         <CardRail
           activeIndex={item === undefined ? null : index}
           activeOutcome={null}
-          description={`${index} von ${items.length} ${nouns.dativePlural} kennengelernt${shownDirection === null ? '' : ` · ${shownDirection}`}`}
+          description={`${index} von ${items.length} ${items.length === 1 ? nouns.singular : nouns.dativePlural} kennengelernt${shownDirection === null ? '' : ` · ${shownDirection}`}`}
           label="Kennenlernen"
           ticks={items.map((_, position) =>
             position < index ? ('correct' as const) : null,

@@ -36,6 +36,11 @@ export const judgeCacheIdentity = (
   input: JudgeInput,
 ): Promise<string> => cacheIdentity(model, judgePrompt(input));
 
+export const definitionCacheIdentity = (
+  model: string,
+  input: DefinitionJudgeInput,
+): Promise<string> => cacheIdentity(model, definitionJudgePrompt(input));
+
 export const isTranslationVerdict = (
   verdict: StoredVerdict,
 ): verdict is JudgeVerdictData => 'correct' in verdict;
@@ -114,7 +119,7 @@ export const judgeDefinitionWithCache = (request: DefinitionRequest) =>
   Effect.gen(function* () {
     const grader = yield* DefinitionGrader;
     const model = yield* Effect.promise(() =>
-      cacheIdentity(grader.model, definitionJudgePrompt(request.input)),
+      definitionCacheIdentity(grader.model, request.input),
     );
     return yield* judgeThroughCache(
       request,

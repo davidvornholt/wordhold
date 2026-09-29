@@ -14,6 +14,10 @@ test('a definition names the missed key point and keeps a slipped copy', async (
   await expect(page.getByText('Erkläre den Begriff')).toBeVisible();
   const answer = page.getByLabel('Deine Antwort');
   await expect(answer).toBeFocused();
+  // Enter in an empty field does nothing, as in the one-line field.
+  await answer.press('Enter');
+  await expect(page.getByText('Noch nicht sicher')).toHaveCount(0);
+  await expect(answer).toBeFocused();
   await answer.fill('Ein Stoff, der die Aktivierungsenergie senkt.');
   // The definition field wraps, but Enter still submits.
   await answer.press('Enter');
@@ -51,10 +55,12 @@ test('the learning pass shows a definition to copy and keeps a slipped copy', as
   await expect(
     page.getByRole('heading', { level: 2, name: 'Katalysator' }),
   ).toBeVisible();
-  await expect(page.getByText('0 von 1 Begriffen kennengelernt')).toBeVisible();
+  await expect(page.getByText('0 von 1 Begriff kennengelernt')).toBeVisible();
   const field = page.getByLabel('Schreib die Definition ab');
   await expect(field).toBeFocused();
   await expect(field).toHaveAccessibleDescription(`Katalysator ${definition}`);
+  await field.press('Enter');
+  await expect(page.getByText('Noch nicht ganz')).toHaveCount(0);
 
   await field.fill(slippedCopy);
   await field.press('Enter');

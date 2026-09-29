@@ -34,6 +34,38 @@ const databaseError = (operation: string, cause: unknown) =>
     message: 'Die Antwort konnte nicht gespeichert werden.',
   });
 
+// The read is a separate statement: an update that waited for another
+// request's write skips the row, and only a later statement sees what
+// that request stored.
+const saveKeyPointsWith =
+  (sql: Database) =>
+  (entryId: string, definition: string, keyPoints: ReadonlyArray<string>) =>
+    Effect.gen(function* () {
+      const [updated] = yield* sql<{
+        readonly keyPoints: ReadonlyArray<string>;
+      }>`
+        update entries
+        set key_points = array(
+          select jsonb_array_elements_text(${JSON.stringify(keyPoints)}::jsonb)
+        )
+        where id = ${entryId} and native_text = ${definition}
+          and key_points is null
+        returning key_points as "keyPoints"
+      `;
+      if (updated !== undefined) {
+        return updated.keyPoints;
+      }
+      const [current] = yield* sql<{
+        readonly keyPoints: ReadonlyArray<string> | null;
+      }>`
+        select key_points as "keyPoints" from entries
+        where id = ${entryId} and native_text = ${definition}
+      `;
+      return current?.keyPoints ?? null;
+    }).pipe(
+      Effect.mapError((cause) => databaseError('save key points', cause)),
+    );
+
 export class PracticeReviewStore extends Context.Tag(
   'wordhold/PracticeReviewStore',
 )<
@@ -49,12 +81,13 @@ export class PracticeReviewStore extends Context.Tag(
       direction: AnswerDirection,
     ) => Effect.Effect<ReadonlyArray<AcceptedAnswer>, PracticeDatabaseError>;
     // Stores key points derived during grading, unless the definition changed
-    // or the learner set key points in the meantime.
+    // or key points were set in the meantime. Returns the key points the
+    // entry now has, or null when the definition changed.
     readonly saveKeyPoints: (
       entryId: string,
       definition: string,
       keyPoints: ReadonlyArray<string>,
-    ) => Effect.Effect<void, PracticeDatabaseError>;
+    ) => Effect.Effect<ReadonlyArray<string> | null, PracticeDatabaseError>;
     readonly commit: (
       input: PersistReviewInput,
     ) => Effect.Effect<
@@ -125,22 +158,7 @@ export class PracticeReviewStore extends Context.Tag(
             databaseError('load accepted answers', cause),
           ),
         );
-      const saveKeyPoints = (
-        entryId: string,
-        definition: string,
-        keyPoints: ReadonlyArray<string>,
-      ) =>
-        sql`
-          update entries
-          set key_points = array(
-            select jsonb_array_elements_text(${JSON.stringify(keyPoints)}::jsonb)
-          )
-          where id = ${entryId} and native_text = ${definition}
-            and key_points is null
-        `.pipe(
-          Effect.asVoid,
-          Effect.mapError((cause) => databaseError('save key points', cause)),
-        );
+      const saveKeyPoints = saveKeyPointsWith(sql);
       const commit = (input: PersistReviewInput) => {
         const next = applyRating(input.card, input.rating, input.reviewedAt);
         const mapCommitError = (cause: unknown) =>

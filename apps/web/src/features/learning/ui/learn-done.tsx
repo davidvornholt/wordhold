@@ -37,7 +37,7 @@ export const LearnDone = ({
     {learned === 0 ? null : (
       <p className="text-muted-foreground">
         {directionLabel === null
-          ? 'Sie sind jetzt zum Üben bereit.'
+          ? 'Du kannst jetzt üben.'
           : 'Diese Richtung ist jetzt zum Üben bereit.'}
       </p>
     )}

@@ -7,7 +7,10 @@ import {
   type PracticeJudgeError,
   StaleAnswerSubmissionError,
 } from '../errors/practice-errors';
-import type { SubmissionRecord } from '../schemas/practice-models';
+import type {
+  CachedVerdict,
+  SubmissionRecord,
+} from '../schemas/practice-models';
 import type { AnsweredSubmitData } from '../schemas/submission-schema';
 import { DefinitionGrader } from './definition-grader';
 import {
@@ -15,6 +18,7 @@ import {
   isDeterministicMatch,
 } from './deterministic-grading';
 import {
+  definitionCacheIdentity,
   isDefinitionVerdict,
   isTranslationVerdict,
   judgeDefinitionWithCache,
@@ -79,7 +83,8 @@ const gradeTranslation = ({
 
 // A term saved before its key points could be derived gets them on its first
 // graded answer. They are stored only while the definition is still the one
-// they were derived from.
+// they were derived from. When another answer stored its own first, the
+// answer is graded against those, so every verdict matches the entry.
 const definitionKeyPoints = ({ row, reviews, grader }: GradeAnswerInput) =>
   row.entry.keyPoints === null
     ? grader
@@ -88,12 +93,10 @@ const definitionKeyPoints = ({ row, reviews, grader }: GradeAnswerInput) =>
           definition: row.entry.nativeText,
         })
         .pipe(
-          Effect.tap((keyPoints) =>
-            reviews.saveKeyPoints(
-              row.entry.id,
-              row.entry.nativeText,
-              keyPoints,
-            ),
+          Effect.flatMap((derived) =>
+            reviews
+              .saveKeyPoints(row.entry.id, row.entry.nativeText, derived)
+              .pipe(Effect.map((stored) => stored ?? derived)),
           ),
         )
     : Effect.succeed(row.entry.keyPoints);
@@ -146,9 +149,12 @@ export const gradeAnswer = (input: GradeAnswerInput) => {
 
 type LoadRejectedAssessmentInput = {
   readonly row: SubmissionRecord;
+  // The answer as typed, which a definition verdict was judged on.
+  readonly answer: string;
   readonly normalized: string;
   readonly assessmentId: string;
   readonly cache: JudgeCacheStore['Type'];
+  readonly grader: DefinitionGrader['Type'];
 };
 
 const staleAssessment = () =>
@@ -157,20 +163,62 @@ const staleAssessment = () =>
       'Die ursprüngliche Bewertung ist nicht mehr verfügbar. Lade die Übung neu.',
   });
 
-export const loadRejectedAssessment = ({
-  row,
-  normalized,
-  assessmentId,
-  cache,
-}: LoadRejectedAssessmentInput) =>
-  cache
+// The key points may have been edited since. Only a verdict whose cache
+// identity matches the entry's current key points and this answer can be
+// committed; comparing the number of points would let an edit through.
+const rejectedDefinition = (
+  { row, answer, grader }: LoadRejectedAssessmentInput,
+  cached: CachedVerdict,
+) =>
+  Effect.gen(function* () {
+    const { keyPoints } = row.entry;
+    const { verdict } = cached;
+    if (
+      keyPoints === null ||
+      !isDefinitionVerdict(verdict) ||
+      isDefinitionCorrect(verdict)
+    ) {
+      return yield* staleAssessment();
+    }
+    const identity = yield* Effect.promise(() =>
+      definitionCacheIdentity(grader.model, {
+        term: row.entry.targetText,
+        definition: row.entry.nativeText,
+        keyPoints,
+        givenAnswer: answer,
+      }),
+    );
+    if (cached.model !== identity) {
+      return yield* staleAssessment();
+    }
+    return {
+      outcome: { method: 'definition', keyPoints, verdict },
+      assessmentId: cached.assessmentId,
+    } satisfies AssessedAnswer;
+  });
+
+const rejectedTranslation = (
+  cached: CachedVerdict,
+): Effect.Effect<AssessedAnswer, StaleAnswerSubmissionError> => {
+  const { verdict } = cached;
+  if (!isTranslationVerdict(verdict) || verdict.correct) {
+    return Effect.fail(staleAssessment());
+  }
+  return Effect.succeed({
+    outcome: { method: 'judge', verdict },
+    assessmentId: cached.assessmentId,
+  });
+};
+
+export const loadRejectedAssessment = (input: LoadRejectedAssessmentInput) =>
+  input.cache
     .read(
       {
-        entryId: row.entry.id,
-        direction: row.card.direction,
-        normalizedAnswer: normalized,
+        entryId: input.row.entry.id,
+        direction: input.row.card.direction,
+        normalizedAnswer: input.normalized,
       },
-      { assessmentId },
+      { assessmentId: input.assessmentId },
     )
     .pipe(
       Effect.flatMap(
@@ -178,31 +226,9 @@ export const loadRejectedAssessment = ({
           if (cached === undefined) {
             return Effect.fail(staleAssessment());
           }
-          const { verdict } = cached;
-          if (row.courseKind === 'terms') {
-            // The key points may have been edited since; a verdict that no
-            // longer lines up with them cannot be committed.
-            const { keyPoints } = row.entry;
-            if (
-              !isDefinitionVerdict(verdict) ||
-              keyPoints === null ||
-              verdict.keyPoints.length !== keyPoints.length ||
-              isDefinitionCorrect(verdict)
-            ) {
-              return Effect.fail(staleAssessment());
-            }
-            return Effect.succeed({
-              outcome: { method: 'definition', keyPoints, verdict },
-              assessmentId: cached.assessmentId,
-            });
-          }
-          if (!isTranslationVerdict(verdict) || verdict.correct) {
-            return Effect.fail(staleAssessment());
-          }
-          return Effect.succeed({
-            outcome: { method: 'judge', verdict },
-            assessmentId: cached.assessmentId,
-          });
+          return input.row.courseKind === 'terms'
+            ? rejectedDefinition(input, cached)
+            : rejectedTranslation(cached);
         },
       ),
     );

@@ -95,7 +95,12 @@ const commitOutcome = ({
 }: CommitOutcomeInput) =>
   Effect.gen(function* () {
     const elapsedMs = data.elapsedMs ?? null;
-    const rating = deriveRating(outcome, elapsedMs);
+    // How fast a definition was written says little about how well it is
+    // known, so even an exact one is never rated easy.
+    const rating = deriveRating(
+      outcome,
+      row.courseKind === 'terms' ? null : elapsedMs,
+    );
     const reviewedAt = new Date(yield* Clock.currentTimeMillis);
     const persisted = yield* reviews.commit({
       card: row.card,
@@ -174,9 +179,11 @@ export const resolveAnswerSubmission = (
         })
       : loadRejectedAssessment({
           row,
+          answer: data.answer,
           normalized,
           assessmentId: data.assessmentId,
           cache,
+          grader,
         });
     if (assessment === null) {
       return {

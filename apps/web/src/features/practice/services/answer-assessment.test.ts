@@ -7,11 +7,14 @@ import type {
   SubmissionRecord,
 } from '../schemas/practice-models';
 import { loadRejectedAssessment } from './answer-assessment';
+import { definitionCacheIdentity } from './judge-cache';
 import type { JudgeCacheStore } from './judge-cache-store';
-import { testCard } from './practice-service-test-support';
+import { testCard, testGrader } from './practice-service-test-support';
 
 const assessmentId = '00000000-0000-0000-0000-000000000003';
 const keyPoints = ['ist ein Stoff', 'senkt die Aktivierungsenergie'];
+const answer = 'Ein Stoff.';
+const grader = testGrader({});
 
 const termRow = (
   stored: ReadonlyArray<string> | null = keyPoints,
@@ -36,8 +39,11 @@ const missedVerdict: DefinitionVerdictData = {
   explanation: 'Die Aktivierungsenergie fehlt.',
 };
 
-const cacheWith = (verdict: StoredVerdict): JudgeCacheStore['Type'] => {
-  const cached: CachedVerdict = { assessmentId, verdict, model: 'test' };
+const cacheWith = (
+  verdict: StoredVerdict,
+  model: string,
+): JudgeCacheStore['Type'] => {
+  const cached: CachedVerdict = { assessmentId, verdict, model };
   return {
     read: () => Effect.succeed(cached),
     write: () => Effect.void,
@@ -45,15 +51,30 @@ const cacheWith = (verdict: StoredVerdict): JudgeCacheStore['Type'] => {
   };
 };
 
-const load = (row: SubmissionRecord, verdict: StoredVerdict) =>
-  Effect.runPromise(
+// The verdict is cached as judged against `judgedKeyPoints`, which the row's
+// current key points may no longer match.
+const load = async (
+  row: SubmissionRecord,
+  verdict: StoredVerdict,
+  judgedKeyPoints: ReadonlyArray<string> = keyPoints,
+) => {
+  const model = await definitionCacheIdentity(grader.model, {
+    term: row.entry.targetText,
+    definition: row.entry.nativeText,
+    keyPoints: judgedKeyPoints,
+    givenAnswer: answer,
+  });
+  return Effect.runPromise(
     loadRejectedAssessment({
       row,
+      answer,
       normalized: 'ein stoff',
       assessmentId,
-      cache: cacheWith(verdict),
+      cache: cacheWith(verdict, model),
+      grader,
     }).pipe(Effect.either),
   );
+};
 
 describe('loadRejectedAssessment for definitions', () => {
   it('returns the rejected definition with the key points it was graded against', async () => {
@@ -68,6 +89,14 @@ describe('loadRejectedAssessment for definitions', () => {
 
   it('refuses a verdict that no longer lines up with the key points', async () => {
     const edited = termRow([...keyPoints, 'wird nicht verbraucht']);
+    expect(await load(edited, missedVerdict)).toMatchObject({
+      _tag: 'Left',
+      left: { _tag: 'StaleAnswerSubmissionError' },
+    });
+  });
+
+  it('refuses a verdict judged against other key points of the same number', async () => {
+    const edited = termRow(['ist ein Stoff', 'beschleunigt Reaktionen']);
     expect(await load(edited, missedVerdict)).toMatchObject({
       _tag: 'Left',
       left: { _tag: 'StaleAnswerSubmissionError' },

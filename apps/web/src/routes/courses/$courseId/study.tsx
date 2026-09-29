@@ -82,7 +82,8 @@ const StudyScreen = () => {
   if (selection === null) {
     content = (
       <p className={`${cardClass} text-sm`}>
-        Wähle zuerst {nouns.plural}, ein Buch oder eine Einheit aus.
+        Wähle zuerst mindestens {nouns.accusativeOne}, ein Buch oder eine
+        Einheit aus.
       </p>
     );
   } else if (mode === 'learn') {

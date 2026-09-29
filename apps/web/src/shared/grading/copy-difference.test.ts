@@ -59,4 +59,43 @@ describe('copyDifference word boundaries', () => {
       typed: 'Energie',
     });
   });
+
+  it('keeps a decimal comma inside its number', () => {
+    expect(
+      copyDifference(
+        'Eine Lösung mit dem pH-Wert 7,0 ist neutral.',
+        'Eine Lösung mit dem pH-Wert 7,0 ist sauer.',
+      ),
+    ).toEqual({
+      kind: 'wrong-word',
+      position: 8,
+      expected: 'neutral.',
+      typed: 'sauer.',
+    });
+  });
+});
+
+describe('copyDifference between sentences', () => {
+  const twoSentences =
+    'Ein Stoff, der Reaktionen beschleunigt. Er bleibt erhalten.';
+
+  it('names a missing full stop between two sentences', () => {
+    expect(
+      copyDifference(
+        twoSentences,
+        'Ein Stoff, der Reaktionen beschleunigt, er bleibt erhalten.',
+      ),
+    ).toEqual({
+      kind: 'wrong-word',
+      position: 5,
+      expected: 'beschleunigt.',
+      typed: 'beschleunigt,',
+    });
+  });
+
+  it('treats the last typed word as where an unfinished copy stops', () => {
+    expect(
+      copyDifference(twoSentences, 'Ein Stoff, der Reaktionen beschleunigt'),
+    ).toEqual({ kind: 'missing', rest: 'Er bleibt erhalten.' });
+  });
 });

@@ -11,19 +11,22 @@ export type CourseSubject = {
 };
 
 // What the course's entries and their list are called. The dative plural
-// follows prepositions such as "von".
+// follows prepositions such as "von"; `accusativeOne` is the object "eine
+// Vokabel" or "einen Begriff".
 export const courseNouns = (subject: CourseSubject) =>
   subject.kind === 'terms'
     ? {
         singular: 'Begriff',
         plural: 'Begriffe',
         dativePlural: 'Begriffen',
+        accusativeOne: 'einen Begriff',
         list: 'Begriffsliste',
       }
     : {
         singular: 'Vokabel',
         plural: 'Vokabeln',
         dativePlural: 'Vokabeln',
+        accusativeOne: 'eine Vokabel',
         list: 'Vokabelliste',
       };
 
