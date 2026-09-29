@@ -1,4 +1,9 @@
 import { describe, expect, it } from 'bun:test';
+import {
+  DefinitionSuggestion,
+  DefinitionVerdict,
+  KeyPointList,
+} from './definition/schema';
 import { ExtractedPage } from './extraction/schema';
 import { JudgeVerdict } from './judge/schema';
 import { SentenceBatch } from './sentence/service';
@@ -7,7 +12,10 @@ import { providerJsonSchema } from './structured-output';
 // A schema the AI SDK cannot express as JSON Schema fails only once a model is
 // actually called, so every structured-output schema is converted here.
 const outputSchemas = [
+  ['DefinitionSuggestion', () => providerJsonSchema(DefinitionSuggestion)],
+  ['DefinitionVerdict', () => providerJsonSchema(DefinitionVerdict)],
   ['ExtractedPage', () => providerJsonSchema(ExtractedPage)],
+  ['KeyPointList', () => providerJsonSchema(KeyPointList)],
   ['JudgeVerdict', () => providerJsonSchema(JudgeVerdict)],
   ['SentenceBatch', () => providerJsonSchema(SentenceBatch)],
 ] as const;
@@ -43,6 +51,7 @@ describe('providerJsonSchema', () => {
   }
 
   for (const [name, convert] of [
+    ['DefinitionVerdict', () => providerJsonSchema(DefinitionVerdict)],
     ['JudgeVerdict', () => providerJsonSchema(JudgeVerdict)],
     ['SentenceBatch', () => providerJsonSchema(SentenceBatch)],
   ] as const) {
