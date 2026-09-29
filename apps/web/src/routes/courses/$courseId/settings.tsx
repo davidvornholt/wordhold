@@ -5,7 +5,6 @@ import {
 } from '../../../features/courses/services/server-fns';
 import { DirectionSettings } from '../../../features/courses/ui/direction-settings';
 import { getCourse } from '../../../features/import/server-fns';
-import { germanLabels } from '../../../shared/languages';
 import { BackLink } from '../../../shared/ui/back-link';
 import { PageLayout } from '../../../shared/ui/page-layout';
 
@@ -28,7 +27,7 @@ const CourseSettingsScreen = () => {
             data: { courseId: course.id, directions: next },
           })
         }
-        targetLabel={germanLabels[course.targetLanguage]}
+        subject={course}
       />
     </PageLayout>
   );

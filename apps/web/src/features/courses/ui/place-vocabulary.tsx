@@ -1,7 +1,8 @@
-import type { LanguageCode } from '@wordhold/db/schema/courses';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import { type ReactNode, useId, useState } from 'react';
+import type { CourseSubject } from '../../../shared/directions';
 import type { GeneratedExample } from '../../../shared/examples/example-draft';
+import { germanLabels } from '../../../shared/languages';
 import { Button } from '../../../shared/ui/button';
 import type { VocabularyEntry } from '../schemas/course-units';
 import type { CreatedVocabularyEntry } from '../services/vocabulary-entry-service';
@@ -17,8 +18,7 @@ type PlaceVocabularyProps = {
   // Every entry of the course, which a typed word is checked against.
   readonly courseEntries: ReadonlyArray<VocabularyEntry>;
   readonly enabledDirections: ReadonlyArray<AnswerDirection>;
-  readonly targetLanguage: LanguageCode;
-  readonly targetLabel: string;
+  readonly subject: CourseSubject;
   readonly importAction: ReactNode;
   readonly renderStudyAction: (
     entryIds: ReadonlyArray<string>,
@@ -50,8 +50,7 @@ export const PlaceVocabulary = ({
   entries,
   courseEntries,
   enabledDirections,
-  targetLanguage,
-  targetLabel,
+  subject,
   importAction,
   renderStudyAction,
   generateExample,
@@ -69,8 +68,8 @@ export const PlaceVocabulary = ({
       entries={courseEntries}
       generateExample={generateDraftExample}
       suggestTranslation={suggestTranslation}
-      targetLabel={targetLabel}
-      targetLanguage={targetLanguage}
+      targetLabel={germanLabels[subject.targetLanguage]}
+      targetLanguage={subject.targetLanguage}
       translateExample={translateDraftExample}
     />
   ) : null;
@@ -84,7 +83,7 @@ export const PlaceVocabulary = ({
         initialFilter="all"
         renderStudyAction={renderStudyAction}
         scope="place"
-        targetLanguage={targetLanguage}
+        subject={subject}
       />
     );
   } else if (!adding) {

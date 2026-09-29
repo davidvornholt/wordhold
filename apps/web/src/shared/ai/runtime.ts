@@ -1,3 +1,5 @@
+import { DefinitionJudge } from '@wordhold/ai/definition/judge';
+import { DefinitionWriter } from '@wordhold/ai/definition/writer';
 import { Extraction } from '@wordhold/ai/extraction';
 import { Judge } from '@wordhold/ai/judge';
 import { VertexProvider } from '@wordhold/ai/providers/vertex';
@@ -13,6 +15,11 @@ export const extractionRuntime = ManagedRuntime.make(
 export const judgeLayer = Judge.Default.pipe(
   Layer.provide(VertexProvider.live),
 );
+
+export const definitionLayer = Layer.merge(
+  DefinitionJudge.Default,
+  DefinitionWriter.Default,
+).pipe(Layer.provide(VertexProvider.live));
 
 export const sentenceRuntime = ManagedRuntime.make(
   SentenceGen.Default.pipe(Layer.provide(VertexProvider.live)),

@@ -1,6 +1,9 @@
 import type { RefObject, SubmitEventHandler } from 'react';
+import {
+  AnswerField,
+  type AnswerFieldElement,
+} from '../../../shared/ui/answer-field';
 import { Button } from '../../../shared/ui/button';
-import { answerFieldClass } from '../../../shared/ui/field-styles';
 import type { CardTone } from '../../../shared/ui/word-card';
 
 const toneField: Record<CardTone, string> = {
@@ -16,7 +19,8 @@ export type RetypeState = {
   readonly template: string;
   readonly templateLanguage: string;
   readonly typed: string;
-  readonly missed: boolean;
+  // What went wrong in the last attempt, or null before one was checked.
+  readonly missedMessage: string | null;
   readonly onTypedChange: (typed: string) => void;
 };
 
@@ -24,7 +28,9 @@ type PracticeAnswerFormProps = {
   readonly answer: string;
   readonly busy: boolean;
   readonly disabled: boolean;
-  readonly inputRef: RefObject<HTMLInputElement | null>;
+  readonly inputRef: RefObject<AnswerFieldElement | null>;
+  // Definitions are answered in a field that wraps.
+  readonly multiline: boolean;
   readonly onAnswerChange: (answer: string) => void;
   readonly onSkip: () => void;
   readonly onSubmit: SubmitEventHandler<HTMLFormElement>;
@@ -40,9 +46,13 @@ const RetypeField = ({
   busy,
   hintId,
   inputRef,
+  multiline,
   promptId,
   retype,
-}: Pick<PracticeAnswerFormProps, 'busy' | 'inputRef' | 'promptId'> & {
+}: Pick<
+  PracticeAnswerFormProps,
+  'busy' | 'inputRef' | 'multiline' | 'promptId'
+> & {
   readonly hintId: string;
   readonly retype: RetypeState;
 }) => (
@@ -52,28 +62,26 @@ const RetypeField = ({
         Vorlage: <span lang={retype.templateLanguage}>{retype.template}</span>
       </span>
     ) : null}
-    <input
+    <AnswerField
       aria-describedby={
         retype.typed === '' ? `${promptId} ${hintId}` : promptId
       }
       aria-label="Schreib die Antwort ab"
-      autoCapitalize="off"
-      autoComplete="off"
-      autoCorrect="off"
-      className={`${answerFieldClass} ${
-        retype.missed ? toneField.warning : toneField.neutral
-      }`}
+      borderClass={
+        retype.missedMessage === null ? toneField.neutral : toneField.warning
+      }
       disabled={busy}
-      onChange={(event) => retype.onTypedChange(event.target.value)}
+      fieldRef={inputRef}
+      multiline={multiline}
+      onChange={retype.onTypedChange}
       placeholder={retype.template}
-      ref={inputRef}
       value={retype.typed}
     />
-    {retype.missed ? (
+    {retype.missedMessage === null ? null : (
       <p className="text-center text-sm" role="status">
-        Noch nicht ganz. Schreib die Vokabel genau so ab.
+        {retype.missedMessage}
       </p>
-    ) : null}
+    )}
   </>
 );
 
@@ -82,6 +90,7 @@ export const PracticeAnswerForm = ({
   busy,
   disabled,
   inputRef,
+  multiline,
   onAnswerChange,
   onSkip,
   onSubmit,
@@ -93,17 +102,15 @@ export const PracticeAnswerForm = ({
 }: PracticeAnswerFormProps) => (
   <form aria-busy={busy} className="flex flex-col gap-3" onSubmit={onSubmit}>
     {retype === null ? (
-      <input
+      <AnswerField
         aria-describedby={promptId}
         aria-label="Deine Antwort"
-        autoCapitalize="off"
-        autoComplete="off"
-        autoCorrect="off"
-        className={`${answerFieldClass} ${toneField[tone]}`}
+        borderClass={toneField[tone]}
         disabled={busy || disabled}
-        onChange={(event) => onAnswerChange(event.target.value)}
-        placeholder="Deine Antwort"
-        ref={inputRef}
+        fieldRef={inputRef}
+        multiline={multiline}
+        onChange={onAnswerChange}
+        placeholder={multiline ? 'Deine Definition' : 'Deine Antwort'}
         value={submittedAnswer ?? answer}
       />
     ) : (
@@ -111,6 +118,7 @@ export const PracticeAnswerForm = ({
         busy={busy}
         hintId={`${promptId}-retype-hint`}
         inputRef={inputRef}
+        multiline={multiline}
         promptId={promptId}
         retype={retype}
       />

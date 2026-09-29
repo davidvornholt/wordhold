@@ -1,5 +1,6 @@
+import type { DefinitionVerdictData } from '@wordhold/ai/definition/schema';
 import type { JudgeVerdictData } from '@wordhold/ai/judge/schema';
-import type { LanguageCode } from '@wordhold/db/schema/courses';
+import type { CourseKind, LanguageCode } from '@wordhold/db/schema/courses';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import type {
   CardState,
@@ -54,6 +55,13 @@ export const remainingReadyCount = (session: PracticeSession): number =>
       session.items.length,
   );
 
+// How a typed definition fared on one key point, in the stored order.
+export type KeyPointFinding = {
+  readonly text: string;
+  readonly covered: boolean;
+  readonly note: string | null;
+};
+
 export type SubmitResult =
   | {
       readonly graded: false;
@@ -67,6 +75,7 @@ export type SubmitResult =
       readonly expectedAnswers: ReadonlyArray<string>;
       readonly explanation: string | null;
       readonly acceptedAsAlternative: false;
+      readonly keyPoints: ReadonlyArray<KeyPointFinding> | null;
       readonly assessmentId: string;
     }
   | {
@@ -78,6 +87,8 @@ export type SubmitResult =
       readonly expectedAnswers: ReadonlyArray<string>;
       readonly explanation: string | null;
       readonly acceptedAsAlternative: boolean;
+      // Only for a definition the judge graded; null otherwise.
+      readonly keyPoints: ReadonlyArray<KeyPointFinding> | null;
       readonly schedule: CardSchedule;
     };
 
@@ -92,7 +103,9 @@ export type SubmissionRecord = {
     readonly id: string;
     readonly targetText: string;
     readonly nativeText: string;
+    readonly keyPoints: ReadonlyArray<string> | null;
   };
+  readonly courseKind: CourseKind;
   readonly targetLanguage: LanguageCode;
 };
 
@@ -115,11 +128,18 @@ export type PersistedReview = {
   readonly schedule: CardSchedule;
 };
 
-export type CachedJudgeVerdict = {
+// A judge_cache row holds a translation or a definition verdict. The entry's
+// course decides which one is asked for, and the prompt hash in `model`
+// keeps a row from answering for the other.
+export type StoredVerdict = JudgeVerdictData | DefinitionVerdictData;
+
+export type CachedVerdict<V extends StoredVerdict = StoredVerdict> = {
   readonly assessmentId: string;
-  readonly verdict: JudgeVerdictData;
+  readonly verdict: V;
   readonly model: string;
 };
+
+export type CachedJudgeVerdict = CachedVerdict<JudgeVerdictData>;
 
 export type JudgeVerdict = Omit<CachedJudgeVerdict, 'assessmentId'>;
 

@@ -1,5 +1,4 @@
 import { useRouter } from '@tanstack/react-router';
-import type { LanguageCode } from '@wordhold/db/schema/courses';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import type { ReactNode } from 'react';
 import type { LearnSelectionPass } from '../../../features/learning/schemas/learning-models';
@@ -8,7 +7,11 @@ import { LearnPass } from '../../../features/learning/ui/learn-pass';
 import type { SessionDirection } from '../../../features/practice/schemas/session-request';
 import { directionOptions } from '../../../features/practice/services/session-options';
 import { SessionStart } from '../../../features/practice/ui/session-start';
-import { directionLabel } from '../../../shared/directions';
+import {
+  type CourseSubject,
+  courseNouns,
+  directionLabel,
+} from '../../../shared/directions';
 import { countNoun } from '../../../shared/format/count';
 import { itemsInNextSection } from '../../../shared/session/section-policy';
 import type { VocabularySelectionData } from '../../../shared/session/vocabulary-selection';
@@ -21,8 +24,7 @@ type StudyLearningProps = {
   readonly direction: AnswerDirection | undefined;
   readonly pass: LearnSelectionPass;
   readonly selection: VocabularySelectionData;
-  readonly targetLabel: string;
-  readonly targetLanguage: LanguageCode;
+  readonly subject: CourseSubject;
 };
 
 export const selectionSearch = (
@@ -42,10 +44,10 @@ export const StudyLearning = ({
   direction,
   pass,
   selection,
-  targetLabel,
-  targetLanguage,
+  subject,
 }: StudyLearningProps) => {
   const router = useRouter();
+  const nouns = courseNouns(subject);
   const availableDirections = pass.directions.map(
     (progress) => progress.direction,
   );
@@ -65,10 +67,10 @@ export const StudyLearning = ({
   if (pass.items.length > 0 && direction === undefined) {
     content = (
       <SessionStart
-        itemNoun={{ singular: 'Vokabel', plural: 'Vokabeln' }}
+        itemNoun={nouns}
         options={directionOptions(
           availableDirections,
-          targetLabel,
+          subject,
           availableDirections.map((candidate) => ({
             direction: candidate,
             ready: pass.items.filter((item) => item.direction === candidate)
@@ -88,7 +90,8 @@ export const StudyLearning = ({
               search={selectionSearch(selection, 'learn', option.value)}
               to="/courses/$courseId/study"
             >
-              {countNoun(option.cards, 'Vokabel', 'Vokabeln')} kennenlernen
+              {countNoun(option.cards, nouns.singular, nouns.plural)}{' '}
+              kennenlernen
             </ActionLink>
           );
         }}
@@ -117,7 +120,7 @@ export const StudyLearning = ({
               search={selectionSearch(selection, 'practice', direction)}
               to="/courses/$courseId/study"
             >
-              Jetzt üben · {directionLabel(direction, targetLabel)}
+              Jetzt üben · {directionLabel(direction, subject)}
             </ActionLink>
             {currentRemaining === 0 ? null : (
               <Button
@@ -127,10 +130,10 @@ export const StudyLearning = ({
                 Weitere{' '}
                 {countNoun(
                   itemsInNextSection(currentRemaining),
-                  'Vokabel',
-                  'Vokabeln',
+                  nouns.singular,
+                  nouns.plural,
                 )}{' '}
-                kennenlernen · {directionLabel(direction, targetLabel)}
+                kennenlernen · {directionLabel(direction, subject)}
               </Button>
             )}
             {nextDirection === undefined ? null : (
@@ -142,15 +145,15 @@ export const StudyLearning = ({
               >
                 {countNoun(
                   itemsInNextSection(nextCount),
-                  'Vokabel',
-                  'Vokabeln',
+                  nouns.singular,
+                  nouns.plural,
                 )}{' '}
-                kennenlernen · {directionLabel(nextDirection, targetLabel)}
+                kennenlernen · {directionLabel(nextDirection, subject)}
               </ActionLink>
             )}
           </div>
         }
-        directionLabel={directionLabel(direction, targetLabel)}
+        directionLabel={directionLabel(direction, subject)}
         items={items}
         key={`${direction}:${items.map((item) => item.cardId).join('|')}`}
         onIntroduce={async (item) => {
@@ -158,8 +161,7 @@ export const StudyLearning = ({
             data: { cardId: item.cardId, courseId },
           });
         }}
-        targetLabel={targetLabel}
-        targetLanguage={targetLanguage}
+        subject={subject}
       />
     );
   }

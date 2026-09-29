@@ -42,6 +42,10 @@ export const entries = pgTable(
     targetText: text('target_text').notNull(),
     nativeText: text('native_text').notNull(),
     grammar: jsonb('grammar'),
+    // For a term: what a typed definition must state to count, derived from
+    // `native_text` and editable by the learner. Null until derived, and
+    // always null in a language course.
+    keyPoints: text('key_points').array(),
     notes: text('notes'),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()

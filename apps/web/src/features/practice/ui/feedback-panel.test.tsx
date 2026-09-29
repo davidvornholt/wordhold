@@ -12,6 +12,7 @@ const result: SubmitResult = {
   expectedAnswers: ['waiter'],
   explanation: null,
   acceptedAsAlternative: false,
+  keyPoints: null,
   schedule: {
     advanced: true,
     state: 'review',
@@ -32,6 +33,7 @@ const render = (
       busy={false}
       example={null}
       id={feedbackId}
+      kind="language"
       playSentence={null}
       playWord={null}
       repeated={false}
@@ -63,6 +65,7 @@ const pendingWrongResult: SubmitResult = {
   expectedAnswers: ['waiter'],
   explanation: null,
   acceptedAsAlternative: false,
+  keyPoints: null,
   assessmentId: 'assessment',
 };
 

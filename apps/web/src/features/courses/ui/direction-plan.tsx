@@ -1,6 +1,7 @@
 import { type ReactNode, useId } from 'react';
 import { formatLearningDateInline } from '../../../shared/dates/learning-date';
 import {
+  type CourseSubject,
   directionDescription,
   directionLabel,
 } from '../../../shared/directions';
@@ -18,7 +19,7 @@ import {
 type DirectionPlanProps = {
   // A unit's words, or the words that live directly in a book.
   readonly progress: WordProgress;
-  readonly targetLabel: string;
+  readonly subject: CourseSubject;
   readonly renderLearnAction: (
     progress: DirectionProgress,
     variant: ActionVariant,
@@ -57,7 +58,7 @@ const practiceStatus = (progress: DirectionProgress): string | null => {
 
 export const DirectionPlan = ({
   progress: words,
-  targetLabel,
+  subject,
   renderLearnAction,
   renderScheduledAction,
 }: DirectionPlanProps) => {
@@ -91,7 +92,7 @@ export const DirectionPlan = ({
         </div>
         <ul className={cardListClass}>
           {words.directions.map((progress) => {
-            const label = directionLabel(progress.direction, targetLabel);
+            const label = directionLabel(progress.direction, subject);
             const learnIsNext = isRecommended(
               recommendation,
               'learn',
@@ -110,7 +111,7 @@ export const DirectionPlan = ({
                   <div className="flex flex-col gap-1">
                     <h3 className="font-display text-xl">{label}</h3>
                     <p className="text-muted-foreground text-sm">
-                      {directionDescription(progress.direction, targetLabel)}
+                      {directionDescription(progress.direction, subject)}
                     </p>
                   </div>
                   <ProgressMeter

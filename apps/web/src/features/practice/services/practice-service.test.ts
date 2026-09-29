@@ -22,6 +22,7 @@ describe('PracticeService', () => {
     const result = await runSubmit(
       {
         findSubmission: () => Effect.fail(failure),
+        saveKeyPoints: () => Effect.void,
         listAcceptedAnswers: () => Effect.succeed([]),
         commit: () => Effect.succeed(persistedReview),
       },
@@ -36,6 +37,7 @@ describe('PracticeService', () => {
     const result = await runSubmit(
       {
         findSubmission: () => Effect.succeed(testSubmission),
+        saveKeyPoints: () => Effect.void,
         listAcceptedAnswers: () =>
           Effect.succeed([
             {
@@ -60,6 +62,7 @@ describe('PracticeService', () => {
     const result = await runSubmit(
       {
         findSubmission: () => Effect.succeed(testSubmission),
+        saveKeyPoints: () => Effect.void,
         listAcceptedAnswers: () =>
           Effect.succeed([
             {
@@ -95,6 +98,7 @@ describe('PracticeService', () => {
     const result = await runSubmit(
       {
         findSubmission: () => Effect.succeed(testSubmission),
+        saveKeyPoints: () => Effect.void,
         listAcceptedAnswers: () =>
           Effect.succeed([{ text: 'correct', source: 'textbook' }]),
         commit: () =>

@@ -13,6 +13,8 @@ export type LearnItem = {
   readonly hasAudio: boolean;
   readonly example: PreparedExampleSentence | null;
   readonly textbookAnswers: ReadonlyArray<string>;
+  // What a definition must state, once derived. Always null for vocabulary.
+  readonly keyPoints: ReadonlyArray<string> | null;
 };
 
 export const learnPrompt = (item: LearnItem): string =>

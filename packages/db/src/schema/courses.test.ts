@@ -35,3 +35,40 @@ describe('course direction constraint', () => {
     );
   });
 });
+
+describe('terms course constraint', () => {
+  it('keeps a terms course monolingual and definition-only', async () => {
+    await Effect.runPromise(
+      withMigratedTestDatabase((database) =>
+        Effect.gen(function* () {
+          const sql = yield* Database;
+          const bilingual = yield* Effect.either(sql`
+            insert into courses (id, name, kind, target_language, directions)
+            values (${courseId}, 'Chemie', 'terms', 'fr', '{to_native}')
+          `);
+          expect(bilingual._tag).toBe('Left');
+          const bothDirections = yield* Effect.either(sql`
+            insert into courses (id, name, kind, target_language)
+            values (${courseId}, 'Chemie', 'terms', 'de')
+          `);
+          expect(bothDirections._tag).toBe('Left');
+
+          yield* sql`
+            insert into courses (id, name, kind, target_language, directions)
+            values (${courseId}, 'Chemie', 'terms', 'de', '{to_native}')
+          `;
+          const widen = yield* Effect.either(sql`
+            update courses
+            set directions = '{to_target,to_native}'::answer_direction[]
+            where id = ${courseId}
+          `);
+          expect(widen._tag).toBe('Left');
+          const rows = yield* sql<{ readonly kind: string }>`
+            select kind from courses where id = ${courseId}
+          `;
+          expect(rows).toEqual([{ kind: 'terms' }]);
+        }).pipe(Effect.provide(testDatabaseLayer(database.url))),
+      ),
+    );
+  });
+});

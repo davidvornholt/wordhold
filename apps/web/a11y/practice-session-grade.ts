@@ -32,6 +32,7 @@ export const gradeFixtureAnswer = (
       expectedAnswers: [expected],
       explanation: null,
       acceptedAsAlternative: false,
+      keyPoints: null,
       schedule: {
         advanced: true,
         state: 'relearning',
@@ -55,6 +56,7 @@ export const gradeFixtureAnswer = (
       expectedAnswers: [expected],
       explanation: null,
       acceptedAsAlternative: false,
+      keyPoints: null,
       assessmentId: '00000000-0000-0000-0000-000000000003',
     });
   }
@@ -70,6 +72,7 @@ export const gradeFixtureAnswer = (
     expectedAnswers: [expected],
     explanation: null,
     acceptedAsAlternative: false,
+    keyPoints: null,
     schedule: {
       advanced: scheduleAdvances,
       state: resolvedCorrect ? 'review' : 'relearning',

@@ -6,6 +6,7 @@ import type {
 } from '../schemas/session-request';
 import type { SubmitPayloadData } from '../schemas/submission-schema';
 import { resolveAnswerSubmission } from './answer-submission';
+import { DefinitionGrader } from './definition-grader';
 import { JudgeCacheStore } from './judge-cache-store';
 import { PracticeJudge } from './practice-judge';
 import { PracticeReviewStore } from './review-store';
@@ -27,6 +28,7 @@ export class PracticeService extends Effect.Service<PracticeService>()(
       const reviews = yield* PracticeReviewStore;
       const cache = yield* JudgeCacheStore;
       const judge = yield* PracticeJudge;
+      const grader = yield* DefinitionGrader;
       const getSession = ({ courseId, direction, place }: SessionRequestData) =>
         Effect.gen(function* () {
           const now = new Date(yield* Clock.currentTimeMillis);
@@ -55,7 +57,7 @@ export class PracticeService extends Effect.Service<PracticeService>()(
           }),
         );
       const submit = (data: SubmitPayloadData) =>
-        resolveAnswerSubmission(data, { reviews, cache, judge });
+        resolveAnswerSubmission(data, { reviews, cache, judge, grader });
       return { getSession, getStudySession, submit } as const;
     }),
   },

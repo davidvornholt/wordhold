@@ -8,6 +8,7 @@ import {
 } from '../../../shared/grading/rating';
 import { StaleAnswerSubmissionError } from '../errors/practice-errors';
 import type {
+  KeyPointFinding,
   SubmissionRecord,
   SubmitResult,
 } from '../schemas/practice-models';
@@ -20,6 +21,7 @@ import {
   gradeAnswer,
   loadRejectedAssessment,
 } from './answer-assessment';
+import type { DefinitionGrader } from './definition-grader';
 import type { JudgeCacheStore } from './judge-cache-store';
 import type { PracticeJudge } from './practice-judge';
 import type { PracticeReviewStore } from './review-store';
@@ -28,7 +30,26 @@ type SubmissionDependencies = {
   readonly reviews: PracticeReviewStore['Type'];
   readonly cache: JudgeCacheStore['Type'];
   readonly judge: PracticeJudge['Type'];
+  readonly grader: DefinitionGrader['Type'];
 };
+
+type AssessedOutcome = AssessedAnswer['outcome'];
+
+const explanationOf = (assessed: AssessedOutcome): string | null =>
+  assessed.method === 'exact' ? null : assessed.verdict.explanation;
+
+// Lines each key point up with the judge's finding for it, so the feedback
+// can mark what the definition covered.
+const keyPointFindings = (
+  assessed: AssessedOutcome,
+): ReadonlyArray<KeyPointFinding> | null =>
+  assessed.method === 'definition'
+    ? assessed.keyPoints.map((text, index) => ({
+        text,
+        covered: assessed.verdict.keyPoints[index]?.covered ?? false,
+        note: assessed.verdict.keyPoints[index]?.note ?? null,
+      }))
+    : null;
 
 const pendingRejectedResult = (
   assessed: AssessedAnswer,
@@ -38,7 +59,7 @@ const pendingRejectedResult = (
   if (isCorrect(assessed.outcome) || data.wrongAnswerResolution !== 'defer') {
     return null;
   }
-  if (assessed.assessmentId === null || assessed.outcome.method !== 'judge') {
+  if (assessed.assessmentId === null) {
     return null;
   }
   return {
@@ -48,6 +69,7 @@ const pendingRejectedResult = (
     expectedAnswers,
     explanation: assessed.outcome.verdict.explanation,
     acceptedAsAlternative: false,
+    keyPoints: keyPointFindings(assessed.outcome),
     assessmentId: assessed.assessmentId,
   };
 };
@@ -97,17 +119,17 @@ const commitOutcome = ({
       revision: persisted.revision,
       rating,
       expectedAnswers,
-      explanation:
-        assessed.method === 'judge' ? assessed.verdict.explanation : null,
+      explanation: assessed.method === 'skip' ? null : explanationOf(assessed),
       acceptedAsAlternative:
         assessed.method === 'judge' && isAcceptedAlternative(assessed.verdict),
+      keyPoints: assessed.method === 'skip' ? null : keyPointFindings(assessed),
       schedule: persisted.schedule,
     };
   });
 
 export const resolveAnswerSubmission = (
   data: SubmitPayloadData,
-  { reviews, cache, judge }: SubmissionDependencies,
+  { reviews, cache, judge, grader }: SubmissionDependencies,
 ) =>
   Effect.gen(function* () {
     const row = yield* reviews.findSubmission(
@@ -140,7 +162,16 @@ export const resolveAnswerSubmission = (
     }
     const normalized = normalizeAnswer(data.answer);
     const assessment = yield* data.wrongAnswerResolution === 'defer'
-      ? gradeAnswer({ row, accepted, data, normalized, cache, judge })
+      ? gradeAnswer({
+          row,
+          accepted,
+          data,
+          normalized,
+          reviews,
+          cache,
+          judge,
+          grader,
+        })
       : loadRejectedAssessment({
           row,
           normalized,

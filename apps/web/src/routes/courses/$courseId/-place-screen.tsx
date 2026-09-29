@@ -1,5 +1,4 @@
 import { useRouter } from '@tanstack/react-router';
-import type { LanguageCode } from '@wordhold/db/schema/courses';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import type {
   VocabularyEntry,
@@ -15,7 +14,11 @@ import {
 import { DirectionPlan } from '../../../features/courses/ui/direction-plan';
 import { PlaceVocabulary } from '../../../features/courses/ui/place-vocabulary';
 import type { WordPlace } from '../../../features/courses/ui/word-places';
-import { directionLabel } from '../../../shared/directions';
+import {
+  type CourseSubject,
+  courseNouns,
+  directionLabel,
+} from '../../../shared/directions';
 import { countNoun } from '../../../shared/format/count';
 import { readyCardsInNextSection } from '../../../shared/practice/session-policy';
 import { itemsInNextSection } from '../../../shared/session/section-policy';
@@ -33,16 +36,17 @@ type PlaceDirectionPlanProps = {
   readonly courseId: string;
   readonly place: WordPlace;
   readonly progress: WordProgress;
-  readonly targetLabel: string;
+  readonly subject: CourseSubject;
 };
 
 export const PlaceDirectionPlan = ({
   courseId,
   place,
   progress,
-  targetLabel,
+  subject,
 }: PlaceDirectionPlanProps) => {
   const selection = placeSelection(place);
+  const nouns = courseNouns(subject);
   return (
     <DirectionPlan
       progress={progress}
@@ -56,11 +60,11 @@ export const PlaceDirectionPlan = ({
         >
           {`${countNoun(
             itemsInNextSection(direction.unintroduced),
-            'Vokabel',
-            'Vokabeln',
+            nouns.singular,
+            nouns.plural,
           )} kennenlernen${
             variant === 'primary'
-              ? ` · ${directionLabel(direction.direction, targetLabel)}`
+              ? ` · ${directionLabel(direction.direction, subject)}`
               : ''
           }`}
         </PlaceLearnLink>
@@ -78,10 +82,10 @@ export const PlaceDirectionPlan = ({
             'Karte',
             'Karten',
           )}{' '}
-          üben · {directionLabel(direction.direction, targetLabel)}
+          üben · {directionLabel(direction.direction, subject)}
         </ActionLink>
       )}
-      targetLabel={targetLabel}
+      subject={subject}
     />
   );
 };
@@ -89,8 +93,7 @@ export const PlaceDirectionPlan = ({
 type PlaceWordsProps = {
   readonly courseId: string;
   readonly place: WordPlace;
-  readonly targetLanguage: LanguageCode;
-  readonly targetLabel: string;
+  readonly subject: CourseSubject;
   readonly enabledDirections: ReadonlyArray<AnswerDirection>;
   readonly entries: ReadonlyArray<VocabularyEntry>;
   readonly courseEntries: ReadonlyArray<VocabularyEntry>;
@@ -99,8 +102,7 @@ type PlaceWordsProps = {
 export const PlaceWords = ({
   courseId,
   place,
-  targetLanguage,
-  targetLabel,
+  subject,
   enabledDirections,
   entries,
   courseEntries,
@@ -151,8 +153,7 @@ export const PlaceWords = ({
           data: { courseId, ...place, text, given },
         })
       }
-      targetLabel={targetLabel}
-      targetLanguage={targetLanguage}
+      subject={subject}
       translateDraftExample={(targetText) =>
         translateVocabularyDraftExample({ data: { courseId, targetText } })
       }

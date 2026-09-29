@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import type { DefinitionVerdictData } from '@wordhold/ai/definition/schema';
 import type { JudgeVerdictData } from '@wordhold/ai/judge/schema';
 import { deriveRating, isCorrect, ratings } from './rating';
 
@@ -15,6 +16,20 @@ const verdict = (overrides: Partial<JudgeVerdictData>): JudgeVerdictData => ({
   intendedConstruction: { ok: true, note: null },
   explanation: 'Passt.',
   ...overrides,
+});
+
+const keyPoints = ['senkt die Aktivierungsenergie', 'wird nicht verbraucht'];
+
+const definitionVerdict = (
+  covered: ReadonlyArray<boolean>,
+  accurate = true,
+): DefinitionVerdictData => ({
+  keyPoints: covered.map((point) => ({
+    covered: point,
+    note: point ? null : 'Fehlt.',
+  })),
+  accuracy: { ok: accurate, note: accurate ? null : 'Falsch.' },
+  explanation: 'Passt.',
 });
 
 describe('deriveRating', () => {
@@ -58,6 +73,45 @@ describe('deriveRating', () => {
     expect(deriveRating({ method: 'skip' }, null)).toBe(ratings.again);
   });
 
+  it('rates a definition that covers every key point Good, however fast', () => {
+    expect(
+      deriveRating(
+        {
+          method: 'definition',
+          keyPoints,
+          verdict: definitionVerdict([true, true]),
+        },
+        fastMs,
+      ),
+    ).toBe(ratings.good);
+  });
+
+  it('rates a definition that misses a key point Again', () => {
+    expect(
+      deriveRating(
+        {
+          method: 'definition',
+          keyPoints,
+          verdict: definitionVerdict([false, true]),
+        },
+        slowMs,
+      ),
+    ).toBe(ratings.again);
+  });
+
+  it('rates a complete but false definition Again', () => {
+    expect(
+      deriveRating(
+        {
+          method: 'definition',
+          keyPoints,
+          verdict: definitionVerdict([true, true], false),
+        },
+        slowMs,
+      ),
+    ).toBe(ratings.again);
+  });
+
   it('rates a learner correction Hard', () => {
     const assessed = {
       method: 'judge',
@@ -80,6 +134,23 @@ describe('isCorrect', () => {
   it('follows the judge verdict otherwise', () => {
     expect(
       isCorrect({ method: 'judge', verdict: verdict({ correct: false }) }),
+    ).toBe(false);
+  });
+
+  it('requires every key point of a definition', () => {
+    expect(
+      isCorrect({
+        method: 'definition',
+        keyPoints,
+        verdict: definitionVerdict([true, true]),
+      }),
+    ).toBe(true);
+    expect(
+      isCorrect({
+        method: 'definition',
+        keyPoints,
+        verdict: definitionVerdict([true, false]),
+      }),
     ).toBe(false);
   });
 

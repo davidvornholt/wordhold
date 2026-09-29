@@ -3,6 +3,7 @@ import {
   prepareVocabularyExamples,
 } from '../../../features/courses/services/server-fns';
 import { getCourse } from '../../../features/import/server-fns';
+import type { Course } from '../../../features/import/services/repository';
 import { getLearnSelection } from '../../../features/learning/services/server-fns';
 import type { PracticeSession } from '../../../features/practice/schemas/practice-models';
 import {
@@ -20,17 +21,20 @@ import type { VocabularySelectionData } from '../../../shared/session/vocabulary
 import { type CoursePlace, findCoursePlace } from './-course-place';
 
 const loadLearningMode = async (
-  courseId: string,
+  course: Course,
   selection: VocabularySelectionData,
   deps: StudySearchData,
 ) => {
-  const pass = await getLearnSelection({ data: { courseId, selection } });
+  const pass = await getLearnSelection({
+    data: { courseId: course.id, selection },
+  });
   const availableDirections = pass.directions.map(
     (progress) => progress.direction,
   );
   const direction = resolveAnswerDirection(deps.direction, availableDirections);
+  // A definition has no example sentence to show.
   const prepared =
-    direction === undefined
+    direction === undefined || course.kind === 'terms'
       ? []
       : await prepareVocabularyExamples({
           data: pass.items
@@ -119,7 +123,7 @@ export const loadStudyData = async (
   }
   const mode =
     deps.mode === 'learn'
-      ? await loadLearningMode(course.id, selection, deps)
+      ? await loadLearningMode(course, selection, deps)
       : await loadPracticeMode(course.id, selection, deps);
   return { ...mode, course, place, selection };
 };

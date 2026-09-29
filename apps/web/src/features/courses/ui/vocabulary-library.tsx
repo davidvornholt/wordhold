@@ -1,7 +1,7 @@
-import type { LanguageCode } from '@wordhold/db/schema/courses';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
+import type { CourseSubject } from '../../../shared/directions';
 import { Button } from '../../../shared/ui/button';
 import { cardClass } from '../../../shared/ui/surface-styles';
 import { wordLocation } from '../../../shared/vocabulary/book-name';
@@ -24,7 +24,7 @@ type VocabularyLibraryProps = {
   // two books may each have a unit with the same name. Place scope shows one
   // flat list because every entry lives in the same book or unit.
   readonly scope: 'course' | 'place';
-  readonly targetLanguage: LanguageCode;
+  readonly subject: CourseSubject;
   readonly renderStudyAction: (
     entryIds: ReadonlyArray<string>,
     intent: 'learn' | 'practice',
@@ -83,7 +83,7 @@ export const VocabularyLibrary = ({
   initialFilter,
   initialPlaceId,
   scope,
-  targetLanguage,
+  subject,
   renderStudyAction,
   generateExample,
 }: VocabularyLibraryProps) => {
@@ -187,7 +187,7 @@ export const VocabularyLibrary = ({
             onToggleAll={toggleAll}
             onToggleEntry={toggleEntry}
             selected={selected}
-            targetLanguage={targetLanguage}
+            subject={subject}
           />
         ))
       )}

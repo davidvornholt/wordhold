@@ -94,3 +94,34 @@ it('plans without writes, refuses concurrent changes, and preserves original gra
     ),
   );
 });
+
+it('refuses to reassess a card from a terms course', async () => {
+  await Effect.runPromise(
+    withMigratedTestDatabase((database) =>
+      Effect.gen(function* () {
+        const sql = yield* Database;
+        yield* seedIntroducedCardFixture;
+        yield* sql`update courses set kind = 'terms', target_language = 'de', directions = '{to_native}'
+      where id = (select course_id from entries where id = ${firstReviewEntryId})`;
+        const [card] = yield* sql<{
+          readonly id: string;
+        }>`select id from cards where entry_id = ${firstReviewEntryId} and direction = 'to_native'`;
+        if (card === undefined) {
+          return yield* Effect.die('Fixture card missing');
+        }
+        const plan = yield* planReviewRepairs([card.id]).pipe(Effect.either);
+        expect(plan).toMatchObject({
+          _tag: 'Left',
+          left: { _tag: 'ReviewRepairError' },
+        });
+      }).pipe(
+        Effect.provide(testDatabaseLayer(database.url)),
+        Effect.provideService(PracticeJudge, {
+          model: 'test',
+          judge: () =>
+            Effect.die('A term must not reach the translation judge'),
+        }),
+      ),
+    ),
+  );
+});

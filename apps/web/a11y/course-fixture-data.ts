@@ -6,8 +6,19 @@ import type {
   VocabularyEntry,
   WordProgress,
 } from '../src/features/courses/schemas/course-units';
+import type { CourseSubject } from '../src/shared/directions';
 
 export const targetLabel = 'Englisch';
+
+export const englishSubject: CourseSubject = {
+  kind: 'language',
+  targetLanguage: 'en',
+};
+
+export const termsSubject: CourseSubject = {
+  kind: 'terms',
+  targetLanguage: 'de',
+};
 
 const holidaysCount = 18;
 const holidaysReverseIntroduced = 16;

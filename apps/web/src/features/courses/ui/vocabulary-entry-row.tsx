@@ -1,5 +1,5 @@
-import type { LanguageCode } from '@wordhold/db/schema/courses';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
+import type { CourseSubject } from '../../../shared/directions';
 import { Checkbox } from '../../../shared/ui/selection-controls';
 import type { VocabularyEntry } from '../schemas/course-units';
 import { VocabularyExample } from './vocabulary-example';
@@ -9,7 +9,7 @@ type VocabularyEntryRowProps = {
   readonly entry: VocabularyEntry;
   readonly enabledDirections: ReadonlyArray<AnswerDirection>;
   readonly now: Date;
-  readonly targetLanguage: LanguageCode;
+  readonly subject: CourseSubject;
   readonly selected: boolean;
   readonly onToggle: () => void;
   readonly generateExample: () => Promise<
@@ -21,7 +21,7 @@ export const VocabularyEntryRow = ({
   entry,
   enabledDirections,
   now,
-  targetLanguage,
+  subject,
   selected,
   onToggle,
   generateExample,
@@ -35,7 +35,7 @@ export const VocabularyEntryRow = ({
     />
     <div className="flex min-w-0 flex-1 flex-col">
       <p>
-        <span className="font-medium" lang={targetLanguage}>
+        <span className="font-medium" lang={subject.targetLanguage}>
           {entry.targetText}
         </span>
         <span className="text-muted-foreground"> · {entry.nativeText}</span>
@@ -47,11 +47,11 @@ export const VocabularyEntryRow = ({
           <VocabularyExample
             entry={entry}
             generate={generateExample}
-            targetLanguage={targetLanguage}
+            targetLanguage={subject.targetLanguage}
           />
         }
         now={now}
-        targetLanguage={targetLanguage}
+        subject={subject}
       />
     </div>
   </li>

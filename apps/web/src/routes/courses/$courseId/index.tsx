@@ -19,7 +19,11 @@ import { placeLinkClass } from '../../../features/courses/ui/place-link-styles';
 import { QuickVocabularyEntry } from '../../../features/courses/ui/quick-vocabulary-entry';
 import { getDashboard } from '../../../features/dashboard/services/server-fns';
 import { getCourse } from '../../../features/import/server-fns';
-import { directionLabel } from '../../../shared/directions';
+import {
+  type CourseSubject,
+  courseNouns,
+  directionLabel,
+} from '../../../shared/directions';
 import { countNoun } from '../../../shared/format/count';
 import { germanLabels, languageSubtitle } from '../../../shared/languages';
 import { itemsInNextSection } from '../../../shared/session/section-policy';
@@ -36,14 +40,15 @@ const coursePrimaryAction = ({
   isEmpty,
   outline,
   ready,
-  targetLabel,
+  subject,
 }: {
   readonly courseId: string;
   readonly isEmpty: boolean;
   readonly outline: CourseOutline;
   readonly ready: number;
-  readonly targetLabel: string;
+  readonly subject: CourseSubject;
 }): ReactNode => {
+  const nouns = courseNouns(subject);
   const nextPlace = coursePlaces(outline).find(
     (place) => place.unintroduced > 0,
   );
@@ -69,14 +74,14 @@ const coursePrimaryAction = ({
         selection={nextPlace.selection}
       >
         {recommendedDirection === undefined
-          ? 'Neue Vokabeln kennenlernen'
+          ? `Neue ${nouns.plural} kennenlernen`
           : `${countNoun(
               itemsInNextSection(recommendedDirection.unintroduced),
-              'Vokabel',
-              'Vokabeln',
+              nouns.singular,
+              nouns.plural,
             )} kennenlernen · ${directionLabel(
               recommendedDirection.direction,
-              targetLabel,
+              subject,
             )}`}
       </PlaceLearnLink>
     );
@@ -101,7 +106,6 @@ const CourseScreen = () => {
     return next;
   };
   const isEmpty = courseTotals(outline).entries === 0;
-  const targetLabel = germanLabels[course.targetLanguage];
 
   return (
     <PageLayout
@@ -136,7 +140,7 @@ const CourseScreen = () => {
           isEmpty,
           outline,
           ready: stats?.ready ?? 0,
-          targetLabel,
+          subject: course,
         })}
         quickEntry={
           outline.books.length === 0 ? null : (
@@ -160,7 +164,7 @@ const CourseScreen = () => {
                   data: { courseId: course.id, ...place, text, given },
                 })
               }
-              targetLabel={targetLabel}
+              targetLabel={germanLabels[course.targetLanguage]}
               targetLanguage={course.targetLanguage}
               translateExample={(targetText) =>
                 translateVocabularyDraftExample({

@@ -41,7 +41,7 @@ describe('vocabulary schedule', () => {
         entry={entry}
         exampleControl={null}
         now={new Date('2026-08-29T10:00:00Z')}
-        targetLanguage="en"
+        subject={{ kind: 'language', targetLanguage: 'en' }}
       />,
     );
 

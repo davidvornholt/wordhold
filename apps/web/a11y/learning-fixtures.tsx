@@ -4,10 +4,12 @@ import { LearnDone } from '../src/features/learning/ui/learn-done';
 import { LearnPass } from '../src/features/learning/ui/learn-pass';
 import { directionOptions } from '../src/features/practice/services/session-options';
 import { SessionStart } from '../src/features/practice/ui/session-start';
+import { courseNouns } from '../src/shared/directions';
 import { countNoun } from '../src/shared/format/count';
 import { sessionSectionSize } from '../src/shared/session/section-policy';
 import { Button } from '../src/shared/ui/button';
 import { FocusLayout } from '../src/shared/ui/focus-layout';
+import { englishSubject } from './course-fixture-data';
 import { fixtureBackControl, fixtureControl } from './fixture-controls';
 import { navigateToFixture } from './fixture-state';
 
@@ -26,6 +28,7 @@ const items: ReadonlyArray<LearnItem> = [
       hasAudio: false,
     },
     textbookAnswers: ['memory'],
+    keyPoints: null,
   },
   {
     cardId: '00000000-0000-0000-0000-000000000012',
@@ -41,6 +44,7 @@ const items: ReadonlyArray<LearnItem> = [
       hasAudio: false,
     },
     textbookAnswers: ['holiday'],
+    keyPoints: null,
   },
   {
     cardId: '00000000-0000-0000-0000-000000000013',
@@ -56,6 +60,7 @@ const items: ReadonlyArray<LearnItem> = [
       hasAudio: false,
     },
     textbookAnswers: ['to look (at)'],
+    keyPoints: null,
   },
 ];
 
@@ -129,8 +134,7 @@ export const LearnFixture = ({
           setIntroduced((current) => [...current, item.cardId]);
           return Promise.resolve();
         }}
-        targetLabel="Englisch"
-        targetLanguage="en"
+        subject={englishSubject}
       />
       <output aria-label="Introduced directions" className="sr-only">
         {introduced.length}
@@ -146,7 +150,7 @@ export const LearnStartFixture = () => (
   <FocusLayout exit={backControl} title="Unit 3: Holidays · Kennenlernen">
     <SessionStart
       itemNoun={{ singular: 'Vokabel', plural: 'Vokabeln' }}
-      options={directionOptions(['to_target', 'to_native'], 'Englisch', [
+      options={directionOptions(['to_target', 'to_native'], englishSubject, [
         { direction: 'to_target', ready: 2 },
         { direction: 'to_native', ready: 1 },
       ])}
@@ -178,6 +182,7 @@ export const LearnDoneFixture = () => (
       )}
       directionLabel="Deutsch → Englisch"
       learned={2}
+      nouns={courseNouns(englishSubject)}
     />
   </FocusLayout>
 );
@@ -205,6 +210,7 @@ export const LearnSectionDoneFixture = () => {
         }
         directionLabel="Deutsch → Englisch"
         learned={sessionSectionSize}
+        nouns={courseNouns(englishSubject)}
       />
       <output aria-label="Continued learning sections" className="sr-only">
         {continuations}

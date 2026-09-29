@@ -1,7 +1,8 @@
-import type { LanguageCode } from '@wordhold/db/schema/courses';
+import type { CourseKind, LanguageCode } from '@wordhold/db/schema/courses';
 import { formatLearningDateInline } from '../../../shared/dates/learning-date';
 import type { PreparedExampleSentence } from '../../../shared/examples/example-model';
 import { normalizeAnswerForComparison } from '../../../shared/grading/normalize';
+import { KeyPointList } from '../../../shared/ui/key-point-list';
 import type { CardTone } from '../../../shared/ui/word-card';
 import type { SubmitResult } from '../schemas/practice-models';
 import { feedbackTone } from './feedback-tone';
@@ -35,6 +36,7 @@ type FeedbackPanelProps = {
   readonly targetLanguage: LanguageCode;
   // The language of the expected answer, for hyphenation and speech.
   readonly answerLanguage: LanguageCode;
+  readonly kind: CourseKind;
 };
 
 const feedbackHeading = (
@@ -94,6 +96,54 @@ const ScheduleNote = ({
   </p>
 );
 
+// What the judge found: the key points of a definition, its explanation, and
+// whether the answer now counts as an alternative.
+const JudgeNotes = ({
+  result,
+}: {
+  readonly result: Extract<SubmitResult, { readonly graded: true }>;
+}) => (
+  <>
+    {result.keyPoints === null ? null : (
+      <KeyPointList items={result.keyPoints} />
+    )}
+    {result.explanation === null ? null : (
+      <p className="text-sm">{result.explanation}</p>
+    )}
+    {result.acceptedAsAlternative ? (
+      <p className="text-accent-foreground text-sm">
+        Deine Antwort wurde als gültige Alternative gespeichert.
+      </p>
+    ) : null}
+  </>
+);
+
+const ExpectedAnswer = ({
+  answerLanguage,
+  definition,
+  expectedAnswers,
+}: {
+  readonly answerLanguage: LanguageCode;
+  readonly definition: boolean;
+  readonly expectedAnswers: ReadonlyArray<string>;
+}) => (
+  <p>
+    <span className="text-muted-foreground text-sm">
+      {definition ? 'Definition: ' : 'Erwartet: '}
+    </span>
+    <span
+      className={
+        definition
+          ? 'wrap-break-word hyphens-auto text-lg'
+          : 'wrap-break-word hyphens-auto font-display text-2xl'
+      }
+      lang={answerLanguage}
+    >
+      {definition ? expectedAnswers.at(0) : expectedAnswers.join(' / ')}
+    </span>
+  </p>
+);
+
 // The back of the card: what the answer was, why, and what follows. Rendered
 // inside the card under the prompt once an answer has been judged.
 export const FeedbackPanel = ({
@@ -108,7 +158,9 @@ export const FeedbackPanel = ({
   skipped,
   targetLanguage,
   answerLanguage,
+  kind,
 }: FeedbackPanelProps) => {
+  const definition = kind === 'terms';
   const normalizedSubmission = normalizeAnswerForComparison(submittedAnswer);
   const repeatsSubmittedAnswer = result.expectedAnswers.some(
     (expectedAnswer) =>
@@ -136,29 +188,18 @@ export const FeedbackPanel = ({
         {feedbackHeading(result, repeated, skipped)}
       </p>
       {repeatsSubmittedAnswer ? null : (
-        <p>
-          <span className="text-muted-foreground text-sm">Erwartet: </span>
-          <span
-            className="wrap-break-word hyphens-auto font-display text-2xl"
-            lang={answerLanguage}
-          >
-            {result.expectedAnswers.join(' / ')}
-          </span>
-        </p>
+        <ExpectedAnswer
+          answerLanguage={answerLanguage}
+          definition={definition}
+          expectedAnswers={result.expectedAnswers}
+        />
       )}
       {showsAttempt ? (
         <p className="text-muted-foreground text-sm">
           Deine Antwort: <span lang={answerLanguage}>{submittedAnswer}</span>
         </p>
       ) : null}
-      {result.graded && result.explanation !== null ? (
-        <p className="text-sm">{result.explanation}</p>
-      ) : null}
-      {result.graded && result.acceptedAsAlternative ? (
-        <p className="text-accent-foreground text-sm">
-          Deine Antwort wurde als gültige Alternative gespeichert.
-        </p>
-      ) : null}
+      {result.graded ? <JudgeNotes result={result} /> : null}
       {result.graded && example !== null ? (
         <PracticeFeedbackExample
           example={example}
@@ -167,7 +208,7 @@ export const FeedbackPanel = ({
           targetLanguage={targetLanguage}
         />
       ) : null}
-      {result.graded && example === null && busy ? (
+      {result.graded && !definition && example === null && busy ? (
         <p className="text-muted-foreground text-sm">
           Beispielsatz wird vorbereitet …
         </p>
@@ -177,8 +218,9 @@ export const FeedbackPanel = ({
       ) : null}
       {pendingWrong ? (
         <p className="text-muted-foreground text-sm">
-          Vertippt? „Als richtig werten“ zählt die Karte als schwer und
-          speichert deine Antwort nicht als Lösung.
+          {definition
+            ? 'Steht doch alles drin? „Als richtig werten“ zählt die Karte als schwer.'
+            : 'Vertippt? „Als richtig werten“ zählt die Karte als schwer und speichert deine Antwort nicht als Lösung.'}
         </p>
       ) : null}
     </div>

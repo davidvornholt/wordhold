@@ -4,6 +4,7 @@ import {
 } from '@wordhold/db/schema/directions';
 import { useEffect, useRef, useState } from 'react';
 import {
+  type CourseSubject,
   directionDescription,
   directionLabel,
 } from '../../../shared/directions';
@@ -12,7 +13,7 @@ import { cardCompactClass } from '../../../shared/ui/surface-styles';
 
 type DirectionSettingsProps = {
   readonly initial: ReadonlyArray<AnswerDirection>;
-  readonly targetLabel: string;
+  readonly subject: CourseSubject;
   readonly save: (
     directions: ReadonlyArray<AnswerDirection>,
   ) => Promise<unknown>;
@@ -25,7 +26,7 @@ type DirectionSettingsProps = {
 // save settles, so the server cannot receive snapshots out of order.
 export const DirectionSettings = ({
   initial,
-  targetLabel,
+  subject,
   save,
 }: DirectionSettingsProps) => {
   const [directions, setDirections] =
@@ -112,13 +113,13 @@ export const DirectionSettings = ({
             />
             <span className="flex flex-col gap-0.5">
               <label className="font-medium" htmlFor={direction}>
-                {directionLabel(direction, targetLabel)}
+                {directionLabel(direction, subject)}
               </label>
               <span
                 className="text-muted-foreground"
                 id={`${direction}-description`}
               >
-                {directionDescription(direction, targetLabel)}
+                {directionDescription(direction, subject)}
               </span>
             </span>
           </div>

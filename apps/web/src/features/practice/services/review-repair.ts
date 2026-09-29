@@ -1,6 +1,6 @@
 import type { JudgeInput } from '@wordhold/ai/judge/schema';
 import { Database } from '@wordhold/db/client';
-import type { LanguageCode } from '@wordhold/db/schema/courses';
+import type { CourseKind, LanguageCode } from '@wordhold/db/schema/courses';
 import { Data, Effect } from 'effect';
 import {
   deriveRating,
@@ -31,6 +31,7 @@ type EntryCard = RepairCard & {
   readonly targetText: string;
   readonly nativeText: string;
   readonly targetLanguage: LanguageCode;
+  readonly courseKind: CourseKind;
 };
 
 // A read-only plan contains its original rows. Apply compares those rows under
@@ -54,7 +55,7 @@ const loadCards = (ids: ReadonlyArray<string>) =>
       c.scheduled_days as "scheduledDays", c.learning_steps as "learningSteps",
       c.last_reviewed_at as "lastReviewedAt", c.revision,
       e.target_text as "targetText", e.native_text as "nativeText",
-      co.target_language as "targetLanguage"
+      co.target_language as "targetLanguage", co.kind as "courseKind"
     from cards c join entries e on e.id = c.entry_id join courses co on co.id = e.course_id
     where c.id = any(${`{${ids.join(',')}}`}::uuid[]) order by c.id
   `;
@@ -88,7 +89,7 @@ const reassess = (input: JudgeInput, accepted: ReadonlyArray<AcceptedAnswer>) =>
     } as const;
   });
 
-const planCardRepair = (card: EntryCard) =>
+const planTranslationRepair = (card: EntryCard) =>
   Effect.gen(function* () {
     const judge = yield* PracticeJudge;
     const { reviews, accepted } = yield* loadHistory(card);
@@ -147,6 +148,16 @@ const planCardRepair = (card: EntryCard) =>
     }
   });
 
+// Definitions are graded against key points, which this repair does not know
+// how to replay.
+const planCardRepair = (card: EntryCard) =>
+  card.courseKind === 'terms'
+    ? Effect.fail(
+        new ReviewRepairError({
+          message: `${card.id} gehört zu einem Fach. Die Reparatur bewertet nur Übersetzungen neu.`,
+        }),
+      )
+    : planTranslationRepair(card);
 export const planReviewRepairs = (ids: ReadonlyArray<string>) =>
   Effect.gen(function* () {
     const cards = yield* loadCards(ids);

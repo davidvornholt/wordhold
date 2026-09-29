@@ -1,11 +1,12 @@
 import type { RefObject, SubmitEvent } from 'react';
+import type { AnswerFieldElement } from '../../../shared/ui/answer-field';
 import type { ResolvedSubmitResult } from '../schemas/practice-models';
 import type { useCardSubmission } from './use-card-submission';
 
 type CardContinuationInput = {
   readonly submission: ReturnType<typeof useCardSubmission>;
   readonly checkRetype: () => boolean;
-  readonly inputRef: RefObject<HTMLInputElement | null>;
+  readonly inputRef: RefObject<AnswerFieldElement | null>;
   readonly onNext: (result: ResolvedSubmitResult) => void;
 };
 

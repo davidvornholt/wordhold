@@ -1,5 +1,9 @@
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
-import { directionLabel } from '../../../shared/directions';
+import {
+  type CourseSubject,
+  courseNouns,
+  directionLabel,
+} from '../../../shared/directions';
 import { countNoun } from '../../../shared/format/count';
 import { itemsInNextSection } from '../../../shared/session/section-policy';
 import type { PlaceSelectionData } from '../../../shared/session/vocabulary-selection';
@@ -17,7 +21,7 @@ type LearnCompletionControlsProps = {
     readonly direction: AnswerDirection;
     readonly count: number;
   } | null;
-  readonly targetLabel: string;
+  readonly subject: CourseSubject;
 };
 
 export const LearnCompletionControls = ({
@@ -27,33 +31,40 @@ export const LearnCompletionControls = ({
   currentRemaining,
   onContinueCurrent,
   next,
-  targetLabel,
-}: LearnCompletionControlsProps) => (
-  <div className="flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap">
-    <ActionLink
-      params={{ courseId }}
-      search={{ direction: current, ...placeSearch(selection) }}
-      to="/courses/$courseId/practice"
-    >
-      Jetzt üben · {directionLabel(current, targetLabel)}
-    </ActionLink>
-    {currentRemaining === 0 ? null : (
-      <Button onClick={onContinueCurrent} variant="outline">
-        Weitere{' '}
-        {countNoun(itemsInNextSection(currentRemaining), 'Vokabel', 'Vokabeln')}{' '}
-        kennenlernen · {directionLabel(current, targetLabel)}
-      </Button>
-    )}
-    {next === null ? null : (
-      <PlaceLearnLink
-        courseId={courseId}
-        direction={next.direction}
-        selection={selection}
-        variant="outline"
+  subject,
+}: LearnCompletionControlsProps) => {
+  const nouns = courseNouns(subject);
+  return (
+    <div className="flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap">
+      <ActionLink
+        params={{ courseId }}
+        search={{ direction: current, ...placeSearch(selection) }}
+        to="/courses/$courseId/practice"
       >
-        {countNoun(next.count, 'Vokabel', 'Vokabeln')} kennenlernen ·{' '}
-        {directionLabel(next.direction, targetLabel)}
-      </PlaceLearnLink>
-    )}
-  </div>
-);
+        Jetzt üben · {directionLabel(current, subject)}
+      </ActionLink>
+      {currentRemaining === 0 ? null : (
+        <Button onClick={onContinueCurrent} variant="outline">
+          Weitere{' '}
+          {countNoun(
+            itemsInNextSection(currentRemaining),
+            nouns.singular,
+            nouns.plural,
+          )}{' '}
+          kennenlernen · {directionLabel(current, subject)}
+        </Button>
+      )}
+      {next === null ? null : (
+        <PlaceLearnLink
+          courseId={courseId}
+          direction={next.direction}
+          selection={selection}
+          variant="outline"
+        >
+          {countNoun(next.count, nouns.singular, nouns.plural)} kennenlernen ·{' '}
+          {directionLabel(next.direction, subject)}
+        </PlaceLearnLink>
+      )}
+    </div>
+  );
+};

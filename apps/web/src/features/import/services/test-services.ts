@@ -22,6 +22,7 @@ const page = {
 const course = {
   id: page.courseId,
   name: 'Französisch',
+  kind: 'language' as const,
   targetLanguage: 'fr' as const,
   nativeLanguage: 'de' as const,
   createdAt: new Date(0),

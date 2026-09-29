@@ -1,8 +1,10 @@
-import type { LanguageCode } from '@wordhold/db/schema/courses';
 import type { ReviewMode } from '@wordhold/db/schema/practice';
 import { useId, useRef } from 'react';
+import type { CourseSubject } from '../../../shared/directions';
 import type { PrepareExamples } from '../../../shared/examples/example-model';
+import { germanLabels } from '../../../shared/languages';
 import type { RailOutcome } from '../../../shared/session/rail-outcome';
+import type { AnswerFieldElement } from '../../../shared/ui/answer-field';
 import { WordCard } from '../../../shared/ui/word-card';
 import type {
   PracticeSession,
@@ -27,13 +29,15 @@ type SessionItem = PracticeSession['items'][number];
 // correctly ("auf Französisch", "auf Latein" — never "ins Lateine").
 const practiceInstruction = (
   direction: SessionItem['direction'],
-  targetLabel: string,
+  subject: CourseSubject,
   repeated: boolean,
 ) => {
-  const instruction =
-    direction === 'to_target'
-      ? `Übersetze auf ${targetLabel}`
-      : 'Übersetze auf Deutsch';
+  let instruction = 'Übersetze auf Deutsch';
+  if (subject.kind === 'terms') {
+    instruction = 'Erkläre den Begriff';
+  } else if (direction === 'to_target') {
+    instruction = `Übersetze auf ${germanLabels[subject.targetLanguage]}`;
+  }
   return repeated ? `${instruction} · Noch einmal` : instruction;
 };
 
@@ -42,8 +46,7 @@ type CardPracticeProps = {
   // Cards still waiting behind this one in the round.
   readonly deck: number;
   readonly repeated: boolean;
-  readonly targetLabel: string;
-  readonly targetLanguage: LanguageCode;
+  readonly subject: CourseSubject;
   readonly mode: ReviewMode;
   readonly prepareExamples: PrepareExamples;
   readonly submit: (input: {
@@ -58,15 +61,16 @@ export const CardPractice = ({
   item,
   deck,
   repeated,
-  targetLabel,
-  targetLanguage,
+  subject,
   mode,
   prepareExamples,
   submit,
   onJudged,
   onNext,
 }: CardPracticeProps) => {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<AnswerFieldElement>(null);
+  const { targetLanguage } = subject;
+  const definition = subject.kind === 'terms';
   const nextButtonRef = useRef<HTMLButtonElement>(null);
   const promptId = useId();
   const feedbackDescriptionId = useId();
@@ -91,7 +95,7 @@ export const CardPractice = ({
   });
   const { result, busy, resolution } = submission;
   const answerLanguage = item.direction === 'to_target' ? targetLanguage : 'de';
-  const retype = useRetype(result, answerLanguage);
+  const retype = useRetype(result, answerLanguage, subject.kind);
   useCardFlow({
     busy,
     result,
@@ -115,7 +119,7 @@ export const CardPractice = ({
     <>
       <WordCard
         deck={deck}
-        eyebrow={practiceInstruction(item.direction, targetLabel, repeated)}
+        eyebrow={practiceInstruction(item.direction, subject, repeated)}
         tone={tone}
         word={item.prompt}
         wordId={promptId}
@@ -127,6 +131,7 @@ export const CardPractice = ({
             busy={busy || resolution !== null}
             example={example}
             id={feedbackDescriptionId}
+            kind={subject.kind}
             playSentence={audio.playSentence}
             playWord={audio.playWord}
             repeated={repeated}
@@ -142,6 +147,7 @@ export const CardPractice = ({
         busy={busy}
         disabled={result !== null}
         inputRef={inputRef}
+        multiline={definition}
         onAnswerChange={submission.setAnswer}
         onSkip={submission.skipCard}
         onSubmit={onSubmit}

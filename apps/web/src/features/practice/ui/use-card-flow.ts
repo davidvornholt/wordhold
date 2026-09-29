@@ -1,6 +1,7 @@
 import { type RefObject, useEffect } from 'react';
 import type { PreparedExampleSentence } from '../../../shared/examples/example-model';
 import type { RailOutcome } from '../../../shared/session/rail-outcome';
+import type { AnswerFieldElement } from '../../../shared/ui/answer-field';
 import type { SubmitResult } from '../schemas/practice-models';
 
 const outcomeOf = (result: SubmitResult): RailOutcome => {
@@ -16,7 +17,7 @@ type CardFlowInput = {
   readonly example: PreparedExampleSentence | null;
   readonly loadExample: () => Promise<PreparedExampleSentence | null>;
   readonly onJudged: (outcome: RailOutcome) => void;
-  readonly inputRef: RefObject<HTMLInputElement | null>;
+  readonly inputRef: RefObject<AnswerFieldElement | null>;
   readonly nextButtonRef: RefObject<HTMLButtonElement | null>;
   // After a mistake the field asks for the answer again, so focus stays there.
   readonly retypeRequired: boolean;

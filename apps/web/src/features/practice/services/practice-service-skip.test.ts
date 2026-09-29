@@ -18,6 +18,7 @@ describe('PracticeService skip', () => {
     const result = await runSubmitPayload(
       {
         findSubmission: () => Effect.succeed(testSubmission),
+        saveKeyPoints: () => Effect.void,
         listAcceptedAnswers: () =>
           Effect.succeed([{ text: 'correct', source: 'textbook' }]),
         commit: (input) =>

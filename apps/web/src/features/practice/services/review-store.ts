@@ -1,5 +1,5 @@
 import { Database } from '@wordhold/db/client';
-import type { LanguageCode } from '@wordhold/db/schema/courses';
+import type { CourseKind, LanguageCode } from '@wordhold/db/schema/courses';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import type { AnswerSource } from '@wordhold/db/schema/entries';
 import type { cards, ReviewMode } from '@wordhold/db/schema/practice';
@@ -22,6 +22,8 @@ import { advancesSchedule } from './schedule-guard';
 type SubmissionRow = typeof cards.$inferSelect & {
   readonly targetText: string;
   readonly nativeText: string;
+  readonly keyPoints: ReadonlyArray<string> | null;
+  readonly courseKind: CourseKind;
   readonly targetLanguage: LanguageCode;
 };
 
@@ -46,6 +48,13 @@ export class PracticeReviewStore extends Context.Tag(
       entryId: string,
       direction: AnswerDirection,
     ) => Effect.Effect<ReadonlyArray<AcceptedAnswer>, PracticeDatabaseError>;
+    // Stores key points derived during grading, unless the definition changed
+    // or the learner set key points in the meantime.
+    readonly saveKeyPoints: (
+      entryId: string,
+      definition: string,
+      keyPoints: ReadonlyArray<string>,
+    ) => Effect.Effect<void, PracticeDatabaseError>;
     readonly commit: (
       input: PersistReviewInput,
     ) => Effect.Effect<
@@ -70,7 +79,8 @@ export class PracticeReviewStore extends Context.Tag(
             c.learning_steps as "learningSteps",
             c.last_reviewed_at as "lastReviewedAt", c.revision,
             e.target_text as "targetText",
-            e.native_text as "nativeText", co.target_language as "targetLanguage"
+            e.native_text as "nativeText", e.key_points as "keyPoints",
+            co.kind as "courseKind", co.target_language as "targetLanguage"
           from cards c
           join entries e on e.id = c.entry_id
           join courses co on co.id = e.course_id
@@ -90,7 +100,9 @@ export class PracticeReviewStore extends Context.Tag(
                     id: row.entryId,
                     targetText: row.targetText,
                     nativeText: row.nativeText,
+                    keyPoints: row.keyPoints,
                   },
+                  courseKind: row.courseKind,
                   targetLanguage: row.targetLanguage,
                 };
           }),
@@ -112,6 +124,22 @@ export class PracticeReviewStore extends Context.Tag(
           Effect.mapError((cause) =>
             databaseError('load accepted answers', cause),
           ),
+        );
+      const saveKeyPoints = (
+        entryId: string,
+        definition: string,
+        keyPoints: ReadonlyArray<string>,
+      ) =>
+        sql`
+          update entries
+          set key_points = array(
+            select jsonb_array_elements_text(${JSON.stringify(keyPoints)}::jsonb)
+          )
+          where id = ${entryId} and native_text = ${definition}
+            and key_points is null
+        `.pipe(
+          Effect.asVoid,
+          Effect.mapError((cause) => databaseError('save key points', cause)),
         );
       const commit = (input: PersistReviewInput) => {
         const next = applyRating(input.card, input.rating, input.reviewedAt);
@@ -204,7 +232,12 @@ export class PracticeReviewStore extends Context.Tag(
           })),
         );
       };
-      return { findSubmission, listAcceptedAnswers, commit } as const;
+      return {
+        findSubmission,
+        listAcceptedAnswers,
+        saveKeyPoints,
+        commit,
+      } as const;
     }),
   );
 }

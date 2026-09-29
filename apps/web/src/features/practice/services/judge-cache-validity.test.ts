@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import type { JudgeVerdictData } from '@wordhold/ai/judge/schema';
 import { Effect, Layer } from 'effect';
+import type { CachedVerdict } from '../schemas/practice-models';
 import { judgeCacheIdentity, judgeWithCache } from './judge-cache';
 import { JudgeCacheStore } from './judge-cache-store';
 import { PracticeJudge } from './practice-judge';
@@ -88,7 +89,7 @@ describe('judge cache validity', () => {
   });
 
   it('replaces the assessment identity with an obsolete model', async () => {
-    let cached = {
+    let cached: CachedVerdict = {
       assessmentId,
       verdict,
       model: 'bedrock-runtime:old-model',

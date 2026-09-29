@@ -28,6 +28,8 @@ const unitBookIndexMigrationHash =
   'cb42bc24512d3f6a940f361c3af4bf685acbc113f3bf980841b93260c11cf941';
 const entryBookMigrationHash =
   '872071c0a1725aa0d740405e071d8905bcbe7ecfe394a84ac3eda36698bb00e6';
+const courseKindMigrationHash =
+  'b26fe74cf27edc2b2519861de4384dc66e43010d89be9fd629d03935959863af';
 const fullMigrationTestTimeoutMs = 15_000;
 
 const getMigrationError = (url: string) =>
@@ -51,6 +53,10 @@ it(
             ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', 0, 2, 'pages/one.png'),
             ('dddddddd-dddd-4ddd-8ddd-dddddddddddd', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', 1, 2, 'pages/two.png')
         `;
+          yield* sql`alter table courses drop constraint courses_terms_shape`;
+          yield* sql`alter table courses drop column kind`;
+          yield* sql`drop type course_kind`;
+          yield* sql`alter table entries drop column key_points`;
           yield* sql`drop index "account_providerId_accountId_idx"`;
           yield* sql`alter table account alter column issuer set not null`;
           yield* sql`create unique index "account_issuer_accountId_idx" on account (issuer, account_id)`;
@@ -91,7 +97,8 @@ it(
             ${booksMigrationHash},
             ${accountIdentityMigrationHash},
             ${unitBookIndexMigrationHash},
-            ${entryBookMigrationHash}
+            ${entryBookMigrationHash},
+            ${courseKindMigrationHash}
           )
         `;
           yield* migrateDatabase(database.url);
