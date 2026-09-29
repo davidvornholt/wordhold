@@ -50,7 +50,9 @@ test('a course with only empty units still leads into importing vocabulary', asy
     page.getByRole('button', { name: 'Seite fotografieren' }),
   ).toBeVisible();
   await expect(page.getByText('Für jetzt geschafft')).toHaveCount(0);
-  await expect(page.getByText('Noch keine Vokabeln')).toBeVisible();
+  await expect(
+    page.getByText('Englisch · noch keine Vokabeln', { exact: true }),
+  ).toBeVisible();
 });
 
 test('an untouched unit exposes both learning paths before the session', async ({
