@@ -1,15 +1,18 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, useRouter } from '@tanstack/react-router';
 import {
   getCourseDirections,
+  renameSubject,
   setCourseDirections,
 } from '../../../features/courses/services/server-fns';
 import { DirectionSettings } from '../../../features/courses/ui/direction-settings';
-import { getCourse } from '../../../features/import/server-fns';
+import { SubjectSettings } from '../../../features/courses/ui/subject-settings';
+import { getCourse, listCourses } from '../../../features/import/server-fns';
 import { BackLink } from '../../../shared/ui/back-link';
 import { PageLayout } from '../../../shared/ui/page-layout';
 
 const CourseSettingsScreen = () => {
-  const { course, directions } = Route.useLoaderData();
+  const { course, courses, directions } = Route.useLoaderData();
+  const router = useRouter();
 
   return (
     <PageLayout
@@ -20,26 +23,39 @@ const CourseSettingsScreen = () => {
       }
       title={`${course.name}: Einstellungen`}
     >
-      <DirectionSettings
-        initial={directions}
-        save={(next) =>
-          setCourseDirections({
-            data: { courseId: course.id, directions: next },
-          })
-        }
-        subject={course}
-      />
+      {course.kind === 'terms' ? (
+        <SubjectSettings
+          courseId={course.id}
+          courses={courses}
+          name={course.name}
+          rename={async (name) => {
+            await renameSubject({ data: { courseId: course.id, name } });
+            await router.invalidate();
+          }}
+        />
+      ) : (
+        <DirectionSettings
+          initial={directions}
+          save={(next) =>
+            setCourseDirections({
+              data: { courseId: course.id, directions: next },
+            })
+          }
+          subject={course}
+        />
+      )}
     </PageLayout>
   );
 };
 
 export const Route = createFileRoute('/courses/$courseId/settings')({
   loader: async ({ params }) => {
-    const [course, directions] = await Promise.all([
+    const [course, courses, directions] = await Promise.all([
       getCourse({ data: params.courseId }),
+      listCourses(),
       getCourseDirections({ data: params.courseId }),
     ]);
-    return { course, directions };
+    return { course, courses, directions };
   },
   component: CourseSettingsScreen,
 });

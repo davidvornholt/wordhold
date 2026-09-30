@@ -1,4 +1,5 @@
 import { Database } from '@wordhold/db/client';
+import type { CourseKind } from '@wordhold/db/schema/courses';
 import { Context, Effect, Layer } from 'effect';
 import { CourseDatabaseError } from '../errors/courses-errors';
 import {
@@ -19,6 +20,10 @@ import {
   makeCourseBookMutations,
 } from './course-book-mutations';
 import {
+  type CreateSubjectResult,
+  makeCourseSubjectMutations,
+} from './course-subject-mutations';
+import {
   type CreateUnitResult,
   makeCourseUnitMutations,
 } from './course-unit-mutations';
@@ -32,7 +37,7 @@ const databaseError = (operation: string, cause: unknown) =>
   new CourseDatabaseError({
     operation,
     cause,
-    message: 'Die Sprache konnte nicht geladen werden.',
+    message: 'Die Sprache oder das Fach konnte nicht geladen werden.',
   });
 
 export class CourseStore extends Context.Tag('wordhold/CourseStore')<
@@ -46,6 +51,19 @@ export class CourseStore extends Context.Tag('wordhold/CourseStore')<
       courseId: string,
       directions: CourseDirectionsData,
     ) => Effect.Effect<boolean, CourseDatabaseError>;
+    readonly readKind: (
+      courseId: string,
+    ) => Effect.Effect<CourseKind | undefined, CourseDatabaseError>;
+    readonly createSubject: (
+      name: string,
+    ) => Effect.Effect<CreateSubjectResult, CourseDatabaseError>;
+    readonly renameSubject: (
+      courseId: string,
+      name: string,
+    ) => Effect.Effect<
+      'renamed' | 'duplicate' | 'subject-missing',
+      CourseDatabaseError
+    >;
     readonly listBooks: (
       courseId: string,
       now: Date,
@@ -162,12 +180,15 @@ export class CourseStore extends Context.Tag('wordhold/CourseStore')<
           Effect.mapError((cause) => databaseError('list units', cause)),
         );
       const { createBook, renameBook } = makeCourseBookMutations(sql);
+      const { createSubject, renameSubject, readKind } =
+        makeCourseSubjectMutations(sql);
       const { createUnit, reorderUnits } = makeCourseUnitMutations(sql);
       const listVocabulary = (courseId: string) =>
         sql<VocabularyRow>`
           select e.id, e.book_id as "bookId", b.name as "bookName",
             e.unit_id as "unitId", u.name as "unitName",
             e.target_text as "targetText", e.native_text as "nativeText",
+            e.key_points as "keyPoints",
             example.target_text as "exampleTargetText",
             example.native_text as "exampleNativeText",
             example.source as "exampleSource",
@@ -196,6 +217,9 @@ export class CourseStore extends Context.Tag('wordhold/CourseStore')<
       return {
         readDirections,
         writeDirections,
+        readKind,
+        createSubject,
+        renameSubject,
         listBooks,
         createBook,
         renameBook,

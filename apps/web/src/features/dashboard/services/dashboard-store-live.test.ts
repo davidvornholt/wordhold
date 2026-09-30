@@ -228,7 +228,11 @@ describe('DashboardStore fragile-entry contract', () => {
           `;
 
           expect(yield* store.fragileEntries()).toContainEqual(
-            expect.objectContaining({ entryId: dueEntryId, failures: 2 }),
+            expect.objectContaining({
+              entryId: dueEntryId,
+              courseKind: 'language',
+              failures: 2,
+            }),
           );
 
           yield* sql`

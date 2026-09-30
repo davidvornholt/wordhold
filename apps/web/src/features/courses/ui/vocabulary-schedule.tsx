@@ -92,14 +92,15 @@ type VocabularyScheduleProps = {
   readonly entry: VocabularyEntry;
   readonly subject: CourseSubject;
   readonly now?: Date;
-  readonly exampleControl: ReactNode;
+  // The example sentence of a word, or the key points of a term.
+  readonly detail: ReactNode;
 };
 
 export const VocabularySchedule = ({
   enabledDirections,
   entry,
   subject,
-  exampleControl,
+  detail,
   now = new Date(),
 }: VocabularyScheduleProps) => (
   <details className="group text-sm">
@@ -126,6 +127,6 @@ export const VocabularySchedule = ({
         </div>
       ))}
     </dl>
-    <div className="mt-3">{exampleControl}</div>
+    <div className="mt-3">{detail}</div>
   </details>
 );

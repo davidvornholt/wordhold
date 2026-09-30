@@ -120,6 +120,14 @@ export const storeUploadedPage = (input: {
         message: 'Sprache nicht gefunden.',
       });
     }
+    // A subject's terms are typed, not photographed.
+    if (course.kind === 'terms') {
+      return yield* new UploadValidationError({
+        message:
+          'Ein Fach hat keinen Fotoimport. Trage Begriffe auf seiner Seite ein.',
+        status: 409,
+      });
+    }
     yield* reconcileStoredFiles;
     const existingPage = yield* repository.getPageUpload(input.pageId);
     if (

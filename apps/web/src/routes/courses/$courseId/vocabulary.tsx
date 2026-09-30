@@ -1,7 +1,6 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 import { parseVocabularySearch } from '../../../features/courses/schemas/vocabulary-search';
 import {
-  generateVocabularyExample,
   getCourseDirections,
   listCourseVocabulary,
 } from '../../../features/courses/services/server-fns';
@@ -10,6 +9,7 @@ import { getCourse } from '../../../features/import/server-fns';
 import { ActionLink } from '../../../shared/ui/action-link';
 import { BackLink } from '../../../shared/ui/back-link';
 import { PageLayout } from '../../../shared/ui/page-layout';
+import { CourseEntryDetail } from './-entry-forms';
 
 const VocabularyScreen = () => {
   const { course, directions, entries, filter, place } = Route.useLoaderData();
@@ -29,11 +29,11 @@ const VocabularyScreen = () => {
       <VocabularyLibrary
         enabledDirections={directions}
         entries={entries}
-        generateExample={(entryId) =>
-          generateVocabularyExample({ data: entryId })
-        }
         initialFilter={filter}
         initialPlaceId={place}
+        renderEntryDetail={(entry) => (
+          <CourseEntryDetail course={course} entry={entry} />
+        )}
         renderStudyAction={(entryIds, intent) => (
           <ActionLink
             params={{ courseId: course.id }}
@@ -43,7 +43,7 @@ const VocabularyScreen = () => {
             Auswahl {intent === 'learn' ? 'kennenlernen' : 'üben'}
           </ActionLink>
         )}
-        scope="course"
+        layout="by-place"
         subject={course}
       />
     </PageLayout>
@@ -62,6 +62,14 @@ export const Route = createFileRoute('/courses/$courseId/vocabulary')({
       getCourseDirections({ data: params.courseId }),
       listCourseVocabulary({ data: params.courseId }),
     ]);
+    // A subject's page is its list of terms.
+    if (course.kind === 'terms') {
+      throw redirect({
+        to: '/courses/$courseId',
+        params: { courseId: course.id },
+        search: { filter: deps.filter },
+      });
+    }
     return {
       course,
       directions,

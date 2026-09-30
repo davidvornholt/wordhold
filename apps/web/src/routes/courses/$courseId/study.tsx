@@ -7,7 +7,7 @@ import { submitAnswer } from '../../../features/practice/services/server-fns';
 import { sessionOptions } from '../../../features/practice/services/session-options';
 import { SessionRunner } from '../../../features/practice/ui/session-runner';
 import { SessionStart } from '../../../features/practice/ui/session-start';
-import { courseNouns } from '../../../shared/directions';
+import { type CourseSubject, courseNouns } from '../../../shared/directions';
 import { countNoun } from '../../../shared/format/count';
 import { focusShell } from '../../../shared/routing/shell';
 import { ActionLink } from '../../../shared/ui/action-link';
@@ -22,31 +22,75 @@ import {
 import { StudyLearning, selectionSearch } from './-study-learning';
 import { loadStudyData } from './-study-loader';
 
+type StudyCourse = CourseSubject & {
+  readonly id: string;
+  readonly name: string;
+};
+
+// A free selection is made in a language's word list, or on a subject's own
+// page, which is its list of terms.
 const StudySelectionControl = ({
-  courseId,
+  course,
   place,
 }: {
-  readonly courseId: string;
+  readonly course: StudyCourse;
   readonly place: CoursePlace | undefined;
-}) =>
-  place === undefined ? (
+}) => {
+  if (place !== undefined) {
+    return (
+      <PlacePageLink
+        courseId={course.id}
+        selection={place.selection}
+        variant="quiet-muted"
+      >
+        Neue Auswahl treffen
+      </PlacePageLink>
+    );
+  }
+  return course.kind === 'terms' ? (
+    <PlacePageLink courseId={course.id} selection={null} variant="quiet-muted">
+      Neue Auswahl treffen
+    </PlacePageLink>
+  ) : (
     <ActionLink
-      params={{ courseId }}
+      params={{ courseId: course.id }}
       search={{ filter: 'all' }}
       to="/courses/$courseId/vocabulary"
       variant="quiet-muted"
     >
       Neue Auswahl treffen
     </ActionLink>
-  ) : (
-    <PlacePageLink
-      courseId={courseId}
-      selection={place.selection}
-      variant="quiet-muted"
-    >
-      Neue Auswahl treffen
-    </PlacePageLink>
   );
+};
+
+const StudyBackControl = ({
+  course,
+  place,
+}: {
+  readonly course: StudyCourse;
+  readonly place: CoursePlace | undefined;
+}) => {
+  if (place !== undefined) {
+    return (
+      <PlaceBackLink courseId={course.id} selection={place.selection}>
+        {place.name}
+      </PlaceBackLink>
+    );
+  }
+  return course.kind === 'terms' ? (
+    <PlaceBackLink courseId={course.id} selection={null}>
+      {course.name}
+    </PlaceBackLink>
+  ) : (
+    <BackLink
+      params={{ courseId: course.id }}
+      search={{ filter: 'all' }}
+      to="/courses/$courseId/vocabulary"
+    >
+      Vokabelliste
+    </BackLink>
+  );
+};
 
 const StudyScreen = () => {
   const {
@@ -62,28 +106,15 @@ const StudyScreen = () => {
   } = Route.useLoaderData();
   const nouns = courseNouns(course);
   const navigating = useRouterState({ select: (state) => state.isLoading });
-  const backControl =
-    place === undefined ? (
-      <BackLink
-        params={{ courseId: course.id }}
-        search={{ filter: 'all' }}
-        to="/courses/$courseId/vocabulary"
-      >
-        {nouns.list}
-      </BackLink>
-    ) : (
-      <PlaceBackLink courseId={course.id} selection={place.selection}>
-        {place.name}
-      </PlaceBackLink>
-    );
   const titleSubject = place === undefined ? 'Auswahl' : place.name;
   const title = `${titleSubject} · ${mode === 'learn' ? 'Kennenlernen' : 'Üben'}`;
   let content: ReactNode;
   if (selection === null) {
     content = (
       <p className={`${cardClass} text-sm`}>
-        Wähle zuerst mindestens {nouns.accusativeOne}, ein Buch oder eine
-        Einheit aus.
+        {course.kind === 'terms'
+          ? 'Wähle zuerst mindestens einen Begriff aus.'
+          : 'Wähle zuerst mindestens eine Vokabel, ein Buch oder eine Einheit aus.'}
       </p>
     );
   } else if (mode === 'learn') {
@@ -135,9 +166,7 @@ const StudyScreen = () => {
   } else {
     content = (
       <SessionRunner
-        backControl={
-          <StudySelectionControl courseId={course.id} place={place} />
-        }
+        backControl={<StudySelectionControl course={course} place={place} />}
         emptyMessage={`Diese Auswahl enthält keine ${nouns.plural}.`}
         key={direction}
         mode="drill"
@@ -150,7 +179,10 @@ const StudyScreen = () => {
   }
 
   return (
-    <FocusLayout exit={backControl} title={title}>
+    <FocusLayout
+      exit={<StudyBackControl course={course} place={place} />}
+      title={title}
+    >
       {content}
     </FocusLayout>
   );

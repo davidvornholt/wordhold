@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 import {
   getCourseDirections,
   getCourseOutline,
@@ -57,12 +57,11 @@ const UnitScreen = () => {
         />
       )}
       <PlaceWords
+        course={course}
         courseEntries={courseEntries}
-        courseId={course.id}
         enabledDirections={directions}
         entries={unitEntries}
         place={place}
-        subject={course}
       />
     </PageLayout>
   );
@@ -78,6 +77,14 @@ export const Route = createFileRoute('/courses/$courseId/units/$unitId/')({
       getCourseDirections({ data: params.courseId }),
       listCourseVocabulary({ data: params.courseId }),
     ]);
+    // A subject keeps its terms in one list on its own page, so it has no
+    // unit pages.
+    if (course.kind === 'terms') {
+      throw redirect({
+        to: '/courses/$courseId',
+        params: { courseId: course.id },
+      });
+    }
     const unit = outline.units.find(
       (candidate) => candidate.id === params.unitId,
     );

@@ -1,8 +1,8 @@
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
+import type { ReactNode } from 'react';
 import type { CourseSubject } from '../../../shared/directions';
 import { Checkbox } from '../../../shared/ui/selection-controls';
 import type { VocabularyEntry } from '../schemas/course-units';
-import { VocabularyExample } from './vocabulary-example';
 import { VocabularySchedule } from './vocabulary-schedule';
 
 type VocabularyEntryRowProps = {
@@ -12,11 +12,11 @@ type VocabularyEntryRowProps = {
   readonly subject: CourseSubject;
   readonly selected: boolean;
   readonly onToggle: () => void;
-  readonly generateExample: () => Promise<
-    NonNullable<VocabularyEntry['example']>
-  >;
+  readonly detail: ReactNode;
 };
 
+// A word and its translation share one line. A term's definition is a
+// sentence or two, so it gets a line of its own under the term.
 export const VocabularyEntryRow = ({
   entry,
   enabledDirections,
@@ -24,7 +24,7 @@ export const VocabularyEntryRow = ({
   subject,
   selected,
   onToggle,
-  generateExample,
+  detail,
 }: VocabularyEntryRowProps) => (
   <li className="flex gap-3 p-4 hover:bg-muted/50">
     <Checkbox
@@ -34,22 +34,25 @@ export const VocabularyEntryRow = ({
       onChange={onToggle}
     />
     <div className="flex min-w-0 flex-1 flex-col">
-      <p>
-        <span className="font-medium" lang={subject.targetLanguage}>
-          {entry.targetText}
-        </span>
-        <span className="text-muted-foreground"> · {entry.nativeText}</span>
-      </p>
+      {subject.kind === 'terms' ? (
+        <>
+          <p className="font-medium">{entry.targetText}</p>
+          <p className="hyphens-auto text-muted-foreground">
+            {entry.nativeText}
+          </p>
+        </>
+      ) : (
+        <p>
+          <span className="font-medium" lang={subject.targetLanguage}>
+            {entry.targetText}
+          </span>
+          <span className="text-muted-foreground"> · {entry.nativeText}</span>
+        </p>
+      )}
       <VocabularySchedule
+        detail={detail}
         enabledDirections={enabledDirections}
         entry={entry}
-        exampleControl={
-          <VocabularyExample
-            entry={entry}
-            generate={generateExample}
-            targetLanguage={subject.targetLanguage}
-          />
-        }
         now={now}
         subject={subject}
       />

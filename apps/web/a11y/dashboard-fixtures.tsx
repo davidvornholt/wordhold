@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { HomeShell } from '../src/app/home-shell';
+import { NewSubjectForm } from '../src/features/courses/ui/new-subject-form';
 import {
   busiestCourse,
   type CourseStats,
@@ -12,6 +13,7 @@ import { FragileList } from '../src/features/dashboard/ui/fragile-list';
 import { TodayPanel } from '../src/features/dashboard/ui/today-panel';
 import { AudioRecoveryPages } from '../src/features/import/ui/audio-recovery-pages';
 import { PendingImportSessions } from '../src/features/import/ui/pending-import-sessions';
+import { type CourseSubject, courseNouns } from '../src/shared/directions';
 import { actionClass } from '../src/shared/ui/action-styles';
 import { AudioRecoveryPagesFixture } from './audio-recovery-pages-fixture';
 import { audioRecoveryIsComplete, navigateToFixture } from './fixture-state';
@@ -19,13 +21,22 @@ import { audioRecoveryIsComplete, navigateToFixture } from './fixture-state';
 const course = {
   id: '00000000-0000-0000-0000-000000000001',
   name: 'English A2',
+  kind: 'language' as const,
   targetLanguage: 'en' as const,
 };
 const secondCourse = {
   id: '00000000-0000-0000-0000-000000000005',
   name: 'Französisch',
+  kind: 'language' as const,
   targetLanguage: 'fr' as const,
 };
+const subject = {
+  id: '00000000-0000-0000-0000-000000000006',
+  name: 'Chemie',
+  kind: 'terms' as const,
+  targetLanguage: 'de' as const,
+};
+const subjectReady = 3;
 const secondCourseReady = 20;
 const fixtureUser = { name: 'David' };
 const fixtureReviewsToday = 7;
@@ -69,22 +80,39 @@ const fixtureWeek: ReadonlyArray<PracticeDay> = [
   { day: '2026-08-24', weekday: 1, practiced: true },
 ];
 
-type FixtureAction = 'course' | 'import' | 'learn' | 'practice' | 'today';
+type FixtureAction =
+  | 'course'
+  | 'import'
+  | 'learn'
+  | 'practice'
+  | 'today'
+  | 'subject'
+  | 'subject-start';
 
 const fixtureDestination = (destination: FixtureAction) => {
   if (destination === 'today') {
     return 'practice';
+  }
+  if (destination === 'subject') {
+    return 'terms-course';
+  }
+  if (destination === 'subject-start') {
+    return 'terms-course-empty';
   }
   return destination === 'learn' ? 'course' : destination;
 };
 
 // The fixture mirrors the variants the dashboard route gives each action.
 const fixtureActionClass = (destination: FixtureAction) => {
-  if (destination === 'course') {
+  if (destination === 'course' || destination === 'subject') {
     return 'font-display text-xl underline decoration-border underline-offset-4 hover:decoration-current';
   }
   return actionClass(
-    destination === 'today' || destination === 'import' ? 'primary' : 'outline',
+    destination === 'today' ||
+      destination === 'import' ||
+      destination === 'subject-start'
+      ? 'primary'
+      : 'outline',
   );
 };
 
@@ -128,6 +156,46 @@ const secondCourseStats: CourseStats = {
   ],
 };
 
+const subjectStats: CourseStats = {
+  courseId: subject.id,
+  due: subjectReady,
+  firstReviews: 0,
+  ready: subjectReady,
+  unintroduced: 2,
+  entries: 14,
+  known: 5,
+  nextDueAt: fixtureNextDueAt,
+  directions: [
+    {
+      direction: 'to_native' as const,
+      due: subjectReady,
+      firstReviews: 0,
+      ready: subjectReady,
+      nextDueAt: fixtureNextDueAt,
+    },
+  ],
+};
+
+const fragileWord = {
+  entryId: '00000000-0000-0000-0000-000000000002',
+  courseId: course.id,
+  courseKind: 'language' as const,
+  targetText: 'memory',
+  nativeText: 'Erinnerung',
+  courseName: 'English A2',
+  failures: 2,
+};
+
+const fragileTerm = {
+  entryId: '00000000-0000-0000-0000-000000000007',
+  courseId: subject.id,
+  courseKind: 'terms' as const,
+  targetText: 'Katalysator',
+  nativeText: 'Ein Stoff, der die Aktivierungsenergie einer Reaktion senkt.',
+  courseName: 'Chemie',
+  failures: 3,
+};
+
 const dashboardStats = (
   empty: boolean,
   resting: boolean,
@@ -153,22 +221,123 @@ const dashboardStats = (
   },
 ];
 
+type FixtureCourse = CourseSubject & {
+  readonly id: string;
+  readonly name: string;
+};
+
+// The first course is always there; the others join for their states.
+const fixtureCourseList = ({
+  empty,
+  resting,
+  twoCourses,
+  subjects,
+}: {
+  readonly empty: boolean;
+  readonly resting: boolean;
+  readonly twoCourses: boolean;
+  readonly subjects: boolean;
+}) => ({
+  courses: [
+    course,
+    ...(twoCourses ? [secondCourse] : []),
+    ...(subjects ? [subject] : []),
+  ] satisfies ReadonlyArray<FixtureCourse>,
+  stats: [
+    ...dashboardStats(empty, resting),
+    ...(twoCourses ? [secondCourseStats] : []),
+    ...(subjects ? [subjectStats] : []),
+  ],
+});
+
+type FixtureCoursesProps = {
+  readonly courses: ReadonlyArray<FixtureCourse>;
+  readonly stats: ReadonlyArray<CourseStats>;
+  readonly empty: boolean;
+  readonly subjects: boolean;
+};
+
+// The course cards with the subject form below them, then the words and
+// terms that failed most often.
+const FixtureCourses = ({
+  courses,
+  stats,
+  empty,
+  subjects,
+}: FixtureCoursesProps) => (
+  <>
+    <CourseGrid
+      courses={courses}
+      renderCourseLink={(candidate) =>
+        action(
+          candidate.name,
+          candidate.kind === 'terms' ? 'subject' : 'course',
+        )
+      }
+      renderLearnAction={(candidate) =>
+        action(`Neue ${courseNouns(candidate).plural} kennenlernen`, 'learn')
+      }
+      renderPracticeAction={(candidate) =>
+        action(
+          `${stats.find((item) => item.courseId === candidate.id)?.ready ?? 0} Karten üben`,
+          'practice',
+        )
+      }
+      renderStartAction={(candidate) =>
+        candidate.kind === 'terms'
+          ? action('Ersten Begriff eintragen', 'subject-start')
+          : action('Erste Seite fotografieren', 'import')
+      }
+      stats={stats}
+      subjectForm={
+        <NewSubjectForm
+          courses={courses}
+          createSubject={async () => navigateToFixture('terms-course-empty')}
+          hasSubjects={subjects}
+        />
+      }
+    />
+    <FragileList
+      entries={empty ? [] : [fragileWord, ...(subjects ? [fragileTerm] : [])]}
+      renderEntryAction={(entry) => (
+        <button
+          onClick={() =>
+            navigateToFixture(
+              entry.courseKind === 'terms'
+                ? 'terms-course'
+                : 'vocabulary-difficult',
+            )
+          }
+          type="button"
+        >
+          {entry.courseKind === 'terms'
+            ? entry.targetText
+            : `${entry.targetText} · ${entry.nativeText}`}
+        </button>
+      )}
+    />
+  </>
+);
+
 export const DashboardFixture = ({
   empty = false,
   audioRecovery = false,
   pending = false,
   resting = false,
   twoCourses = false,
+  subjects = false,
 }) => {
   const queueRecovery =
     new URLSearchParams(globalThis.location.search).get('queue') === 'true';
   const [pendingImportSessions, setPendingImportSessions] = useState(
     pending ? [pendingImportSession] : [],
   );
-  const courses = twoCourses ? [course, secondCourse] : [course];
-  const stats = twoCourses
-    ? [...dashboardStats(empty, resting), secondCourseStats]
-    : dashboardStats(empty, resting);
+  const { courses, stats } = fixtureCourseList({
+    empty,
+    resting,
+    twoCourses,
+    subjects,
+  });
   const ready = totalReady(stats);
   const busiest = busiestCourse(stats);
   const busiestName = courses.find(
@@ -204,44 +373,11 @@ export const DashboardFixture = ({
             : fixtureWeek
         }
       />
-      <CourseGrid
+      <FixtureCourses
         courses={courses}
-        renderCourseLink={(candidate) => action(candidate.name, 'course')}
-        renderImportAction={() => action('Erste Seite fotografieren', 'import')}
-        renderLearnAction={() => action('Neue Vokabeln kennenlernen', 'learn')}
-        renderPracticeAction={(candidate) =>
-          action(
-            candidate.id === course.id
-              ? '6 Karten üben'
-              : `${secondCourseReady} Karten üben`,
-            'practice',
-          )
-        }
+        empty={empty}
         stats={stats}
-      />
-      <FragileList
-        entries={
-          empty
-            ? []
-            : [
-                {
-                  entryId: '00000000-0000-0000-0000-000000000002',
-                  courseId: course.id,
-                  targetText: 'memory',
-                  nativeText: 'Erinnerung',
-                  courseName: 'English A2',
-                  failures: 2,
-                },
-              ]
-        }
-        renderEntryAction={(entry) => (
-          <button
-            onClick={() => navigateToFixture('vocabulary-difficult')}
-            type="button"
-          >
-            {entry.targetText} · {entry.nativeText}
-          </button>
-        )}
+        subjects={subjects}
       />
       {queueRecovery ? (
         <AudioRecoveryPagesFixture />

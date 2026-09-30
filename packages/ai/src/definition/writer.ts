@@ -27,14 +27,9 @@ export const definitionPrompt = (request: DefinitionRequest): string =>
     `"${request.subject}" in one short German sentence, as a school glossary`,
     'does: what kind of thing it is and what sets it apart, in the',
     "subject's technical terms, without examples or further properties.",
-    request.topic === undefined
-      ? ''
-      : `The term belongs to "${request.topic}"; pick the meaning that fits it.`,
     'Return only the definition as `definition`. Never use double or',
     'typographic quotation marks.',
-  ]
-    .filter((part) => part !== '')
-    .join(' ');
+  ].join(' ');
 
 export class DefinitionWriter extends Effect.Service<DefinitionWriter>()(
   '@wordhold/ai/DefinitionWriter',

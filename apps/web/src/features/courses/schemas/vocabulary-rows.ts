@@ -11,6 +11,7 @@ export type VocabularyRow = {
   readonly unitName: string | null;
   readonly targetText: string;
   readonly nativeText: string;
+  readonly keyPoints: ReadonlyArray<string> | null;
   readonly exampleTargetText: string | null;
   readonly exampleNativeText: string | null;
   readonly exampleSource: ExampleSource | null;
@@ -45,6 +46,7 @@ export const groupVocabularyRows = (
         unitName: row.unitName,
         targetText: row.targetText,
         nativeText: row.nativeText,
+        keyPoints: row.keyPoints,
         example:
           row.exampleTargetText === null || row.exampleSource === null
             ? null

@@ -9,20 +9,24 @@ import {
 } from '../errors/learning-errors';
 import { LearningStore } from './learning-store';
 
+const placeMissingMessage = (place: PlaceSelectionData | null): string => {
+  if (place === null) {
+    return 'Sprache oder Fach nicht gefunden.';
+  }
+  return 'bookId' in place ? 'Buch nicht gefunden.' : 'Einheit nicht gefunden.';
+};
+
 export class LearningService extends Effect.Service<LearningService>()(
   'wordhold/LearningService',
   {
     effect: Effect.gen(function* () {
       const store = yield* LearningStore;
-      const getPass = (courseId: string, place: PlaceSelectionData) =>
+      const getPass = (courseId: string, place: PlaceSelectionData | null) =>
         Effect.gen(function* () {
           const pass = yield* store.loadPass(courseId, place);
           return pass === undefined
             ? yield* new LearningPlaceNotFoundError({
-                message:
-                  'bookId' in place
-                    ? 'Buch nicht gefunden.'
-                    : 'Einheit nicht gefunden.',
+                message: placeMissingMessage(place),
               })
             : pass;
         });

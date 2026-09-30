@@ -24,7 +24,7 @@ const keyPoints = [
   'Er wird bei der Reaktion nicht verbraucht.',
 ];
 
-const backControl = fixtureBackControl('Chemie', 'course');
+const backControl = fixtureBackControl('Chemie', 'terms-course');
 const title = 'Chemie · Üben';
 
 const learnItem: LearnItem = {

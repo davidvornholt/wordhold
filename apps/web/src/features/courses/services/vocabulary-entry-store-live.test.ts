@@ -215,8 +215,11 @@ describe('VocabularyEntryStore PostgreSQL places', () => {
         yield* seedCourse;
         const sql = yield* Database;
         const store = yield* VocabularyEntryStore;
-        expect(yield* store.readTargetLanguage(courseId)).toBe('fr');
-        expect(yield* store.readTargetLanguage(missingUnitId)).toBeUndefined();
+        expect(yield* store.readCourse(courseId)).toEqual({
+          kind: 'language',
+          targetLanguage: 'fr',
+        });
+        expect(yield* store.readCourse(missingUnitId)).toBeUndefined();
         const created = yield* store.create(word('bonjour'));
         const entryId = created.kind === 'created' ? created.entryId : '';
         yield* store.storeAudio(entryId, 'fr-voice', 'audio/first.mp3');

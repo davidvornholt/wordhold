@@ -17,8 +17,12 @@ const learningLive = LearningService.Default.pipe(
 
 const learningRuntime = ManagedRuntime.make(learningLive);
 
+// Without a place the pass covers the whole course.
 const decodePassRequest = Schema.decodeUnknownSync(
-  Schema.Struct({ courseId: Schema.UUID, place: PlaceSelection }),
+  Schema.Struct({
+    courseId: Schema.UUID,
+    place: Schema.optional(PlaceSelection),
+  }),
 );
 const decodeIntroductionRequest = Schema.decodeUnknownSync(
   Schema.Struct({
@@ -39,7 +43,7 @@ export const getLearnPass = createServerFn()
     await authRuntime.runPromise(requireSession(getRequest().headers));
     return learningRuntime.runPromise(
       Effect.flatMap(LearningService, (service) =>
-        service.getPass(data.courseId, data.place),
+        service.getPass(data.courseId, data.place ?? null),
       ),
     );
   });

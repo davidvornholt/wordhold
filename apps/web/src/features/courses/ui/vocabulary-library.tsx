@@ -1,7 +1,7 @@
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
-import type { CourseSubject } from '../../../shared/directions';
+import { type CourseSubject, courseNouns } from '../../../shared/directions';
 import { Button } from '../../../shared/ui/button';
 import { cardClass } from '../../../shared/ui/surface-styles';
 import { wordLocation } from '../../../shared/vocabulary/book-name';
@@ -16,22 +16,23 @@ type VocabularyLibraryProps = {
   readonly enabledDirections: ReadonlyArray<AnswerDirection>;
   readonly entries: ReadonlyArray<VocabularyEntry>;
   readonly initialFilter: VocabularyFilter;
-  // Course scope only: preselects the book or unit dropdown when arriving via
-  // a link.
+  // By place only: preselects the book or unit dropdown when arriving via a
+  // link.
   readonly initialPlaceId?: string;
-  // Course scope groups entries under "book · unit" headings, or the book's
-  // name for words directly in a book, with a book and unit dropdown, since
-  // two books may each have a unit with the same name. Place scope shows one
-  // flat list because every entry lives in the same book or unit.
-  readonly scope: 'course' | 'place';
+  // A language course's whole list groups entries under "book · unit"
+  // headings, or the book's name for words directly in a book, with a book
+  // and unit dropdown, since two books may each have a unit with the same
+  // name. A book's or unit's own list, and a subject's list of terms, is one
+  // flat list.
+  readonly layout: 'by-place' | 'flat';
   readonly subject: CourseSubject;
   readonly renderStudyAction: (
     entryIds: ReadonlyArray<string>,
     intent: 'learn' | 'practice',
   ) => ReactNode;
-  readonly generateExample: (
-    entryId: string,
-  ) => Promise<NonNullable<VocabularyEntry['example']>>;
+  // The example sentence of a word, or the key points of a term, shown with
+  // the entry's schedule.
+  readonly renderEntryDetail: (entry: VocabularyEntry) => ReactNode;
 };
 
 type VocabularySection = readonly [string, ReadonlyArray<VocabularyEntry>];
@@ -82,11 +83,12 @@ export const VocabularyLibrary = ({
   entries,
   initialFilter,
   initialPlaceId,
-  scope,
+  layout,
   subject,
   renderStudyAction,
-  generateExample,
+  renderEntryDetail,
 }: VocabularyLibraryProps) => {
+  const nouns = courseNouns(subject);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<VocabularyFilter>(initialFilter);
   const [placeFilter, setPlaceFilter] = useState(
@@ -104,7 +106,7 @@ export const VocabularyLibrary = ({
       entry.targetText.toLocaleLowerCase('de-DE').includes(needle) ||
       entry.nativeText.toLocaleLowerCase('de-DE').includes(needle);
     const matchesPlace =
-      scope === 'place' ||
+      layout === 'flat' ||
       placeFilter === 'all' ||
       isInPlace(entry, placeFilter);
     return (
@@ -114,7 +116,9 @@ export const VocabularyLibrary = ({
     );
   });
   const sections: ReadonlyArray<VocabularySection> =
-    scope === 'course' ? placeSections(visible) : [['Alle auswählen', visible]];
+    layout === 'by-place'
+      ? placeSections(visible)
+      : [['Alle auswählen', visible]];
   const toggleEntry = (entryId: string) =>
     setSelected((current) =>
       current.includes(entryId)
@@ -142,11 +146,12 @@ export const VocabularyLibrary = ({
     <div className="flex flex-col gap-5">
       <VocabularyFilters
         filter={filter}
+        nouns={nouns}
         onFilterChange={setFilter}
         onQueryChange={setQuery}
         query={query}
         placeSelect={
-          scope === 'course'
+          layout === 'by-place'
             ? {
                 value: placeFilter,
                 options: placeOptions(entries),
@@ -167,32 +172,32 @@ export const VocabularyLibrary = ({
           }
           variant="outline"
         >
-          Schwierige Vokabeln auswählen
+          Schwierige {nouns.plural} auswählen
         </Button>
       ) : null}
       {visible.length === 0 ? (
         <p className={`${cardClass} text-sm`}>
-          Für diese Auswahl wurden keine Vokabeln gefunden.
+          Für diese Auswahl wurden keine {nouns.plural} gefunden.
         </p>
       ) : (
         sections.map(([label, sectionEntries]) => (
           <VocabularyUnitSection
             enabledDirections={enabledDirections}
             entries={sectionEntries}
-            generateExample={generateExample}
             key={label}
             label={label}
-            labelStyle={scope === 'course' ? 'heading' : 'plain'}
+            labelStyle={layout === 'by-place' ? 'heading' : 'plain'}
             now={now}
             onToggleAll={toggleAll}
             onToggleEntry={toggleEntry}
+            renderEntryDetail={renderEntryDetail}
             selected={selected}
             subject={subject}
           />
         ))
       )}
       {selected.length === 0 ? null : (
-        <VocabularySelectionBar count={selected.length}>
+        <VocabularySelectionBar count={selected.length} nouns={nouns}>
           {renderStudyAction(selected, selectionIntent)}
         </VocabularySelectionBar>
       )}

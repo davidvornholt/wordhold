@@ -1,4 +1,4 @@
-import { useRouter } from '@tanstack/react-router';
+import { redirect, useRouter } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { prepareVocabularyExamples } from '../../../features/courses/services/server-fns';
 import { getCourse } from '../../../features/import/server-fns';
@@ -21,20 +21,37 @@ import { itemsInNextSection } from '../../../shared/session/section-policy';
 import type { PlaceSelectionData } from '../../../shared/session/vocabulary-selection';
 import { ActionLink } from '../../../shared/ui/action-link';
 import { FocusLayout } from '../../../shared/ui/focus-layout';
-import { PlaceBackLink, PlaceLearnLink, placeSearch } from './-course-place';
+import {
+  PlaceBackLink,
+  PlaceLearnLink,
+  PlacePageLink,
+  placeSearch,
+} from './-course-place';
 import { LearnCompletionControls } from './-learn-completion-controls';
 
-// The learning pass for the words directly in a book or for one unit. Both
-// learn routes load and render it the same way.
+// The learning pass for the words directly in a book, for one unit, or for a
+// whole course when the selection is null. Every learn route loads and
+// renders it the same way.
 export const loadLearnScreen = async (
   courseId: string,
-  selection: PlaceSelectionData,
+  selection: PlaceSelectionData | null,
   requestedDirection: SessionDirection | undefined,
 ) => {
   const [course, pass] = await Promise.all([
     getCourse({ data: courseId }),
-    getLearnPass({ data: { courseId, place: selection } }),
+    getLearnPass({
+      data: { courseId, ...(selection === null ? {} : { place: selection }) },
+    }),
   ]);
+  // A subject keeps its terms in one list, so its terms are learned from
+  // that list and never from the book that holds them.
+  if (course.kind === 'terms' && selection !== null) {
+    throw redirect({
+      to: '/courses/$courseId/learn',
+      params: { courseId },
+      search: { direction: requestedDirection },
+    });
+  }
   const availableDirections = pass.directions.map(
     (progress) => progress.direction,
   );
@@ -61,6 +78,37 @@ export const loadLearnScreen = async (
 };
 
 type LearnScreenProps = Awaited<ReturnType<typeof loadLearnScreen>>;
+
+type LearnDoneControlsProps = {
+  readonly courseId: string;
+  readonly name: string;
+  readonly selection: PlaceSelectionData | null;
+};
+
+// With nothing left to learn, a book or unit can still be practised freely.
+// A whole course has no such selection, so it leads back to its page.
+const LearnDoneControls = ({
+  courseId,
+  name,
+  selection,
+}: LearnDoneControlsProps) => {
+  if (selection === null) {
+    return (
+      <PlacePageLink courseId={courseId} selection={null} variant="primary">
+        Zurück zu {name}
+      </PlacePageLink>
+    );
+  }
+  return (
+    <ActionLink
+      params={{ courseId }}
+      search={placeSearch(selection)}
+      to="/courses/$courseId/study"
+    >
+      {'bookId' in selection ? 'Buch üben' : 'Einheit üben'}
+    </ActionLink>
+  );
+};
 
 export const LearnScreen = ({
   availableDirections,
@@ -127,13 +175,11 @@ export const LearnScreen = ({
     content = (
       <LearnDone
         controls={
-          <ActionLink
-            params={{ courseId: course.id }}
-            search={placeSearch(selection)}
-            to="/courses/$courseId/study"
-          >
-            {'bookId' in selection ? 'Buch üben' : 'Einheit üben'}
-          </ActionLink>
+          <LearnDoneControls
+            courseId={course.id}
+            name={pass.name}
+            selection={selection}
+          />
         }
         directionLabel={null}
         learned={0}

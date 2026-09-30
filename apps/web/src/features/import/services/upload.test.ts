@@ -120,6 +120,24 @@ describe('storeUploadedPage', () => {
     expect(actions).toEqual([]);
   });
 
+  it('refuses a page for a subject before storing it', async () => {
+    const actions: Array<string> = [];
+    const base = makeImportRepository();
+    const repository = makeImportRepository({
+      getCourse: (courseId) =>
+        Effect.map(base.getCourse(courseId), (course) =>
+          course === undefined ? undefined : { ...course, kind: 'terms' },
+        ),
+    });
+    const storage = makeStorage({
+      write: () => Effect.sync(() => actions.push('write')),
+    });
+    await expect(
+      runUpload(imageFile(pngBytes()), repository, storage),
+    ).rejects.toThrow('keinen Fotoimport');
+    expect(actions).toEqual([]);
+  });
+
   it('removes the image when its page row cannot be inserted', async () => {
     const actions: Array<string> = [];
     const repository = makeImportRepository({

@@ -1,6 +1,16 @@
 import type { ReactNode } from 'react';
 import type { FragileEntry } from '../schemas/dashboard-models';
 
+// The list can mix words from language courses with terms from subjects.
+const listedNouns = (entries: ReadonlyArray<FragileEntry>): string => {
+  if (entries.every((entry) => entry.courseKind === 'language')) {
+    return 'Diese Vokabeln sind';
+  }
+  return entries.every((entry) => entry.courseKind === 'terms')
+    ? 'Diese Begriffe sind'
+    : 'Diese Vokabeln und Begriffe sind';
+};
+
 export const FragileList = ({
   entries,
   renderEntryAction,
@@ -12,7 +22,7 @@ export const FragileList = ({
     <section className="flex flex-col gap-3">
       <h2 className="font-display text-xl">Wackelkandidaten</h2>
       <p className="text-muted-foreground text-sm">
-        Diese Vokabeln sind zuletzt mehrfach danebengegangen.
+        {listedNouns(entries)} zuletzt mehrfach danebengegangen.
       </p>
       <ul className="divide-y divide-border border-border border-y">
         {entries.map((entry) => (

@@ -1,5 +1,5 @@
 import { Database } from '@wordhold/db/client';
-import type { LanguageCode } from '@wordhold/db/schema/courses';
+import type { CourseKind, LanguageCode } from '@wordhold/db/schema/courses';
 import { Context, Effect, Layer } from 'effect';
 import { wordLocation } from '../../../shared/vocabulary/book-name';
 import {
@@ -15,8 +15,12 @@ export type WordPlace = {
   readonly unitId: string | null;
 };
 
-export type PlaceContext = {
+export type LanguageCourse = {
+  readonly kind: CourseKind;
   readonly targetLanguage: LanguageCode;
+};
+
+export type PlaceContext = LanguageCourse & {
   readonly unitName: string | null;
 };
 
@@ -72,9 +76,9 @@ export class VocabularyEntryStore extends Context.Tag(
 )<
   VocabularyEntryStore,
   {
-    readonly readTargetLanguage: (
+    readonly readCourse: (
       courseId: string,
-    ) => Effect.Effect<LanguageCode | undefined, CourseDatabaseError>;
+    ) => Effect.Effect<LanguageCourse | undefined, CourseDatabaseError>;
     // Undefined when the book does not belong to the course or the unit
     // not to the book.
     readonly readPlace: (
@@ -96,12 +100,12 @@ export class VocabularyEntryStore extends Context.Tag(
     Effect.gen(function* () {
       const sql = yield* Database;
 
-      const readTargetLanguage = (courseId: string) =>
-        sql<{ readonly targetLanguage: LanguageCode }>`
-          select target_language as "targetLanguage"
+      const readCourse = (courseId: string) =>
+        sql<LanguageCourse>`
+          select kind, target_language as "targetLanguage"
           from courses where id = ${courseId} limit 1
         `.pipe(
-          Effect.map((rows) => rows[0]?.targetLanguage),
+          Effect.map((rows) => rows[0]),
           Effect.mapError((cause) =>
             databaseError('read course language', cause),
           ),
@@ -111,7 +115,8 @@ export class VocabularyEntryStore extends Context.Tag(
       // because the unit's name is then required to match.
       const selectPlace = (courseId: string, { bookId, unitId }: WordPlace) =>
         sql<PlaceContext>`
-          select co.target_language as "targetLanguage", u.name as "unitName"
+          select co.kind, co.target_language as "targetLanguage",
+            u.name as "unitName"
           from books b
           join courses co on co.id = b.course_id
           left join units u on u.id = ${unitId}::uuid and u.book_id = b.id
@@ -204,7 +209,7 @@ export class VocabularyEntryStore extends Context.Tag(
           Effect.mapError((cause) => databaseError('store entry audio', cause)),
         );
 
-      return { readTargetLanguage, readPlace, create, storeAudio } as const;
+      return { readCourse, readPlace, create, storeAudio } as const;
     }),
   );
 }

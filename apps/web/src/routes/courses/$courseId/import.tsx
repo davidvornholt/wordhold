@@ -1,4 +1,4 @@
-import { createFileRoute, useRouter } from '@tanstack/react-router';
+import { createFileRoute, redirect, useRouter } from '@tanstack/react-router';
 import { getCourse } from '../../../features/import/server-fns';
 import { hasStoredUpload } from '../../../features/import/services/upload-queue';
 import { CaptureScreen as CaptureScreenView } from '../../../features/import/ui/capture-screen';
@@ -78,6 +78,16 @@ const CaptureScreen = () => {
 };
 
 export const Route = createFileRoute('/courses/$courseId/import')({
-  loader: ({ params }) => getCourse({ data: params.courseId }),
+  // A subject's terms are typed on its own page.
+  loader: async ({ params }) => {
+    const course = await getCourse({ data: params.courseId });
+    if (course.kind === 'terms') {
+      throw redirect({
+        to: '/courses/$courseId',
+        params: { courseId: course.id },
+      });
+    }
+    return course;
+  },
   component: CaptureScreen,
 });

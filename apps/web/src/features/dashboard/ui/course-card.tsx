@@ -1,6 +1,10 @@
-import type { LanguageCode } from '@wordhold/db/schema/courses';
 import type { ReactNode } from 'react';
 import { formatLearningDateInline } from '../../../shared/dates/learning-date';
+import {
+  type CourseNouns,
+  type CourseSubject,
+  courseNouns,
+} from '../../../shared/directions';
 import { countNoun } from '../../../shared/format/count';
 import { languageSubtitle } from '../../../shared/languages';
 import { cardCompactClass } from '../../../shared/ui/surface-styles';
@@ -10,10 +14,9 @@ import {
 } from '../schemas/dashboard-models';
 
 type CourseCardProps = {
-  readonly course: {
+  readonly course: CourseSubject & {
     readonly id: string;
     readonly name: string;
-    readonly targetLanguage: LanguageCode;
   };
   readonly stats: CourseStats | undefined;
   // The course's name as a link into the course itself, which is where
@@ -21,7 +24,7 @@ type CourseCardProps = {
   readonly courseLink: ReactNode;
   readonly practiceAction: ReactNode;
   readonly learnAction: ReactNode;
-  readonly importAction: ReactNode;
+  readonly startAction: ReactNode;
 };
 
 const courseAction = (
@@ -47,9 +50,12 @@ const readyDetail = (stats: CourseStats): string =>
     .filter((part): part is string => part !== null)
     .join(' · ');
 
-const restingDetail = (stats: CourseStats): string | null => {
+const restingDetail = (
+  stats: CourseStats,
+  nouns: CourseNouns,
+): string | null => {
   if (stats.unintroduced > 0) {
-    return 'Neue Vokabeln verfügbar';
+    return `Neue ${nouns.plural} verfügbar`;
   }
   return stats.nextDueAt === null
     ? null
@@ -83,7 +89,13 @@ const KnownMeter = ({
   );
 };
 
-const CourseProgress = (stats: CourseStats) => (
+const CourseProgress = ({
+  stats,
+  nouns,
+}: {
+  readonly stats: CourseStats;
+  readonly nouns: CourseNouns;
+}) => (
   <div className="flex flex-col gap-4">
     <div className="flex flex-col gap-1">
       {stats.ready > 0 ? (
@@ -99,7 +111,7 @@ const CourseProgress = (stats: CourseStats) => (
         </p>
       )}
       <p className="text-muted-foreground text-sm">
-        {stats.ready > 0 ? readyDetail(stats) : restingDetail(stats)}
+        {stats.ready > 0 ? readyDetail(stats) : restingDetail(stats, nouns)}
       </p>
     </div>
     <KnownMeter entries={stats.entries} known={stats.known} />
@@ -115,9 +127,15 @@ export const CourseCard = ({
   courseLink,
   practiceAction,
   learnAction,
-  importAction,
+  startAction,
 }: CourseCardProps) => {
-  const subtitle = languageSubtitle(course.name, course.targetLanguage);
+  const nouns = courseNouns(course);
+  // A subject's name says what it is; a language course may need its
+  // language spelled out.
+  const subtitle =
+    course.kind === 'terms'
+      ? null
+      : languageSubtitle(course.name, course.targetLanguage);
   return (
     <li className={`flex flex-col gap-5 ${cardCompactClass}`}>
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
@@ -128,11 +146,13 @@ export const CourseCard = ({
       </div>
       {stats === undefined || stats.entries === 0 ? (
         <div className="flex flex-col items-start gap-3">
-          <p className="text-muted-foreground text-sm">Noch keine Vokabeln.</p>
-          {importAction}
+          <p className="text-muted-foreground text-sm">
+            Noch keine {nouns.plural}.
+          </p>
+          {startAction}
         </div>
       ) : (
-        <CourseProgress {...stats} />
+        <CourseProgress nouns={nouns} stats={stats} />
       )}
       <div className="mt-auto">
         {courseAction(stats, practiceAction, learnAction)}

@@ -32,6 +32,10 @@ import {
 import { rootFixture } from './root-fixtures';
 import { StudyStartFixture } from './study-fixtures';
 import {
+  SubjectCourseFixture,
+  SubjectSettingsFixture,
+} from './subject-fixtures';
+import {
   TermsFeedbackFixture,
   TermsLearnFixture,
   TermsPracticeFixture,
@@ -67,6 +71,27 @@ const bareStates: ReadonlySet<FixtureState> = new Set<FixtureState>([
   'error',
   'not-found',
 ]);
+
+const importFixture = (state: FixtureState) => {
+  switch (state) {
+    case 'import':
+      return <ImportFixture />;
+    case 'import-selected':
+      return <ImportFixture initialState="selected" />;
+    case 'import-progress':
+      return <ImportFixture initialState="progress" />;
+    case 'import-complete':
+      return <ImportFixture initialState="complete" />;
+    case 'import-failed':
+      return <ImportFixture initialState="failed" />;
+    case 'import-error':
+      return <ImportFixture error={true} />;
+    case 'import-session':
+      return <ImportSessionFixture />;
+    default:
+      return null;
+  }
+};
 
 const batchReviewFixture = (state: FixtureState) => {
   switch (state) {
@@ -135,6 +160,12 @@ const termsFixture = (state: FixtureState) => {
       return <TermsPracticeFixture />;
     case 'terms-feedback':
       return <TermsFeedbackFixture />;
+    case 'terms-course':
+      return <SubjectCourseFixture />;
+    case 'terms-course-empty':
+      return <SubjectCourseFixture empty={true} />;
+    case 'terms-settings':
+      return <SubjectSettingsFixture />;
     default:
       return null;
   }
@@ -161,6 +192,7 @@ const dashboardFixture = (state: FixtureState) => (
     empty={state === 'dashboard-empty'}
     pending={state === 'dashboard-pending'}
     resting={state === 'dashboard-learning'}
+    subjects={state === 'dashboard-subjects'}
     twoCourses={state === 'dashboard-two-courses'}
   />
 );
@@ -175,21 +207,16 @@ const fixtureContent = (state: FixtureState) => {
     case 'dashboard-audio-recovery':
     case 'dashboard-pending':
     case 'dashboard-two-courses':
+    case 'dashboard-subjects':
       return dashboardFixture(state);
     case 'import':
-      return <ImportFixture />;
     case 'import-selected':
-      return <ImportFixture initialState="selected" />;
     case 'import-progress':
-      return <ImportFixture initialState="progress" />;
     case 'import-complete':
-      return <ImportFixture initialState="complete" />;
     case 'import-failed':
-      return <ImportFixture initialState="failed" />;
     case 'import-error':
-      return <ImportFixture error={true} />;
     case 'import-session':
-      return <ImportSessionFixture />;
+      return importFixture(state);
     case 'verification-batch-first':
     case 'verification-batch-second':
       return batchReviewFixture(state);
@@ -254,6 +281,9 @@ const fixtureContent = (state: FixtureState) => {
     case 'terms-learn':
     case 'terms-practice':
     case 'terms-feedback':
+    case 'terms-course':
+    case 'terms-course-empty':
+    case 'terms-settings':
       return termsFixture(state);
     case 'loading':
     case 'error':

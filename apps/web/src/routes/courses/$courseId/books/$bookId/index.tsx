@@ -1,4 +1,9 @@
-import { createFileRoute, Link, useRouter } from '@tanstack/react-router';
+import {
+  createFileRoute,
+  Link,
+  redirect,
+  useRouter,
+} from '@tanstack/react-router';
 import { useId } from 'react';
 import type {
   CourseOutline,
@@ -138,12 +143,11 @@ const BookScreen = () => {
         )}
         {showWords ? (
           <PlaceWords
+            course={course}
             courseEntries={courseEntries}
-            courseId={course.id}
             enabledDirections={directions}
             entries={entries}
             place={wordPlace}
-            subject={course}
           />
         ) : null}
         {units.length === 0 ? null : (
@@ -168,6 +172,14 @@ export const Route = createFileRoute('/courses/$courseId/books/$bookId/')({
       getCourseDirections({ data: params.courseId }),
       listCourseVocabulary({ data: params.courseId }),
     ]);
+    // A subject keeps its terms in one list on its own page, so it has no
+    // book pages.
+    if (course.kind === 'terms') {
+      throw redirect({
+        to: '/courses/$courseId',
+        params: { courseId: course.id },
+      });
+    }
     return {
       book: outline.books.find((candidate) => candidate.id === params.bookId),
       books: outline.books,

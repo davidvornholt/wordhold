@@ -1,5 +1,5 @@
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
-import { useId } from 'react';
+import { type ReactNode, useId } from 'react';
 import type { CourseSubject } from '../../../shared/directions';
 import { Checkbox } from '../../../shared/ui/selection-controls';
 import { cardListClass } from '../../../shared/ui/surface-styles';
@@ -22,9 +22,7 @@ type VocabularyUnitSectionProps = {
   readonly subject: CourseSubject;
   readonly selected: ReadonlyArray<string>;
   readonly onToggleEntry: (entryId: string) => void;
-  readonly generateExample: (
-    entryId: string,
-  ) => Promise<NonNullable<VocabularyEntry['example']>>;
+  readonly renderEntryDetail: (entry: VocabularyEntry) => ReactNode;
   readonly onToggleAll: (
     entryIds: ReadonlyArray<string>,
     select: boolean,
@@ -40,7 +38,7 @@ export const VocabularyUnitSection = ({
   subject,
   selected,
   onToggleEntry,
-  generateExample,
+  renderEntryDetail,
   onToggleAll,
 }: VocabularyUnitSectionProps) => {
   const selectAllId = useId();
@@ -71,9 +69,9 @@ export const VocabularyUnitSection = ({
       <ul className={cardListClass}>
         {entries.map((entry) => (
           <VocabularyEntryRow
+            detail={renderEntryDetail(entry)}
             enabledDirections={enabledDirections}
             entry={entry}
-            generateExample={() => generateExample(entry.id)}
             key={entry.id}
             now={now}
             onToggle={() => onToggleEntry(entry.id)}

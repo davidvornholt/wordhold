@@ -11,6 +11,7 @@ const entry: VocabularyEntry = {
   unitName: 'Unit 1',
   targetText: 'memory',
   nativeText: 'die Erinnerung',
+  keyPoints: null,
   example: null,
   introduced: true,
   cards: [
@@ -39,7 +40,7 @@ describe('vocabulary schedule', () => {
       <VocabularySchedule
         enabledDirections={['to_target']}
         entry={entry}
-        exampleControl={null}
+        detail={null}
         now={new Date('2026-08-29T10:00:00Z')}
         subject={{ kind: 'language', targetLanguage: 'en' }}
       />,

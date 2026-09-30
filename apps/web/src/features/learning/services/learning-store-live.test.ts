@@ -194,7 +194,7 @@ describe('LearningStore live places', () => {
     );
   });
 
-  it("keeps a book's own words apart from the words in its units", async () => {
+  it("keeps a book's own words apart from its units' words, and the whole course together", async () => {
     const directEntry = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
     await Effect.runPromise(
       withMigratedTestDatabase((database) => {
@@ -233,11 +233,25 @@ describe('LearningStore live places', () => {
           expect(wrongCourse._tag === 'Left' && wrongCourse.left._tag).toBe(
             'LearningPlaceNotFoundError',
           );
+          const coursePass = yield* service.getPass(courseA, null);
+          expect(coursePass.name).toBe('French');
+          expect(coursePass.items.map((item) => item.entryId)).toEqual([
+            entryA,
+            directEntry,
+          ]);
+          const missingCourse = yield* Effect.either(
+            service.getPass(unitA, null),
+          );
+          expect(missingCourse._tag === 'Left' && missingCourse.left._tag).toBe(
+            'LearningPlaceNotFoundError',
+          );
         }).pipe(Effect.provide(serviceLayer));
       }),
     );
   });
+});
 
+describe('LearningStore live sections', () => {
   it('loads at most one section per direction and retains the remaining count', async () => {
     await Effect.runPromise(
       withMigratedTestDatabase((database) => {

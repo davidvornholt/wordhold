@@ -7,7 +7,7 @@ import { CourseOverview } from '../src/features/courses/ui/course-overview';
 import { DirectionPlan } from '../src/features/courses/ui/direction-plan';
 import { placeLinkClass } from '../src/features/courses/ui/place-link-styles';
 import { progressSummary } from '../src/features/courses/ui/progress-status';
-import { QuickVocabularyEntry } from '../src/features/courses/ui/quick-vocabulary-entry';
+import { QuickEntry } from '../src/features/courses/ui/quick-entry';
 import { directionLabel } from '../src/shared/directions';
 import { countNoun } from '../src/shared/format/count';
 import { itemsInNextSection } from '../src/shared/session/section-policy';
@@ -23,18 +23,15 @@ import {
   mixedUnit,
   novelBook,
   novelEntries,
-  targetLabel,
   unintroducedUnit,
 } from './course-fixture-data';
 import { fixtureBackControl, fixtureControl } from './fixture-controls';
 import { navigateToFixture } from './fixture-state';
-import { FixturePlaceVocabulary } from './word-entry-fixture';
 import {
-  fixtureDraftExample,
-  fixtureExampleTranslation,
-  fixtureTranslation,
-  useFixtureEntries,
-} from './word-entry-fixture-data';
+  FixtureNewVocabularyForm,
+  FixturePlaceVocabulary,
+} from './word-entry-fixture';
+import { useFixtureEntries } from './word-entry-fixture-data';
 
 const coursePrimaryAction = (
   emptyVocabulary: boolean,
@@ -104,23 +101,21 @@ export const CourseFixture = ({
         primaryAction={coursePrimaryAction(noVocabulary, practiceAvailable)}
         quickEntry={
           books.length === 0 ? null : (
-            <QuickVocabularyEntry
-              createEntry={(place, draft) =>
-                createEntry(
-                  draft,
-                  books.find((book) => book.id === place.bookId) ?? currentBook,
-                  units.find((unit) => unit.id === place.unitId) ?? null,
-                )
-              }
-              entries={entries}
-              generateExample={fixtureDraftExample}
+            <QuickEntry
               outline={outline}
-              suggestTranslation={(_, text, given) =>
-                fixtureTranslation(text, given)
-              }
-              targetLabel={targetLabel}
-              targetLanguage="en"
-              translateExample={fixtureExampleTranslation}
+              renderForm={(place) => (
+                <FixtureNewVocabularyForm
+                  createEntry={(draft) =>
+                    createEntry(
+                      draft,
+                      books.find((book) => book.id === place.bookId) ??
+                        currentBook,
+                      units.find((unit) => unit.id === place.unitId) ?? null,
+                    )
+                  }
+                  entries={entries}
+                />
+              )}
             />
           )
         }
