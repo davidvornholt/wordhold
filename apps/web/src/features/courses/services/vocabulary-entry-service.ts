@@ -8,7 +8,12 @@ import {
   CourseSettingsNotFoundError,
   CourseUnitNotFoundError,
   VocabularyEntryConflictError,
+  VocabularyEntryNotFoundError,
 } from '../errors/courses-errors';
+import type {
+  DeleteEntryData,
+  UpdateVocabularyEntryData,
+} from '../schemas/entry-changes';
 import type {
   CreateVocabularyEntryData,
   VocabularyExampleRequestData,
@@ -20,13 +25,18 @@ import {
   suggestDraftTranslation,
   translateDraftExample,
 } from './vocabulary-draft-examples';
-import { prepareEntryAudio } from './vocabulary-entry-audio';
+import { prepareEntryAudio, removeEntryFiles } from './vocabulary-entry-audio';
 import { VocabularyEntryStore, type WordPlace } from './vocabulary-entry-store';
 
 export type CreatedVocabularyEntry = {
   readonly entryId: string;
   // The entry is stored either way; only the pronunciation can be missing.
   readonly audio: 'generated' | 'failed';
+};
+
+export type UpdatedVocabularyEntry = {
+  // A changed word needs new pronunciation; otherwise the stored one is kept.
+  readonly audio: 'generated' | 'failed' | 'kept';
 };
 
 const courseMissing = new CourseSettingsNotFoundError({
@@ -38,6 +48,16 @@ const courseMissing = new CourseSettingsNotFoundError({
 const notLanguage = new CourseKindMismatchError({
   message: 'In einem Fach trägst du Begriffe mit Definition ein.',
 });
+
+const entryMissing = new VocabularyEntryNotFoundError({
+  message: 'Diese Vokabel gibt es nicht mehr. Lade die Seite neu.',
+});
+
+const duplicateWord = (targetText: string, location: string) =>
+  new VocabularyEntryConflictError({
+    targetText,
+    message: `„${targetText}“ ist schon in ${location} gespeichert.`,
+  });
 
 const placeMissing = ({ unitId }: WordPlace) =>
   unitId === null
@@ -76,10 +96,7 @@ export class VocabularyEntryService extends Effect.Service<VocabularyEntryServic
             case 'place-missing':
               return yield* placeMissing(input);
             case 'duplicate':
-              return yield* new VocabularyEntryConflictError({
-                targetText: input.targetText,
-                message: `„${input.targetText}“ ist schon in ${result.location} gespeichert.`,
-              });
+              return yield* duplicateWord(input.targetText, result.location);
             case 'created':
               return {
                 entryId: result.entryId,
@@ -93,6 +110,35 @@ export class VocabularyEntryService extends Effect.Service<VocabularyEntryServic
             default:
               return result satisfies never;
           }
+        });
+
+      const update = (input: UpdateVocabularyEntryData) =>
+        Effect.gen(function* () {
+          const language = yield* targetLanguage(input.courseId);
+          const result = yield* store.update(input);
+          if (result.kind === 'entry-missing') {
+            return yield* entryMissing;
+          }
+          if (result.kind === 'duplicate') {
+            return yield* duplicateWord(input.targetText, result.location);
+          }
+          yield* removeEntryFiles(storage, result.unreferencedFiles);
+          const audio = result.wordChanged
+            ? yield* prepareEntryAudio(
+                { tts, storage, store },
+                input.entryId,
+                input.targetText,
+                language,
+              )
+            : 'kept';
+          return { audio } satisfies UpdatedVocabularyEntry;
+        });
+
+      // Words and terms alike.
+      const remove = (input: DeleteEntryData) =>
+        Effect.gen(function* () {
+          const removed = yield* store.remove(input);
+          yield* removeEntryFiles(storage, removed.unreferencedFiles);
         });
 
       const generateExample = ({
@@ -135,6 +181,8 @@ export class VocabularyEntryService extends Effect.Service<VocabularyEntryServic
 
       return {
         create,
+        update,
+        remove,
         generateExample,
         translateExample,
         suggestTranslation,
