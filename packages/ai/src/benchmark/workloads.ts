@@ -1,5 +1,11 @@
 import type { ModelMessage } from 'ai';
 import { Schema } from 'effect';
+import { definitionJudgePrompt } from '../definition/judge';
+import {
+  type DefinitionJudgeInput,
+  DefinitionVerdict,
+  isDefinitionCorrect,
+} from '../definition/schema';
 import { ExtractedPage } from '../extraction/schema';
 import { extractionPrompt } from '../extraction/service';
 import { type JudgeInput, JudgeVerdict } from '../judge/schema';
@@ -62,6 +68,54 @@ const judgeWorkload = (
   };
 };
 
+// The expected coverage names which key points the answer states, so a
+// verdict that reaches the right total for the wrong reason still fails.
+const definitionWorkload = (
+  name: string,
+  input: DefinitionJudgeInput,
+  expectedCoverage: ReadonlyArray<boolean>,
+): Workload => {
+  const prompt = definitionJudgePrompt(input);
+  return {
+    name,
+    prompt,
+    messages: [{ role: 'user', content: prompt }],
+    schema: providerJsonSchema(DefinitionVerdict),
+    qualityFailures: (output) => {
+      if (!Schema.is(DefinitionVerdict)(output)) {
+        return ['Invalid verdict schema'];
+      }
+      if (output.keyPoints.length !== expectedCoverage.length) {
+        return ['Key point count differs'];
+      }
+      const failures = expectedCoverage.flatMap((covered, index) =>
+        output.keyPoints[index]?.covered === covered
+          ? []
+          : [`Key point ${index + 1} ${covered ? 'missed' : 'credited'}`],
+      );
+      if (!output.accuracy.ok) {
+        failures.push('Accurate answer faulted');
+      }
+      const correct = expectedCoverage.every(Boolean);
+      if (isDefinitionCorrect(output) !== correct) {
+        failures.push('Incorrect verdict');
+      }
+      return failures;
+    },
+  };
+};
+
+const catalyst = {
+  term: 'Katalysator',
+  definition:
+    'Stoff, der die Aktivierungsenergie einer Reaktion senkt und sie so beschleunigt, ohne dabei verbraucht zu werden.',
+  keyPoints: [
+    'senkt die Aktivierungsenergie',
+    'beschleunigt die Reaktion',
+    'wird nicht verbraucht',
+  ],
+} as const;
+
 export const workloads = async (): Promise<ReadonlyArray<Workload>> => {
   const sentence = sentencePrompt({
     targetText: 'el/la abogado/-a',
@@ -76,6 +130,23 @@ export const workloads = async (): Promise<ReadonlyArray<Workload>> => {
     ).arrayBuffer(),
   );
   return [
+    definitionWorkload(
+      'definition-paraphrase',
+      {
+        ...catalyst,
+        givenAnswer:
+          'Er setzt die Aktivierungsenergie herab, wodurch die Reaktion schneller abläuft, und liegt am Ende unverändert vor.',
+      },
+      [true, true, true],
+    ),
+    definitionWorkload(
+      'definition-missing-term',
+      {
+        ...catalyst,
+        givenAnswer: 'beschleunigt Reaktionen und wird nicht verbraucht',
+      },
+      [false, true, true],
+    ),
     judgeWorkload(
       'judge-abogado',
       {
