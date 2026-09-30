@@ -8,11 +8,7 @@ import { DirectionPlan } from '../src/features/courses/ui/direction-plan';
 import { placeLinkClass } from '../src/features/courses/ui/place-link-styles';
 import { progressSummary } from '../src/features/courses/ui/progress-status';
 import { QuickEntry } from '../src/features/courses/ui/quick-entry';
-import {
-  type CourseSubject,
-  courseNouns,
-  directionLabel,
-} from '../src/shared/directions';
+import { directionLabel } from '../src/shared/directions';
 import { countNoun } from '../src/shared/format/count';
 import { itemsInNextSection } from '../src/shared/session/section-policy';
 import { PageLayout } from '../src/shared/ui/page-layout';
@@ -141,46 +137,37 @@ export const CourseFixture = ({
           'course-settings',
           'quiet',
         )}
-        subject={englishSubject}
         vocabularyAction={fixtureControl('Vokabelliste', 'vocabulary', 'quiet')}
       />
     </PageLayout>
   );
 };
 
-type FixtureDirectionPlanProps = {
-  readonly progress: WordProgress;
-  readonly subject?: CourseSubject;
-};
-
 // A book's or unit's learning paths, with its actions as fixture controls.
 export const FixtureDirectionPlan = ({
   progress,
-  subject = englishSubject,
-}: FixtureDirectionPlanProps) => {
-  const nouns = courseNouns(subject);
-  const isTerms = subject.kind === 'terms';
-  return (
-    <DirectionPlan
-      progress={progress}
-      renderLearnAction={(direction, variant) =>
-        fixtureControl(
-          `${countNoun(itemsInNextSection(direction.unintroduced), nouns.singular, nouns.plural)} kennenlernen${variant === 'primary' ? ` · ${directionLabel(direction.direction, subject)}` : ''}`,
-          isTerms ? 'terms-learn' : 'learn',
-          variant,
-        )
-      }
-      renderScheduledAction={(direction, variant) =>
-        fixtureControl(
-          `${countNoun(direction.due + direction.firstReviews, 'Karte', 'Karten')} üben · ${directionLabel(direction.direction, subject)}`,
-          isTerms ? 'terms-practice' : 'practice',
-          variant,
-        )
-      }
-      subject={subject}
-    />
-  );
-};
+}: {
+  readonly progress: WordProgress;
+}) => (
+  <DirectionPlan
+    progress={progress}
+    renderLearnAction={(direction, variant) =>
+      fixtureControl(
+        `${countNoun(itemsInNextSection(direction.unintroduced), 'Vokabel', 'Vokabeln')} kennenlernen${variant === 'primary' ? ` · ${directionLabel(direction.direction, englishSubject)}` : ''}`,
+        'learn',
+        variant,
+      )
+    }
+    renderScheduledAction={(direction, variant) =>
+      fixtureControl(
+        `${countNoun(direction.due + direction.firstReviews, 'Karte', 'Karten')} üben · ${directionLabel(direction.direction, englishSubject)}`,
+        'practice',
+        variant,
+      )
+    }
+    subject={englishSubject}
+  />
+);
 
 type UnitFixtureProps = {
   readonly state?: 'mixed' | 'unintroduced' | 'due' | 'empty';
@@ -224,7 +211,7 @@ export const UnitFixture = ({ state = 'mixed' }: UnitFixtureProps) => {
       title={unit.name}
     >
       <p className="text-muted-foreground text-sm">
-        {`${currentBook.name} · ${progressSummary(unit, courseNouns(englishSubject))}`}
+        {`${currentBook.name} · ${progressSummary(unit)}`}
       </p>
       {unit.directions.length === 0 ? null : (
         <FixtureDirectionPlan progress={unit} />

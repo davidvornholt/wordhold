@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'bun:test';
-import { courseNouns } from '../../../shared/directions';
 import type { CourseBook, CourseUnit } from '../schemas/course-units';
 import {
   bookSummary,
@@ -8,9 +7,6 @@ import {
 } from './progress-status';
 
 const vocabularyCount = 12;
-
-const vocabulary = courseNouns({ kind: 'language', targetLanguage: 'en' });
-const terms = courseNouns({ kind: 'terms', targetLanguage: 'de' });
 
 const progress = {
   entries: 10,
@@ -66,9 +62,9 @@ describe('practiceStatus', () => {
 
 describe('progressSummary', () => {
   it('reports an empty unit without practice status', () => {
-    expect(
-      progressSummary(unit({ entries: 0, introduced: 0 }), vocabulary),
-    ).toBe('Noch keine Vokabeln');
+    expect(progressSummary(unit({ entries: 0, introduced: 0 }))).toBe(
+      'Noch keine Vokabeln',
+    );
   });
 
   it('names what is left to learn and to review', () => {
@@ -80,7 +76,6 @@ describe('progressSummary', () => {
           unintroduced: 3,
           due: 2,
         }),
-        vocabulary,
       ),
     ).toBe('12 Vokabeln · 3 noch kennenlernen · 2 Wiederholungen offen');
   });
@@ -93,23 +88,13 @@ describe('progressSummary', () => {
           introduced: 0,
           unintroduced: vocabularyCount,
         }),
-        vocabulary,
       ),
     ).toBe('12 Vokabeln · 12 noch kennenlernen');
   });
 
   it('summarizes fully introduced words', () => {
-    expect(
-      progressSummary(unit({ entries: 1, introduced: 1 }), vocabulary),
-    ).toBe('1 Vokabel · Für jetzt geschafft');
-  });
-
-  it('counts the terms of a subject', () => {
-    expect(progressSummary(unit({ entries: 1, introduced: 1 }), terms)).toBe(
-      '1 Begriff · Für jetzt geschafft',
-    );
-    expect(progressSummary(unit({ entries: 0, introduced: 0 }), terms)).toBe(
-      'Noch keine Begriffe',
+    expect(progressSummary(unit({ entries: 1, introduced: 1 }))).toBe(
+      '1 Vokabel · Für jetzt geschafft',
     );
   });
 });
@@ -117,30 +102,23 @@ describe('progressSummary', () => {
 describe('bookSummary', () => {
   it('counts the units of a book and every word in it', () => {
     expect(
-      bookSummary(
-        book({ entries: 3, unintroduced: 3 }),
-        [
-          unit({ entries: 10 }),
-          unit({ entries: vocabularyCount, unintroduced: 2 }),
-        ],
-        vocabulary,
-      ),
+      bookSummary(book({ entries: 3, unintroduced: 3 }), [
+        unit({ entries: 10 }),
+        unit({ entries: vocabularyCount, unintroduced: 2 }),
+      ]),
     ).toBe('2 Einheiten · 25 Vokabeln · 5 noch kennenlernen');
   });
 
   it('leaves units out of a book without any', () => {
-    expect(
-      bookSummary(book({ entries: vocabularyCount }), [], vocabulary),
-    ).toBe('12 Vokabeln');
-    expect(bookSummary(book({}), [], vocabulary)).toBe('Noch keine Vokabeln');
+    expect(bookSummary(book({ entries: vocabularyCount }), [])).toBe(
+      '12 Vokabeln',
+    );
+    expect(bookSummary(book({}), [])).toBe('Noch keine Vokabeln');
   });
 
   it('names units that are still empty', () => {
-    expect(
-      bookSummary(book({}), [unit({ entries: 0, introduced: 0 })], vocabulary),
-    ).toBe('1 Einheit · noch keine Vokabeln');
-    expect(
-      bookSummary(book({}), [unit({ entries: 0, introduced: 0 })], terms),
-    ).toBe('1 Einheit · noch keine Begriffe');
+    expect(bookSummary(book({}), [unit({ entries: 0, introduced: 0 })])).toBe(
+      '1 Einheit · noch keine Vokabeln',
+    );
   });
 });

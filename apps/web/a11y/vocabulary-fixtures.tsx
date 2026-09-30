@@ -104,7 +104,7 @@ export const VocabularyFixture = ({
         />
       )}
       renderStudyAction={(_, intent) => <FixtureStudyAction intent={intent} />}
-      scope="course"
+      layout="by-place"
       subject={englishSubject}
     />
   </PageLayout>

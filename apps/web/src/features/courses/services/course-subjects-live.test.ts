@@ -45,7 +45,7 @@ const failureTag = <A, E extends { readonly _tag: string }, R>(
   );
 
 describe('course subjects', () => {
-  it('creates a subject with one book and a term-to-definition direction', async () => {
+  it('creates a subject with a hidden book and a term-to-definition direction', async () => {
     await runServiceTest(
       Effect.gen(function* () {
         const sql = yield* Database;
@@ -69,6 +69,39 @@ describe('course subjects', () => {
     );
   });
 
+  it('refuses books and units in a subject', async () => {
+    await runServiceTest(
+      Effect.gen(function* () {
+        const sql = yield* Database;
+        const service = yield* CourseService;
+        const { courseId } = yield* service.createSubject({ name: 'Chemie' });
+        const [book] = yield* sql<{
+          readonly id: string;
+        }>`select id from books where course_id = ${courseId}`;
+        const bookId = book?.id ?? '';
+        const refused = yield* Effect.all([
+          failureTag(service.createBook({ courseId, name: 'Skript' })),
+          failureTag(service.renameBook({ courseId, bookId, name: 'Skript' })),
+          failureTag(service.createUnit({ courseId, bookId, name: 'Kinetik' })),
+          failureTag(
+            service.reorderUnits({
+              courseId,
+              bookId,
+              expectedUnitIds: [],
+              unitIds: [],
+            }),
+          ),
+        ]);
+        expect(new Set(refused)).toEqual(new Set(['CourseKindMismatchError']));
+        const units =
+          yield* sql`select id from units where course_id = ${courseId}`;
+        expect(units).toEqual([]);
+      }),
+    );
+  });
+});
+
+describe('course subject names', () => {
   it('refuses a name another course already has, in any casing', async () => {
     await runServiceTest(
       Effect.gen(function* () {

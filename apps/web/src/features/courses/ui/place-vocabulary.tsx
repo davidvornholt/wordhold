@@ -1,6 +1,6 @@
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import { type ReactNode, useId, useState } from 'react';
-import { type CourseSubject, courseNouns } from '../../../shared/directions';
+import type { CourseSubject } from '../../../shared/directions';
 import { Button } from '../../../shared/ui/button';
 import type { VocabularyEntry } from '../schemas/course-units';
 import { PlaceVocabularyEmpty } from './place-vocabulary-empty';
@@ -11,9 +11,8 @@ type PlaceVocabularyProps = {
   readonly entries: ReadonlyArray<VocabularyEntry>;
   readonly enabledDirections: ReadonlyArray<AnswerDirection>;
   readonly subject: CourseSubject;
-  // Null for a subject, whose terms are typed rather than photographed.
-  readonly importAction: ReactNode | null;
-  // The form for a word or a term, saving into this book or unit.
+  readonly importAction: ReactNode;
+  // The form for a word, saving into this book or unit.
   readonly entryForm: ReactNode;
   readonly renderStudyAction: (
     entryIds: ReadonlyArray<string>,
@@ -22,11 +21,11 @@ type PlaceVocabularyProps = {
   readonly renderEntryDetail: (entry: VocabularyEntry) => ReactNode;
 };
 
-// A unit's entries, or the entries directly in a book, with the one way to
-// grow them by hand. The form sits under the heading, above the list, and
-// stays open until the learner is done, so several entries can be typed in a
-// row and appear below as they are saved. An empty book or unit of a language
-// offers typing next to photographing.
+// A unit's vocabulary, or the words directly in a book, with the one way to
+// grow it by hand. The form sits under the heading, above the list, and stays
+// open until the learner is done, so several words can be typed in a row and
+// appear below as they are saved. An empty book or unit offers typing next to
+// photographing.
 export const PlaceVocabulary = ({
   place,
   entries,
@@ -39,7 +38,6 @@ export const PlaceVocabulary = ({
 }: PlaceVocabularyProps) => {
   const [adding, setAdding] = useState(false);
   const headingId = useId();
-  const nouns = courseNouns(subject);
   const isEmpty = entries.length === 0;
   let content: ReactNode = null;
   if (!isEmpty) {
@@ -49,8 +47,8 @@ export const PlaceVocabulary = ({
         entries={entries}
         initialFilter="all"
         renderEntryDetail={renderEntryDetail}
+        layout="flat"
         renderStudyAction={renderStudyAction}
-        scope="place"
         subject={subject}
       />
     );
@@ -59,12 +57,11 @@ export const PlaceVocabulary = ({
       <PlaceVocabularyEmpty
         addAction={
           <Button onClick={() => setAdding(true)} variant="outline">
-            {nouns.singular} eintragen
+            Vokabel eintragen
           </Button>
         }
         importAction={importAction}
         place={place}
-        subject={subject}
       />
     );
   }
@@ -72,7 +69,7 @@ export const PlaceVocabulary = ({
     <section aria-labelledby={headingId} className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-4">
         <h2 className="font-display text-xl" id={headingId}>
-          {isEmpty ? `${nouns.plural} hinzufügen` : nouns.plural}
+          {isEmpty ? 'Vokabeln hinzufügen' : 'Vokabeln'}
         </h2>
         {isEmpty && !adding ? null : (
           <Button
@@ -80,7 +77,7 @@ export const PlaceVocabulary = ({
             onClick={() => setAdding((current) => !current)}
             variant="quiet-muted"
           >
-            {adding ? 'Fertig' : `${nouns.singular} eintragen`}
+            {adding ? 'Fertig' : 'Vokabel eintragen'}
           </Button>
         )}
       </div>

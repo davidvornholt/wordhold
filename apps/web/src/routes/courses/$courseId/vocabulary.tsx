@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 import { parseVocabularySearch } from '../../../features/courses/schemas/vocabulary-search';
 import {
   getCourseDirections,
@@ -6,7 +6,6 @@ import {
 } from '../../../features/courses/services/server-fns';
 import { VocabularyLibrary } from '../../../features/courses/ui/vocabulary-library';
 import { getCourse } from '../../../features/import/server-fns';
-import { courseNouns } from '../../../shared/directions';
 import { ActionLink } from '../../../shared/ui/action-link';
 import { BackLink } from '../../../shared/ui/back-link';
 import { PageLayout } from '../../../shared/ui/page-layout';
@@ -14,7 +13,6 @@ import { CourseEntryDetail } from './-entry-forms';
 
 const VocabularyScreen = () => {
   const { course, directions, entries, filter, place } = Route.useLoaderData();
-  const nouns = courseNouns(course);
   return (
     <PageLayout
       backControl={
@@ -22,12 +20,11 @@ const VocabularyScreen = () => {
           {course.name}
         </BackLink>
       }
-      title={nouns.list}
+      title="Vokabelliste"
     >
       <p className="text-muted-foreground text-sm">
-        {course.kind === 'terms'
-          ? 'Wähle beliebige Begriffe aus und übe genau diese Auswahl.'
-          : 'Termine gelten pro Abfragerichtung. Wähle beliebige Vokabeln aus und übe genau diese Auswahl.'}
+        Termine gelten pro Abfragerichtung. Wähle beliebige Vokabeln aus und übe
+        genau diese Auswahl.
       </p>
       <VocabularyLibrary
         enabledDirections={directions}
@@ -46,7 +43,7 @@ const VocabularyScreen = () => {
             Auswahl {intent === 'learn' ? 'kennenlernen' : 'üben'}
           </ActionLink>
         )}
-        scope="course"
+        layout="by-place"
         subject={course}
       />
     </PageLayout>
@@ -65,6 +62,14 @@ export const Route = createFileRoute('/courses/$courseId/vocabulary')({
       getCourseDirections({ data: params.courseId }),
       listCourseVocabulary({ data: params.courseId }),
     ]);
+    // A subject's page is its list of terms.
+    if (course.kind === 'terms') {
+      throw redirect({
+        to: '/courses/$courseId',
+        params: { courseId: course.id },
+        search: { filter: deps.filter },
+      });
+    }
     return {
       course,
       directions,

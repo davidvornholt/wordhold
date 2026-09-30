@@ -106,18 +106,10 @@ describe('key points', () => {
 });
 
 describe('definition suggestion', () => {
-  it('names the subject and, when known, the topic', () => {
-    const withTopic = definitionPrompt({
-      term: 'Base',
-      subject: 'Chemie',
-      topic: 'Säuren und Basen',
-    });
-    expect(withTopic).toContain('"Base"');
-    expect(withTopic).toContain('"Chemie"');
-    expect(withTopic).toContain('"Säuren und Basen"');
-    expect(definitionPrompt({ term: 'Base', subject: 'Chemie' })).not.toContain(
-      'belongs to',
-    );
+  it('names the term and its subject', () => {
+    const prompt = definitionPrompt({ term: 'Base', subject: 'Chemie' });
+    expect(prompt).toContain('"Base"');
+    expect(prompt).toContain('"Chemie"');
   });
 
   it('trims the suggestion and keeps it within an entry', () => {

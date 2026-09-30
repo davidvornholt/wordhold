@@ -2,17 +2,14 @@ import { Database } from '@wordhold/db/client';
 import type { CourseKind } from '@wordhold/db/schema/courses';
 import { Context, Effect, Layer } from 'effect';
 import { normalizeAnswer } from '../../../shared/grading/normalize';
-import { wordLocation } from '../../../shared/vocabulary/book-name';
 import { findDuplicate } from '../../../shared/vocabulary/entry-identity';
 import { saveDerivedKeyPoints } from '../../../shared/vocabulary/key-points';
 import { CourseDatabaseError } from '../errors/courses-errors';
 import type { CreateTermEntryData } from '../schemas/term-entry-creation';
-import type { WordPlace } from './vocabulary-entry-store';
 
-export type TermPlace = {
+export type TermCourse = {
   readonly kind: CourseKind;
-  readonly courseName: string;
-  readonly unitName: string | null;
+  readonly name: string;
 };
 
 export type StoredTerm = {
@@ -23,15 +20,9 @@ export type StoredTerm = {
 
 export type CreateTermEntryResult =
   | { readonly kind: 'created'; readonly entryId: string }
-  | { readonly kind: 'place-missing' }
+  | { readonly kind: 'course-missing' }
   | { readonly kind: 'not-terms' }
-  | { readonly kind: 'duplicate'; readonly location: string };
-
-type CourseTermRow = {
-  readonly targetText: string;
-  readonly bookName: string;
-  readonly unitName: string | null;
-};
+  | { readonly kind: 'duplicate' };
 
 const databaseError = (operation: string, cause: unknown) =>
   new CourseDatabaseError({
@@ -43,12 +34,9 @@ const databaseError = (operation: string, cause: unknown) =>
 export class TermEntryStore extends Context.Tag('wordhold/TermEntryStore')<
   TermEntryStore,
   {
-    // Undefined when the book does not belong to the course or the unit
-    // not to the book.
-    readonly readPlace: (
+    readonly readCourse: (
       courseId: string,
-      place: WordPlace,
-    ) => Effect.Effect<TermPlace | undefined, CourseDatabaseError>;
+    ) => Effect.Effect<TermCourse | undefined, CourseDatabaseError>;
     readonly create: (
       input: CreateTermEntryData,
     ) => Effect.Effect<CreateTermEntryResult, CourseDatabaseError>;
@@ -76,37 +64,36 @@ export class TermEntryStore extends Context.Tag('wordhold/TermEntryStore')<
     Effect.gen(function* () {
       const sql = yield* Database;
 
-      // A book without the unit yields no row when a unit was asked for,
-      // because the unit's name is then required to match.
-      const selectPlace = (courseId: string, { bookId, unitId }: WordPlace) =>
-        sql<TermPlace>`
-          select co.kind, co.name as "courseName", u.name as "unitName"
-          from books b
-          join courses co on co.id = b.course_id
-          left join units u on u.id = ${unitId}::uuid and u.book_id = b.id
-          where b.id = ${bookId} and b.course_id = ${courseId}
-            and (${unitId}::uuid is null or u.id is not null)
-          limit 1
+      const selectCourse = (courseId: string) =>
+        sql<TermCourse>`
+          select kind, name from courses where id = ${courseId} limit 1
         `.pipe(Effect.map((rows) => rows[0]));
 
-      const readPlace = (courseId: string, place: WordPlace) =>
-        selectPlace(courseId, place).pipe(
-          Effect.mapError((cause) => databaseError('read term place', cause)),
+      const readCourse = (courseId: string) =>
+        selectCourse(courseId).pipe(
+          Effect.mapError((cause) => databaseError('read subject', cause)),
         );
 
+      // Every entry needs a book, so a subject keeps its terms in the one
+      // book it is created with (see createSubject). The learner never sees
+      // that book.
       const insertTerm = (input: CreateTermEntryData) =>
         Effect.gen(function* () {
           const [entry] = yield* sql<{ readonly id: string }>`
             insert into entries
               (course_id, book_id, unit_id, target_text, native_text)
-            values (${input.courseId}, ${input.bookId}, ${input.unitId},
-              ${input.term}, ${input.definition})
+            select ${input.courseId}, b.id, null, ${input.term},
+              ${input.definition}
+            from books b
+            where b.course_id = ${input.courseId}
+            order by b.position asc
+            limit 1
             returning id
           `;
           if (entry === undefined) {
             return yield* databaseError(
               'create term',
-              new Error('The term was not inserted.'),
+              new Error('The subject has no book to hold its terms.'),
             );
           }
           yield* sql`
@@ -124,41 +111,33 @@ export class TermEntryStore extends Context.Tag('wordhold/TermEntryStore')<
 
       // The same per-course lock the language entries take. A term is asked
       // only from term to definition, so it gets that one card and the
-      // definition as its one accepted answer. An exact repeat of a term
-      // anywhere in the subject is refused.
+      // definition as its one accepted answer. An exact repeat of a term in
+      // the subject is refused.
       const create = (input: CreateTermEntryData) =>
         sql
           .withTransaction(
             Effect.gen(function* () {
               yield* sql`select pg_advisory_xact_lock(hashtextextended(${input.courseId}, 0))`;
-              const place = yield* selectPlace(input.courseId, input);
-              if (place === undefined) {
-                return { kind: 'place-missing' } as const;
+              const course = yield* selectCourse(input.courseId);
+              if (course === undefined) {
+                return { kind: 'course-missing' } as const;
               }
-              if (place.kind !== 'terms') {
+              if (course.kind !== 'terms') {
                 return { kind: 'not-terms' } as const;
               }
-              const rows = yield* sql<CourseTermRow>`
-                select e.target_text as "targetText",
-                  b.name as "bookName", u.name as "unitName"
-                from entries e
-                join books b on b.id = e.book_id
-                left join units u on u.id = e.unit_id
-                where e.course_id = ${input.courseId}
+              const rows = yield* sql<{ readonly targetText: string }>`
+                select target_text as "targetText" from entries
+                where course_id = ${input.courseId}
               `;
               const duplicate = findDuplicate(
                 { targetText: input.term, example: '' },
                 rows.map((row) => ({
                   targetText: row.targetText,
                   examples: [],
-                  location: wordLocation(row.bookName, row.unitName),
                 })),
               );
               if (duplicate.verdict === 'exact') {
-                return {
-                  kind: 'duplicate',
-                  location: duplicate.entry.location,
-                } as const;
+                return { kind: 'duplicate' } as const;
               }
               const entryId = yield* insertTerm(input);
               return { kind: 'created', entryId } as const;
@@ -213,7 +192,7 @@ export class TermEntryStore extends Context.Tag('wordhold/TermEntryStore')<
         );
 
       return {
-        readPlace,
+        readCourse,
         create,
         readTerm,
         saveDerivedKeyPoints: saveKeyPoints,

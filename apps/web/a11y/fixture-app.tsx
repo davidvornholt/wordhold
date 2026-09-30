@@ -32,10 +32,8 @@ import {
 import { rootFixture } from './root-fixtures';
 import { StudyStartFixture } from './study-fixtures';
 import {
-  SubjectBookFixture,
   SubjectCourseFixture,
   SubjectSettingsFixture,
-  SubjectVocabularyFixture,
 } from './subject-fixtures';
 import {
   TermsFeedbackFixture,
@@ -166,10 +164,6 @@ const termsFixture = (state: FixtureState) => {
       return <SubjectCourseFixture />;
     case 'terms-course-empty':
       return <SubjectCourseFixture empty={true} />;
-    case 'terms-book':
-      return <SubjectBookFixture />;
-    case 'terms-vocabulary':
-      return <SubjectVocabularyFixture />;
     case 'terms-settings':
       return <SubjectSettingsFixture />;
     default:
@@ -289,8 +283,6 @@ const fixtureContent = (state: FixtureState) => {
     case 'terms-feedback':
     case 'terms-course':
     case 'terms-course-empty':
-    case 'terms-book':
-    case 'terms-vocabulary':
     case 'terms-settings':
       return termsFixture(state);
     case 'loading':

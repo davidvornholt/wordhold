@@ -1,9 +1,8 @@
 import { DefinitionWriter } from '@wordhold/ai/definition/writer';
 import { Effect } from 'effect';
 import {
-  CourseBookNotFoundError,
   CourseKindMismatchError,
-  CourseUnitNotFoundError,
+  CourseSettingsNotFoundError,
   TermAssistError,
   VocabularyEntryConflictError,
   VocabularyEntryNotFoundError,
@@ -15,16 +14,10 @@ import type {
   UpdateTermKeyPointsData,
 } from '../schemas/term-entry-creation';
 import { TermEntryStore } from './term-entry-store';
-import type { WordPlace } from './vocabulary-entry-store';
 
-const placeMissing = ({ unitId }: WordPlace) =>
-  unitId === null
-    ? new CourseBookNotFoundError({
-        message: 'Dieses Buch gibt es nicht mehr. Lade die Seite neu.',
-      })
-    : new CourseUnitNotFoundError({
-        message: 'Diese Einheit gibt es nicht mehr. Lade die Seite neu.',
-      });
+const subjectMissing = new CourseSettingsNotFoundError({
+  message: 'Dieses Fach gibt es nicht mehr. Lade die Seite neu.',
+});
 
 const notTerms = new CourseKindMismatchError({
   message: 'Begriffe mit Definition gibt es nur in einem Fach.',
@@ -55,14 +48,14 @@ export class TermEntryService extends Effect.Service<TermEntryService>()(
         Effect.gen(function* () {
           const result = yield* store.create(input);
           switch (result.kind) {
-            case 'place-missing':
-              return yield* placeMissing(input);
+            case 'course-missing':
+              return yield* subjectMissing;
             case 'not-terms':
               return yield* notTerms;
             case 'duplicate':
               return yield* new VocabularyEntryConflictError({
                 targetText: input.term,
-                message: `„${input.term}“ ist schon in ${result.location} gespeichert.`,
+                message: `„${input.term}“ ist in diesem Fach schon eingetragen.`,
               });
             case 'created':
               return { entryId: result.entryId };
@@ -71,29 +64,22 @@ export class TermEntryService extends Effect.Service<TermEntryService>()(
           }
         });
 
-      // The subject and the unit tell the writer which meaning of the term
-      // is meant. A book name such as "Allgemein" says nothing about that,
-      // so only a unit name is passed on.
+      // The subject's name tells the writer which meaning of the term is
+      // meant.
       const suggestDefinition = ({
         courseId,
-        bookId,
-        unitId,
         term,
       }: TermDefinitionSuggestionData) =>
         Effect.gen(function* () {
-          const place = yield* store.readPlace(courseId, { bookId, unitId });
-          if (place === undefined) {
-            return yield* placeMissing({ bookId, unitId });
+          const course = yield* store.readCourse(courseId);
+          if (course === undefined) {
+            return yield* subjectMissing;
           }
-          if (place.kind !== 'terms') {
+          if (course.kind !== 'terms') {
             return yield* notTerms;
           }
           const { definition } = yield* writer
-            .suggest({
-              term,
-              subject: place.courseName,
-              ...(place.unitName === null ? {} : { topic: place.unitName }),
-            })
+            .suggest({ term, subject: course.name })
             .pipe(Effect.mapError(() => suggestionFailed));
           return { definition };
         });

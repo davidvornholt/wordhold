@@ -10,13 +10,11 @@ import { TermEntryService } from './term-entry-service';
 import {
   type CreateTermEntryResult,
   type StoredTerm,
+  type TermCourse,
   TermEntryStore,
-  type TermPlace,
 } from './term-entry-store';
 
 const courseId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
-const bookId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
-const unitId = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
 const entryId = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
 
 const definition = 'Ein Stoff, der die Aktivierungsenergie senkt.';
@@ -24,7 +22,8 @@ const derived = ['senkt die Aktivierungsenergie'];
 
 type Stubs = {
   readonly createResult?: CreateTermEntryResult;
-  readonly place?: TermPlace;
+  // Null for a course that does not exist.
+  readonly course?: TermCourse | null;
   readonly stored?: StoredTerm;
   readonly termKnown?: boolean;
   // What the store holds after saving derived key points.
@@ -32,17 +31,13 @@ type Stubs = {
   readonly writerFails?: boolean;
 };
 
-const subjectPlace: TermPlace = {
-  kind: 'terms',
-  courseName: 'Chemie',
-  unitName: 'Kinetik',
-};
+const subject: TermCourse = { kind: 'terms', name: 'Chemie' };
 
 const runService = <A, E>(
   use: (service: TermEntryService) => Effect.Effect<A, E>,
   {
     createResult = { kind: 'created', entryId },
-    place = subjectPlace,
+    course = subject,
     stored = { term: 'Katalysator', definition, keyPoints: null },
     termKnown = true,
     saved = derived,
@@ -54,7 +49,7 @@ const runService = <A, E>(
   const failure = new DefinitionError({ cause: 'down', message: 'down' });
   const dependencies = Layer.merge(
     Layer.succeed(TermEntryStore, {
-      readPlace: () => Effect.succeed(place),
+      readCourse: () => Effect.succeed(course ?? undefined),
       create: () => Effect.succeed(createResult),
       readTerm: () => Effect.succeed(termKnown ? stored : undefined),
       saveDerivedKeyPoints: () => Effect.succeed(saved),
@@ -102,8 +97,6 @@ const failureTag = (result: {
 
 const input = {
   courseId,
-  bookId,
-  unitId,
   term: 'Katalysator',
   definition,
 };
@@ -115,11 +108,8 @@ describe('TermEntryService', () => {
       expect.objectContaining({ right: { entryId } }),
     );
     const cases = [
-      [
-        { kind: 'duplicate', location: 'Allgemein' },
-        'VocabularyEntryConflictError',
-      ],
-      [{ kind: 'place-missing' }, 'CourseUnitNotFoundError'],
+      [{ kind: 'duplicate' }, 'VocabularyEntryConflictError'],
+      [{ kind: 'course-missing' }, 'CourseSettingsNotFoundError'],
       [{ kind: 'not-terms' }, 'CourseKindMismatchError'],
     ] as const;
     const refused = await Promise.all(
@@ -132,40 +122,30 @@ describe('TermEntryService', () => {
     );
   });
 
-  it('suggests a definition with the subject and the unit as context', async () => {
+  it('suggests a definition with the subject as context', async () => {
+    const request = { courseId, term: 'Base' };
     const { result, suggestions } = await runService((service) =>
-      service.suggestDefinition({ courseId, bookId, unitId, term: 'Base' }),
+      service.suggestDefinition(request),
     );
     expect(result).toEqual(expect.objectContaining({ right: { definition } }));
-    expect(suggestions).toEqual([
-      { term: 'Base', subject: 'Chemie', topic: 'Kinetik' },
-    ]);
-    const withoutUnit = await runService(
-      (service) =>
-        service.suggestDefinition({
-          courseId,
-          bookId,
-          unitId: null,
-          term: 'Base',
-        }),
-      { place: { ...subjectPlace, unitName: null } },
-    );
-    expect(withoutUnit.suggestions).toEqual([
-      { term: 'Base', subject: 'Chemie' },
-    ]);
+    expect(suggestions).toEqual([{ term: 'Base', subject: 'Chemie' }]);
     const failed = await runService(
-      (service) =>
-        service.suggestDefinition({ courseId, bookId, unitId, term: 'Base' }),
+      (service) => service.suggestDefinition(request),
       { writerFails: true },
     );
     expect(failureTag(failed.result)).toBe('TermAssistError');
-    const language = await runService(
-      (service) =>
-        service.suggestDefinition({ courseId, bookId, unitId, term: 'Base' }),
-      { place: { ...subjectPlace, kind: 'language' } },
+    const refused = await Promise.all(
+      [{ ...subject, kind: 'language' } as const, null].map((course) =>
+        runService((service) => service.suggestDefinition(request), {
+          course,
+        }),
+      ),
     );
-    expect(failureTag(language.result)).toBe('CourseKindMismatchError');
-    expect(language.suggestions).toEqual([]);
+    expect(refused.map((refusal) => failureTag(refusal.result))).toEqual([
+      'CourseKindMismatchError',
+      'CourseSettingsNotFoundError',
+    ]);
+    expect(refused.flatMap(({ suggestions: asked }) => asked)).toEqual([]);
   });
 
   it('derives key points once and keeps the ones stored first', async () => {

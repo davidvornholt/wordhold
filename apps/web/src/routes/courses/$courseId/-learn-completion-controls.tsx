@@ -13,7 +13,8 @@ import { PlaceLearnLink, placeSearch } from './-course-place';
 
 type LearnCompletionControlsProps = {
   readonly courseId: string;
-  readonly selection: PlaceSelectionData;
+  // Null when the pass covers the whole course.
+  readonly selection: PlaceSelectionData | null;
   readonly current: AnswerDirection;
   readonly currentRemaining: number;
   readonly onContinueCurrent: () => Promise<unknown>;

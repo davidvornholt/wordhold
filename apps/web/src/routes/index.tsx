@@ -37,6 +37,9 @@ import { ActionLink } from '../shared/ui/action-link';
 const courseLinkClass =
   'font-display text-xl underline decoration-border underline-offset-4 transition-colors hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring';
 
+const fragileLinkClass =
+  'font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2';
+
 type CourseName = {
   readonly id: string;
   readonly name: string;
@@ -188,18 +191,28 @@ const Home = () => {
 
           <FragileList
             entries={dashboard.fragile}
-            renderEntryAction={(entry) => (
-              <Link
-                className="font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
-                params={{ courseId: entry.courseId }}
-                search={{ filter: 'difficult' }}
-                to="/courses/$courseId/vocabulary"
-              >
-                {entry.courseKind === 'terms'
-                  ? entry.targetText
-                  : `${entry.targetText} · ${entry.nativeText}`}
-              </Link>
-            )}
+            renderEntryAction={(entry) =>
+              // A subject's page is its list of terms.
+              entry.courseKind === 'terms' ? (
+                <Link
+                  className={fragileLinkClass}
+                  params={{ courseId: entry.courseId }}
+                  search={{ filter: 'difficult' }}
+                  to="/courses/$courseId"
+                >
+                  {entry.targetText}
+                </Link>
+              ) : (
+                <Link
+                  className={fragileLinkClass}
+                  params={{ courseId: entry.courseId }}
+                  search={{ filter: 'difficult' }}
+                  to="/courses/$courseId/vocabulary"
+                >
+                  {entry.targetText} · {entry.nativeText}
+                </Link>
+              )
+            }
           />
 
           <AudioRecoveryPages

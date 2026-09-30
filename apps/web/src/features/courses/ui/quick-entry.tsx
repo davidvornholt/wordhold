@@ -9,13 +9,13 @@ import {
 
 type QuickEntryProps = {
   readonly outline: CourseOutline;
-  // The form for a word or a term, saving into the chosen place.
+  // The form for a word, saving into the chosen place.
   readonly renderForm: (place: WordPlace) => ReactNode;
 };
 
-// Typing an entry without first opening its book: the place starts at the
-// book or unit that received the latest entry, so reading one novel means
-// picking it once.
+// Typing a word without first opening its book: the place starts at the book
+// or unit that received the latest word, so reading one novel means picking
+// it once.
 export const QuickEntry = ({ outline, renderForm }: QuickEntryProps) => {
   const placeId = useId();
   const options = wordPlaceOptions(outline);

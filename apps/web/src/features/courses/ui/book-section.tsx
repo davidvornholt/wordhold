@@ -1,5 +1,4 @@
 import { type ReactNode, useId, useState } from 'react';
-import { type CourseSubject, courseNouns } from '../../../shared/directions';
 import { Button } from '../../../shared/ui/button';
 import { cardClass, cardListClass } from '../../../shared/ui/surface-styles';
 import { maximumBookNameLength } from '../../../shared/vocabulary/book-name';
@@ -8,27 +7,24 @@ import {
   type CourseOutline,
   unitsByBook,
 } from '../schemas/course-units';
-import { bookPlaceholder, bookTaken } from './book-names';
+import { bookTaken } from './book-names';
 import { NameForm } from './name-form';
 import { bookSummary } from './progress-status';
 
 type BookSectionProps = {
   readonly outline: CourseOutline;
-  readonly subject: CourseSubject;
   readonly renderBookLink: (book: CourseBook) => ReactNode;
   // Creates the book and opens its page.
   readonly createBook: (name: string) => Promise<void>;
 };
 
-// The course's books in order. Each book's own page holds its words and
+// The language's books in order. Each book's own page holds its words and
 // units and is where the book is renamed or divided into units.
 export const BookSection = ({
   outline,
-  subject,
   renderBookLink,
   createBook,
 }: BookSectionProps) => {
-  const nouns = courseNouns(subject);
   const [adding, setAdding] = useState(false);
   const [creating, setCreating] = useState(false);
   const headingId = useId();
@@ -59,23 +55,23 @@ export const BookSection = ({
             maxLength={maximumBookNameLength}
             onBusyChange={setCreating}
             pendingStatus="Buch wird angelegt …"
-            placeholder={bookPlaceholder(subject)}
+            placeholder="z. B. Harry Potter"
             save={createBook}
             savedStatus={(name) => `${name} angelegt.`}
             statusLabel="Status beim Anlegen eines Buchs"
             submitLabel="Buch anlegen"
           />
           <p className="text-muted-foreground text-sm">
-            {nouns.plural} kommen direkt ins Buch. Einheiten legst du auf der
-            Seite des Buchs an, wenn es welche hat.
+            Vokabeln kommen direkt ins Buch. Einheiten legst du auf der Seite
+            des Buchs an, wenn es welche hat.
           </p>
         </div>
       ) : null}
       {groups.length === 0 ? (
         <p className={`${cardClass} text-sm`}>
-          {subject.kind === 'terms'
-            ? 'Für dieses Fach gibt es noch keine Bücher. Lege eines an, zum Beispiel für ein Lehrbuch oder ein Vorlesungsskript.'
-            : 'Für diese Sprache gibt es noch keine Bücher. Lege eines an, zum Beispiel für einen Roman oder ein Lehrbuch, oder fotografiere eine Vokabelseite und gib beim Prüfen an, aus welchem Buch sie stammt.'}
+          Für diese Sprache gibt es noch keine Bücher. Lege eines an, zum
+          Beispiel für einen Roman oder ein Lehrbuch, oder fotografiere eine
+          Vokabelseite und gib beim Prüfen an, aus welchem Buch sie stammt.
         </p>
       ) : (
         <ul className={cardListClass}>
@@ -86,7 +82,7 @@ export const BookSection = ({
             >
               {renderBookLink(book)}
               <span className="text-muted-foreground text-sm">
-                {bookSummary(book, units, nouns)}
+                {bookSummary(book, units)}
               </span>
             </li>
           ))}

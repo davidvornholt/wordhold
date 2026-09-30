@@ -19,8 +19,8 @@ import { ActionLink } from '../../../shared/ui/action-link';
 import { PlaceLearnLink, placeSearch } from './-course-place';
 import {
   CourseEntryDetail,
-  CourseEntryForm,
   type EntryCourse,
+  VocabularyEntryForm,
 } from './-entry-forms';
 
 // The screens of a book and of a unit share their learning paths and their
@@ -95,8 +95,6 @@ type PlaceWordsProps = {
   readonly courseEntries: ReadonlyArray<VocabularyEntry>;
 };
 
-// A subject's terms are only typed, so its books and units offer no photo
-// import.
 export const PlaceWords = ({
   course,
   place,
@@ -111,18 +109,16 @@ export const PlaceWords = ({
       enabledDirections={enabledDirections}
       entries={entries}
       entryForm={
-        <CourseEntryForm
+        <VocabularyEntryForm
           course={course}
           entries={courseEntries}
           place={place}
         />
       }
       importAction={
-        course.kind === 'terms' ? null : (
-          <ActionLink params={{ courseId }} to="/courses/$courseId/import">
-            Seite fotografieren
-          </ActionLink>
-        )
+        <ActionLink params={{ courseId }} to="/courses/$courseId/import">
+          Seite fotografieren
+        </ActionLink>
       }
       place={place.unitId === null ? 'book' : 'unit'}
       renderEntryDetail={(entry) => (

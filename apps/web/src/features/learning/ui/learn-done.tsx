@@ -16,7 +16,7 @@ const doneHeading = (
   nouns: CourseNouns,
 ): string => {
   if (learned === 0) {
-    return 'In dieser Einheit gibt es keine offene Abfragerichtung.';
+    return `Hier gibt es keine neuen ${nouns.plural} zum Kennenlernen.`;
   }
   const count = countNoun(learned, nouns.singular, nouns.plural);
   return direction === null

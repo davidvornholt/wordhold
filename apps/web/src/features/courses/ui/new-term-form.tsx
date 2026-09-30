@@ -1,7 +1,6 @@
 import { type SubmitEvent, useEffect, useRef, useState } from 'react';
 import { Button } from '../../../shared/ui/button';
 import { cardCompactClass } from '../../../shared/ui/surface-styles';
-import { wordLocation } from '../../../shared/vocabulary/book-name';
 import { findDuplicate } from '../../../shared/vocabulary/entry-identity';
 import type { VocabularyEntry } from '../schemas/course-units';
 import {
@@ -14,8 +13,8 @@ import { quoted } from './use-new-vocabulary-entry';
 export type CreateTerm = (draft: TermDraft) => Promise<void>;
 
 type NewTermFormProps = {
-  // Every stored term of the subject, in any book, so a repeat is pointed
-  // out while typing.
+  // Every stored term of the subject, so a repeat is pointed out while
+  // typing.
   readonly entries: ReadonlyArray<VocabularyEntry>;
   readonly createEntry: CreateTerm;
   readonly suggestDefinition: SuggestDefinition;
@@ -79,11 +78,7 @@ export const NewTermForm = ({
   const term = draft.term.trim();
   const duplicate = findDuplicate(
     { targetText: term, example: '' },
-    entries.map((entry) => ({
-      targetText: entry.targetText,
-      examples: [],
-      location: wordLocation(entry.bookName, entry.unitName),
-    })),
+    entries.map((entry) => ({ targetText: entry.targetText, examples: [] })),
   );
   const submittable =
     !busy &&
@@ -109,8 +104,9 @@ export const NewTermForm = ({
       />
       {duplicate.verdict === 'none' ? null : (
         <p className="text-sm text-warning-foreground">
-          {quoted(term)} ist schon in {duplicate.entry.location}
-          {duplicate.verdict === 'exact' ? '.' : ', mit anderer Schreibweise.'}
+          {duplicate.verdict === 'exact'
+            ? `${quoted(term)} ist schon eingetragen.`
+            : `${quoted(term)} ist schon als ${quoted(duplicate.entry.targetText)} eingetragen.`}
         </p>
       )}
       <div className="flex flex-wrap items-center gap-4">

@@ -2,25 +2,18 @@ import { KeyPoints } from '@wordhold/ai/definition/schema';
 import { Schema } from 'effect';
 import { EntryText } from '../../../shared/vocabulary/entry-fields';
 
-// Where a typed term goes: a book, and optionally one of its units.
-const TermPlaceFields = {
-  bookId: Schema.UUID,
-  unitId: Schema.NullOr(Schema.UUID),
-};
-
+// A subject keeps its terms in one list, so a term names only its subject.
 export const CreateTermEntry = Schema.Struct({
   courseId: Schema.UUID,
-  ...TermPlaceFields,
   term: EntryText,
   definition: EntryText,
 });
 export type CreateTermEntryData = typeof CreateTermEntry.Type;
 
-// A term whose definition is proposed on request. The subject and the unit
-// tell apart meanings the term has elsewhere.
+// A term whose definition is proposed on request. The subject tells apart
+// meanings the term has elsewhere.
 export const TermDefinitionSuggestion = Schema.Struct({
   courseId: Schema.UUID,
-  ...TermPlaceFields,
   term: EntryText,
 });
 export type TermDefinitionSuggestionData = typeof TermDefinitionSuggestion.Type;

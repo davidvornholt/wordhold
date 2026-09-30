@@ -35,9 +35,11 @@ test('a new subject is named on the overview and opens ready for its first term'
     'terms-course-empty',
   );
   await expect(termField(page)).toBeFocused();
+  await expect(page.getByText('Noch keine Begriffe')).toBeVisible();
   await expect(
     page.getByRole('combobox', { name: 'Eintragen in' }),
-  ).toHaveValue('00000000-0000-0000-0000-000000000061');
+  ).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Neues Buch' })).toHaveCount(0);
   await expect(page.getByText('Für jetzt geschafft')).toHaveCount(0);
   await expect(
     page.getByRole('button', { name: 'Seite fotografieren' }),
@@ -66,20 +68,22 @@ test('a term takes a suggested definition and the next term follows', async ({
 
   await definitionField(page).press('Enter');
   await expect(entryStatus(page)).toHaveText('„Oxidation“ eingetragen.');
+  await expect(page.getByText('1 Begriff · 1 noch kennenlernen')).toBeVisible();
+  await expect(
+    page.getByRole('heading', { level: 2, name: 'Begriffe' }),
+  ).toBeVisible();
   await expect(termField(page)).toBeFocused();
   await expect(termField(page)).toHaveValue('');
   await expect(definitionField(page)).toHaveValue('');
 
   await termField(page).fill('oxidation');
   await expect(
-    page.getByText(
-      '„oxidation“ ist schon in Allgemein, mit anderer Schreibweise.',
-    ),
+    page.getByText('„oxidation“ ist schon als „Oxidation“ eingetragen.'),
   ).toBeVisible();
   await termField(page).fill('Oxidation');
   await definitionField(page).fill('Abgabe von Elektronen.');
   await expect(
-    page.getByText('„Oxidation“ ist schon in Allgemein.'),
+    page.getByText('„Oxidation“ ist schon eingetragen.'),
   ).toBeVisible();
   await expect(submit).toBeDisabled();
 });
@@ -98,7 +102,7 @@ test('a definition is offered only while the field is empty', async ({
 test('key points are derived, corrected and checked before they are saved', async ({
   page,
 }) => {
-  await page.goto('/?state=terms-book');
+  await page.goto('/?state=terms-course');
   const enzym = page.getByRole('listitem').filter({ hasText: 'Enzym' });
   await enzym.locator('summary').click();
   await expect(
@@ -185,6 +189,6 @@ test('the overview lists a subject with its failed terms by name only', async ({
     'terms-course',
   );
   await expect(
-    page.getByRole('button', { name: 'Begriffsliste' }),
+    page.getByRole('heading', { level: 2, name: 'Begriffe' }),
   ).toBeVisible();
 });

@@ -36,15 +36,21 @@ export const findCoursePlace = (
       : selection.unitId === search.unit,
   );
 
-// The search parameters that narrow practice or study to a place.
-export const placeSearch = (selection: PlaceSelectionData) =>
-  'bookId' in selection
+// The search parameters that narrow practice or study to a place. Without a
+// place they cover the whole course, as a subject's list does.
+export const placeSearch = (selection: PlaceSelectionData | null) => {
+  if (selection === null) {
+    return { book: undefined, unit: undefined };
+  }
+  return 'bookId' in selection
     ? { book: selection.bookId, unit: undefined }
     : { book: undefined, unit: selection.unitId };
+};
 
 type PlaceLinkProps = {
   readonly courseId: string;
-  readonly selection: PlaceSelectionData;
+  // Null for the whole course, whose page is the course page.
+  readonly selection: PlaceSelectionData | null;
   readonly children: ReactNode;
 };
 
@@ -52,8 +58,15 @@ export const PlaceBackLink = ({
   courseId,
   selection,
   children,
-}: PlaceLinkProps) =>
-  'bookId' in selection ? (
+}: PlaceLinkProps) => {
+  if (selection === null) {
+    return (
+      <BackLink params={{ courseId }} to="/courses/$courseId">
+        {children}
+      </BackLink>
+    );
+  }
+  return 'bookId' in selection ? (
     <BackLink
       params={{ courseId, bookId: selection.bookId }}
       to="/courses/$courseId/books/$bookId"
@@ -68,14 +81,26 @@ export const PlaceBackLink = ({
       {children}
     </BackLink>
   );
+};
 
 export const PlacePageLink = ({
   courseId,
   selection,
   variant,
   children,
-}: PlaceLinkProps & { readonly variant: ActionVariant }) =>
-  'bookId' in selection ? (
+}: PlaceLinkProps & { readonly variant: ActionVariant }) => {
+  if (selection === null) {
+    return (
+      <ActionLink
+        params={{ courseId }}
+        to="/courses/$courseId"
+        variant={variant}
+      >
+        {children}
+      </ActionLink>
+    );
+  }
+  return 'bookId' in selection ? (
     <ActionLink
       params={{ courseId, bookId: selection.bookId }}
       to="/courses/$courseId/books/$bookId"
@@ -92,12 +117,31 @@ export const PlacePageLink = ({
       {children}
     </ActionLink>
   );
+};
 
 type PlaceLearnLinkProps = PlaceLinkProps & {
   readonly direction: AnswerDirection | undefined;
   readonly variant?: ActionVariant;
   readonly className?: string;
   readonly onClick?: () => void;
+};
+
+const placeLearnTarget = (
+  courseId: string,
+  selection: PlaceSelectionData | null,
+) => {
+  if (selection === null) {
+    return { to: '/courses/$courseId/learn', params: { courseId } } as const;
+  }
+  return 'bookId' in selection
+    ? ({
+        to: '/courses/$courseId/books/$bookId/learn',
+        params: { courseId, bookId: selection.bookId },
+      } as const)
+    : ({
+        to: '/courses/$courseId/units/$unitId/learn',
+        params: { courseId, unitId: selection.unitId },
+      } as const);
 };
 
 export const PlaceLearnLink = ({
@@ -108,27 +152,14 @@ export const PlaceLearnLink = ({
   className,
   onClick,
   children,
-}: PlaceLearnLinkProps) =>
-  'bookId' in selection ? (
-    <ActionLink
-      className={className}
-      onClick={onClick}
-      params={{ courseId, bookId: selection.bookId }}
-      search={{ direction }}
-      to="/courses/$courseId/books/$bookId/learn"
-      variant={variant}
-    >
-      {children}
-    </ActionLink>
-  ) : (
-    <ActionLink
-      className={className}
-      onClick={onClick}
-      params={{ courseId, unitId: selection.unitId }}
-      search={{ direction }}
-      to="/courses/$courseId/units/$unitId/learn"
-      variant={variant}
-    >
-      {children}
-    </ActionLink>
-  );
+}: PlaceLearnLinkProps) => (
+  <ActionLink
+    className={className}
+    onClick={onClick}
+    search={{ direction }}
+    variant={variant}
+    {...placeLearnTarget(courseId, selection)}
+  >
+    {children}
+  </ActionLink>
+);

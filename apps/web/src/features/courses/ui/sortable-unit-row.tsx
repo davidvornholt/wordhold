@@ -1,6 +1,5 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import type { CourseNouns } from '../../../shared/directions';
 import { countNoun } from '../../../shared/format/count';
 import { Button } from '../../../shared/ui/button';
 import type { CourseUnit } from '../schemas/course-units';
@@ -10,7 +9,6 @@ type SortableUnitRowProps = {
   readonly index: number;
   readonly total: number;
   readonly unit: CourseUnit;
-  readonly nouns: CourseNouns;
   readonly onMove: (from: number, to: number) => void;
 };
 
@@ -35,7 +33,6 @@ export const SortableUnitRow = ({
   index,
   total,
   unit,
-  nouns,
   onMove,
 }: SortableUnitRowProps) => {
   const {
@@ -75,7 +72,7 @@ export const SortableUnitRow = ({
       <span className="min-w-0 flex-1">
         <span className="block truncate font-medium">{unit.name}</span>
         <span className="text-muted-foreground text-sm">
-          {countNoun(unit.entries, nouns.singular, nouns.plural)}
+          {countNoun(unit.entries, 'Vokabel', 'Vokabeln')}
         </span>
       </span>
       <Button

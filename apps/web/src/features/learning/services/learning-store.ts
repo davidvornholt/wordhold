@@ -67,9 +67,10 @@ const passFromRows = (
 export class LearningStore extends Context.Tag('wordhold/LearningStore')<
   LearningStore,
   {
+    // A null place covers the whole course, as a subject's list does.
     readonly loadPass: (
       courseId: string,
-      place: PlaceSelectionData,
+      place: PlaceSelectionData | null,
     ) => Effect.Effect<LearnPass | undefined, LearningDatabaseError>;
     readonly loadSelection: (
       courseId: string,
@@ -88,9 +89,10 @@ export class LearningStore extends Context.Tag('wordhold/LearningStore')<
       const sql = yield* Database;
       const loadSelectionRows = (
         courseId: string,
-        selection: VocabularySelectionData,
+        selection: VocabularySelectionData | null,
       ) => {
-        const selected = selectedEntries(sql, selection);
+        const selected =
+          selection === null ? sql`true` : selectedEntries(sql, selection);
         return Effect.all(
           {
             items: sql<ItemRow>`
@@ -143,19 +145,27 @@ export class LearningStore extends Context.Tag('wordhold/LearningStore')<
             databaseError('load selected learning pass', cause),
           ),
         );
-      const loadPass = (courseId: string, place: PlaceSelectionData) =>
+      const placeName = (
+        courseId: string,
+        place: PlaceSelectionData | null,
+      ) => {
+        if (place === null) {
+          return sql<PlaceRow>`select name from courses where id = ${courseId}`;
+        }
+        return 'bookId' in place
+          ? sql<PlaceRow>`
+              select name from books
+              where id = ${place.bookId} and course_id = ${courseId}
+            `
+          : sql<PlaceRow>`
+              select name from units
+              where id = ${place.unitId} and course_id = ${courseId}
+            `;
+      };
+      const loadPass = (courseId: string, place: PlaceSelectionData | null) =>
         Effect.all(
           {
-            places:
-              'bookId' in place
-                ? sql<PlaceRow>`
-                    select name from books
-                    where id = ${place.bookId} and course_id = ${courseId}
-                  `
-                : sql<PlaceRow>`
-                    select name from units
-                    where id = ${place.unitId} and course_id = ${courseId}
-                  `,
+            places: placeName(courseId, place),
             pass: loadSelectionRows(courseId, place),
           },
           { concurrency: 'unbounded' },

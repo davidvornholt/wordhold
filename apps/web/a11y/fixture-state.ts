@@ -62,8 +62,6 @@ export const fixtureStates = [
   'terms-feedback',
   'terms-course',
   'terms-course-empty',
-  'terms-book',
-  'terms-vocabulary',
   'terms-settings',
   'loading',
   'error',

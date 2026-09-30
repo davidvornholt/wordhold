@@ -16,14 +16,15 @@ type VocabularyLibraryProps = {
   readonly enabledDirections: ReadonlyArray<AnswerDirection>;
   readonly entries: ReadonlyArray<VocabularyEntry>;
   readonly initialFilter: VocabularyFilter;
-  // Course scope only: preselects the book or unit dropdown when arriving via
-  // a link.
+  // By place only: preselects the book or unit dropdown when arriving via a
+  // link.
   readonly initialPlaceId?: string;
-  // Course scope groups entries under "book · unit" headings, or the book's
-  // name for words directly in a book, with a book and unit dropdown, since
-  // two books may each have a unit with the same name. Place scope shows one
-  // flat list because every entry lives in the same book or unit.
-  readonly scope: 'course' | 'place';
+  // A language course's whole list groups entries under "book · unit"
+  // headings, or the book's name for words directly in a book, with a book
+  // and unit dropdown, since two books may each have a unit with the same
+  // name. A book's or unit's own list, and a subject's list of terms, is one
+  // flat list.
+  readonly layout: 'by-place' | 'flat';
   readonly subject: CourseSubject;
   readonly renderStudyAction: (
     entryIds: ReadonlyArray<string>,
@@ -82,7 +83,7 @@ export const VocabularyLibrary = ({
   entries,
   initialFilter,
   initialPlaceId,
-  scope,
+  layout,
   subject,
   renderStudyAction,
   renderEntryDetail,
@@ -105,7 +106,7 @@ export const VocabularyLibrary = ({
       entry.targetText.toLocaleLowerCase('de-DE').includes(needle) ||
       entry.nativeText.toLocaleLowerCase('de-DE').includes(needle);
     const matchesPlace =
-      scope === 'place' ||
+      layout === 'flat' ||
       placeFilter === 'all' ||
       isInPlace(entry, placeFilter);
     return (
@@ -115,7 +116,9 @@ export const VocabularyLibrary = ({
     );
   });
   const sections: ReadonlyArray<VocabularySection> =
-    scope === 'course' ? placeSections(visible) : [['Alle auswählen', visible]];
+    layout === 'by-place'
+      ? placeSections(visible)
+      : [['Alle auswählen', visible]];
   const toggleEntry = (entryId: string) =>
     setSelected((current) =>
       current.includes(entryId)
@@ -148,7 +151,7 @@ export const VocabularyLibrary = ({
         onQueryChange={setQuery}
         query={query}
         placeSelect={
-          scope === 'course'
+          layout === 'by-place'
             ? {
                 value: placeFilter,
                 options: placeOptions(entries),
@@ -183,7 +186,7 @@ export const VocabularyLibrary = ({
             entries={sectionEntries}
             key={label}
             label={label}
-            labelStyle={scope === 'course' ? 'heading' : 'plain'}
+            labelStyle={layout === 'by-place' ? 'heading' : 'plain'}
             now={now}
             onToggleAll={toggleAll}
             onToggleEntry={toggleEntry}

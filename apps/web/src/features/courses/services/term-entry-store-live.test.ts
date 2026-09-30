@@ -11,9 +11,8 @@ import { VocabularyExampleStore } from './vocabulary-example-store';
 const subjectId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const languageCourseId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const bookId = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
-const unitId = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
 const languageBookId = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
-const missingUnitId = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
+const missingCourseId = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
 
 const definition =
   'Ein Stoff, der die Aktivierungsenergie einer Reaktion senkt.';
@@ -57,16 +56,10 @@ const seedCourses = Effect.gen(function* () {
     values (${bookId}, ${subjectId}, 'Allgemein', 0),
       (${languageBookId}, ${languageCourseId}, 'Découvertes 3', 0)
   `;
-  yield* sql`
-    insert into units (id, course_id, book_id, name, position)
-    values (${unitId}, ${subjectId}, ${bookId}, 'Kinetik', 0)
-  `;
 });
 
-const term = (text: string, place: { readonly unitId: string | null }) => ({
-  courseId: subjectId,
-  bookId,
-  unitId: place.unitId,
+const term = (text: string, courseId = subjectId) => ({
+  courseId,
   term: text,
   definition,
 });
@@ -82,9 +75,12 @@ describe('TermEntryStore', () => {
         yield* seedCourses;
         const sql = yield* Database;
         const store = yield* TermEntryStore;
-        const entryId = createdId(
-          yield* store.create(term('Katalysator', { unitId })),
-        );
+        const entryId = createdId(yield* store.create(term('Katalysator')));
+        const [entry] = yield* sql<{
+          readonly bookId: string;
+          readonly unitId: string | null;
+        }>`select book_id as "bookId", unit_id as "unitId" from entries where id = ${entryId}`;
+        expect(entry).toEqual({ bookId, unitId: null });
         const cards = yield* sql<{
           readonly direction: string;
         }>`select direction from cards where entry_id = ${entryId}`;
@@ -109,33 +105,27 @@ describe('TermEntryStore', () => {
     );
   });
 
-  it('refuses a repeated term, a vanished place and a language course', async () => {
+  it('refuses a repeated term, a missing subject and a language course', async () => {
     await runStoreTest(
       Effect.gen(function* () {
         yield* seedCourses;
         const store = yield* TermEntryStore;
-        yield* store.create(term('Katalysator', { unitId }));
-        expect(
-          yield* store.create(term('Katalysator', { unitId: null })),
-        ).toEqual({ kind: 'duplicate', location: 'Allgemein · Kinetik' });
-        expect(
-          (yield* store.create(term('katalysator', { unitId: null }))).kind,
-        ).toBe('created');
-        expect(
-          yield* store.create(term('Enzym', { unitId: missingUnitId })),
-        ).toEqual({ kind: 'place-missing' });
-        expect(
-          yield* store.create({
-            ...term('Enzym', { unitId: null }),
-            courseId: languageCourseId,
-            bookId: languageBookId,
-          }),
-        ).toEqual({ kind: 'not-terms' });
-        expect(yield* store.readPlace(subjectId, { bookId, unitId })).toEqual({
-          kind: 'terms',
-          courseName: 'Chemie',
-          unitName: 'Kinetik',
+        yield* store.create(term('Katalysator'));
+        expect(yield* store.create(term('Katalysator'))).toEqual({
+          kind: 'duplicate',
         });
+        expect((yield* store.create(term('katalysator'))).kind).toBe('created');
+        expect(yield* store.create(term('Enzym', missingCourseId))).toEqual({
+          kind: 'course-missing',
+        });
+        expect(yield* store.create(term('Enzym', languageCourseId))).toEqual({
+          kind: 'not-terms',
+        });
+        expect(yield* store.readCourse(subjectId)).toEqual({
+          kind: 'terms',
+          name: 'Chemie',
+        });
+        expect(yield* store.readCourse(missingCourseId)).toBeUndefined();
       }),
     );
   });
@@ -148,9 +138,7 @@ describe('TermEntryStore key points', () => {
         yield* seedCourses;
         const sql = yield* Database;
         const store = yield* TermEntryStore;
-        const entryId = createdId(
-          yield* store.create(term('Katalysator', { unitId })),
-        );
+        const entryId = createdId(yield* store.create(term('Katalysator')));
         const first = ['senkt die Aktivierungsenergie'];
         expect(
           yield* store.saveDerivedKeyPoints(entryId, definition, first),

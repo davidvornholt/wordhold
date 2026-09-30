@@ -7,13 +7,11 @@ import { EditableBook } from '../src/features/courses/ui/book-editor';
 import { placeLinkClass } from '../src/features/courses/ui/place-link-styles';
 import { bookSummary } from '../src/features/courses/ui/progress-status';
 import { UnitList } from '../src/features/courses/ui/unit-list';
-import { courseNouns } from '../src/shared/directions';
 import { PageLayout } from '../src/shared/ui/page-layout';
 import {
   courseOutline,
   currentBook,
   emptyUnit,
-  englishSubject,
   newBook,
   novelBook,
   novelEntries,
@@ -83,7 +81,6 @@ export const BookFixture = ({ kind }: BookFixtureProps) => {
   const { book, units, ...edits } = useFixtureBook(kind);
   const entries = kind === 'novel' ? novelEntries : [];
   const showWords = book.entries > 0 || units.length === 0;
-  const nouns = courseNouns(englishSubject);
   return (
     <PageLayout
       backControl={fixtureBackControl('English A2', 'course')}
@@ -92,8 +89,7 @@ export const BookFixture = ({ kind }: BookFixtureProps) => {
       <EditableBook
         book={book}
         books={courseOutline.books}
-        subject={englishSubject}
-        summary={bookSummary(book, units, nouns)}
+        summary={bookSummary(book, units)}
         units={units}
         {...edits}
       >
@@ -119,7 +115,6 @@ export const BookFixture = ({ kind }: BookFixtureProps) => {
                 : fixtureControl('Seite fotografieren', 'import', 'quiet')}
             </div>
             <UnitList
-              nouns={nouns}
               renderUnitLink={(unit) => (
                 <button
                   className={placeLinkClass}

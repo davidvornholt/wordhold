@@ -23,44 +23,54 @@ import { germanLabels } from '../../../shared/languages';
 
 export type EntryCourse = CourseSubject & { readonly id: string };
 
-type CourseEntryFormProps = {
+type TermEntryFormProps = {
   readonly course: EntryCourse;
-  readonly place: WordPlace;
-  // Every entry of the course, which a typed entry is checked against.
+  // Every term of the subject, which a typed term is checked against.
   readonly entries: ReadonlyArray<VocabularyEntry>;
 };
 
-// Typing an entry into a book or unit: a word with its translation and
-// example for a language, a term with its definition for a subject. Each
-// saved entry refreshes the loader so the page's counts and lists include it.
-// A term's key points are derived after it is saved, without holding up the
-// next term; practice derives them itself if that has not finished.
-export const CourseEntryForm = ({
+// Typing a term with its definition into a subject. Each saved term refreshes
+// the loader so the page's counts and list include it. Its key points are
+// derived after it is saved, without holding up the next term; practice
+// derives them itself if that has not finished.
+export const TermEntryForm = ({ course, entries }: TermEntryFormProps) => {
+  const router = useRouter();
+  const courseId = course.id;
+  return (
+    <NewTermForm
+      createEntry={async (draft) => {
+        const { entryId } = await createTermEntry({
+          data: { courseId, ...draft },
+        });
+        deriveTermKeyPoints({ data: { courseId, entryId } })
+          .then(() => router.invalidate())
+          .catch(() => undefined);
+        await router.invalidate();
+      }}
+      entries={entries}
+      suggestDefinition={(term) =>
+        suggestTermDefinition({ data: { courseId, term } })
+      }
+    />
+  );
+};
+
+type VocabularyEntryFormProps = {
+  readonly course: EntryCourse;
+  readonly place: WordPlace;
+  // Every entry of the course, which a typed word is checked against.
+  readonly entries: ReadonlyArray<VocabularyEntry>;
+};
+
+// Typing a word with its translation and example into a book or unit. Each
+// saved word refreshes the loader so the page's counts and lists include it.
+export const VocabularyEntryForm = ({
   course,
   place,
   entries,
-}: CourseEntryFormProps) => {
+}: VocabularyEntryFormProps) => {
   const router = useRouter();
   const courseId = course.id;
-  if (course.kind === 'terms') {
-    return (
-      <NewTermForm
-        createEntry={async (draft) => {
-          const { entryId } = await createTermEntry({
-            data: { courseId, ...place, ...draft },
-          });
-          deriveTermKeyPoints({ data: { courseId, entryId } })
-            .then(() => router.invalidate())
-            .catch(() => undefined);
-          await router.invalidate();
-        }}
-        entries={entries}
-        suggestDefinition={(term) =>
-          suggestTermDefinition({ data: { courseId, ...place, term } })
-        }
-      />
-    );
-  }
   return (
     <NewVocabularyForm
       createEntry={async (draft) => {

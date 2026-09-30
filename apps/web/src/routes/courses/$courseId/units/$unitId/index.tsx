@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 import {
   getCourseDirections,
   getCourseOutline,
@@ -6,7 +6,6 @@ import {
 } from '../../../../../features/courses/services/server-fns';
 import { progressSummary } from '../../../../../features/courses/ui/progress-status';
 import { getCourse } from '../../../../../features/import/server-fns';
-import { courseNouns } from '../../../../../shared/directions';
 import { BackLink } from '../../../../../shared/ui/back-link';
 import { PageLayout } from '../../../../../shared/ui/page-layout';
 import { cardClass } from '../../../../../shared/ui/surface-styles';
@@ -35,19 +34,19 @@ const UnitScreen = () => {
     return (
       <PageLayout backControl={backControl} title={course.name}>
         <p className={`${cardClass} font-medium`}>
-          Diese Einheit gehört nicht zu{' '}
-          {course.kind === 'terms' ? 'diesem Fach' : 'dieser Sprache'}.
+          Diese Einheit gehört nicht zu dieser Sprache.
         </p>
       </PageLayout>
     );
   }
 
   const place = { bookId: unit.bookId, unitId: unit.id };
-  const summary = progressSummary(unit, courseNouns(course));
   return (
     <PageLayout backControl={backControl} title={unit.name}>
       <p className="text-muted-foreground text-sm">
-        {book === undefined ? summary : `${book.name} · ${summary}`}
+        {book === undefined
+          ? progressSummary(unit)
+          : `${book.name} · ${progressSummary(unit)}`}
       </p>
       {unit.directions.length === 0 ? null : (
         <PlaceDirectionPlan
@@ -78,6 +77,14 @@ export const Route = createFileRoute('/courses/$courseId/units/$unitId/')({
       getCourseDirections({ data: params.courseId }),
       listCourseVocabulary({ data: params.courseId }),
     ]);
+    // A subject keeps its terms in one list on its own page, so it has no
+    // unit pages.
+    if (course.kind === 'terms') {
+      throw redirect({
+        to: '/courses/$courseId',
+        params: { courseId: course.id },
+      });
+    }
     const unit = outline.units.find(
       (candidate) => candidate.id === params.unitId,
     );

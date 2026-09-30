@@ -9,9 +9,10 @@ const databaseError = (
   message = 'Das Fach konnte nicht gespeichert werden.',
 ) => new CourseDatabaseError({ operation, cause, message });
 
-// A new subject starts with one book, so its first term can be typed right
-// away. The learner renames it or adds more books later.
-export const firstSubjectBookName = 'Allgemein';
+// Every entry belongs to a book, while a subject keeps its terms in one list.
+// So a subject gets one book for all its terms when it is created, and the
+// learner never sees it. Books and units are refused for a subject.
+const subjectBookName = 'Allgemein';
 
 export type CreateSubjectResult =
   | { readonly kind: 'created'; readonly courseId: string }
@@ -52,7 +53,7 @@ export const makeCourseSubjectMutations = (sql: Database) => {
           }
           yield* sql`
             insert into books (course_id, name, position)
-            values (${course.id}, ${firstSubjectBookName}, 0)
+            values (${course.id}, ${subjectBookName}, 0)
           `;
           return { kind: 'created', courseId: course.id } as const;
         }),

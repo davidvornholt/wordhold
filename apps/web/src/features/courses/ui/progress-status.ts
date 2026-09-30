@@ -1,5 +1,4 @@
 import { formatLearningDateInline } from '../../../shared/dates/learning-date';
-import type { CourseNouns } from '../../../shared/directions';
 import { countNoun } from '../../../shared/format/count';
 import type {
   CourseBook,
@@ -12,7 +11,6 @@ import type {
 export const bookSummary = (
   book: CourseBook,
   units: ReadonlyArray<CourseUnit>,
-  nouns: CourseNouns,
 ): string => {
   const places = [book, ...units];
   const entries = places.reduce((total, place) => total + place.entries, 0);
@@ -21,13 +19,13 @@ export const bookSummary = (
     0,
   );
   if (units.length === 0 && entries === 0) {
-    return `Noch keine ${nouns.plural}`;
+    return 'Noch keine Vokabeln';
   }
   return [
     units.length === 0 ? null : countNoun(units.length, 'Einheit', 'Einheiten'),
     entries === 0
-      ? `noch keine ${nouns.plural}`
-      : countNoun(entries, nouns.singular, nouns.plural),
+      ? 'noch keine Vokabeln'
+      : countNoun(entries, 'Vokabel', 'Vokabeln'),
     unintroduced === 0 ? null : `${unintroduced} noch kennenlernen`,
   ]
     .filter((part): part is string => part !== null)
@@ -50,12 +48,9 @@ export const practiceStatus = (progress: WordProgress): string => {
 // One line describing how far a unit or a book's own words have come, in the
 // same terms as the course summary. Progress per direction lives on the
 // unit's or book's own page.
-export const progressSummary = (
-  progress: WordProgress,
-  nouns: CourseNouns,
-): string => {
+export const progressSummary = (progress: WordProgress): string => {
   if (progress.entries === 0) {
-    return `Noch keine ${nouns.plural}`;
+    return 'Noch keine Vokabeln';
   }
   const learningStatus =
     progress.unintroduced === 0
@@ -66,7 +61,7 @@ export const progressSummary = (
       ? practiceStatus(progress)
       : null;
   return [
-    countNoun(progress.entries, nouns.singular, nouns.plural),
+    countNoun(progress.entries, 'Vokabel', 'Vokabeln'),
     learningStatus,
     practice,
   ]

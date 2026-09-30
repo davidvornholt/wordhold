@@ -301,7 +301,13 @@ const FixtureCourses = ({
       entries={empty ? [] : [fragileWord, ...(subjects ? [fragileTerm] : [])]}
       renderEntryAction={(entry) => (
         <button
-          onClick={() => navigateToFixture('vocabulary-difficult')}
+          onClick={() =>
+            navigateToFixture(
+              entry.courseKind === 'terms'
+                ? 'terms-course'
+                : 'vocabulary-difficult',
+            )
+          }
           type="button"
         >
           {entry.courseKind === 'terms'

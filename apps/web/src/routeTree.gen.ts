@@ -16,6 +16,7 @@ import { Route as ImportsSessionIdRouteImport } from './routes/imports/$sessionI
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as CoursesCourseIdIndexRouteImport } from './routes/courses/$courseId/index'
 import { Route as CoursesCourseIdImportRouteImport } from './routes/courses/$courseId/import'
+import { Route as CoursesCourseIdLearnRouteImport } from './routes/courses/$courseId/learn'
 import { Route as CoursesCourseIdPracticeRouteImport } from './routes/courses/$courseId/practice'
 import { Route as CoursesCourseIdSettingsRouteImport } from './routes/courses/$courseId/settings'
 import { Route as CoursesCourseIdStudyRouteImport } from './routes/courses/$courseId/study'
@@ -63,6 +64,11 @@ const CoursesCourseIdIndexRoute = CoursesCourseIdIndexRouteImport.update({
 const CoursesCourseIdImportRoute = CoursesCourseIdImportRouteImport.update({
   id: '/courses/$courseId/import',
   path: '/courses/$courseId/import',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CoursesCourseIdLearnRoute = CoursesCourseIdLearnRouteImport.update({
+  id: '/courses/$courseId/learn',
+  path: '/courses/$courseId/learn',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CoursesCourseIdPracticeRoute = CoursesCourseIdPracticeRouteImport.update({
@@ -144,6 +150,7 @@ export interface FileRoutesByFullPath {
   '/imports/$sessionId': typeof ImportsSessionIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/courses/$courseId/import': typeof CoursesCourseIdImportRoute
+  '/courses/$courseId/learn': typeof CoursesCourseIdLearnRoute
   '/courses/$courseId/practice': typeof CoursesCourseIdPracticeRoute
   '/courses/$courseId/settings': typeof CoursesCourseIdSettingsRoute
   '/courses/$courseId/study': typeof CoursesCourseIdStudyRoute
@@ -166,6 +173,7 @@ export interface FileRoutesByTo {
   '/imports/$sessionId': typeof ImportsSessionIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/courses/$courseId/import': typeof CoursesCourseIdImportRoute
+  '/courses/$courseId/learn': typeof CoursesCourseIdLearnRoute
   '/courses/$courseId/practice': typeof CoursesCourseIdPracticeRoute
   '/courses/$courseId/settings': typeof CoursesCourseIdSettingsRoute
   '/courses/$courseId/study': typeof CoursesCourseIdStudyRoute
@@ -189,6 +197,7 @@ export interface FileRoutesById {
   '/imports/$sessionId': typeof ImportsSessionIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/courses/$courseId/import': typeof CoursesCourseIdImportRoute
+  '/courses/$courseId/learn': typeof CoursesCourseIdLearnRoute
   '/courses/$courseId/practice': typeof CoursesCourseIdPracticeRoute
   '/courses/$courseId/settings': typeof CoursesCourseIdSettingsRoute
   '/courses/$courseId/study': typeof CoursesCourseIdStudyRoute
@@ -213,6 +222,7 @@ export interface FileRouteTypes {
     | '/imports/$sessionId'
     | '/api/auth/$'
     | '/courses/$courseId/import'
+    | '/courses/$courseId/learn'
     | '/courses/$courseId/practice'
     | '/courses/$courseId/settings'
     | '/courses/$courseId/study'
@@ -235,6 +245,7 @@ export interface FileRouteTypes {
     | '/imports/$sessionId'
     | '/api/auth/$'
     | '/courses/$courseId/import'
+    | '/courses/$courseId/learn'
     | '/courses/$courseId/practice'
     | '/courses/$courseId/settings'
     | '/courses/$courseId/study'
@@ -257,6 +268,7 @@ export interface FileRouteTypes {
     | '/imports/$sessionId'
     | '/api/auth/$'
     | '/courses/$courseId/import'
+    | '/courses/$courseId/learn'
     | '/courses/$courseId/practice'
     | '/courses/$courseId/settings'
     | '/courses/$courseId/study'
@@ -280,6 +292,7 @@ export interface RootRouteChildren {
   ImportsSessionIdRoute: typeof ImportsSessionIdRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   CoursesCourseIdImportRoute: typeof CoursesCourseIdImportRoute
+  CoursesCourseIdLearnRoute: typeof CoursesCourseIdLearnRoute
   CoursesCourseIdPracticeRoute: typeof CoursesCourseIdPracticeRoute
   CoursesCourseIdSettingsRoute: typeof CoursesCourseIdSettingsRoute
   CoursesCourseIdStudyRoute: typeof CoursesCourseIdStudyRoute
@@ -344,6 +357,13 @@ declare module '@tanstack/react-router' {
       path: '/courses/$courseId/import'
       fullPath: '/courses/$courseId/import'
       preLoaderRoute: typeof CoursesCourseIdImportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/courses/$courseId/learn': {
+      id: '/courses/$courseId/learn'
+      path: '/courses/$courseId/learn'
+      fullPath: '/courses/$courseId/learn'
+      preLoaderRoute: typeof CoursesCourseIdLearnRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/courses/$courseId/practice': {
@@ -459,6 +479,7 @@ const rootRouteChildren: RootRouteChildren = {
   ImportsSessionIdRoute: ImportsSessionIdRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   CoursesCourseIdImportRoute: CoursesCourseIdImportRoute,
+  CoursesCourseIdLearnRoute: CoursesCourseIdLearnRoute,
   CoursesCourseIdPracticeRoute: CoursesCourseIdPracticeRoute,
   CoursesCourseIdSettingsRoute: CoursesCourseIdSettingsRoute,
   CoursesCourseIdStudyRoute: CoursesCourseIdStudyRoute,

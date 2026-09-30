@@ -42,6 +42,11 @@ const directionsFixed = new CourseKindMismatchError({
   message: 'Ein Fach fragt immer vom Begriff zur Definition.',
 });
 
+const noBooksInSubject = new CourseKindMismatchError({
+  message:
+    'Ein Fach hat keine Bücher oder Einheiten. Trag die Begriffe direkt auf der Seite des Fachs ein.',
+});
+
 const bookMissing = new CourseBookNotFoundError({
   message: 'Dieses Buch gibt es nicht mehr. Lade die Seite neu.',
 });
@@ -120,8 +125,18 @@ export class CourseService extends Effect.Service<CourseService>()(
           ]);
           return { books, units } satisfies CourseOutline;
         });
+      // A subject keeps its terms in one list, so only a language course
+      // has books and units to manage. A course never changes its kind, so
+      // checking it before the mutation cannot race.
+      const requireLanguage = (courseId: string) =>
+        Effect.gen(function* () {
+          if ((yield* store.readKind(courseId)) === 'terms') {
+            return yield* noBooksInSubject;
+          }
+        });
       const createBook = ({ courseId, name }: CreateCourseBookData) =>
         Effect.gen(function* () {
+          yield* requireLanguage(courseId);
           const result = yield* store.createBook(courseId, name);
           if (result.kind === 'course-missing') {
             return yield* notFound;
@@ -133,6 +148,7 @@ export class CourseService extends Effect.Service<CourseService>()(
         });
       const renameBook = ({ courseId, bookId, name }: RenameCourseBookData) =>
         Effect.gen(function* () {
+          yield* requireLanguage(courseId);
           const result = yield* store.renameBook(courseId, bookId, name);
           if (result === 'book-missing') {
             return yield* bookMissing;
@@ -144,6 +160,7 @@ export class CourseService extends Effect.Service<CourseService>()(
         });
       const createUnit = ({ courseId, bookId, name }: CreateCourseUnitData) =>
         Effect.gen(function* () {
+          yield* requireLanguage(courseId);
           const result = yield* store.createUnit(courseId, bookId, name);
           if (result === 'book-missing') {
             return yield* bookMissing;
@@ -162,6 +179,7 @@ export class CourseService extends Effect.Service<CourseService>()(
         unitIds,
       }: ReorderCourseUnitsData) =>
         Effect.gen(function* () {
+          yield* requireLanguage(courseId);
           const updated = yield* store.reorderUnits(
             courseId,
             bookId,

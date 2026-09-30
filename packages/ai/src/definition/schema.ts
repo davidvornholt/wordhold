@@ -68,6 +68,4 @@ export type DefinitionRequest = {
   // The course name, such as "Chemie", which tells "Base" in chemistry apart
   // from a base in mathematics.
   readonly subject: string;
-  // The book or unit name, when the term was filed under one.
-  readonly topic?: string;
 };
