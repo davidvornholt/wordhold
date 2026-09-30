@@ -12,11 +12,11 @@ import { Button } from '../src/shared/ui/button';
 import { englishSubject, targetLabel } from './course-fixture-data';
 import { fixtureControl } from './fixture-controls';
 import { navigateToFixture } from './fixture-state';
+import { useFixtureWords } from './fixture-word-actions';
 import {
   fixtureDraftExample,
   fixtureExampleTranslation,
   fixtureTranslation,
-  useFixtureEntries,
 } from './word-entry-fixture-data';
 
 type FixtureNewVocabularyFormProps = {
@@ -88,11 +88,15 @@ export const FixturePlaceVocabulary = ({
   unit,
   initialEntries,
 }: FixturePlaceVocabularyProps) => {
-  const { entries, createEntry } = useFixtureEntries(initialEntries);
+  const { entries, createEntry, entryActions } = useFixtureWords(
+    initialEntries,
+    (entry) => <FixtureVocabularyExample entry={entry} />,
+  );
   return (
     <PlaceVocabulary
       enabledDirections={['to_target', 'to_native']}
       entries={entries}
+      entryActions={entryActions}
       entryForm={
         <FixtureNewVocabularyForm
           createEntry={(draft) => createEntry(draft, book, unit)}
@@ -101,7 +105,6 @@ export const FixturePlaceVocabulary = ({
       }
       importAction={fixtureControl('Seite fotografieren', 'import', 'primary')}
       place={unit === null ? 'book' : 'unit'}
-      renderEntryDetail={(entry) => <FixtureVocabularyExample entry={entry} />}
       renderStudyAction={(_, intent) => <FixtureStudyAction intent={intent} />}
       subject={englishSubject}
     />

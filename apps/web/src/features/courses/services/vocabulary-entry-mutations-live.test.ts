@@ -18,11 +18,11 @@ const practisedReps = 3;
 const wordAudio = 'audio/word-old.mp3';
 const exampleAudio = 'audio/example-old.mp3';
 
-const example: NewExampleData = {
+const example = {
   targetText: 'Ce voyage est un bon souvenir.',
   nativeText: 'Diese Reise ist eine schöne Erinnerung.',
   source: 'textbook',
-};
+} satisfies NewExampleData;
 
 const runStoreTest = <A, E>(
   effect: Effect.Effect<A, E, Database | VocabularyEntryStore>,
@@ -193,11 +193,11 @@ describe('VocabularyEntryStore corrections', () => {
         expect((yield* storedWord(entryId)).examples).toEqual([
           { ...translated, audioPath: exampleAudio },
         ]);
-        const replaced: NewExampleData = {
+        const replaced = {
           targetText: 'Il a une bonne mémoire.',
           nativeText: 'Er hat ein gutes Gedächtnis.',
           source: 'generated',
-        };
+        } satisfies NewExampleData;
         expect(yield* store.update({ ...word, example: replaced })).toEqual({
           kind: 'updated',
           wordChanged: false,

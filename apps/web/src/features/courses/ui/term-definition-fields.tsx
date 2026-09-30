@@ -24,6 +24,8 @@ type TermDefinitionFieldsProps = {
   readonly draft: TermDraft;
   readonly setDraft: Dispatch<SetStateAction<TermDraft>>;
   readonly busy: boolean;
+  // Names the step the learner reviews the AI text before, e.g. "Eintragen".
+  readonly reviewStep: string;
   readonly termRef: RefObject<HTMLInputElement | null>;
   readonly suggestDefinition: SuggestDefinition;
 };
@@ -37,6 +39,7 @@ export const TermDefinitionFields = ({
   draft,
   setDraft,
   busy,
+  reviewStep,
   termRef,
   suggestDefinition,
 }: TermDefinitionFieldsProps) => {
@@ -128,7 +131,7 @@ export const TermDefinitionFields = ({
       ) : null}
       {suggested !== null && draft.definition === suggested ? (
         <p className="text-muted-foreground text-xs">
-          Definition mit KI vorgeschlagen. Prüfe sie vor dem Eintragen.
+          Definition mit KI vorgeschlagen. Prüfe sie vor dem {reviewStep}.
         </p>
       ) : null}
       {suggestionError ? (

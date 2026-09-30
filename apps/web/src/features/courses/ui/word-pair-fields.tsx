@@ -23,6 +23,8 @@ type WordPairFieldsProps = {
   readonly draft: ExampleDraft;
   readonly setDraft: Dispatch<SetStateAction<ExampleDraft>>;
   readonly busy: boolean;
+  // Names the step the learner reviews the AI text before, e.g. "Eintragen".
+  readonly reviewStep: string;
   readonly targetLabel: string;
   readonly targetLanguage: LanguageCode;
   readonly targetRef: RefObject<HTMLInputElement | null>;
@@ -49,6 +51,7 @@ export const WordPairFields = ({
   draft,
   setDraft,
   busy,
+  reviewStep,
   targetLabel,
   targetLanguage,
   targetRef,
@@ -143,7 +146,7 @@ export const WordPairFields = ({
       )}
       {showHint ? (
         <p className="text-muted-foreground text-xs">
-          Übersetzung mit KI vorgeschlagen. Prüfe sie vor dem Eintragen.
+          Übersetzung mit KI vorgeschlagen. Prüfe sie vor dem {reviewStep}.
         </p>
       ) : null}
       {suggestionError ? (

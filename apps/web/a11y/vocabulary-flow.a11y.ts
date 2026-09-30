@@ -53,7 +53,11 @@ test('a missing vocabulary example can be generated from its details', async ({
   await page.getByRole('button', { exact: true, name: 'the referee' }).click();
   const referee = page.getByRole('dialog', { name: 'the referee' });
   await referee.getByRole('button', { name: 'Beispielsatz erzeugen' }).click();
-  await expect(referee.getByRole('status')).toBeFocused();
+  await expect(
+    referee
+      .getByRole('status')
+      .filter({ hasText: 'The referee stopped the match.' }),
+  ).toBeFocused();
   await expect(
     referee.getByText('The referee stopped the match.'),
   ).toBeVisible();

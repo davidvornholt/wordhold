@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import type { VocabularyEntry } from '../src/features/courses/schemas/course-units';
+import { EditTermForm } from '../src/features/courses/ui/edit-term-form';
+import type { CourseEntryActions } from '../src/features/courses/ui/entry-actions';
 import { NewTermForm } from '../src/features/courses/ui/new-term-form';
 import { SubjectOverview } from '../src/features/courses/ui/subject-overview';
 import { SubjectSettings } from '../src/features/courses/ui/subject-settings';
@@ -21,8 +23,9 @@ import {
 type KeyPoints = ReadonlyArray<string>;
 
 // Typed terms join the list in memory, without key points, the way the
-// server stores them before deriving the points. Derived or edited key points
-// are kept the way the page's refreshed loader would show them.
+// server stores them before deriving the points; a corrected definition
+// drops them the same way. Derived or edited key points are kept the way the
+// page's refreshed loader would show them.
 const useFixtureTerms = (initial: ReadonlyArray<VocabularyEntry>) => {
   const [entries, setEntries] = useState(initial);
   const createEntry = ({ term, definition }: TermDraft) => {
@@ -46,7 +49,25 @@ const useFixtureTerms = (initial: ReadonlyArray<VocabularyEntry>) => {
     );
     return { keyPoints };
   };
-  return { entries, createEntry, keepKeyPoints };
+  const updateEntry = (entryId: string, { term, definition }: TermDraft) => {
+    setEntries((current) =>
+      current.map((entry) =>
+        entry.id === entryId
+          ? {
+              ...entry,
+              targetText: term,
+              nativeText: definition,
+              keyPoints:
+                definition === entry.nativeText ? entry.keyPoints : null,
+            }
+          : entry,
+      ),
+    );
+    return Promise.resolve();
+  };
+  const removeEntry = (entryId: string) =>
+    setEntries((current) => current.filter((entry) => entry.id !== entryId));
+  return { entries, createEntry, keepKeyPoints, updateEntry, removeEntry };
 };
 
 const FixtureTermKeyPoints = ({
@@ -88,9 +109,28 @@ export const SubjectCourseFixture = ({
 }: {
   readonly empty?: boolean;
 }) => {
-  const { entries, createEntry, keepKeyPoints } = useFixtureTerms(
-    empty ? [] : subjectEntries,
-  );
+  const { entries, createEntry, keepKeyPoints, updateEntry, removeEntry } =
+    useFixtureTerms(empty ? [] : subjectEntries);
+  // The list refreshes after the dialog has closed, as the page's loader
+  // does.
+  const entryActions: CourseEntryActions = {
+    renderDetail: (entry) => (
+      <FixtureTermKeyPoints entry={entry} keepKeyPoints={keepKeyPoints} />
+    ),
+    renderEditor: (entry, control) => (
+      <EditTermForm
+        control={control}
+        entries={entries}
+        entry={entry}
+        suggestDefinition={fixtureDefinition}
+        updateEntry={(draft) => updateEntry(entry.id, draft)}
+      />
+    ),
+    remove: (entry) => {
+      globalThis.setTimeout(() => removeEntry(entry.id));
+      return Promise.resolve();
+    },
+  };
   return (
     <PageLayout
       backControl={fixtureBackControl('Übersicht', 'dashboard-subjects')}
@@ -99,6 +139,7 @@ export const SubjectCourseFixture = ({
       <SubjectOverview
         enabledDirections={['to_native']}
         entries={entries}
+        entryActions={entryActions}
         entryForm={
           <NewTermForm
             createEntry={createEntry}
@@ -112,9 +153,6 @@ export const SubjectCourseFixture = ({
             ? null
             : fixtureControl('1 Karte üben', 'terms-practice', 'primary')
         }
-        renderEntryDetail={(entry) => (
-          <FixtureTermKeyPoints entry={entry} keepKeyPoints={keepKeyPoints} />
-        )}
         renderStudyAction={termsStudyAction}
         settingsAction={fixtureControl(
           'Einstellungen',

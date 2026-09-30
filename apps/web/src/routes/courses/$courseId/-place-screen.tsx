@@ -18,8 +18,8 @@ import type { PlaceSelectionData } from '../../../shared/session/vocabulary-sele
 import { ActionLink } from '../../../shared/ui/action-link';
 import { PlaceLearnLink, placeSearch } from './-course-place';
 import {
-  CourseEntryDetail,
   type EntryCourse,
+  useCourseEntryActions,
   VocabularyEntryForm,
 } from './-entry-forms';
 
@@ -104,10 +104,12 @@ export const PlaceWords = ({
 }: PlaceWordsProps) => {
   const courseId = course.id;
   const selection = placeSelection(place);
+  const entryActions = useCourseEntryActions(course, courseEntries);
   return (
     <PlaceVocabulary
       enabledDirections={enabledDirections}
       entries={entries}
+      entryActions={entryActions}
       entryForm={
         <VocabularyEntryForm
           course={course}
@@ -121,9 +123,6 @@ export const PlaceWords = ({
         </ActionLink>
       }
       place={place.unitId === null ? 'book' : 'unit'}
-      renderEntryDetail={(entry) => (
-        <CourseEntryDetail course={course} entry={entry} />
-      )}
       renderStudyAction={(entryIds, intent) => (
         <ActionLink
           params={{ courseId }}

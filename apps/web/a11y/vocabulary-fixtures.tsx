@@ -1,12 +1,14 @@
+import { useRef } from 'react';
 import type { VocabularyEntry } from '../src/features/courses/schemas/course-units';
 import { VocabularyExample } from '../src/features/courses/ui/vocabulary-example';
 import { VocabularyLibrary } from '../src/features/courses/ui/vocabulary-library';
 import { PageLayout } from '../src/shared/ui/page-layout';
 import { englishSubject } from './course-fixture-data';
 import { fixtureBackControl } from './fixture-controls';
+import { useFixtureWords } from './fixture-word-actions';
 import { FixtureStudyAction } from './word-entry-fixture';
 
-const entries: ReadonlyArray<VocabularyEntry> = [
+const storedEntries: ReadonlyArray<VocabularyEntry> = [
   {
     id: '00000000-0000-0000-0000-000000000011',
     bookId: '00000000-0000-0000-0000-000000000031',
@@ -73,39 +75,54 @@ const entries: ReadonlyArray<VocabularyEntry> = [
   },
 ];
 
+const FixtureExample = ({ entry }: { readonly entry: VocabularyEntry }) => (
+  <VocabularyExample
+    entry={entry}
+    generate={() =>
+      Promise.resolve({
+        targetText: 'The referee stopped the match.',
+        nativeText: 'Der Schiedsrichter unterbrach das Spiel.',
+        source: 'generated',
+      })
+    }
+    targetLanguage="en"
+  />
+);
+
 export const VocabularyFixture = ({
   difficult = false,
 }: {
   readonly difficult?: boolean;
-}) => (
-  <PageLayout
-    backControl={fixtureBackControl('English A2', 'course')}
-    title="Vokabelliste"
-  >
-    <p className="text-muted-foreground text-sm">
-      Termine gelten pro Abfragerichtung. Wähle Vokabeln aus beliebigen
-      Einheiten.
-    </p>
-    <VocabularyLibrary
-      enabledDirections={['to_target', 'to_native']}
-      entries={entries}
-      initialFilter={difficult ? 'difficult' : 'all'}
-      renderEntryDetail={(entry) => (
-        <VocabularyExample
-          entry={entry}
-          generate={() =>
-            Promise.resolve({
-              targetText: 'The referee stopped the match.',
-              nativeText: 'Der Schiedsrichter unterbrach das Spiel.',
-              source: 'generated',
-            })
-          }
-          targetLanguage="en"
-        />
-      )}
-      renderStudyAction={(_, intent) => <FixtureStudyAction intent={intent} />}
-      layout="by-place"
-      subject={englishSubject}
-    />
-  </PageLayout>
-);
+}) => {
+  const { entries, entryActions } = useFixtureWords(storedEntries, (entry) => (
+    <FixtureExample entry={entry} />
+  ));
+  const introRef = useRef<HTMLParagraphElement>(null);
+  return (
+    <PageLayout
+      backControl={fixtureBackControl('English A2', 'course')}
+      title="Vokabelliste"
+    >
+      <p
+        className="text-muted-foreground text-sm focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
+        ref={introRef}
+        tabIndex={-1}
+      >
+        Termine gelten pro Abfragerichtung. Wähle Vokabeln aus beliebigen
+        Einheiten.
+      </p>
+      <VocabularyLibrary
+        enabledDirections={['to_target', 'to_native']}
+        entries={entries}
+        entryActions={entryActions}
+        fallbackFocusRef={introRef}
+        initialFilter={difficult ? 'difficult' : 'all'}
+        layout="by-place"
+        renderStudyAction={(_, intent) => (
+          <FixtureStudyAction intent={intent} />
+        )}
+        subject={englishSubject}
+      />
+    </PageLayout>
+  );
+};

@@ -33,9 +33,9 @@ import { BackLink } from '../../../shared/ui/back-link';
 import { PageLayout } from '../../../shared/ui/page-layout';
 import { coursePlaces, PlaceLearnLink } from './-course-place';
 import {
-  CourseEntryDetail,
   type EntryCourse,
   TermEntryForm,
+  useCourseEntryActions,
   VocabularyEntryForm,
 } from './-entry-forms';
 
@@ -243,19 +243,18 @@ const SubjectScreen = ({
   stats,
 }: SubjectScreenProps) => {
   const { filter } = Route.useSearch();
+  const entryActions = useCourseEntryActions(course, entries);
   return (
     <SubjectOverview
       enabledDirections={directions}
       entries={entries}
+      entryActions={entryActions}
       entryForm={<TermEntryForm course={course} entries={entries} />}
       initialFilter={filter ?? 'all'}
       primaryAction={subjectPrimaryAction(
         course.id,
         entries,
         stats?.ready ?? 0,
-      )}
-      renderEntryDetail={(entry) => (
-        <CourseEntryDetail course={course} entry={entry} />
       )}
       renderStudyAction={(entryIds, intent) => (
         <ActionLink

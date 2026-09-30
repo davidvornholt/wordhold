@@ -1,7 +1,7 @@
 import { type SubmitEvent, useEffect, useRef, useState } from 'react';
 import { Button } from '../../../shared/ui/button';
-import { findDuplicate } from '../../../shared/vocabulary/entry-identity';
 import type { VocabularyEntry } from '../schemas/course-units';
+import { termDuplicate } from './entry-duplicates';
 import {
   type SuggestDefinition,
   TermDefinitionFields,
@@ -75,15 +75,12 @@ export const NewTermForm = ({
   const { draft, setDraft, busy, failed, status, termRef, save } =
     useNewTermEntry(createEntry);
   const term = draft.term.trim();
-  const duplicate = findDuplicate(
-    { targetText: term, example: '' },
-    entries.map((entry) => ({ targetText: entry.targetText, examples: [] })),
-  );
+  const duplicate = termDuplicate(entries, term, null);
   const submittable =
     !busy &&
     term !== '' &&
     draft.definition.trim() !== '' &&
-    duplicate.verdict !== 'exact';
+    !duplicate.blocked;
 
   const submit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -97,16 +94,13 @@ export const NewTermForm = ({
       <TermDefinitionFields
         busy={busy}
         draft={draft}
+        reviewStep="Eintragen"
         setDraft={setDraft}
         suggestDefinition={suggestDefinition}
         termRef={termRef}
       />
-      {duplicate.verdict === 'none' ? null : (
-        <p className="text-sm text-warning-foreground">
-          {duplicate.verdict === 'exact'
-            ? `${quoted(term)} ist schon eingetragen.`
-            : `${quoted(term)} ist schon als ${quoted(duplicate.entry.targetText)} eingetragen.`}
-        </p>
+      {duplicate.hint === null ? null : (
+        <p className="text-sm text-warning-foreground">{duplicate.hint}</p>
       )}
       <div className="flex flex-wrap items-center gap-4">
         <Button disabled={!submittable} type="submit">
