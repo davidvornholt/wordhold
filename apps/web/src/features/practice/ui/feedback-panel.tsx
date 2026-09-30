@@ -219,8 +219,8 @@ export const FeedbackPanel = ({
       {pendingWrong ? (
         <p className="text-muted-foreground text-sm">
           {definition
-            ? 'Steht doch alles drin? „Als richtig werten“ zählt die Karte als schwer.'
-            : 'Vertippt? „Als richtig werten“ zählt die Karte als schwer und speichert deine Antwort nicht als Lösung.'}
+            ? 'Steht doch alles drin? Dann werte die Antwort als richtig. Die Karte kommt etwas früher wieder als nach einer auf Anhieb richtigen Antwort.'
+            : 'Vertippt? Dann werte die Antwort als richtig. Die Karte kommt etwas früher wieder als nach einer auf Anhieb richtigen Antwort, und deine Antwort wird nicht als weitere Lösung gespeichert.'}
         </p>
       ) : null}
     </div>

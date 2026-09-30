@@ -94,7 +94,9 @@ describe('answer feedback', () => {
   });
 
   it('explains the regrading option only while a wrong answer is pending', () => {
-    expect(render('waitor', pendingWrongResult)).toContain('nicht als Lösung');
-    expect(render('server')).not.toContain('nicht als Lösung');
+    expect(render('waitor', pendingWrongResult)).toContain(
+      'nicht als weitere Lösung',
+    );
+    expect(render('server')).not.toContain('nicht als weitere Lösung');
   });
 });
