@@ -1,5 +1,4 @@
-import { type ReactNode, useId, useState } from 'react';
-import { Button } from '../../../shared/ui/button';
+import { type ReactNode, useId } from 'react';
 import { cardClass, cardListClass } from '../../../shared/ui/surface-styles';
 import { maximumBookNameLength } from '../../../shared/vocabulary/book-name';
 import {
@@ -8,7 +7,7 @@ import {
   unitsByBook,
 } from '../schemas/course-units';
 import { bookTaken } from './book-names';
-import { NameForm } from './name-form';
+import { NameDialog } from './name-dialog';
 import { bookSummary } from './progress-status';
 
 type BookSectionProps = {
@@ -25,10 +24,7 @@ export const BookSection = ({
   renderBookLink,
   createBook,
 }: BookSectionProps) => {
-  const [adding, setAdding] = useState(false);
-  const [creating, setCreating] = useState(false);
   const headingId = useId();
-  const formId = useId();
   const groups = unitsByBook(outline.books, outline.units);
   return (
     <section aria-labelledby={headingId} className="flex flex-col gap-3">
@@ -36,37 +32,25 @@ export const BookSection = ({
         <h2 className="font-display text-xl" id={headingId}>
           Bücher
         </h2>
-        <Button
-          aria-controls={adding ? formId : undefined}
-          aria-expanded={adding}
-          onClick={() => setAdding((current) => !current)}
-          variant="quiet"
-        >
-          {adding ? 'Abbrechen' : 'Neues Buch'}
-        </Button>
+        <NameDialog
+          conflict={(name) => bookTaken(outline.books, name)}
+          description={
+            <p className="text-muted-foreground">
+              Vokabeln kommen direkt ins Buch. Einheiten legst du auf der Seite
+              des Buchs an, wenn es welche hat.
+            </p>
+          }
+          failedMessage="Das Buch wurde nicht angelegt. Versuche es noch einmal."
+          label="Name des Buchs"
+          maxLength={maximumBookNameLength}
+          openLabel="Neues Buch"
+          pendingLabel="Buch wird angelegt …"
+          placeholder="z. B. Harry Potter"
+          save={createBook}
+          submitLabel="Buch anlegen"
+          title="Neues Buch"
+        />
       </div>
-      {adding ? (
-        <div className={`${cardClass} flex flex-col gap-2`} id={formId}>
-          <NameForm
-            busy={creating}
-            conflict={(name) => bookTaken(outline.books, name)}
-            failedStatus="Das Buch wurde nicht angelegt. Versuche es noch einmal."
-            label="Name des Buchs"
-            maxLength={maximumBookNameLength}
-            onBusyChange={setCreating}
-            pendingStatus="Buch wird angelegt …"
-            placeholder="z. B. Harry Potter"
-            save={createBook}
-            savedStatus={(name) => `${name} angelegt.`}
-            statusLabel="Status beim Anlegen eines Buchs"
-            submitLabel="Buch anlegen"
-          />
-          <p className="text-muted-foreground text-sm">
-            Vokabeln kommen direkt ins Buch. Einheiten legst du auf der Seite
-            des Buchs an, wenn es welche hat.
-          </p>
-        </div>
-      ) : null}
       {groups.length === 0 ? (
         <p className={`${cardClass} text-sm`}>
           Für diese Sprache gibt es noch keine Bücher. Lege eines an, zum

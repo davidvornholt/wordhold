@@ -1,6 +1,7 @@
-import { type SubmitEvent, useState } from 'react';
+import { useState } from 'react';
 import { Button } from '../../../shared/ui/button';
 import { fieldClass } from '../../../shared/ui/field-styles';
+import { useNameDraft } from './use-name-draft';
 
 type NameFormProps = {
   readonly label: string;
@@ -8,19 +9,17 @@ type NameFormProps = {
   readonly submitLabel: string;
   readonly statusLabel: string;
   readonly maxLength: number;
-  readonly initialName?: string;
-  readonly busy: boolean;
+  readonly initialName: string;
   // The message to show instead of saving, or null when the name is free.
   readonly conflict: (name: string) => string | null;
   readonly save: (name: string) => Promise<void>;
   readonly pendingStatus: string;
   readonly savedStatus: (name: string) => string;
   readonly failedStatus: string;
-  readonly onBusyChange: (busy: boolean) => void;
 };
 
-// One text field that saves a name: a new unit, a new book, or a book's new
-// name. The field is cleared after adding and kept after renaming.
+// A settings page's one text field for a new name. The saved name stays in
+// the field.
 export const NameForm = ({
   label,
   placeholder,
@@ -28,45 +27,26 @@ export const NameForm = ({
   statusLabel,
   maxLength,
   initialName,
-  busy,
   conflict,
   save,
   pendingStatus,
   savedStatus,
   failedStatus,
-  onBusyChange,
 }: NameFormProps) => {
-  const [name, setName] = useState(initialName ?? '');
-  const [failed, setFailed] = useState(false);
-  const [status, setStatus] = useState('');
-  const trimmed = name.trim();
-  const unchanged = initialName !== undefined && trimmed === initialName;
-
-  const submit = async (event: SubmitEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (busy || trimmed === '' || unchanged) {
-      return;
-    }
-    const conflictMessage = conflict(trimmed);
-    if (conflictMessage !== null) {
-      setFailed(true);
-      setStatus(conflictMessage);
-      return;
-    }
-    onBusyChange(true);
-    setFailed(false);
-    setStatus(pendingStatus);
-    try {
-      await save(trimmed);
-      setName(initialName === undefined ? '' : trimmed);
-      setStatus(savedStatus(trimmed));
-    } catch {
-      setFailed(true);
-      setStatus(failedStatus);
-    } finally {
-      onBusyChange(false);
-    }
-  };
+  const [saved, setSaved] = useState<string | null>(null);
+  const { name, setName, busy, error, submittable, submit } = useNameDraft({
+    initialName,
+    conflict,
+    save,
+    failedMessage: failedStatus,
+    onSaved: setSaved,
+  });
+  let status = saved === null ? '' : savedStatus(saved);
+  if (busy) {
+    status = pendingStatus;
+  } else if (error !== null) {
+    status = error;
+  }
 
   return (
     <>
@@ -84,7 +64,7 @@ export const NameForm = ({
         </label>
         <Button
           className="self-end"
-          disabled={busy || trimmed === '' || unchanged}
+          disabled={!submittable}
           type="submit"
           variant="outline"
         >
@@ -93,7 +73,9 @@ export const NameForm = ({
       </form>
       <output
         aria-label={statusLabel}
-        className={failed ? 'text-destructive text-sm' : 'text-sm'}
+        className={
+          !busy && error !== null ? 'text-destructive text-sm' : 'text-sm'
+        }
       >
         {status}
       </output>

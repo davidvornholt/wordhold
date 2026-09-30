@@ -18,7 +18,7 @@ import {
   reorderCourseUnits,
 } from '../../../../../features/courses/services/server-fns';
 import { EditableBook } from '../../../../../features/courses/ui/book-editor';
-import { placeLinkClass } from '../../../../../features/courses/ui/place-link-styles';
+import { listItemNameClass } from '../../../../../features/courses/ui/list-item-name-styles';
 import { bookSummary } from '../../../../../features/courses/ui/progress-status';
 import { UnitList } from '../../../../../features/courses/ui/unit-list';
 import { getCourse } from '../../../../../features/import/server-fns';
@@ -56,7 +56,7 @@ const BookUnits = ({ courseId, units, offerImport }: BookUnitsProps) => {
       <UnitList
         renderUnitLink={(unit) => (
           <Link
-            className={placeLinkClass}
+            className={listItemNameClass}
             params={{ courseId, unitId: unit.id }}
             to="/courses/$courseId/units/$unitId"
           >

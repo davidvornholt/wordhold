@@ -1,5 +1,5 @@
 import { type ReactNode, useId, useState } from 'react';
-import { fieldCompactClass } from '../../../shared/ui/field-styles';
+import { fieldOnCardClass } from '../../../shared/ui/field-styles';
 import type { CourseOutline } from '../schemas/course-units';
 import {
   lastUsedWordPlace,
@@ -28,7 +28,7 @@ export const QuickEntry = ({ outline, renderForm }: QuickEntryProps) => {
       <label className="flex flex-col gap-1 text-sm" htmlFor={placeId}>
         Eintragen in
         <select
-          className={fieldCompactClass}
+          className={fieldOnCardClass}
           id={placeId}
           onChange={(event) => setValue(event.target.value)}
           value={value}

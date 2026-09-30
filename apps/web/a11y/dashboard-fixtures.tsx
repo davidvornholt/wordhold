@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { HomeShell } from '../src/app/home-shell';
-import { NewSubjectForm } from '../src/features/courses/ui/new-subject-form';
+import { NewSubjectDialog } from '../src/features/courses/ui/new-subject-dialog';
 import {
   busiestCourse,
   type CourseStats,
@@ -289,11 +289,10 @@ const FixtureCourses = ({
           : action('Erste Seite fotografieren', 'import')
       }
       stats={stats}
-      subjectForm={
-        <NewSubjectForm
+      newSubjectAction={
+        <NewSubjectDialog
           courses={courses}
           createSubject={async () => navigateToFixture('terms-course-empty')}
-          hasSubjects={subjects}
         />
       }
     />

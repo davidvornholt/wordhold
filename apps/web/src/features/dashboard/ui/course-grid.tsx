@@ -18,10 +18,10 @@ type CourseGridProps = {
   // language, typing a term for a subject.
   readonly renderStartAction: (course: Course) => ReactNode;
   // Adds a subject; languages come with the app.
-  readonly subjectForm: ReactNode;
+  readonly newSubjectAction: ReactNode;
 };
 
-type CourseListProps = Omit<CourseGridProps, 'subjectForm'>;
+type CourseListProps = Omit<CourseGridProps, 'newSubjectAction'>;
 
 const CourseList = ({
   courses,
@@ -48,7 +48,7 @@ const CourseList = ({
 
 export const CourseGrid = ({
   courses,
-  subjectForm,
+  newSubjectAction,
   ...list
 }: CourseGridProps) => {
   const languages = courses.filter((course) => course.kind === 'language');
@@ -71,7 +71,7 @@ export const CourseGrid = ({
         ) : (
           <CourseList courses={subjects} {...list} />
         )}
-        {subjectForm}
+        <div>{newSubjectAction}</div>
       </section>
     </>
   );

@@ -6,7 +6,7 @@ import {
 } from '@tanstack/react-router';
 import { HomeShell } from '../app/home-shell';
 import { createSubject } from '../features/courses/services/server-fns';
-import { NewSubjectForm } from '../features/courses/ui/new-subject-form';
+import { NewSubjectDialog } from '../features/courses/ui/new-subject-dialog';
 import {
   busiestCourse,
   type DashboardData,
@@ -145,8 +145,8 @@ const Courses = ({ dashboard, courses }: CoursesProps) => {
         )
       }
       stats={dashboard.perCourse}
-      subjectForm={
-        <NewSubjectForm
+      newSubjectAction={
+        <NewSubjectDialog
           courses={courses}
           createSubject={async (name) => {
             const { courseId } = await createSubject({
@@ -157,7 +157,6 @@ const Courses = ({ dashboard, courses }: CoursesProps) => {
               params: { courseId },
             });
           }}
-          hasSubjects={courses.some((course) => course.kind === 'terms')}
         />
       }
     />

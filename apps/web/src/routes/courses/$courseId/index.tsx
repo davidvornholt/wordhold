@@ -14,7 +14,7 @@ import {
   listCourseVocabulary,
 } from '../../../features/courses/services/server-fns';
 import { CourseOverview } from '../../../features/courses/ui/course-overview';
-import { placeLinkClass } from '../../../features/courses/ui/place-link-styles';
+import { listItemNameClass } from '../../../features/courses/ui/list-item-name-styles';
 import { QuickEntry } from '../../../features/courses/ui/quick-entry';
 import { SubjectOverview } from '../../../features/courses/ui/subject-overview';
 import type { CourseStats } from '../../../features/dashboard/schemas/dashboard-models';
@@ -185,7 +185,7 @@ const LanguageScreen = ({
       }
       renderBookLink={(book) => (
         <Link
-          className={placeLinkClass}
+          className={listItemNameClass}
           params={{ courseId: course.id, bookId: book.id }}
           to="/courses/$courseId/books/$bookId"
         >

@@ -1,6 +1,5 @@
 import { type SubmitEvent, useEffect, useRef, useState } from 'react';
 import { Button } from '../../../shared/ui/button';
-import { cardCompactClass } from '../../../shared/ui/surface-styles';
 import { findDuplicate } from '../../../shared/vocabulary/entry-identity';
 import type { VocabularyEntry } from '../schemas/course-units';
 import {
@@ -94,7 +93,7 @@ export const NewTermForm = ({
   };
 
   return (
-    <form className={`${cardCompactClass} grid gap-3`} onSubmit={submit}>
+    <form className="grid gap-3" onSubmit={submit}>
       <TermDefinitionFields
         busy={busy}
         draft={draft}

@@ -1,6 +1,7 @@
-import { type ReactNode, useId, useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { countNoun } from '../../../shared/format/count';
 import { Button } from '../../../shared/ui/button';
+import { Dialog } from '../../../shared/ui/dialog';
 import {
   type CourseBook,
   type CourseOutline,
@@ -55,7 +56,6 @@ export const CourseOverview = ({
   createBook,
 }: CourseOverviewProps) => {
   const [adding, setAdding] = useState(false);
-  const quickEntryId = useId();
   const totals = courseTotals(outline);
   return (
     <>
@@ -68,21 +68,26 @@ export const CourseOverview = ({
         )}
         {quickEntry === null ? null : (
           <Button
-            aria-controls={adding ? quickEntryId : undefined}
-            aria-expanded={adding}
-            onClick={() => setAdding((current) => !current)}
+            aria-haspopup="dialog"
+            onClick={() => setAdding(true)}
             variant="quiet"
           >
-            {adding ? 'Fertig' : 'Vokabel eintragen'}
+            Vokabel eintragen
           </Button>
         )}
         {vocabularyAction}
         {importAction}
         {settingsAction}
       </div>
-      {adding && quickEntry !== null ? (
-        <div id={quickEntryId}>{quickEntry}</div>
-      ) : null}
+      <Dialog
+        closable={true}
+        closeLabel="Fertig"
+        onClose={() => setAdding(false)}
+        open={adding && quickEntry !== null}
+        title="Vokabel eintragen"
+      >
+        {quickEntry}
+      </Dialog>
       <BookSection
         createBook={createBook}
         outline={outline}

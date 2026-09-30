@@ -25,6 +25,10 @@ test('units can be added and reordered with the drag keyboard controls', async (
     .locator('[aria-live="assertive"]')
     .filter({ hasText: 'Unit 3 – Holidays' });
   await expect(dragAnnouncement).toContainText('Position 1');
+  // The keyboard sensor listens for arrow keys only from a timeout set when
+  // the drag starts, and a key sent sooner scrolls the page instead. A
+  // timeout set now runs after that one.
+  await page.evaluate(() => new Promise((resolve) => setTimeout(resolve)));
   await firstHandle.press('ArrowDown');
   await expect(dragAnnouncement).toContainText('Position 2');
   await firstHandle.press('Space');
@@ -35,10 +39,25 @@ test('units can be added and reordered with the drag keyboard controls', async (
     page.getByRole('button', { name: firstUnitDragHandlePattern }),
   ).toHaveAccessibleName(secondOfThreePattern);
 
-  await page.getByLabel('Neue Einheit').fill('Unit 6 – At the airport');
-  await page.getByRole('button', { name: 'Einheit hinzufügen' }).click();
+  const newUnit = page.getByRole('button', { name: 'Neue Einheit' });
+  await newUnit.click();
+  const dialog = page.getByRole('dialog', {
+    name: 'Neue Einheit in Green Line 3',
+  });
+  const unitName = dialog.getByLabel('Name der Einheit');
+  await expect(unitName).toBeFocused();
+  assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
+  await unitName.fill('Unit 3 – Holidays');
+  await dialog.getByRole('button', { name: 'Einheit hinzufügen' }).click();
+  await expect(dialog.getByRole('alert')).toHaveText(
+    'Die Einheit "Unit 3 – Holidays" gibt es in diesem Buch bereits.',
+  );
+  await unitName.fill('Unit 6 – At the airport');
+  await dialog.getByRole('button', { name: 'Einheit hinzufügen' }).click();
+  await expect(dialog).toBeHidden();
+  await expect(newUnit).toBeFocused();
   await expect(
-    page.getByLabel('Status beim Hinzufügen einer Einheit zu Green Line 3'),
+    page.getByLabel('Status der Einheiten in Green Line 3'),
   ).toHaveText('Unit 6 – At the airport hinzugefügt.');
   await expect(
     page.getByText('Unit 6 – At the airport', { exact: true }),
@@ -94,16 +113,32 @@ test('units can be reordered by dragging their handles', async ({ page }) => {
 test('a book is renamed on its own page', async ({ page }) => {
   await page.goto('/?state=book');
   await page.getByRole('button', { name: 'Bearbeiten' }).click();
-  const name = page.getByLabel('Buchname');
-  const status = page.getByLabel('Status beim Umbenennen des Buchs');
+  const rename = page.getByRole('button', { name: 'Buch umbenennen' });
+  const dialog = page.getByRole('dialog', { name: 'Buch umbenennen' });
+  const name = dialog.getByLabel('Buchname');
 
+  await rename.click();
+  await expect(name).toBeFocused();
+  await name.fill('Green Line 4');
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+  await expect(rename).toBeFocused();
+
+  await rename.click();
+  await expect(name).toHaveValue('Green Line 3');
   await name.fill('Green Line 2');
-  await page.getByRole('button', { name: 'Umbenennen' }).click();
-  await expect(status).toHaveText('Das Buch "Green Line 2" gibt es bereits.');
+  await dialog.getByRole('button', { name: 'Umbenennen' }).click();
+  await expect(dialog.getByRole('alert')).toHaveText(
+    'Das Buch "Green Line 2" gibt es bereits.',
+  );
+  assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
 
   await name.fill('Green Line 3 (Workbook)');
-  await page.getByRole('button', { name: 'Umbenennen' }).click();
-  await expect(status).toHaveText('Umbenannt in Green Line 3 (Workbook).');
+  await dialog.getByRole('button', { name: 'Umbenennen' }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.getByLabel('Status beim Umbenennen des Buchs')).toHaveText(
+    'Umbenannt in Green Line 3 (Workbook).',
+  );
   await expect(
     page.getByRole('heading', { level: 1, name: 'Green Line 3 (Workbook)' }),
   ).toBeVisible();
@@ -124,8 +159,12 @@ test('a book without units offers units as an option while editing', async ({
   await expect(page.getByLabel('burglar auswählen')).toHaveCount(0);
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
 
-  await page.getByLabel('Neue Einheit').fill('Chapter 1');
-  await page.getByRole('button', { name: 'Einheit hinzufügen' }).click();
+  await page.getByRole('button', { name: 'Neue Einheit' }).click();
+  const dialog = page.getByRole('dialog', {
+    name: 'Neue Einheit in The Hobbit',
+  });
+  await dialog.getByLabel('Name der Einheit').fill('Chapter 1');
+  await dialog.getByRole('button', { name: 'Einheit hinzufügen' }).click();
   await expect(
     page.getByRole('list', { name: 'Einheiten in The Hobbit' }),
   ).toContainText('Chapter 1');
@@ -138,19 +177,21 @@ test('a new book opens its own page, ready for its first words', async ({
   page,
 }) => {
   await page.goto('/?state=course');
-  const toggle = page.getByRole('button', { name: 'Neues Buch' });
-  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-  await toggle.click();
-  const name = page.getByLabel('Name des Buchs');
+  const opener = page.getByRole('button', { name: 'Neues Buch' });
+  await expect(opener).toHaveAttribute('aria-haspopup', 'dialog');
+  await opener.click();
+  const dialog = page.getByRole('dialog', { name: 'Neues Buch' });
+  const name = dialog.getByLabel('Name des Buchs');
+  await expect(name).toBeFocused();
   await name.fill('Green Line 2');
-  await page.getByRole('button', { name: 'Buch anlegen' }).click();
-  await expect(page.getByLabel('Status beim Anlegen eines Buchs')).toHaveText(
+  await dialog.getByRole('button', { name: 'Buch anlegen' }).click();
+  await expect(dialog.getByRole('alert')).toHaveText(
     'Das Buch "Green Line 2" gibt es bereits.',
   );
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
 
   await name.fill('Harry Potter');
-  await page.getByRole('button', { name: 'Buch anlegen' }).click();
+  await dialog.getByRole('button', { name: 'Buch anlegen' }).click();
   await expect(page.locator('body')).toHaveAttribute(
     'data-fixture',
     'book-new',

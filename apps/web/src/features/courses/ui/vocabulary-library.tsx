@@ -7,6 +7,7 @@ import { cardClass } from '../../../shared/ui/surface-styles';
 import { wordLocation } from '../../../shared/vocabulary/book-name';
 import type { VocabularyEntry } from '../schemas/course-units';
 import type { VocabularyFilter } from '../schemas/vocabulary-search';
+import { VocabularyEntryDialog } from './vocabulary-entry-details';
 import { matchesFilter } from './vocabulary-filter-logic';
 import { type PlaceOption, VocabularyFilters } from './vocabulary-filters';
 import { VocabularySelectionBar } from './vocabulary-selection-bar';
@@ -30,8 +31,8 @@ type VocabularyLibraryProps = {
     entryIds: ReadonlyArray<string>,
     intent: 'learn' | 'practice',
   ) => ReactNode;
-  // The example sentence of a word, or the key points of a term, shown with
-  // the entry's schedule.
+  // The example sentence of a word, or the key points of a term, shown in
+  // the entry's details.
   readonly renderEntryDetail: (entry: VocabularyEntry) => ReactNode;
 };
 
@@ -78,6 +79,29 @@ const placeOptions = (
 const isInPlace = (entry: VocabularyEntry, placeId: string): boolean =>
   entry.bookId === placeId || entry.unitId === placeId;
 
+const matchesQuery = (entry: VocabularyEntry, query: string): boolean => {
+  const needle = query.trim().toLocaleLowerCase('de-DE');
+  return (
+    needle === '' ||
+    entry.targetText.toLocaleLowerCase('de-DE').includes(needle) ||
+    entry.nativeText.toLocaleLowerCase('de-DE').includes(needle)
+  );
+};
+
+// Entries with no enabled direction learned yet are learned first; any other
+// selection is practised.
+const intentFor = (
+  selectedEntries: ReadonlyArray<VocabularyEntry>,
+  enabledDirections: ReadonlyArray<AnswerDirection>,
+): 'learn' | 'practice' =>
+  selectedEntries.every((entry) =>
+    entry.cards
+      .filter((card) => enabledDirections.includes(card.direction))
+      .every((card) => card.introducedAt === null),
+  )
+    ? 'learn'
+    : 'practice';
+
 export const VocabularyLibrary = ({
   enabledDirections,
   entries,
@@ -98,23 +122,19 @@ export const VocabularyLibrary = ({
       : 'all',
   );
   const [selected, setSelected] = useState<ReadonlyArray<string>>([]);
+  const [openEntryId, setOpenEntryId] = useState<string | null>(null);
+  // Looked up among all entries, so a filter change behind the dialog cannot
+  // take its entry away.
+  const openEntry = entries.find((entry) => entry.id === openEntryId);
   const now = useMemo(() => new Date(), []);
-  const visible = entries.filter((entry) => {
-    const needle = query.trim().toLocaleLowerCase('de-DE');
-    const matchesQuery =
-      needle === '' ||
-      entry.targetText.toLocaleLowerCase('de-DE').includes(needle) ||
-      entry.nativeText.toLocaleLowerCase('de-DE').includes(needle);
-    const matchesPlace =
-      layout === 'flat' ||
-      placeFilter === 'all' ||
-      isInPlace(entry, placeFilter);
-    return (
-      matchesQuery &&
-      matchesPlace &&
-      matchesFilter(entry, enabledDirections, filter, now)
-    );
-  });
+  const visible = entries.filter(
+    (entry) =>
+      matchesQuery(entry, query) &&
+      (layout === 'flat' ||
+        placeFilter === 'all' ||
+        isInPlace(entry, placeFilter)) &&
+      matchesFilter(entry, enabledDirections, filter, now),
+  );
   const sections: ReadonlyArray<VocabularySection> =
     layout === 'by-place'
       ? placeSections(visible)
@@ -131,16 +151,10 @@ export const VocabularyLibrary = ({
         ? [...current, ...entryIds.filter((id) => !current.includes(id))]
         : current.filter((id) => !entryIds.includes(id)),
     );
-  const selectedEntries = entries.filter((entry) =>
-    selected.includes(entry.id),
+  const selectionIntent = intentFor(
+    entries.filter((entry) => selected.includes(entry.id)),
+    enabledDirections,
   );
-  const selectionIntent = selectedEntries.every((entry) =>
-    entry.cards
-      .filter((card) => enabledDirections.includes(card.direction))
-      .every((card) => card.introducedAt === null),
-  )
-    ? 'learn'
-    : 'practice';
 
   return (
     <div className="flex flex-col gap-5">
@@ -188,9 +202,9 @@ export const VocabularyLibrary = ({
             label={label}
             labelStyle={layout === 'by-place' ? 'heading' : 'plain'}
             now={now}
+            onOpenEntry={setOpenEntryId}
             onToggleAll={toggleAll}
             onToggleEntry={toggleEntry}
-            renderEntryDetail={renderEntryDetail}
             selected={selected}
             subject={subject}
           />
@@ -201,6 +215,14 @@ export const VocabularyLibrary = ({
           {renderStudyAction(selected, selectionIntent)}
         </VocabularySelectionBar>
       )}
+      <VocabularyEntryDialog
+        enabledDirections={enabledDirections}
+        entry={openEntry}
+        now={now}
+        onClose={() => setOpenEntryId(null)}
+        renderDetail={renderEntryDetail}
+        subject={subject}
+      />
     </div>
   );
 };

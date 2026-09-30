@@ -4,7 +4,7 @@ import type {
   CourseUnit,
 } from '../src/features/courses/schemas/course-units';
 import { EditableBook } from '../src/features/courses/ui/book-editor';
-import { placeLinkClass } from '../src/features/courses/ui/place-link-styles';
+import { listItemNameClass } from '../src/features/courses/ui/list-item-name-styles';
 import { bookSummary } from '../src/features/courses/ui/progress-status';
 import { UnitList } from '../src/features/courses/ui/unit-list';
 import { PageLayout } from '../src/shared/ui/page-layout';
@@ -117,7 +117,7 @@ export const BookFixture = ({ kind }: BookFixtureProps) => {
             <UnitList
               renderUnitLink={(unit) => (
                 <button
-                  className={placeLinkClass}
+                  className={listItemNameClass}
                   onClick={() => navigateToFixture('unit')}
                   type="button"
                 >

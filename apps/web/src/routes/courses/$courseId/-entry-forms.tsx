@@ -105,27 +105,42 @@ type CourseEntryDetailProps = {
   readonly entry: VocabularyEntry;
 };
 
-// What an entry's schedule shows besides its dates: a word's example
-// sentence, generated on request, or a term's key points.
-export const CourseEntryDetail = ({ course, entry }: CourseEntryDetailProps) =>
-  course.kind === 'terms' ? (
+// What an entry's details show besides its schedule: a word's example
+// sentence, generated on request, or a term's key points. Each change
+// refreshes the loader, so the details show it when they are opened again.
+export const CourseEntryDetail = ({
+  course,
+  entry,
+}: CourseEntryDetailProps) => {
+  const router = useRouter();
+  const refreshed = async <Result,>(change: Promise<Result>) => {
+    const result = await change;
+    await router.invalidate();
+    return result;
+  };
+  return course.kind === 'terms' ? (
     <TermKeyPoints
       derive={() =>
-        deriveTermKeyPoints({
-          data: { courseId: course.id, entryId: entry.id },
-        })
+        refreshed(
+          deriveTermKeyPoints({
+            data: { courseId: course.id, entryId: entry.id },
+          }),
+        )
       }
       keyPoints={entry.keyPoints}
       update={(keyPoints) =>
-        updateTermKeyPoints({
-          data: { courseId: course.id, entryId: entry.id, keyPoints },
-        })
+        refreshed(
+          updateTermKeyPoints({
+            data: { courseId: course.id, entryId: entry.id, keyPoints },
+          }),
+        )
       }
     />
   ) : (
     <VocabularyExample
       entry={entry}
-      generate={() => generateVocabularyExample({ data: entry.id })}
+      generate={() => refreshed(generateVocabularyExample({ data: entry.id }))}
       targetLanguage={course.targetLanguage}
     />
   );
+};

@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'bun:test';
 import { renderToStaticMarkup } from 'react-dom/server';
 import type { VocabularyEntry } from '../schemas/course-units';
-import { VocabularySchedule } from './vocabulary-schedule';
+import { ScheduleItems } from './vocabulary-schedule';
+import { scheduleSummary } from './vocabulary-schedule-status';
 
 const entry: VocabularyEntry = {
   id: '00000000-0000-0000-0000-000000000001',
@@ -34,20 +35,30 @@ const entry: VocabularyEntry = {
   ],
 };
 
+const now = new Date('2026-08-29T10:00:00Z');
+
 describe('vocabulary schedule', () => {
   it('keeps a disabled direction out of the compact regular-plan status', () => {
+    const summary = scheduleSummary(entry, ['to_target'], now);
+
+    expect(summary).toContain('31.08.2026 um 10:00');
+    expect(summary).not.toContain('Richtungen fällig');
+  });
+
+  it('lists a disabled direction as outside the plan', () => {
     const markup = renderToStaticMarkup(
-      <VocabularySchedule
-        enabledDirections={['to_target']}
-        entry={entry}
-        detail={null}
-        now={new Date('2026-08-29T10:00:00Z')}
-        subject={{ kind: 'language', targetLanguage: 'en' }}
-      />,
+      <dl>
+        <ScheduleItems
+          enabledDirections={['to_target']}
+          entry={entry}
+          now={now}
+          subject={{ kind: 'language', targetLanguage: 'en' }}
+        />
+      </dl>,
     );
 
     expect(markup).toContain('31.08.2026 um 10:00');
-    expect(markup).not.toContain('Richtungen fällig');
     expect(markup).toContain('Nicht im Lernplan');
+    expect(markup).toContain('1× nicht gewusst');
   });
 });

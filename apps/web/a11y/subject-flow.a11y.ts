@@ -13,20 +13,29 @@ const definitionField = (page: Page) =>
   page.getByRole('textbox', { exact: true, name: 'Definition' });
 const entryStatus = (page: Page) =>
   page.getByRole('status', { name: 'Status beim Eintragen eines Begriffs' });
+const openEntryDialog = (page: Page) =>
+  page.getByRole('button', { name: 'Begriff eintragen' }).click();
 const suggestedDefinition =
   'Eine Reaktion, bei der ein Stoff Elektronen abgibt.';
 
-test('a new subject is named on the overview and opens ready for its first term', async ({
+test('a new subject is named in a dialog and leads with its first term', async ({
   page,
 }) => {
   await page.goto('/?state=dashboard');
-  const name = page.getByRole('textbox', { name: 'Name des Fachs' });
-  const create = page.getByRole('button', { name: 'Fach anlegen' });
+  const opener = page.getByRole('button', { name: 'Neues Fach' });
+  await expect(opener).toHaveAttribute('aria-haspopup', 'dialog');
+  await opener.click();
+  const dialog = page.getByRole('dialog', { name: 'Neues Fach' });
+  const name = dialog.getByRole('textbox', { name: 'Name des Fachs' });
+  const create = dialog.getByRole('button', { name: 'Fach anlegen' });
+  await expect(name).toBeFocused();
+  await expect(create).toBeDisabled();
   await name.fill('english a2');
   await create.click();
-  await expect(
-    page.getByRole('status', { name: 'Status beim Anlegen eines Fachs' }),
-  ).toHaveText('„english a2“ gibt es auf der Übersicht bereits.');
+  await expect(dialog.getByRole('alert')).toHaveText(
+    '„english a2“ gibt es auf der Übersicht bereits.',
+  );
+  assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
 
   await name.fill('Chemie');
   await create.click();
@@ -34,8 +43,8 @@ test('a new subject is named on the overview and opens ready for its first term'
     'data-fixture',
     'terms-course-empty',
   );
-  await expect(termField(page)).toBeFocused();
   await expect(page.getByText('Noch keine Begriffe')).toBeVisible();
+  await expect(termField(page)).toHaveCount(0);
   await expect(
     page.getByRole('combobox', { name: 'Eintragen in' }),
   ).toHaveCount(0);
@@ -45,12 +54,17 @@ test('a new subject is named on the overview and opens ready for its first term'
     page.getByRole('button', { name: 'Seite fotografieren' }),
   ).toHaveCount(0);
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
+
+  await openEntryDialog(page);
+  await expect(termField(page)).toBeFocused();
+  assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
 });
 
 test('a term takes a suggested definition and the next term follows', async ({
   page,
 }) => {
   await page.goto('/?state=terms-course-empty');
+  await openEntryDialog(page);
   const submit = page.getByRole('button', { exact: true, name: 'Eintragen' });
   await expect(
     page.getByRole('button', { name: 'Definition vorschlagen' }),
@@ -86,12 +100,24 @@ test('a term takes a suggested definition and the next term follows', async ({
     page.getByText('„Oxidation“ ist schon eingetragen.'),
   ).toBeVisible();
   await expect(submit).toBeDisabled();
+
+  await page
+    .getByRole('dialog', { name: 'Begriff eintragen' })
+    .getByRole('button', { name: 'Fertig' })
+    .click();
+  await expect(
+    page.getByRole('button', { name: 'Begriff eintragen' }),
+  ).toBeFocused();
+  await expect(
+    page.getByRole('button', { exact: true, name: 'Oxidation' }),
+  ).toBeVisible();
 });
 
 test('a definition is offered only while the field is empty', async ({
   page,
 }) => {
   await page.goto('/?state=terms-course-empty');
+  await openEntryDialog(page);
   await termField(page).fill('Reduktion');
   await definitionField(page).fill('Aufnahme von Elektronen.');
   await expect(
@@ -103,8 +129,17 @@ test('key points are derived, corrected and checked before they are saved', asyn
   page,
 }) => {
   await page.goto('/?state=terms-course');
-  const enzym = page.getByRole('listitem').filter({ hasText: 'Enzym' });
-  await enzym.locator('summary').click();
+  const open = page.getByRole('button', { exact: true, name: 'Enzym' });
+  await expect(open).toHaveAttribute('aria-haspopup', 'dialog');
+  await open.click();
+  const enzym = page.getByRole('dialog', { name: 'Enzym' });
+  await expect(enzym).toContainText('Begriff → Definition');
+  await expect(
+    enzym.getByText(
+      'Ein Protein, das als Biokatalysator eine bestimmte Reaktion im Körper beschleunigt.',
+    ),
+  ).toBeVisible();
+  assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
   await expect(
     enzym.getByText(
       'Noch keine Kernpunkte. Sie werden spätestens bei der ersten Abfrage bestimmt.',
@@ -141,6 +176,15 @@ test('key points are derived, corrected and checked before they are saved', asyn
     enzym.getByRole('button', { name: 'Kernpunkte bearbeiten' }),
   ).toBeVisible();
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
+
+  await enzym.getByRole('button', { name: 'Schließen' }).click();
+  await expect(enzym).toBeHidden();
+  await expect(open).toBeFocused();
+  await open.click();
+  await expect(points.getByRole('listitem')).toHaveText([
+    'Ein Enzym ist ein Protein.',
+    'Es beschleunigt eine Reaktion.',
+  ]);
 });
 
 test('a subject is renamed from its settings, apart from the other courses', async ({
