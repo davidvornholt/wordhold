@@ -9,13 +9,16 @@ import { TtsError } from '@wordhold/ai/tts/error';
 import type { CourseKind } from '@wordhold/db/schema/courses';
 import { Effect, Either, Layer } from 'effect';
 import { Storage, type StorageShape } from '../../../shared/storage/server';
+import { StorageError } from '../../../shared/storage/storage-error';
 import {
   CourseBookNotFoundError,
   CourseKindMismatchError,
   CourseSettingsNotFoundError,
   CourseUnitNotFoundError,
   VocabularyEntryConflictError,
+  VocabularyEntryNotFoundError,
 } from '../errors/courses-errors';
+import type { UpdateVocabularyEntryResult } from './vocabulary-entry-mutations';
 import { VocabularyEntryService } from './vocabulary-entry-service';
 import {
   type CreateVocabularyEntryResult,
@@ -35,8 +38,19 @@ const input = {
   nativeText: 'die Erinnerung',
 };
 
+const correction = {
+  courseId,
+  entryId,
+  targetText: 'le souvenir',
+  nativeText: 'die Erinnerung',
+};
+
+const staleFiles = ['audio/old-word.mp3', 'audio/old-example.mp3'];
+
 type Stubs = {
   readonly createResult?: CreateVocabularyEntryResult;
+  readonly updateResult?: UpdateVocabularyEntryResult;
+  readonly removeFails?: boolean;
   readonly courseKnown?: boolean;
   readonly courseKind?: CourseKind;
   readonly ttsFails?: boolean;
@@ -49,6 +63,12 @@ const runService = <A, E>(
   ) => Effect.Effect<A, E, VocabularyEntryService>,
   {
     createResult = { kind: 'created', entryId },
+    updateResult = {
+      kind: 'updated',
+      wordChanged: true,
+      unreferencedFiles: staleFiles,
+    },
+    removeFails = false,
     courseKnown = true,
     courseKind = 'language',
     ttsFails = false,
@@ -56,12 +76,26 @@ const runService = <A, E>(
   }: Stubs = {},
 ) => {
   const written: Array<string> = [];
+  const removed: Array<string> = [];
   const audioReferences: Array<string> = [];
   const wordRequests: Array<WordTranslationRequest> = [];
   const storage: StorageShape = {
     read: () => Effect.succeed(new Uint8Array()),
     reconcile: () => Effect.succeed([]),
-    remove: () => Effect.void,
+    // Recorded when the removal runs, not when it is built.
+    remove: (path) =>
+      Effect.suspend(() => {
+        removed.push(path);
+        return removeFails
+          ? Effect.fail(
+              new StorageError({
+                operation: 'remove file',
+                cause: 'down',
+                message: 'down',
+              }),
+            )
+          : Effect.void;
+      }),
     write: (path) => {
       written.push(path);
       return Effect.void;
@@ -87,6 +121,8 @@ const runService = <A, E>(
             : undefined,
         ),
       create: () => Effect.succeed(createResult),
+      update: () => Effect.succeed(updateResult),
+      remove: () => Effect.succeed({ unreferencedFiles: staleFiles }),
       storeAudio: (_entryId, profile) => {
         audioReferences.push(profile);
         return Effect.void;
@@ -133,6 +169,7 @@ const runService = <A, E>(
       Effect.map((result) => ({
         result,
         written,
+        removed,
         audioReferences,
         wordRequests,
       })),
@@ -266,12 +303,71 @@ describe('VocabularyEntryService', () => {
   });
 });
 
+describe('VocabularyEntryService corrections', () => {
+  it('replaces the pronunciation of a corrected word', async () => {
+    const { result, written, removed } = await runService((service) =>
+      service.update(correction),
+    );
+    expect(Either.getOrNull(result)).toEqual({ audio: 'generated' });
+    expect(removed).toEqual(staleFiles);
+    expect(written).toHaveLength(1);
+  });
+
+  it('keeps the pronunciation when the word itself is unchanged', async () => {
+    const { result, written } = await runService(
+      (service) => service.update(correction),
+      {
+        updateResult: {
+          kind: 'updated',
+          wordChanged: false,
+          unreferencedFiles: [],
+        },
+      },
+    );
+    expect(Either.getOrNull(result)).toEqual({ audio: 'kept' });
+    expect(written).toHaveLength(0);
+  });
+
+  it('names a repeated word and a vanished entry as typed failures', async () => {
+    const duplicate = await runService(
+      (service) => service.update(correction),
+      {
+        updateResult: { kind: 'duplicate', location: 'Green Line 3 · Unit 1' },
+      },
+    );
+    expect(
+      duplicate.result._tag === 'Left' ? duplicate.result.left : undefined,
+    ).toBeInstanceOf(VocabularyEntryConflictError);
+    const missing = await runService((service) => service.update(correction), {
+      updateResult: { kind: 'entry-missing' },
+    });
+    expect(
+      missing.result._tag === 'Left' ? missing.result.left : undefined,
+    ).toBeInstanceOf(VocabularyEntryNotFoundError);
+    expect([...duplicate.removed, ...missing.removed]).toEqual([]);
+  });
+
+  it('deletes the entry even when its files cannot be removed', async () => {
+    const deleted = await runService((service) =>
+      service.remove({ courseId, entryId }),
+    );
+    expect(deleted.result._tag).toBe('Right');
+    expect(deleted.removed).toEqual(staleFiles);
+    const stuck = await runService(
+      (service) => service.remove({ courseId, entryId }),
+      { removeFails: true },
+    );
+    expect(stuck.result._tag).toBe('Right');
+  });
+});
+
 describe('VocabularyEntryService for a subject', () => {
   it('refuses words, examples and translations for a subject', async () => {
     const attempts: ReadonlyArray<
       (service: VocabularyEntryService) => Effect.Effect<unknown, unknown>
     > = [
       (service) => service.create(input),
+      (service) => service.update(correction),
       (service) =>
         service.generateExample({
           courseId,

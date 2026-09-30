@@ -1,11 +1,12 @@
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
-import { type ReactNode, useId, useState } from 'react';
+import { type ReactNode, useId, useRef, useState } from 'react';
 import type { CourseSubject } from '../../../shared/directions';
 import { countNoun } from '../../../shared/format/count';
 import { Button } from '../../../shared/ui/button';
 import { Dialog } from '../../../shared/ui/dialog';
 import type { VocabularyEntry } from '../schemas/course-units';
 import type { VocabularyFilter } from '../schemas/vocabulary-search';
+import type { CourseEntryActions } from './entry-actions';
 import { VocabularyLibrary } from './vocabulary-library';
 
 type SubjectOverviewProps = {
@@ -23,7 +24,7 @@ type SubjectOverviewProps = {
     entryIds: ReadonlyArray<string>,
     intent: 'learn' | 'practice',
   ) => ReactNode;
-  readonly renderEntryDetail: (entry: VocabularyEntry) => ReactNode;
+  readonly entryActions: CourseEntryActions;
 };
 
 const subjectSummary = (entries: ReadonlyArray<VocabularyEntry>): string => {
@@ -53,11 +54,14 @@ export const SubjectOverview = ({
   entryForm,
   settingsAction,
   renderStudyAction,
-  renderEntryDetail,
+  entryActions,
 }: SubjectOverviewProps) => {
   const isEmpty = entries.length === 0;
   const [adding, setAdding] = useState(false);
   const headingId = useId();
+  // Takes focus once a term is deleted, since its row is gone, and counts
+  // the terms that are left.
+  const summaryRef = useRef<HTMLParagraphElement>(null);
   let nextStep: ReactNode = primaryAction;
   if (primaryAction === null && !isEmpty) {
     nextStep = (
@@ -66,7 +70,13 @@ export const SubjectOverview = ({
   }
   return (
     <>
-      <p className="text-muted-foreground text-sm">{subjectSummary(entries)}</p>
+      <p
+        className="text-muted-foreground text-sm focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
+        ref={summaryRef}
+        tabIndex={-1}
+      >
+        {subjectSummary(entries)}
+      </p>
       <div className="flex flex-wrap items-center gap-4">
         {nextStep}
         <Button
@@ -96,8 +106,9 @@ export const SubjectOverview = ({
             enabledDirections={enabledDirections}
             entries={entries}
             initialFilter={initialFilter}
+            entryActions={entryActions}
+            fallbackFocusRef={summaryRef}
             layout="flat"
-            renderEntryDetail={renderEntryDetail}
             renderStudyAction={renderStudyAction}
             subject={subject}
           />

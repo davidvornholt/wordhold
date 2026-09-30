@@ -5,6 +5,7 @@ import { Effect, Layer, ManagedRuntime } from 'effect';
 import { definitionLayer } from '../../../shared/ai/runtime';
 import { requireSession } from '../../../shared/auth/require-session';
 import { authRuntime } from '../../../shared/auth/runtime';
+import { decodeUpdateTermEntry } from '../schemas/entry-changes';
 import {
   decodeCreateTermEntry,
   decodeTermDefinitionSuggestion,
@@ -31,6 +32,15 @@ export const createTermEntry = createServerFn({ method: 'POST' })
     await authRuntime.runPromise(requireSession(getRequest().headers));
     return termRuntime.runPromise(
       Effect.flatMap(TermEntryService, (service) => service.create(data)),
+    );
+  });
+
+export const updateTermEntry = createServerFn({ method: 'POST' })
+  .validator(decodeUpdateTermEntry)
+  .handler(async ({ data }) => {
+    await authRuntime.runPromise(requireSession(getRequest().headers));
+    return termRuntime.runPromise(
+      Effect.flatMap(TermEntryService, (service) => service.update(data)),
     );
   });
 

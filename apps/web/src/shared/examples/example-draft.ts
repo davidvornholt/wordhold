@@ -10,6 +10,9 @@ export type ExampleDraft = {
   // Set once "Beispielsatz erzeugen" wrote the sentence, so the stored
   // example records the source and the review says the sentence is AI text.
   readonly exampleGenerated?: true;
+  // Set while the sentence and its translation are the ones already saved
+  // with the entry, which the learner reviewed when they were stored.
+  readonly exampleStored?: true;
 };
 
 // The draft state a generation request was made from. A response only

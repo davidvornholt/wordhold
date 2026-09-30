@@ -12,6 +12,7 @@ import {
   type StoredTerm,
   type TermCourse,
   TermEntryStore,
+  type UpdateTermEntryResult,
 } from './term-entry-store';
 
 const courseId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
@@ -22,6 +23,7 @@ const derived = ['senkt die Aktivierungsenergie'];
 
 type Stubs = {
   readonly createResult?: CreateTermEntryResult;
+  readonly updateResult?: UpdateTermEntryResult;
   // Null for a course that does not exist.
   readonly course?: TermCourse | null;
   readonly stored?: StoredTerm;
@@ -37,6 +39,7 @@ const runService = <A, E>(
   use: (service: TermEntryService) => Effect.Effect<A, E>,
   {
     createResult = { kind: 'created', entryId },
+    updateResult = { kind: 'updated', definitionChanged: true },
     course = subject,
     stored = { term: 'Katalysator', definition, keyPoints: null },
     termKnown = true,
@@ -51,6 +54,7 @@ const runService = <A, E>(
     Layer.succeed(TermEntryStore, {
       readCourse: () => Effect.succeed(course ?? undefined),
       create: () => Effect.succeed(createResult),
+      update: () => Effect.succeed(updateResult),
       readTerm: () => Effect.succeed(termKnown ? stored : undefined),
       saveDerivedKeyPoints: () => Effect.succeed(saved),
       setKeyPoints: () => Effect.succeed(termKnown),
@@ -197,5 +201,27 @@ describe('TermEntryService', () => {
       { termKnown: false },
     );
     expect(failureTag(missing.result)).toBe('VocabularyEntryNotFoundError');
+  });
+});
+
+describe('TermEntryService edits', () => {
+  it('reports a changed definition and names each refused edit', async () => {
+    const edit = { ...input, entryId };
+    const edited = await runService((service) => service.update(edit));
+    expect(edited.result).toEqual(
+      expect.objectContaining({ right: { definitionChanged: true } }),
+    );
+    const cases = [
+      [{ kind: 'duplicate' }, 'VocabularyEntryConflictError'],
+      [{ kind: 'term-missing' }, 'VocabularyEntryNotFoundError'],
+    ] as const;
+    const refused = await Promise.all(
+      cases.map(([updateResult]) =>
+        runService((service) => service.update(edit), { updateResult }),
+      ),
+    );
+    expect(refused.map(({ result }) => failureTag(result))).toEqual(
+      cases.map(([, tag]) => tag),
+    );
   });
 });

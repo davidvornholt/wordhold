@@ -16,7 +16,8 @@ export const emptyDraft: ExampleDraft = {
   exampleNativeText: '',
 };
 
-const exampleOf = (draft: ExampleDraft): NewExampleData | undefined => {
+// The example as it is stored: none without a sentence.
+export const exampleOf = (draft: ExampleDraft): NewExampleData | undefined => {
   const sentence = draft.example.trim();
   if (sentence === '') {
     return undefined;

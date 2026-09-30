@@ -7,6 +7,7 @@ import {
   VocabularyEntryConflictError,
   VocabularyEntryNotFoundError,
 } from '../errors/courses-errors';
+import type { UpdateTermEntryData } from '../schemas/entry-changes';
 import type {
   CreateTermEntryData,
   TermDefinitionSuggestionData,
@@ -26,6 +27,12 @@ const notTerms = new CourseKindMismatchError({
 const termMissing = new VocabularyEntryNotFoundError({
   message: 'Diesen Begriff gibt es nicht mehr. Lade die Seite neu.',
 });
+
+const duplicateTerm = (term: string) =>
+  new VocabularyEntryConflictError({
+    targetText: term,
+    message: `„${term}“ ist in diesem Fach schon eingetragen.`,
+  });
 
 const suggestionFailed = new TermAssistError({
   message:
@@ -53,12 +60,26 @@ export class TermEntryService extends Effect.Service<TermEntryService>()(
             case 'not-terms':
               return yield* notTerms;
             case 'duplicate':
-              return yield* new VocabularyEntryConflictError({
-                targetText: input.term,
-                message: `„${input.term}“ ist in diesem Fach schon eingetragen.`,
-              });
+              return yield* duplicateTerm(input.term);
             case 'created':
               return { entryId: result.entryId };
+            default:
+              return result satisfies never;
+          }
+        });
+
+      // A changed definition has no key points until they are derived again,
+      // which the caller starts as after a new term.
+      const update = (input: UpdateTermEntryData) =>
+        Effect.gen(function* () {
+          const result = yield* store.update(input);
+          switch (result.kind) {
+            case 'term-missing':
+              return yield* termMissing;
+            case 'duplicate':
+              return yield* duplicateTerm(input.term);
+            case 'updated':
+              return { definitionChanged: result.definitionChanged };
             default:
               return result satisfies never;
           }
@@ -126,6 +147,7 @@ export class TermEntryService extends Effect.Service<TermEntryService>()(
 
       return {
         create,
+        update,
         suggestDefinition,
         deriveKeyPoints,
         updateKeyPoints,

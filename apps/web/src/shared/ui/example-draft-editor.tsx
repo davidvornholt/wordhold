@@ -81,6 +81,26 @@ const Field = ({ variant, label, hint, placeholder, children }: FieldProps) => {
   );
 };
 
+// Only AI text needs the learner's review; a saved sentence had it.
+const ReviewHint = ({
+  entry,
+  reviewStep,
+}: {
+  readonly entry: ExampleDraft;
+  readonly reviewStep: string;
+}) => {
+  if (entry.exampleStored === true) {
+    return null;
+  }
+  return (
+    <p className="text-muted-foreground text-xs">
+      {entry.exampleGenerated === true
+        ? `Mit KI erzeugt. Prüfe Satz und Übersetzung vor dem ${reviewStep}.`
+        : `Übersetzung mit KI erzeugt. Prüfe sie vor dem ${reviewStep}.`}
+    </p>
+  );
+};
+
 // The example sentence and its German translation, side by side and both
 // editable. A typed sentence gets its translation from the page reading
 // or, failing that, from a translation requested here; rewriting the
@@ -147,6 +167,7 @@ export const ExampleDraftEditor = <T extends ExampleDraft>({
                 ...entry,
                 example: event.target.value,
                 exampleNativeText: '',
+                exampleStored: undefined,
               })
             }
             value={entry.example}
@@ -189,11 +210,7 @@ export const ExampleDraftEditor = <T extends ExampleDraft>({
           {generating ? 'Satz wird erzeugt …' : 'Beispielsatz erzeugen'}
         </Button>
       ) : (
-        <p className="text-muted-foreground text-xs">
-          {entry.exampleGenerated === true
-            ? `Mit KI erzeugt. Prüfe Satz und Übersetzung vor dem ${reviewStep}.`
-            : `Übersetzung mit KI erzeugt. Prüfe sie vor dem ${reviewStep}.`}
-        </p>
+        <ReviewHint entry={entry} reviewStep={reviewStep} />
       )}
       {generationError ? (
         <p className="text-destructive text-sm" role="alert">
