@@ -2,6 +2,7 @@ import type { VocabularyEntry } from '../src/features/courses/schemas/course-uni
 import { VocabularyLibrary } from '../src/features/courses/ui/vocabulary-library';
 import { Button } from '../src/shared/ui/button';
 import { PageLayout } from '../src/shared/ui/page-layout';
+import { englishSubject } from './course-fixture-data';
 import { fixtureBackControl } from './fixture-controls';
 import { navigateToFixture } from './fixture-state';
 
@@ -104,7 +105,7 @@ export const VocabularyFixture = ({
         </Button>
       )}
       scope="course"
-      targetLanguage="en"
+      subject={englishSubject}
     />
   </PageLayout>
 );

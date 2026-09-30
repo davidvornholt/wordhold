@@ -55,6 +55,7 @@ const passFromRows = (
       nativeText: item.nativeText,
       hasAudio: item.hasAudio,
       example: null,
+      keyPoints: item.keyPoints,
       textbookAnswers:
         byCard
           .get(`${item.entryId}:${item.direction}`)
@@ -94,12 +95,13 @@ export class LearningStore extends Context.Tag('wordhold/LearningStore')<
           {
             items: sql<ItemRow>`
               select "cardId", direction, "entryId", "targetText",
-                "nativeText", "hasAudio", "directionTotal"
+                "nativeText", "keyPoints", "hasAudio", "directionTotal"
               from (
                 select c.id as "cardId", c.direction,
                   e.id as "entryId",
                   e.target_text as "targetText",
                   e.native_text as "nativeText",
+                  e.key_points as "keyPoints",
                   exists(
                     select 1 from entry_audio a where a.entry_id = e.id
                   ) as "hasAudio",

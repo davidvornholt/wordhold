@@ -1,5 +1,5 @@
 import { Database } from '@wordhold/db/client';
-import type { LanguageCode } from '@wordhold/db/schema/courses';
+import type { CourseKind, LanguageCode } from '@wordhold/db/schema/courses';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import type { AnswerSource } from '@wordhold/db/schema/entries';
 import type { cards, ReviewMode } from '@wordhold/db/schema/practice';
@@ -22,6 +22,8 @@ import { advancesSchedule } from './schedule-guard';
 type SubmissionRow = typeof cards.$inferSelect & {
   readonly targetText: string;
   readonly nativeText: string;
+  readonly keyPoints: ReadonlyArray<string> | null;
+  readonly courseKind: CourseKind;
   readonly targetLanguage: LanguageCode;
 };
 
@@ -31,6 +33,38 @@ const databaseError = (operation: string, cause: unknown) =>
     cause,
     message: 'Die Antwort konnte nicht gespeichert werden.',
   });
+
+// The read is a separate statement: an update that waited for another
+// request's write skips the row, and only a later statement sees what
+// that request stored.
+const saveKeyPointsWith =
+  (sql: Database) =>
+  (entryId: string, definition: string, keyPoints: ReadonlyArray<string>) =>
+    Effect.gen(function* () {
+      const [updated] = yield* sql<{
+        readonly keyPoints: ReadonlyArray<string>;
+      }>`
+        update entries
+        set key_points = array(
+          select jsonb_array_elements_text(${JSON.stringify(keyPoints)}::jsonb)
+        )
+        where id = ${entryId} and native_text = ${definition}
+          and key_points is null
+        returning key_points as "keyPoints"
+      `;
+      if (updated !== undefined) {
+        return updated.keyPoints;
+      }
+      const [current] = yield* sql<{
+        readonly keyPoints: ReadonlyArray<string> | null;
+      }>`
+        select key_points as "keyPoints" from entries
+        where id = ${entryId} and native_text = ${definition}
+      `;
+      return current?.keyPoints ?? null;
+    }).pipe(
+      Effect.mapError((cause) => databaseError('save key points', cause)),
+    );
 
 export class PracticeReviewStore extends Context.Tag(
   'wordhold/PracticeReviewStore',
@@ -46,6 +80,14 @@ export class PracticeReviewStore extends Context.Tag(
       entryId: string,
       direction: AnswerDirection,
     ) => Effect.Effect<ReadonlyArray<AcceptedAnswer>, PracticeDatabaseError>;
+    // Stores key points derived during grading, unless the definition changed
+    // or key points were set in the meantime. Returns the key points the
+    // entry now has, or null when the definition changed.
+    readonly saveKeyPoints: (
+      entryId: string,
+      definition: string,
+      keyPoints: ReadonlyArray<string>,
+    ) => Effect.Effect<ReadonlyArray<string> | null, PracticeDatabaseError>;
     readonly commit: (
       input: PersistReviewInput,
     ) => Effect.Effect<
@@ -70,7 +112,8 @@ export class PracticeReviewStore extends Context.Tag(
             c.learning_steps as "learningSteps",
             c.last_reviewed_at as "lastReviewedAt", c.revision,
             e.target_text as "targetText",
-            e.native_text as "nativeText", co.target_language as "targetLanguage"
+            e.native_text as "nativeText", e.key_points as "keyPoints",
+            co.kind as "courseKind", co.target_language as "targetLanguage"
           from cards c
           join entries e on e.id = c.entry_id
           join courses co on co.id = e.course_id
@@ -90,7 +133,9 @@ export class PracticeReviewStore extends Context.Tag(
                     id: row.entryId,
                     targetText: row.targetText,
                     nativeText: row.nativeText,
+                    keyPoints: row.keyPoints,
                   },
+                  courseKind: row.courseKind,
                   targetLanguage: row.targetLanguage,
                 };
           }),
@@ -113,6 +158,7 @@ export class PracticeReviewStore extends Context.Tag(
             databaseError('load accepted answers', cause),
           ),
         );
+      const saveKeyPoints = saveKeyPointsWith(sql);
       const commit = (input: PersistReviewInput) => {
         const next = applyRating(input.card, input.rating, input.reviewedAt);
         const mapCommitError = (cause: unknown) =>
@@ -204,7 +250,12 @@ export class PracticeReviewStore extends Context.Tag(
           })),
         );
       };
-      return { findSubmission, listAcceptedAnswers, commit } as const;
+      return {
+        findSubmission,
+        listAcceptedAnswers,
+        saveKeyPoints,
+        commit,
+      } as const;
     }),
   );
 }

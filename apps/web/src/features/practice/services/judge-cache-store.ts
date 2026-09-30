@@ -1,11 +1,11 @@
+import { DefinitionVerdict } from '@wordhold/ai/definition/schema';
 import { JudgeVerdict } from '@wordhold/ai/judge/schema';
 import { Database } from '@wordhold/db/client';
 import { Context, Effect, Layer, Schema } from 'effect';
 import { PracticeDatabaseError } from '../errors/practice-errors';
-import type {
-  CachedJudgeVerdict,
-  JudgeCacheKey,
-} from '../schemas/practice-models';
+import type { CachedVerdict, JudgeCacheKey } from '../schemas/practice-models';
+
+const StoredVerdict = Schema.Union(JudgeVerdict, DefinitionVerdict);
 
 type CacheRow = {
   readonly assessmentId: string;
@@ -31,10 +31,10 @@ export class JudgeCacheStore extends Context.Tag('wordhold/JudgeCacheStore')<
     readonly read: (
       key: JudgeCacheKey,
       selector: JudgeCacheSelector,
-    ) => Effect.Effect<CachedJudgeVerdict | undefined, PracticeDatabaseError>;
+    ) => Effect.Effect<CachedVerdict | undefined, PracticeDatabaseError>;
     readonly write: (
       key: JudgeCacheKey,
-      value: CachedJudgeVerdict,
+      value: CachedVerdict,
     ) => Effect.Effect<void, PracticeDatabaseError>;
     readonly withCriticalSection: <A, E, R>(
       key: JudgeCacheKey,
@@ -62,7 +62,7 @@ export class JudgeCacheStore extends Context.Tag('wordhold/JudgeCacheStore')<
             if (row === undefined) {
               return Effect.succeed(undefined);
             }
-            return Schema.decodeUnknown(JudgeVerdict)(row.verdict).pipe(
+            return Schema.decodeUnknown(StoredVerdict)(row.verdict).pipe(
               Effect.map((verdict) => ({
                 assessmentId: row.assessmentId,
                 verdict,
@@ -79,7 +79,7 @@ export class JudgeCacheStore extends Context.Tag('wordhold/JudgeCacheStore')<
               : databaseError('read judge cache', cause),
           ),
         );
-      const write = (key: JudgeCacheKey, value: CachedJudgeVerdict) =>
+      const write = (key: JudgeCacheKey, value: CachedVerdict) =>
         sql`
           insert into judge_cache
             (id, entry_id, direction, normalized_answer, verdict, model)

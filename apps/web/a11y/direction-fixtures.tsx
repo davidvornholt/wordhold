@@ -7,6 +7,7 @@ import { countNoun } from '../src/shared/format/count';
 import { Button } from '../src/shared/ui/button';
 import { FocusLayout } from '../src/shared/ui/focus-layout';
 import { PageLayout } from '../src/shared/ui/page-layout';
+import { englishSubject } from './course-fixture-data';
 import { fixtureBackControl } from './fixture-controls';
 import { navigateToFixture } from './fixture-state';
 
@@ -34,7 +35,7 @@ export const PracticeStartFixture = ({
       itemNoun={{ singular: 'Karte', plural: 'Karten' }}
       options={sessionOptions(
         ['to_target', 'to_native'],
-        'Englisch',
+        englishSubject,
         partial ? partialPracticeCounts : completePracticeCounts,
       )}
       preferenceKey="english-a2:practice"
@@ -60,7 +61,7 @@ export const CourseSettingsFixture = () => (
     <DirectionSettings
       initial={['to_target', 'to_native']}
       save={() => Promise.resolve()}
-      targetLabel="Englisch"
+      subject={englishSubject}
     />
   </PageLayout>
 );
@@ -97,7 +98,7 @@ export const DeferredCourseSettingsFixture = () => {
       <DirectionSettings
         initial={['to_target', 'to_native']}
         save={save}
-        targetLabel="Englisch"
+        subject={englishSubject}
       />
       <output aria-label="Direction save calls">{calls}</output>
       <output aria-label="Direction save snapshot">{snapshot}</output>

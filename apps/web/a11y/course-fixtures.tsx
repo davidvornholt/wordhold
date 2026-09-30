@@ -17,6 +17,7 @@ import {
   currentBook,
   dueUnit,
   emptyUnit,
+  englishSubject,
   type FixtureWord,
   fixtureEntry,
   mixedUnit,
@@ -157,19 +158,19 @@ export const FixtureDirectionPlan = ({
     progress={progress}
     renderLearnAction={(direction, variant) =>
       fixtureControl(
-        `${countNoun(itemsInNextSection(direction.unintroduced), 'Vokabel', 'Vokabeln')} kennenlernen${variant === 'primary' ? ` · ${directionLabel(direction.direction, targetLabel)}` : ''}`,
+        `${countNoun(itemsInNextSection(direction.unintroduced), 'Vokabel', 'Vokabeln')} kennenlernen${variant === 'primary' ? ` · ${directionLabel(direction.direction, englishSubject)}` : ''}`,
         'learn',
         variant,
       )
     }
     renderScheduledAction={(direction, variant) =>
       fixtureControl(
-        `${countNoun(direction.due + direction.firstReviews, 'Karte', 'Karten')} üben · ${directionLabel(direction.direction, targetLabel)}`,
+        `${countNoun(direction.due + direction.firstReviews, 'Karte', 'Karten')} üben · ${directionLabel(direction.direction, englishSubject)}`,
         'practice',
         variant,
       )
     }
-    targetLabel={targetLabel}
+    subject={englishSubject}
   />
 );
 

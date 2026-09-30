@@ -19,6 +19,8 @@ export type PrepareExamples = (input: {
   readonly data: Array<string>;
 }) => Promise<ReadonlyArray<PreparedEntryExample>>;
 
+export const withoutExamples: PrepareExamples = () => Promise.resolve([]);
+
 export const preparedExamplesByEntry = (
   prepared: ReadonlyArray<PreparedEntryExample>,
 ): ReadonlyMap<string, PreparedExampleSentence | null> =>

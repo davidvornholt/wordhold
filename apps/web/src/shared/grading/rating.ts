@@ -1,13 +1,23 @@
+import {
+  type DefinitionVerdictData,
+  isDefinitionCorrect,
+} from '@wordhold/ai/definition/schema';
 import type { JudgeVerdictData } from '@wordhold/ai/judge/schema';
 
 export type DerivedRating = 1 | 2 | 3 | 4;
 
 // Grading outcome as stored in reviews.grading. A learner correction records
 // the rejected assessment it replaced without teaching the matcher that the
-// submitted typo is valid.
+// submitted typo is valid. A definition keeps the key points it was graded
+// against, since the learner can edit them later.
 export type AssessedGradeOutcome =
   | { readonly method: 'exact' }
-  | { readonly method: 'judge'; readonly verdict: JudgeVerdictData };
+  | { readonly method: 'judge'; readonly verdict: JudgeVerdictData }
+  | {
+      readonly method: 'definition';
+      readonly keyPoints: ReadonlyArray<string>;
+      readonly verdict: DefinitionVerdictData;
+    };
 
 export type GradeOutcome =
   | AssessedGradeOutcome
@@ -28,10 +38,21 @@ export const ratings = {
   easy: 4,
 } as const satisfies Record<string, DerivedRating>;
 
-export const isCorrect = (outcome: GradeOutcome): boolean =>
-  outcome.method === 'exact' ||
-  outcome.method === 'learner-correction' ||
-  (outcome.method === 'judge' && outcome.verdict.correct);
+export const isCorrect = (outcome: GradeOutcome): boolean => {
+  switch (outcome.method) {
+    case 'exact':
+    case 'learner-correction':
+      return true;
+    case 'judge':
+      return outcome.verdict.correct;
+    case 'definition':
+      return isDefinitionCorrect(outcome.verdict);
+    case 'skip':
+      return false;
+    default:
+      return outcome satisfies never;
+  }
+};
 
 export const deriveRating = (
   outcome: GradeOutcome,
@@ -47,6 +68,11 @@ export const deriveRating = (
     return elapsedMs !== null && elapsedMs < fastAnswerMs
       ? ratings.easy
       : ratings.good;
+  }
+  // A definition has no degrees of correct: every key point is there or the
+  // answer is wrong. The time taken says little about a written sentence.
+  if (outcome.method === 'definition') {
+    return isDefinitionCorrect(outcome.verdict) ? ratings.good : ratings.again;
   }
   const { verdict } = outcome;
   if (!verdict.correct) {

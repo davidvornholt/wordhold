@@ -24,7 +24,6 @@ import {
 import { SessionRunner } from '../../../features/practice/ui/session-runner';
 import { SessionStart } from '../../../features/practice/ui/session-start';
 import { countNoun } from '../../../shared/format/count';
-import { germanLabels } from '../../../shared/languages';
 import { readyCardsInNextSection } from '../../../shared/practice/session-policy';
 import { focusShell } from '../../../shared/routing/shell';
 import { itemsInNextSection } from '../../../shared/session/section-policy';
@@ -45,7 +44,6 @@ const PracticeScreen = () => {
   const router = useRouter();
   const navigating = useRouterState({ select: (state) => state.isLoading });
   const [sessionGeneration, setSessionGeneration] = useState(0);
-  const targetLabel = germanLabels[course.targetLanguage];
   const pageBackControl =
     place === undefined ? (
       <BackLink to="/">Übersicht</BackLink>
@@ -77,7 +75,7 @@ const PracticeScreen = () => {
       {session === null ? (
         <SessionStart
           itemNoun={{ singular: 'Karte', plural: 'Karten' }}
-          options={sessionOptions(directions, targetLabel, [
+          options={sessionOptions(directions, course, [
             ...availability.directions,
             { direction: 'both', ready: availability.ready },
           ])}
@@ -122,9 +120,8 @@ const PracticeScreen = () => {
           mode="scheduled"
           prepareExamples={prepareVocabularyExamples}
           session={session}
+          subject={course}
           submit={submitAnswer}
-          targetLabel={targetLabel}
-          targetLanguage={course.targetLanguage}
         />
       )}
     </FocusLayout>

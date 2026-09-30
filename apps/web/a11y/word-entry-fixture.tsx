@@ -5,7 +5,7 @@ import type {
 } from '../src/features/courses/schemas/course-units';
 import { PlaceVocabulary } from '../src/features/courses/ui/place-vocabulary';
 import { Button } from '../src/shared/ui/button';
-import { targetLabel } from './course-fixture-data';
+import { englishSubject } from './course-fixture-data';
 import { fixtureControl } from './fixture-controls';
 import { navigateToFixture } from './fixture-state';
 import {
@@ -54,8 +54,7 @@ export const FixturePlaceVocabulary = ({
         </Button>
       )}
       suggestTranslation={fixtureTranslation}
-      targetLabel={targetLabel}
-      targetLanguage="en"
+      subject={englishSubject}
       translateDraftExample={fixtureExampleTranslation}
     />
   );

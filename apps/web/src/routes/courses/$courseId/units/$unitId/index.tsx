@@ -6,7 +6,6 @@ import {
 } from '../../../../../features/courses/services/server-fns';
 import { progressSummary } from '../../../../../features/courses/ui/progress-status';
 import { getCourse } from '../../../../../features/import/server-fns';
-import { germanLabels } from '../../../../../shared/languages';
 import { BackLink } from '../../../../../shared/ui/back-link';
 import { PageLayout } from '../../../../../shared/ui/page-layout';
 import { cardClass } from '../../../../../shared/ui/surface-styles';
@@ -41,7 +40,6 @@ const UnitScreen = () => {
     );
   }
 
-  const targetLabel = germanLabels[course.targetLanguage];
   const place = { bookId: unit.bookId, unitId: unit.id };
   return (
     <PageLayout backControl={backControl} title={unit.name}>
@@ -55,7 +53,7 @@ const UnitScreen = () => {
           courseId={course.id}
           place={place}
           progress={unit}
-          targetLabel={targetLabel}
+          subject={course}
         />
       )}
       <PlaceWords
@@ -64,8 +62,7 @@ const UnitScreen = () => {
         enabledDirections={directions}
         entries={unitEntries}
         place={place}
-        targetLabel={targetLabel}
-        targetLanguage={course.targetLanguage}
+        subject={course}
       />
     </PageLayout>
   );

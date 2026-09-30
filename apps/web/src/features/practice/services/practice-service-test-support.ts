@@ -3,6 +3,7 @@ import { Effect, Layer } from 'effect';
 import { PracticeJudgeError } from '../errors/practice-errors';
 import type { SubmissionRecord } from '../schemas/practice-models';
 import type { SubmitPayloadData } from '../schemas/submission-schema';
+import { DefinitionGrader } from './definition-grader';
 import { JudgeCacheStore } from './judge-cache-store';
 import { PracticeJudge } from './practice-judge';
 import { PracticeService } from './practice-service';
@@ -32,8 +33,10 @@ export const testSubmission: SubmissionRecord = {
     id: testCard.entryId,
     targetText: 'correct',
     nativeText: 'richtig',
+    keyPoints: null,
   },
   targetLanguage: 'en',
+  courseKind: 'language',
 };
 
 export const persistedReview = {
@@ -47,6 +50,15 @@ export const persistedReview = {
 
 export const unavailableJudge = (cause: string) =>
   Effect.fail(new PracticeJudgeError({ cause, message: 'judge unavailable' }));
+
+export const testGrader = (
+  grader: Partial<Omit<DefinitionGrader['Type'], 'model'>> = {},
+): DefinitionGrader['Type'] => ({
+  model: 'vertex:test-model',
+  judge: () => unavailableJudge('definition judge must not run'),
+  keyPoints: () => unavailableJudge('key points must not be derived'),
+  ...grader,
+});
 
 export const testJudge = (
   judge: PracticeJudge['Type']['judge'],
@@ -79,6 +91,7 @@ export const runSubmitPayload = (
   reviewStore: PracticeReviewStore['Type'],
   judge: PracticeJudge['Type'],
   payload: SubmitPayloadData,
+  grader = testGrader(),
 ) =>
   Effect.runPromise(
     Effect.flatMap(PracticeService, (service) => service.submit(payload)).pipe(
@@ -90,6 +103,7 @@ export const runSubmitPayload = (
               cacheStore,
               Layer.succeed(PracticeReviewStore, reviewStore),
               Layer.succeed(PracticeJudge, judge),
+              Layer.succeed(DefinitionGrader, grader),
             ),
           ),
         ),

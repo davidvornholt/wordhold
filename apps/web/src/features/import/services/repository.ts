@@ -1,5 +1,5 @@
 import type { ExtractionResult } from '@wordhold/ai/extraction';
-import type { LanguageCode } from '@wordhold/db/schema/courses';
+import type { CourseKind, LanguageCode } from '@wordhold/db/schema/courses';
 import { Context, type Effect } from 'effect';
 import type { BookNotFoundError } from '../errors/book-not-found-error';
 import type { DuplicateEntryError } from '../errors/duplicate-entry-error';
@@ -13,6 +13,7 @@ import type { PageReviewOrder } from './page-review-order';
 export type Course = {
   readonly id: string;
   readonly name: string;
+  readonly kind: CourseKind;
   readonly targetLanguage: LanguageCode;
   readonly nativeLanguage: LanguageCode;
   readonly createdAt: Date;

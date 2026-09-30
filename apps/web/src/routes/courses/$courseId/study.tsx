@@ -7,8 +7,8 @@ import { submitAnswer } from '../../../features/practice/services/server-fns';
 import { sessionOptions } from '../../../features/practice/services/session-options';
 import { SessionRunner } from '../../../features/practice/ui/session-runner';
 import { SessionStart } from '../../../features/practice/ui/session-start';
+import { courseNouns } from '../../../shared/directions';
 import { countNoun } from '../../../shared/format/count';
-import { germanLabels } from '../../../shared/languages';
 import { focusShell } from '../../../shared/routing/shell';
 import { ActionLink } from '../../../shared/ui/action-link';
 import { BackLink } from '../../../shared/ui/back-link';
@@ -60,7 +60,7 @@ const StudyScreen = () => {
     selection,
     session,
   } = Route.useLoaderData();
-  const targetLabel = germanLabels[course.targetLanguage];
+  const nouns = courseNouns(course);
   const navigating = useRouterState({ select: (state) => state.isLoading });
   const backControl =
     place === undefined ? (
@@ -69,7 +69,7 @@ const StudyScreen = () => {
         search={{ filter: 'all' }}
         to="/courses/$courseId/vocabulary"
       >
-        Vokabelliste
+        {nouns.list}
       </BackLink>
     ) : (
       <PlaceBackLink courseId={course.id} selection={place.selection}>
@@ -82,7 +82,8 @@ const StudyScreen = () => {
   if (selection === null) {
     content = (
       <p className={`${cardClass} text-sm`}>
-        Wähle zuerst mindestens eine Vokabel, ein Buch oder eine Einheit aus.
+        Wähle zuerst mindestens {nouns.accusativeOne}, ein Buch oder eine
+        Einheit aus.
       </p>
     );
   } else if (mode === 'learn') {
@@ -92,8 +93,7 @@ const StudyScreen = () => {
         direction={direction}
         pass={learningPass}
         selection={selection}
-        targetLabel={targetLabel}
-        targetLanguage={course.targetLanguage}
+        subject={course}
       />
     );
   } else if (session === null) {
@@ -105,7 +105,7 @@ const StudyScreen = () => {
         </p>
         <SessionStart
           itemNoun={{ singular: 'Karte', plural: 'Karten' }}
-          options={sessionOptions(availableDirections, targetLabel, [
+          options={sessionOptions(availableDirections, course, [
             ...answerDirections.map((candidate) => ({
               direction: candidate,
               ready: preview.items.filter(
@@ -138,14 +138,13 @@ const StudyScreen = () => {
         backControl={
           <StudySelectionControl courseId={course.id} place={place} />
         }
-        emptyMessage="Diese Auswahl enthält keine Vokabeln."
+        emptyMessage={`Diese Auswahl enthält keine ${nouns.plural}.`}
         key={direction}
         mode="drill"
         prepareExamples={prepareVocabularyExamples}
         session={session}
+        subject={course}
         submit={submitAnswer}
-        targetLabel={targetLabel}
-        targetLanguage={course.targetLanguage}
       />
     );
   }

@@ -2,6 +2,7 @@ import type { Database } from '@wordhold/db/client';
 import { Effect } from 'effect';
 import { ImportDatabaseError } from '../errors/import-database-error';
 import { listOrSeedCourses } from './course-seeding';
+import type { Course } from './repository';
 
 const seeds = [
   { name: 'Englisch', targetLanguage: 'en' },
@@ -16,14 +17,11 @@ const failure = (operation: string, cause: unknown) =>
     message: `Database operation failed: ${operation}.`,
   });
 
+const courseColumns = (sql: Database) =>
+  sql`id, name, kind, target_language as "targetLanguage", native_language as "nativeLanguage", created_at as "createdAt"`;
+
 const listCourses = (sql: Database) =>
-  sql<{
-    id: string;
-    name: string;
-    targetLanguage: 'de' | 'en' | 'es' | 'fr';
-    nativeLanguage: 'de' | 'en' | 'es' | 'fr';
-    createdAt: Date;
-  }>`select id, name, target_language as "targetLanguage", native_language as "nativeLanguage", created_at as "createdAt" from courses order by name`;
+  sql<Course>`select ${courseColumns(sql)} from courses order by name`;
 
 export const courseRepositoryLive = (sql: Database) => ({
   listOrSeedCourses: sql
@@ -41,13 +39,7 @@ export const courseRepositoryLive = (sql: Database) => ({
     )
     .pipe(Effect.mapError((cause) => failure('list or seed courses', cause))),
   getCourse: (courseId: string) =>
-    sql<{
-      id: string;
-      name: string;
-      targetLanguage: 'de' | 'en' | 'es' | 'fr';
-      nativeLanguage: 'de' | 'en' | 'es' | 'fr';
-      createdAt: Date;
-    }>`select id, name, target_language as "targetLanguage", native_language as "nativeLanguage", created_at as "createdAt" from courses where id = ${courseId} limit 1`.pipe(
+    sql<Course>`select ${courseColumns(sql)} from courses where id = ${courseId} limit 1`.pipe(
       Effect.map((rows) => rows[0]),
       Effect.mapError((cause) => failure('get course', cause)),
     ),

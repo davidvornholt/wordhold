@@ -105,7 +105,7 @@ test('a rejected typo can be stored as Hard without teaching it as an answer', a
   await page.getByRole('button', { name: 'Prüfen' }).click();
   await expect(page.getByText('Noch nicht sicher')).toBeVisible();
   await expect(
-    page.getByText('nicht als Lösung', { exact: false }),
+    page.getByText('nicht als weitere Lösung', { exact: false }),
   ).toBeVisible();
   await page.getByRole('button', { name: 'Als richtig werten' }).click();
 

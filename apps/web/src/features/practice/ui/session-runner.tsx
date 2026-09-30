@@ -1,7 +1,10 @@
-import type { LanguageCode } from '@wordhold/db/schema/courses';
 import type { ReviewMode } from '@wordhold/db/schema/practice';
 import { type ReactNode, useState } from 'react';
-import type { PrepareExamples } from '../../../shared/examples/example-model';
+import type { CourseSubject } from '../../../shared/directions';
+import {
+  type PrepareExamples,
+  withoutExamples,
+} from '../../../shared/examples/example-model';
 import { countNoun } from '../../../shared/format/count';
 import type { RailOutcome } from '../../../shared/session/rail-outcome';
 import { CardRail } from '../../../shared/ui/card-rail';
@@ -24,8 +27,7 @@ import { useExampleWarmup } from './use-example-warmup';
 
 type SessionRunnerProps = {
   readonly session: PracticeSession;
-  readonly targetLabel: string;
-  readonly targetLanguage: LanguageCode;
+  readonly subject: CourseSubject;
   readonly mode: ReviewMode;
   readonly emptyMessage: string;
   readonly backControl: ReactNode;
@@ -52,8 +54,7 @@ const railDescription = (queue: SessionQueue): string => {
 
 export const SessionRunner = ({
   session,
-  targetLabel,
-  targetLanguage,
+  subject,
   mode,
   emptyMessage,
   backControl,
@@ -63,7 +64,11 @@ export const SessionRunner = ({
 }: SessionRunnerProps) => {
   const [queue, setQueue] = useState(() => createSessionQueue(session.items));
   const [judged, setJudged] = useState<RailOutcome | null>(null);
-  const warmup = useExampleWarmup(session.items, prepareExamples);
+  // A definition has no example sentence to show.
+  const warmup = useExampleWarmup(
+    session.items,
+    subject.kind === 'terms' ? withoutExamples : prepareExamples,
+  );
   const head = queue.pending.at(0);
   const card =
     head === undefined
@@ -111,9 +116,8 @@ export const SessionRunner = ({
         }}
         prepareExamples={warmup.prepareExamples}
         repeated={queue.phase === 'after-round'}
+        subject={subject}
         submit={submit}
-        targetLabel={targetLabel}
-        targetLanguage={targetLanguage}
       />
     );
   }

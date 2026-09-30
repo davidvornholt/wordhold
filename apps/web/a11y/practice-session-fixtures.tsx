@@ -3,6 +3,7 @@ import { useRef, useState } from 'react';
 import type { PracticeSession } from '../src/features/practice/schemas/practice-models';
 import { SessionRunner } from '../src/features/practice/ui/session-runner';
 import { FocusLayout } from '../src/shared/ui/focus-layout';
+import { englishSubject } from './course-fixture-data';
 import { DeferredExampleControls } from './deferred-example-controls';
 import {
   type DeferredExamples,
@@ -113,8 +114,7 @@ export const PracticeSessionFixture = ({
           prepareExamples={prepareExamples}
           session={session}
           submit={(input) => gradeFixtureAnswer(activeItems, input)}
-          targetLabel="Englisch"
-          targetLanguage="en"
+          subject={englishSubject}
         />
       ) : null}
       {deferredExample ? (

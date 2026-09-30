@@ -1,6 +1,7 @@
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import { answerDirections } from '@wordhold/db/schema/directions';
 import {
+  type CourseSubject,
   directionDescription,
   directionLabel,
 } from '../../../shared/directions';
@@ -41,7 +42,7 @@ export const directionsWithCards = (
 // and only when there is more than one direction to mix.
 export const directionOptions = (
   enabled: ReadonlyArray<AnswerDirection>,
-  targetLabel: string,
+  subject: CourseSubject,
   counts: ReadonlyArray<DirectionCount>,
 ): ReadonlyArray<SessionOption> =>
   answerDirections
@@ -51,8 +52,8 @@ export const directionOptions = (
         counts.find((count) => count.direction === direction)?.ready ?? 0;
       return {
         value: direction,
-        label: directionLabel(direction, targetLabel),
-        description: directionDescription(direction, targetLabel),
+        label: directionLabel(direction, subject),
+        description: directionDescription(direction, subject),
         cards,
         availability:
           cards > 0 ? ('available' as const) : ('no_cards' as const),
@@ -61,10 +62,10 @@ export const directionOptions = (
 
 export const sessionOptions = (
   enabled: ReadonlyArray<AnswerDirection>,
-  targetLabel: string,
+  subject: CourseSubject,
   counts: ReadonlyArray<DirectionCount>,
 ): ReadonlyArray<SessionOption> => {
-  const singles = directionOptions(enabled, targetLabel, counts);
+  const singles = directionOptions(enabled, subject, counts);
   const mixedCards =
     counts.find((count) => count.direction === 'both')?.ready ?? 0;
   return singles.length > 1

@@ -1,6 +1,6 @@
-import type { LanguageCode } from '@wordhold/db/schema/courses';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import { useId } from 'react';
+import type { CourseSubject } from '../../../shared/directions';
 import { Checkbox } from '../../../shared/ui/selection-controls';
 import { cardListClass } from '../../../shared/ui/surface-styles';
 import type { VocabularyEntry } from '../schemas/course-units';
@@ -19,7 +19,7 @@ type VocabularyUnitSectionProps = {
   readonly entries: ReadonlyArray<VocabularyEntry>;
   readonly enabledDirections: ReadonlyArray<AnswerDirection>;
   readonly now: Date;
-  readonly targetLanguage: LanguageCode;
+  readonly subject: CourseSubject;
   readonly selected: ReadonlyArray<string>;
   readonly onToggleEntry: (entryId: string) => void;
   readonly generateExample: (
@@ -37,7 +37,7 @@ export const VocabularyUnitSection = ({
   entries,
   enabledDirections,
   now,
-  targetLanguage,
+  subject,
   selected,
   onToggleEntry,
   generateExample,
@@ -78,7 +78,7 @@ export const VocabularyUnitSection = ({
             now={now}
             onToggle={() => onToggleEntry(entry.id)}
             selected={selected.includes(entry.id)}
-            targetLanguage={targetLanguage}
+            subject={subject}
           />
         ))}
       </ul>

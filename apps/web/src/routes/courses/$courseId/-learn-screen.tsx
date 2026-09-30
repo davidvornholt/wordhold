@@ -14,10 +14,9 @@ import {
   resolveAnswerDirection,
 } from '../../../features/practice/services/session-options';
 import { SessionStart } from '../../../features/practice/ui/session-start';
-import { directionLabel } from '../../../shared/directions';
+import { courseNouns, directionLabel } from '../../../shared/directions';
 import { attachPreparedExamples } from '../../../shared/examples/example-model';
 import { countNoun } from '../../../shared/format/count';
-import { germanLabels } from '../../../shared/languages';
 import { itemsInNextSection } from '../../../shared/session/section-policy';
 import type { PlaceSelectionData } from '../../../shared/session/vocabulary-selection';
 import { ActionLink } from '../../../shared/ui/action-link';
@@ -43,8 +42,9 @@ export const loadLearnScreen = async (
     requestedDirection,
     availableDirections,
   );
+  // A definition has no example sentence to show.
   const prepared =
-    direction === undefined
+    direction === undefined || course.kind === 'terms'
       ? []
       : await prepareVocabularyExamples({
           data: pass.items
@@ -70,7 +70,7 @@ export const LearnScreen = ({
   selection,
 }: LearnScreenProps) => {
   const router = useRouter();
-  const targetLabel = germanLabels[course.targetLanguage];
+  const nouns = courseNouns(course);
   const items = pass.items.filter((item) => item.direction === direction);
   const chooseDirection = pass.items.length > 0 && direction === undefined;
   const nextDirection = availableDirections.find(
@@ -96,10 +96,10 @@ export const LearnScreen = ({
   if (chooseDirection) {
     content = (
       <SessionStart
-        itemNoun={{ singular: 'Vokabel', plural: 'Vokabeln' }}
+        itemNoun={nouns}
         options={directionOptions(
           availableDirections,
-          targetLabel,
+          course,
           availableDirections.map((candidate) => ({
             direction: candidate,
             ready: pass.items.filter((item) => item.direction === candidate)
@@ -116,7 +116,8 @@ export const LearnScreen = ({
               onClick={rememberDirection}
               selection={selection}
             >
-              {countNoun(option.cards, 'Vokabel', 'Vokabeln')} kennenlernen
+              {countNoun(option.cards, nouns.singular, nouns.plural)}{' '}
+              kennenlernen
             </PlaceLearnLink>
           )
         }
@@ -136,6 +137,7 @@ export const LearnScreen = ({
         }
         directionLabel={null}
         learned={0}
+        nouns={nouns}
       />
     );
   } else {
@@ -149,10 +151,10 @@ export const LearnScreen = ({
             next={next}
             onContinueCurrent={() => router.invalidate({ sync: true })}
             selection={selection}
-            targetLabel={targetLabel}
+            subject={course}
           />
         }
-        directionLabel={directionLabel(direction, targetLabel)}
+        directionLabel={directionLabel(direction, course)}
         items={items}
         key={`${direction}:${items.map((item) => item.cardId).join('|')}`}
         onIntroduce={async (item) => {
@@ -160,8 +162,7 @@ export const LearnScreen = ({
             data: { courseId: course.id, cardId: item.cardId },
           });
         }}
-        targetLabel={targetLabel}
-        targetLanguage={course.targetLanguage}
+        subject={course}
       />
     );
   }

@@ -2,7 +2,7 @@ import { createServerFn } from '@tanstack/react-start';
 import { getRequest } from '@tanstack/react-start/server';
 import { PgLive } from '@wordhold/db/client';
 import { Effect, Layer, ManagedRuntime } from 'effect';
-import { judgeLayer } from '../../../shared/ai/runtime';
+import { definitionLayer, judgeLayer } from '../../../shared/ai/runtime';
 import { requireSession } from '../../../shared/auth/require-session';
 import { authRuntime } from '../../../shared/auth/runtime';
 import {
@@ -10,6 +10,7 @@ import {
   decodeStudyRequest,
 } from '../schemas/session-request';
 import { decodeSubmitPayload } from '../schemas/submission-schema';
+import { DefinitionGrader } from './definition-grader';
 import { JudgeCacheStore } from './judge-cache-store';
 import { PracticeJudge } from './practice-judge';
 import { PracticeService } from './practice-service';
@@ -24,7 +25,11 @@ const storesLive = Layer.mergeAll(
 
 const practiceLive = PracticeService.Default.pipe(
   Layer.provide(
-    Layer.merge(storesLive, PracticeJudge.live.pipe(Layer.provide(judgeLayer))),
+    Layer.mergeAll(
+      storesLive,
+      PracticeJudge.live.pipe(Layer.provide(judgeLayer)),
+      DefinitionGrader.live.pipe(Layer.provide(definitionLayer)),
+    ),
   ),
 );
 

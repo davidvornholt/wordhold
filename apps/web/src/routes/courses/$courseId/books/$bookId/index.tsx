@@ -17,7 +17,6 @@ import { placeLinkClass } from '../../../../../features/courses/ui/place-link-st
 import { bookSummary } from '../../../../../features/courses/ui/progress-status';
 import { UnitList } from '../../../../../features/courses/ui/unit-list';
 import { getCourse } from '../../../../../features/import/server-fns';
-import { germanLabels } from '../../../../../shared/languages';
 import { ActionLink } from '../../../../../shared/ui/action-link';
 import { BackLink } from '../../../../../shared/ui/back-link';
 import { PageLayout } from '../../../../../shared/ui/page-layout';
@@ -105,7 +104,6 @@ const BookScreen = () => {
     return unitsOf(outline, book.id);
   };
   const place = { courseId: course.id, bookId: book.id };
-  const targetLabel = germanLabels[course.targetLanguage];
   const wordPlace = { bookId: book.id, unitId: null };
   const showWords = book.entries > 0 || units.length === 0;
   return (
@@ -135,7 +133,7 @@ const BookScreen = () => {
             courseId={course.id}
             place={wordPlace}
             progress={book}
-            targetLabel={targetLabel}
+            subject={course}
           />
         )}
         {showWords ? (
@@ -145,8 +143,7 @@ const BookScreen = () => {
             enabledDirections={directions}
             entries={entries}
             place={wordPlace}
-            targetLabel={targetLabel}
-            targetLanguage={course.targetLanguage}
+            subject={course}
           />
         ) : null}
         {units.length === 0 ? null : (

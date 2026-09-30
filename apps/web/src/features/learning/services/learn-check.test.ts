@@ -11,6 +11,7 @@ const item: LearnItem = {
   hasAudio: false,
   example: null,
   textbookAnswers: ['to look (at)'],
+  keyPoints: null,
 };
 
 describe('matchesLearnItem', () => {

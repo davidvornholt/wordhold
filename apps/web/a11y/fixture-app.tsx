@@ -31,6 +31,11 @@ import {
 } from './practice-session-fixtures';
 import { rootFixture } from './root-fixtures';
 import { StudyStartFixture } from './study-fixtures';
+import {
+  TermsFeedbackFixture,
+  TermsLearnFixture,
+  TermsPracticeFixture,
+} from './terms-fixtures';
 import { verificationFixture } from './verification-fixture-router';
 import { VocabularyFixture } from './vocabulary-fixtures';
 
@@ -55,6 +60,9 @@ const bareStates: ReadonlySet<FixtureState> = new Set<FixtureState>([
   'practice-complete-one-card',
   'practice-ungraded-one-card',
   'practice-deferred',
+  'terms-learn',
+  'terms-practice',
+  'terms-feedback',
   'loading',
   'error',
   'not-found',
@@ -87,6 +95,46 @@ const learningFixture = (state: FixtureState) => {
       return <LearnDoneFixture />;
     case 'learn-section-done':
       return <LearnSectionDoneFixture />;
+    default:
+      return null;
+  }
+};
+
+const practiceFixture = (state: FixtureState) => {
+  switch (state) {
+    case 'practice':
+      return <PracticeFixture />;
+    case 'practice-start':
+      return <PracticeStartFixture />;
+    case 'practice-start-partial':
+      return <PracticeStartFixture partial={true} />;
+    case 'practice-session':
+      return <PracticeSessionFixture />;
+    case 'study-session':
+      return <FutureStudySessionFixture />;
+    case 'practice-feedback':
+      return <PracticeFeedbackFixture />;
+    case 'practice-empty':
+      return <PracticeEmptyFixture />;
+    case 'practice-complete-one-card':
+      return <PracticeOneCardSummaryFixture ungraded={false} />;
+    case 'practice-ungraded-one-card':
+      return <PracticeOneCardSummaryFixture ungraded={true} />;
+    case 'practice-deferred':
+      return <DeferredPracticeFixture />;
+    default:
+      return null;
+  }
+};
+
+const termsFixture = (state: FixtureState) => {
+  switch (state) {
+    case 'terms-learn':
+      return <TermsLearnFixture />;
+    case 'terms-practice':
+      return <TermsPracticeFixture />;
+    case 'terms-feedback':
+      return <TermsFeedbackFixture />;
     default:
       return null;
   }
@@ -193,25 +241,20 @@ const fixtureContent = (state: FixtureState) => {
     case 'course-settings-deferred':
       return <DeferredCourseSettingsFixture />;
     case 'practice':
-      return <PracticeFixture />;
     case 'practice-start':
-      return <PracticeStartFixture />;
     case 'practice-start-partial':
-      return <PracticeStartFixture partial={true} />;
     case 'practice-session':
-      return <PracticeSessionFixture />;
     case 'study-session':
-      return <FutureStudySessionFixture />;
     case 'practice-feedback':
-      return <PracticeFeedbackFixture />;
     case 'practice-empty':
-      return <PracticeEmptyFixture />;
     case 'practice-complete-one-card':
-      return <PracticeOneCardSummaryFixture ungraded={false} />;
     case 'practice-ungraded-one-card':
-      return <PracticeOneCardSummaryFixture ungraded={true} />;
     case 'practice-deferred':
-      return <DeferredPracticeFixture />;
+      return practiceFixture(state);
+    case 'terms-learn':
+    case 'terms-practice':
+    case 'terms-feedback':
+      return termsFixture(state);
     case 'loading':
     case 'error':
     case 'not-found':

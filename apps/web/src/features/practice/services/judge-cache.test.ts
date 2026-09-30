@@ -5,6 +5,7 @@ import {
   PracticeDatabaseError,
   PracticeJudgeError,
 } from '../errors/practice-errors';
+import type { CachedVerdict } from '../schemas/practice-models';
 import { judgeWithCache } from './judge-cache';
 import { JudgeCacheStore } from './judge-cache-store';
 import { PracticeJudge } from './practice-judge';
@@ -97,13 +98,7 @@ describe('judgeWithCache', () => {
   });
   it('judges once when concurrent misses share a critical section', async () => {
     const mutex = Effect.unsafeMakeSemaphore(1);
-    let cached:
-      | {
-          readonly assessmentId: string;
-          readonly verdict: JudgeVerdictData;
-          readonly model: string;
-        }
-      | undefined;
+    let cached: CachedVerdict | undefined;
     let judgeCalls = 0;
     const layer = Layer.merge(
       Layer.succeed(JudgeCacheStore, {

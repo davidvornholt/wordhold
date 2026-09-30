@@ -1,4 +1,3 @@
-import type { LanguageCode } from '@wordhold/db/schema/courses';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import type { ReactNode } from 'react';
 import {
@@ -6,8 +5,7 @@ import {
   formatLearningDate,
   formatLearningDateInline,
 } from '../../../shared/dates/learning-date';
-import { directionLabel } from '../../../shared/directions';
-import { germanLabels } from '../../../shared/languages';
+import { type CourseSubject, directionLabel } from '../../../shared/directions';
 import type { VocabularyEntry } from '../schemas/course-units';
 
 type VocabularyCard = VocabularyEntry['cards'][number];
@@ -92,7 +90,7 @@ const CardSchedule = ({
 type VocabularyScheduleProps = {
   readonly enabledDirections: ReadonlyArray<AnswerDirection>;
   readonly entry: VocabularyEntry;
-  readonly targetLanguage: LanguageCode;
+  readonly subject: CourseSubject;
   readonly now?: Date;
   readonly exampleControl: ReactNode;
 };
@@ -100,37 +98,34 @@ type VocabularyScheduleProps = {
 export const VocabularySchedule = ({
   enabledDirections,
   entry,
-  targetLanguage,
+  subject,
   exampleControl,
   now = new Date(),
-}: VocabularyScheduleProps) => {
-  const targetLabel = germanLabels[targetLanguage];
-  return (
-    <details className="group text-sm">
-      <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-1.5 text-muted-foreground underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
-        <span aria-hidden="true" className="group-open:rotate-90">
-          ▸
-        </span>
-        {scheduleSummary(entry, enabledDirections, now)}
-      </summary>
-      <dl className="mt-3 grid gap-3 border-border border-l pl-3">
-        {entry.cards.map((card) => (
-          <div className="grid gap-0.5" key={card.cardId}>
-            <dt className="font-medium">
-              {directionLabel(card.direction, targetLabel)}
-            </dt>
-            <dd className="text-muted-foreground">
-              <CardSchedule
-                card={card}
-                enabled={enabledDirections.includes(card.direction)}
-                now={now}
-              />
-              {card.failures > 0 ? ` · ${card.failures}× nicht gewusst` : ''}
-            </dd>
-          </div>
-        ))}
-      </dl>
-      <div className="mt-3">{exampleControl}</div>
-    </details>
-  );
-};
+}: VocabularyScheduleProps) => (
+  <details className="group text-sm">
+    <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-1.5 text-muted-foreground underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
+      <span aria-hidden="true" className="group-open:rotate-90">
+        ▸
+      </span>
+      {scheduleSummary(entry, enabledDirections, now)}
+    </summary>
+    <dl className="mt-3 grid gap-3 border-border border-l pl-3">
+      {entry.cards.map((card) => (
+        <div className="grid gap-0.5" key={card.cardId}>
+          <dt className="font-medium">
+            {directionLabel(card.direction, subject)}
+          </dt>
+          <dd className="text-muted-foreground">
+            <CardSchedule
+              card={card}
+              enabled={enabledDirections.includes(card.direction)}
+              now={now}
+            />
+            {card.failures > 0 ? ` · ${card.failures}× nicht gewusst` : ''}
+          </dd>
+        </div>
+      ))}
+    </dl>
+    <div className="mt-3">{exampleControl}</div>
+  </details>
+);

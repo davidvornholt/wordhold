@@ -43,6 +43,7 @@ const result = (
   expectedAnswers: ['word'],
   explanation: null,
   acceptedAsAlternative: false,
+  keyPoints: null,
   schedule: {
     advanced: true,
     state: correct ? 'review' : 'relearning',

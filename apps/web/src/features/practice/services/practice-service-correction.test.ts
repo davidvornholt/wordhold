@@ -7,11 +7,12 @@ import type {
   SubmissionRecord,
 } from '../schemas/practice-models';
 import type { WrongAnswerResolution } from '../schemas/submission-schema';
+import { DefinitionGrader } from './definition-grader';
 import { judgeCacheIdentity } from './judge-cache';
 import { JudgeCacheStore } from './judge-cache-store';
 import { PracticeJudge } from './practice-judge';
 import { PracticeService } from './practice-service';
-import { persistedReview } from './practice-service-test-support';
+import { persistedReview, testGrader } from './practice-service-test-support';
 import { PracticeReviewStore } from './review-store';
 import { PracticeSessionStore } from './session-store';
 
@@ -34,8 +35,14 @@ const card: typeof cards.$inferSelect = {
 
 const submission: SubmissionRecord = {
   card,
-  entry: { id: card.entryId, targetText: 'correct', nativeText: 'richtig' },
+  entry: {
+    id: card.entryId,
+    targetText: 'correct',
+    nativeText: 'richtig',
+    keyPoints: null,
+  },
   targetLanguage: 'en',
+  courseKind: 'language',
 };
 
 const rejectedTypo = {
@@ -94,6 +101,7 @@ const runSubmit = async (
     }),
     Layer.succeed(PracticeReviewStore, {
       findSubmission: () => Effect.succeed(submission),
+      saveKeyPoints: (_entryId, _definition, points) => Effect.succeed(points),
       listAcceptedAnswers: () =>
         Effect.succeed([
           {
@@ -111,6 +119,7 @@ const runSubmit = async (
           model: 'vertex:test-model',
         }),
     }),
+    Layer.succeed(DefinitionGrader, testGrader()),
   );
   const data =
     wrongAnswerResolution === 'defer'

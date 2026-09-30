@@ -7,6 +7,7 @@ import {
   sessionOptions,
 } from './session-options';
 
+const english = { kind: 'language', targetLanguage: 'en' } as const;
 const counts = [
   { direction: 'to_target' as const, ready: 12 },
   { direction: 'to_native' as const, ready: 8 },
@@ -30,7 +31,7 @@ describe('directionsWithCards', () => {
 describe('sessionOptions', () => {
   it('offers a mixed sitting only when both directions are practised', () => {
     expect(
-      sessionOptions(['to_target', 'to_native'], 'Englisch', counts).map(
+      sessionOptions(['to_target', 'to_native'], english, counts).map(
         (option) => option.value,
       ),
     ).toEqual(['to_target', 'to_native', 'both']);
@@ -38,7 +39,7 @@ describe('sessionOptions', () => {
 
   it('drops a direction the course switched off, and the mix with it', () => {
     expect(
-      sessionOptions(['to_native'], 'Englisch', counts).map(
+      sessionOptions(['to_native'], english, counts).map(
         (option) => option.value,
       ),
     ).toEqual(['to_native']);
@@ -46,14 +47,13 @@ describe('sessionOptions', () => {
 
   it('keeps the German-first direction first however the course stores it', () => {
     expect(
-      sessionOptions(['to_native', 'to_target'], 'Englisch', counts).at(0)
-        ?.value,
+      sessionOptions(['to_native', 'to_target'], english, counts).at(0)?.value,
     ).toBe('to_target');
   });
 
   it('shows the exact number of cards for every choice', () => {
     expect(
-      sessionOptions(['to_target', 'to_native'], 'Englisch', counts).map(
+      sessionOptions(['to_target', 'to_native'], english, counts).map(
         ({ value, cards }) => [value, cards],
       ),
     ).toEqual([
@@ -64,7 +64,7 @@ describe('sessionOptions', () => {
   });
 
   it('disables mixed practice while either direction has no cards', () => {
-    const options = sessionOptions(['to_target', 'to_native'], 'Englisch', [
+    const options = sessionOptions(['to_target', 'to_native'], english, [
       { direction: 'to_target', ready: 7 },
       { direction: 'to_native', ready: 0 },
       { direction: 'both', ready: 7 },
@@ -79,7 +79,7 @@ describe('sessionOptions', () => {
 describe('directionOptions', () => {
   it('offers each direction separately without a mixed learning pass', () => {
     expect(
-      directionOptions(['to_target', 'to_native'], 'Englisch', counts).map(
+      directionOptions(['to_target', 'to_native'], english, counts).map(
         (option) => option.value,
       ),
     ).toEqual(['to_target', 'to_native']);
@@ -145,5 +145,22 @@ describe('resolveSessionDirection', () => {
     expect(
       resolveSessionDirection(undefined, ['to_target'], ['to_target']),
     ).toBe('to_target');
+  });
+});
+
+describe('sessionOptions for a terms course', () => {
+  it('names the only direction by what it asks for', () => {
+    expect(
+      sessionOptions(
+        ['to_native'],
+        { kind: 'terms', targetLanguage: 'de' },
+        counts,
+      ).map(({ label, description }) => [label, description]),
+    ).toEqual([
+      [
+        'Begriff → Definition',
+        'Du siehst den Begriff und schreibst seine Definition.',
+      ],
+    ]);
   });
 });

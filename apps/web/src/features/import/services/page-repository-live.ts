@@ -1,7 +1,7 @@
 import type { ExtractionResult } from '@wordhold/ai/extraction';
 import { ttsAudioProfile } from '@wordhold/ai/tts/speech-text';
 import type { Database } from '@wordhold/db/client';
-import type { LanguageCode } from '@wordhold/db/schema/courses';
+import type { CourseKind, LanguageCode } from '@wordhold/db/schema/courses';
 import { Effect } from 'effect';
 import { insertPage } from './page-repository-insert';
 import {
@@ -185,12 +185,13 @@ export const pageRepositoryLive = (sql: Database) => ({
       capturedAt: Date;
       verifiedAt: Date | null;
       courseName: string;
+      courseKind: CourseKind;
       targetLanguage: 'de' | 'en' | 'es' | 'fr';
       nativeLanguage: 'de' | 'en' | 'es' | 'fr';
       courseCreatedAt: Date;
       importSessionId: string;
       importPosition: number;
-    }>`select pages.id as "pageId", pages.course_id as "courseId", pages.import_session_id as "importSessionId", pages.import_position as "importPosition", pages.image_path as "imagePath", pages.extraction, pages.status, pages.captured_at as "capturedAt", pages.verified_at as "verifiedAt", courses.name as "courseName", courses.target_language as "targetLanguage", courses.native_language as "nativeLanguage", courses.created_at as "courseCreatedAt" from pages inner join courses on pages.course_id = courses.id where pages.id = ${pageId} limit 1`.pipe(
+    }>`select pages.id as "pageId", pages.course_id as "courseId", pages.import_session_id as "importSessionId", pages.import_position as "importPosition", pages.image_path as "imagePath", pages.extraction, pages.status, pages.captured_at as "capturedAt", pages.verified_at as "verifiedAt", courses.name as "courseName", courses.kind as "courseKind", courses.target_language as "targetLanguage", courses.native_language as "nativeLanguage", courses.created_at as "courseCreatedAt" from pages inner join courses on pages.course_id = courses.id where pages.id = ${pageId} limit 1`.pipe(
       Effect.map((rows) => {
         const [row] = rows;
         return row === undefined
@@ -210,6 +211,7 @@ export const pageRepositoryLive = (sql: Database) => ({
               course: {
                 id: row.courseId,
                 name: row.courseName,
+                kind: row.courseKind,
                 targetLanguage: row.targetLanguage,
                 nativeLanguage: row.nativeLanguage,
                 createdAt: row.courseCreatedAt,

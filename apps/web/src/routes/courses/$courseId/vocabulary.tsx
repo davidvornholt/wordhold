@@ -44,7 +44,7 @@ const VocabularyScreen = () => {
           </ActionLink>
         )}
         scope="course"
-        targetLanguage={course.targetLanguage}
+        subject={course}
       />
     </PageLayout>
   );

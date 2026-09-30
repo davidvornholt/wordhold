@@ -12,6 +12,7 @@ import { Button } from '../src/shared/ui/button';
 import { CardRail } from '../src/shared/ui/card-rail';
 import { FocusLayout } from '../src/shared/ui/focus-layout';
 import { WordCard } from '../src/shared/ui/word-card';
+import { englishSubject } from './course-fixture-data';
 import { fixtureBackControl, fixtureControl } from './fixture-controls';
 import { navigateToFixture } from './fixture-state';
 
@@ -42,6 +43,7 @@ const result: SubmitResult = {
   expectedAnswers: ['memory'],
   explanation: 'Das bedeutet etwas anderes.',
   acceptedAsAlternative: false,
+  keyPoints: null,
   assessmentId: '00000000-0000-0000-0000-000000000003',
 };
 
@@ -70,8 +72,7 @@ export const PracticeFixture = () => (
         navigateToFixture('practice-feedback');
         return Promise.resolve(result);
       }}
-      targetLabel="Englisch"
-      targetLanguage="en"
+      subject={englishSubject}
     />
   </FocusLayout>
 );
@@ -94,6 +95,7 @@ export const PracticeFeedbackFixture = () => {
           busy={false}
           example={item.example}
           id={feedbackId}
+          kind="language"
           playSentence={null}
           playWord={null}
           repeated={false}
@@ -141,6 +143,7 @@ export const PracticeOneCardSummaryFixture = ({
     expectedAnswers: ['memory'],
     explanation: null,
     acceptedAsAlternative: false,
+    keyPoints: null,
     schedule: {
       advanced: true,
       state: 'review',
@@ -208,8 +211,7 @@ export const DeferredPracticeFixture = () => {
         prepareExamples={prepareExamples}
         repeated={false}
         submit={submit}
-        targetLabel="Englisch"
-        targetLanguage="en"
+        subject={englishSubject}
       />
       <output aria-label="Submit calls">{calls}</output>
       <output aria-label="Submitted answer">{submittedAnswer}</output>
