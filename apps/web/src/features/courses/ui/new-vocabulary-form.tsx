@@ -7,17 +7,11 @@ import {
 } from '../../../shared/examples/example-draft';
 import { Button } from '../../../shared/ui/button';
 import { ExampleDraftEditor } from '../../../shared/ui/example-draft-editor';
-import { wordLocation } from '../../../shared/vocabulary/book-name';
-import {
-  type DuplicateMatch,
-  type ExistingEntry,
-  findDuplicate,
-} from '../../../shared/vocabulary/entry-identity';
 import type { VocabularyEntry } from '../schemas/course-units';
 import type { CreatedVocabularyEntry } from '../services/vocabulary-entry-service';
+import { wordDuplicate } from './entry-duplicates';
 import {
   type NewVocabularyEntryDraft,
-  quoted,
   useNewVocabularyEntry,
 } from './use-new-vocabulary-entry';
 import { type SuggestTranslation, WordPairFields } from './word-pair-fields';
@@ -41,22 +35,6 @@ type NewVocabularyFormProps = {
   readonly suggestTranslation: SuggestTranslation;
 };
 
-type LocatedEntry = ExistingEntry & { readonly location: string };
-
-const duplicateHint = (
-  duplicate: DuplicateMatch<LocatedEntry>,
-  targetText: string,
-): string | null => {
-  switch (duplicate.verdict) {
-    case 'exact':
-      return `${quoted(targetText)} ist schon in ${duplicate.entry.location}.`;
-    case 'exception':
-      return `${quoted(targetText)} ist schon in ${duplicate.entry.location}, mit anderer Schreibweise oder anderem Beispielsatz.`;
-    default:
-      return null;
-  }
-};
-
 // One word at a time, for as long as the form stays open. An exact repeat
 // of a stored word is stopped here; a variant is pointed out and left to
 // the learner, who typed it on purpose.
@@ -73,16 +51,8 @@ export const NewVocabularyForm = ({
     useNewVocabularyEntry(createEntry);
   const targetText = draft.targetText.trim();
   const complete = targetText !== '' && draft.nativeText.trim() !== '';
-  const duplicate = findDuplicate(
-    { targetText, example: draft.example },
-    entries.map((entry) => ({
-      targetText: entry.targetText,
-      examples: entry.example === null ? [] : [entry.example.targetText],
-      location: wordLocation(entry.bookName, entry.unitName),
-    })),
-  );
-  const hint = duplicateHint(duplicate, targetText);
-  const submittable = !busy && complete && duplicate.verdict !== 'exact';
+  const duplicate = wordDuplicate(entries, draft, null);
+  const submittable = !busy && complete && !duplicate.blocked;
 
   const submit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -96,14 +66,15 @@ export const NewVocabularyForm = ({
       <WordPairFields
         busy={busy}
         draft={draft}
+        reviewStep="Eintragen"
         setDraft={setDraft}
         suggestTranslation={suggestTranslation}
         targetLabel={targetLabel}
         targetLanguage={targetLanguage}
         targetRef={targetRef}
       />
-      {hint === null ? null : (
-        <p className="text-sm text-warning-foreground">{hint}</p>
+      {duplicate.hint === null ? null : (
+        <p className="text-sm text-warning-foreground">{duplicate.hint}</p>
       )}
       <ExampleDraftEditor
         disabled={busy}

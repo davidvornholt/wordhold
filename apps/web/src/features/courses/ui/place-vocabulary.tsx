@@ -4,6 +4,7 @@ import type { CourseSubject } from '../../../shared/directions';
 import { Button } from '../../../shared/ui/button';
 import { Dialog } from '../../../shared/ui/dialog';
 import type { VocabularyEntry } from '../schemas/course-units';
+import type { CourseEntryActions } from './entry-actions';
 import { PlaceVocabularyEmpty } from './place-vocabulary-empty';
 import { VocabularyLibrary } from './vocabulary-library';
 
@@ -19,7 +20,7 @@ type PlaceVocabularyProps = {
     entryIds: ReadonlyArray<string>,
     intent: 'learn' | 'practice',
   ) => ReactNode;
-  readonly renderEntryDetail: (entry: VocabularyEntry) => ReactNode;
+  readonly entryActions: CourseEntryActions;
 };
 
 // A unit's vocabulary, or the words directly in a book, with the one way to
@@ -35,11 +36,13 @@ export const PlaceVocabulary = ({
   importAction,
   entryForm,
   renderStudyAction,
-  renderEntryDetail,
+  entryActions,
 }: PlaceVocabularyProps) => {
   const [adding, setAdding] = useState(false);
   // The first saved word replaces the empty state's button with this one.
   const addRef = useRef<HTMLButtonElement>(null);
+  // Takes focus once an entry is deleted, since its row is gone.
+  const headingRef = useRef<HTMLHeadingElement>(null);
   const headingId = useId();
   const isEmpty = entries.length === 0;
   let content: ReactNode = null;
@@ -64,8 +67,9 @@ export const PlaceVocabulary = ({
       <VocabularyLibrary
         enabledDirections={enabledDirections}
         entries={entries}
+        entryActions={entryActions}
+        fallbackFocusRef={headingRef}
         initialFilter="all"
-        renderEntryDetail={renderEntryDetail}
         layout="flat"
         renderStudyAction={renderStudyAction}
         subject={subject}
@@ -75,7 +79,12 @@ export const PlaceVocabulary = ({
   return (
     <section aria-labelledby={headingId} className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-4">
-        <h2 className="font-display text-xl" id={headingId}>
+        <h2
+          className="font-display text-xl focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
+          id={headingId}
+          ref={headingRef}
+          tabIndex={-1}
+        >
           {isEmpty ? 'Vokabeln hinzufügen' : 'Vokabeln'}
         </h2>
         {isEmpty ? null : (

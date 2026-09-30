@@ -184,3 +184,88 @@ describe('TermEntryStore key points', () => {
     );
   });
 });
+
+describe('TermEntryStore edits', () => {
+  it('corrects a term and clears its key points only for a new definition', async () => {
+    await runStoreTest(
+      Effect.gen(function* () {
+        yield* seedCourses;
+        const sql = yield* Database;
+        const store = yield* TermEntryStore;
+        const entryId = createdId(yield* store.create(term('Katalysator')));
+        const keyPoints = ['senkt die Aktivierungsenergie'];
+        yield* store.setKeyPoints(subjectId, entryId, keyPoints);
+        yield* sql`update cards set reps = 3 where entry_id = ${entryId}`;
+        yield* sql`
+          insert into accepted_answers
+            (entry_id, direction, text, normalized, source)
+          values (${entryId}, 'to_native', 'Beschleunigt Reaktionen.',
+            'beschleunigt reaktionen', 'judge')
+        `;
+        const edit = { courseId: subjectId, entryId };
+        expect(
+          yield* store.update({ ...edit, term: 'Katalysatoren', definition }),
+        ).toEqual({ kind: 'updated', definitionChanged: false });
+        expect(yield* store.readTerm(subjectId, entryId)).toEqual({
+          term: 'Katalysatoren',
+          definition,
+          keyPoints,
+        });
+        const corrected = 'Ein Stoff, der eine Reaktion beschleunigt.';
+        expect(
+          yield* store.update({
+            ...edit,
+            term: 'Katalysatoren',
+            definition: corrected,
+          }),
+        ).toEqual({ kind: 'updated', definitionChanged: true });
+        expect(yield* store.readTerm(subjectId, entryId)).toEqual({
+          term: 'Katalysatoren',
+          definition: corrected,
+          keyPoints: null,
+        });
+        const answers = yield* sql<{
+          readonly text: string;
+          readonly source: string;
+        }>`select text, source from accepted_answers where entry_id = ${entryId}`;
+        expect(answers).toEqual([{ text: corrected, source: 'textbook' }]);
+        const cards = yield* sql<{
+          readonly reps: number;
+        }>`select reps from cards where entry_id = ${entryId}`;
+        expect(cards).toEqual([{ reps: 3 }]);
+      }),
+    );
+  });
+
+  it('refuses a repeated term and a term of another course', async () => {
+    await runStoreTest(
+      Effect.gen(function* () {
+        yield* seedCourses;
+        const store = yield* TermEntryStore;
+        yield* store.create(term('Enzym'));
+        const entryId = createdId(yield* store.create(term('Katalysator')));
+        const edit = { courseId: subjectId, entryId, definition };
+        expect(yield* store.update({ ...edit, term: 'Enzym' })).toEqual({
+          kind: 'duplicate',
+        });
+        expect(
+          yield* store.update({
+            ...edit,
+            term: 'Katalysator',
+            definition: 'Neu.',
+          }),
+        ).toEqual({ kind: 'updated', definitionChanged: true });
+        expect(
+          yield* store.update({
+            ...edit,
+            courseId: languageCourseId,
+            term: 'Katalysator',
+          }),
+        ).toEqual({ kind: 'term-missing' });
+        expect((yield* store.readTerm(subjectId, entryId))?.term).toBe(
+          'Katalysator',
+        );
+      }),
+    );
+  });
+});

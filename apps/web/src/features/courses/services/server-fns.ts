@@ -16,6 +16,10 @@ import {
   decodeReorderCourseUnits,
 } from '../schemas/course-unit-management';
 import {
+  decodeDeleteEntry,
+  decodeUpdateVocabularyEntry,
+} from '../schemas/entry-changes';
+import {
   decodeCreateSubject,
   decodeRenameSubject,
 } from '../schemas/subject-management';
@@ -179,6 +183,25 @@ export const createVocabularyEntry = createServerFn({ method: 'POST' })
     await authRuntime.runPromise(requireSession(getRequest().headers));
     return vocabularyRuntime.runPromise(
       Effect.flatMap(VocabularyEntryService, (service) => service.create(data)),
+    );
+  });
+
+export const updateVocabularyEntry = createServerFn({ method: 'POST' })
+  .validator(decodeUpdateVocabularyEntry)
+  .handler(async ({ data }) => {
+    await authRuntime.runPromise(requireSession(getRequest().headers));
+    return vocabularyRuntime.runPromise(
+      Effect.flatMap(VocabularyEntryService, (service) => service.update(data)),
+    );
+  });
+
+// Words and terms alike.
+export const deleteCourseEntry = createServerFn({ method: 'POST' })
+  .validator(decodeDeleteEntry)
+  .handler(async ({ data }) => {
+    await authRuntime.runPromise(requireSession(getRequest().headers));
+    return vocabularyRuntime.runPromise(
+      Effect.flatMap(VocabularyEntryService, (service) => service.remove(data)),
     );
   });
 

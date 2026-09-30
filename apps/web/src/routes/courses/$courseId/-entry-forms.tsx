@@ -2,17 +2,26 @@ import { useRouter } from '@tanstack/react-router';
 import type { VocabularyEntry } from '../../../features/courses/schemas/course-units';
 import {
   createVocabularyEntry,
+  deleteCourseEntry,
   generateVocabularyDraftExample,
   generateVocabularyExample,
   suggestVocabularyTranslation,
   translateVocabularyDraftExample,
+  updateVocabularyEntry,
 } from '../../../features/courses/services/server-fns';
 import {
   createTermEntry,
   deriveTermKeyPoints,
   suggestTermDefinition,
+  updateTermEntry,
   updateTermKeyPoints,
 } from '../../../features/courses/services/term-server-fns';
+import { EditTermForm } from '../../../features/courses/ui/edit-term-form';
+import { EditVocabularyForm } from '../../../features/courses/ui/edit-vocabulary-form';
+import type {
+  CourseEntryActions,
+  EntryEditorControl,
+} from '../../../features/courses/ui/entry-actions';
 import { NewTermForm } from '../../../features/courses/ui/new-term-form';
 import { NewVocabularyForm } from '../../../features/courses/ui/new-vocabulary-form';
 import { TermKeyPoints } from '../../../features/courses/ui/term-key-points';
@@ -108,10 +117,7 @@ type CourseEntryDetailProps = {
 // What an entry's details show besides its schedule: a word's example
 // sentence, generated on request, or a term's key points. Each change
 // refreshes the loader, so the details show it when they are opened again.
-export const CourseEntryDetail = ({
-  course,
-  entry,
-}: CourseEntryDetailProps) => {
+const CourseEntryDetail = ({ course, entry }: CourseEntryDetailProps) => {
   const router = useRouter();
   const refreshed = async <Result,>(change: Promise<Result>) => {
     const result = await change;
@@ -143,4 +149,114 @@ export const CourseEntryDetail = ({
       targetLanguage={course.targetLanguage}
     />
   );
+};
+
+type CourseEntryEditorProps = {
+  readonly course: EntryCourse;
+  // The entries a corrected entry is checked against.
+  readonly entries: ReadonlyArray<VocabularyEntry>;
+  readonly entry: VocabularyEntry;
+  readonly control: EntryEditorControl;
+};
+
+// Correcting a word or term from its details. A saved correction refreshes
+// the loader before the details are shown again, so they show it. A term
+// with a new definition gets its key points derived again in the
+// background, as a typed term does.
+const CourseEntryEditor = ({
+  course,
+  entries,
+  entry,
+  control,
+}: CourseEntryEditorProps) => {
+  const router = useRouter();
+  const courseId = course.id;
+  const entryId = entry.id;
+  if (course.kind === 'terms') {
+    return (
+      <EditTermForm
+        control={control}
+        entries={entries}
+        entry={entry}
+        suggestDefinition={(term) =>
+          suggestTermDefinition({ data: { courseId, term } })
+        }
+        updateEntry={async (draft) => {
+          const { definitionChanged } = await updateTermEntry({
+            data: { courseId, entryId, ...draft },
+          });
+          if (definitionChanged) {
+            deriveTermKeyPoints({ data: { courseId, entryId } })
+              .then(() => router.invalidate())
+              .catch(() => undefined);
+          }
+          await router.invalidate();
+        }}
+      />
+    );
+  }
+  return (
+    <EditVocabularyForm
+      control={control}
+      entries={entries}
+      entry={entry}
+      generateExample={(targetText, nativeText) =>
+        generateVocabularyDraftExample({
+          data: { courseId, targetText, nativeText },
+        })
+      }
+      suggestTranslation={(text, given) =>
+        suggestVocabularyTranslation({
+          data: {
+            courseId,
+            bookId: entry.bookId,
+            unitId: entry.unitId,
+            text,
+            given,
+          },
+        })
+      }
+      targetLabel={germanLabels[course.targetLanguage]}
+      targetLanguage={course.targetLanguage}
+      translateExample={(targetText) =>
+        translateVocabularyDraftExample({ data: { courseId, targetText } })
+      }
+      updateEntry={async (draft) => {
+        const updated = await updateVocabularyEntry({
+          data: { courseId, entryId, ...draft },
+        });
+        await router.invalidate();
+        return updated;
+      }}
+    />
+  );
+};
+
+// What an entry's dialog offers: its details, correcting it, and deleting
+// it. A deleted entry's list refreshes without being awaited, so the dialog
+// closes and hands focus on while the entry's row is still there.
+export const useCourseEntryActions = (
+  course: EntryCourse,
+  entries: ReadonlyArray<VocabularyEntry>,
+): CourseEntryActions => {
+  const router = useRouter();
+  return {
+    renderDetail: (entry) => (
+      <CourseEntryDetail course={course} entry={entry} />
+    ),
+    renderEditor: (entry, control) => (
+      <CourseEntryEditor
+        control={control}
+        course={course}
+        entries={entries}
+        entry={entry}
+      />
+    ),
+    remove: async (entry) => {
+      await deleteCourseEntry({
+        data: { courseId: course.id, entryId: entry.id },
+      });
+      router.invalidate().catch(() => undefined);
+    },
+  };
 };

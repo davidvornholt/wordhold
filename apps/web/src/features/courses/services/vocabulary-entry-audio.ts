@@ -1,6 +1,6 @@
 import type { Tts } from '@wordhold/ai/tts';
 import type { LanguageCode } from '@wordhold/db/schema/courses';
-import { Cause, type Context, Effect } from 'effect';
+import { Cause, type Context, Effect, Either } from 'effect';
 import {
   speechAudioProfile,
   synthesizeSpeechAudio,
@@ -44,4 +44,20 @@ export const prepareEntryAudio = (
       ),
     ),
     Effect.catchAll(() => Effect.succeed('failed' as const)),
+  );
+
+// The database is authoritative. A file that cannot be removed stays for the
+// reconciliation pass, which removes unreferenced files.
+export const removeEntryFiles = (
+  storage: Context.Tag.Service<typeof Storage>,
+  paths: ReadonlyArray<string>,
+) =>
+  Effect.forEach(paths, (path) => storage.remove(path).pipe(Effect.either), {
+    concurrency: 3,
+  }).pipe(
+    Effect.tap((removals) =>
+      removals.some(Either.isLeft)
+        ? Effect.logWarning('entry audio removal failed')
+        : Effect.void,
+    ),
   );
