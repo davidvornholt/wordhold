@@ -1,9 +1,9 @@
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
-import type { ReactNode } from 'react';
 import type { CourseSubject } from '../../../shared/directions';
 import { Checkbox } from '../../../shared/ui/selection-controls';
 import type { VocabularyEntry } from '../schemas/course-units';
-import { VocabularySchedule } from './vocabulary-schedule';
+import { listItemNameClass } from './list-item-name-styles';
+import { scheduleSummary } from './vocabulary-schedule-status';
 
 type VocabularyEntryRowProps = {
   readonly entry: VocabularyEntry;
@@ -12,11 +12,13 @@ type VocabularyEntryRowProps = {
   readonly subject: CourseSubject;
   readonly selected: boolean;
   readonly onToggle: () => void;
-  readonly detail: ReactNode;
+  // Opens the entry's details over the list.
+  readonly onOpen: () => void;
 };
 
 // A word and its translation share one line. A term's definition is a
-// sentence or two, so it gets a line of its own under the term.
+// sentence or two, so it gets a line of its own under the term. The word or
+// term opens the entry's details.
 export const VocabularyEntryRow = ({
   entry,
   enabledDirections,
@@ -24,38 +26,45 @@ export const VocabularyEntryRow = ({
   subject,
   selected,
   onToggle,
-  detail,
-}: VocabularyEntryRowProps) => (
-  <li className="flex gap-3 p-4 hover:bg-muted/50">
-    <Checkbox
-      aria-label={`${entry.targetText} auswählen`}
-      checked={selected}
-      className="mt-1"
-      onChange={onToggle}
-    />
-    <div className="flex min-w-0 flex-1 flex-col">
-      {subject.kind === 'terms' ? (
-        <>
-          <p className="font-medium">{entry.targetText}</p>
-          <p className="hyphens-auto text-muted-foreground">
-            {entry.nativeText}
-          </p>
-        </>
-      ) : (
-        <p>
-          <span className="font-medium" lang={subject.targetLanguage}>
-            {entry.targetText}
-          </span>
-          <span className="text-muted-foreground"> · {entry.nativeText}</span>
-        </p>
-      )}
-      <VocabularySchedule
-        detail={detail}
-        enabledDirections={enabledDirections}
-        entry={entry}
-        now={now}
-        subject={subject}
+  onOpen,
+}: VocabularyEntryRowProps) => {
+  const name = (
+    <button
+      aria-haspopup="dialog"
+      className={listItemNameClass}
+      lang={subject.kind === 'terms' ? undefined : subject.targetLanguage}
+      onClick={onOpen}
+      type="button"
+    >
+      {entry.targetText}
+    </button>
+  );
+  return (
+    <li className="flex gap-3 p-4 hover:bg-muted/50">
+      <Checkbox
+        aria-label={`${entry.targetText} auswählen`}
+        checked={selected}
+        className="mt-1"
+        onChange={onToggle}
       />
-    </div>
-  </li>
-);
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        {subject.kind === 'terms' ? (
+          <>
+            {name}
+            <p className="hyphens-auto text-muted-foreground">
+              {entry.nativeText}
+            </p>
+          </>
+        ) : (
+          <p>
+            {name}
+            <span className="text-muted-foreground"> · {entry.nativeText}</span>
+          </p>
+        )}
+        <p className="text-muted-foreground text-sm">
+          {scheduleSummary(entry, enabledDirections, now)}
+        </p>
+      </div>
+    </li>
+  );
+};

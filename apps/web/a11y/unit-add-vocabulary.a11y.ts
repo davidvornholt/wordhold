@@ -14,21 +14,19 @@ const targetField = (page: Page) =>
   page.getByRole('textbox', { exact: true, name: 'Englisch' });
 const nativeField = (page: Page) =>
   page.getByRole('textbox', { exact: true, name: 'Deutsch' });
+const entryDialog = (page: Page) =>
+  page.getByRole('dialog', { name: 'Vokabel eintragen' });
 
 test('a unit takes typed vocabulary one word after another', async ({
   page,
 }) => {
   await page.goto('/?state=unit');
   await expect(targetField(page)).toHaveCount(0);
-  const toggle = page.getByRole('button', { name: 'Vokabel eintragen' });
-  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-  await toggle.click();
+  const opener = page.getByRole('button', { name: 'Vokabel eintragen' });
+  await expect(opener).toHaveAttribute('aria-haspopup', 'dialog');
+  await opener.click();
   const target = targetField(page);
   await expect(target).toBeFocused();
-  await expect(page.getByRole('button', { name: 'Fertig' })).toHaveAttribute(
-    'aria-expanded',
-    'true',
-  );
   const submit = page.getByRole('button', { exact: true, name: 'Eintragen' });
   await expect(submit).toBeDisabled();
 
@@ -46,11 +44,10 @@ test('a unit takes typed vocabulary one word after another', async ({
   ).toContainText('die Reise');
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
 
-  await page.getByRole('button', { name: 'Fertig' }).click();
+  await entryDialog(page).getByRole('button', { name: 'Fertig' }).click();
+  await expect(entryDialog(page)).toBeHidden();
   await expect(targetField(page)).toHaveCount(0);
-  await expect(
-    page.getByRole('button', { name: 'Vokabel eintragen' }),
-  ).toBeFocused();
+  await expect(opener).toBeFocused();
 });
 
 test('a repeated word is pointed out before it is sent', async ({ page }) => {
@@ -104,10 +101,12 @@ test('a typed entry can carry a generated example sentence', async ({
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
   await page.getByRole('button', { exact: true, name: 'Eintragen' }).click();
   await expect(status(page)).toHaveText('„journey“ eingetragen.');
-  const added = page.getByRole('listitem').filter({ hasText: 'journey' });
-  await added.locator('summary').click();
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { exact: true, name: 'journey' }).click();
   await expect(
-    added.getByText('We packed our bags for the journey.'),
+    page
+      .getByRole('dialog', { name: 'journey' })
+      .getByText('We packed our bags for the journey.'),
   ).toBeVisible();
 });
 
@@ -135,9 +134,6 @@ test('an empty unit offers typing next to photographing', async ({ page }) => {
   ).toHaveCount(1);
   await page.getByRole('button', { name: 'Vokabel eintragen' }).click();
   await expect(targetField(page)).toBeFocused();
-  await expect(
-    page.getByRole('button', { name: 'Seite fotografieren' }),
-  ).toHaveCount(0);
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
   await targetField(page).fill('journey');
   await nativeField(page).fill('die Reise');
@@ -146,6 +142,13 @@ test('an empty unit offers typing next to photographing', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Vokabeln' })).toBeVisible();
   await expect(page.getByLabel('Vokabel suchen')).toBeVisible();
   await expect(page.getByLabel('journey auswählen')).toBeVisible();
+
+  // The empty state's button is gone, so focus lands on the one that
+  // replaced it.
+  await entryDialog(page).getByRole('button', { name: 'Fertig' }).click();
+  await expect(
+    page.getByRole('button', { name: 'Vokabel eintragen' }),
+  ).toBeFocused();
 });
 
 test('the missing side of a word pair can be proposed from either side', async ({

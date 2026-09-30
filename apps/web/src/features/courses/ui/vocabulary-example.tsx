@@ -15,23 +15,25 @@ export const VocabularyExample = ({
   generate,
 }: VocabularyExampleProps) => {
   const [example, setExample] = useState(entry.example);
+  const [generated, setGenerated] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [failed, setFailed] = useState(false);
   const generatedResultRef = useRef<HTMLDivElement>(null);
 
+  // The generated sentence replaces the button that had focus.
   useEffect(() => {
-    if (entry.example === null && example !== null) {
+    if (generated) {
       generatedResultRef.current?.focus();
     }
-  }, [entry.example, example]);
+  }, [generated]);
 
   if (example !== null) {
     return (
       <div
         className="grid gap-1 border-border border-l pl-3 text-sm focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
         ref={generatedResultRef}
-        role={entry.example === null ? 'status' : undefined}
-        tabIndex={entry.example === null ? -1 : undefined}
+        role={generated ? 'status' : undefined}
+        tabIndex={generated ? -1 : undefined}
       >
         <p className="font-medium" lang={targetLanguage}>
           {example.targetText}
@@ -54,8 +56,8 @@ export const VocabularyExample = ({
           setGenerating(true);
           setFailed(false);
           try {
-            const generated = await generate();
-            setExample(generated);
+            setExample(await generate());
+            setGenerated(true);
           } catch {
             setFailed(true);
           } finally {

@@ -7,7 +7,6 @@ import {
 } from '../../../shared/examples/example-draft';
 import { Button } from '../../../shared/ui/button';
 import { ExampleDraftEditor } from '../../../shared/ui/example-draft-editor';
-import { cardCompactClass } from '../../../shared/ui/surface-styles';
 import { wordLocation } from '../../../shared/vocabulary/book-name';
 import {
   type DuplicateMatch,
@@ -93,7 +92,7 @@ export const NewVocabularyForm = ({
   };
 
   return (
-    <form className={`${cardCompactClass} grid gap-3`} onSubmit={submit}>
+    <form className="grid gap-3" onSubmit={submit}>
       <WordPairFields
         busy={busy}
         draft={draft}

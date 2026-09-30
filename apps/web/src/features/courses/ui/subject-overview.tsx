@@ -3,6 +3,7 @@ import { type ReactNode, useId, useState } from 'react';
 import type { CourseSubject } from '../../../shared/directions';
 import { countNoun } from '../../../shared/format/count';
 import { Button } from '../../../shared/ui/button';
+import { Dialog } from '../../../shared/ui/dialog';
 import type { VocabularyEntry } from '../schemas/course-units';
 import type { VocabularyFilter } from '../schemas/vocabulary-search';
 import { VocabularyLibrary } from './vocabulary-library';
@@ -39,8 +40,10 @@ const subjectSummary = (entries: ReadonlyArray<VocabularyEntry>): string => {
 };
 
 // A subject's page is its list of terms: the next thing to do, typing new
-// terms, and the list with its search and filters. An empty subject opens
-// with the form, since typing its first term is all there is to do.
+// terms, and the list with its search and filters. Terms are typed in a
+// dialog that stays open for the next one and adds each saved term to the
+// list behind it. An empty subject leads with typing, since its first term is
+// all there is to do.
 export const SubjectOverview = ({
   subject,
   entries,
@@ -53,8 +56,7 @@ export const SubjectOverview = ({
   renderEntryDetail,
 }: SubjectOverviewProps) => {
   const isEmpty = entries.length === 0;
-  const [adding, setAdding] = useState(isEmpty);
-  const formId = useId();
+  const [adding, setAdding] = useState(false);
   const headingId = useId();
   let nextStep: ReactNode = primaryAction;
   if (primaryAction === null && !isEmpty) {
@@ -68,16 +70,23 @@ export const SubjectOverview = ({
       <div className="flex flex-wrap items-center gap-4">
         {nextStep}
         <Button
-          aria-controls={adding ? formId : undefined}
-          aria-expanded={adding}
-          onClick={() => setAdding((current) => !current)}
-          variant="quiet"
+          aria-haspopup="dialog"
+          onClick={() => setAdding(true)}
+          variant={isEmpty ? 'primary' : 'quiet'}
         >
-          {adding ? 'Fertig' : 'Begriff eintragen'}
+          Begriff eintragen
         </Button>
         {settingsAction}
       </div>
-      {adding ? <div id={formId}>{entryForm}</div> : null}
+      <Dialog
+        closable={true}
+        closeLabel="Fertig"
+        onClose={() => setAdding(false)}
+        open={adding}
+        title="Begriff eintragen"
+      >
+        {entryForm}
+      </Dialog>
       {isEmpty ? null : (
         <section aria-labelledby={headingId} className="flex flex-col gap-3">
           <h2 className="font-display text-xl" id={headingId}>

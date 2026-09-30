@@ -1,4 +1,6 @@
+import { scanWcag22AaViolations } from '@davidvornholt/a11y-testing/axe';
 import { expect, test } from '@playwright/test';
+import { assertNoAccessibilityViolations } from './a11y-assertions';
 
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
@@ -7,17 +9,22 @@ test('the vocabulary library exposes per-direction dates and cross-unit selectio
 }) => {
   await page.goto('/?state=vocabulary');
   await expect(page.getByText('1 von 2 Richtungen geübt')).toBeVisible();
-  await page.locator('summary').first().click();
-  await expect(page.getByText('Deutsch → Englisch').first()).toBeVisible();
-  await expect(page.getByText('Englisch → Deutsch').first()).toBeVisible();
-  await expect(page.getByText('nicht gewusst').first()).toBeVisible();
-  await expect(page.getByText('That trip is a happy memory.')).toBeVisible();
+  const open = page.getByRole('button', { exact: true, name: 'memory' });
+  await open.click();
+  const memory = page.getByRole('dialog', { name: 'memory' });
+  await expect(memory.getByText('die Erinnerung')).toBeVisible();
+  await expect(memory.getByText('Deutsch → Englisch')).toBeVisible();
+  await expect(memory.getByText('Englisch → Deutsch')).toBeVisible();
+  await expect(memory.getByText('2× nicht gewusst')).toBeVisible();
+  await expect(memory.getByText('Noch nicht kennengelernt')).toBeVisible();
+  await expect(memory.getByText('That trip is a happy memory.')).toBeVisible();
   await expect(
-    page.getByText('Diese Reise ist eine schöne Erinnerung.'),
+    memory.getByText('Diese Reise ist eine schöne Erinnerung.'),
   ).toBeVisible();
-  await expect(
-    page.getByText('Noch nicht kennengelernt').first(),
-  ).toBeVisible();
+  assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
+  await page.keyboard.press('Escape');
+  await expect(memory).toBeHidden();
+  await expect(open).toBeFocused();
 
   await page.getByLabel('memory auswählen').check();
   await page.getByLabel('the referee auswählen').check();
@@ -43,10 +50,8 @@ test('a missing vocabulary example can be generated from its details', async ({
   page,
 }) => {
   await page.goto('/?state=vocabulary');
-  const referee = page.getByRole('listitem').filter({
-    hasText: 'the referee',
-  });
-  await referee.locator('summary').click();
+  await page.getByRole('button', { exact: true, name: 'the referee' }).click();
+  const referee = page.getByRole('dialog', { name: 'the referee' });
   await referee.getByRole('button', { name: 'Beispielsatz erzeugen' }).click();
   await expect(referee.getByRole('status')).toBeFocused();
   await expect(

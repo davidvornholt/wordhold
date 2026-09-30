@@ -3,7 +3,7 @@ import { Button } from '../../../shared/ui/button';
 import { maximumBookNameLength } from '../../../shared/vocabulary/book-name';
 import type { CourseBook, CourseUnit } from '../schemas/course-units';
 import { bookTaken } from './book-names';
-import { NameForm } from './name-form';
+import { NameDialog } from './name-dialog';
 import { UnitOrderEditor } from './unit-order-editor';
 
 type BookEditorProps = {
@@ -28,26 +28,33 @@ const BookEditor = ({
   createUnit,
   reorderUnits,
 }: BookEditorProps) => {
-  const [renaming, setRenaming] = useState(false);
+  const [renamed, setRenamed] = useState('');
   const unitsHeadingId = useId();
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-2">
-        <NameForm
-          busy={renaming}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+        <NameDialog
           conflict={(name) => bookTaken(books, name, book.id)}
-          failedStatus="Das Buch wurde nicht umbenannt. Versuche es noch einmal."
+          failedMessage="Das Buch wurde nicht umbenannt. Versuche es noch einmal."
           initialName={book.name}
           label="Buchname"
           maxLength={maximumBookNameLength}
-          onBusyChange={setRenaming}
-          pendingStatus="Buch wird umbenannt …"
+          openLabel="Buch umbenennen"
+          pendingLabel="Buch wird umbenannt …"
           placeholder="z. B. Harry Potter"
-          save={renameBook}
-          savedStatus={(name) => `Umbenannt in ${name}.`}
-          statusLabel="Status beim Umbenennen des Buchs"
+          save={async (name) => {
+            await renameBook(name);
+            setRenamed(`Umbenannt in ${name}.`);
+          }}
           submitLabel="Umbenennen"
+          title="Buch umbenennen"
         />
+        <output
+          aria-label="Status beim Umbenennen des Buchs"
+          className="text-sm"
+        >
+          {renamed}
+        </output>
       </div>
       <section aria-labelledby={unitsHeadingId} className="flex flex-col gap-3">
         <h2 className="font-display text-xl" id={unitsHeadingId}>

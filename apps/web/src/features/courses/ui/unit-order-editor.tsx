@@ -18,7 +18,7 @@ import { maximumUnitNameLength } from '@wordhold/ai/extraction/schema';
 import { useState } from 'react';
 import { cardListClass } from '../../../shared/ui/surface-styles';
 import type { CourseUnit } from '../schemas/course-units';
-import { NameForm } from './name-form';
+import { NameDialog } from './name-dialog';
 import { SortableUnitRow } from './sortable-unit-row';
 
 type UnitOrderEditorProps = {
@@ -159,24 +159,28 @@ export const UnitOrderEditor = ({
           )}
         </SortableContext>
       </DndContext>
-      <NameForm
-        busy={busy}
-        conflict={(name) =>
-          units.some((unit) => unit.name === name)
-            ? `Die Einheit "${name}" gibt es in diesem Buch bereits.`
-            : null
-        }
-        failedStatus="Die Einheit wurde nicht hinzugefügt. Versuche es noch einmal."
-        label="Neue Einheit"
-        maxLength={maximumUnitNameLength}
-        onBusyChange={setBusy}
-        pendingStatus="Einheit wird hinzugefügt …"
-        placeholder="z. B. Unité 2 Volet 1"
-        save={async (name) => setUnits(await createUnit(name))}
-        savedStatus={(name) => `${name} hinzugefügt.`}
-        statusLabel={`Status beim Hinzufügen einer Einheit zu ${bookName}`}
-        submitLabel="Einheit hinzufügen"
-      />
+      <div>
+        <NameDialog
+          conflict={(name) =>
+            units.some((unit) => unit.name === name)
+              ? `Die Einheit "${name}" gibt es in diesem Buch bereits.`
+              : null
+          }
+          failedMessage="Die Einheit wurde nicht hinzugefügt. Versuche es noch einmal."
+          label="Name der Einheit"
+          maxLength={maximumUnitNameLength}
+          openLabel="Neue Einheit"
+          pendingLabel="Einheit wird hinzugefügt …"
+          placeholder="z. B. Unité 2 Volet 1"
+          save={async (name) => {
+            setUnits(await createUnit(name));
+            setFailed(false);
+            setStatus(`${name} hinzugefügt.`);
+          }}
+          submitLabel="Einheit hinzufügen"
+          title={`Neue Einheit in ${bookName}`}
+        />
+      </div>
       <output
         aria-label={`Status der Einheiten in ${bookName}`}
         className={failed ? 'text-destructive text-sm' : 'text-sm'}

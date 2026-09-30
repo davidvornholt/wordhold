@@ -1,5 +1,6 @@
-import { type ReactNode, useEffect, useId, useRef } from 'react';
+import type { ReactNode } from 'react';
 import { Button } from './button';
+import { Dialog } from './dialog';
 
 type ConfirmDialogProps = {
   readonly open: boolean;
@@ -12,9 +13,8 @@ type ConfirmDialogProps = {
   readonly onCancel: () => void;
 };
 
-// A modal question over the page instead of a panel inside it, so asking
-// moves nothing underneath. The native dialog traps focus, closes on Escape
-// and hands focus back to the control that opened it.
+// A question over the page, answered with one of two buttons. Focus starts
+// on the confirmation, which names what it does.
 export const ConfirmDialog = ({
   open,
   title,
@@ -24,61 +24,26 @@ export const ConfirmDialog = ({
   busy,
   onConfirm,
   onCancel,
-}: ConfirmDialogProps) => {
-  const dialogRef = useRef<HTMLDialogElement>(null);
-  const confirmRef = useRef<HTMLButtonElement>(null);
-  const titleId = useId();
-  const descriptionId = useId();
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (dialog === null) {
-      return;
-    }
-    if (open && !dialog.open) {
-      dialog.showModal();
-      confirmRef.current?.focus();
-    } else if (!open && dialog.open) {
-      dialog.close();
-    }
-  }, [open]);
-
-  return (
-    <dialog
-      aria-describedby={descriptionId}
-      aria-labelledby={titleId}
-      className="m-auto w-[calc(100%-2rem)] max-w-md border border-border bg-card p-6 text-foreground backdrop:bg-foreground/40"
-      onCancel={(event) => {
-        event.preventDefault();
-        if (!busy) {
-          onCancel();
-        }
-      }}
-      ref={dialogRef}
-    >
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-2">
-          <h2 className="font-display text-xl" id={titleId}>
-            {title}
-          </h2>
-          <p className="text-sm" id={descriptionId}>
-            {description}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <Button
-            disabled={busy}
-            onClick={onConfirm}
-            ref={confirmRef}
-            variant="destructive"
-          >
-            {confirmLabel}
-          </Button>
-          <Button disabled={busy} onClick={onCancel} variant="quiet">
-            {cancelLabel}
-          </Button>
-        </div>
-      </div>
-    </dialog>
-  );
-};
+}: ConfirmDialogProps) => (
+  <Dialog
+    closable={!busy}
+    description={description}
+    onClose={onCancel}
+    open={open}
+    title={title}
+  >
+    <div className="flex flex-wrap gap-3">
+      <Button
+        autoFocus={true}
+        disabled={busy}
+        onClick={onConfirm}
+        variant="destructive"
+      >
+        {confirmLabel}
+      </Button>
+      <Button disabled={busy} onClick={onCancel} variant="quiet">
+        {cancelLabel}
+      </Button>
+    </div>
+  </Dialog>
+);

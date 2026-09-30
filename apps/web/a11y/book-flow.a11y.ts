@@ -56,10 +56,11 @@ test('a word typed on the course page goes where the last word went', async ({
   page,
 }) => {
   await page.goto('/?state=course');
-  const toggle = page.getByRole('button', { name: 'Vokabel eintragen' });
-  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-  await toggle.click();
-  const place = page.getByLabel('Eintragen in');
+  const opener = page.getByRole('button', { name: 'Vokabel eintragen' });
+  await expect(opener).toHaveAttribute('aria-haspopup', 'dialog');
+  await opener.click();
+  const dialog = page.getByRole('dialog', { name: 'Vokabel eintragen' });
+  const place = dialog.getByLabel('Eintragen in');
   await expect(place.locator('option:checked')).toHaveText('The Hobbit');
   await expect(targetField(page)).toBeFocused();
   await typeWord(page, 'wizard', 'der Zauberer');
@@ -71,11 +72,10 @@ test('a word typed on the course page goes where the last word went', async ({
     'Green Line 3 · Unit 3 – Holidays',
   );
 
-  await page.getByRole('button', { name: 'Fertig' }).click();
+  await dialog.getByRole('button', { name: 'Fertig' }).click();
+  await expect(dialog).toBeHidden();
   await expect(place).toHaveCount(0);
-  await expect(
-    page.getByRole('button', { name: 'Vokabel eintragen' }),
-  ).toBeFocused();
+  await expect(opener).toBeFocused();
 });
 
 test('a novel keeps its words in the book, without units', async ({ page }) => {

@@ -5,7 +5,7 @@ import type {
 } from '../src/features/courses/schemas/course-units';
 import { CourseOverview } from '../src/features/courses/ui/course-overview';
 import { DirectionPlan } from '../src/features/courses/ui/direction-plan';
-import { placeLinkClass } from '../src/features/courses/ui/place-link-styles';
+import { listItemNameClass } from '../src/features/courses/ui/list-item-name-styles';
 import { progressSummary } from '../src/features/courses/ui/progress-status';
 import { QuickEntry } from '../src/features/courses/ui/quick-entry';
 import { directionLabel } from '../src/shared/directions';
@@ -121,7 +121,7 @@ export const CourseFixture = ({
         }
         renderBookLink={(book) => (
           <button
-            className={placeLinkClass}
+            className={listItemNameClass}
             onClick={() =>
               navigateToFixture(
                 book.id === novelBook.id ? 'book-novel' : 'book',

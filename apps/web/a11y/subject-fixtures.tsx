@@ -18,8 +18,11 @@ import {
   termEntry,
 } from './subject-fixture-data';
 
+type KeyPoints = ReadonlyArray<string>;
+
 // Typed terms join the list in memory, without key points, the way the
-// server stores them before deriving the points.
+// server stores them before deriving the points. Derived or edited key points
+// are kept the way the page's refreshed loader would show them.
 const useFixtureTerms = (initial: ReadonlyArray<VocabularyEntry>) => {
   const [entries, setEntries] = useState(initial);
   const createEntry = ({ term, definition }: TermDraft) => {
@@ -35,18 +38,33 @@ const useFixtureTerms = (initial: ReadonlyArray<VocabularyEntry>) => {
     ]);
     return Promise.resolve();
   };
-  return { entries, createEntry };
+  const keepKeyPoints = (entryId: string, keyPoints: KeyPoints) => {
+    setEntries((current) =>
+      current.map((entry) =>
+        entry.id === entryId ? { ...entry, keyPoints } : entry,
+      ),
+    );
+    return { keyPoints };
+  };
+  return { entries, createEntry, keepKeyPoints };
 };
 
 const FixtureTermKeyPoints = ({
   entry,
+  keepKeyPoints,
 }: {
   readonly entry: VocabularyEntry;
+  readonly keepKeyPoints: (
+    entryId: string,
+    keyPoints: KeyPoints,
+  ) => { readonly keyPoints: KeyPoints };
 }) => (
   <TermKeyPoints
-    derive={() => fixtureKeyPoints(entry)}
+    derive={async () =>
+      keepKeyPoints(entry.id, (await fixtureKeyPoints(entry)).keyPoints)
+    }
     keyPoints={entry.keyPoints}
-    update={(keyPoints) => Promise.resolve({ keyPoints })}
+    update={(keyPoints) => Promise.resolve(keepKeyPoints(entry.id, keyPoints))}
   />
 );
 
@@ -63,14 +81,16 @@ const termsStudyAction = (
   </Button>
 );
 
-// A subject's page is its list of terms. A new subject opens with the entry
-// form.
+// A subject's page is its list of terms. A new subject leads with typing its
+// first term.
 export const SubjectCourseFixture = ({
   empty = false,
 }: {
   readonly empty?: boolean;
 }) => {
-  const { entries, createEntry } = useFixtureTerms(empty ? [] : subjectEntries);
+  const { entries, createEntry, keepKeyPoints } = useFixtureTerms(
+    empty ? [] : subjectEntries,
+  );
   return (
     <PageLayout
       backControl={fixtureBackControl('Übersicht', 'dashboard-subjects')}
@@ -92,7 +112,9 @@ export const SubjectCourseFixture = ({
             ? null
             : fixtureControl('1 Karte üben', 'terms-practice', 'primary')
         }
-        renderEntryDetail={(entry) => <FixtureTermKeyPoints entry={entry} />}
+        renderEntryDetail={(entry) => (
+          <FixtureTermKeyPoints entry={entry} keepKeyPoints={keepKeyPoints} />
+        )}
         renderStudyAction={termsStudyAction}
         settingsAction={fixtureControl(
           'Einstellungen',
