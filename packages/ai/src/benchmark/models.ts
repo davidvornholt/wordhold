@@ -1,8 +1,8 @@
 import { createOpenAI } from '@ai-sdk/openai';
 import { Config, Effect, Redacted } from 'effect';
-import { VertexProvider } from '../providers/vertex';
-import { geminiHighProviderOptions } from '../structured-output';
 import type { BenchmarkModel } from './runner';
+import { geminiHighProviderOptions } from './structured-output';
+import { VertexProvider } from './vertex';
 
 export const benchmarkModels = Effect.gen(function* () {
   const vertex = yield* VertexProvider;

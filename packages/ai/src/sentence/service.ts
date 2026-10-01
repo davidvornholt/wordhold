@@ -1,15 +1,14 @@
 import { generateText, Output } from 'ai';
 import { Effect, Schema } from 'effect';
-import { sentenceModel } from '../config';
 import {
   maximumEntryTextLength,
   maximumExampleLength,
 } from '../extraction/schema';
-import { VertexProvider } from '../providers/vertex';
 import {
-  geminiHighProviderOptions,
-  providerJsonSchema,
-} from '../structured-output';
+  BedrockProvider,
+  sonnetMediumProviderOptions,
+} from '../providers/bedrock';
+import { providerJsonSchema } from '../structured-output';
 import { SentenceGenError } from './error';
 
 const SentenceText = Schema.Trim.pipe(
@@ -101,8 +100,7 @@ export class SentenceGen extends Effect.Service<SentenceGen>()(
   '@wordhold/ai/SentenceGen',
   {
     effect: Effect.gen(function* () {
-      const vertex = yield* VertexProvider;
-      const modelId = yield* sentenceModel;
+      const model = yield* BedrockProvider;
 
       const generateStructured = <A, I>(
         schema: Schema.Schema<A, I>,
@@ -111,10 +109,10 @@ export class SentenceGen extends Effect.Service<SentenceGen>()(
         Effect.tryPromise({
           try: async () => {
             const { output } = await generateText({
-              model: vertex(modelId),
+              model,
               output: Output.object({ schema: providerJsonSchema(schema) }),
               prompt,
-              providerOptions: geminiHighProviderOptions,
+              providerOptions: sonnetMediumProviderOptions,
             });
             return output;
           },

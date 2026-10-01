@@ -1,6 +1,5 @@
 import { Effect } from 'effect';
-import { judgeModel } from '../config';
-import { VertexProvider } from '../providers/vertex';
+import { BedrockProvider, productionModelId } from '../providers/bedrock';
 import { DefinitionError } from './error';
 import { generateDefinitionOutput } from './generate';
 import {
@@ -31,8 +30,8 @@ export class DefinitionJudge extends Effect.Service<DefinitionJudge>()(
   '@wordhold/ai/DefinitionJudge',
   {
     effect: Effect.gen(function* () {
-      const vertex = yield* VertexProvider;
-      const modelId = yield* judgeModel;
+      const model = yield* BedrockProvider;
+      const modelId = productionModelId;
 
       // A verdict that skips or adds a key point cannot be lined up with the
       // stored points, so it is rejected like any other malformed answer.
@@ -40,7 +39,7 @@ export class DefinitionJudge extends Effect.Service<DefinitionJudge>()(
         input: DefinitionJudgeInput,
       ): Effect.Effect<DefinitionVerdictData, DefinitionError> =>
         generateDefinitionOutput(
-          vertex(modelId),
+          model,
           DefinitionVerdict,
           definitionJudgePrompt(input),
           judgeFailure,
