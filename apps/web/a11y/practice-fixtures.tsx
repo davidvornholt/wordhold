@@ -40,7 +40,7 @@ const result: SubmitResult = {
   graded: true,
   correct: false,
   stored: false,
-  expectedAnswers: ['memory'],
+  expectedAnswer: 'memory',
   explanation: 'Das bedeutet etwas anderes.',
   acceptedAsAlternative: false,
   keyPoints: null,
@@ -140,7 +140,7 @@ export const PracticeOneCardSummaryFixture = ({
     stored: true,
     revision: 1,
     rating: 3,
-    expectedAnswers: ['memory'],
+    expectedAnswer: 'memory',
     explanation: null,
     acceptedAsAlternative: false,
     keyPoints: null,
@@ -153,7 +153,7 @@ export const PracticeOneCardSummaryFixture = ({
   };
   const unavailable: SubmitResult = {
     graded: false,
-    expectedAnswers: ['memory'],
+    expectedAnswer: 'memory',
     message: 'Der KI-Prüfer ist gerade nicht erreichbar.',
   };
   const queue = advanceQueue(

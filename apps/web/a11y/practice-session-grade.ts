@@ -9,6 +9,12 @@ const millisecondsPerDay = 86_400_000;
 const millisecondsPerSecond = 1000;
 type FixtureCard = PracticeSession['items'][number];
 
+// Answers the judge accepted earlier; they count as correct, but the feedback
+// still names the textbook answer.
+const learnedAlternatives: Readonly<Record<string, string>> = {
+  memory: 'recollection',
+};
+
 const resolvedRating = (correct: boolean, corrected: boolean) => {
   if (correct) {
     return ratings.good;
@@ -29,7 +35,7 @@ export const gradeFixtureAnswer = (
       stored: true,
       revision: data.revision + 1,
       rating: ratings.again,
-      expectedAnswers: [expected],
+      expectedAnswer: expected,
       explanation: null,
       acceptedAsAlternative: false,
       keyPoints: null,
@@ -44,17 +50,18 @@ export const gradeFixtureAnswer = (
   if (data.answer === 'ungraded') {
     return Promise.resolve({
       graded: false,
-      expectedAnswers: [expected],
+      expectedAnswer: expected,
       message: 'Der KI-Prüfer ist gerade nicht erreichbar.',
     });
   }
-  const correct = data.answer === expected;
+  const correct =
+    data.answer === expected || data.answer === learnedAlternatives[expected];
   if (!correct && data.wrongAnswerResolution === 'defer') {
     return Promise.resolve({
       graded: true,
       correct: false,
       stored: false,
-      expectedAnswers: [expected],
+      expectedAnswer: expected,
       explanation: null,
       acceptedAsAlternative: false,
       keyPoints: null,
@@ -70,7 +77,7 @@ export const gradeFixtureAnswer = (
     stored: true,
     revision: data.revision + 1,
     rating: resolvedRating(correct, corrected),
-    expectedAnswers: [expected],
+    expectedAnswer: expected,
     explanation: null,
     acceptedAsAlternative: false,
     keyPoints: null,

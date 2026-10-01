@@ -56,7 +56,7 @@ const missedPoint: SubmitResult = {
   graded: true,
   correct: false,
   stored: false,
-  expectedAnswers: [definition],
+  expectedAnswer: definition,
   explanation:
     'Du beschreibst die Wirkung richtig, aber nicht, dass der Stoff erhalten bleibt.',
   acceptedAsAlternative: false,
@@ -88,7 +88,7 @@ const submitDefinition = ({
     stored: true,
     revision: data.revision + 1,
     rating: ratings.again,
-    expectedAnswers: missedPoint.expectedAnswers,
+    expectedAnswer: missedPoint.expectedAnswer,
     explanation: null,
     acceptedAsAlternative: false,
     keyPoints: missedPoint.keyPoints,

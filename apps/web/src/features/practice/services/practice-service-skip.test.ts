@@ -53,7 +53,7 @@ describe('PracticeService skip', () => {
         graded: true,
         correct: false,
         stored: true,
-        expectedAnswers: ['correct'],
+        expectedAnswer: 'correct',
       },
     });
   });

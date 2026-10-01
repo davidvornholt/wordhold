@@ -22,7 +22,7 @@ export const useRetype = (
   const [typed, setTypedText] = useState('');
   const [missedMessage, setMissedMessage] = useState<string | null>(null);
   const required = needsRetype(result);
-  const template = result?.expectedAnswers.at(0) ?? '';
+  const template = result?.expectedAnswer ?? '';
 
   // True when the card may move on; false after recording a miss. A missed
   // word is typed again from scratch; a missed definition keeps the copy and
@@ -31,7 +31,7 @@ export const useRetype = (
     if (!required) {
       return true;
     }
-    if (matchesAcceptedAnswer(result?.expectedAnswers ?? [], typed)) {
+    if (matchesAcceptedAnswer([template], typed)) {
       setMissedMessage(null);
       return true;
     }

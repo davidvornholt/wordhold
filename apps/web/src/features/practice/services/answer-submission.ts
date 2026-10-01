@@ -54,7 +54,7 @@ const keyPointFindings = (
 const pendingRejectedResult = (
   assessed: AssessedAnswer,
   data: AnsweredSubmitData,
-  expectedAnswers: ReadonlyArray<string>,
+  expectedAnswer: string,
 ): SubmitResult | null => {
   if (isCorrect(assessed.outcome) || data.wrongAnswerResolution !== 'defer') {
     return null;
@@ -66,7 +66,7 @@ const pendingRejectedResult = (
     graded: true,
     correct: false,
     stored: false,
-    expectedAnswers,
+    expectedAnswer,
     explanation: assessed.outcome.verdict.explanation,
     acceptedAsAlternative: false,
     keyPoints: keyPointFindings(assessed.outcome),
@@ -81,7 +81,7 @@ type CommitOutcomeInput = {
   readonly outcome: GradeOutcome;
   readonly answer: string;
   readonly normalizedAnswer: string;
-  readonly expectedAnswers: ReadonlyArray<string>;
+  readonly expectedAnswer: string;
 };
 
 const commitOutcome = ({
@@ -91,7 +91,7 @@ const commitOutcome = ({
   outcome,
   answer,
   normalizedAnswer,
-  expectedAnswers,
+  expectedAnswer,
 }: CommitOutcomeInput) =>
   Effect.gen(function* () {
     const elapsedMs = data.elapsedMs ?? null;
@@ -123,7 +123,7 @@ const commitOutcome = ({
       stored: true as const,
       revision: persisted.revision,
       rating,
-      expectedAnswers,
+      expectedAnswer,
       explanation: assessed.method === 'skip' ? null : explanationOf(assessed),
       acceptedAsAlternative:
         assessed.method === 'judge' && isAcceptedAlternative(assessed.verdict),
@@ -152,7 +152,11 @@ export const resolveAnswerSubmission = (
       row.entry.id,
       row.card.direction,
     );
-    const expectedAnswers = accepted.map((answer) => answer.text);
+    // The entry's own text for the asked direction: its textbook answer.
+    const expectedAnswer =
+      row.card.direction === 'to_target'
+        ? row.entry.targetText
+        : row.entry.nativeText;
     if ('skipped' in data) {
       // A skip is never graded: it reveals the solution and commits a lapse
       // without consulting the matcher or the judge.
@@ -163,7 +167,7 @@ export const resolveAnswerSubmission = (
         outcome: { method: 'skip' },
         answer: '',
         normalizedAnswer: '',
-        expectedAnswers,
+        expectedAnswer,
       });
     }
     const normalized = normalizeAnswer(data.answer);
@@ -189,12 +193,12 @@ export const resolveAnswerSubmission = (
     if (assessment === null) {
       return {
         graded: false as const,
-        expectedAnswers,
+        expectedAnswer,
         message:
           'Der KI-Prüfer ist gerade nicht erreichbar; die Antwort wurde nicht gewertet.',
       };
     }
-    const pending = pendingRejectedResult(assessment, data, expectedAnswers);
+    const pending = pendingRejectedResult(assessment, data, expectedAnswer);
     if (pending !== null) {
       return pending;
     }
@@ -210,6 +214,6 @@ export const resolveAnswerSubmission = (
       outcome,
       answer: data.answer,
       normalizedAnswer: normalized,
-      expectedAnswers,
+      expectedAnswer,
     });
   });
