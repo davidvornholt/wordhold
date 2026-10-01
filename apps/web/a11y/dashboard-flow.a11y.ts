@@ -73,3 +73,19 @@ test('with several courses the Heute action names the course it opens', async ({
   ).toBeVisible();
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
 });
+
+test('the Wackelkandidaten start a sitting of exactly those words', async ({
+  page,
+}) => {
+  await page.goto('/?state=dashboard');
+
+  const fragile = page.getByRole('listitem').filter({ hasText: 'memory' });
+  await expect(fragile).toContainText('memory · Erinnerung');
+  await expect(fragile.getByRole('link')).toHaveCount(0);
+  await expect(fragile.getByRole('button')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Wackelkandidaten üben' }).click();
+  await expect(page.locator('body')).toHaveAttribute(
+    'data-fixture',
+    'study-start',
+  );
+});

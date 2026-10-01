@@ -82,6 +82,7 @@ const fixtureWeek: ReadonlyArray<PracticeDay> = [
 
 type FixtureAction =
   | 'course'
+  | 'fragile'
   | 'import'
   | 'learn'
   | 'practice'
@@ -98,6 +99,9 @@ const fixtureDestination = (destination: FixtureAction) => {
   }
   if (destination === 'subject-start') {
     return 'terms-course-empty';
+  }
+  if (destination === 'fragile') {
+    return 'study-start';
   }
   return destination === 'learn' ? 'course' : destination;
 };
@@ -298,22 +302,7 @@ const FixtureCourses = ({
     />
     <FragileList
       entries={empty ? [] : [fragileWord, ...(subjects ? [fragileTerm] : [])]}
-      renderEntryAction={(entry) => (
-        <button
-          onClick={() =>
-            navigateToFixture(
-              entry.courseKind === 'terms'
-                ? 'terms-course'
-                : 'vocabulary-difficult',
-            )
-          }
-          type="button"
-        >
-          {entry.courseKind === 'terms'
-            ? entry.targetText
-            : `${entry.targetText} · ${entry.nativeText}`}
-        </button>
-      )}
+      renderPracticeAction={(_group, label) => action(label, 'fragile')}
     />
   </>
 );

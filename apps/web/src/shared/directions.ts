@@ -12,7 +12,7 @@ export type CourseSubject = {
 
 // What the course's entries are called. The dative plural follows
 // prepositions such as "von".
-export const courseNouns = (subject: CourseSubject) =>
+export const courseNouns = (subject: Pick<CourseSubject, 'kind'>) =>
   subject.kind === 'terms'
     ? {
         singular: 'Begriff',
