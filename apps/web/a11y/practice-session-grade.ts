@@ -38,6 +38,7 @@ export const gradeFixtureAnswer = (
         state: 'relearning',
         dueAt: new Date(Date.now() - millisecondsPerSecond),
       },
+      entryKnown: false,
     });
   }
   if (data.answer === 'ungraded') {
@@ -80,5 +81,7 @@ export const gradeFixtureAnswer = (
         ? new Date(Date.now() + millisecondsPerDay)
         : new Date(Date.now() - millisecondsPerSecond),
     },
+    // Each fixture entry is practised in one direction only.
+    entryKnown: resolvedCorrect && scheduleAdvances,
   });
 };
