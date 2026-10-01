@@ -40,7 +40,7 @@ const result = (
   stored: true,
   revision,
   rating: correct ? ratings.good : ratings.again,
-  expectedAnswers: ['word'],
+  expectedAnswer: 'word',
   explanation: null,
   acceptedAsAlternative: false,
   keyPoints: null,
@@ -58,7 +58,7 @@ const leavingKnown = (answer: ResolvedSubmitResult): ResolvedSubmitResult =>
 
 const ungraded: ResolvedSubmitResult = {
   graded: false,
-  expectedAnswers: ['word'],
+  expectedAnswer: 'word',
   message: 'Nicht bewertet',
 };
 

@@ -58,17 +58,19 @@ export type KeyPointFinding = {
   readonly note: string | null;
 };
 
+// `expectedAnswer` is the card's textbook answer: the solution the entry
+// intends, never an alternative the judge accepted along the way.
 export type SubmitResult =
   | {
       readonly graded: false;
-      readonly expectedAnswers: ReadonlyArray<string>;
+      readonly expectedAnswer: string;
       readonly message: string;
     }
   | {
       readonly graded: true;
       readonly correct: false;
       readonly stored: false;
-      readonly expectedAnswers: ReadonlyArray<string>;
+      readonly expectedAnswer: string;
       readonly explanation: string | null;
       readonly acceptedAsAlternative: false;
       readonly keyPoints: ReadonlyArray<KeyPointFinding> | null;
@@ -80,7 +82,7 @@ export type SubmitResult =
       readonly stored: true;
       readonly revision: number;
       readonly rating: number;
-      readonly expectedAnswers: ReadonlyArray<string>;
+      readonly expectedAnswer: string;
       readonly explanation: string | null;
       readonly acceptedAsAlternative: boolean;
       // Only for a definition the judge graded; null otherwise.
