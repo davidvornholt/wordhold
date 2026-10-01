@@ -7,6 +7,28 @@ const trailingPunctuation = /[.,;:!?\s]+$/u;
 const innerWhitespace = /\s+/gu;
 const ignorableInnerPunctuation = /,+/gu;
 const slashSpacing = /\s*\/\s*/gu;
+const arrows = /\s*(?:<->|->|<-|=>|[↔→←⇒])\s*/gu;
+const typedArrows = new Map([
+  ['<->', '↔'],
+  ['->', '→'],
+  ['<-', '←'],
+  ['=>', '⇒'],
+]);
+const ellipses = /\s*(?:…|\.{3})\s*/gu;
+const dashes = /[–—]/gu;
+
+// Textbooks print marks a keyboard cannot type, and the body font even draws
+// a typed "->" as an arrow. Their usual typed spelling copies them exactly:
+// "o -> ue" is "o → ue", "no ... nada" is "no … nada", and a dash is a
+// hyphen. Arrows and ellipses are notation, so their spacing is ignored.
+const unifyTypedMarks = (text: string): string =>
+  text
+    .replace(arrows, (arrow) => {
+      const mark = arrow.trim();
+      return ` ${typedArrows.get(mark) ?? mark} `;
+    })
+    .replace(ellipses, ' ... ')
+    .replace(dashes, '-');
 
 export const normalizeAnswer = (text: string): string =>
   text
@@ -25,5 +47,7 @@ export const normalizeAnswer = (text: string): string =>
 // the learner must reproduce: "el / la tenista" is "el/la tenista".
 export const normalizeAnswerForComparison = (text: string): string =>
   normalizeAnswer(
-    text.replace(ignorableInnerPunctuation, ' ').replace(slashSpacing, '/'),
+    unifyTypedMarks(text)
+      .replace(ignorableInnerPunctuation, ' ')
+      .replace(slashSpacing, '/'),
   );

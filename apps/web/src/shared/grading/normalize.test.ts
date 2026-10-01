@@ -42,6 +42,24 @@ describe('normalizeAnswerForComparison', () => {
     }
   });
 
+  it('reads typed arrows as the printed ones, with any spacing', () => {
+    for (const text of ['(o → ue)', '(o -> ue)', '(o->ue)', '(o  →ue)']) {
+      expect(normalizeAnswerForComparison(text)).toBe('(o → ue)');
+    }
+    expect(normalizeAnswerForComparison('a <- b')).toBe('a ← b');
+    expect(normalizeAnswerForComparison('a <-> b')).toBe('a ↔ b');
+    expect(normalizeAnswerForComparison('a => b')).toBe('a ⇒ b');
+  });
+
+  it('reads three dots as an ellipsis and dashes as hyphens', () => {
+    expect(normalizeAnswerForComparison('no … nada')).toBe(
+      normalizeAnswerForComparison('no...nada'),
+    );
+    expect(normalizeAnswerForComparison('algo…')).toBe('algo');
+    expect(normalizeAnswerForComparison('ir – fui')).toBe('ir - fui');
+    expect(normalizeAnswerForComparison('ir — fui')).toBe('ir - fui');
+  });
+
   it('keeps textbook notation for the variant parser', () => {
     expect(normalizeAnswerForComparison('amigo/a; estudiante(s)')).toBe(
       'amigo/a; estudiante(s)',

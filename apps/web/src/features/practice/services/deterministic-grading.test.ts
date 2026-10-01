@@ -45,6 +45,17 @@ describe('isDeterministicMatch', () => {
     expect(isDeterministicMatch('bonne', [answer('bon/ bonne')])).toBe(true);
   });
 
+  it('accepts typed spellings of printed marks', () => {
+    expect(
+      isDeterministicMatch('suponer algo (o -> ue)', [
+        answer('suponer algo (o → ue)'),
+      ]),
+    ).toBe(true);
+    expect(isDeterministicMatch('no ... nada', [answer('no … nada')])).toBe(
+      true,
+    );
+  });
+
   it('rejects compact suffix fragments and invented forms', () => {
     expect(isDeterministicMatch('trice', [answer('acteur/trice')])).toBe(false);
     expect(isDeterministicMatch('ive', [answer('sportif/ive')])).toBe(false);

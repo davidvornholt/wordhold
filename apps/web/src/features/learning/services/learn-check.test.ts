@@ -88,6 +88,17 @@ describe('matchesLearnItem', () => {
     ).toBe(true);
   });
 
+  // The body font draws a typed "->" as an arrow, so the copy looks exact.
+  it('accepts an arrow typed the way a keyboard allows', () => {
+    const arrowItem = {
+      ...item,
+      targetText: 'suponer algo (o → ue)',
+      textbookAnswers: ['suponer algo (o → ue)'],
+    };
+    expect(matchesLearnItem(arrowItem, 'suponer algo (o -> ue)')).toBe(true);
+    expect(matchesLearnItem(arrowItem, 'suponer algo (o > ue)')).toBe(false);
+  });
+
   it('accepts the prompted spelling but not an unproven overflow reading', () => {
     const overflow = 'aa/bb cc/dd ee/ff gg/hh ii/jj';
     const overflowItem = {
