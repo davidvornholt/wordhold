@@ -6,6 +6,7 @@ import {
 } from './definition/schema';
 import { ExtractedPage } from './extraction/schema';
 import { JudgeVerdict } from './judge/schema';
+import { SentenceVerdict } from './sentence/judge-schema';
 import { SentenceBatch } from './sentence/service';
 import { providerJsonSchema } from './structured-output';
 
@@ -18,6 +19,7 @@ const outputSchemas = [
   ['KeyPointList', () => providerJsonSchema(KeyPointList)],
   ['JudgeVerdict', () => providerJsonSchema(JudgeVerdict)],
   ['SentenceBatch', () => providerJsonSchema(SentenceBatch)],
+  ['SentenceVerdict', () => providerJsonSchema(SentenceVerdict)],
 ] as const;
 
 const objectNodes = (root: unknown): ReadonlyArray<Record<string, unknown>> => {
@@ -54,6 +56,7 @@ describe('providerJsonSchema', () => {
     ['DefinitionVerdict', () => providerJsonSchema(DefinitionVerdict)],
     ['JudgeVerdict', () => providerJsonSchema(JudgeVerdict)],
     ['SentenceBatch', () => providerJsonSchema(SentenceBatch)],
+    ['SentenceVerdict', () => providerJsonSchema(SentenceVerdict)],
   ] as const) {
     it(`marks every ${name} object property as required`, () => {
       const incompleteObjects = objectNodes(convert().jsonSchema)

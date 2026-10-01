@@ -16,6 +16,9 @@
     "./judge/schema": "./src/judge/schema.ts",
     "./sentence": "./src/sentence/service.ts",
     "./sentence/error": "./src/sentence/error.ts",
+    "./sentence/judge": "./src/sentence/judge.ts",
+    "./sentence/judge-error": "./src/sentence/judge-error.ts",
+    "./sentence/judge-schema": "./src/sentence/judge-schema.ts",
     "./tts": "./src/tts/service.ts",
     "./tts/error": "./src/tts/error.ts",
     "./tts/speech-text": "./src/tts/speech-text.ts"
