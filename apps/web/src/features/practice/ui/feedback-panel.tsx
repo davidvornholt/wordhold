@@ -121,11 +121,11 @@ const JudgeNotes = ({
 const ExpectedAnswer = ({
   answerLanguage,
   definition,
-  expectedAnswers,
+  expectedAnswer,
 }: {
   readonly answerLanguage: LanguageCode;
   readonly definition: boolean;
-  readonly expectedAnswers: ReadonlyArray<string>;
+  readonly expectedAnswer: string;
 }) => (
   <p>
     <span className="text-muted-foreground text-sm">
@@ -139,7 +139,7 @@ const ExpectedAnswer = ({
       }
       lang={answerLanguage}
     >
-      {definition ? expectedAnswers.at(0) : expectedAnswers.join(' / ')}
+      {expectedAnswer}
     </span>
   </p>
 );
@@ -161,11 +161,11 @@ export const FeedbackPanel = ({
   kind,
 }: FeedbackPanelProps) => {
   const definition = kind === 'terms';
-  const normalizedSubmission = normalizeAnswerForComparison(submittedAnswer);
-  const repeatsSubmittedAnswer = result.expectedAnswers.some(
-    (expectedAnswer) =>
-      normalizeAnswerForComparison(expectedAnswer) === normalizedSubmission,
-  );
+  // Only the textbook answer itself makes it redundant: an accepted
+  // alternative still shows the solution the entry intends.
+  const repeatsSubmittedAnswer =
+    normalizeAnswerForComparison(result.expectedAnswer) ===
+    normalizeAnswerForComparison(submittedAnswer);
   const tone = feedbackTone(result);
   const pendingWrong = result.graded && !result.stored;
   // The field below now asks for the answer to be written out, so the
@@ -191,7 +191,7 @@ export const FeedbackPanel = ({
         <ExpectedAnswer
           answerLanguage={answerLanguage}
           definition={definition}
-          expectedAnswers={result.expectedAnswers}
+          expectedAnswer={result.expectedAnswer}
         />
       )}
       {showsAttempt ? (

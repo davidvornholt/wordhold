@@ -9,7 +9,7 @@ const result: SubmitResult = {
   stored: true,
   revision: 1,
   rating: 3,
-  expectedAnswers: ['waiter'],
+  expectedAnswer: 'waiter',
   explanation: null,
   acceptedAsAlternative: false,
   keyPoints: null,
@@ -63,7 +63,7 @@ const pendingWrongResult: SubmitResult = {
   graded: true,
   correct: false,
   stored: false,
-  expectedAnswers: ['waiter'],
+  expectedAnswer: 'waiter',
   explanation: null,
   acceptedAsAlternative: false,
   keyPoints: null,
@@ -74,7 +74,7 @@ describe('answer feedback', () => {
   it('does not repeat an expected answer that matches the submission', () => {
     expect(render('  Waiter. ')).not.toContain('Erwartet:');
     expect(
-      render('hello world', { expectedAnswers: ['hello, world'] }),
+      render('hello world', { expectedAnswer: 'hello, world' }),
     ).not.toContain('Erwartet:');
   });
 
