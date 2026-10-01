@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./providers/vertex": "./src/providers/vertex.ts",
+    "./providers/bedrock": "./src/providers/bedrock.ts",
     "./extraction": "./src/extraction/service.ts",
     "./extraction/error": "./src/extraction/error.ts",
     "./extraction/schema": "./src/extraction/schema.ts",
@@ -28,6 +28,7 @@
     "benchmark:models": "bun src/benchmark/cli.ts"
   },
   "dependencies": {
+    "@ai-sdk/amazon-bedrock": "^5.0.104",
     "@ai-sdk/google-vertex": "^5.0.93",
     "@ai-sdk/openai": "^4.0.75",
     "@aws-sdk/client-polly": "^3.1140.0",
