@@ -5,7 +5,7 @@ import { Extraction } from '@wordhold/ai/extraction';
 import { Judge } from '@wordhold/ai/judge';
 import { BedrockProvider } from '@wordhold/ai/providers/bedrock';
 import { SentenceGen } from '@wordhold/ai/sentence';
-import { Data, Effect, Exit, Layer } from 'effect';
+import { Cause, Data, Effect, Exit, Layer, Option } from 'effect';
 
 class VerificationError extends Data.TaggedError('VerificationError')<{
   readonly message: string;
@@ -116,6 +116,22 @@ const verification = Effect.gen(function* () {
 
 const result = await Effect.runPromiseExit(verification);
 if (Exit.isFailure(result)) {
+  const failure = Cause.failureOption(result.cause);
+  if (Option.isSome(failure)) {
+    const error = failure.value;
+    const providerCause = 'cause' in error ? error.cause : undefined;
+    const status =
+      typeof providerCause === 'object' &&
+      providerCause !== null &&
+      'statusCode' in providerCause &&
+      typeof providerCause.statusCode === 'number'
+        ? ` (HTTP ${providerCause.statusCode})`
+        : '';
+    await globalThis.Bun.write(
+      globalThis.Bun.stderr,
+      `${error._tag}${status}\n`,
+    );
+  }
   await globalThis.Bun.write(
     globalThis.Bun.stderr,
     'Sonnet medium provider verification failed; the last reported workload identifies progress.\n',
