@@ -46,6 +46,18 @@ describe('judgePrompt', () => {
     expect(prompt).toContain('"expected":["freedom","liberty"]');
     expect(prompt).toContain('"fredom"');
   });
+
+  // The feedback heading already says the answer was right.
+  it('asks for no explanation when there is nothing to add', () => {
+    const prompt = judgePrompt({
+      direction: 'to_target',
+      targetLanguage: 'Spanish',
+      prompt: 'hier: das Schuljahr',
+      expectedAnswers: ['el curso'],
+      givenAnswer: 'el año escolar',
+    });
+    expect(prompt).toContain('otherwise use a null explanation');
+  });
 });
 
 describe('JudgeVerdict schema', () => {
@@ -81,6 +93,15 @@ describe('JudgeVerdict schema', () => {
         Schema.decodeUnknownSync(JudgeVerdict)(completeVerdict),
       ),
     ).toBe(true);
+  });
+
+  it('decodes a verdict without an explanation', () => {
+    const verdict = Schema.decodeUnknownSync(JudgeVerdict)({
+      ...completeVerdict,
+      explanation: null,
+    });
+    expect(verdict.explanation).toBeNull();
+    expect(isAcceptedAlternative(verdict)).toBe(true);
   });
 
   // A model that proposes an alternative while faulting the answer has still

@@ -32,6 +32,9 @@ const allDimensionsPass = (verdict: {
 // leave the learner looking at "judge unreachable" over a disagreement about
 // a boolean. `isAcceptedAlternative` is the gate that matters, because it
 // guards the only irreversible step: writing the answer back as accepted.
+//
+// `explanation` is null when there is nothing to add to the verdict, so the
+// feedback does not repeat "Richtig" under its own heading.
 export const JudgeVerdict = Schema.Struct({
   correct: Schema.Boolean,
   acceptAsAlternative: Schema.Boolean,
@@ -40,7 +43,7 @@ export const JudgeVerdict = Schema.Struct({
   idiomaticity: Dimension,
   spelling: Dimension,
   intendedConstruction: Dimension,
-  explanation: Schema.String,
+  explanation: Schema.NullOr(Schema.String),
 });
 export type JudgeVerdictData = typeof JudgeVerdict.Type;
 
