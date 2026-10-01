@@ -47,7 +47,7 @@ const practiceItem = {
   targetText: term,
   nativeText: definition,
   hasAudio: false,
-  state: 'learning' as const,
+  entryKnown: false,
   example: null,
   prompt: term,
 };
@@ -93,6 +93,7 @@ const submitDefinition = ({
     acceptedAsAlternative: false,
     keyPoints: missedPoint.keyPoints,
     schedule: { advanced: true, state: 'relearning', dueAt: new Date() },
+    entryKnown: false,
   });
 };
 

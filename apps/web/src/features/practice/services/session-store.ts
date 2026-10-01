@@ -1,5 +1,6 @@
 import { Database } from '@wordhold/db/client';
 import { Context, Effect, Layer } from 'effect';
+import { entryIsKnown } from '../../../shared/practice/known-entry';
 import { readyCardsInNextSection } from '../../../shared/practice/session-policy';
 import { sessionSectionSize } from '../../../shared/session/section-policy';
 import {
@@ -78,8 +79,8 @@ export class PracticeSessionStore extends Context.Tag(
         return Effect.all(
           {
             items: sql<ItemRow>`
-              select c.id as "cardId", c.revision, c.direction, c.state,
-                e.id as "entryId",
+              select c.id as "cardId", c.revision, c.direction,
+                e.id as "entryId", ${entryIsKnown(sql)} as "entryKnown",
                 e.target_text as "targetText", e.native_text as "nativeText",
                 exists(select 1 from entry_audio a where a.entry_id = e.id) as "hasAudio"
               from cards c
@@ -153,12 +154,13 @@ export class PracticeSessionStore extends Context.Tag(
         const only = chosenDirection(direction);
         const selectionClause = selectedEntries(sql, selection);
         return sql<ItemRow>`
-          select c.id as "cardId", c.revision, c.direction, c.state,
-            e.id as "entryId",
+          select c.id as "cardId", c.revision, c.direction,
+            e.id as "entryId", ${entryIsKnown(sql)} as "entryKnown",
             e.target_text as "targetText", e.native_text as "nativeText",
             exists(select 1 from entry_audio a where a.entry_id = e.id) as "hasAudio"
           from cards c
           join entries e on e.id = c.entry_id
+          join courses co on co.id = e.course_id
           where e.course_id = ${courseId}
             and ${selectionClause}
             and (${only}::answer_direction is null

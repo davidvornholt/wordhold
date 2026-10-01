@@ -2,11 +2,7 @@ import type { DefinitionVerdictData } from '@wordhold/ai/definition/schema';
 import type { JudgeVerdictData } from '@wordhold/ai/judge/schema';
 import type { CourseKind, LanguageCode } from '@wordhold/db/schema/courses';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
-import type {
-  CardState,
-  cards,
-  ReviewMode,
-} from '@wordhold/db/schema/practice';
+import type { cards, ReviewMode } from '@wordhold/db/schema/practice';
 import type { PreparedExampleSentence } from '../../../shared/examples/example-model';
 import type {
   DerivedRating,
@@ -21,9 +17,9 @@ export type PracticeItem = {
   readonly targetText: string;
   readonly nativeText: string;
   readonly hasAudio: boolean;
-  // Where the card stands before this sitting, so the summary can count the
-  // cards that graduated to review during it.
-  readonly state: CardState;
+  // Whether the entry already counted as "sicher" when the sitting loaded, so
+  // the summary can count the entries the sitting made sicher.
+  readonly entryKnown: boolean;
   readonly example: PreparedExampleSentence | null;
   readonly prompt: string;
 };
@@ -90,6 +86,8 @@ export type SubmitResult =
       // Only for a definition the judge graded; null otherwise.
       readonly keyPoints: ReadonlyArray<KeyPointFinding> | null;
       readonly schedule: CardSchedule;
+      // Whether the entry counts as "sicher" after this answer.
+      readonly entryKnown: boolean;
     };
 
 export type ResolvedSubmitResult = Exclude<
@@ -126,6 +124,7 @@ export type PersistReviewInput = {
 export type PersistedReview = {
   readonly revision: number;
   readonly schedule: CardSchedule;
+  readonly entryKnown: boolean;
 };
 
 // A judge_cache row holds a translation or a definition verdict. The entry's

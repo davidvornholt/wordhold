@@ -26,7 +26,7 @@ const item = {
   targetText: 'memory',
   nativeText: 'Erinnerung',
   hasAudio: false,
-  state: 'learning' as const,
+  entryKnown: false,
   example: {
     targetText: 'This memory still makes me smile.',
     nativeText: 'Diese Erinnerung bringt mich noch immer zum Lächeln.',
@@ -149,6 +149,7 @@ export const PracticeOneCardSummaryFixture = ({
       state: 'review',
       dueAt: justDueAt,
     },
+    entryKnown: true,
   };
   const unavailable: SubmitResult = {
     graded: false,

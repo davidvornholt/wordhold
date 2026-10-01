@@ -22,7 +22,7 @@ const item = (index: number): PracticeItem => ({
   targetText: `word-${index}`,
   nativeText: `Wort-${index}`,
   hasAudio: false,
-  state: 'learning',
+  entryKnown: false,
   example: null,
   prompt: `Wort-${index}`,
 });
@@ -49,7 +49,12 @@ const result = (
     state: correct ? 'review' : 'relearning',
     dueAt,
   },
+  entryKnown: false,
 });
+
+// The same answer, after which the entry counts as "sicher".
+const leavingKnown = (answer: ResolvedSubmitResult): ResolvedSubmitResult =>
+  answer.graded ? { ...answer, entryKnown: true } : answer;
 
 const ungraded: ResolvedSubmitResult = {
   graded: false,
@@ -204,14 +209,67 @@ describe('session queue rail', () => {
     expect(repaired.phase).toBe('complete');
     expect(outcomes(repaired)).toEqual(['correct', 'ungraded', 'correct']);
   });
+});
 
-  it('counts cards that graduate to review during the sitting', () => {
+describe('session queue newly known entries', () => {
+  // Both directions of one entry, as a mixed sitting asks them.
+  const bothDirections = (entryKnown = false): ReadonlyArray<PracticeItem> => [
+    { ...item(0), entryKnown },
+    {
+      ...item(0),
+      cardId: 'card-0-native',
+      direction: 'to_native',
+      entryKnown,
+    },
+  ];
+
+  it('counts an entry once an answer makes it sicher', () => {
     const queue = answerHead(
-      createSessionQueue([item(0), { ...item(1), state: 'review' }]),
-      result(true, minuteLater),
+      createSessionQueue(items(2)),
+      leavingKnown(result(true, minuteLater)),
     );
     const done = answerHead(queue, result(true, minuteLater));
-    expect(done.graduatedCardIds).toEqual(['card-0']);
+    expect(done.newlyKnownEntryIds).toEqual(['entry-0']);
+  });
+
+  it('does not count a card in review while another direction is still learning', () => {
+    const done = answerHead(
+      createSessionQueue(items(1)),
+      result(true, minuteLater),
+    );
+    expect(done.newlyKnownEntryIds).toEqual([]);
+  });
+
+  it('counts an entry once when both of its directions are answered', () => {
+    const first = answerHead(
+      createSessionQueue(bothDirections()),
+      result(true, minuteLater),
+    );
+    const done = answerHead(first, leavingKnown(result(true, minuteLater)));
+    expect(done.newlyKnownEntryIds).toEqual(['entry-0']);
+  });
+
+  it('takes an entry back out when a later answer misses it', () => {
+    const first = answerHead(
+      createSessionQueue(bothDirections()),
+      leavingKnown(result(true, minuteLater)),
+    );
+    const missed = answerHead(first, result(false, minuteLater));
+    expect(missed.newlyKnownEntryIds).toEqual([]);
+  });
+
+  it('does not count an entry that was already sicher', () => {
+    const missed = answerHead(
+      createSessionQueue(bothDirections(true)),
+      result(false, minuteLater),
+    );
+    const second = answerHead(missed, leavingKnown(result(true, minuteLater)));
+    const recovered = answerHead(
+      second,
+      leavingKnown(result(true, minuteLater, 2)),
+    );
+    expect(recovered.phase).toBe('complete');
+    expect(recovered.newlyKnownEntryIds).toEqual([]);
   });
 });
 

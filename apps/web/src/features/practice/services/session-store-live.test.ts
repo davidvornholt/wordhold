@@ -36,6 +36,11 @@ describe('PracticeSessionStore introduction contract', () => {
             firstReviewEntryId,
             firstReviewEntryId,
           ]);
+          expect(session.items.map((item) => item.entryKnown)).toEqual([
+            true,
+            false,
+            false,
+          ]);
           expect(session.availability).toEqual({
             due: 1,
             firstReviews: 2,

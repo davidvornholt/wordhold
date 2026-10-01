@@ -13,6 +13,9 @@ export type ReviewCommitOperations<E> = {
   ) => Effect.Effect<number | undefined, E>;
   readonly insertReview: () => Effect.Effect<void, E>;
   readonly insertAcceptedAlternative: () => Effect.Effect<void, E>;
+  // Whether the answered card's entry counts as "sicher" once this answer is
+  // applied.
+  readonly entryKnown: () => Effect.Effect<boolean, E>;
 };
 
 export type RunReviewTransaction<E> = <A, E2>(
@@ -36,6 +39,7 @@ export const commitGradedAnswer = <E>(
         yield* operations.insertAcceptedAlternative();
       }
       yield* operations.insertReview();
-      return revision;
+      const entryKnown = yield* operations.entryKnown();
+      return { revision, entryKnown };
     }),
   );
