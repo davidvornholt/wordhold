@@ -46,6 +46,13 @@ describe('definitionJudgePrompt', () => {
       'covered only by that term or an exact synonym',
     );
   });
+
+  // The feedback heading already says the answer was right.
+  it('asks for no explanation when nothing is missing or wrong', () => {
+    expect(definitionJudgePrompt({ ...catalyst, givenAnswer: '' })).toContain(
+      'otherwise use a null explanation',
+    );
+  });
 });
 
 describe('DefinitionVerdict', () => {
@@ -58,7 +65,7 @@ describe('DefinitionVerdict', () => {
       note: point ? null : 'fehlt',
     })),
     accuracy: { ok: accurate, note: accurate ? null : 'falsch' },
-    explanation: 'Richtig.',
+    explanation: null,
   });
   const decode = Schema.decodeUnknownSync(DefinitionVerdict);
 

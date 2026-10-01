@@ -14,16 +14,13 @@ import type { RetypeState } from './practice-answer-form';
 export const needsRetype = (result: SubmitResult | null): boolean =>
   result?.graded === true && !result.correct;
 
-// The learner copies the solution shown to them, so every shown answer is
-// read as the textbook notation it is displayed in.
+// The template is the card's textbook answer, so the copy passes whenever
+// review grading would accept it.
 export const matchesShownAnswer = (
-  expectedAnswers: ReadonlyArray<string>,
+  expectedAnswer: string,
   typed: string,
 ): boolean =>
-  isDeterministicMatch(
-    typed,
-    expectedAnswers.map((text) => ({ text, source: 'textbook' })),
-  );
+  isDeterministicMatch(typed, [{ text: expectedAnswer, source: 'textbook' }]);
 
 export const useRetype = (
   result: SubmitResult | null,
@@ -33,7 +30,7 @@ export const useRetype = (
   const [typed, setTypedText] = useState('');
   const [missedMessage, setMissedMessage] = useState<string | null>(null);
   const required = needsRetype(result);
-  const template = result?.expectedAnswers.at(0) ?? '';
+  const template = result?.expectedAnswer ?? '';
 
   // True when the card may move on; false after recording a miss. A missed
   // word is typed again from scratch; a missed definition keeps the copy and
@@ -42,7 +39,7 @@ export const useRetype = (
     if (!required) {
       return true;
     }
-    if (matchesShownAnswer(result?.expectedAnswers ?? [], typed)) {
+    if (matchesShownAnswer(template, typed)) {
       setMissedMessage(null);
       return true;
     }

@@ -191,7 +191,7 @@ describe('Bedrock definition transport', () => {
         judge: {
           keyPoints: [{ covered: true, note: null }],
           accuracy: { ok: true, note: null },
-          explanation: 'Richtig.',
+          explanation: null,
         },
         keyPoints: { keyPoints: ['gibt Elektronen ab'] },
         suggest: { definition: 'Ein Elektronendonator gibt Elektronen ab.' },
@@ -261,7 +261,7 @@ describe('Bedrock definition transport', () => {
     const { services } = capturedServices({
       keyPoints: [],
       accuracy: { ok: true, note: null },
-      explanation: 'Richtig.',
+      explanation: null,
     });
     const result = await Effect.runPromise(
       Effect.gen(function* () {

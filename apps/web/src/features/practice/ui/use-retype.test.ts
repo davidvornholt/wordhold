@@ -3,7 +3,7 @@ import { matchesShownAnswer } from './use-retype';
 
 describe('matchesShownAnswer', () => {
   it('accepts the notation review grading accepts', () => {
-    const shown = ['estar ilusionado/-a (con algo)'];
+    const shown = 'estar ilusionado/-a (con algo)';
     expect(matchesShownAnswer(shown, 'estar ilusionado/a (con algo)')).toBe(
       true,
     );
@@ -15,10 +15,9 @@ describe('matchesShownAnswer', () => {
     );
   });
 
-  it('accepts any shown answer and rejects an empty copy', () => {
-    const shown = ['to look (at)', 'to watch'];
-    expect(matchesShownAnswer(shown, 'to watch')).toBe(true);
-    expect(matchesShownAnswer(shown, 'to look at')).toBe(true);
-    expect(matchesShownAnswer(shown, '  ')).toBe(false);
+  it('accepts a reading of the template and rejects an empty copy', () => {
+    expect(matchesShownAnswer('to look (at)', 'to look at')).toBe(true);
+    expect(matchesShownAnswer('to look (at)', 'to watch')).toBe(false);
+    expect(matchesShownAnswer('to look (at)', '  ')).toBe(false);
   });
 });
