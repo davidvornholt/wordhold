@@ -63,7 +63,7 @@ const restingDetail = (
 };
 
 // What the course holds in memory so far: known entries over all entries,
-// as text and as a filled bar that grows with every graduated card.
+// as text and as a filled bar that grows as entries become known.
 const percentScale = 100;
 
 const KnownMeter = ({

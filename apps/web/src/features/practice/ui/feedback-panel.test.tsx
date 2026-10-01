@@ -18,6 +18,7 @@ const result: SubmitResult = {
     state: 'review',
     dueAt: new Date('2026-08-30T12:00:00Z'),
   },
+  entryKnown: false,
 };
 
 const feedbackId = 'feedback';

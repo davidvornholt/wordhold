@@ -129,6 +129,7 @@ const commitOutcome = ({
         assessed.method === 'judge' && isAcceptedAlternative(assessed.verdict),
       keyPoints: assessed.method === 'skip' ? null : keyPointFindings(assessed),
       schedule: persisted.schedule,
+      entryKnown: persisted.entryKnown,
     };
   });
 

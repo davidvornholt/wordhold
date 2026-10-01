@@ -14,7 +14,7 @@ const session = (
     targetText: 'memory',
     nativeText: 'Erinnerung',
     hasAudio: false,
-    state: 'review',
+    entryKnown: true,
     example: null,
     prompt: 'Erinnerung',
   })),
