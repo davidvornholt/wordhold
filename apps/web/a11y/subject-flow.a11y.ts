@@ -224,8 +224,15 @@ test('the overview lists a subject with its failed terms by name only', async ({
   await expect(
     page.getByRole('textbox', { name: 'Name des Fachs' }),
   ).toHaveCount(0);
+  const fragile = page.getByRole('list').filter({ hasText: 'Katalysator' });
+  await expect(fragile.getByRole('listitem')).toHaveCount(2);
+  await expect(fragile.getByText('Aktivierungsenergie')).toHaveCount(0);
+  // One sitting per course, each naming its course and count.
   await expect(
-    page.getByRole('button', { exact: true, name: 'Katalysator' }),
+    page.getByRole('button', { name: 'English A2 üben · 1 Vokabel' }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Chemie üben · 1 Begriff' }),
   ).toBeVisible();
   await page.getByRole('button', { exact: true, name: 'Chemie' }).click();
   await expect(page.locator('body')).toHaveAttribute(

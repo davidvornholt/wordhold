@@ -27,15 +27,20 @@ type StudyCourse = CourseSubject & {
   readonly name: string;
 };
 
+type StudyOriginProps = {
+  readonly course: StudyCourse;
+  readonly place: CoursePlace | undefined;
+  readonly fromFragile: boolean;
+};
+
 // A free selection is made in a language's word list, or on a subject's own
-// page, which is its list of terms.
+// page, which is its list of terms. The overview's Wackelkandidaten lead back
+// to the overview.
 const StudySelectionControl = ({
   course,
   place,
-}: {
-  readonly course: StudyCourse;
-  readonly place: CoursePlace | undefined;
-}) => {
+  fromFragile,
+}: StudyOriginProps) => {
   if (place !== undefined) {
     return (
       <PlacePageLink
@@ -45,6 +50,13 @@ const StudySelectionControl = ({
       >
         Neue Auswahl treffen
       </PlacePageLink>
+    );
+  }
+  if (fromFragile) {
+    return (
+      <ActionLink to="/" variant="quiet-muted">
+        Zurück zur Übersicht
+      </ActionLink>
     );
   }
   return course.kind === 'terms' ? (
@@ -63,19 +75,16 @@ const StudySelectionControl = ({
   );
 };
 
-const StudyBackControl = ({
-  course,
-  place,
-}: {
-  readonly course: StudyCourse;
-  readonly place: CoursePlace | undefined;
-}) => {
+const StudyBackControl = ({ course, place, fromFragile }: StudyOriginProps) => {
   if (place !== undefined) {
     return (
       <PlaceBackLink courseId={course.id} selection={place.selection}>
         {place.name}
       </PlaceBackLink>
     );
+  }
+  if (fromFragile) {
+    return <BackLink to="/">Übersicht</BackLink>;
   }
   return course.kind === 'terms' ? (
     <PlaceBackLink courseId={course.id} selection={null}>
@@ -104,9 +113,16 @@ const StudyScreen = () => {
     selection,
     session,
   } = Route.useLoaderData();
+  const { from } = Route.useSearch();
+  const fromFragile = from === 'fragile';
   const nouns = courseNouns(course);
   const navigating = useRouterState({ select: (state) => state.isLoading });
-  const titleSubject = place === undefined ? 'Auswahl' : place.name;
+  let titleSubject = 'Auswahl';
+  if (place !== undefined) {
+    titleSubject = place.name;
+  } else if (fromFragile) {
+    titleSubject = 'Wackelkandidaten';
+  }
   const title = `${titleSubject} · ${mode === 'learn' ? 'Kennenlernen' : 'Üben'}`;
   let content: ReactNode;
   if (selection === null) {
@@ -152,7 +168,10 @@ const StudyScreen = () => {
               className="w-fit"
               onClick={rememberDirection}
               params={{ courseId: course.id }}
-              search={selectionSearch(selection, 'practice', option.value)}
+              search={{
+                ...selectionSearch(selection, 'practice', option.value),
+                from,
+              }}
               to="/courses/$courseId/study"
             >
               {navigating
@@ -166,7 +185,13 @@ const StudyScreen = () => {
   } else {
     content = (
       <SessionRunner
-        backControl={<StudySelectionControl course={course} place={place} />}
+        backControl={
+          <StudySelectionControl
+            course={course}
+            fromFragile={fromFragile}
+            place={place}
+          />
+        }
         emptyMessage={`Diese Auswahl enthält keine ${nouns.plural}.`}
         key={direction}
         mode="drill"
@@ -180,7 +205,13 @@ const StudyScreen = () => {
 
   return (
     <FocusLayout
-      exit={<StudyBackControl course={course} place={place} />}
+      exit={
+        <StudyBackControl
+          course={course}
+          fromFragile={fromFragile}
+          place={place}
+        />
+      }
       title={title}
     >
       {content}

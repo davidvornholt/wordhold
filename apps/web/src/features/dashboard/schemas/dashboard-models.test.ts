@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'bun:test';
 import {
   busiestCourse,
+  type FragileEntry,
+  fragileActionLabel,
+  fragileGroups,
   hasAvailablePractice,
   todayActionLabel,
   totalReady,
@@ -57,6 +60,60 @@ describe('todayActionLabel', () => {
     );
     expect(todayActionLabel(latin, latin.ready + otherCourses)).toBe(
       'Latein üben · 1 Karte',
+    );
+  });
+});
+
+const fragile = (
+  entryId: string,
+  course: Pick<FragileEntry, 'courseId' | 'courseKind' | 'courseName'>,
+): FragileEntry => ({
+  ...course,
+  entryId,
+  targetText: entryId,
+  nativeText: entryId,
+  failures: 2,
+});
+
+const spanish = {
+  courseId: 'spanish',
+  courseKind: 'language',
+  courseName: 'Spanisch',
+} as const;
+const chemistry = {
+  courseId: 'chemistry',
+  courseKind: 'terms',
+  courseName: 'Chemie',
+} as const;
+
+describe('fragileGroups', () => {
+  it('collects each course’s entries in the order of its most fragile one', () => {
+    expect(
+      fragileGroups([
+        fragile('a', chemistry),
+        fragile('b', spanish),
+        fragile('c', chemistry),
+      ]),
+    ).toEqual([
+      { ...chemistry, entryIds: ['a', 'c'] },
+      { ...spanish, entryIds: ['b'] },
+    ]);
+  });
+});
+
+describe('fragileActionLabel', () => {
+  it('stays plain when one course holds every entry', () => {
+    expect(fragileActionLabel({ ...spanish, entryIds: ['a', 'b'] }, 1)).toBe(
+      'Wackelkandidaten üben',
+    );
+  });
+
+  it('names the course and its own count otherwise', () => {
+    expect(fragileActionLabel({ ...spanish, entryIds: ['a', 'b'] }, 2)).toBe(
+      'Spanisch üben · 2 Vokabeln',
+    );
+    expect(fragileActionLabel({ ...chemistry, entryIds: ['c'] }, 2)).toBe(
+      'Chemie üben · 1 Begriff',
     );
   });
 });
