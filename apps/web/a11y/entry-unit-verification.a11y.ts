@@ -202,5 +202,7 @@ test('VerifyForm fills every missing example sentence with one click', async ({
   await expect(
     page.getByLabel('Beispielsatz', { exact: true }).nth(generatedExampleIndex),
   ).toHaveValue('This memory makes me smile.');
+  // Focusing a filled row would scroll the page to it as each sentence lands.
+  await expect(page.locator('input:focus')).toHaveCount(0);
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
 });
