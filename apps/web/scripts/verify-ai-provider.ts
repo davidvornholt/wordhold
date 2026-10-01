@@ -1,18 +1,23 @@
+import { DefinitionJudge } from '@wordhold/ai/definition/judge';
+import { isDefinitionCorrect } from '@wordhold/ai/definition/schema';
+import { DefinitionWriter } from '@wordhold/ai/definition/writer';
 import { Extraction } from '@wordhold/ai/extraction';
 import { Judge } from '@wordhold/ai/judge';
-import { VertexProvider } from '@wordhold/ai/providers/vertex';
+import { BedrockProvider } from '@wordhold/ai/providers/bedrock';
 import { SentenceGen } from '@wordhold/ai/sentence';
-import { Data, Effect, Exit, Layer } from 'effect';
+import { Cause, Data, Effect, Exit, Layer, Option } from 'effect';
 
 class VerificationError extends Data.TaggedError('VerificationError')<{
   readonly message: string;
 }> {}
 
 const services = Layer.mergeAll(
+  DefinitionJudge.Default,
+  DefinitionWriter.Default,
   Extraction.Default,
   Judge.Default,
   SentenceGen.Default,
-).pipe(Layer.provide(VertexProvider.live));
+).pipe(Layer.provide(BedrockProvider.live));
 
 const report = (message: string) =>
   Effect.promise(() =>
@@ -36,6 +41,25 @@ const verification = Effect.gen(function* () {
     });
   }
   yield* report('Judge verified.');
+  const definitionJudge = yield* DefinitionJudge;
+  const definitions = yield* DefinitionWriter;
+  const definitionVerdict = yield* definitionJudge.judge({
+    term: 'Elektronendonator',
+    definition: 'Ein Elektronendonator gibt Elektronen ab.',
+    keyPoints: ['gibt Elektronen ab'],
+    givenAnswer: 'Ein Elektronendonator gibt Elektronen ab.',
+  });
+  if (!isDefinitionCorrect(definitionVerdict)) {
+    return yield* new VerificationError({
+      message: 'Definition judge rejected an exact definition.',
+    });
+  }
+  yield* definitions.keyPoints({
+    term: 'Elektronendonator',
+    definition: 'Ein Elektronendonator gibt Elektronen ab.',
+  });
+  yield* definitions.suggest({ term: 'Elektronendonator', subject: 'Chemie' });
+  yield* report('Definition grading and writing verified.');
   const batch = yield* sentences.generate({
     targetText: 'the book',
     nativeText: 'das Buch',
@@ -92,15 +116,31 @@ const verification = Effect.gen(function* () {
 
 const result = await Effect.runPromiseExit(verification);
 if (Exit.isFailure(result)) {
+  const failure = Cause.failureOption(result.cause);
+  if (Option.isSome(failure)) {
+    const error = failure.value;
+    const providerCause = 'cause' in error ? error.cause : undefined;
+    const status =
+      typeof providerCause === 'object' &&
+      providerCause !== null &&
+      'statusCode' in providerCause &&
+      typeof providerCause.statusCode === 'number'
+        ? ` (HTTP ${providerCause.statusCode})`
+        : '';
+    await globalThis.Bun.write(
+      globalThis.Bun.stderr,
+      `${error._tag}${status}\n`,
+    );
+  }
   await globalThis.Bun.write(
     globalThis.Bun.stderr,
-    'Vertex provider verification failed; the last reported workload identifies progress.\n',
+    'Sonnet medium provider verification failed; the last reported workload identifies progress.\n',
   );
   // biome-ignore lint/correctness/noProcessGlobal: This CLI boundary must report failure to the shell.
   globalThis.process.exitCode = 1;
 } else {
   await globalThis.Bun.write(
     globalThis.Bun.stdout,
-    'Vertex extraction, judge, sentence generation and translations verified.\n',
+    'Sonnet medium extraction, vocabulary and definition grading, writing, sentence generation and translations verified.\n',
   );
 }

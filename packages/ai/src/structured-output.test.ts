@@ -3,6 +3,7 @@ import {
   DefinitionSuggestion,
   DefinitionVerdict,
   KeyPointList,
+  maximumKeyPoints,
 } from './definition/schema';
 import { ExtractedPage } from './extraction/schema';
 import { JudgeVerdict } from './judge/schema';
@@ -43,12 +44,17 @@ describe('providerJsonSchema', () => {
       expect(Object.keys(converted.properties ?? {}).length).toBeGreaterThan(0);
       // Providers reject cross-references in structured output schemas.
       expect(JSON.stringify(converted)).not.toContain('$ref');
-      // Gemini rejects array length bounds in responseJsonSchema.
-      const keys = objectNodes(converted).flatMap((node) => Object.keys(node));
-      expect(keys).not.toContain('maxItems');
-      expect(keys).not.toContain('minItems');
     });
   }
+
+  it('keeps key point bounds in the schema sent to Bedrock', () => {
+    const schema = providerJsonSchema(KeyPointList).jsonSchema;
+    expect(schema).toHaveProperty('properties.keyPoints.minItems', 1);
+    expect(schema).toHaveProperty(
+      'properties.keyPoints.maxItems',
+      maximumKeyPoints,
+    );
+  });
 
   for (const [name, convert] of [
     ['DefinitionVerdict', () => providerJsonSchema(DefinitionVerdict)],

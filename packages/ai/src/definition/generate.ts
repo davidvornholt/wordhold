@@ -1,9 +1,7 @@
 import { generateText, type LanguageModel, Output } from 'ai';
 import { Effect, Schema } from 'effect';
-import {
-  geminiHighProviderOptions,
-  providerJsonSchema,
-} from '../structured-output';
+import { sonnetMediumProviderOptions } from '../providers/bedrock';
+import { providerJsonSchema } from '../structured-output';
 import { DefinitionError } from './error';
 
 // One structured request, decoded with the Effect schema. The message names
@@ -21,7 +19,7 @@ export const generateDefinitionOutput = <A, I>(
         model,
         output: Output.object({ schema: providerJsonSchema(schema) }),
         prompt,
-        providerOptions: geminiHighProviderOptions,
+        providerOptions: sonnetMediumProviderOptions,
       });
       return output;
     },

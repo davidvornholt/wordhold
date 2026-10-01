@@ -1,11 +1,11 @@
 import { generateText, Output } from 'ai';
 import { Effect, Schema } from 'effect';
-import { extractionModel } from '../config';
-import { VertexProvider } from '../providers/vertex';
 import {
-  geminiHighProviderOptions,
-  providerJsonSchema,
-} from '../structured-output';
+  BedrockProvider,
+  productionModelId,
+  sonnetMediumProviderOptions,
+} from '../providers/bedrock';
+import { providerJsonSchema } from '../structured-output';
 import { ExtractionError } from './error';
 import { ExtractedPage, type ExtractedPageData } from './schema';
 
@@ -34,8 +34,8 @@ export class Extraction extends Effect.Service<Extraction>()(
   '@wordhold/ai/Extraction',
   {
     effect: Effect.gen(function* () {
-      const vertex = yield* VertexProvider;
-      const modelId = yield* extractionModel;
+      const model = yield* BedrockProvider;
+      const modelId = productionModelId;
 
       const pageOutput = providerJsonSchema(ExtractedPage);
       const decodePage = Schema.decodeUnknown(ExtractedPage);
@@ -44,9 +44,9 @@ export class Extraction extends Effect.Service<Extraction>()(
         Effect.tryPromise({
           try: async () => {
             const { output } = await generateText({
-              model: vertex(modelId),
+              model,
               output: Output.object({ schema: pageOutput }),
-              providerOptions: geminiHighProviderOptions,
+              providerOptions: sonnetMediumProviderOptions,
               messages: [
                 {
                   role: 'user',
