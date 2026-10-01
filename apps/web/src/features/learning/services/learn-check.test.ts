@@ -124,3 +124,35 @@ describe('matchesLearnItem', () => {
     expect(matchesLearnItem(item, '  ')).toBe(false);
   });
 });
+
+describe('matchesLearnItem review notation', () => {
+  // A word must pass its first learning with every answer review grading
+  // would accept, including notation typed differently from the template.
+  it('accepts the notation review grading accepts', () => {
+    const notationItem = {
+      ...item,
+      targetText: 'estar ilusionado/-a (con algo)',
+      textbookAnswers: ['estar ilusionado/-a (con algo)'],
+    };
+    expect(
+      matchesLearnItem(notationItem, 'estar ilusionado/a (con algo)'),
+    ).toBe(true);
+    expect(matchesLearnItem(notationItem, 'estar ilusionado/-a con algo')).toBe(
+      true,
+    );
+    expect(matchesLearnItem(notationItem, 'estar ilusionada')).toBe(true);
+    expect(
+      matchesLearnItem(notationItem, 'estar ilusionado/a (con nada)'),
+    ).toBe(false);
+    expect(
+      matchesLearnItem(
+        {
+          ...item,
+          targetText: 'el programa m.',
+          textbookAnswers: ['el programa m.'],
+        },
+        'el programa',
+      ),
+    ).toBe(true);
+  });
+});

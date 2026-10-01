@@ -1,5 +1,9 @@
 import { isDefinitionCorrect } from '@wordhold/ai/definition/schema';
 import { Effect } from 'effect';
+import {
+  type AcceptedAnswer,
+  isDeterministicMatch,
+} from '../../../shared/grading/deterministic-match';
 import type { AssessedGradeOutcome } from '../../../shared/grading/rating';
 import { englishNames } from '../../../shared/languages';
 import {
@@ -13,10 +17,6 @@ import type {
 } from '../schemas/practice-models';
 import type { AnsweredSubmitData } from '../schemas/submission-schema';
 import { DefinitionGrader } from './definition-grader';
-import {
-  type AcceptedAnswer,
-  isDeterministicMatch,
-} from './deterministic-grading';
 import {
   definitionCacheIdentity,
   isDefinitionVerdict,

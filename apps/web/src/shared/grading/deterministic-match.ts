@@ -1,6 +1,6 @@
 import type { AnswerSource } from '@wordhold/db/schema/entries';
-import { normalizeAnswerForComparison } from '../../../shared/grading/normalize';
-import { answerVariants } from '../../../shared/grading/variants';
+import { normalizeAnswerForComparison } from './normalize';
+import { answerVariants } from './variants';
 
 export type AcceptedAnswer = {
   readonly text: string;
@@ -17,6 +17,11 @@ const textbookReadings = (text: string): ReadonlyArray<string> => {
   return expansion._tag === 'Expanded' ? expansion.readings : [];
 };
 
+// Whether a typed answer is accepted without asking the judge. Review
+// grading, the learning pass, and the retype after a mistake all use this one
+// rule, so an answer that passes review also passes when the word is first
+// learned. A typed answer in textbook notation ("estar ilusionado/a (con
+// algo)") passes when every reading it stands for is an accepted reading.
 export const isDeterministicMatch = (
   submittedAnswer: string,
   accepted: ReadonlyArray<AcceptedAnswer>,

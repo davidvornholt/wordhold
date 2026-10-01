@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
-import type { AcceptedAnswer } from './deterministic-grading';
-import { isDeterministicMatch } from './deterministic-grading';
+import type { AcceptedAnswer } from './deterministic-match';
+import { isDeterministicMatch } from './deterministic-match';
 
 const answer = (
   text: string,
@@ -125,6 +125,8 @@ describe('isDeterministicMatch dictionary notation regressions', () => {
     ['el programa', 'el programa m.'],
     ['obtener algo', 'obtener algo (e → ie)'],
     ['AC/DC', 'AC/DC'],
+    ['estar ilusionado/a (con algo)', 'estar ilusionado/-a (con algo)'],
+    ['estar ilusionado/-a con algo', 'estar ilusionado/-a (con algo)'],
   ])('accepts %s for %s', (submitted, expected) => {
     expect(isDeterministicMatch(submitted, [answer(expected)])).toBe(true);
   });
@@ -146,6 +148,7 @@ describe('isDeterministicMatch dictionary notation regressions', () => {
     ['ein Angestellte', 'eine/ein Angestellte(r)'],
     ['AC', 'AC/DC'],
     ['DC', 'AC/DC'],
+    ['estar ilusionado/a (con nada)', 'estar ilusionado/-a (con algo)'],
   ])('sends %s for %s to the judge', (submitted, expected) => {
     expect(isDeterministicMatch(submitted, [answer(expected)])).toBe(false);
   });
