@@ -56,6 +56,9 @@ const StudySearch = Schema.Struct({
   unit: Schema.optional(Schema.UUID),
   entries: Schema.optional(Schema.String),
   mode: Schema.optional(Schema.Literal('learn', 'practice')),
+  // The selection is the overview's Wackelkandidaten, so the sitting is named
+  // after them and leads back to the overview.
+  from: Schema.optional(Schema.Literal('fragile')),
 });
 
 export type StudySearchData = typeof StudySearch.Type;

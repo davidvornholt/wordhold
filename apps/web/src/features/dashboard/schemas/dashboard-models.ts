@@ -1,5 +1,7 @@
 import type { CourseKind } from '@wordhold/db/schema/courses';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
+import { courseNouns } from '../../../shared/directions';
+import { countNoun } from '../../../shared/format/count';
 
 export type DirectionStats = {
   readonly direction: AnswerDirection;
@@ -81,3 +83,46 @@ export const todayActionLabel = (
   course.ready === ready
     ? 'Jetzt üben'
     : `${course.name} üben · ${course.ready} ${course.ready === 1 ? 'Karte' : 'Karten'}`;
+
+// The fragile entries of one course, which one free sitting can practise.
+export type FragileGroup = {
+  readonly courseId: string;
+  readonly courseName: string;
+  readonly courseKind: CourseKind;
+  readonly entryIds: ReadonlyArray<string>;
+};
+
+// Courses appear in the order of their most fragile entry.
+export const fragileGroups = (
+  entries: ReadonlyArray<FragileEntry>,
+): ReadonlyArray<FragileGroup> => {
+  const groups = new Map<string, FragileGroup & { entryIds: Array<string> }>();
+  for (const entry of entries) {
+    const existing = groups.get(entry.courseId);
+    if (existing === undefined) {
+      groups.set(entry.courseId, {
+        courseId: entry.courseId,
+        courseName: entry.courseName,
+        courseKind: entry.courseKind,
+        entryIds: [entry.entryId],
+      });
+    } else {
+      existing.entryIds.push(entry.entryId);
+    }
+  }
+  return [...groups.values()];
+};
+
+// A sitting covers one course. When the list spans several, each action
+// names its course and count, as the "Heute" action does.
+export const fragileActionLabel = (
+  group: FragileGroup,
+  groupCount: number,
+): string => {
+  if (groupCount === 1) {
+    return 'Wackelkandidaten üben';
+  }
+  const nouns = courseNouns({ kind: group.courseKind });
+  const count = countNoun(group.entryIds.length, nouns.singular, nouns.plural);
+  return `${group.courseName} üben · ${count}`;
+};
