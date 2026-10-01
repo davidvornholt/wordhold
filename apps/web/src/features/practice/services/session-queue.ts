@@ -32,8 +32,9 @@ export type SessionQueue = {
   readonly total: number;
   readonly firstTryCorrect: number;
   readonly afterRoundCorrect: number;
-  // Cards that left the learning steps during this sitting.
-  readonly graduatedCardIds: ReadonlyArray<string>;
+  // Entries this sitting made "sicher", in the dashboard's sense: every
+  // direction the course practises is past the learning steps.
+  readonly newlyKnownEntryIds: ReadonlyArray<string>;
   readonly missedCardIds: ReadonlyArray<string>;
   readonly ungradedCardIds: ReadonlyArray<string>;
   readonly processedCardIds: ReadonlyArray<string>;
@@ -72,7 +73,7 @@ export const createSessionQueue = (
     total: items.length,
     firstTryCorrect: 0,
     afterRoundCorrect: 0,
-    graduatedCardIds: [],
+    newlyKnownEntryIds: [],
     missedCardIds: [],
     ungradedCardIds: [],
     processedCardIds: [],
@@ -126,6 +127,22 @@ const withOutcome = (
 const addUnique = (ids: ReadonlyArray<string>, id: string) =>
   ids.includes(id) ? ids : [...ids, id];
 
+// An entry that was not sicher when the sitting loaded counts while its
+// latest answer leaves it sicher. A later miss on either direction takes it
+// back out; an entry that already was sicher never counts.
+const trackNewlyKnown = (
+  newlyKnownEntryIds: ReadonlyArray<string>,
+  card: QueuedCard,
+  entryKnown: boolean,
+): ReadonlyArray<string> => {
+  if (card.entryKnown) {
+    return newlyKnownEntryIds;
+  }
+  return entryKnown
+    ? addUnique(newlyKnownEntryIds, card.entryId)
+    : newlyKnownEntryIds.filter((entryId) => entryId !== card.entryId);
+};
+
 export const advanceQueue = (
   queue: SessionQueue,
   expected: ExpectedCard,
@@ -172,27 +189,24 @@ export const advanceQueue = (
       card.cardId,
       result.schedule.dueAt,
     ),
+    newlyKnownEntryIds: trackNewlyKnown(
+      queue.newlyKnownEntryIds,
+      card,
+      result.entryKnown,
+    ),
   };
   if (result.correct) {
-    const graduated =
-      result.schedule.state === 'review' && card.state !== 'review';
-    const counted = {
-      ...withSchedule,
-      graduatedCardIds: graduated
-        ? addUnique(queue.graduatedCardIds, card.cardId)
-        : queue.graduatedCardIds,
-    };
     return finishCheckpoint(
       withOutcome(
         queue.phase === 'after-round'
           ? {
-              ...counted,
+              ...withSchedule,
               afterRoundCorrect: queue.afterRoundCorrect + 1,
               repeatCards: queue.repeatCards.filter(
                 (item) => item.cardId !== card.cardId,
               ),
             }
-          : { ...counted, firstTryCorrect: queue.firstTryCorrect + 1 },
+          : { ...withSchedule, firstTryCorrect: queue.firstTryCorrect + 1 },
         card.cardId,
         'correct',
       ),

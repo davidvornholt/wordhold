@@ -5,6 +5,7 @@ import type { AnswerSource } from '@wordhold/db/schema/entries';
 import type { cards, ReviewMode } from '@wordhold/db/schema/practice';
 import { Context, Effect, Layer } from 'effect';
 import { ratings } from '../../../shared/grading/rating';
+import { entryIsKnown } from '../../../shared/practice/known-entry';
 import { saveDerivedKeyPoints } from '../../../shared/vocabulary/key-points';
 import {
   PracticeDatabaseError,
@@ -34,6 +35,17 @@ const databaseError = (operation: string, cause: unknown) =>
     cause,
     message: 'Die Antwort konnte nicht gespeichert werden.',
   });
+
+const loadEntryKnown = (sql: Database, entryId: string) =>
+  sql<{ readonly known: boolean }>`
+    select ${entryIsKnown(sql)} as known
+    from entries e
+    join courses co on co.id = e.course_id
+    where e.id = ${entryId}
+  `.pipe(
+    Effect.map((rows) => rows.at(0)?.known ?? false),
+    Effect.mapError((cause) => databaseError('commit graded answer', cause)),
+  );
 
 export class PracticeReviewStore extends Context.Tag(
   'wordhold/PracticeReviewStore',
@@ -191,6 +203,7 @@ export class PracticeReviewStore extends Context.Tag(
                       ${JSON.stringify(input.outcome)}::jsonb, ${input.elapsedMs},
                       ${input.mode}::review_mode)
                   `.pipe(Effect.asVoid, Effect.mapError(mapCommitError)),
+                entryKnown: () => loadEntryKnown(sql, input.entryId),
               }),
             )
             .pipe(
@@ -208,8 +221,8 @@ export class PracticeReviewStore extends Context.Tag(
           input.outcome.method === 'judge' ? input.outcome.verdict : null,
           scheduleAdvances,
         ).pipe(
-          Effect.map((revision) => ({
-            revision,
+          Effect.map((committed) => ({
+            ...committed,
             schedule: scheduleAdvances
               ? {
                   advanced: true,

@@ -51,6 +51,7 @@ const makeTransactionalStore = () => {
                 : Effect.sync(() => {
                     draft.reviews += 1;
                   }),
+            entryKnown: () => Effect.succeed(true),
           });
           Object.assign(store, draft);
           return result;
@@ -74,7 +75,7 @@ describe('commitGradedAnswer', () => {
     expect(accepted).toHaveLength(1);
     expect(
       accepted.at(0)?._tag === 'Right' ? accepted.at(0)?.right : undefined,
-    ).toBe(1);
+    ).toEqual({ revision: 1, entryKnown: true });
     const rejection = results.find((result) => result._tag === 'Left');
     expect(rejection?._tag).toBe('Left');
     const failure = rejection?._tag === 'Left' ? rejection.left : undefined;
@@ -84,10 +85,10 @@ describe('commitGradedAnswer', () => {
 
   it('claims the revision for a held-back answer', async () => {
     const { store, transaction } = makeTransactionalStore();
-    const revision = await Effect.runPromise(
+    const committed = await Effect.runPromise(
       commitGradedAnswer(transaction(0), verdict(), false),
     );
-    expect(revision).toBe(1);
+    expect(committed).toEqual({ revision: 1, entryKnown: true });
     expect(store).toEqual({ revision: 1, reviews: 1, alternatives: 1 });
   });
 

@@ -2,6 +2,7 @@ import { Database } from '@wordhold/db/client';
 import { Context, Effect, Layer } from 'effect';
 import { earliestDate } from '../../../shared/dates/learning-date';
 import { ratings } from '../../../shared/grading/rating';
+import { entryIsKnown } from '../../../shared/practice/known-entry';
 import { readyCardsInNextSection } from '../../../shared/practice/session-policy';
 import { DashboardDatabaseError } from '../errors/dashboard-errors';
 import type { CourseStats, FragileEntry } from '../schemas/dashboard-models';
@@ -100,19 +101,11 @@ export class DashboardStore extends Context.Tag('wordhold/DashboardStore')<
               select course_id as "courseId", count(*)::int as count
               from entries group by course_id
             `,
-            // An entry is known once every enabled direction has a card in
-            // the review state; a missing card counts as not known.
             known: sql<CountRow>`
               select e.course_id as "courseId", count(*)::int as count
               from entries e
               join courses co on co.id = e.course_id
-              where not exists (
-                select 1
-                from unnest(co.directions) as d(direction)
-                left join cards c on c.entry_id = e.id
-                  and c.direction = d.direction
-                where c.state is distinct from 'review'
-              )
+              where ${entryIsKnown(sql)}
               group by e.course_id
             `,
           },

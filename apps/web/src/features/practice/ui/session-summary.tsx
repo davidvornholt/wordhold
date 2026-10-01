@@ -67,7 +67,7 @@ const NextDue = ({
 );
 
 const Outcome = ({ queue }: { readonly queue: SessionQueue }) => {
-  const graduated = queue.graduatedCardIds.length;
+  const newlyKnown = queue.newlyKnownEntryIds.length;
   return (
     <>
       <CardRail
@@ -90,8 +90,8 @@ const Outcome = ({ queue }: { readonly queue: SessionQueue }) => {
           label="Nach Fehlern richtig"
           value={String(queue.afterRoundCorrect)}
         />
-        {graduated === 0 ? null : (
-          <Figure label="Neu sicher" value={`+${graduated}`} />
+        {newlyKnown === 0 ? null : (
+          <Figure label="Neu sicher" value={`+${newlyKnown}`} />
         )}
       </dl>
     </>

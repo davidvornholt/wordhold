@@ -22,7 +22,7 @@ const card = (index: number, target: string, native: string): FixtureCard => ({
   targetText: target,
   nativeText: native,
   hasAudio: false,
-  state: 'learning' as const,
+  entryKnown: false,
   example: null,
   prompt: native,
 });
