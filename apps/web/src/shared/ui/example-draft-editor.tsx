@@ -122,20 +122,24 @@ export const ExampleDraftEditor = <T extends ExampleDraft>({
   const { translating, translationError, translateSentence } =
     useExampleTranslation({ entry, disabled, translate, onTranslated });
   const translationRef = useRef<HTMLInputElement>(null);
-  const previousGeneratedRef = useRef(entry.exampleGenerated);
+  // The sentence this editor's own button just produced. Only that request
+  // moves focus to the translation for review; a sentence written by the
+  // page-wide "Beispielsätze erzeugen" must not pull the page to its row.
+  const requestedSentenceRef = useRef<string | null>(null);
   const sentence = entry.example.trim();
   const canGenerate =
     entry.targetText.trim() !== '' && entry.nativeText.trim() !== '';
 
   useEffect(() => {
-    const generatedNow =
-      previousGeneratedRef.current === undefined &&
-      entry.exampleGenerated === true;
-    previousGeneratedRef.current = entry.exampleGenerated;
-    if (generatedNow) {
+    const requested = requestedSentenceRef.current;
+    if (requested === null || generating) {
+      return;
+    }
+    requestedSentenceRef.current = null;
+    if (entry.exampleGenerated === true && entry.example === requested) {
       translationRef.current?.focus();
     }
-  }, [entry.exampleGenerated]);
+  }, [entry.example, entry.exampleGenerated, generating]);
 
   const generateExample = async () => {
     setGenerating(true);
@@ -143,6 +147,7 @@ export const ExampleDraftEditor = <T extends ExampleDraft>({
     try {
       const source = exampleGenerationSource(entry);
       const generated = await generate(source.targetText, source.nativeText);
+      requestedSentenceRef.current = generated.target;
       onGenerated(source, generated);
     } catch {
       setGenerationError(true);
