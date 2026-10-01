@@ -4,6 +4,7 @@ import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import type { AnswerSource } from '@wordhold/db/schema/entries';
 import type { cards, ReviewMode } from '@wordhold/db/schema/practice';
 import { Context, Effect, Layer } from 'effect';
+import type { AcceptedAnswer } from '../../../shared/grading/deterministic-match';
 import { ratings } from '../../../shared/grading/rating';
 import { entryIsKnown } from '../../../shared/practice/known-entry';
 import { saveDerivedKeyPoints } from '../../../shared/vocabulary/key-points';
@@ -16,7 +17,6 @@ import type {
   PersistReviewInput,
   SubmissionRecord,
 } from '../schemas/practice-models';
-import type { AcceptedAnswer } from './deterministic-grading';
 import { applyRating } from './fsrs';
 import { commitGradedAnswer, type RunReviewTransaction } from './review-commit';
 import { advancesSchedule } from './schedule-guard';

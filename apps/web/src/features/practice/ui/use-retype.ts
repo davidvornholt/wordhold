@@ -1,10 +1,10 @@
 import type { CourseKind } from '@wordhold/db/schema/courses';
 import { useState } from 'react';
-import { matchesAcceptedAnswer } from '../../../shared/grading/accepted';
 import {
   copyDifference,
   copyDifferenceMessage,
 } from '../../../shared/grading/copy-difference';
+import { isDeterministicMatch } from '../../../shared/grading/deterministic-match';
 import type { SubmitResult } from '../schemas/practice-models';
 import type { RetypeState } from './practice-answer-form';
 
@@ -13,6 +13,14 @@ import type { RetypeState } from './practice-answer-form';
 // the template and disappears as soon as the learner types.
 export const needsRetype = (result: SubmitResult | null): boolean =>
   result?.graded === true && !result.correct;
+
+// The template is the card's textbook answer, so the copy passes whenever
+// review grading would accept it.
+export const matchesShownAnswer = (
+  expectedAnswer: string,
+  typed: string,
+): boolean =>
+  isDeterministicMatch(typed, [{ text: expectedAnswer, source: 'textbook' }]);
 
 export const useRetype = (
   result: SubmitResult | null,
@@ -31,7 +39,7 @@ export const useRetype = (
     if (!required) {
       return true;
     }
-    if (matchesAcceptedAnswer([template], typed)) {
+    if (matchesShownAnswer(template, typed)) {
       setMissedMessage(null);
       return true;
     }

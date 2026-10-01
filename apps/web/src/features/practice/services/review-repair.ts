@@ -3,15 +3,15 @@ import { Database } from '@wordhold/db/client';
 import type { CourseKind, LanguageCode } from '@wordhold/db/schema/courses';
 import { Data, Effect } from 'effect';
 import {
+  type AcceptedAnswer,
+  isDeterministicMatch,
+} from '../../../shared/grading/deterministic-match';
+import {
   deriveRating,
   type GradeOutcome,
   ratings,
 } from '../../../shared/grading/rating';
 import { englishNames } from '../../../shared/languages';
-import {
-  type AcceptedAnswer,
-  isDeterministicMatch,
-} from './deterministic-grading';
 import { judgeCacheIdentity } from './judge-cache';
 import { PracticeJudge } from './practice-judge';
 import {
