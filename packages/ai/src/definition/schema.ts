@@ -35,7 +35,8 @@ const Finding = Schema.Struct({
 // A definition is graded point by point: `keyPoints` answers each stored key
 // point in the order it was asked, and `accuracy` fails when the answer says
 // something false. Correctness is derived from those findings instead of
-// being a separate field the model could contradict.
+// being a separate field the model could contradict. `explanation` is null
+// when nothing is missing or wrong.
 export const DefinitionVerdict = Schema.Struct({
   keyPoints: Schema.Array(
     Schema.Struct({
@@ -44,7 +45,7 @@ export const DefinitionVerdict = Schema.Struct({
     }),
   ),
   accuracy: Finding,
-  explanation: Schema.String,
+  explanation: Schema.NullOr(Schema.String),
 });
 export type DefinitionVerdictData = typeof DefinitionVerdict.Type;
 

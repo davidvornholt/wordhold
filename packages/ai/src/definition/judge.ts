@@ -16,7 +16,7 @@ export const definitionJudgePrompt = (input: DefinitionJudgeInput): string =>
     'Answer keyPoints in the given order, one entry per key point. A point is covered when the answer states it in any wording; a technical term in a point is covered only by that term or an exact synonym.',
     'Set accuracy.ok=false when the answer states something false about the term. Extra correct details, spelling and style do not matter.',
     'Use null notes for covered points and passing accuracy; otherwise give a short German note.',
-    "Explain in German, at most two short sentences, what is missing or wrong; otherwise say 'Richtig.'. Quote words with single quotes.",
+    'Explain in German, at most two short sentences, what is missing or wrong, quoting words with single quotes; otherwise use a null explanation.',
     JSON.stringify({
       term: input.term,
       reference: input.definition,
