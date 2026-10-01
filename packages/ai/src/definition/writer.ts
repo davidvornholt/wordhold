@@ -1,6 +1,5 @@
 import { Effect } from 'effect';
-import { sentenceModel } from '../config';
-import { VertexProvider } from '../providers/vertex';
+import { BedrockProvider } from '../providers/bedrock';
 import type { DefinitionError } from './error';
 import { generateDefinitionOutput } from './generate';
 import {
@@ -35,14 +34,13 @@ export class DefinitionWriter extends Effect.Service<DefinitionWriter>()(
   '@wordhold/ai/DefinitionWriter',
   {
     effect: Effect.gen(function* () {
-      const vertex = yield* VertexProvider;
-      const modelId = yield* sentenceModel;
+      const model = yield* BedrockProvider;
 
       const keyPoints = (
         request: KeyPointRequest,
       ): Effect.Effect<KeyPointListData, DefinitionError> =>
         generateDefinitionOutput(
-          vertex(modelId),
+          model,
           KeyPointList,
           keyPointPrompt(request),
           'The key points could not be derived.',
@@ -52,7 +50,7 @@ export class DefinitionWriter extends Effect.Service<DefinitionWriter>()(
         request: DefinitionRequest,
       ): Effect.Effect<DefinitionSuggestionData, DefinitionError> =>
         generateDefinitionOutput(
-          vertex(modelId),
+          model,
           DefinitionSuggestion,
           definitionPrompt(request),
           'The definition could not be suggested.',

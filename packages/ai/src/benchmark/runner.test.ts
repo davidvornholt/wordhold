@@ -1,11 +1,11 @@
 import { expect, it } from 'bun:test';
 import { createVertex } from '@ai-sdk/google-vertex';
 import { Effect, Schema } from 'effect';
+import { runSample } from './runner';
 import {
   geminiHighProviderOptions,
   providerJsonSchema,
-} from '../structured-output';
-import { runSample } from './runner';
+} from './structured-output';
 
 it('retains known usage when Vertex exhausts reasoning tokens without visible output', async () => {
   const modelId = 'gemini-3.8-flash';

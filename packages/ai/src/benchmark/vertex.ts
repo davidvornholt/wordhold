@@ -1,6 +1,8 @@
 import { createVertex } from '@ai-sdk/google-vertex';
-import { Context, Effect, Layer, Redacted, Schema } from 'effect';
-import { googleServiceAccountJson, vertexLocation } from '../config';
+import { Config, Context, Effect, Layer, Redacted, Schema } from 'effect';
+
+const vertexLocation = Config.string('GOOGLE_VERTEX_LOCATION');
+const googleServiceAccountJson = Config.redacted('GOOGLE_SERVICE_ACCOUNT_JSON');
 
 // Google service-account key files use snake_case; rename on decode so the
 // external format stays at this boundary.

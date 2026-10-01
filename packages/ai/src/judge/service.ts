@@ -1,11 +1,11 @@
 import { generateText, Output } from 'ai';
 import { Effect, Schema } from 'effect';
-import { judgeModel } from '../config';
-import { VertexProvider } from '../providers/vertex';
 import {
-  geminiHighProviderOptions,
-  providerJsonSchema,
-} from '../structured-output';
+  BedrockProvider,
+  productionModelId,
+  sonnetMediumProviderOptions,
+} from '../providers/bedrock';
+import { providerJsonSchema } from '../structured-output';
 import { JudgeError } from './error';
 import { type JudgeInput, JudgeVerdict, type JudgeVerdictData } from './schema';
 
@@ -30,8 +30,8 @@ export const judgePrompt = (input: JudgeInput): string => {
 
 export class Judge extends Effect.Service<Judge>()('@wordhold/ai/Judge', {
   effect: Effect.gen(function* () {
-    const vertex = yield* VertexProvider;
-    const modelId = yield* judgeModel;
+    const model = yield* BedrockProvider;
+    const modelId = productionModelId;
     const verdictOutput = providerJsonSchema(JudgeVerdict);
     const decodeVerdict = Schema.decodeUnknown(JudgeVerdict);
 
@@ -41,10 +41,10 @@ export class Judge extends Effect.Service<Judge>()('@wordhold/ai/Judge', {
       Effect.tryPromise({
         try: async () => {
           const { output } = await generateText({
-            model: vertex(modelId),
+            model,
             output: Output.object({ schema: verdictOutput }),
             prompt: judgePrompt(input),
-            providerOptions: geminiHighProviderOptions,
+            providerOptions: sonnetMediumProviderOptions,
           });
           return output;
         },

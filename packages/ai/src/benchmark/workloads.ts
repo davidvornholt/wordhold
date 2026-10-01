@@ -11,7 +11,7 @@ import { extractionPrompt } from '../extraction/service';
 import { type JudgeInput, JudgeVerdict } from '../judge/schema';
 import { judgePrompt } from '../judge/service';
 import { SentenceBatch, sentencePrompt } from '../sentence/service';
-import { providerJsonSchema } from '../structured-output';
+import { providerJsonSchema } from './structured-output';
 
 const sentenceCount = 3;
 const printedPageNumber = 42;
