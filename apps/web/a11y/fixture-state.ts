@@ -53,6 +53,7 @@ export const fixtureStates = [
   'practice-session',
   'study-session',
   'practice-feedback',
+  'practice-feedback-alternative',
   'practice-empty',
   'practice-complete-one-card',
   'practice-ungraded-one-card',

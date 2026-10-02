@@ -118,19 +118,32 @@ const JudgeNotes = ({
   </>
 );
 
+// "Erwartet" beside "Richtig" would read as a correction, so a correct answer
+// names the book's word instead. Every word lives in a book, whether a
+// textbook or a novel, so "Im Buch" fits both.
+const expectedAnswerLabel = (
+  result: SubmitResult,
+  definition: boolean,
+): string => {
+  if (definition) {
+    return 'Definition: ';
+  }
+  return result.graded && result.correct ? 'Im Buch: ' : 'Erwartet: ';
+};
+
 const ExpectedAnswer = ({
   answerLanguage,
   definition,
   expectedAnswer,
+  label,
 }: {
   readonly answerLanguage: LanguageCode;
   readonly definition: boolean;
   readonly expectedAnswer: string;
+  readonly label: string;
 }) => (
   <p>
-    <span className="text-muted-foreground text-sm">
-      {definition ? 'Definition: ' : 'Erwartet: '}
-    </span>
+    <span className="text-muted-foreground text-sm">{label}</span>
     <span
       className={
         definition
@@ -192,6 +205,7 @@ export const FeedbackPanel = ({
           answerLanguage={answerLanguage}
           definition={definition}
           expectedAnswer={result.expectedAnswer}
+          label={expectedAnswerLabel(result, definition)}
         />
       )}
       {showsAttempt ? (

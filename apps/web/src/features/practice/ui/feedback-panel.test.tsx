@@ -72,14 +72,22 @@ const pendingWrongResult: SubmitResult = {
 
 describe('answer feedback', () => {
   it('does not repeat an expected answer that matches the submission', () => {
-    expect(render('  Waiter. ')).not.toContain('Erwartet:');
+    expect(render('  Waiter. ')).not.toContain('Im Buch:');
     expect(
       render('hello world', { expectedAnswer: 'hello, world' }),
-    ).not.toContain('Erwartet:');
+    ).not.toContain('Im Buch:');
   });
 
-  it('shows the textbook answer for a different accepted answer', () => {
-    expect(render('server')).toContain('Erwartet:');
+  it('shows the book answer beside a different accepted answer', () => {
+    const markup = render('server');
+    expect(markup).toContain('Im Buch:');
+    expect(markup).not.toContain('Erwartet:');
+  });
+
+  it('shows the expected answer beside a wrong answer', () => {
+    const markup = render('waitor', pendingWrongResult);
+    expect(markup).toContain('Erwartet:');
+    expect(markup).not.toContain('Im Buch:');
   });
 
   it('distinguishes an early free exercise from a regular review', () => {

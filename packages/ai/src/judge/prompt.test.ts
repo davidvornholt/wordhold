@@ -47,8 +47,9 @@ describe('judgePrompt', () => {
     expect(prompt).toContain('"fredom"');
   });
 
-  // The feedback heading already says the answer was right.
-  it('asks for no explanation when there is nothing to add', () => {
+  // The feedback heading already says the answer was right, so a note on an
+  // accepted answer must teach something about the difference.
+  it('asks for a difference worth knowing instead of a bare confirmation', () => {
     const prompt = judgePrompt({
       direction: 'to_target',
       targetLanguage: 'Spanish',
@@ -56,7 +57,10 @@ describe('judgePrompt', () => {
       expectedAnswers: ['el curso'],
       givenAnswer: 'el año escolar',
     });
-    expect(prompt).toContain('otherwise use a null explanation');
+    expect(prompt).toContain('Write the explanation in German');
+    expect(prompt).toContain('such as usage, register or region');
+    expect(prompt).toContain('Otherwise use a null explanation');
+    expect(prompt).toContain('never a bare confirmation');
   });
 });
 

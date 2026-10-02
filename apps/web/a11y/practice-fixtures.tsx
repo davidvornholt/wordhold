@@ -77,7 +77,36 @@ export const PracticeFixture = () => (
   </FocusLayout>
 );
 
-export const PracticeFeedbackFixture = () => {
+// Tomorrow morning, so the schedule note reads the same on every render.
+const nextReviewHour = 9;
+const nextReviewAt = new Date();
+nextReviewAt.setDate(nextReviewAt.getDate() + 1);
+nextReviewAt.setHours(nextReviewHour, 0, 0, 0);
+
+// A correct answer that differs from the book: the judge accepts it and
+// notes the difference worth knowing.
+const alternativeResult: SubmitResult = {
+  graded: true,
+  correct: true,
+  stored: true,
+  revision: 1,
+  rating: 3,
+  expectedAnswer: 'memory',
+  explanation:
+    "'recollection' klingt gehobener; im Alltag sagt man meist 'memory'.",
+  acceptedAsAlternative: true,
+  keyPoints: null,
+  schedule: { advanced: true, state: 'review', dueAt: nextReviewAt },
+  entryKnown: false,
+};
+
+type PracticeFeedbackFixtureProps = {
+  readonly alternative: boolean;
+};
+
+export const PracticeFeedbackFixture = ({
+  alternative,
+}: PracticeFeedbackFixtureProps) => {
   const promptId = useId();
   const feedbackId = useId();
   return (
@@ -85,7 +114,7 @@ export const PracticeFeedbackFixture = () => {
       <WordCard
         deck={1}
         eyebrow="Übersetze auf Englisch"
-        tone="destructive"
+        tone={alternative ? 'positive' : 'destructive'}
         word={item.prompt}
         wordId={promptId}
         wordLang={undefined}
@@ -99,9 +128,9 @@ export const PracticeFeedbackFixture = () => {
           playSentence={null}
           playWord={null}
           repeated={false}
-          result={result}
+          result={alternative ? alternativeResult : result}
           skipped={false}
-          submittedAnswer="wrong"
+          submittedAnswer={alternative ? 'recollection' : 'wrong'}
           targetLanguage="en"
         />
       </WordCard>
