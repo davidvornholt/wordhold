@@ -60,6 +60,7 @@ const bareStates: ReadonlySet<FixtureState> = new Set<FixtureState>([
   'practice-session',
   'study-session',
   'practice-feedback',
+  'practice-feedback-alternative',
   'practice-empty',
   'practice-complete-one-card',
   'practice-ungraded-one-card',
@@ -138,7 +139,9 @@ const practiceFixture = (state: FixtureState) => {
     case 'study-session':
       return <FutureStudySessionFixture />;
     case 'practice-feedback':
-      return <PracticeFeedbackFixture />;
+      return <PracticeFeedbackFixture alternative={false} />;
+    case 'practice-feedback-alternative':
+      return <PracticeFeedbackFixture alternative={true} />;
     case 'practice-empty':
       return <PracticeEmptyFixture />;
     case 'practice-complete-one-card':
@@ -273,6 +276,7 @@ const fixtureContent = (state: FixtureState) => {
     case 'practice-session':
     case 'study-session':
     case 'practice-feedback':
+    case 'practice-feedback-alternative':
     case 'practice-empty':
     case 'practice-complete-one-card':
     case 'practice-ungraded-one-card':

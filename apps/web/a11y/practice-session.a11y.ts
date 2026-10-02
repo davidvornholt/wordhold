@@ -70,14 +70,12 @@ test('a missed card returns in the end-of-section after-round', async ({
   await expect(page.getByText('Weiterhin unsicher')).toHaveCount(0);
 });
 
-test('a learned alternative still shows the textbook answer', async ({
-  page,
-}) => {
+test('a learned alternative still shows the book answer', async ({ page }) => {
   await page.goto('/?state=practice-session');
   await page.getByLabel('Deine Antwort').fill('recollection');
   await page.getByRole('button', { name: 'Prüfen' }).click();
   await expect(page.getByText('Richtig', { exact: true })).toBeVisible();
-  await expect(page.getByRole('status')).toContainText('Erwartet: memory');
+  await expect(page.getByRole('status')).toContainText('Im Buch: memory');
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
 });
 
