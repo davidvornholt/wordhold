@@ -25,10 +25,14 @@ export type SessionRequestData = typeof SessionRequest.Type;
 
 export const decodeSessionRequest = Schema.decodeUnknownSync(SessionRequest);
 
+// A hand-picked selection may also practise a direction the course has
+// switched off. The overview's Wackelkandidaten come from the directions the
+// course still practises, so their sitting stays in those.
 export const StudyRequest = Schema.Struct({
   courseId: Schema.UUID,
   direction: SessionDirectionSchema,
   selection: VocabularySelection,
+  includeSwitchedOff: Schema.Boolean,
 });
 
 export type StudyRequestData = typeof StudyRequest.Type;

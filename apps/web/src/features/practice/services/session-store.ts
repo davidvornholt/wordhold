@@ -20,10 +20,11 @@ import type {
 // and FSRS would schedule the entry on that failure.
 //
 // They all require the direction to be one the course still practises
-// (`co.directions`) as well as the one picked for this sitting. "Both" is
-// passed as null, which the null check in each query turns into "no extra
-// restriction"; the casts keep Postgres from having to guess the parameter's
-// type when it is null.
+// (`co.directions`) as well as the one picked for this sitting. The exception
+// is a hand-picked selection, which may also ask a switched-off direction.
+// "Both" is passed as null, which the null check in each query turns into "no
+// extra restriction"; the casts keep Postgres from having to guess the
+// parameter's type when it is null.
 
 type ItemRow = Omit<PracticeItem, 'example' | 'prompt'>;
 
@@ -150,6 +151,7 @@ export class PracticeSessionStore extends Context.Tag(
         courseId,
         direction,
         selection,
+        includeSwitchedOff,
       }: StudyRequestData) => {
         const only = chosenDirection(direction);
         const selectionClause = selectedEntries(sql, selection);
@@ -163,6 +165,8 @@ export class PracticeSessionStore extends Context.Tag(
           join courses co on co.id = e.course_id
           where e.course_id = ${courseId}
             and ${selectionClause}
+            and (${includeSwitchedOff}::boolean
+              or c.direction = any(co.directions))
             and (${only}::answer_direction is null
               or c.direction = ${only}::answer_direction)
           order by c.due_at asc nulls last, e.created_at asc, c.direction asc
