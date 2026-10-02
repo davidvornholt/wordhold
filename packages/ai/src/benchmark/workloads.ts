@@ -10,6 +10,13 @@ import { ExtractedPage } from '../extraction/schema';
 import { extractionPrompt } from '../extraction/service';
 import { type JudgeInput, JudgeVerdict } from '../judge/schema';
 import { judgePrompt } from '../judge/service';
+import { sentenceJudgePrompt } from '../sentence/judge';
+import {
+  isSentenceCorrect,
+  type SentenceJudgeInput,
+  SentenceVerdict,
+  type SentenceVerdictData,
+} from '../sentence/judge-schema';
 import { SentenceBatch, sentencePrompt } from '../sentence/service';
 import { providerJsonSchema } from './structured-output';
 
@@ -105,6 +112,61 @@ const definitionWorkload = (
   };
 };
 
+type SentenceFinding = Exclude<
+  keyof SentenceVerdictData,
+  'correction' | 'explanation'
+>;
+
+// The findings expected to fail, so a verdict that rejects the answer for the
+// wrong reason still fails. A rejected answer must also come with a
+// correction that fixes it.
+const sentenceJudgeWorkload = (
+  name: string,
+  input: SentenceJudgeInput,
+  expectedFaults: ReadonlyArray<SentenceFinding>,
+): Workload => {
+  const prompt = sentenceJudgePrompt(input);
+  const findings = [
+    'meaningKept',
+    'grammatical',
+    'spelledCorrectly',
+    'wordUsed',
+  ] as const;
+  return {
+    name,
+    prompt,
+    messages: [{ role: 'user', content: prompt }],
+    schema: providerJsonSchema(SentenceVerdict),
+    qualityFailures: (output) => {
+      if (!Schema.is(SentenceVerdict)(output)) {
+        return ['Invalid verdict schema'];
+      }
+      const failures = findings.flatMap((finding) => {
+        const expectedOk = !expectedFaults.includes(finding);
+        if (output[finding] === expectedOk) {
+          return [];
+        }
+        return [`${finding} ${expectedOk ? 'faulted' : 'passed'}`];
+      });
+      const correct = expectedFaults.length === 0;
+      if (isSentenceCorrect(output) !== correct) {
+        failures.push('Incorrect verdict');
+      }
+      if (!correct && output.correction === null) {
+        failures.push('Correction missing');
+      }
+      return failures;
+    },
+  };
+};
+
+const lawyerSentence = {
+  targetLanguage: 'Spanish',
+  sentence: 'Meine Schwester arbeitet als Anwältin in Madrid.',
+  reference: 'Mi hermana trabaja como abogada en Madrid.',
+  word: { target: 'el/la abogado/-a', german: 'der Anwalt / die Anwältin' },
+} as const;
+
 const catalyst = {
   term: 'Katalysator',
   definition:
@@ -115,6 +177,84 @@ const catalyst = {
     'wird nicht verbraucht',
   ],
 } as const;
+
+// Grading prompts that each return one verdict for a known answer.
+const gradingWorkloads = (): ReadonlyArray<Workload> => [
+  definitionWorkload(
+    'definition-paraphrase',
+    {
+      ...catalyst,
+      givenAnswer:
+        'Er setzt die Aktivierungsenergie herab, wodurch die Reaktion schneller abläuft, und liegt am Ende unverändert vor.',
+    },
+    [true, true, true],
+  ),
+  definitionWorkload(
+    'definition-missing-term',
+    {
+      ...catalyst,
+      givenAnswer: 'beschleunigt Reaktionen und wird nicht verbraucht',
+    },
+    [false, true, true],
+  ),
+  judgeWorkload(
+    'judge-abogado',
+    {
+      direction: 'to_target',
+      targetLanguage: 'Spanish',
+      prompt: 'der Anwalt / die Anwältin',
+      expectedAnswers: ['el/la abogado/-a'],
+      givenAnswer: 'el abogado / la abogada',
+    },
+    true,
+  ),
+  judgeWorkload(
+    'judge-wrong-gender',
+    {
+      direction: 'to_target',
+      targetLanguage: 'Spanish',
+      prompt: 'die Anwältin',
+      expectedAnswers: ['la abogada'],
+      givenAnswer: 'la abogado',
+    },
+    false,
+  ),
+  judgeWorkload(
+    'judge-unstated-context',
+    {
+      direction: 'to_target',
+      targetLanguage: 'English',
+      prompt: 'synchronisieren',
+      expectedAnswers: ['to dub'],
+      givenAnswer: 'to synchronize',
+    },
+    true,
+  ),
+  sentenceJudgeWorkload(
+    'sentence-judge-paraphrase',
+    {
+      ...lawyerSentence,
+      givenAnswer: 'Mi hermana trabaja de abogada en Madrid.',
+    },
+    [],
+  ),
+  sentenceJudgeWorkload(
+    'sentence-judge-wrong-gender',
+    {
+      ...lawyerSentence,
+      givenAnswer: 'Mi hermana trabaja como abogado en Madrid.',
+    },
+    ['grammatical'],
+  ),
+  sentenceJudgeWorkload(
+    'sentence-judge-avoided-word',
+    {
+      ...lawyerSentence,
+      givenAnswer: 'Mi hermana trabaja como jurista en Madrid.',
+    },
+    ['wordUsed'],
+  ),
+];
 
 export const workloads = async (): Promise<ReadonlyArray<Workload>> => {
   const sentence = sentencePrompt({
@@ -130,56 +270,7 @@ export const workloads = async (): Promise<ReadonlyArray<Workload>> => {
     ).arrayBuffer(),
   );
   return [
-    definitionWorkload(
-      'definition-paraphrase',
-      {
-        ...catalyst,
-        givenAnswer:
-          'Er setzt die Aktivierungsenergie herab, wodurch die Reaktion schneller abläuft, und liegt am Ende unverändert vor.',
-      },
-      [true, true, true],
-    ),
-    definitionWorkload(
-      'definition-missing-term',
-      {
-        ...catalyst,
-        givenAnswer: 'beschleunigt Reaktionen und wird nicht verbraucht',
-      },
-      [false, true, true],
-    ),
-    judgeWorkload(
-      'judge-abogado',
-      {
-        direction: 'to_target',
-        targetLanguage: 'Spanish',
-        prompt: 'der Anwalt / die Anwältin',
-        expectedAnswers: ['el/la abogado/-a'],
-        givenAnswer: 'el abogado / la abogada',
-      },
-      true,
-    ),
-    judgeWorkload(
-      'judge-wrong-gender',
-      {
-        direction: 'to_target',
-        targetLanguage: 'Spanish',
-        prompt: 'die Anwältin',
-        expectedAnswers: ['la abogada'],
-        givenAnswer: 'la abogado',
-      },
-      false,
-    ),
-    judgeWorkload(
-      'judge-unstated-context',
-      {
-        direction: 'to_target',
-        targetLanguage: 'English',
-        prompt: 'synchronisieren',
-        expectedAnswers: ['to dub'],
-        givenAnswer: 'to synchronize',
-      },
-      true,
-    ),
+    ...gradingWorkloads(),
     {
       name: 'sentences',
       prompt: sentence,

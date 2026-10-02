@@ -2,6 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import { definitionJudgePrompt } from './definition/judge';
 import { definitionPrompt, keyPointPrompt } from './definition/writer';
 import { extractionPrompt } from './extraction/service';
+import { sentenceJudgePrompt } from './sentence/judge';
 import {
   sentencePrompt,
   sentenceTranslationPrompt,
@@ -15,6 +16,7 @@ const sentenceInstructionBudget = 300;
 const translationInstructionBudget = 450;
 const definitionJudgeInstructionBudget = 800;
 const definitionInstructionBudget = 400;
+const sentenceJudgeInstructionBudget = 900;
 
 describe('prompt instruction budgets', () => {
   it('keeps page extraction instructions compact', () => {
@@ -39,6 +41,18 @@ describe('prompt instruction budgets', () => {
       wordTranslationPrompt({ text: '', given: 'native', targetLanguage: '' })
         .length,
     ).toBeLessThanOrEqual(translationInstructionBudget);
+  });
+
+  it('keeps sentence grading instructions compact', () => {
+    expect(
+      sentenceJudgePrompt({
+        targetLanguage: '',
+        sentence: '',
+        reference: '',
+        word: { target: '', german: '' },
+        givenAnswer: '',
+      }).length,
+    ).toBeLessThanOrEqual(sentenceJudgeInstructionBudget);
   });
 
   it('keeps definition instructions compact', () => {
