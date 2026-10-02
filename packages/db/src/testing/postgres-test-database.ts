@@ -19,13 +19,16 @@ const allocate = Effect.gen(function* () {
   const name = `wordhold_test_${crypto.randomUUID().replaceAll('-', '')}`;
   const url = new URL(rootUrl);
   url.pathname = `/${name}`;
-  const admin = postgres(rootUrl, { max: 1 });
-  yield* Effect.tryPromise({
-    try: () => admin`create database ${admin(name)}`,
-    catch: (cause) =>
-      new Error('Could not create an isolated test database.', { cause }),
-  });
-  yield* Effect.promise(() => admin.end());
+  yield* Effect.acquireUseRelease(
+    Effect.sync(() => postgres(rootUrl, { max: 1 })),
+    (admin) =>
+      Effect.tryPromise({
+        try: () => admin`create database ${admin(name)}`,
+        catch: (cause) =>
+          new Error('Could not create an isolated test database.', { cause }),
+      }),
+    (admin) => Effect.promise(() => admin.end()),
+  );
   return { name, rootUrl, url: url.toString() };
 });
 
