@@ -7,6 +7,7 @@ import type { ExtractedPageData } from '../extraction/schema';
 import { Extraction } from '../extraction/service';
 import type { JudgeVerdictData } from '../judge/schema';
 import { Judge } from '../judge/service';
+import { SentenceJudge } from '../sentence/judge';
 import { SentenceGen } from '../sentence/service';
 import { BedrockProvider, productionModelId } from './bedrock';
 
@@ -48,6 +49,7 @@ const capturedServices = (response: unknown) => {
     Extraction.Default,
     DefinitionJudge.Default,
     DefinitionWriter.Default,
+    SentenceJudge.Default,
   ).pipe(Layer.provide(Layer.succeed(BedrockProvider, bedrock(modelId))));
   return { calls, services };
 };
@@ -94,6 +96,66 @@ describe('Bedrock workload transport', () => {
 });
 
 describe('Bedrock sentence transport', () => {
+  it('grades sentence translations with the production model and medium reasoning', async () => {
+    const verdict = {
+      meaningKept: true,
+      grammatical: false,
+      spelledCorrectly: true,
+      wordUsed: true,
+      correction: 'Mi hermana trabaja como abogada en Madrid.',
+      explanation: "Die Anwältin ist weiblich: 'abogada'.",
+    };
+    const { calls, services } = capturedServices(verdict);
+    const result = await Effect.runPromise(
+      Effect.gen(function* () {
+        const judge = yield* SentenceJudge;
+        expect(judge.modelId).toBe(modelId);
+        return yield* judge.judge({
+          targetLanguage: 'Spanish',
+          sentence: 'Meine Schwester arbeitet als Anwältin in Madrid.',
+          reference: 'Mi hermana trabaja como abogada en Madrid.',
+          word: { target: 'la abogada', german: 'die Anwältin' },
+          givenAnswer: 'Mi hermana trabaja como abogado en Madrid.',
+        });
+      }).pipe(Effect.provide(services)),
+    );
+    expect(result).toEqual(verdict);
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.url).toContain(`${modelId}/converse`);
+    expect(calls[0]?.body).toHaveProperty(
+      'additionalModelRequestFields.output_config.effort',
+      'medium',
+    );
+    expect(calls[0]?.body).toHaveProperty(
+      'additionalModelRequestFields.thinking.type',
+      'adaptive',
+    );
+    expect(JSON.stringify(calls[0]?.body.system)).toContain('JSON schema');
+    expect(calls[0]?.body).not.toHaveProperty('toolConfig');
+  });
+
+  it('returns a typed error for a malformed sentence verdict', async () => {
+    const { services } = capturedServices({ meaningKept: 'yes' });
+    const result = await Effect.runPromise(
+      Effect.gen(function* () {
+        return yield* (yield* SentenceJudge).judge({
+          targetLanguage: 'French',
+          sentence: 'Ich lese.',
+          reference: 'Je lis.',
+          word: { target: 'lire', german: 'lesen' },
+          givenAnswer: 'Je suis en train de lire.',
+        });
+      }).pipe(Effect.provide(services), Effect.either),
+    );
+    expect(result).toMatchObject({
+      _tag: 'Left',
+      left: {
+        _tag: 'SentenceJudgeError',
+        message: 'The sentence translation could not be graded.',
+      },
+    });
+  });
+
   it.each(['generate', 'translate', 'translateWord'] as const)(
     'sends %s through the same medium reasoning configuration',
     async (operation) => {

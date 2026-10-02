@@ -1,11 +1,11 @@
 import { generateText, Output } from 'ai';
 import { Effect, Schema } from 'effect';
-import { judgeModel } from '../config';
-import { VertexProvider } from '../providers/vertex';
 import {
-  geminiHighProviderOptions,
-  providerJsonSchema,
-} from '../structured-output';
+  BedrockProvider,
+  productionModelId,
+  sonnetMediumProviderOptions,
+} from '../providers/bedrock';
+import { providerJsonSchema } from '../structured-output';
 import { SentenceJudgeError } from './judge-error';
 import {
   type SentenceJudgeInput,
@@ -38,8 +38,8 @@ export class SentenceJudge extends Effect.Service<SentenceJudge>()(
   '@wordhold/ai/SentenceJudge',
   {
     effect: Effect.gen(function* () {
-      const vertex = yield* VertexProvider;
-      const modelId = yield* judgeModel;
+      const model = yield* BedrockProvider;
+      const modelId = productionModelId;
       const verdictOutput = providerJsonSchema(SentenceVerdict);
       const decodeVerdict = Schema.decodeUnknown(SentenceVerdict);
       const failure = (cause: unknown) =>
@@ -51,10 +51,10 @@ export class SentenceJudge extends Effect.Service<SentenceJudge>()(
         Effect.tryPromise({
           try: async () => {
             const { output } = await generateText({
-              model: vertex(modelId),
+              model,
               output: Output.object({ schema: verdictOutput }),
               prompt: sentenceJudgePrompt(input),
-              providerOptions: geminiHighProviderOptions,
+              providerOptions: sonnetMediumProviderOptions,
             });
             return output;
           },
