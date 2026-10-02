@@ -59,8 +59,11 @@ const loadPracticeMode = async (
   selection: VocabularySelectionData,
   deps: StudySearchData,
 ) => {
+  // The Wackelkandidaten failed in the directions the course still practises.
+  // With one of those left, their sitting starts without asking.
+  const includeSwitchedOff = deps.from !== 'fragile';
   const preview = await getStudySession({
-    data: { courseId, direction: 'both', selection },
+    data: { courseId, direction: 'both', selection, includeSwitchedOff },
   });
   const availableDirections = directionsWithCards(preview.items);
   const direction = resolveSessionDirection(
@@ -73,7 +76,7 @@ const loadPracticeMode = async (
     session = preview;
   } else if (direction !== undefined) {
     session = await getStudySession({
-      data: { courseId, direction, selection },
+      data: { courseId, direction, selection, includeSwitchedOff },
     });
   }
   return {

@@ -18,7 +18,7 @@ import { PracticeSessionStore } from './session-store';
 const selectedEntryCount = 3;
 
 describe('PracticeSessionStore selected practice', () => {
-  it('loads every selected card and permits a direction outside the regular plan', async () => {
+  it('loads every selected card, and a switched-off direction only when asked', async () => {
     await Effect.runPromise(
       withMigratedTestDatabase((database) => {
         const databaseLayer = testDatabaseLayer(database.url);
@@ -31,6 +31,7 @@ describe('PracticeSessionStore selected practice', () => {
             courseId: fixtureCourseId,
             direction: 'both',
             selection: { unitId: fixtureUnitId },
+            includeSwitchedOff: true,
           });
           expect(
             mixed
@@ -50,6 +51,7 @@ describe('PracticeSessionStore selected practice', () => {
             courseId: fixtureCourseId,
             direction: 'to_target',
             selection: { unitId: fixtureUnitId },
+            includeSwitchedOff: true,
           });
           expect(target.map(({ direction }) => direction)).toEqual([
             'to_target',
@@ -67,8 +69,28 @@ describe('PracticeSessionStore selected practice', () => {
               courseId: fixtureCourseId,
               direction: 'to_target',
               selection: { unitId: fixtureUnitId },
+              includeSwitchedOff: true,
             }),
           ).toHaveLength(selectedEntryCount);
+          expect(
+            yield* store.loadSelection({
+              courseId: fixtureCourseId,
+              direction: 'to_target',
+              selection: { unitId: fixtureUnitId },
+              includeSwitchedOff: false,
+            }),
+          ).toEqual([]);
+          const planned = yield* store.loadSelection({
+            courseId: fixtureCourseId,
+            direction: 'both',
+            selection: { unitId: fixtureUnitId },
+            includeSwitchedOff: false,
+          });
+          expect(planned.map(({ direction }) => direction)).toEqual([
+            'to_native',
+            'to_native',
+            'to_native',
+          ]);
         }).pipe(
           Effect.provide(
             PracticeSessionStore.live.pipe(Layer.provide(databaseLayer)),
