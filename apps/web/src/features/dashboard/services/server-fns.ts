@@ -18,7 +18,7 @@ const dashboardRuntime = ManagedRuntime.make(dashboardLive);
 
 // Everyone in the family shares the instance's time zone, so "today" and the
 // streak mean the same calendar day for all of them.
-export const loadDashboard = (ownerId: string) =>
+const loadDashboard = (ownerId: string) =>
   dashboardRuntime.runPromise(
     Effect.flatMap(DashboardService, (service) =>
       service.load(ownerId, serverEnv.ownerTimeZone()),
