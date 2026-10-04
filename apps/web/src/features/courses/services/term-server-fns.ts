@@ -22,7 +22,7 @@ const termRuntime = ManagedRuntime.make(
         definitionLayer,
       ),
     ),
-    Layer.provideMerge(UsageLedger.live.pipe(Layer.provide(PgLive))),
+    Layer.provideMerge(UsageLedger.live(PgLive)),
   ),
 );
 

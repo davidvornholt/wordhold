@@ -20,7 +20,7 @@ const sentenceRuntime = ManagedRuntime.make(
         SentenceGrader.live.pipe(Layer.provide(sentenceJudgeLayer)),
       ),
     ),
-    Layer.provideMerge(UsageLedger.live.pipe(Layer.provide(PgLive))),
+    Layer.provideMerge(UsageLedger.live(PgLive)),
   ),
 );
 

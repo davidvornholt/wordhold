@@ -52,7 +52,7 @@ const vocabularyDependencies = Layer.mergeAll(
   SentenceGen.Default.pipe(Layer.provide(BedrockProvider.live)),
   StorageLive,
   Tts.Default,
-  UsageLedger.live.pipe(Layer.provide(PgLive)),
+  UsageLedger.live(PgLive),
 );
 const vocabularyRuntime = ManagedRuntime.make(
   Layer.mergeAll(

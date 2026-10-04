@@ -25,6 +25,6 @@ export const sentenceJudgeLayer = SentenceJudge.Default.pipe(
 export const sentenceRuntime = ManagedRuntime.make(
   Layer.merge(
     SentenceGen.Default.pipe(Layer.provide(BedrockProvider.live)),
-    UsageLedger.live.pipe(Layer.provide(PgLive)),
+    UsageLedger.live(PgLive),
   ),
 );

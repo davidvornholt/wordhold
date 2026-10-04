@@ -33,9 +33,7 @@ const practiceLive = PracticeService.Default.pipe(
 );
 
 const practiceRuntime = ManagedRuntime.make(
-  practiceLive.pipe(
-    Layer.provideMerge(UsageLedger.live.pipe(Layer.provide(PgLive))),
-  ),
+  practiceLive.pipe(Layer.provideMerge(UsageLedger.live(PgLive))),
 );
 
 export const getPracticeSession = createServerFn()

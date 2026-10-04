@@ -16,7 +16,7 @@ const databaseServices = Layer.mergeAll(
   ImportRepositoryLive,
   MemberRepositoryLive,
   MediaRepositoryLive,
-  UsageLedger.live,
+  UsageLedger.live(PgLive),
 ).pipe(Layer.provideMerge(PgLive));
 
 const extraction = Extraction.Default.pipe(Layer.provide(BedrockProvider.live));

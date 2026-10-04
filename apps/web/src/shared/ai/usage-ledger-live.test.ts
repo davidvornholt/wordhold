@@ -5,7 +5,7 @@ import {
   testDatabaseLayer,
   withMigratedTestDatabase,
 } from '@wordhold/db/testing/postgres-test-database';
-import { Effect, Layer } from 'effect';
+import { Effect, Schedule } from 'effect';
 import { seedOwner } from '../testing/owner-fixture';
 import { billedTo, UsageLedger } from './usage-ledger';
 
@@ -18,7 +18,7 @@ const runWithLedger = <A, E>(
     withMigratedTestDatabase((database) => {
       const databaseLayer = testDatabaseLayer(database.url);
       return work.pipe(
-        Effect.provide(UsageLedger.live.pipe(Layer.provide(databaseLayer))),
+        Effect.provide(UsageLedger.live(databaseLayer)),
         Effect.provide(databaseLayer),
       );
     }),
@@ -117,6 +117,35 @@ describe('UsageLedger', () => {
             characters: 1000,
             estimatedUsd: '0.03000000',
           },
+        ]);
+      }),
+    );
+  });
+
+  it('accepts another request after its idle database connection disconnects', async () => {
+    await runWithLedger(
+      Effect.gen(function* () {
+        const sql = yield* Database;
+        yield* seedMember(true);
+        const first = yield* billedTo(memberId)(speech);
+        yield* first.settle({ succeeded: true, usage: undefined });
+
+        const terminated = yield* sql<{ terminated: boolean }>`
+          select pg_terminate_backend(pid, 1000) as terminated
+          from pg_stat_activity
+          where datname = current_database() and pid <> pg_backend_pid()
+            and state = 'idle' and query like '%update ai_usage set%'`;
+        expect(terminated).toEqual([{ terminated: true }]);
+        // The driver's socket notification can lag behind backend termination;
+        // recovery must happen on this same layer without restarting it.
+        const next = yield* billedTo(memberId)(speech).pipe(
+          Effect.retry({ times: 20, schedule: Schedule.spaced('50 millis') }),
+        );
+        yield* next.settle({ succeeded: true, usage: undefined });
+        const rows = yield* sql`select status from ai_usage`;
+        expect(rows).toEqual([
+          { status: 'succeeded' },
+          { status: 'succeeded' },
         ]);
       }),
     );
