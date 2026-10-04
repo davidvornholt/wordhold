@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { AiUsage } from '@wordhold/ai/usage';
+import { AiUsage, metered } from '@wordhold/ai/usage';
 import { Database } from '@wordhold/db/client';
 import {
   testDatabaseLayer,
@@ -79,6 +79,45 @@ describe('UsageLedger', () => {
 
         expect(failure.message).toBe('Dieses Konto hat keinen Zugang mehr.');
         expect(yield* sql`select 1 from ai_usage`).toHaveLength(0);
+      }),
+    );
+  });
+
+  it('keeps failed paid usage after the application transaction rolls back', async () => {
+    await runWithLedger(
+      Effect.gen(function* () {
+        const sql = yield* Database;
+        yield* seedMember(true);
+
+        const request = metered(
+          { operation: 'speech', provider: 'polly', model: 'generative' },
+          (report) =>
+            Effect.gen(function* () {
+              report({ characters: 1000, raw: { characters: 1000 } });
+              return yield* Effect.fail('Provider returned an invalid answer');
+            }),
+        );
+        const failure = yield* Effect.flip(
+          sql.withTransaction(billedTo(memberId)(request)),
+        );
+
+        expect(failure).toBe('Provider returned an invalid answer');
+        const rows = yield* sql<{
+          readonly userId: string;
+          readonly status: string;
+          readonly characters: number;
+          readonly estimatedUsd: string;
+        }>`select user_id as "userId", status, characters,
+            estimated_usd::text as "estimatedUsd"
+          from ai_usage`;
+        expect(rows).toEqual([
+          {
+            userId: memberId,
+            status: 'failed',
+            characters: 1000,
+            estimatedUsd: '0.03000000',
+          },
+        ]);
       }),
     );
   });

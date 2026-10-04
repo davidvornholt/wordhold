@@ -6,6 +6,7 @@ import { Config } from 'effect';
 // reaching through the package boundary to @effect/sql.
 export const Database = SqlClient.SqlClient;
 export type Database = SqlClient.SqlClient;
+export const { TransactionConnection } = SqlClient;
 
 const toSnakeCase = (name: string): string =>
   name.replaceAll(/[A-Z]/gu, (character) => `_${character.toLowerCase()}`);

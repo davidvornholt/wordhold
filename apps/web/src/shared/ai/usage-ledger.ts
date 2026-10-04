@@ -1,7 +1,7 @@
 import { aiPrice, estimateUsd } from '@wordhold/ai/cost';
 import { type AiCall, type AiCallUsage, AiUsage } from '@wordhold/ai/usage';
 import { AiUsageError } from '@wordhold/ai/usage-error';
-import { Database } from '@wordhold/db/client';
+import { Database, TransactionConnection } from '@wordhold/db/client';
 import { Cause, Context, Effect, Layer } from 'effect';
 
 // USD estimates keep eight decimal places, as the column does.
@@ -31,10 +31,18 @@ export class UsageLedger extends Context.Tag('@wordhold/web/ai/UsageLedger')<
   UsageLedger,
   { readonly forPerson: (userId: string) => AiUsage['Type'] }
 >() {
-  static readonly live = Layer.effect(
+  static readonly live = Layer.scoped(
     UsageLedger,
     Effect.gen(function* () {
       const sql = yield* Database;
+      // Reserve before application transactions acquire their connections. No
+      // BEGIN is issued here: ledger statements autocommit independently, even
+      // when the caller rolls back, without waiting on a saturated pool.
+      const connection = yield* sql.reserve;
+      const independently = Effect.provideService(TransactionConnection, [
+        connection,
+        0,
+      ]);
       const forPerson = (userId: string) =>
         AiUsage.of({
           start: (call) =>
@@ -44,6 +52,7 @@ export class UsageLedger extends Context.Tag('@wordhold/web/ai/UsageLedger')<
               select ${userId}, ${call.operation}, ${call.provider}, ${call.model}
               where exists (select 1 from members where user_id = ${userId} and enabled)
               returning id`.pipe(
+              independently,
               Effect.mapError(
                 (cause) =>
                   new AiUsageError({
@@ -71,6 +80,7 @@ export class UsageLedger extends Context.Tag('@wordhold/web/ai/UsageLedger')<
                             price_snapshot = ${columns.priceSnapshot}::jsonb,
                             estimated_usd = ${columns.estimatedUsd}::numeric
                           where id = ${row.id}`.pipe(
+                          independently,
                           Effect.asVoid,
                           Effect.catchAllCause((cause) =>
                             Effect.logError(
