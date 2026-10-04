@@ -177,26 +177,47 @@ describe('recitation rating', () => {
     'Also hat Gott die Welt geliebt, daß er seinen eingeborenen Sohn gab.';
 
   it('rates a word-perfect text Good however fast it came', () => {
-    const outcome = gradeRecitation(verse, verse.replace('geliebt', 'gelibt'));
+    const outcome = gradeRecitation(verse, verse.replace('geliebt', 'gelibt'), {
+      dictated: false,
+    });
     expect(outcome).toEqual({
       method: 'recitation',
+      dictated: false,
       words: 12,
       mistakes: 0,
       typos: 1,
+      soundAlikes: 0,
     });
     expect(deriveRating(outcome, fastMs)).toBe(ratings.good);
   });
 
   it('rates a mistake per ten words Hard and counts it as correct', () => {
-    const outcome = gradeRecitation(verse, verse.replace('Welt', 'Erde'));
+    const outcome = gradeRecitation(verse, verse.replace('Welt', 'Erde'), {
+      dictated: false,
+    });
     expect(isCorrect(outcome)).toBe(true);
     expect(deriveRating(outcome, slowMs)).toBe(ratings.hard);
+  });
+
+  it('rates a dictated text with words that sound right Good', () => {
+    const outcome = gradeRecitation(
+      'Seid fröhlich in Hoffnung.',
+      'Seit fröhlich in Hoffnung',
+      { dictated: true },
+    );
+    expect(outcome).toMatchObject({
+      dictated: true,
+      mistakes: 0,
+      soundAlikes: 1,
+    });
+    expect(deriveRating(outcome, slowMs)).toBe(ratings.good);
   });
 
   it('rates more mistakes Again', () => {
     const outcome = gradeRecitation(
       verse,
       'Also hat Gott die Menschen geliebt',
+      { dictated: false },
     );
     expect(isCorrect(outcome)).toBe(false);
     expect(deriveRating(outcome, slowMs)).toBe(ratings.again);

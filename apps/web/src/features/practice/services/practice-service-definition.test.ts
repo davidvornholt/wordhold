@@ -98,6 +98,7 @@ const submitDefinition = (
       cardId: testCard.id,
       revision: testCard.revision,
       answer,
+      dictated: false,
       elapsedMs: options.elapsedMs,
       wrongAnswerResolution: 'defer',
       mode: 'scheduled',

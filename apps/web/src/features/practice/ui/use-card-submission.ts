@@ -46,6 +46,28 @@ type CardSubmissionInput = {
   readonly onNext: (result: ResolvedSubmitResult) => void;
 };
 
+// The answer being written. It counts as dictated once speech recognition
+// wrote part of it; typing keeps it so, since the spoken words are still
+// there, and clearing the answer starts over.
+const useAnswerDraft = () => {
+  const [answer, setAnswer] = useState('');
+  const [dictated, setDictated] = useState(false);
+  const change = (value: string) => {
+    setAnswer(value);
+    if (value.trim() === '') {
+      setDictated(false);
+    }
+  };
+  // Spoken words go after what is already there.
+  const appendDictation = (transcript: string) => {
+    setAnswer((current) =>
+      current.trim() === '' ? transcript : `${current.trimEnd()} ${transcript}`,
+    );
+    setDictated(true);
+  };
+  return { answer, dictated, change, appendDictation };
+};
+
 // All state around one card's answer round trip: the deferred first
 // submission, the optional skip, and the resolution of a rejected answer.
 export const useCardSubmission = ({
@@ -56,7 +78,7 @@ export const useCardSubmission = ({
   submit,
   onNext,
 }: CardSubmissionInput) => {
-  const [answer, setAnswer] = useState('');
+  const draft = useAnswerDraft();
   const [submittedData, setSubmittedData] = useState<DeferredSubmitData | null>(
     null,
   );
@@ -96,7 +118,8 @@ export const useCardSubmission = ({
     const data: DeferredSubmitData = {
       cardId,
       revision,
-      answer,
+      answer: draft.answer,
+      dictated: draft.dictated,
       elapsedMs: Math.floor(performance.now() - startedAt),
       wrongAnswerResolution: 'defer',
       mode,
@@ -161,9 +184,11 @@ export const useCardSubmission = ({
   };
 
   return {
-    answer,
-    setAnswer,
+    answer: draft.answer,
+    setAnswer: draft.change,
+    appendDictation: draft.appendDictation,
     submittedAnswer: submittedData?.answer ?? null,
+    submittedDictated: submittedData?.dictated ?? false,
     skipped,
     result,
     busy,

@@ -3,13 +3,13 @@ import { Effect } from 'effect';
 import {
   BibleConflictError,
   BibleModuleError,
-  BibleUploadError,
 } from '../../features/bibles/errors/bible-errors';
 import { bibleRuntime } from '../../features/bibles/runtime';
 import { BibleService } from '../../features/bibles/services/bible-service';
 import { readModuleUpload } from '../../features/bibles/services/upload';
 import { AuthenticationError } from '../../shared/auth/authentication-error';
 import { requireMember } from '../../shared/auth/require-member';
+import { RequestBodyError } from '../../shared/http/bounded-body';
 
 const unauthorizedStatus = 401;
 const badRequestStatus = 400;
@@ -33,7 +33,7 @@ const uploadResponse = (request: Request) =>
             { status: unauthorizedStatus },
           );
         }
-        if (error instanceof BibleUploadError) {
+        if (error instanceof RequestBodyError) {
           return Response.json(
             { error: error.message },
             { status: error.status },

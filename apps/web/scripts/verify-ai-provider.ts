@@ -8,6 +8,7 @@ import { BedrockProvider } from '@wordhold/ai/providers/bedrock';
 import { SentenceGen } from '@wordhold/ai/sentence';
 import { SentenceJudge } from '@wordhold/ai/sentence/judge';
 import { isSentenceCorrect } from '@wordhold/ai/sentence/judge-schema';
+import { Stt } from '@wordhold/ai/stt';
 import { AiUsage } from '@wordhold/ai/usage';
 import { Cause, Data, Effect, Exit, Layer, Option } from 'effect';
 
@@ -51,7 +52,11 @@ const services = Layer.mergeAll(
   Judge.Default,
   SentenceGen.Default,
   SentenceJudge.Default,
-).pipe(Layer.provide(BedrockProvider.live), Layer.merge(printedUsage));
+).pipe(
+  Layer.provide(BedrockProvider.live),
+  Layer.merge(Stt.Default),
+  Layer.merge(printedUsage),
+);
 
 const verifySentences = Effect.gen(function* () {
   const sentences = yield* SentenceGen;
@@ -89,6 +94,29 @@ const verifySentences = Effect.gen(function* () {
     });
   }
   yield* report('Sentence generation, translations and grading verified.');
+});
+
+// Polly's German voice Vicki saying "Seid fröhlich in Hoffnung." (Romans
+// 12:12 in the Luther Bible of 1912), as 16 kHz PCM the way the app records.
+const verifyDictation = Effect.gen(function* () {
+  const stt = yield* Stt;
+  const audio = yield* Effect.tryPromise({
+    try: () =>
+      globalThis.Bun.file(
+        new URL('./fixtures/provider-speech.pcm', import.meta.url),
+      ).bytes(),
+    catch: () =>
+      new VerificationError({
+        message: 'Could not read the synthetic speech fixture.',
+      }),
+  });
+  const { transcript } = yield* stt.transcribe({ audio });
+  if (!transcript.toLowerCase().includes('hoffnung')) {
+    return yield* new VerificationError({
+      message: 'Transcription did not recognize the synthetic speech.',
+    });
+  }
+  yield* report('Dictation verified.');
 });
 
 const verification = Effect.gen(function* () {
@@ -158,6 +186,7 @@ const verification = Effect.gen(function* () {
     });
   }
   yield* report(`Page extraction verified (${extracted.modelId}).`);
+  yield* verifyDictation;
 }).pipe(Effect.provide(services));
 
 const result = await Effect.runPromiseExit(verification);
@@ -187,6 +216,6 @@ if (Exit.isFailure(result)) {
 } else {
   await globalThis.Bun.write(
     globalThis.Bun.stdout,
-    'Sonnet medium extraction, vocabulary, definition and sentence grading, writing, sentence generation and translations verified.\n',
+    'Sonnet medium extraction, vocabulary, definition and sentence grading, writing, sentence generation and translations verified, and Transcribe dictation verified.\n',
   );
 }

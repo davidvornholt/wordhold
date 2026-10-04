@@ -124,6 +124,7 @@ export const runSubmit = (
     cardId: testCard.id,
     revision: testCard.revision,
     answer,
+    dictated: false,
     wrongAnswerResolution: 'defer',
     mode: 'scheduled',
   });

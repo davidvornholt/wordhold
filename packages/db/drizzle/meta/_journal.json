@@ -190,6 +190,13 @@
       "when": 1791135245098,
       "tag": "0026_smart_dreadnoughts",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1791137829614,
+      "tag": "0027_next_shaman",
+      "breakpoints": true
     }
   ]
 }

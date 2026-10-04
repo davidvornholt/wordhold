@@ -3,7 +3,11 @@ import {
   isDefinitionCorrect,
 } from '@wordhold/ai/definition/schema';
 import type { JudgeVerdictData } from '@wordhold/ai/judge/schema';
-import { allowedMistakes, compareRecitation } from './recitation';
+import {
+  allowedMistakes,
+  compareRecitation,
+  type RecitationInput,
+} from './recitation';
 
 export type DerivedRating = 1 | 2 | 3 | 4;
 
@@ -11,7 +15,8 @@ export type DerivedRating = 1 | 2 | 3 | 4;
 // the rejected assessment it replaced without teaching the matcher that the
 // submitted typo is valid. A definition keeps the key points it was graded
 // against, since the learner can edit them later. A recited text keeps its
-// counts; the words themselves can be compared again from the answer.
+// counts and whether it was dictated; the words themselves can be compared
+// again from the answer.
 export type AssessedGradeOutcome =
   | { readonly method: 'exact' }
   | { readonly method: 'judge'; readonly verdict: JudgeVerdictData }
@@ -22,9 +27,11 @@ export type AssessedGradeOutcome =
     }
   | {
       readonly method: 'recitation';
+      readonly dictated: boolean;
       readonly words: number;
       readonly mistakes: number;
       readonly typos: number;
+      readonly soundAlikes: number;
     };
 
 export type RecitationOutcome = Extract<
@@ -35,9 +42,21 @@ export type RecitationOutcome = Extract<
 export const gradeRecitation = (
   original: string,
   recited: string,
+  input: RecitationInput,
 ): RecitationOutcome => {
-  const { words, mistakes, typos } = compareRecitation(original, recited);
-  return { method: 'recitation', words, mistakes, typos };
+  const { words, mistakes, typos, soundAlikes } = compareRecitation(
+    original,
+    recited,
+    input,
+  );
+  return {
+    method: 'recitation',
+    dictated: input.dictated,
+    words,
+    mistakes,
+    typos,
+    soundAlikes,
+  };
 };
 
 export type GradeOutcome =
@@ -77,8 +96,9 @@ export const isCorrect = (outcome: GradeOutcome): boolean => {
   }
 };
 
-// Typos aside, a text recited word for word is known. A few mistakes in a
-// long text still count as recalled, but with effort.
+// Typos and words that sound right aside, a text recited word for word is
+// known. A few mistakes in a long text still count as recalled, but with
+// effort.
 const recitationRating = (outcome: RecitationOutcome): DerivedRating => {
   if (outcome.mistakes === 0) {
     return ratings.good;

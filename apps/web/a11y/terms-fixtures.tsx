@@ -155,6 +155,7 @@ export const TermsFeedbackFixture = () => {
         <FeedbackPanel
           answerLanguage="de"
           busy={false}
+          dictated={false}
           example={null}
           id={feedbackId}
           kind="terms"

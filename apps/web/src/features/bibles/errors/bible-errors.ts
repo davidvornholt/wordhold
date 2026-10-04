@@ -1,13 +1,5 @@
 import { Data } from 'effect';
 
-// The upload is missing, too large or could not be received. The status is
-// the HTTP status the upload route answers with.
-export class BibleUploadError extends Data.TaggedError('BibleUploadError')<{
-  readonly message: string;
-  readonly status: number;
-  readonly cause?: unknown;
-}> {}
-
 // The uploaded file is not a Bible module Wordhold can read.
 export class BibleModuleError extends Data.TaggedError('BibleModuleError')<{
   readonly message: string;

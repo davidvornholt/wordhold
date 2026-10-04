@@ -135,7 +135,9 @@ const gradeDefinition = (input: GradeAnswerInput) =>
 export const gradeAnswer = (input: GradeAnswerInput) => {
   if (input.row.courseKind === 'texts') {
     return Effect.succeed<AssessedAnswer>({
-      outcome: gradeRecitation(input.row.entry.nativeText, input.data.answer),
+      outcome: gradeRecitation(input.row.entry.nativeText, input.data.answer, {
+        dictated: input.data.dictated,
+      }),
       assessmentId: null,
     });
   }

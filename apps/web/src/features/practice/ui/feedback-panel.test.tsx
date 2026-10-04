@@ -32,6 +32,7 @@ const render = (
     <FeedbackPanel
       answerLanguage="en"
       busy={false}
+      dictated={false}
       example={null}
       id={feedbackId}
       kind="language"

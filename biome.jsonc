@@ -86,8 +86,14 @@
       }
     },
     {
-      // AWS Polly's SDK commands require PascalCase request properties.
-      "includes": ["packages/ai/src/tts/service.ts"],
+      // AWS Polly's and Transcribe's SDK commands and events use PascalCase
+      // properties.
+      "includes": [
+        "packages/ai/src/tts/service.ts",
+        "packages/ai/src/stt/audio.ts",
+        "packages/ai/src/stt/audio.test.ts",
+        "packages/ai/src/stt/service.ts"
+      ],
       "linter": {
         "rules": {
           "style": { "useNamingConvention": "off" }

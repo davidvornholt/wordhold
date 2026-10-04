@@ -43,6 +43,9 @@ const SubmitPayloadBase = Schema.Struct({
 const AnsweredPayloadBase = Schema.Struct({
   ...SubmitPayloadBase.fields,
   answer: Schema.String.pipe(Schema.maxLength(maximumSubmittedAnswerLength)),
+  // Whether speech recognition wrote the answer. A recited text then forgives
+  // words that sound right and numbers in digits.
+  dictated: Schema.Boolean,
   skipped: ForbiddenField,
 });
 
@@ -63,6 +66,7 @@ export const SubmitPayload = Schema.Union(
   Schema.Struct({
     ...SubmitPayloadBase.fields,
     answer: ForbiddenField,
+    dictated: ForbiddenField,
     wrongAnswerResolution: ForbiddenField,
     assessmentId: ForbiddenField,
     skipped: Schema.Literal(true),

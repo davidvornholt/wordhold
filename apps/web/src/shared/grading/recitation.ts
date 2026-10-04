@@ -1,3 +1,10 @@
+import {
+  numberWordEndings,
+  numberWordKey,
+  numberWordStems,
+} from './german-numbers';
+import { germanSoundKey } from './german-sound';
+
 // A text learned by heart is compared word for word with its original. Only
 // the words count: case, punctuation and line breaks are not what is being
 // memorized, and umlauts typed as "ae" or a "ß" typed as "ss" are the same
@@ -13,11 +20,13 @@ export type RecitedWord = {
 
 // One step of the alignment, in the order of the original. A typo is a word
 // that is clearly the right one with a single slip; a wrong word is another
-// word in its place.
+// word in its place. A dictated answer can also have a word that sounds like
+// the right one, since speech recognition cannot tell which spelling was
+// meant.
 export type RecitationStep =
   | { readonly kind: 'same'; readonly expected: RecitedWord }
   | {
-      readonly kind: 'typo' | 'wrong';
+      readonly kind: 'typo' | 'soundAlike' | 'wrong';
       readonly expected: RecitedWord;
       readonly typed: RecitedWord;
     }
@@ -28,13 +37,23 @@ export type Recitation = {
   readonly steps: ReadonlyArray<RecitationStep>;
   // Words in the original.
   readonly words: number;
-  // Wrong, missing and extra words. A typo is not a mistake.
+  // Wrong, missing and extra words. Neither a typo nor a word that sounds
+  // right is a mistake.
   readonly mistakes: number;
   readonly typos: number;
+  readonly soundAlikes: number;
 };
 
-const wordPattern = /[\p{L}\p{M}\p{N}]+(?:['’][\p{L}\p{M}\p{N}]+)*/gu;
+// How the answer was given. Spoken words come back from speech recognition,
+// which spells numbers in digits and cannot tell words apart that sound the
+// same.
+export type RecitationInput = { readonly dictated: boolean };
+
+// A number grouped by thousands, such as "144.000" or "144 000", is one word.
+const wordPattern =
+  /\d{1,3}(?:[. \u00a0\u202f]\d{3})+(?!\d)|[\p{L}\p{M}\p{N}]+(?:['’][\p{L}\p{M}\p{N}]+)*/gu;
 const apostrophes = /['’]/gu;
+const groupSeparators = /[. \u00a0\u202f]/gu;
 const foldedLetters = new Map([
   ['ß', 'ss'],
   ['ä', 'ae'],
@@ -48,6 +67,7 @@ const comparisonKey = (word: string): string =>
     .normalize('NFC')
     .toLowerCase()
     .replace(apostrophes, '')
+    .replace(groupSeparators, '')
     .replace(foldable, (letter) => foldedLetters.get(letter) ?? letter);
 
 export const recitedWords = (text: string): ReadonlyArray<RecitedWord> =>
@@ -87,60 +107,115 @@ const typoMinimumLength = 5;
 const isTypo = (expected: string, typed: string): boolean =>
   expected.length >= typoMinimumLength && withinOneEdit(expected, typed);
 
+const digitsOnly = /^\d+$/u;
+
+type PairKind = 'same' | 'typo' | 'soundAlike' | 'wrong';
+type WordMatch = (expected: string, typed: string) => PairKind;
+
+const typedMatch: WordMatch = (expected, typed) => {
+  if (expected === typed) {
+    return 'same';
+  }
+  return isTypo(expected, typed) ? 'typo' : 'wrong';
+};
+
+// The alignment compares every word of the original with every word of the
+// answer, so what is derived from a single word is worked out once.
+const memoized = <A>(compute: (word: string) => A) => {
+  const known = new Map<string, A>();
+  return (word: string): A => {
+    const cached = known.get(word);
+    if (cached !== undefined) {
+      return cached;
+    }
+    const computed = compute(word);
+    known.set(word, computed);
+    return computed;
+  };
+};
+
+// A dictated word that sounds like the right one is a sound-alike, and a
+// number in digits is the same as the number written out.
+const dictatedMatch = (): WordMatch => {
+  const soundKey = memoized(germanSoundKey);
+  const isDigits = memoized((word) => digitsOnly.test(word));
+  const spelledKey = memoized(numberWordKey);
+  const stemKeys = memoized((digits) =>
+    numberWordStems(digits).map((stem) => numberWordKey(comparisonKey(stem))),
+  );
+  const spellsNumber = (word: string, digits: string): boolean => {
+    const spelled = spelledKey(word);
+    return stemKeys(digits).some(
+      (stem) =>
+        spelled.startsWith(stem) &&
+        numberWordEndings.has(spelled.slice(stem.length)),
+    );
+  };
+  const sameNumber = (expected: string, typed: string): boolean => {
+    if (isDigits(typed)) {
+      return !isDigits(expected) && spellsNumber(expected, typed);
+    }
+    return isDigits(expected) && spellsNumber(typed, expected);
+  };
+  return (expected, typed) => {
+    if (expected === typed || sameNumber(expected, typed)) {
+      return 'same';
+    }
+    if (soundKey(expected) === soundKey(typed)) {
+      return 'soundAlike';
+    }
+    return typedMatch(expected, typed);
+  };
+};
+
 // Costs in half mistakes, so a typo is cheaper than a wrong word and a wrong
 // word cheaper than a missing plus an extra one.
-const cost = { same: 0, typo: 1, wrong: 2, gap: 2 } as const;
-
-const substitutionCost = (expected: string, typed: string): number => {
-  if (expected === typed) {
-    return cost.same;
-  }
-  return isTypo(expected, typed) ? cost.typo : cost.wrong;
-};
+const pairCost = { same: 0, typo: 1, soundAlike: 1, wrong: 2 } as const;
+const gapCost = 2;
 
 const alignmentCosts = (
   expected: ReadonlyArray<RecitedWord>,
   typed: ReadonlyArray<RecitedWord>,
+  match: WordMatch,
 ): Uint32Array => {
   const columns = typed.length + 1;
   const costs = new Uint32Array((expected.length + 1) * columns);
   for (let column = 1; column < columns; column += 1) {
-    costs[column] = column * cost.gap;
+    costs[column] = column * gapCost;
   }
   for (let row = 1; row <= expected.length; row += 1) {
-    costs[row * columns] = row * cost.gap;
+    costs[row * columns] = row * gapCost;
     const want = expected[row - 1]?.key ?? '';
     for (let column = 1; column < columns; column += 1) {
       const got = typed[column - 1]?.key ?? '';
       costs[row * columns + column] = Math.min(
         (costs[(row - 1) * columns + column - 1] ?? 0) +
-          substitutionCost(want, got),
-        (costs[(row - 1) * columns + column] ?? 0) + cost.gap,
-        (costs[row * columns + column - 1] ?? 0) + cost.gap,
+          pairCost[match(want, got)],
+        (costs[(row - 1) * columns + column] ?? 0) + gapCost,
+        (costs[row * columns + column - 1] ?? 0) + gapCost,
       );
     }
   }
   return costs;
 };
 
-const alignedPair = (want: RecitedWord, got: RecitedWord): RecitationStep => {
-  if (want.key === got.key) {
-    return { kind: 'same', expected: want };
-  }
-  return {
-    kind: isTypo(want.key, got.key) ? 'typo' : 'wrong',
-    expected: want,
-    typed: got,
-  };
-};
+const alignedPair = (
+  want: RecitedWord,
+  got: RecitedWord,
+  kind: PairKind,
+): RecitationStep =>
+  kind === 'same'
+    ? { kind, expected: want }
+    : { kind, expected: want, typed: got };
 
 // Walks back through the costs. On a tie, pairing two words wins over a
 // missing word, and a missing word over an extra one.
 const alignedSteps = (
   expected: ReadonlyArray<RecitedWord>,
   typed: ReadonlyArray<RecitedWord>,
+  match: WordMatch,
 ): ReadonlyArray<RecitationStep> => {
-  const costs = alignmentCosts(expected, typed);
+  const costs = alignmentCosts(expected, typed, match);
   const columns = typed.length + 1;
   const at = (rowIndex: number, columnIndex: number) =>
     costs[rowIndex * columns + columnIndex] ?? 0;
@@ -151,15 +226,20 @@ const alignedSteps = (
     const want = expected[row - 1];
     const got = typed[column - 1];
     const here = at(row, column);
+    const kind =
+      want === undefined || got === undefined
+        ? undefined
+        : match(want.key, got.key);
     if (
       want !== undefined &&
       got !== undefined &&
-      here === at(row - 1, column - 1) + substitutionCost(want.key, got.key)
+      kind !== undefined &&
+      here === at(row - 1, column - 1) + pairCost[kind]
     ) {
-      steps.push(alignedPair(want, got));
+      steps.push(alignedPair(want, got, kind));
       row -= 1;
       column -= 1;
-    } else if (want !== undefined && here === at(row - 1, column) + cost.gap) {
+    } else if (want !== undefined && here === at(row - 1, column) + gapCost) {
       steps.push({ kind: 'missing', expected: want });
       row -= 1;
     } else if (got === undefined) {
@@ -172,19 +252,29 @@ const alignedSteps = (
   return steps.reverse();
 };
 
+const tolerated = new Set<RecitationStep['kind']>([
+  'same',
+  'typo',
+  'soundAlike',
+]);
+
 export const compareRecitation = (
   original: string,
   recited: string,
+  { dictated }: RecitationInput,
 ): Recitation => {
   const expected = recitedWords(original);
-  const steps = alignedSteps(expected, recitedWords(recited));
+  const steps = alignedSteps(
+    expected,
+    recitedWords(recited),
+    dictated ? dictatedMatch() : typedMatch,
+  );
   return {
     steps,
     words: expected.length,
-    mistakes: steps.filter(
-      (step) => step.kind !== 'same' && step.kind !== 'typo',
-    ).length,
+    mistakes: steps.filter((step) => !tolerated.has(step.kind)).length,
     typos: steps.filter((step) => step.kind === 'typo').length,
+    soundAlikes: steps.filter((step) => step.kind === 'soundAlike').length,
   };
 };
 
@@ -195,7 +285,9 @@ export const allowedMistakes = (words: number): number =>
 
 // A copy shown on screen has no excuse for typos either.
 export const isVerbatimCopy = (original: string, typed: string): boolean => {
-  const { mistakes, typos } = compareRecitation(original, typed);
+  const { mistakes, typos } = compareRecitation(original, typed, {
+    dictated: false,
+  });
   return mistakes === 0 && typos === 0;
 };
 
@@ -205,7 +297,7 @@ export type RecitationSegment =
   | { readonly kind: 'text'; readonly text: string }
   | { readonly kind: 'same' | 'missing'; readonly text: string }
   | {
-      readonly kind: 'typo' | 'wrong';
+      readonly kind: 'typo' | 'soundAlike' | 'wrong';
       readonly text: string;
       readonly typed: string;
     }
@@ -234,9 +326,9 @@ export const recitationSegments = (
       extras = [];
       const { text } = step.expected;
       segments.push(
-        step.kind === 'typo' || step.kind === 'wrong'
-          ? { kind: step.kind, text, typed: step.typed.text }
-          : { kind: step.kind, text },
+        step.kind === 'same' || step.kind === 'missing'
+          ? { kind: step.kind, text }
+          : { kind: step.kind, text, typed: step.typed.text },
       );
       cursor = step.expected.end;
     }
@@ -266,7 +358,7 @@ export const copyMistakeMessage = (
   original: string,
   typed: string,
 ): string | null => {
-  const { steps } = compareRecitation(original, typed);
+  const { steps } = compareRecitation(original, typed, { dictated: false });
   const index = steps.findIndex((candidate) => candidate.kind !== 'same');
   const step = steps[index];
   if (step === undefined) {
@@ -277,6 +369,7 @@ export const copyMistakeMessage = (
     1;
   switch (step.kind) {
     case 'typo':
+    case 'soundAlike':
     case 'wrong':
       return `Noch nicht ganz: Das ${position}. Wort ist „${step.expected.text}“, nicht „${step.typed.text}“.`;
     case 'missing': {

@@ -122,6 +122,7 @@ export const PracticeFeedbackFixture = ({
         <FeedbackPanel
           answerLanguage="en"
           busy={false}
+          dictated={false}
           example={item.example}
           id={feedbackId}
           kind="language"

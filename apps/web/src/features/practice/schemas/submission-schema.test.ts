@@ -12,10 +12,19 @@ const validPayload = {
   cardId: 'd9428888-122b-11e1-b85c-61cd3cbb3210',
   revision: 0,
   answer: 'souvenir',
+  dictated: false,
   elapsedMs: ordinaryElapsedMs,
   wrongAnswerResolution: 'defer',
   mode: 'scheduled',
 } as const;
+
+// A skipped card carries none of the answer's fields.
+const {
+  answer: _answer,
+  dictated: _dictated,
+  wrongAnswerResolution: _resolution,
+  ...withoutAnswer
+} = validPayload;
 
 describe('decodeSubmitPayload', () => {
   it('accepts finite non-negative integer elapsed time within one day', () => {
@@ -65,22 +74,12 @@ describe('decodeSubmitPayload', () => {
   });
 
   it('accepts a skipped card without an answer', () => {
-    const {
-      answer: _answer,
-      wrongAnswerResolution: _resolution,
-      ...withoutAnswer
-    } = validPayload;
     expect(
       decodeSubmitPayload({ ...withoutAnswer, skipped: true }),
     ).toMatchObject({ skipped: true });
   });
 
   it('rejects a submission that neither answers nor skips', () => {
-    const {
-      answer: _answer,
-      wrongAnswerResolution: _resolution,
-      ...withoutAnswer
-    } = validPayload;
     expect(() => decodeSubmitPayload(withoutAnswer)).toThrow();
     expect(() =>
       decodeSubmitPayload({ ...withoutAnswer, skipped: false }),
@@ -88,11 +87,6 @@ describe('decodeSubmitPayload', () => {
   });
 
   it('rejects a payload that mixes skip and answer fields', () => {
-    const {
-      answer: _answer,
-      wrongAnswerResolution: _resolution,
-      ...withoutAnswer
-    } = validPayload;
     expect(() =>
       decodeSubmitPayload({
         ...withoutAnswer,
@@ -107,6 +101,16 @@ describe('decodeSubmitPayload', () => {
         skipped: true,
         wrongAnswerResolution: 'defer',
       }),
+    ).toThrow();
+  });
+
+  // Dictated answers are graded more leniently, so an answer has to say
+  // whether it was dictated, and a skip has nothing to say it about.
+  it('requires whether an answer was dictated, but only for an answer', () => {
+    const { dictated: _omitted, ...withoutDictated } = validPayload;
+    expect(() => decodeSubmitPayload(withoutDictated)).toThrow();
+    expect(() =>
+      decodeSubmitPayload({ ...withoutAnswer, skipped: true, dictated: false }),
     ).toThrow();
   });
 

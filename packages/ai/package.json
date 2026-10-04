@@ -19,6 +19,9 @@
     "./sentence/judge": "./src/sentence/judge.ts",
     "./sentence/judge-error": "./src/sentence/judge-error.ts",
     "./sentence/judge-schema": "./src/sentence/judge-schema.ts",
+    "./stt": "./src/stt/service.ts",
+    "./stt/audio": "./src/stt/audio.ts",
+    "./stt/error": "./src/stt/error.ts",
     "./tts": "./src/tts/service.ts",
     "./tts/error": "./src/tts/error.ts",
     "./tts/speech-text": "./src/tts/speech-text.ts",
@@ -39,6 +42,7 @@
     "@ai-sdk/google-vertex": "^5.0.93",
     "@ai-sdk/openai": "^4.0.75",
     "@aws-sdk/client-polly": "^3.1140.0",
+    "@aws-sdk/client-transcribe-streaming": "^3.1140.0",
     "ai": "^7.0.126",
     "effect": "^3.22.2"
   },

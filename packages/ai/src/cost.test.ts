@@ -4,11 +4,16 @@ import { productionModelId } from './providers/bedrock';
 
 const sonnet = aiPrice({ provider: 'bedrock', model: productionModelId });
 const polly = aiPrice({ provider: 'polly', model: 'generative' });
+const transcribe = aiPrice({ provider: 'transcribe', model: 'standard' });
 
 describe('aiPrice', () => {
-  it('prices the production model and generative speech', () => {
+  it('prices the production model, generative speech and transcription', () => {
     expect(sonnet).toMatchObject({ unit: 'tokens', input: 2, output: 10 });
     expect(polly).toMatchObject({ unit: 'characters', characters: 30 });
+    expect(transcribe).toMatchObject({
+      unit: 'audio-seconds',
+      audioSeconds: 0.000_166_7,
+    });
   });
 
   it('leaves unknown models unpriced', () => {
@@ -49,12 +54,26 @@ describe('estimateUsd', () => {
     );
   });
 
+  it('prices transcription by the second', () => {
+    if (transcribe === undefined) {
+      throw new Error('Transcription has no price.');
+    }
+    expect(
+      estimateUsd({ audioSeconds: 60, raw: null }, transcribe),
+    ).toBeCloseTo(0.01);
+  });
+
   it('leaves the estimate unknown without the billed figures', () => {
-    if (sonnet === undefined || polly === undefined) {
+    if (
+      sonnet === undefined ||
+      polly === undefined ||
+      transcribe === undefined
+    ) {
       throw new Error('A price is missing.');
     }
     expect(estimateUsd({ raw: null }, sonnet)).toBeUndefined();
     expect(estimateUsd({ raw: null }, polly)).toBeUndefined();
+    expect(estimateUsd({ raw: null }, transcribe)).toBeUndefined();
     expect(
       estimateUsd(
         {

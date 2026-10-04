@@ -76,8 +76,12 @@ tomorrowMorning.setHours(nextReviewHour, 0, 0, 0);
 
 // Graded the way the server grades a recited text: word for word, never by
 // the judge, and stored at once.
-const recitedResult = (answer: string, revision: number): SubmitResult => {
-  const outcome = gradeRecitation(verse, answer);
+const recitedResult = (
+  answer: string,
+  dictated: boolean,
+  revision: number,
+): SubmitResult => {
+  const outcome = gradeRecitation(verse, answer, { dictated });
   const correct = isCorrect(outcome);
   return {
     graded: true,
@@ -102,7 +106,9 @@ const submitRecitation = ({
   readonly data: SubmitPayloadData;
 }): Promise<SubmitResult> =>
   Promise.resolve(
-    recitedResult('skipped' in data ? '' : data.answer, data.revision + 1),
+    'skipped' in data
+      ? recitedResult('', false, data.revision + 1)
+      : recitedResult(data.answer, data.dictated, data.revision + 1),
   );
 
 export const TextsLearnFixture = () => (
@@ -160,13 +166,14 @@ export const TextsFeedbackFixture = () => {
         <FeedbackPanel
           answerLanguage="de"
           busy={false}
+          dictated={false}
           example={null}
           id={feedbackId}
           kind="texts"
           playSentence={null}
           playWord={null}
           repeated={false}
-          result={recitedResult(nearlyRecited, 1)}
+          result={recitedResult(nearlyRecited, false, 1)}
           skipped={false}
           submittedAnswer={nearlyRecited}
           targetLanguage="de"
