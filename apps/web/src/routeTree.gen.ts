@@ -18,6 +18,7 @@ import { Route as CoursesCourseIdIndexRouteImport } from './routes/courses/$cour
 import { Route as CoursesCourseIdImportRouteImport } from './routes/courses/$courseId/import'
 import { Route as CoursesCourseIdLearnRouteImport } from './routes/courses/$courseId/learn'
 import { Route as CoursesCourseIdPracticeRouteImport } from './routes/courses/$courseId/practice'
+import { Route as CoursesCourseIdSentencesRouteImport } from './routes/courses/$courseId/sentences'
 import { Route as CoursesCourseIdSettingsRouteImport } from './routes/courses/$courseId/settings'
 import { Route as CoursesCourseIdStudyRouteImport } from './routes/courses/$courseId/study'
 import { Route as CoursesCourseIdVocabularyRouteImport } from './routes/courses/$courseId/vocabulary'
@@ -76,6 +77,12 @@ const CoursesCourseIdPracticeRoute = CoursesCourseIdPracticeRouteImport.update({
   path: '/courses/$courseId/practice',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CoursesCourseIdSentencesRoute =
+  CoursesCourseIdSentencesRouteImport.update({
+    id: '/courses/$courseId/sentences',
+    path: '/courses/$courseId/sentences',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const CoursesCourseIdSettingsRoute = CoursesCourseIdSettingsRouteImport.update({
   id: '/courses/$courseId/settings',
   path: '/courses/$courseId/settings',
@@ -152,6 +159,7 @@ export interface FileRoutesByFullPath {
   '/courses/$courseId/import': typeof CoursesCourseIdImportRoute
   '/courses/$courseId/learn': typeof CoursesCourseIdLearnRoute
   '/courses/$courseId/practice': typeof CoursesCourseIdPracticeRoute
+  '/courses/$courseId/sentences': typeof CoursesCourseIdSentencesRoute
   '/courses/$courseId/settings': typeof CoursesCourseIdSettingsRoute
   '/courses/$courseId/study': typeof CoursesCourseIdStudyRoute
   '/courses/$courseId/vocabulary': typeof CoursesCourseIdVocabularyRoute
@@ -175,6 +183,7 @@ export interface FileRoutesByTo {
   '/courses/$courseId/import': typeof CoursesCourseIdImportRoute
   '/courses/$courseId/learn': typeof CoursesCourseIdLearnRoute
   '/courses/$courseId/practice': typeof CoursesCourseIdPracticeRoute
+  '/courses/$courseId/sentences': typeof CoursesCourseIdSentencesRoute
   '/courses/$courseId/settings': typeof CoursesCourseIdSettingsRoute
   '/courses/$courseId/study': typeof CoursesCourseIdStudyRoute
   '/courses/$courseId/vocabulary': typeof CoursesCourseIdVocabularyRoute
@@ -199,6 +208,7 @@ export interface FileRoutesById {
   '/courses/$courseId/import': typeof CoursesCourseIdImportRoute
   '/courses/$courseId/learn': typeof CoursesCourseIdLearnRoute
   '/courses/$courseId/practice': typeof CoursesCourseIdPracticeRoute
+  '/courses/$courseId/sentences': typeof CoursesCourseIdSentencesRoute
   '/courses/$courseId/settings': typeof CoursesCourseIdSettingsRoute
   '/courses/$courseId/study': typeof CoursesCourseIdStudyRoute
   '/courses/$courseId/vocabulary': typeof CoursesCourseIdVocabularyRoute
@@ -224,6 +234,7 @@ export interface FileRouteTypes {
     | '/courses/$courseId/import'
     | '/courses/$courseId/learn'
     | '/courses/$courseId/practice'
+    | '/courses/$courseId/sentences'
     | '/courses/$courseId/settings'
     | '/courses/$courseId/study'
     | '/courses/$courseId/vocabulary'
@@ -247,6 +258,7 @@ export interface FileRouteTypes {
     | '/courses/$courseId/import'
     | '/courses/$courseId/learn'
     | '/courses/$courseId/practice'
+    | '/courses/$courseId/sentences'
     | '/courses/$courseId/settings'
     | '/courses/$courseId/study'
     | '/courses/$courseId/vocabulary'
@@ -270,6 +282,7 @@ export interface FileRouteTypes {
     | '/courses/$courseId/import'
     | '/courses/$courseId/learn'
     | '/courses/$courseId/practice'
+    | '/courses/$courseId/sentences'
     | '/courses/$courseId/settings'
     | '/courses/$courseId/study'
     | '/courses/$courseId/vocabulary'
@@ -294,6 +307,7 @@ export interface RootRouteChildren {
   CoursesCourseIdImportRoute: typeof CoursesCourseIdImportRoute
   CoursesCourseIdLearnRoute: typeof CoursesCourseIdLearnRoute
   CoursesCourseIdPracticeRoute: typeof CoursesCourseIdPracticeRoute
+  CoursesCourseIdSentencesRoute: typeof CoursesCourseIdSentencesRoute
   CoursesCourseIdSettingsRoute: typeof CoursesCourseIdSettingsRoute
   CoursesCourseIdStudyRoute: typeof CoursesCourseIdStudyRoute
   CoursesCourseIdVocabularyRoute: typeof CoursesCourseIdVocabularyRoute
@@ -371,6 +385,13 @@ declare module '@tanstack/react-router' {
       path: '/courses/$courseId/practice'
       fullPath: '/courses/$courseId/practice'
       preLoaderRoute: typeof CoursesCourseIdPracticeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/courses/$courseId/sentences': {
+      id: '/courses/$courseId/sentences'
+      path: '/courses/$courseId/sentences'
+      fullPath: '/courses/$courseId/sentences'
+      preLoaderRoute: typeof CoursesCourseIdSentencesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/courses/$courseId/settings': {
@@ -481,6 +502,7 @@ const rootRouteChildren: RootRouteChildren = {
   CoursesCourseIdImportRoute: CoursesCourseIdImportRoute,
   CoursesCourseIdLearnRoute: CoursesCourseIdLearnRoute,
   CoursesCourseIdPracticeRoute: CoursesCourseIdPracticeRoute,
+  CoursesCourseIdSentencesRoute: CoursesCourseIdSentencesRoute,
   CoursesCourseIdSettingsRoute: CoursesCourseIdSettingsRoute,
   CoursesCourseIdStudyRoute: CoursesCourseIdStudyRoute,
   CoursesCourseIdVocabularyRoute: CoursesCourseIdVocabularyRoute,

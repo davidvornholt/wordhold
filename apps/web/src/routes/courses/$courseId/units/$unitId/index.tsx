@@ -9,7 +9,11 @@ import { getCourse } from '../../../../../features/import/server-fns';
 import { BackLink } from '../../../../../shared/ui/back-link';
 import { PageLayout } from '../../../../../shared/ui/page-layout';
 import { cardClass } from '../../../../../shared/ui/surface-styles';
-import { PlaceDirectionPlan, PlaceWords } from '../../-place-screen';
+import {
+  PlaceDirectionPlan,
+  PlaceSentencePractice,
+  PlaceWords,
+} from '../../-place-screen';
 
 // One screen per unit: progress, the unit's actions, and its vocabulary as a
 // selectable list — no separate filtered Vokabelliste to jump to.
@@ -56,6 +60,12 @@ const UnitScreen = () => {
           subject={course}
         />
       )}
+      <PlaceSentencePractice
+        courseId={course.id}
+        place={place}
+        progress={unit}
+        subject={course}
+      />
       <PlaceWords
         course={course}
         courseEntries={courseEntries}

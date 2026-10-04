@@ -18,3 +18,7 @@ export class StaleAnswerSubmissionError extends Data.TaggedError(
 )<{
   readonly message: string;
 }> {}
+
+export class StaleSentenceError extends Data.TaggedError('StaleSentenceError')<{
+  readonly message: string;
+}> {}

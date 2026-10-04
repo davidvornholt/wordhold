@@ -4,6 +4,7 @@ import { Extraction } from '@wordhold/ai/extraction';
 import { Judge } from '@wordhold/ai/judge';
 import { BedrockProvider } from '@wordhold/ai/providers/bedrock';
 import { SentenceGen } from '@wordhold/ai/sentence';
+import { SentenceJudge } from '@wordhold/ai/sentence/judge';
 import { Tts } from '@wordhold/ai/tts';
 import { Layer, ManagedRuntime } from 'effect';
 
@@ -20,6 +21,10 @@ export const definitionLayer = Layer.merge(
   DefinitionJudge.Default,
   DefinitionWriter.Default,
 ).pipe(Layer.provide(BedrockProvider.live));
+
+export const sentenceJudgeLayer = SentenceJudge.Default.pipe(
+  Layer.provide(BedrockProvider.live),
+);
 
 export const sentenceRuntime = ManagedRuntime.make(
   SentenceGen.Default.pipe(Layer.provide(BedrockProvider.live)),

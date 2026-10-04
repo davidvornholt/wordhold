@@ -6,7 +6,7 @@ import type { PreparedExampleSentence } from '../../../shared/examples/example-m
 // controller is created by the effect and read through a ref, so StrictMode's
 // simulated unmount and remount in development aborts one controller and
 // hands the card a fresh one, instead of leaving it aborted for good.
-const useLifetime = () => {
+export const useLifetime = () => {
   const lifetimeRef = useRef(new AbortController());
   useEffect(() => {
     const controller = new AbortController();

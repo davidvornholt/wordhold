@@ -3,24 +3,9 @@ import { formatLearningDateInline } from '../../../shared/dates/learning-date';
 import type { PreparedExampleSentence } from '../../../shared/examples/example-model';
 import { normalizeAnswerForComparison } from '../../../shared/grading/normalize';
 import { KeyPointList } from '../../../shared/ui/key-point-list';
-import type { CardTone } from '../../../shared/ui/word-card';
 import type { SubmitResult } from '../schemas/practice-models';
-import { feedbackTone } from './feedback-tone';
+import { feedbackTone, toneDivider, toneText } from './feedback-tone';
 import { PracticeFeedbackExample } from './practice-feedback-example';
-
-const toneText: Record<CardTone, string> = {
-  neutral: 'text-foreground',
-  positive: 'text-primary',
-  destructive: 'text-destructive',
-  warning: 'text-warning-foreground',
-};
-
-const toneDivider: Record<CardTone, string> = {
-  neutral: 'border-border',
-  positive: 'border-primary',
-  destructive: 'border-destructive',
-  warning: 'border-warning-foreground',
-};
 
 type FeedbackPanelProps = {
   readonly busy: boolean;
