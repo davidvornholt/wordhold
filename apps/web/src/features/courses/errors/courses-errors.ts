@@ -72,7 +72,6 @@ export class SubjectConflictError extends Data.TaggedError(
 // A language action asked of a subject, or a subject action of a language
 // course, such as photographing a page for a subject.
 export class CourseKindMismatchError extends Data.TaggedError(
-  // biome-ignore lint/security/noSecrets: this stable Effect tag is not a credential
   'CourseKindMismatchError',
 )<{
   readonly message: string;

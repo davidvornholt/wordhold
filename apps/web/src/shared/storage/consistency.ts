@@ -1,4 +1,4 @@
-import { Effect } from 'effect';
+import { Effect, Order } from 'effect';
 import { FileReferenceError } from './file-reference-error';
 
 const hoursPerDay = 24;
@@ -33,7 +33,7 @@ export const orphanedDataFiles = (
         nowMs - file.modifiedAtMs >= orphanGracePeriodMs,
     )
     .map((file) => file.relativePath)
-    .sort();
+    .sort(Order.string);
 
 type PersistFileReferenceInput<T, WriteError, PersistenceError, RemoveError> = {
   readonly write: Effect.Effect<void, WriteError>;
