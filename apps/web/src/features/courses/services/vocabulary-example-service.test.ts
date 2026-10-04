@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { SentenceGen } from '@wordhold/ai/sentence';
+import { untrackedAiUsage } from '@wordhold/ai/testing/usage';
 import { Tts } from '@wordhold/ai/tts';
 import { Effect, Layer } from 'effect';
 import { Storage, type StorageShape } from '../../../shared/storage/server';
@@ -105,7 +106,7 @@ const runService = (
   return Effect.runPromise(
     Effect.flatMap(VocabularyExampleService, (service) =>
       service.generate(entryId),
-    ).pipe(Effect.provide(live)),
+    ).pipe(Effect.provide(live), Effect.provide(untrackedAiUsage)),
   );
 };
 

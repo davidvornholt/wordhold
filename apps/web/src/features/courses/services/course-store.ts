@@ -55,6 +55,7 @@ export class CourseStore extends Context.Tag('wordhold/CourseStore')<
       courseId: string,
     ) => Effect.Effect<CourseKind | undefined, CourseDatabaseError>;
     readonly createSubject: (
+      ownerId: string,
       name: string,
     ) => Effect.Effect<CreateSubjectResult, CourseDatabaseError>;
     readonly renameSubject: (

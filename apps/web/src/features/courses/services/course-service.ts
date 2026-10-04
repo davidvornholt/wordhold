@@ -75,9 +75,9 @@ const courseSettings = (store: Context.Tag.Service<typeof CourseStore>) => {
       const updated = yield* store.writeDirections(courseId, directions);
       return updated ? directions : yield* notFound;
     });
-  const createSubject = ({ name }: CreateSubjectData) =>
+  const createSubject = (ownerId: string, { name }: CreateSubjectData) =>
     Effect.gen(function* () {
-      const result = yield* store.createSubject(name);
+      const result = yield* store.createSubject(ownerId, name);
       return result.kind === 'duplicate'
         ? yield* subjectTaken(name)
         : { courseId: result.courseId };

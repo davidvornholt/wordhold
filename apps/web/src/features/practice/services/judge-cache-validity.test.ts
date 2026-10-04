@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import type { JudgeVerdictData } from '@wordhold/ai/judge/schema';
+import { untrackedAiUsage } from '@wordhold/ai/testing/usage';
 import { Effect, Layer } from 'effect';
 import type { CachedVerdict } from '../schemas/practice-models';
 import { judgeCacheIdentity, judgeWithCache } from './judge-cache';
@@ -60,6 +61,7 @@ describe('judge cache validity', () => {
             }),
           ),
         ),
+        Effect.provide(untrackedAiUsage),
       ),
     );
 
@@ -122,6 +124,7 @@ describe('judge cache validity', () => {
             }),
           ),
         ),
+        Effect.provide(untrackedAiUsage),
       ),
     );
 

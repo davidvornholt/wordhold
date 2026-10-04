@@ -1,14 +1,11 @@
-import { generateText, Output } from 'ai';
 import { Effect, Schema } from 'effect';
 import {
   maximumEntryTextLength,
   maximumExampleLength,
 } from '../extraction/schema';
-import {
-  BedrockProvider,
-  sonnetMediumProviderOptions,
-} from '../providers/bedrock';
-import { providerJsonSchema } from '../structured-output';
+import { BedrockProvider } from '../providers/bedrock';
+import { generateStructured } from '../structured-generation';
+import type { AiOperation, AiUsage } from '../usage';
 import { SentenceGenError } from './error';
 
 const SentenceText = Schema.Trim.pipe(
@@ -102,21 +99,17 @@ export class SentenceGen extends Effect.Service<SentenceGen>()(
     effect: Effect.gen(function* () {
       const model = yield* BedrockProvider;
 
-      const generateStructured = <A, I>(
+      const generateSentenceOutput = <A, I>(
+        operation: AiOperation,
         schema: Schema.Schema<A, I>,
         prompt: string,
-      ): Effect.Effect<A, SentenceGenError> =>
-        Effect.tryPromise({
-          try: async () => {
-            const { output } = await generateText({
-              model,
-              output: Output.object({ schema: providerJsonSchema(schema) }),
-              prompt,
-              providerOptions: sonnetMediumProviderOptions,
-            });
-            return output;
-          },
-          catch: (cause) => new SentenceGenError({ cause }),
+      ): Effect.Effect<A, SentenceGenError, AiUsage> =>
+        generateStructured({
+          model,
+          operation,
+          schema,
+          prompt,
+          failure: (cause) => new SentenceGenError({ cause }),
         }).pipe(
           Effect.flatMap((output) =>
             Schema.decodeUnknown(schema)(output).pipe(
@@ -127,22 +120,31 @@ export class SentenceGen extends Effect.Service<SentenceGen>()(
 
       const generate = (
         request: SentenceRequest,
-      ): Effect.Effect<SentenceBatchData, SentenceGenError> =>
-        generateStructured(SentenceBatch, sentencePrompt(request));
+      ): Effect.Effect<SentenceBatchData, SentenceGenError, AiUsage> =>
+        generateSentenceOutput(
+          'example-generation',
+          SentenceBatch,
+          sentencePrompt(request),
+        );
 
       const translate = (request: {
         readonly targetText: string;
         readonly targetLanguage: string;
-      }): Effect.Effect<SentenceTranslationData, SentenceGenError> =>
-        generateStructured(
+      }): Effect.Effect<SentenceTranslationData, SentenceGenError, AiUsage> =>
+        generateSentenceOutput(
+          'example-translation',
           SentenceTranslation,
           sentenceTranslationPrompt(request.targetText, request.targetLanguage),
         );
 
       const translateWord = (
         request: WordTranslationRequest,
-      ): Effect.Effect<WordTranslationData, SentenceGenError> =>
-        generateStructured(WordTranslation, wordTranslationPrompt(request));
+      ): Effect.Effect<WordTranslationData, SentenceGenError, AiUsage> =>
+        generateSentenceOutput(
+          'word-translation',
+          WordTranslation,
+          wordTranslationPrompt(request),
+        );
 
       return { generate, translate, translateWord } as const;
     }),

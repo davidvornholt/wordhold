@@ -9,12 +9,18 @@ import type { JudgeVerdictData } from '../judge/schema';
 import { Judge } from '../judge/service';
 import { SentenceJudge } from '../sentence/judge';
 import { SentenceGen } from '../sentence/service';
+import { type AiCall, type AiCallUsage, AiUsage } from '../usage';
 import { BedrockProvider, productionModelId } from './bedrock';
 
 const modelId = productionModelId;
 
 const capturedServices = (response: unknown) => {
   const calls: Array<{ url: string; body: Record<string, unknown> }> = [];
+  const usage: Array<{
+    call: AiCall;
+    succeeded: boolean;
+    usage: AiCallUsage | undefined;
+  }> = [];
   const bedrock = createAmazonBedrock({
     // Fake SigV4 credentials keep authentication offline; serialization is real.
     accessKeyId: 'test-access-key',
@@ -50,8 +56,24 @@ const capturedServices = (response: unknown) => {
     DefinitionJudge.Default,
     DefinitionWriter.Default,
     SentenceJudge.Default,
-  ).pipe(Layer.provide(Layer.succeed(BedrockProvider, bedrock(modelId))));
-  return { calls, services };
+  ).pipe(
+    Layer.provide(Layer.succeed(BedrockProvider, bedrock(modelId))),
+    Layer.merge(
+      Layer.succeed(
+        AiUsage,
+        AiUsage.of({
+          start: (call) =>
+            Effect.succeed({
+              settle: (outcome) =>
+                Effect.sync(() => {
+                  usage.push({ call, ...outcome });
+                }),
+            }),
+        }),
+      ),
+    ),
+  );
+  return { calls, services, usage };
 };
 
 describe('Bedrock workload transport', () => {
@@ -66,7 +88,7 @@ describe('Bedrock workload transport', () => {
       intendedConstruction: { ok: true, note: null },
       explanation: '„Café“ passt. ☕',
     };
-    const { calls, services } = capturedServices(verdict);
+    const { calls, services, usage } = capturedServices(verdict);
     const result = await Effect.runPromise(
       Effect.gen(function* () {
         return yield* (yield* Judge).judge({
@@ -79,6 +101,19 @@ describe('Bedrock workload transport', () => {
       }).pipe(Effect.provide(services)),
     );
     expect(result).toEqual(verdict);
+    expect(usage).toEqual([
+      {
+        call: {
+          operation: 'answer-grading',
+          provider: 'bedrock',
+          model: modelId,
+        },
+        succeeded: true,
+        usage: expect.objectContaining({
+          tokens: { input: 10, cachedInput: 0, cacheWrite: 0, output: 20 },
+        }),
+      },
+    ]);
     expect(calls).toHaveLength(1);
     expect(calls[0]?.url).toContain(`${modelId}/converse`);
     expect(calls[0]?.body).toHaveProperty(

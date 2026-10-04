@@ -10,8 +10,10 @@ import {
   dueEntryId,
   fixtureCourseId,
   fixtureNow,
+  fixtureOwnerId,
   seedIntroducedCardFixture,
 } from '../../../shared/testing/introduced-card-fixture';
+import { seedOwner } from '../../../shared/testing/owner-fixture';
 import { DashboardStore } from './dashboard-store';
 
 describe('DashboardStore introduction contract', () => {
@@ -22,7 +24,7 @@ describe('DashboardStore introduction contract', () => {
         return Effect.gen(function* () {
           yield* seedIntroducedCardFixture;
           const store = yield* DashboardStore;
-          const counts = yield* store.courseCounts(fixtureNow);
+          const counts = yield* store.courseCounts(fixtureOwnerId, fixtureNow);
           expect(counts).toContainEqual({
             courseId: fixtureCourseId,
             due: 1,
@@ -70,7 +72,9 @@ describe('DashboardStore introduction contract', () => {
             set directions = '{to_native}'::answer_direction[]
             where id = ${fixtureCourseId}
           `;
-          expect(yield* store.courseCounts(fixtureNow)).toContainEqual({
+          expect(
+            yield* store.courseCounts(fixtureOwnerId, fixtureNow),
+          ).toContainEqual({
             courseId: fixtureCourseId,
             due: 0,
             firstReviews: 1,
@@ -87,7 +91,9 @@ describe('DashboardStore introduction contract', () => {
             set directions = '{to_target,to_native}'::answer_direction[]
             where id = ${fixtureCourseId}
           `;
-          expect(yield* store.courseCounts(fixtureNow)).toContainEqual({
+          expect(
+            yield* store.courseCounts(fixtureOwnerId, fixtureNow),
+          ).toContainEqual({
             courseId: fixtureCourseId,
             due: 1,
             firstReviews: 2,
@@ -129,7 +135,10 @@ describe('DashboardStore known-entry contract', () => {
           const sql = yield* Database;
           const store = yield* DashboardStore;
           const known = () =>
-            Effect.map(store.courseCounts(fixtureNow), fixtureKnownCount);
+            Effect.map(
+              store.courseCounts(fixtureOwnerId, fixtureNow),
+              fixtureKnownCount,
+            );
 
           yield* sql`
             update cards set state = 'relearning'
@@ -179,12 +188,14 @@ describe('DashboardStore practiced-day contract', () => {
           `;
 
           const days = yield* store.practicedDays(
+            fixtureOwnerId,
             new Date('2026-08-10T00:00:00.000Z'),
             'Europe/Berlin',
           );
           expect([...days].sort()).toEqual(['2026-08-20']);
 
           const utcDays = yield* store.practicedDays(
+            fixtureOwnerId,
             new Date('2026-08-10T00:00:00.000Z'),
             'UTC',
           );
@@ -227,7 +238,7 @@ describe('DashboardStore fragile-entry contract', () => {
               (${card.id}, now(), ${ratings.again}, 'scheduled', 'immer noch falsch')
           `;
 
-          expect(yield* store.fragileEntries()).toContainEqual(
+          expect(yield* store.fragileEntries(fixtureOwnerId)).toContainEqual(
             expect.objectContaining({
               entryId: dueEntryId,
               courseKind: 'language',
@@ -240,7 +251,9 @@ describe('DashboardStore fragile-entry contract', () => {
             set directions = '{to_native}'::answer_direction[]
             where id = ${fixtureCourseId}
           `;
-          expect(yield* store.fragileEntries()).not.toContainEqual(
+          expect(
+            yield* store.fragileEntries(fixtureOwnerId),
+          ).not.toContainEqual(
             expect.objectContaining({ entryId: dueEntryId }),
           );
 
@@ -249,9 +262,81 @@ describe('DashboardStore fragile-entry contract', () => {
             set directions = '{to_target,to_native}'::answer_direction[]
             where id = ${fixtureCourseId}
           `;
-          expect(yield* store.fragileEntries()).toContainEqual(
+          expect(yield* store.fragileEntries(fixtureOwnerId)).toContainEqual(
             expect.objectContaining({ entryId: dueEntryId, failures: 2 }),
           );
+        }).pipe(
+          Effect.provide(
+            DashboardStore.live.pipe(Layer.provide(databaseLayer)),
+          ),
+          Effect.provide(databaseLayer),
+        );
+      }),
+    );
+  });
+});
+
+const otherOwnerId = 'other-owner';
+const otherCourseId = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
+
+const courseIds = (counts: ReadonlyArray<{ readonly courseId: string }>) =>
+  counts.map((course) => course.courseId);
+
+describe('DashboardStore owner contract', () => {
+  it('shows each person only their own courses and answers', async () => {
+    await Effect.runPromise(
+      withMigratedTestDatabase((database) => {
+        const databaseLayer = testDatabaseLayer(database.url);
+        return Effect.gen(function* () {
+          yield* seedIntroducedCardFixture;
+          yield* seedOwner(otherOwnerId);
+          const sql = yield* Database;
+          const store = yield* DashboardStore;
+          yield* sql`
+            insert into courses (id, owner_id, name, target_language)
+            values (${otherCourseId}, ${otherOwnerId}, 'Spanisch', 'es')
+          `;
+          const [card] = yield* sql<{ readonly id: string }>`
+            select id from cards
+            where entry_id = ${dueEntryId} and direction = 'to_target'
+          `;
+          if (card === undefined) {
+            throw new Error('Expected the seeded target card.');
+          }
+          yield* sql`
+            insert into reviews (card_id, reviewed_at, rating, mode, answer_text)
+            values
+              (${card.id}, now(), ${ratings.again}, 'scheduled', 'falsch'),
+              (${card.id}, now(), ${ratings.again}, 'scheduled', 'immer noch falsch')
+          `;
+          const hour = 60 * 60 * 1000;
+          const now = Date.now();
+          const start = new Date(now - hour);
+          const end = new Date(now + hour);
+
+          expect(
+            (yield* store.courses(otherOwnerId)).map((course) => course.id),
+          ).toEqual([otherCourseId]);
+          expect(
+            courseIds(yield* store.courseCounts(fixtureOwnerId, fixtureNow)),
+          ).toEqual([fixtureCourseId]);
+          expect(
+            courseIds(yield* store.courseCounts(otherOwnerId, fixtureNow)),
+          ).toEqual([otherCourseId]);
+          expect(yield* store.fragileEntries(fixtureOwnerId)).toHaveLength(1);
+          expect(yield* store.fragileEntries(otherOwnerId)).toEqual([]);
+          expect(
+            yield* store.activityBetween(fixtureOwnerId, start, end),
+          ).toEqual({ answers: 2, cards: 1 });
+          expect(
+            yield* store.activityBetween(otherOwnerId, start, end),
+          ).toEqual({ answers: 0, cards: 0 });
+          expect(
+            yield* store.practicedDays(fixtureOwnerId, start, 'UTC'),
+          ).toHaveLength(1);
+          expect(
+            yield* store.practicedDays(otherOwnerId, start, 'UTC'),
+          ).toEqual([]);
         }).pipe(
           Effect.provide(
             DashboardStore.live.pipe(Layer.provide(databaseLayer)),

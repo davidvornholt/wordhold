@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import { untrackedAiUsage } from '@wordhold/ai/testing/usage';
 import { Tts } from '@wordhold/ai/tts';
 import { TtsError } from '@wordhold/ai/tts/error';
 import { ttsAudioProfile } from '@wordhold/ai/tts/speech-text';
@@ -33,6 +34,7 @@ const runGeneration = (
       Effect.provideService(Tts, Tts.make({ synthesize })),
       Effect.provideService(AudioGenerationStore, store),
       Effect.provideService(Storage, storage),
+      Effect.provide(untrackedAiUsage),
     ),
   );
 
@@ -163,6 +165,7 @@ describe('pronunciation audio revisions', () => {
           }),
         ),
         Effect.provideService(Storage, makeStorage()),
+        Effect.provide(untrackedAiUsage),
       ),
     );
 

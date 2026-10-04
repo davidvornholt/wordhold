@@ -21,7 +21,11 @@
     "./sentence/judge-schema": "./src/sentence/judge-schema.ts",
     "./tts": "./src/tts/service.ts",
     "./tts/error": "./src/tts/error.ts",
-    "./tts/speech-text": "./src/tts/speech-text.ts"
+    "./tts/speech-text": "./src/tts/speech-text.ts",
+    "./cost": "./src/cost.ts",
+    "./usage": "./src/usage.ts",
+    "./usage-error": "./src/usage-error.ts",
+    "./testing/usage": "./src/testing/usage.ts"
   },
   "scripts": {
     "check-types": "tsc --noEmit",

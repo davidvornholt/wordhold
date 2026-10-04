@@ -11,6 +11,7 @@ describe('DashboardService', () => {
       message: 'dashboard unavailable',
     });
     const store = Layer.succeed(DashboardStore, {
+      courses: () => Effect.fail(failure),
       courseCounts: () => Effect.fail(failure),
       fragileEntries: () => Effect.fail(failure),
       activityBetween: () => Effect.fail(failure),
@@ -18,7 +19,7 @@ describe('DashboardService', () => {
     });
     const result = await Effect.runPromise(
       Effect.flatMap(DashboardService, (service) =>
-        service.load('Europe/Berlin'),
+        service.load('owner', 'Europe/Berlin'),
       ).pipe(
         Effect.provide(DashboardService.Default.pipe(Layer.provide(store))),
         Effect.either,
@@ -27,5 +28,31 @@ describe('DashboardService', () => {
     expect(result._tag).toBe('Left');
     const receivedFailure = result._tag === 'Left' ? result.left : undefined;
     expect(receivedFailure).toBe(failure);
+  });
+
+  it('asks the store about the given person only', async () => {
+    const askedFor: Array<string> = [];
+    const answer =
+      <A>(value: A) =>
+      (ownerId: string) =>
+        Effect.sync(() => {
+          askedFor.push(ownerId);
+          return value;
+        });
+    const store = Layer.succeed(DashboardStore, {
+      courses: answer([]),
+      courseCounts: answer([]),
+      fragileEntries: answer([]),
+      activityBetween: answer({ answers: 0, cards: 0 }),
+      practicedDays: answer([]),
+    });
+    await Effect.runPromise(
+      Effect.flatMap(DashboardService, (service) =>
+        service.load('owner', 'Europe/Berlin'),
+      ).pipe(
+        Effect.provide(DashboardService.Default.pipe(Layer.provide(store))),
+      ),
+    );
+    expect(askedFor).toEqual(['owner', 'owner', 'owner', 'owner']);
   });
 });

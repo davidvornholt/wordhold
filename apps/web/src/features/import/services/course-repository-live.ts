@@ -20,24 +20,25 @@ const failure = (operation: string, cause: unknown) =>
 const courseColumns = (sql: Database) =>
   sql`id, name, kind, target_language as "targetLanguage", native_language as "nativeLanguage", created_at as "createdAt"`;
 
-const listCourses = (sql: Database) =>
-  sql<Course>`select ${courseColumns(sql)} from courses order by name`;
+const listCourses = (sql: Database, ownerId: string) =>
+  sql<Course>`select ${courseColumns(sql)} from courses where owner_id = ${ownerId} order by name`;
 
 export const courseRepositoryLive = (sql: Database) => ({
-  listOrSeedCourses: sql
-    .withTransaction(
-      Effect.gen(function* () {
-        yield* sql`select pg_advisory_xact_lock(hashtextextended('wordhold:seed-courses', 0))`;
-        return yield* listOrSeedCourses({
-          list: listCourses(sql),
-          insertSeeds:
-            sql`insert into courses ${sql.insert(seeds.map((course) => ({ ...course })))}`.pipe(
-              Effect.zipRight(listCourses(sql)),
-            ),
-        });
-      }),
-    )
-    .pipe(Effect.mapError((cause) => failure('list or seed courses', cause))),
+  listOrSeedCourses: (ownerId: string) =>
+    sql
+      .withTransaction(
+        Effect.gen(function* () {
+          yield* sql`select pg_advisory_xact_lock(hashtextextended(${`wordhold:seed-courses:${ownerId}`}, 0))`;
+          return yield* listOrSeedCourses({
+            list: listCourses(sql, ownerId),
+            insertSeeds:
+              sql`insert into courses ${sql.insert(seeds.map((course) => ({ ...course, ownerId })))}`.pipe(
+                Effect.zipRight(listCourses(sql, ownerId)),
+              ),
+          });
+        }),
+      )
+      .pipe(Effect.mapError((cause) => failure('list or seed courses', cause))),
   getCourse: (courseId: string) =>
     sql<Course>`select ${courseColumns(sql)} from courses where id = ${courseId} limit 1`.pipe(
       Effect.map((rows) => rows[0]),

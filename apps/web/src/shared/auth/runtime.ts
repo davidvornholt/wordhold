@@ -1,7 +1,8 @@
 import { PgLive } from '@wordhold/db/client';
 import { Layer, ManagedRuntime } from 'effect';
-import { OwnerRepositoryLive } from './owner-repository';
+import { MemberRepositoryLive } from './member-repository';
 
-const ownerLayer = OwnerRepositoryLive.pipe(Layer.provide(PgLive));
-
-export const authRuntime = ManagedRuntime.make(ownerLayer);
+// Ownership checks query the database directly, so it stays in the runtime.
+export const authRuntime = ManagedRuntime.make(
+  MemberRepositoryLive.pipe(Layer.provideMerge(PgLive)),
+);

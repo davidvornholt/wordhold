@@ -1,10 +1,9 @@
 import { createServerFn } from '@tanstack/react-start';
-import { getRequest } from '@tanstack/react-start/server';
 import { PgLive } from '@wordhold/db/client';
 import { Effect, Layer, ManagedRuntime } from 'effect';
 import { definitionLayer, judgeLayer } from '../../../shared/ai/runtime';
-import { requireSession } from '../../../shared/auth/require-session';
-import { authRuntime } from '../../../shared/auth/runtime';
+import { billedTo, UsageLedger } from '../../../shared/ai/usage-ledger';
+import { requestMember } from '../../../shared/auth/member-request';
 import {
   decodeSessionRequest,
   decodeStudyRequest,
@@ -33,12 +32,15 @@ const practiceLive = PracticeService.Default.pipe(
   ),
 );
 
-const practiceRuntime = ManagedRuntime.make(practiceLive);
+const practiceRuntime = ManagedRuntime.make(
+  practiceLive.pipe(Layer.provideMerge(UsageLedger.live(PgLive))),
+);
 
 export const getPracticeSession = createServerFn()
   .validator(decodeSessionRequest)
   .handler(async ({ data }) => {
-    await authRuntime.runPromise(requireSession(getRequest().headers));
+    // The session queries are limited to this course.
+    await requestMember({ courses: [data.courseId] });
     return practiceRuntime.runPromise(
       Effect.flatMap(PracticeService, (service) => service.getSession(data)),
     );
@@ -47,7 +49,7 @@ export const getPracticeSession = createServerFn()
 export const getStudySession = createServerFn()
   .validator(decodeStudyRequest)
   .handler(async ({ data }) => {
-    await authRuntime.runPromise(requireSession(getRequest().headers));
+    await requestMember({ courses: [data.courseId] });
     return practiceRuntime.runPromise(
       Effect.flatMap(PracticeService, (service) =>
         service.getStudySession(data),
@@ -58,8 +60,10 @@ export const getStudySession = createServerFn()
 export const submitAnswer = createServerFn({ method: 'POST' })
   .validator((input: unknown) => decodeSubmitPayload(input))
   .handler(async ({ data }) => {
-    await authRuntime.runPromise(requireSession(getRequest().headers));
+    const member = await requestMember({ cards: [data.cardId] });
     return practiceRuntime.runPromise(
-      Effect.flatMap(PracticeService, (service) => service.submit(data)),
+      Effect.flatMap(PracticeService, (service) => service.submit(data)).pipe(
+        billedTo(member.userId),
+      ),
     );
   });

@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { Effect } from 'effect';
-import { requireSession } from '../../../../shared/auth/require-session';
+import { NotOwnedError } from '../../../../shared/auth/ownership';
+import { requireOwner } from '../../../../shared/auth/require-member';
 import { serverRuntime } from '../../../../shared/runtime/server';
 import { MediaNotFoundError } from '../../../../shared/storage/media-not-found-error';
 import { privateMediaResponse } from '../../../../shared/storage/media-response';
@@ -8,12 +9,15 @@ import { loadExampleAudio } from '../../../../shared/storage/media-service';
 
 const audioResponse = (request: Request, entryId: string) =>
   Effect.zipRight(
-    requireSession(request.headers),
+    requireOwner(request.headers, { entries: [entryId] }),
     loadExampleAudio(entryId),
   ).pipe(
     Effect.match({
       onFailure: (error) => {
-        if (error instanceof MediaNotFoundError) {
+        if (
+          error instanceof MediaNotFoundError ||
+          error instanceof NotOwnedError
+        ) {
           return new Response(error.message, { status: 404 });
         }
         throw error;

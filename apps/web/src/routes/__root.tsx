@@ -14,7 +14,7 @@ import {
   RootNotFound,
   RootPending,
 } from '../shared/routing/root-feedback';
-import { redirectExpiredOwnerRoute } from '../shared/routing/root-guard';
+import { redirectUnauthorizedRoute } from '../shared/routing/root-guard';
 import { usesFocusShell } from '../shared/routing/shell';
 import { AppShell } from '../shared/ui/app-shell';
 import { wordmarkClass } from '../shared/ui/shell-styles';
@@ -67,7 +67,7 @@ export const Route = createRootRoute({
     ],
   }),
   beforeLoad: ({ location }) =>
-    redirectExpiredOwnerRoute(location.pathname, getSessionUser),
+    redirectUnauthorizedRoute(location.pathname, getSessionUser),
   shellComponent: RootDocument,
   component: RootLayout,
   errorComponent: RootError,

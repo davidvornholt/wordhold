@@ -1,11 +1,7 @@
-import { generateText, Output } from 'ai';
 import { Effect, Schema } from 'effect';
-import {
-  BedrockProvider,
-  productionModelId,
-  sonnetMediumProviderOptions,
-} from '../providers/bedrock';
-import { providerJsonSchema } from '../structured-output';
+import { BedrockProvider, productionModelId } from '../providers/bedrock';
+import { generateStructured } from '../structured-generation';
+import type { AiUsage } from '../usage';
 import { SentenceJudgeError } from './judge-error';
 import {
   type SentenceJudgeInput,
@@ -40,25 +36,19 @@ export class SentenceJudge extends Effect.Service<SentenceJudge>()(
     effect: Effect.gen(function* () {
       const model = yield* BedrockProvider;
       const modelId = productionModelId;
-      const verdictOutput = providerJsonSchema(SentenceVerdict);
       const decodeVerdict = Schema.decodeUnknown(SentenceVerdict);
       const failure = (cause: unknown) =>
         new SentenceJudgeError({ cause, message: judgeFailure });
 
       const judge = (
         input: SentenceJudgeInput,
-      ): Effect.Effect<SentenceVerdictData, SentenceJudgeError> =>
-        Effect.tryPromise({
-          try: async () => {
-            const { output } = await generateText({
-              model,
-              output: Output.object({ schema: verdictOutput }),
-              prompt: sentenceJudgePrompt(input),
-              providerOptions: sonnetMediumProviderOptions,
-            });
-            return output;
-          },
-          catch: failure,
+      ): Effect.Effect<SentenceVerdictData, SentenceJudgeError, AiUsage> =>
+        generateStructured({
+          model,
+          operation: 'sentence-grading',
+          schema: SentenceVerdict,
+          prompt: sentenceJudgePrompt(input),
+          failure,
         }).pipe(
           Effect.flatMap((output) =>
             decodeVerdict(output).pipe(Effect.mapError(failure)),

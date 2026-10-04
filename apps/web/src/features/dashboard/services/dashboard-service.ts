@@ -14,7 +14,7 @@ export class DashboardService extends Effect.Service<DashboardService>()(
   {
     effect: Effect.gen(function* () {
       const store = yield* DashboardStore;
-      const load = (timeZone: string) =>
+      const load = (ownerId: string, timeZone: string) =>
         Effect.gen(function* () {
           const now = new Date(yield* Clock.currentTimeMillis);
           const { startInclusive, endExclusive } = ownerDayBounds(
@@ -27,10 +27,10 @@ export class DashboardService extends Effect.Service<DashboardService>()(
           const [perCourse, fragile, activity, practicedDays] =
             yield* Effect.all(
               [
-                store.courseCounts(now),
-                store.fragileEntries(),
-                store.activityBetween(startInclusive, endExclusive),
-                store.practicedDays(streakStart, timeZone),
+                store.courseCounts(ownerId, now),
+                store.fragileEntries(ownerId),
+                store.activityBetween(ownerId, startInclusive, endExclusive),
+                store.practicedDays(ownerId, streakStart, timeZone),
               ] as const,
               { concurrency: 'unbounded' },
             );
@@ -44,7 +44,17 @@ export class DashboardService extends Effect.Service<DashboardService>()(
             streak: practiceStreak(now, timeZone, practiced),
           } satisfies DashboardData;
         });
-      return { load } as const;
+      // What the administrator sees of another person: the same numbers as
+      // that person's overview, with every course named.
+      const progress = (ownerId: string, timeZone: string) =>
+        Effect.all(
+          {
+            courses: store.courses(ownerId),
+            dashboard: load(ownerId, timeZone),
+          },
+          { concurrency: 'unbounded' },
+        );
+      return { load, progress } as const;
     }),
   },
 ) {}

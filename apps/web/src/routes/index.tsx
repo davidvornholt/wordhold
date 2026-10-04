@@ -5,6 +5,7 @@ import {
   useRouter,
 } from '@tanstack/react-router';
 import { HomeShell } from '../app/home-shell';
+import { SignInPanel } from '../features/access/ui/sign-in-panel';
 import { createSubject } from '../features/courses/services/server-fns';
 import { NewSubjectDialog } from '../features/courses/ui/new-subject-dialog';
 import {
@@ -27,7 +28,7 @@ import {
 import { clearUploadQueueIfSession } from '../features/import/services/upload-queue-persistence';
 import { AudioRecoveryPages } from '../features/import/ui/audio-recovery-pages';
 import { PendingImportSessions } from '../features/import/ui/pending-import-sessions';
-import { authClient } from '../shared/auth/client';
+import { authClient, rejectAuthError } from '../shared/auth/client';
 import { getSessionUser } from '../shared/auth/session-fn';
 import { earliestDate } from '../shared/dates/learning-date';
 import { type CourseSubject, courseNouns } from '../shared/directions';
@@ -167,16 +168,42 @@ const Home = () => {
 
   return (
     <HomeShell
-      onSignIn={async () => {
-        await authClient.signIn.social({
-          provider: 'github',
-          callbackURL: '/',
-        });
-      }}
+      accountLinks={
+        user?.admin === true ? (
+          <ActionLink to="/people" variant="quiet-muted">
+            Personen
+          </ActionLink>
+        ) : (
+          <ActionLink to="/passkeys" variant="quiet-muted">
+            Passkeys
+          </ActionLink>
+        )
+      }
       onSignOut={async () => {
         await authClient.signOut();
         await router.invalidate();
       }}
+      signIn={
+        <SignInPanel
+          joinLink={
+            <ActionLink to="/join" variant="quiet">
+              Einladung oder Wiederherstellungscode einlösen
+            </ActionLink>
+          }
+          signInWithGithub={async () => {
+            rejectAuthError(
+              await authClient.signIn.social({
+                provider: 'github',
+                callbackURL: '/',
+              }),
+            );
+          }}
+          signInWithPasskey={async () => {
+            rejectAuthError(await authClient.signIn.passkey());
+            await router.invalidate();
+          }}
+        />
+      }
       user={dashboard === null ? null : user}
     >
       {dashboard === null ? null : (

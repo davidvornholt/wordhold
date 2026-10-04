@@ -1,10 +1,9 @@
 import { createServerFn } from '@tanstack/react-start';
-import { getRequest } from '@tanstack/react-start/server';
 import { PgLive } from '@wordhold/db/client';
 import { Effect, Layer, ManagedRuntime } from 'effect';
 import { sentenceJudgeLayer } from '../../../shared/ai/runtime';
-import { requireSession } from '../../../shared/auth/require-session';
-import { authRuntime } from '../../../shared/auth/runtime';
+import { billedTo, UsageLedger } from '../../../shared/ai/usage-ledger';
+import { requestMember } from '../../../shared/auth/member-request';
 import {
   decodeSentenceAnswer,
   decodeSentenceSessionRequest,
@@ -21,13 +20,15 @@ const sentenceRuntime = ManagedRuntime.make(
         SentenceGrader.live.pipe(Layer.provide(sentenceJudgeLayer)),
       ),
     ),
+    Layer.provideMerge(UsageLedger.live(PgLive)),
   ),
 );
 
 export const getSentenceSession = createServerFn()
   .validator(decodeSentenceSessionRequest)
   .handler(async ({ data }) => {
-    await authRuntime.runPromise(requireSession(getRequest().headers));
+    // The session query is limited to this course.
+    await requestMember({ courses: [data.courseId] });
     return sentenceRuntime.runPromise(
       Effect.flatMap(SentenceService, (service) => service.getSession(data)),
     );
@@ -36,8 +37,10 @@ export const getSentenceSession = createServerFn()
 export const checkSentence = createServerFn({ method: 'POST' })
   .validator(decodeSentenceAnswer)
   .handler(async ({ data }) => {
-    await authRuntime.runPromise(requireSession(getRequest().headers));
+    const member = await requestMember({ entries: [data.entryId] });
     return sentenceRuntime.runPromise(
-      Effect.flatMap(SentenceService, (service) => service.check(data)),
+      Effect.flatMap(SentenceService, (service) => service.check(data)).pipe(
+        billedTo(member.userId),
+      ),
     );
   });

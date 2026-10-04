@@ -1,8 +1,11 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { makePostgresConnection } from './postgres-connection';
+import { aiUsage } from './schema/ai-usage';
 import {
   account,
   accountRelations,
+  passkey,
+  passkeyRelations,
   session,
   sessionRelations,
   user,
@@ -17,6 +20,7 @@ import {
   entryExamples,
 } from './schema/entries';
 import { importSessionTombstones } from './schema/import-sessions';
+import { accessCodes, members } from './schema/members';
 import { pages } from './schema/pages';
 import { cards, judgeCache, reviews } from './schema/practice';
 import { units } from './schema/units';
@@ -26,9 +30,14 @@ export const schema = {
   session,
   account,
   verification,
+  passkey,
   userRelations,
   sessionRelations,
   accountRelations,
+  passkeyRelations,
+  members,
+  accessCodes,
+  aiUsage,
   courses,
   importSessionTombstones,
   pages,

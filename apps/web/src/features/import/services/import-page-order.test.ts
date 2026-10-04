@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import { untrackedAiUsage } from '@wordhold/ai/testing/usage';
 import { Tts } from '@wordhold/ai/tts';
 import { Effect, Either, Option } from 'effect';
 import { Storage } from '../../../shared/storage/server';
@@ -36,6 +37,7 @@ const importCurrentPage = (repository: ImportRepository['Type']) =>
         Tts.make({ synthesize: () => Effect.dieMessage('unexpected TTS') }),
       ),
       Effect.either,
+      Effect.provide(untrackedAiUsage),
     ),
   );
 

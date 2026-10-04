@@ -3,6 +3,7 @@ import type {
   SentenceJudgeInput,
   SentenceVerdictData,
 } from '@wordhold/ai/sentence/judge-schema';
+import { untrackedAiUsage } from '@wordhold/ai/testing/usage';
 import { Effect, Either, Layer } from 'effect';
 import { PracticeJudgeError } from '../errors/practice-errors';
 import type { SentenceAnswerData } from '../schemas/sentence-models';
@@ -59,6 +60,7 @@ const runCheck = (
           ),
         ),
       ),
+      Effect.provide(untrackedAiUsage),
     ),
   );
 

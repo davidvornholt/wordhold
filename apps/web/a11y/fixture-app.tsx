@@ -1,10 +1,15 @@
 import { AppShell } from '../src/shared/ui/app-shell';
 import { wordmarkClass } from '../src/shared/ui/shell-styles';
+import {
+  JoinFixture,
+  PasskeysFixture,
+  SignedOutFixture,
+} from './account-fixtures';
 import { BatchReviewFixture } from './batch-review-fixtures';
 import { BookFixture } from './book-fixtures';
 import { ImportFixture } from './capture-fixtures';
 import { CourseFixture, UnitFixture } from './course-fixtures';
-import { DashboardFixture, SignedOutFixture } from './dashboard-fixtures';
+import { DashboardFixture } from './dashboard-fixtures';
 import {
   CourseSettingsFixture,
   DeferredCourseSettingsFixture,
@@ -18,6 +23,7 @@ import {
   LearnSectionDoneFixture,
   LearnStartFixture,
 } from './learning-fixtures';
+import { PeopleFixture, PeopleProgressFixture } from './people-fixtures';
 import {
   DeferredPracticeFixture,
   PracticeEmptyFixture,
@@ -193,6 +199,23 @@ const courseFixture = (state: FixtureState) => {
   }
 };
 
+const accountFixture = (state: FixtureState) => {
+  switch (state) {
+    case 'signed-out':
+      return <SignedOutFixture />;
+    case 'join':
+      return <JoinFixture />;
+    case 'passkeys':
+      return <PasskeysFixture />;
+    case 'people':
+      return <PeopleFixture />;
+    case 'people-progress':
+      return <PeopleProgressFixture />;
+    default:
+      return null;
+  }
+};
+
 const dashboardFixture = (state: FixtureState) => (
   <DashboardFixture
     audioRecovery={state === 'dashboard-audio-recovery'}
@@ -207,7 +230,11 @@ const dashboardFixture = (state: FixtureState) => (
 const fixtureContent = (state: FixtureState) => {
   switch (state) {
     case 'signed-out':
-      return <SignedOutFixture />;
+    case 'join':
+    case 'passkeys':
+    case 'people':
+    case 'people-progress':
+      return accountFixture(state);
     case 'dashboard':
     case 'dashboard-empty':
     case 'dashboard-learning':

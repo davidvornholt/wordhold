@@ -1,16 +1,17 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
-import { db } from '../db/server';
 import { serverEnv } from '../env/server';
-import { assertAllowedUser, mapAllowedGithubProfile } from './owner';
-import { authRuntime } from './runtime';
+import { authDb, withAccessTransaction } from './access-transaction';
+import { mapAllowedGithubProfile } from './github-gate';
+import { familyPasskeys } from './passkeys';
 
-// Wordhold is a single-user deployment: GitHub OAuth authenticates, but only
-// the allowlisted GitHub account may be persisted or receive a session.
+// The administrator signs in with the one allowlisted GitHub account; every
+// other person signs in with a passkey registered through an invitation.
+// Whether a session may still be used is decided per request from `members`.
 export const auth = betterAuth({
   baseURL: serverEnv.publicUrl(),
   secret: serverEnv.authSecret(),
-  database: drizzleAdapter(db, { provider: 'pg' }),
+  database: drizzleAdapter(authDb, { provider: 'pg', transaction: false }),
   socialProviders: {
     github: {
       clientId: serverEnv.githubClientId(),
@@ -18,14 +19,8 @@ export const auth = betterAuth({
       mapProfileToUser: mapAllowedGithubProfile,
     },
   },
-  databaseHooks: {
-    session: {
-      create: {
-        before: async (session) => {
-          await authRuntime.runPromise(assertAllowedUser(session.userId));
-          return { data: session };
-        },
-      },
-    },
-  },
+  plugins: [familyPasskeys(serverEnv.publicUrl())],
 });
+
+export const handleAuth = (request: Request): Promise<Response> =>
+  withAccessTransaction(() => auth.handler(request));

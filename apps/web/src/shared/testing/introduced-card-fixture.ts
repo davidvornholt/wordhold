@@ -1,6 +1,8 @@
 import { Database } from '@wordhold/db/client';
 import { Effect } from 'effect';
+import { seedOwner } from './owner-fixture';
 
+export const fixtureOwnerId = 'fixture-owner';
 export const fixtureCourseId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 export const fixtureBookId = 'b00cb00c-b00c-4b00-8b00-b00cb00cb00c';
 export const fixtureUnitId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
@@ -12,9 +14,10 @@ export const fixtureAddedAt = new Date('2026-08-01T12:00:00.000Z');
 
 export const seedIntroducedCardFixture = Effect.gen(function* () {
   const sql = yield* Database;
+  yield* seedOwner(fixtureOwnerId);
   yield* sql`
-    insert into courses (id, name, target_language)
-    values (${fixtureCourseId}, 'French', 'fr')
+    insert into courses (id, owner_id, name, target_language)
+    values (${fixtureCourseId}, ${fixtureOwnerId}, 'French', 'fr')
   `;
   yield* sql`
     insert into books (id, course_id, name, position)

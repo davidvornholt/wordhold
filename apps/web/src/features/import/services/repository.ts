@@ -131,10 +131,10 @@ export type UnitEntry = {
 type RepositoryFailure = ImportDatabaseError | ImportInvariantError;
 
 export type ImportRepositoryShape = {
-  readonly listOrSeedCourses: Effect.Effect<
-    ReadonlyArray<Course>,
-    ImportDatabaseError
-  >;
+  // A person's courses, starting them off with the default languages.
+  readonly listOrSeedCourses: (
+    ownerId: string,
+  ) => Effect.Effect<ReadonlyArray<Course>, ImportDatabaseError>;
   readonly getCourse: (
     courseId: string,
   ) => Effect.Effect<Course | undefined, ImportDatabaseError>;
@@ -147,17 +147,15 @@ export type ImportRepositoryShape = {
   readonly listUnitEntries: (
     courseId: string,
   ) => Effect.Effect<ReadonlyArray<UnitEntry>, ImportDatabaseError>;
-  readonly listPendingImportSessions: Effect.Effect<
-    ReadonlyArray<PendingImportSession>,
-    ImportDatabaseError
-  >;
+  readonly listPendingImportSessions: (
+    ownerId: string,
+  ) => Effect.Effect<ReadonlyArray<PendingImportSession>, ImportDatabaseError>;
   readonly getImportSession: (
     sessionId: string,
   ) => Effect.Effect<ImportSession | undefined, ImportDatabaseError>;
-  readonly listAudioRecoveryPages: Effect.Effect<
-    ReadonlyArray<AudioRecoveryPage>,
-    ImportDatabaseError
-  >;
+  readonly listAudioRecoveryPages: (
+    ownerId: string,
+  ) => Effect.Effect<ReadonlyArray<AudioRecoveryPage>, ImportDatabaseError>;
   readonly getPage: (
     pageId: string,
   ) => Effect.Effect<

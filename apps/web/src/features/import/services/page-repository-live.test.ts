@@ -6,13 +6,42 @@ import {
   withMigratedTestDatabase,
 } from '@wordhold/db/testing/postgres-test-database';
 import { Effect } from 'effect';
+import { seedOwner } from '../../../shared/testing/owner-fixture';
 import { pageRepositoryLive } from './page-repository-live';
 
+const ownerId = 'owner';
+const otherOwnerId = 'other-owner';
 const courseId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const pageId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const unitId = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
 const entryId = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
 const verifiedAt = new Date('2026-08-30T12:00:00.000Z');
+
+// A verified page whose one entry still has audio from an older voice.
+const seedPageWithStaleAudio = Effect.gen(function* () {
+  const sql = yield* Database;
+  yield* seedOwner(ownerId);
+  yield* sql`
+    insert into courses (id, owner_id, name, target_language)
+    values (${courseId}, ${ownerId}, 'French', 'fr')
+  `;
+  yield* sql`
+    insert into pages (id, course_id, image_path, status, verified_at)
+    values (${pageId}, ${courseId}, 'page.png', 'verified', ${verifiedAt})
+  `;
+  yield* sql`
+    insert into units (id, course_id, name, position)
+    values (${unitId}, ${courseId}, 'Unit 1', 0)
+  `;
+  yield* sql`
+    insert into entries (id, course_id, unit_id, page_id, target_text, native_text)
+    values (${entryId}, ${courseId}, ${unitId}, ${pageId}, 'donner qc à qn.', 'jemandem etwas geben')
+  `;
+  yield* sql`
+    insert into entry_audio (entry_id, voice, path)
+    values (${entryId}, 'Lea', 'audio/old.mp3')
+  `;
+});
 
 describe('pageRepositoryLive', () => {
   it('lists verified pages with stale audio until the current profile is stored', async () => {
@@ -20,39 +49,19 @@ describe('pageRepositoryLive', () => {
       withMigratedTestDatabase((database) => {
         const databaseLayer = testDatabaseLayer(database.url);
         return Effect.gen(function* () {
+          yield* seedPageWithStaleAudio;
           const sql = yield* Database;
-          yield* sql`
-            insert into courses (id, name, target_language)
-            values (${courseId}, 'French', 'fr')
-          `;
-          yield* sql`
-            insert into pages (id, course_id, image_path, status, verified_at)
-            values (${pageId}, ${courseId}, 'page.png', 'verified', ${verifiedAt})
-          `;
-          yield* sql`
-            insert into units (id, course_id, name, position)
-            values (${unitId}, ${courseId}, 'Unit 1', 0)
-          `;
-          yield* sql`
-            insert into entries (id, course_id, unit_id, page_id, target_text, native_text)
-            values (${entryId}, ${courseId}, ${unitId}, ${pageId}, 'donner qc à qn.', 'jemandem etwas geben')
-          `;
-          yield* sql`
-            insert into entry_audio (entry_id, voice, path)
-            values (${entryId}, 'Lea', 'audio/old.mp3')
-          `;
+          const repository = pageRepositoryLive(sql);
 
-          expect(yield* pageRepositoryLive(sql).listAudioRecoveryPages).toEqual(
-            [
-              {
-                id: pageId,
-                courseId,
-                courseName: 'French',
-                missingAudio: 1,
-                verifiedAt,
-              },
-            ],
-          );
+          expect(yield* repository.listAudioRecoveryPages(ownerId)).toEqual([
+            {
+              id: pageId,
+              courseId,
+              courseName: 'French',
+              missingAudio: 1,
+              verifiedAt,
+            },
+          ]);
 
           yield* sql`
             update entry_audio
@@ -60,9 +69,28 @@ describe('pageRepositoryLive', () => {
             where entry_id = ${entryId}
           `;
 
-          expect(yield* pageRepositoryLive(sql).listAudioRecoveryPages).toEqual(
-            [],
-          );
+          expect(yield* repository.listAudioRecoveryPages(ownerId)).toEqual([]);
+        }).pipe(Effect.provide(databaseLayer));
+      }),
+    );
+  });
+
+  it('leaves out the pages of another person', async () => {
+    await Effect.runPromise(
+      withMigratedTestDatabase((database) => {
+        const databaseLayer = testDatabaseLayer(database.url);
+        return Effect.gen(function* () {
+          yield* seedPageWithStaleAudio;
+          yield* seedOwner(otherOwnerId);
+          const sql = yield* Database;
+          const repository = pageRepositoryLive(sql);
+
+          expect(
+            yield* repository.listAudioRecoveryPages(ownerId),
+          ).toHaveLength(1);
+          expect(
+            yield* repository.listAudioRecoveryPages(otherOwnerId),
+          ).toEqual([]);
         }).pipe(Effect.provide(databaseLayer));
       }),
     );

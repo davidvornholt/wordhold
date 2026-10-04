@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, mock } from 'bun:test';
 import { github } from 'better-auth/social-providers';
-import { makeAllowedGithubProfileMapper } from './owner';
+import { makeAllowedGithubProfileMapper } from './github-gate';
 
 const originalFetch = globalThis.fetch;
 

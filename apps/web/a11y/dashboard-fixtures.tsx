@@ -16,6 +16,7 @@ import { PendingImportSessions } from '../src/features/import/ui/pending-import-
 import { type CourseSubject, courseNouns } from '../src/shared/directions';
 import { actionClass } from '../src/shared/ui/action-styles';
 import { AudioRecoveryPagesFixture } from './audio-recovery-pages-fixture';
+import { fixtureControl } from './fixture-controls';
 import { audioRecoveryIsComplete, navigateToFixture } from './fixture-state';
 
 const course = {
@@ -128,16 +129,6 @@ const action = (label: string, destination: FixtureAction) => (
   >
     {label}
   </button>
-);
-
-export const SignedOutFixture = () => (
-  <HomeShell
-    onSignIn={() => navigateToFixture('dashboard')}
-    onSignOut={() => undefined}
-    user={null}
-  >
-    {null}
-  </HomeShell>
 );
 
 const secondCourseStats: CourseStats = {
@@ -334,8 +325,9 @@ export const DashboardFixture = ({
 
   return (
     <HomeShell
-      onSignIn={() => undefined}
+      accountLinks={fixtureControl('Passkeys', 'passkeys', 'quiet-muted')}
       onSignOut={() => navigateToFixture('signed-out')}
+      signIn={null}
       user={fixtureUser}
     >
       <TodayPanel

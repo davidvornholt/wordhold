@@ -1,10 +1,12 @@
 import { createServerFn } from '@tanstack/react-start';
-import { getRequest } from '@tanstack/react-start/server';
 import { PgLive } from '@wordhold/db/client';
 import { Effect, Layer, ManagedRuntime } from 'effect';
-import { requireSession } from '../../../shared/auth/require-session';
-import { authRuntime } from '../../../shared/auth/runtime';
+import {
+  requestAdministrator,
+  requestMember,
+} from '../../../shared/auth/member-request';
 import { serverEnv } from '../../../shared/env/server';
+import { requireString } from '../../../shared/validate/input';
 import { DashboardService } from './dashboard-service';
 import { DashboardStore } from './dashboard-store';
 
@@ -14,11 +16,29 @@ const dashboardLive = DashboardService.Default.pipe(
 
 const dashboardRuntime = ManagedRuntime.make(dashboardLive);
 
-export const getDashboard = createServerFn().handler(async () => {
-  await authRuntime.runPromise(requireSession(getRequest().headers));
-  return dashboardRuntime.runPromise(
+// Everyone in the family shares the instance's time zone, so "today" and the
+// streak mean the same calendar day for all of them.
+export const loadDashboard = (ownerId: string) =>
+  dashboardRuntime.runPromise(
     Effect.flatMap(DashboardService, (service) =>
-      service.load(serverEnv.ownerTimeZone()),
+      service.load(ownerId, serverEnv.ownerTimeZone()),
     ),
   );
+
+export const getDashboard = createServerFn().handler(async () => {
+  const member = await requestMember();
+  return loadDashboard(member.userId);
 });
+
+// Read-only: the administrator sees a person's courses and progress but
+// cannot act on them.
+export const getPersonProgress = createServerFn()
+  .validator(requireString)
+  .handler(async ({ data }) => {
+    await requestAdministrator();
+    return dashboardRuntime.runPromise(
+      Effect.flatMap(DashboardService, (service) =>
+        service.progress(data, serverEnv.ownerTimeZone()),
+      ),
+    );
+  });

@@ -1,3 +1,4 @@
+import { untrackedAiUsage } from '@wordhold/ai/testing/usage';
 import type { cards } from '@wordhold/db/schema/practice';
 import { Effect, Layer } from 'effect';
 import { PracticeJudgeError } from '../errors/practice-errors';
@@ -110,6 +111,7 @@ export const runSubmitPayload = (
         ),
       ),
       Effect.either,
+      Effect.provide(untrackedAiUsage),
     ),
   );
 

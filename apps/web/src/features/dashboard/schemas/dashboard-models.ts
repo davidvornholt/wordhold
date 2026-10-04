@@ -1,6 +1,6 @@
 import type { CourseKind } from '@wordhold/db/schema/courses';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
-import { courseNouns } from '../../../shared/directions';
+import { type CourseSubject, courseNouns } from '../../../shared/directions';
 import { countNoun } from '../../../shared/format/count';
 
 export type DirectionStats = {
@@ -41,6 +41,11 @@ export type PracticeDay = {
   // 0 is Sunday, matching Date.getDay().
   readonly weekday: number;
   readonly practiced: boolean;
+};
+
+export type CourseSummary = CourseSubject & {
+  readonly id: string;
+  readonly name: string;
 };
 
 export type DashboardData = {

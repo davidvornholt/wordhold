@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import { untrackedAiUsage } from '@wordhold/ai/testing/usage';
 import { Tts } from '@wordhold/ai/tts';
 import { Effect } from 'effect';
 import { Storage } from '../../../shared/storage/server';
@@ -39,6 +40,7 @@ const runRetry = (
       ),
       Effect.provideService(AudioGenerationStore, store),
       Effect.provideService(Storage, makeStorage()),
+      Effect.provide(untrackedAiUsage),
     ),
   );
 
