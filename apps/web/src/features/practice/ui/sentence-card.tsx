@@ -162,6 +162,8 @@ type SentenceCardProps = {
   readonly onNext: () => void;
   // Counts the judged sentence as correct and moves on.
   readonly onAccept: () => void;
+  // The sentence was missed earlier in the round and is asked again.
+  readonly repeated: boolean;
 };
 
 // One German sentence to translate. Focus follows the loop as on a word
@@ -175,6 +177,7 @@ export const SentenceCard = ({
   onOutcome,
   onNext,
   onAccept,
+  repeated,
 }: SentenceCardProps) => {
   const inputRef = useRef<AnswerFieldElement>(null);
   const nextButtonRef = useRef<HTMLButtonElement>(null);
@@ -213,7 +216,9 @@ export const SentenceCard = ({
     <>
       <WordCard
         deck={deck}
-        eyebrow={`Übersetze auf ${germanLabels[targetLanguage]}`}
+        eyebrow={`Übersetze auf ${germanLabels[targetLanguage]}${
+          repeated ? ' · Noch einmal' : ''
+        }`}
         size="sentence"
         tone={tone}
         word={prompt.sentence}
@@ -233,6 +238,7 @@ export const SentenceCard = ({
                 ? outcome.result.reference
                 : prompt.reference
             }
+            repeated={repeated}
             targetLanguage={targetLanguage}
           />
         )}

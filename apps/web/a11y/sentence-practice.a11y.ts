@@ -55,12 +55,34 @@ test('a round of sentences is translated, corrected and summed up', async ({
   );
 
   await page.getByRole('button', { name: 'Weiter' }).click();
+  // The missed sentence comes back until it is translated correctly.
+  await expect(page.getByText('Nachrunde', { exact: true })).toBeVisible();
+  await expect(page.getByText('1 Satz noch einmal')).toBeVisible();
+  await expect(
+    page.getByText('Übersetze auf Englisch · Noch einmal'),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('heading', {
+      level: 2,
+      name: 'Meine Schwester arbeitet in einem Krankenhaus.',
+    }),
+  ).toBeVisible();
+  await expect(field).toBeFocused();
+  await expect(field).toHaveValue('');
+  await field.fill('My sister works in a hospital.');
+  await field.press('Enter');
+  await expect(page.getByRole('status')).toContainText('Diesmal richtig');
+  assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
+
+  await page.getByRole('button', { name: 'Weiter' }).click();
   const heading = page.getByRole('heading', {
     level: 2,
     name: 'Runde beendet',
   });
   await expect(heading).toBeFocused();
   await expect(page.getByText('2 Sätze', { exact: true })).toBeVisible();
+  // "Auf Anhieb richtig" and "Nach Fehlern richtig", in that order.
+  await expect(page.getByRole('definition')).toHaveText(['1', '1']);
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
 });
 
@@ -109,6 +131,6 @@ test('a verdict the learner disagrees with counts as correct when overruled', as
   await expect(
     page.getByRole('heading', { level: 2, name: 'Runde beendet' }),
   ).toBeFocused();
-  // "Richtig" and "Noch nicht richtig", in that order.
+  // "Auf Anhieb richtig" and "Nach Fehlern richtig", in that order.
   await expect(page.getByRole('definition')).toHaveText(['2', '0']);
 });

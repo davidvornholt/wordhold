@@ -2,9 +2,17 @@ import type { LanguageCode } from '@wordhold/db/schema/courses';
 import { type ReactNode, useState } from 'react';
 import type { PrepareExamples } from '../../../shared/examples/example-model';
 import { countNoun } from '../../../shared/format/count';
-import type { RailOutcome } from '../../../shared/session/rail-outcome';
 import { CardRail } from '../../../shared/ui/card-rail';
 import type { SentenceItem, SentenceSession } from '../schemas/sentence-models';
+import {
+  acceptSentence,
+  emptySentenceRound,
+  finishSentence,
+  judgeSentence,
+  nextSentence,
+  type SentenceRound,
+  sentenceRoundCounts,
+} from '../services/sentence-round';
 import { SentenceCard, type SentencePrompt } from './sentence-card';
 import { SentenceSummary } from './sentence-summary';
 import { useExampleWarmup } from './use-example-warmup';
@@ -44,6 +52,24 @@ type SentenceRunnerProps = {
   readonly continueControl: ReactNode;
 };
 
+const railDescription = (
+  round: SentenceRound,
+  roundSize: number,
+  repeated: boolean,
+): string => {
+  if (repeated) {
+    return `${countNoun(round.repeat.length, 'Satz', 'Sätze')} noch einmal`;
+  }
+  const processed = `${round.asked.length} von ${countNoun(
+    roundSize,
+    'Satz',
+    'Sätzen',
+  )} bearbeitet`;
+  return round.repeat.length > 0
+    ? `${processed} · ${round.repeat.length} für die Nachrunde`
+    : processed;
+};
+
 // The round's sentences are prepared one after the other while the learner
 // translates, as in card practice. A word whose example could not be
 // prepared, or has no German side, leaves the round once that is known.
@@ -56,26 +82,27 @@ export const SentenceRunner = ({
   continueControl,
 }: SentenceRunnerProps) => {
   const warmup = useExampleWarmup(session.items, prepareExamples);
-  const [outcomes, setOutcomes] = useState<ReadonlyMap<string, RailOutcome>>(
-    new Map(),
-  );
-  const [done, setDone] = useState<ReadonlySet<string>>(new Set());
-  const round = warmup.items.filter(
+  const [round, setRound] = useState(emptySentenceRound);
+  const items = warmup.items.filter(
     (item) => !warmup.isSettled(item.entryId) || promptOf(item) !== null,
   );
-  const activeIndex = round.findIndex((item) => !done.has(item.entryId));
-  const active = round[activeIndex];
-  if (active === undefined) {
+  const entryIds = items.map((item) => item.entryId);
+  const next = nextSentence(round, entryIds);
+  const active =
+    next === null
+      ? undefined
+      : items.find((item) => item.entryId === next.entryId);
+  if (next === null || active === undefined) {
     return (
       <SentenceSummary
         backControl={backControl}
         continueControl={continueControl}
+        counts={sentenceRoundCounts(round)}
         emptyReason={
           session.items.length === 0
             ? 'Die Sätze kommen aus den Beispielen der Wörter, die du hier schon gelernt hast. Lerne zuerst ein paar Wörter.'
             : 'Zu den gelernten Wörtern ließ sich gerade kein Beispielsatz vorbereiten. Versuche es später noch einmal.'
         }
-        outcomes={round.flatMap((item) => outcomes.get(item.entryId) ?? [])}
       />
     );
   }
@@ -83,40 +110,36 @@ export const SentenceRunner = ({
   return (
     <>
       <CardRail
-        activeIndex={activeIndex}
-        activeOutcome={outcomes.get(active.entryId) ?? null}
-        description={`${done.size} von ${countNoun(
-          round.length,
-          'Satz',
-          'Sätzen',
-        )} bearbeitet`}
-        label="Runde"
-        ticks={round.map((item) =>
-          done.has(item.entryId) ? (outcomes.get(item.entryId) ?? null) : null,
-        )}
+        activeIndex={entryIds.indexOf(active.entryId)}
+        activeOutcome={round.judged}
+        description={railDescription(round, items.length, next.repeated)}
+        label={next.repeated ? 'Nachrunde' : 'Runde'}
+        ticks={entryIds.map((entryId) => round.outcomes.get(entryId) ?? null)}
       />
       {prompt === null ? (
         <PreparingSentence />
       ) : (
         <SentenceCard
           check={check}
-          deck={round.length - activeIndex - 1}
-          key={prompt.entryId}
-          onAccept={() => {
-            setOutcomes((current) =>
-              new Map(current).set(prompt.entryId, 'correct'),
-            );
-            setDone((current) => new Set(current).add(prompt.entryId));
-          }}
+          deck={
+            next.repeated
+              ? round.repeat.length - 1
+              : items.length - round.asked.length - 1
+          }
+          key={`${prompt.entryId}-${round.turn}`}
+          onAccept={() =>
+            setRound((current) => acceptSentence(current, prompt.entryId))
+          }
           onNext={() =>
-            setDone((current) => new Set(current).add(prompt.entryId))
+            setRound((current) => finishSentence(current, prompt.entryId))
           }
           onOutcome={(outcome) =>
-            setOutcomes((current) =>
-              new Map(current).set(prompt.entryId, railOutcomeOf(outcome)),
+            setRound((current) =>
+              judgeSentence(current, railOutcomeOf(outcome)),
             )
           }
           prompt={prompt}
+          repeated={next.repeated}
           targetLanguage={targetLanguage}
         />
       )}

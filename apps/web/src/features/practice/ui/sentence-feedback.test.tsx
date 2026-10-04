@@ -7,13 +7,14 @@ import type { SentenceOutcome } from './use-sentence-check';
 const reference = 'Mi hermana es abogada.';
 const feedbackId = 'feedback';
 
-const render = (outcome: SentenceOutcome) =>
+const render = (outcome: SentenceOutcome, repeated = false) =>
   renderToStaticMarkup(
     <SentenceFeedback
       id={feedbackId}
       outcome={outcome}
       playSentence={null}
       reference={reference}
+      repeated={repeated}
       targetLanguage="es"
     />,
   );
@@ -55,6 +56,20 @@ describe('SentenceFeedback', () => {
     expect(markup).toContain('Richtig');
     expect(markup).toContain('Auch möglich: ');
     expect(markup).toContain(reference);
+  });
+
+  it('says a sentence missed earlier is right this time', () => {
+    const markup = render(
+      checked('Mi hermana es abogada.', {
+        graded: true,
+        correct: true,
+        reference,
+        correction: null,
+        explanation: null,
+      }),
+      true,
+    );
+    expect(markup).toContain('Diesmal richtig');
   });
 
   it('does not repeat the stored translation when the answer was it', () => {
