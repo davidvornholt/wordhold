@@ -74,4 +74,41 @@ test('a sentence given up on shows the stored translation', async ({
     'Musterlösung: My sister works in a hospital.',
   );
   await expect(page.getByRole('button', { name: 'Weiter' })).toBeFocused();
+  // Giving up is the learner's own verdict; there is nothing to overrule.
+  await expect(
+    page.getByRole('button', { name: 'Als richtig werten' }),
+  ).toHaveCount(0);
+});
+
+test('a verdict the learner disagrees with counts as correct when overruled', async ({
+  page,
+}) => {
+  await page.goto('/?state=sentence-practice');
+  const field = page.getByLabel('Deine Übersetzung');
+  await field.fill('My sister is working at a hospitel.');
+  await field.press('Enter');
+  await expect(page.getByRole('status')).toContainText('Noch nicht richtig');
+  await page.getByRole('button', { name: 'Als richtig werten' }).click();
+
+  await expect(
+    page.getByRole('heading', {
+      level: 2,
+      name: 'Ich lese gerade ein spannendes Buch.',
+    }),
+  ).toBeVisible();
+  await expect(page.getByText('1 von 2 Sätzen bearbeitet')).toBeVisible();
+  await expect(field).toBeFocused();
+  await field.fill("I'm reading an exciting book.");
+  await field.press('Enter');
+  await expect(page.getByRole('status')).toContainText('Richtig');
+  await expect(
+    page.getByRole('button', { name: 'Als richtig werten' }),
+  ).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'Weiter' }).click();
+  await expect(
+    page.getByRole('heading', { level: 2, name: 'Runde beendet' }),
+  ).toBeFocused();
+  // "Richtig" and "Noch nicht richtig", in that order.
+  await expect(page.getByRole('definition')).toHaveText(['2', '0']);
 });

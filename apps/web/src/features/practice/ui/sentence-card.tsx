@@ -89,6 +89,68 @@ const SentenceAnswerForm = ({
   );
 };
 
+// The judge can be wrong about a free sentence, and an answer it could not
+// check is the learner's to assess against the stored translation. As in
+// word practice, overruling counts the sentence as correct and moves on.
+const canAccept = (outcome: SentenceOutcome): boolean =>
+  outcome.kind === 'checked' &&
+  !(outcome.result.graded && outcome.result.correct);
+
+type SentenceActionsProps = {
+  readonly outcome: SentenceOutcome;
+  readonly feedbackId: string;
+  readonly nextButtonRef: RefObject<HTMLButtonElement | null>;
+  readonly onNext: () => void;
+  readonly onAccept: () => void;
+  readonly playing: boolean;
+  readonly stopAudio: () => void;
+};
+
+// "Weiter" takes the place "Prüfen" had. The row beneath keeps its height
+// and columns, as on a word card, so "Audio stoppen" can come and go beside
+// "Als richtig werten" without moving it.
+const SentenceActions = ({
+  outcome,
+  feedbackId,
+  nextButtonRef,
+  onNext,
+  onAccept,
+  playing,
+  stopAudio,
+}: SentenceActionsProps) => {
+  const acceptable = canAccept(outcome);
+  const stop = (
+    <Button onClick={stopAudio} variant="quiet-muted">
+      Audio stoppen
+    </Button>
+  );
+  return (
+    <div className="flex flex-col gap-3">
+      <Button
+        aria-describedby={feedbackId}
+        onClick={onNext}
+        ref={nextButtonRef}
+      >
+        Weiter
+      </Button>
+      <div className="grid min-h-11 grid-cols-[1fr_auto_1fr] items-center gap-x-4">
+        <span />
+        <div className="flex items-center justify-center">
+          {acceptable ? (
+            <Button onClick={onAccept} variant="quiet">
+              Als richtig werten
+            </Button>
+          ) : null}
+          {playing && !acceptable ? stop : null}
+        </div>
+        <div className="justify-self-start">
+          {playing && acceptable ? stop : null}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 type SentenceCardProps = {
   readonly prompt: SentencePrompt;
   readonly targetLanguage: LanguageCode;
@@ -98,6 +160,8 @@ type SentenceCardProps = {
   // Fires as soon as the answer is judged, before "Weiter" moves on.
   readonly onOutcome: (outcome: SentenceOutcome) => void;
   readonly onNext: () => void;
+  // Counts the judged sentence as correct and moves on.
+  readonly onAccept: () => void;
 };
 
 // One German sentence to translate. Focus follows the loop as on a word
@@ -110,6 +174,7 @@ export const SentenceCard = ({
   check,
   onOutcome,
   onNext,
+  onAccept,
 }: SentenceCardProps) => {
   const inputRef = useRef<AnswerFieldElement>(null);
   const nextButtonRef = useRef<HTMLButtonElement>(null);
@@ -185,22 +250,15 @@ export const SentenceCard = ({
         </p>
       )}
       {outcome === null ? null : (
-        <div className="flex flex-col gap-3">
-          <Button
-            aria-describedby={feedbackId}
-            onClick={onNext}
-            ref={nextButtonRef}
-          >
-            Weiter
-          </Button>
-          <div className="flex min-h-11 items-center justify-center">
-            {playing ? (
-              <Button onClick={stopAudio} variant="quiet-muted">
-                Audio stoppen
-              </Button>
-            ) : null}
-          </div>
-        </div>
+        <SentenceActions
+          feedbackId={feedbackId}
+          nextButtonRef={nextButtonRef}
+          onAccept={onAccept}
+          onNext={onNext}
+          outcome={outcome}
+          playing={playing}
+          stopAudio={stopAudio}
+        />
       )}
     </>
   );
