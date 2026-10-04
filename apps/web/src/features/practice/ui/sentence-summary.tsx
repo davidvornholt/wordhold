@@ -1,32 +1,26 @@
 import type { ReactNode } from 'react';
 import { countNoun } from '../../../shared/format/count';
-import type { RailOutcome } from '../../../shared/session/rail-outcome';
 import { Callout } from '../../../shared/ui/callout';
 import { CardRail } from '../../../shared/ui/card-rail';
 import { ManagedHeading } from '../../../shared/ui/managed-heading';
+import type { SentenceRoundCounts } from '../services/sentence-round';
 import { Figure } from './session-summary';
 
 type SentenceSummaryProps = {
-  // One outcome per sentence asked, in asking order.
-  readonly outcomes: ReadonlyArray<RailOutcome>;
+  readonly counts: SentenceRoundCounts;
   // Why nothing was asked, shown when no sentence was.
   readonly emptyReason: string;
   readonly backControl: ReactNode;
   readonly continueControl: ReactNode;
 };
 
-const count = (
-  outcomes: ReadonlyArray<RailOutcome>,
-  wanted: RailOutcome,
-): number => outcomes.filter((outcome) => outcome === wanted).length;
-
 export const SentenceSummary = ({
-  outcomes,
+  counts,
   emptyReason,
   backControl,
   continueControl,
 }: SentenceSummaryProps) => {
-  if (outcomes.length === 0) {
+  if (counts.firstPass.length === 0) {
     return (
       <section className="flex animate-rise flex-col gap-6">
         <ManagedHeading className="text-balance font-display text-3xl sm:text-4xl">
@@ -37,7 +31,7 @@ export const SentenceSummary = ({
       </section>
     );
   }
-  const ungraded = count(outcomes, 'ungraded');
+  const { ungraded } = counts;
   return (
     <section className="flex animate-rise flex-col gap-8">
       <ManagedHeading className="text-balance font-display text-3xl sm:text-4xl">
@@ -46,15 +40,18 @@ export const SentenceSummary = ({
       <CardRail
         activeIndex={null}
         activeOutcome={null}
-        description={countNoun(outcomes.length, 'Satz', 'Sätze')}
-        label="Diese Runde"
-        ticks={outcomes}
+        description={countNoun(counts.firstPass.length, 'Satz', 'Sätze')}
+        label="Erster Durchgang"
+        ticks={counts.firstPass}
       />
       <dl className="grid grid-cols-2 gap-6">
-        <Figure label="Richtig" value={String(count(outcomes, 'correct'))} />
         <Figure
-          label="Noch nicht richtig"
-          value={String(count(outcomes, 'wrong'))}
+          label="Auf Anhieb richtig"
+          value={String(counts.firstTryCorrect)}
+        />
+        <Figure
+          label="Nach Fehlern richtig"
+          value={String(counts.afterRoundCorrect)}
         />
       </dl>
       {ungraded === 0 ? null : (

@@ -4,14 +4,20 @@ import { Button } from '../../../shared/ui/button';
 import { sentenceTone, toneDivider, toneText } from './feedback-tone';
 import type { SentenceOutcome } from './use-sentence-check';
 
-const sentenceHeading = (outcome: SentenceOutcome): string => {
+const sentenceHeading = (
+  outcome: SentenceOutcome,
+  repeated: boolean,
+): string => {
   if (outcome.kind === 'skipped') {
     return 'Nicht gewusst';
   }
   if (!outcome.result.graded) {
     return outcome.result.message;
   }
-  return outcome.result.correct ? 'Richtig' : 'Noch nicht richtig';
+  if (!outcome.result.correct) {
+    return 'Noch nicht richtig';
+  }
+  return repeated ? 'Diesmal richtig' : 'Richtig';
 };
 
 const sameSentence = (left: string, right: string) =>
@@ -49,6 +55,8 @@ type SentenceFeedbackProps = {
   readonly reference: string;
   readonly targetLanguage: LanguageCode;
   readonly playSentence: (() => Promise<void>) | null;
+  // The sentence was missed earlier in the round and is asked again.
+  readonly repeated: boolean;
 };
 
 // The back of a sentence card: the verdict, the learner's sentence with the
@@ -59,6 +67,7 @@ export const SentenceFeedback = ({
   reference,
   targetLanguage,
   playSentence,
+  repeated,
 }: SentenceFeedbackProps) => {
   const tone = sentenceTone(outcome);
   const graded =
@@ -75,7 +84,7 @@ export const SentenceFeedback = ({
       role="status"
     >
       <p className={`font-medium ${toneText[tone]}`}>
-        {sentenceHeading(outcome)}
+        {sentenceHeading(outcome, repeated)}
       </p>
       {correction === null || sameSentence(correction, reference) ? null : (
         <LabelledSentence
