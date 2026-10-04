@@ -14,13 +14,14 @@ const memberId = 'anna';
 
 const runWithRepository = <A, E>(
   work: Effect.Effect<A, E, Database | MemberRepository>,
+  getAllowedGithubId: () => string = () => allowedGithubId,
 ): Promise<A> =>
   Effect.runPromise(
     withMigratedTestDatabase((database) => {
       const databaseLayer = testDatabaseLayer(database.url);
       return work.pipe(
         Effect.provide(
-          makeMemberRepository(() => allowedGithubId).pipe(
+          makeMemberRepository(getAllowedGithubId).pipe(
             Layer.provide(databaseLayer),
           ),
         ),
@@ -57,6 +58,62 @@ const seedMember = (options: {
   });
 
 describe('MemberRepository administrator', () => {
+  it('revokes the previous administrator on configuration changes while retaining their courses', async () => {
+    let configuredGithubId = allowedGithubId;
+    await runWithRepository(
+      Effect.gen(function* () {
+        const sql = yield* Database;
+        const repository = yield* MemberRepository;
+        yield* seedGithubAccount(administratorId, allowedGithubId);
+        yield* repository.ensureAdministrator;
+        yield* sql`insert into courses (name, target_language, owner_id)
+          values ('French', 'fr', ${administratorId})`;
+        yield* sql`insert into session (id, expires_at, token, updated_at, user_id)
+          values ('old-session', now() + interval '1 day', 'old-token', now(),
+            ${administratorId})`;
+        yield* sql`insert into passkey (
+            id, public_key, user_id, credential_id, counter, device_type, backed_up
+          ) values ('old-passkey', 'key', ${administratorId}, 'old-credential',
+            0, 'singleDevice', false)`;
+
+        configuredGithubId = '456';
+        yield* repository.ensureAdministrator;
+        const [session] = yield* sql<{ readonly userId: string }>`
+          select user_id as "userId" from session where token = 'old-token'`;
+        expect(session?.userId).toBe(administratorId);
+        expect(
+          yield* repository.authorize(session?.userId ?? ''),
+        ).toBeUndefined();
+        expect(yield* sql`select 1 from members where admin`).toHaveLength(0);
+
+        yield* seedGithubAccount(memberId, configuredGithubId);
+        yield* sql`insert into members (user_id, name, enabled)
+          values (${memberId}, 'Anna', false)`;
+        yield* Effect.all(
+          [repository.ensureAdministrator, repository.ensureAdministrator],
+          { concurrency: 2 },
+        );
+
+        expect(yield* repository.authorize(administratorId)).toBeUndefined();
+        expect(yield* repository.authorize(memberId)).toEqual({
+          userId: memberId,
+          name: 'Anna',
+          admin: true,
+        });
+        expect(
+          yield* sql`select user_id as "userId" from members where admin`,
+        ).toEqual([{ userId: memberId }]);
+        expect(yield* sql`select owner_id as "ownerId" from courses`).toEqual([
+          { ownerId: administratorId },
+        ]);
+        expect(
+          yield* sql`select 1 from passkey where user_id = ${administratorId}`,
+        ).toHaveLength(1);
+      }),
+      () => configuredGithubId,
+    );
+  });
+
   it('makes the allowlisted GitHub account the administrator of older courses', async () => {
     await runWithRepository(
       Effect.gen(function* () {

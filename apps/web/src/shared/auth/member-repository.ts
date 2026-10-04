@@ -11,8 +11,8 @@ export type Member = {
 };
 
 export type MemberRepositoryShape = {
-  // Makes the allowlisted GitHub account the administrator and gives it every
-  // course created before accounts existed.
+  // Reconciles the configured administrator, revoking the previous one's access,
+  // and claims courses created before accounts existed without moving owned ones.
   readonly ensureAdministrator: Effect.Effect<void, AuthDatabaseError>;
   // The member behind a session, or undefined when the person was suspended,
   // deleted, or has not finished registering a passkey.
@@ -41,20 +41,32 @@ export const makeMemberRepository = (getAllowedGithubId: () => string) =>
     Effect.gen(function* () {
       const sql = yield* Database;
       return MemberRepository.of({
-        ensureAdministrator: Effect.all([
-          sql`insert into members (user_id, name, admin)
-            select u.id, u.name, true from "user" u
-            join account a on a.user_id = u.id
-            where a.provider_id = 'github' and a.account_id = ${getAllowedGithubId()}
-            on conflict do nothing`,
-          sql`update courses set owner_id = m.user_id from members m
-            where m.admin and courses.owner_id is null`,
-        ]).pipe(
-          Effect.asVoid,
-          Effect.mapError((cause) =>
-            databaseFailure('ensure administrator', cause),
+        ensureAdministrator: sql
+          .withTransaction(
+            Effect.gen(function* () {
+              yield* sql`select pg_advisory_xact_lock(hashtextextended('wordhold:access', 0))`;
+              const allowedGithubId = getAllowedGithubId();
+              // Disable as well as demote: the previous administrator's passkeys
+              // and sessions must not retain access after configuration changes.
+              yield* sql`update members m set admin = false, enabled = false
+              where m.admin and not exists (
+                select 1 from account a where a.user_id = m.user_id
+                  and a.provider_id = 'github' and a.account_id = ${allowedGithubId}
+              )`;
+              yield* sql`insert into members (user_id, name, admin)
+              select u.id, u.name, true from "user" u
+              join account a on a.user_id = u.id
+              where a.provider_id = 'github' and a.account_id = ${allowedGithubId}
+              on conflict (user_id) do update set admin = true, enabled = true`;
+              yield* sql`update courses set owner_id = m.user_id from members m
+              where m.admin and courses.owner_id is null`;
+            }),
+          )
+          .pipe(
+            Effect.mapError((cause) =>
+              databaseFailure('ensure administrator', cause),
+            ),
           ),
-        ),
         authorize: (userId) =>
           sql<Member>`update members set last_active_at = now()
             where user_id = ${userId} and enabled
