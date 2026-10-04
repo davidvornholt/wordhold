@@ -8,8 +8,8 @@ type VocabularySelectionBarProps = {
   readonly children: ReactNode;
 };
 
-// Floats above the list edge while a selection exists, so the study action
-// stays reachable however long the list grows.
+// Floats above the list edge while a selection exists, so the study actions
+// stay reachable however long the list grows.
 export const VocabularySelectionBar = ({
   count,
   nouns,
@@ -19,6 +19,6 @@ export const VocabularySelectionBar = ({
     <p className="font-medium">
       {countNoun(count, nouns.singular, nouns.plural)} ausgewählt
     </p>
-    {children}
+    <div className="flex flex-wrap items-center gap-3">{children}</div>
   </div>
 );

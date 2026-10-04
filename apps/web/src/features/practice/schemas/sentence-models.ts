@@ -1,13 +1,13 @@
 import { maximumExampleLength } from '@wordhold/ai/extraction/schema';
 import { Option, Schema } from 'effect';
 import type { PreparedExampleSentence } from '../../../shared/examples/example-model';
-import { PlaceSelection } from '../../../shared/session/vocabulary-selection';
+import { VocabularySelection } from '../../../shared/session/vocabulary-selection';
 
-// Sentence practice draws from one book's own words or one unit, like the
-// learning paths it is opened from.
+// Sentence practice draws from one book's own words, one unit, or the words
+// picked in a word list, like the sittings it is opened from.
 export const SentenceSessionRequest = Schema.Struct({
   courseId: Schema.UUID,
-  place: PlaceSelection,
+  selection: VocabularySelection,
 });
 
 export type SentenceSessionRequestData = typeof SentenceSessionRequest.Type;
@@ -64,12 +64,14 @@ export type SentenceResult =
 const SentenceSearch = Schema.Struct({
   book: Schema.optional(Schema.UUID),
   unit: Schema.optional(Schema.UUID),
+  entries: Schema.optional(Schema.String),
 });
 
 export type SentenceSearchData = typeof SentenceSearch.Type;
 
 const decodeSearch = Schema.decodeUnknownOption(SentenceSearch);
 
-// A hand-edited URL falls back to no place, which leads back to the course.
+// A hand-edited URL falls back to no selection, which leads back to the
+// course.
 export const parseSentenceSearch = (input: unknown): SentenceSearchData =>
   Option.getOrElse(decodeSearch(input), (): SentenceSearchData => ({}));

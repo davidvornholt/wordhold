@@ -93,6 +93,10 @@ test('an untouched unit exposes both learning paths before the session', async (
   await expect(
     page.getByRole('button', { name: 'Auswahl kennenlernen' }),
   ).toBeVisible();
+  // None of these words has been met, so no sentence would be ready.
+  await expect(
+    page.getByRole('button', { name: 'Sätze übersetzen' }),
+  ).toHaveCount(0);
 });
 
 test('a partly learned unit explains why only one path still needs learning', async ({
