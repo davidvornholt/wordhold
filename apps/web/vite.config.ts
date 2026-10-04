@@ -12,7 +12,23 @@ export default defineConfig({
   server: { port: 3000, strictPort: true },
   plugins: [
     nitroApiRouting(),
-    tanstackStart(),
+    tanstackStart({
+      // The database client cannot run in a browser: node-postgres stops the
+      // whole bundle before the page becomes interactive. The build fails when
+      // one of these imports survives into the client bundle.
+      importProtection: {
+        // Workspace sources outside Vite's root have absolute importer paths.
+        include: ['src/**', '**/packages/**'],
+        client: {
+          specifiers: [
+            '@wordhold/db/client',
+            '@wordhold/db/drizzle',
+            /^@effect\/sql-pg(?:\/|$)/u,
+            /^pg(?:\/|$)/u,
+          ],
+        },
+      },
+    }),
     nitro({ preset: 'bun' }),
     viteReact(),
     tailwindcss(),
