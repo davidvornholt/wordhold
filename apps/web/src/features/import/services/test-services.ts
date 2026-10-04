@@ -47,9 +47,9 @@ export const makeImportRepository = (
   overrides: Partial<ImportRepositoryShape> = {},
 ) =>
   ImportRepository.of({
-    listOrSeedCourses: Effect.succeed([course]),
+    listOrSeedCourses: () => Effect.succeed([course]),
     getCourse: () => Effect.succeed(course),
-    listPendingImportSessions: Effect.succeed([]),
+    listPendingImportSessions: () => Effect.succeed([]),
     getImportSession: () =>
       Effect.succeed({
         id: page.importSessionId,
@@ -69,7 +69,7 @@ export const makeImportRepository = (
           },
         ],
       }),
-    listAudioRecoveryPages: Effect.succeed([]),
+    listAudioRecoveryPages: () => Effect.succeed([]),
     getPage: () => Effect.succeed({ page, course }),
     getPageUpload: () => Effect.succeed(undefined),
     listBooks: () => Effect.succeed([book]),

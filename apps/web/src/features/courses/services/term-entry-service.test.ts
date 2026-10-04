@@ -5,6 +5,8 @@ import type {
   KeyPointRequest,
 } from '@wordhold/ai/definition/schema';
 import { DefinitionWriter } from '@wordhold/ai/definition/writer';
+import { untrackedAiUsage } from '@wordhold/ai/testing/usage';
+import type { AiUsage } from '@wordhold/ai/usage';
 import { Effect, Layer } from 'effect';
 import { TermEntryService } from './term-entry-service';
 import {
@@ -36,7 +38,7 @@ type Stubs = {
 const subject: TermCourse = { kind: 'terms', name: 'Chemie' };
 
 const runService = <A, E>(
-  use: (service: TermEntryService) => Effect.Effect<A, E>,
+  use: (service: TermEntryService) => Effect.Effect<A, E, AiUsage>,
   {
     createResult = { kind: 'created', entryId },
     updateResult = { kind: 'updated', definitionChanged: true },
@@ -82,6 +84,7 @@ const runService = <A, E>(
       Effect.provide(
         TermEntryService.Default.pipe(Layer.provide(dependencies)),
       ),
+      Effect.provide(untrackedAiUsage),
       Effect.either,
       Effect.map((result) => ({ result, suggestions, derivations })),
     ),

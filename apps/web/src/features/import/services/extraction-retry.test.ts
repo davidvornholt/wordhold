@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { Extraction, type ExtractionResult } from '@wordhold/ai/extraction';
 import { ExtractionError } from '@wordhold/ai/extraction/error';
+import { untrackedAiUsage } from '@wordhold/ai/testing/usage';
 import { Effect } from 'effect';
 import { Storage } from '../../../shared/storage/server';
 import { StorageError } from '../../../shared/storage/storage-error';
@@ -25,6 +26,7 @@ const runRetry = (
       Effect.provideService(ImportRepository, repository),
       Effect.provideService(Storage, makeStorage()),
       Effect.provideService(Extraction, Extraction.make({ extract })),
+      Effect.provide(untrackedAiUsage),
     ),
   );
 
@@ -64,6 +66,7 @@ describe('retryPendingExtraction', () => {
               },
             }),
           ),
+          Effect.provide(untrackedAiUsage),
         ),
       ),
     );
@@ -96,6 +99,7 @@ describe('retryPendingExtraction', () => {
               },
             }),
           ),
+          Effect.provide(untrackedAiUsage),
         ),
       ),
     );
@@ -118,6 +122,7 @@ describe('retryPendingExtraction', () => {
             Extraction,
             Extraction.make({ extract: () => Effect.fail(providerError) }),
           ),
+          Effect.provide(untrackedAiUsage),
         ),
       ),
     );
@@ -152,6 +157,7 @@ describe('retryPendingExtraction guards', () => {
               },
             }),
           ),
+          Effect.provide(untrackedAiUsage),
         ),
       ),
     );
@@ -165,6 +171,10 @@ describe('retryPendingExtraction guards', () => {
     let release: (result: ExtractionResult) => void = () => undefined;
     const provider = new Promise<ExtractionResult>((resolve) => {
       release = resolve;
+    });
+    let providerCalled: () => void = () => undefined;
+    const providerStarted = new Promise<void>((resolve) => {
+      providerCalled = resolve;
     });
     const retry = runRetry(
       makeImportRepository({
@@ -192,9 +202,15 @@ describe('retryPendingExtraction guards', () => {
           });
         },
       }),
-      () => Effect.promise(() => provider),
+      () =>
+        Effect.promise(() => {
+          providerCalled();
+          return provider;
+        }),
     );
 
+    // Verification finishes while the provider is still reading the page.
+    await providerStarted;
     pendingPages.clear();
     release(extraction);
     await expect(retry).rejects.toThrow(

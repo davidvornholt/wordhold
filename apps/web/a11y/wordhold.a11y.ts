@@ -23,7 +23,7 @@ test('authenticated routes remain reachable through their user transitions', asy
   page,
 }) => {
   await page.goto('/?state=signed-out');
-  await page.getByRole('button', { name: 'Mit GitHub anmelden' }).click();
+  await page.getByRole('button', { name: 'Mit Passkey anmelden' }).click();
   await expect(page.locator('body')).toHaveAttribute(
     'data-fixture',
     'dashboard',

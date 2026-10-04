@@ -1,3 +1,4 @@
+import { aiPrice, estimateUsd } from '@wordhold/ai/cost';
 import { DefinitionJudge } from '@wordhold/ai/definition/judge';
 import { isDefinitionCorrect } from '@wordhold/ai/definition/schema';
 import { DefinitionWriter } from '@wordhold/ai/definition/writer';
@@ -7,11 +8,41 @@ import { BedrockProvider } from '@wordhold/ai/providers/bedrock';
 import { SentenceGen } from '@wordhold/ai/sentence';
 import { SentenceJudge } from '@wordhold/ai/sentence/judge';
 import { isSentenceCorrect } from '@wordhold/ai/sentence/judge-schema';
+import { AiUsage } from '@wordhold/ai/usage';
 import { Cause, Data, Effect, Exit, Layer, Option } from 'effect';
 
 class VerificationError extends Data.TaggedError('VerificationError')<{
   readonly message: string;
 }> {}
+
+// Small requests cost fractions of a cent.
+const reportedUsdDecimals = 4;
+
+const report = (message: string) =>
+  Effect.promise(() =>
+    globalThis.Bun.write(globalThis.Bun.stdout, `${message}\n`),
+  );
+
+// The check runs outside the app and bills nobody in it, so each request's
+// estimated cost is printed instead of recorded.
+const printedUsage = Layer.succeed(
+  AiUsage,
+  AiUsage.of({
+    start: (call) =>
+      Effect.succeed({
+        settle: ({ usage }) => {
+          const price = aiPrice(call);
+          const usd =
+            usage === undefined || price === undefined
+              ? undefined
+              : estimateUsd(usage, price);
+          return report(
+            `${call.operation}: ${usd === undefined ? 'cost unknown' : `about $${usd.toFixed(reportedUsdDecimals)}`}`,
+          ).pipe(Effect.asVoid);
+        },
+      }),
+  }),
+);
 
 const services = Layer.mergeAll(
   DefinitionJudge.Default,
@@ -20,12 +51,7 @@ const services = Layer.mergeAll(
   Judge.Default,
   SentenceGen.Default,
   SentenceJudge.Default,
-).pipe(Layer.provide(BedrockProvider.live));
-
-const report = (message: string) =>
-  Effect.promise(() =>
-    globalThis.Bun.write(globalThis.Bun.stdout, `${message}\n`),
-  );
+).pipe(Layer.provide(BedrockProvider.live), Layer.merge(printedUsage));
 
 const verifySentences = Effect.gen(function* () {
   const sentences = yield* SentenceGen;

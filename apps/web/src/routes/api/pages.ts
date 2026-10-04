@@ -7,7 +7,8 @@ import { importRuntime } from '../../features/import/runtime';
 import { parseBoundedMultipartFormData } from '../../features/import/services/multipart';
 import { storeUploadedPage } from '../../features/import/services/upload';
 import { maximumUploadBatchSize } from '../../features/import/services/upload-queue';
-import { requireSession } from '../../shared/auth/require-session';
+import { assertOwned, NotOwnedError } from '../../shared/auth/ownership';
+import { requireMember } from '../../shared/auth/require-member';
 
 const invalidForm = () =>
   new UploadValidationError({
@@ -40,7 +41,8 @@ const decodeUploadFields = Schema.decodeUnknownOption(UploadFields);
 
 const uploadResponse = (request: Request) =>
   Effect.gen(function* () {
-    yield* requireSession(request.headers);
+    // Checked before the body is read, so a stranger's upload is not parsed.
+    const member = yield* requireMember(request.headers);
     const form = yield* parseBoundedMultipartFormData(request);
     const courseId = form.get('courseId');
     const importSessionId = form.get('importSessionId');
@@ -58,6 +60,9 @@ const uploadResponse = (request: Request) =>
     if (Option.isNone(fields) || !(image instanceof File)) {
       return yield* invalidForm();
     }
+    // An existing page or import session must match this course, so owning
+    // the course covers them as well.
+    yield* assertOwned(member.userId, { courses: [fields.value.courseId] });
     return yield* storeUploadedPage({
       courseId: fields.value.courseId,
       importSessionId: fields.value.importSessionId,
@@ -75,7 +80,10 @@ const uploadResponse = (request: Request) =>
             { status: error.status },
           );
         }
-        if (error instanceof CourseNotFoundError) {
+        if (
+          error instanceof CourseNotFoundError ||
+          error instanceof NotOwnedError
+        ) {
           return Response.json({ error: error.message }, { status: 404 });
         }
         if (error instanceof UploadReadError) {

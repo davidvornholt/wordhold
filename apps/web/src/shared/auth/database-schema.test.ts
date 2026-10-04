@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'bun:test';
-import { account, session, user, verification } from '@wordhold/db/schema/auth';
+import { passkey as passkeyPlugin } from '@better-auth/passkey';
+import {
+  account,
+  passkey,
+  session,
+  user,
+  verification,
+} from '@wordhold/db/schema/auth';
 import { getAuthTables } from 'better-auth/db';
 import { getTableColumns } from 'drizzle-orm';
 import { getTableConfig, type PgTable } from 'drizzle-orm/pg-core';
@@ -13,6 +20,7 @@ const drizzleTables: Readonly<Record<string, PgTable>> = {
   session,
   account,
   verification,
+  passkey,
 };
 
 const drizzleTableFor = (modelName: string): PgTable => {
@@ -38,7 +46,9 @@ const uniqueColumnSets = (table: PgTable): ReadonlyArray<string> =>
     );
 
 describe('better-auth database schema', () => {
-  for (const [model, definition] of Object.entries(getAuthTables({}))) {
+  for (const [model, definition] of Object.entries(
+    getAuthTables({ plugins: [passkeyPlugin()] }),
+  )) {
     const fields = Object.entries(definition.fields);
 
     it(`provides every column better-auth reads and writes on ${model}`, () => {

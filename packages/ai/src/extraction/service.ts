@@ -1,11 +1,7 @@
-import { generateText, Output } from 'ai';
 import { Effect, Schema } from 'effect';
-import {
-  BedrockProvider,
-  productionModelId,
-  sonnetMediumProviderOptions,
-} from '../providers/bedrock';
-import { providerJsonSchema } from '../structured-output';
+import { BedrockProvider, productionModelId } from '../providers/bedrock';
+import { generateStructured } from '../structured-generation';
+import type { AiUsage } from '../usage';
 import { ExtractionError } from './error';
 import { ExtractedPage, type ExtractedPageData } from './schema';
 
@@ -37,36 +33,30 @@ export class Extraction extends Effect.Service<Extraction>()(
       const model = yield* BedrockProvider;
       const modelId = productionModelId;
 
-      const pageOutput = providerJsonSchema(ExtractedPage);
       const decodePage = Schema.decodeUnknown(ExtractedPage);
 
       const callModel = (input: PageImage) =>
-        Effect.tryPromise({
-          try: async () => {
-            const { output } = await generateText({
-              model,
-              output: Output.object({ schema: pageOutput }),
-              providerOptions: sonnetMediumProviderOptions,
-              messages: [
+        generateStructured({
+          model,
+          operation: 'page-extraction',
+          schema: ExtractedPage,
+          prompt: [
+            {
+              role: 'user',
+              content: [
                 {
-                  role: 'user',
-                  content: [
-                    {
-                      type: 'file',
-                      data: input.imageBase64,
-                      mediaType: input.mediaType,
-                    },
-                    {
-                      type: 'text',
-                      text: extractionPrompt(input.targetLanguage),
-                    },
-                  ],
+                  type: 'file',
+                  data: input.imageBase64,
+                  mediaType: input.mediaType,
+                },
+                {
+                  type: 'text',
+                  text: extractionPrompt(input.targetLanguage),
                 },
               ],
-            });
-            return output;
-          },
-          catch: (cause) =>
+            },
+          ],
+          failure: (cause) =>
             new ExtractionError({
               reason: 'provider',
               message: `The reading service rejected or did not answer the request for ${modelId}.`,
@@ -76,7 +66,7 @@ export class Extraction extends Effect.Service<Extraction>()(
 
       const runModel = (
         input: PageImage,
-      ): Effect.Effect<ExtractedPageData, ExtractionError> =>
+      ): Effect.Effect<ExtractedPageData, ExtractionError, AiUsage> =>
         callModel(input).pipe(
           Effect.flatMap((output) =>
             decodePage(output).pipe(
@@ -94,7 +84,7 @@ export class Extraction extends Effect.Service<Extraction>()(
 
       const extract = (
         input: PageImage,
-      ): Effect.Effect<ExtractionResult, ExtractionError> =>
+      ): Effect.Effect<ExtractionResult, ExtractionError, AiUsage> =>
         runModel(input).pipe(Effect.map((page) => ({ page, modelId })));
 
       return { extract } as const;

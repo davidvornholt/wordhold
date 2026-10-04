@@ -19,30 +19,40 @@ export type CreateSubjectResult =
   | { readonly kind: 'duplicate' };
 
 // Both mutations take one lock for all course names, and a name is taken
-// regardless of case, so two subjects never read the same on the overview.
+// regardless of case, so two subjects never read the same on a person's
+// overview. Other people's courses do not count.
 export const makeCourseSubjectMutations = (sql: Database) => {
   const lockNames = sql`select pg_advisory_xact_lock(hashtextextended('wordhold:course-names', 0))`;
 
-  const nameTaken = (name: string, exceptCourseId: string | null) =>
+  const nameTaken = (ownerId: string, name: string) =>
     sql<{ readonly id: string }>`
       select id from courses
-      where lower(name) = lower(${name})
-        and (${exceptCourseId}::uuid is null or id <> ${exceptCourseId}::uuid)
+      where owner_id = ${ownerId} and lower(name) = lower(${name})
       limit 1
     `.pipe(Effect.map((rows) => rows.length > 0));
 
-  const createSubject = (name: string) =>
+  const otherNameTaken = (courseId: string, name: string) =>
+    sql<{ readonly id: string }>`
+      select other.id from courses other
+      join courses course on course.id = ${courseId}
+      where other.owner_id is not distinct from course.owner_id
+        and other.id <> course.id
+        and lower(other.name) = lower(${name})
+      limit 1
+    `.pipe(Effect.map((rows) => rows.length > 0));
+
+  const createSubject = (ownerId: string, name: string) =>
     sql
       .withTransaction(
         Effect.gen(function* () {
           yield* lockNames;
-          if (yield* nameTaken(name, null)) {
+          if (yield* nameTaken(ownerId, name)) {
             return { kind: 'duplicate' } as const;
           }
           const [course] = yield* sql<{ readonly id: string }>`
             insert into courses
-              (name, kind, target_language, native_language, directions)
-            values (${name}, 'terms', 'de', 'de', '{to_native}')
+              (owner_id, name, kind, target_language, native_language, directions)
+            values (${ownerId}, ${name}, 'terms', 'de', 'de', '{to_native}')
             returning id
           `;
           if (course === undefined) {
@@ -71,7 +81,7 @@ export const makeCourseSubjectMutations = (sql: Database) => {
       .withTransaction(
         Effect.gen(function* () {
           yield* lockNames;
-          if (yield* nameTaken(name, courseId)) {
+          if (yield* otherNameTaken(courseId, name)) {
             return 'duplicate' as const;
           }
           const renamed = yield* sql<{ readonly id: string }>`

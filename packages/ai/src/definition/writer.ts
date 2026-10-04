@@ -1,5 +1,6 @@
 import { Effect } from 'effect';
 import { BedrockProvider } from '../providers/bedrock';
+import type { AiUsage } from '../usage';
 import type { DefinitionError } from './error';
 import { generateDefinitionOutput } from './generate';
 import {
@@ -38,23 +39,25 @@ export class DefinitionWriter extends Effect.Service<DefinitionWriter>()(
 
       const keyPoints = (
         request: KeyPointRequest,
-      ): Effect.Effect<KeyPointListData, DefinitionError> =>
-        generateDefinitionOutput(
+      ): Effect.Effect<KeyPointListData, DefinitionError, AiUsage> =>
+        generateDefinitionOutput({
           model,
-          KeyPointList,
-          keyPointPrompt(request),
-          'The key points could not be derived.',
-        );
+          operation: 'definition-key-points',
+          schema: KeyPointList,
+          prompt: keyPointPrompt(request),
+          message: 'The key points could not be derived.',
+        });
 
       const suggest = (
         request: DefinitionRequest,
-      ): Effect.Effect<DefinitionSuggestionData, DefinitionError> =>
-        generateDefinitionOutput(
+      ): Effect.Effect<DefinitionSuggestionData, DefinitionError, AiUsage> =>
+        generateDefinitionOutput({
           model,
-          DefinitionSuggestion,
-          definitionPrompt(request),
-          'The definition could not be suggested.',
-        );
+          operation: 'definition-suggestion',
+          schema: DefinitionSuggestion,
+          prompt: definitionPrompt(request),
+          message: 'The definition could not be suggested.',
+        });
 
       return { keyPoints, suggest } as const;
     }),

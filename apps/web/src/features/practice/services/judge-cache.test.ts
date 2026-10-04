@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import type { JudgeVerdictData } from '@wordhold/ai/judge/schema';
+import { untrackedAiUsage } from '@wordhold/ai/testing/usage';
 import { Effect, Layer } from 'effect';
 import {
   PracticeDatabaseError,
@@ -61,6 +62,7 @@ describe('judgeWithCache', () => {
         ),
       ),
       Effect.either,
+      Effect.provide(untrackedAiUsage),
     );
     const result = await Effect.runPromise(program);
     expect(result._tag).toBe('Left');
@@ -90,6 +92,7 @@ describe('judgeWithCache', () => {
           ),
         ),
         Effect.either,
+        Effect.provide(untrackedAiUsage),
       ),
     );
     expect(result._tag).toBe('Left');
@@ -121,7 +124,7 @@ describe('judgeWithCache', () => {
     const results = await Effect.runPromise(
       Effect.all([judgeWithCache(request), judgeWithCache(request)], {
         concurrency: 'unbounded',
-      }).pipe(Effect.provide(layer)),
+      }).pipe(Effect.provide(layer), Effect.provide(untrackedAiUsage)),
     );
     expect(results[0]?.verdict).toEqual(verdict);
     expect(results[1]).toEqual(results[0]);

@@ -10,9 +10,13 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as JoinRouteImport } from './routes/join'
+import { Route as PasskeysRouteImport } from './routes/passkeys'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiPagesRouteImport } from './routes/api/pages'
 import { Route as ImportsSessionIdRouteImport } from './routes/imports/$sessionId'
+import { Route as PeopleIndexRouteImport } from './routes/people/index'
+import { Route as PeopleUserIdRouteImport } from './routes/people/$userId'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as CoursesCourseIdIndexRouteImport } from './routes/courses/$courseId/index'
 import { Route as CoursesCourseIdImportRouteImport } from './routes/courses/$courseId/import'
@@ -37,6 +41,16 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const JoinRoute = JoinRouteImport.update({
+  id: '/join',
+  path: '/join',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PasskeysRoute = PasskeysRouteImport.update({
+  id: '/passkeys',
+  path: '/passkeys',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiHealthRoute = ApiHealthRouteImport.update({
   id: '/api/health',
   path: '/api/health',
@@ -50,6 +64,16 @@ const ApiPagesRoute = ApiPagesRouteImport.update({
 const ImportsSessionIdRoute = ImportsSessionIdRouteImport.update({
   id: '/imports/$sessionId',
   path: '/imports/$sessionId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PeopleIndexRoute = PeopleIndexRouteImport.update({
+  id: '/people/',
+  path: '/people/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PeopleUserIdRoute = PeopleUserIdRouteImport.update({
+  id: '/people/$userId',
+  path: '/people/$userId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
@@ -152,9 +176,13 @@ const CoursesCourseIdUnitsUnitIdLearnRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/join': typeof JoinRoute
+  '/passkeys': typeof PasskeysRoute
   '/api/health': typeof ApiHealthRoute
   '/api/pages': typeof ApiPagesRouteWithChildren
   '/imports/$sessionId': typeof ImportsSessionIdRoute
+  '/people/$userId': typeof PeopleUserIdRoute
+  '/people/': typeof PeopleIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/courses/$courseId/import': typeof CoursesCourseIdImportRoute
   '/courses/$courseId/learn': typeof CoursesCourseIdLearnRoute
@@ -176,9 +204,13 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/join': typeof JoinRoute
+  '/passkeys': typeof PasskeysRoute
   '/api/health': typeof ApiHealthRoute
   '/api/pages': typeof ApiPagesRouteWithChildren
   '/imports/$sessionId': typeof ImportsSessionIdRoute
+  '/people/$userId': typeof PeopleUserIdRoute
+  '/people': typeof PeopleIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/courses/$courseId/import': typeof CoursesCourseIdImportRoute
   '/courses/$courseId/learn': typeof CoursesCourseIdLearnRoute
@@ -201,9 +233,13 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/join': typeof JoinRoute
+  '/passkeys': typeof PasskeysRoute
   '/api/health': typeof ApiHealthRoute
   '/api/pages': typeof ApiPagesRouteWithChildren
   '/imports/$sessionId': typeof ImportsSessionIdRoute
+  '/people/$userId': typeof PeopleUserIdRoute
+  '/people/': typeof PeopleIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/courses/$courseId/import': typeof CoursesCourseIdImportRoute
   '/courses/$courseId/learn': typeof CoursesCourseIdLearnRoute
@@ -227,9 +263,13 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/join'
+    | '/passkeys'
     | '/api/health'
     | '/api/pages'
     | '/imports/$sessionId'
+    | '/people/$userId'
+    | '/people/'
     | '/api/auth/$'
     | '/courses/$courseId/import'
     | '/courses/$courseId/learn'
@@ -251,9 +291,13 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/join'
+    | '/passkeys'
     | '/api/health'
     | '/api/pages'
     | '/imports/$sessionId'
+    | '/people/$userId'
+    | '/people'
     | '/api/auth/$'
     | '/courses/$courseId/import'
     | '/courses/$courseId/learn'
@@ -275,9 +319,13 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/join'
+    | '/passkeys'
     | '/api/health'
     | '/api/pages'
     | '/imports/$sessionId'
+    | '/people/$userId'
+    | '/people/'
     | '/api/auth/$'
     | '/courses/$courseId/import'
     | '/courses/$courseId/learn'
@@ -300,9 +348,13 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  JoinRoute: typeof JoinRoute
+  PasskeysRoute: typeof PasskeysRoute
   ApiHealthRoute: typeof ApiHealthRoute
   ApiPagesRoute: typeof ApiPagesRouteWithChildren
   ImportsSessionIdRoute: typeof ImportsSessionIdRoute
+  PeopleUserIdRoute: typeof PeopleUserIdRoute
+  PeopleIndexRoute: typeof PeopleIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   CoursesCourseIdImportRoute: typeof CoursesCourseIdImportRoute
   CoursesCourseIdLearnRoute: typeof CoursesCourseIdLearnRoute
@@ -331,6 +383,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/join': {
+      id: '/join'
+      path: '/join'
+      fullPath: '/join'
+      preLoaderRoute: typeof JoinRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/passkeys': {
+      id: '/passkeys'
+      path: '/passkeys'
+      fullPath: '/passkeys'
+      preLoaderRoute: typeof PasskeysRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/health': {
       id: '/api/health'
       path: '/api/health'
@@ -350,6 +416,20 @@ declare module '@tanstack/react-router' {
       path: '/imports/$sessionId'
       fullPath: '/imports/$sessionId'
       preLoaderRoute: typeof ImportsSessionIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/people/': {
+      id: '/people/'
+      path: '/people'
+      fullPath: '/people/'
+      preLoaderRoute: typeof PeopleIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/people/$userId': {
+      id: '/people/$userId'
+      path: '/people/$userId'
+      fullPath: '/people/$userId'
+      preLoaderRoute: typeof PeopleUserIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/auth/$': {
@@ -495,9 +575,13 @@ const ApiPagesRouteWithChildren = ApiPagesRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  JoinRoute: JoinRoute,
+  PasskeysRoute: PasskeysRoute,
   ApiHealthRoute: ApiHealthRoute,
   ApiPagesRoute: ApiPagesRouteWithChildren,
   ImportsSessionIdRoute: ImportsSessionIdRoute,
+  PeopleUserIdRoute: PeopleUserIdRoute,
+  PeopleIndexRoute: PeopleIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   CoursesCourseIdImportRoute: CoursesCourseIdImportRoute,
   CoursesCourseIdLearnRoute: CoursesCourseIdLearnRoute,

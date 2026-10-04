@@ -5,6 +5,7 @@ import type {
   KeyPointRequest,
 } from '@wordhold/ai/definition/schema';
 import { DefinitionWriter } from '@wordhold/ai/definition/writer';
+import type { AiUsage } from '@wordhold/ai/usage';
 import { Context, Effect, Layer } from 'effect';
 import { PracticeJudgeError } from '../errors/practice-errors';
 
@@ -23,10 +24,10 @@ export class DefinitionGrader extends Context.Tag('wordhold/DefinitionGrader')<
     readonly model: string;
     readonly judge: (
       input: DefinitionJudgeInput,
-    ) => Effect.Effect<DefinitionVerdictData, PracticeJudgeError>;
+    ) => Effect.Effect<DefinitionVerdictData, PracticeJudgeError, AiUsage>;
     readonly keyPoints: (
       request: KeyPointRequest,
-    ) => Effect.Effect<ReadonlyArray<string>, PracticeJudgeError>;
+    ) => Effect.Effect<ReadonlyArray<string>, PracticeJudgeError, AiUsage>;
   }
 >() {
   static readonly live = Layer.effect(

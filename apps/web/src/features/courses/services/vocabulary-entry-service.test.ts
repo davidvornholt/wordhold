@@ -4,8 +4,10 @@ import {
   type WordTranslationRequest,
 } from '@wordhold/ai/sentence';
 import { SentenceGenError } from '@wordhold/ai/sentence/error';
+import { untrackedAiUsage } from '@wordhold/ai/testing/usage';
 import { Tts } from '@wordhold/ai/tts';
 import { TtsError } from '@wordhold/ai/tts/error';
+import type { AiUsage } from '@wordhold/ai/usage';
 import type { CourseKind } from '@wordhold/db/schema/courses';
 import { Effect, Either, Layer } from 'effect';
 import { Storage, type StorageShape } from '../../../shared/storage/server';
@@ -58,9 +60,7 @@ type Stubs = {
 };
 
 const runService = <A, E>(
-  use: (
-    service: VocabularyEntryService,
-  ) => Effect.Effect<A, E, VocabularyEntryService>,
+  use: (service: VocabularyEntryService) => Effect.Effect<A, E, AiUsage>,
   {
     createResult = { kind: 'created', entryId },
     updateResult = {
@@ -165,6 +165,7 @@ const runService = <A, E>(
   return Effect.runPromise(
     Effect.flatMap(VocabularyEntryService, use).pipe(
       Effect.provide(live),
+      Effect.provide(untrackedAiUsage),
       Effect.either,
       Effect.map((result) => ({
         result,
@@ -363,9 +364,7 @@ describe('VocabularyEntryService corrections', () => {
 
 describe('VocabularyEntryService for a subject', () => {
   it('refuses words, examples and translations for a subject', async () => {
-    const attempts: ReadonlyArray<
-      (service: VocabularyEntryService) => Effect.Effect<unknown, unknown>
-    > = [
+    const attempts: ReadonlyArray<Parameters<typeof runService>[0]> = [
       (service) => service.create(input),
       (service) => service.update(correction),
       (service) =>

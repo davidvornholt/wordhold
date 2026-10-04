@@ -5,7 +5,11 @@ import { ratings } from '../../../shared/grading/rating';
 import { entryIsKnown } from '../../../shared/practice/known-entry';
 import { readyCardsInNextSection } from '../../../shared/practice/session-policy';
 import { DashboardDatabaseError } from '../errors/dashboard-errors';
-import type { CourseStats, FragileEntry } from '../schemas/dashboard-models';
+import type {
+  CourseStats,
+  CourseSummary,
+  FragileEntry,
+} from '../schemas/dashboard-models';
 
 const fragileWindowDays = 30;
 const fragileMinFailures = 2;
@@ -37,14 +41,18 @@ const databaseError = (cause: unknown) =>
 export class DashboardStore extends Context.Tag('wordhold/DashboardStore')<
   DashboardStore,
   {
+    readonly courses: (
+      ownerId: string,
+    ) => Effect.Effect<ReadonlyArray<CourseSummary>, DashboardDatabaseError>;
     readonly courseCounts: (
+      ownerId: string,
       now: Date,
     ) => Effect.Effect<ReadonlyArray<CourseStats>, DashboardDatabaseError>;
-    readonly fragileEntries: () => Effect.Effect<
-      ReadonlyArray<FragileEntry>,
-      DashboardDatabaseError
-    >;
+    readonly fragileEntries: (
+      ownerId: string,
+    ) => Effect.Effect<ReadonlyArray<FragileEntry>, DashboardDatabaseError>;
     readonly activityBetween: (
+      ownerId: string,
       startInclusive: Date,
       endExclusive: Date,
     ) => Effect.Effect<
@@ -54,6 +62,7 @@ export class DashboardStore extends Context.Tag('wordhold/DashboardStore')<
     // Distinct owner-local calendar days (ISO dates) with at least one
     // answer since the given instant.
     readonly practicedDays: (
+      ownerId: string,
       sinceInclusive: Date,
       timeZone: string,
     ) => Effect.Effect<ReadonlyArray<string>, DashboardDatabaseError>;
@@ -63,7 +72,13 @@ export class DashboardStore extends Context.Tag('wordhold/DashboardStore')<
     DashboardStore,
     Effect.gen(function* () {
       const sql = yield* Database;
-      const courseCounts = (now: Date) =>
+      const courses = (ownerId: string) =>
+        sql<CourseSummary>`
+          select id, name, kind, target_language as "targetLanguage"
+          from courses where owner_id = ${ownerId}
+          order by name, id
+        `.pipe(Effect.mapError(databaseError));
+      const courseCounts = (ownerId: string, now: Date) =>
         Effect.all(
           {
             cards: sql<CardCountRow>`
@@ -80,6 +95,7 @@ export class DashboardStore extends Context.Tag('wordhold/DashboardStore')<
               left join cards c on c.entry_id = e.id
                 and c.direction = d.direction
                 and c.introduced_at is not null
+              where co.owner_id = ${ownerId}
               group by co.id, d.direction
             `,
             // Counted per entry for the CTA, but only across enabled card
@@ -89,7 +105,7 @@ export class DashboardStore extends Context.Tag('wordhold/DashboardStore')<
               select e.course_id as "courseId", count(distinct e.id)::int as count
               from entries e
               join courses co on co.id = e.course_id
-              where exists (
+              where co.owner_id = ${ownerId} and exists (
                 select 1 from cards c
                 where c.entry_id = e.id
                   and c.direction = any(co.directions)
@@ -98,14 +114,17 @@ export class DashboardStore extends Context.Tag('wordhold/DashboardStore')<
               group by e.course_id
             `,
             entries: sql<CountRow>`
-              select course_id as "courseId", count(*)::int as count
-              from entries group by course_id
+              select e.course_id as "courseId", count(*)::int as count
+              from entries e
+              join courses co on co.id = e.course_id
+              where co.owner_id = ${ownerId}
+              group by e.course_id
             `,
             known: sql<CountRow>`
               select e.course_id as "courseId", count(*)::int as count
               from entries e
               join courses co on co.id = e.course_id
-              where ${entryIsKnown(sql)}
+              where co.owner_id = ${ownerId} and ${entryIsKnown(sql)}
               group by e.course_id
             `,
           },
@@ -162,7 +181,7 @@ export class DashboardStore extends Context.Tag('wordhold/DashboardStore')<
           }),
           Effect.mapError(databaseError),
         );
-      const fragileEntries = () =>
+      const fragileEntries = (ownerId: string) =>
         sql<FragileEntry>`
           select e.id as "entryId", e.course_id as "courseId",
             co.kind as "courseKind", e.target_text as "targetText",
@@ -172,34 +191,52 @@ export class DashboardStore extends Context.Tag('wordhold/DashboardStore')<
           join cards c on c.id = r.card_id
           join entries e on e.id = c.entry_id
           join courses co on co.id = e.course_id
-          where r.rating = ${ratings.again}
+          where co.owner_id = ${ownerId}
+            and r.rating = ${ratings.again}
             and c.direction = any(co.directions)
             and r.reviewed_at >= now() - make_interval(days => ${fragileWindowDays})
           group by e.id, e.target_text, e.native_text, co.name, co.kind
           having count(*) >= ${fragileMinFailures}
           order by failures desc limit ${fragileLimit}
         `.pipe(Effect.mapError(databaseError));
-      const activityBetween = (startInclusive: Date, endExclusive: Date) =>
+      const activityBetween = (
+        ownerId: string,
+        startInclusive: Date,
+        endExclusive: Date,
+      ) =>
         sql<{ readonly answers: number; readonly cards: number }>`
           select count(*)::int as answers,
-            count(distinct card_id)::int as cards
-          from reviews
-          where reviewed_at >= ${startInclusive} and reviewed_at < ${endExclusive}
+            count(distinct r.card_id)::int as cards
+          from reviews r
+          join cards c on c.id = r.card_id
+          join entries e on e.id = c.entry_id
+          join courses co on co.id = e.course_id
+          where co.owner_id = ${ownerId}
+            and r.reviewed_at >= ${startInclusive}
+            and r.reviewed_at < ${endExclusive}
         `.pipe(
           Effect.map((rows) => rows[0] ?? { answers: 0, cards: 0 }),
           Effect.mapError(databaseError),
         );
-      const practicedDays = (sinceInclusive: Date, timeZone: string) =>
+      const practicedDays = (
+        ownerId: string,
+        sinceInclusive: Date,
+        timeZone: string,
+      ) =>
         sql<{ readonly day: string }>`
           select distinct
-            to_char(reviewed_at at time zone ${timeZone}, 'YYYY-MM-DD') as day
-          from reviews
-          where reviewed_at >= ${sinceInclusive}
+            to_char(r.reviewed_at at time zone ${timeZone}, 'YYYY-MM-DD') as day
+          from reviews r
+          join cards c on c.id = r.card_id
+          join entries e on e.id = c.entry_id
+          join courses co on co.id = e.course_id
+          where co.owner_id = ${ownerId} and r.reviewed_at >= ${sinceInclusive}
         `.pipe(
           Effect.map((rows) => rows.map((row) => row.day)),
           Effect.mapError(databaseError),
         );
       return {
+        courses,
         courseCounts,
         fragileEntries,
         activityBetween,

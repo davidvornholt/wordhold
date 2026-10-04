@@ -3,6 +3,7 @@ import type {
   SentenceJudgeInput,
   SentenceVerdictData,
 } from '@wordhold/ai/sentence/judge-schema';
+import type { AiUsage } from '@wordhold/ai/usage';
 import { Context, Effect, Layer } from 'effect';
 import { PracticeJudgeError } from '../errors/practice-errors';
 
@@ -11,7 +12,7 @@ export class SentenceGrader extends Context.Tag('wordhold/SentenceGrader')<
   {
     readonly judge: (
       input: SentenceJudgeInput,
-    ) => Effect.Effect<SentenceVerdictData, PracticeJudgeError>;
+    ) => Effect.Effect<SentenceVerdictData, PracticeJudgeError, AiUsage>;
   }
 >() {
   static readonly live = Layer.effect(

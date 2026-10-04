@@ -1,17 +1,12 @@
 import { DefinitionJudge } from '@wordhold/ai/definition/judge';
 import { DefinitionWriter } from '@wordhold/ai/definition/writer';
-import { Extraction } from '@wordhold/ai/extraction';
 import { Judge } from '@wordhold/ai/judge';
 import { BedrockProvider } from '@wordhold/ai/providers/bedrock';
 import { SentenceGen } from '@wordhold/ai/sentence';
 import { SentenceJudge } from '@wordhold/ai/sentence/judge';
-import { Tts } from '@wordhold/ai/tts';
+import { PgLive } from '@wordhold/db/client';
 import { Layer, ManagedRuntime } from 'effect';
-
-// Runtimes build lazily; speech remains independent of the AI model.
-export const extractionRuntime = ManagedRuntime.make(
-  Extraction.Default.pipe(Layer.provide(BedrockProvider.live)),
-);
+import { UsageLedger } from './usage-ledger';
 
 export const judgeLayer = Judge.Default.pipe(
   Layer.provide(BedrockProvider.live),
@@ -26,8 +21,10 @@ export const sentenceJudgeLayer = SentenceJudge.Default.pipe(
   Layer.provide(BedrockProvider.live),
 );
 
+// Runtimes build lazily.
 export const sentenceRuntime = ManagedRuntime.make(
-  SentenceGen.Default.pipe(Layer.provide(BedrockProvider.live)),
+  Layer.merge(
+    SentenceGen.Default.pipe(Layer.provide(BedrockProvider.live)),
+    UsageLedger.live.pipe(Layer.provide(PgLive)),
+  ),
 );
-
-export const ttsRuntime = ManagedRuntime.make(Tts.Default);

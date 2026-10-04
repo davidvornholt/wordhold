@@ -5,12 +5,20 @@ import {
   withMigratedTestDatabase,
 } from '@wordhold/db/testing/postgres-test-database';
 import { Effect } from 'effect';
+import { seedOwner } from '../../../shared/testing/owner-fixture';
 import { ImportRepository } from './repository';
 import { ImportRepositoryLive } from './repository-live';
 
 const courseId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const sessionId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const completedSessionId = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+const otherCourseId = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+const otherSessionId = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
+const ownerId = 'owner';
+const otherOwnerId = 'other-owner';
+
+const sessionIds = (sessions: ReadonlyArray<{ readonly id: string }>) =>
+  sessions.map((session) => session.id);
 
 describe('import sessions', () => {
   it('groups a captured batch and lists only sessions with open pages', async () => {
@@ -18,9 +26,10 @@ describe('import sessions', () => {
       withMigratedTestDatabase((database) =>
         Effect.gen(function* () {
           const sql = yield* Database;
+          yield* seedOwner(ownerId);
           yield* sql`
-            insert into courses (id, name, target_language)
-            values (${courseId}, 'Französisch', 'fr')
+            insert into courses (id, owner_id, name, target_language)
+            values (${courseId}, ${ownerId}, 'Französisch', 'fr')
           `;
           yield* sql`
             insert into pages (
@@ -40,7 +49,7 @@ describe('import sessions', () => {
           `;
 
           const repository = yield* ImportRepository;
-          const pending = yield* repository.listPendingImportSessions;
+          const pending = yield* repository.listPendingImportSessions(ownerId);
           expect(pending).toEqual([
             expect.objectContaining({
               id: sessionId,
@@ -66,6 +75,42 @@ describe('import sessions', () => {
               ],
             }),
           );
+        }).pipe(
+          Effect.provide(ImportRepositoryLive),
+          Effect.provide(testDatabaseLayer(database.url)),
+        ),
+      ),
+    );
+  });
+
+  it('lists only the open sessions of the given person', async () => {
+    await Effect.runPromise(
+      withMigratedTestDatabase((database) =>
+        Effect.gen(function* () {
+          const sql = yield* Database;
+          yield* seedOwner(ownerId);
+          yield* seedOwner(otherOwnerId);
+          yield* sql`
+            insert into courses (id, owner_id, name, target_language) values
+              (${courseId}, ${ownerId}, 'Französisch', 'fr'),
+              (${otherCourseId}, ${otherOwnerId}, 'Französisch', 'fr')
+          `;
+          yield* sql`
+            insert into pages (id, course_id, import_session_id, image_path)
+            values
+              ('11111111-1111-4111-8111-111111111111', ${courseId}, ${sessionId}, 'pages/one.png'),
+              ('22222222-2222-4222-8222-222222222222', ${otherCourseId}, ${otherSessionId}, 'pages/two.png')
+          `;
+
+          const repository = yield* ImportRepository;
+          expect(
+            sessionIds(yield* repository.listPendingImportSessions(ownerId)),
+          ).toEqual([sessionId]);
+          expect(
+            sessionIds(
+              yield* repository.listPendingImportSessions(otherOwnerId),
+            ),
+          ).toEqual([otherSessionId]);
         }).pipe(
           Effect.provide(ImportRepositoryLive),
           Effect.provide(testDatabaseLayer(database.url)),

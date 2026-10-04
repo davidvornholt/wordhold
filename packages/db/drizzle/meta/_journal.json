@@ -169,6 +169,13 @@
       "when": 1790697398270,
       "tag": "0023_woozy_black_knight",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1791128547098,
+      "tag": "0024_condemned_stature",
+      "breakpoints": true
     }
   ]
 }

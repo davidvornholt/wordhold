@@ -1,12 +1,14 @@
 import { sql } from 'drizzle-orm';
 import {
   check,
+  index,
   pgEnum,
   pgTable,
   text,
   timestamp,
   uuid,
 } from 'drizzle-orm/pg-core';
+import { user } from './auth';
 import { answerDirectionEnum, answerDirections } from './directions';
 
 export const languageCodes = ['de', 'en', 'es', 'fr'] as const;
@@ -23,11 +25,17 @@ export const courseKindEnum = pgEnum('course_kind', courseKinds);
 
 // A course is one language or one subject the learner studies: the
 // organizing unit for books, pages, entries, and practice sessions. Sessions
-// are always course-scoped.
+// are always course-scoped. Each course belongs to one person, and all of its
+// data goes with it when that person is deleted.
 export const courses = pgTable(
   'courses',
   {
     id: uuid('id').primaryKey().defaultRandom(),
+    // Nullable only until the administrator claims the courses created before
+    // accounts existed; see the package README for the second phase.
+    ownerId: text('owner_id').references(() => user.id, {
+      onDelete: 'cascade',
+    }),
     name: text('name').notNull(),
     kind: courseKindEnum('kind').notNull().default('language'),
     targetLanguage: languageEnum('target_language').notNull(),
@@ -45,6 +53,7 @@ export const courses = pgTable(
       .defaultNow(),
   },
   (table) => [
+    index('courses_owner_id').on(table.ownerId),
     check(
       'courses_directions_non_empty',
       sql`cardinality(${table.directions}) > 0`,

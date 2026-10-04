@@ -1,4 +1,5 @@
 import { expect, it } from 'bun:test';
+import { untrackedAiUsage } from '@wordhold/ai/testing/usage';
 import { Database } from '@wordhold/db/client';
 import {
   testDatabaseLayer,
@@ -90,6 +91,7 @@ it('plans without writes, refuses concurrent changes, and preserves original gra
           judge: () =>
             Effect.die('Deterministic notation should not call a model'),
         }),
+        Effect.provide(untrackedAiUsage),
       ),
     ),
   );
@@ -121,6 +123,7 @@ it('refuses to reassess a card from a terms course', async () => {
           judge: () =>
             Effect.die('A term must not reach the translation judge'),
         }),
+        Effect.provide(untrackedAiUsage),
       ),
     ),
   );

@@ -23,10 +23,11 @@ export const FragileList = ({
   renderPracticeAction,
 }: {
   readonly entries: ReadonlyArray<FragileEntry>;
-  readonly renderPracticeAction: (
-    group: FragileGroup,
-    label: string,
-  ) => ReactNode;
+  // Null where the list is only read, such as in the administrator's view
+  // of another person.
+  readonly renderPracticeAction:
+    | ((group: FragileGroup, label: string) => ReactNode)
+    | null;
 }) => {
   if (entries.length === 0) {
     return null;
@@ -38,16 +39,18 @@ export const FragileList = ({
       <p className="text-muted-foreground text-sm">
         {listedNouns(entries)} zuletzt mehrfach danebengegangen.
       </p>
-      <div className="flex flex-wrap gap-2">
-        {groups.map((group) => (
-          <div key={group.courseId}>
-            {renderPracticeAction(
-              group,
-              fragileActionLabel(group, groups.length),
-            )}
-          </div>
-        ))}
-      </div>
+      {renderPracticeAction === null ? null : (
+        <div className="flex flex-wrap gap-2">
+          {groups.map((group) => (
+            <div key={group.courseId}>
+              {renderPracticeAction(
+                group,
+                fragileActionLabel(group, groups.length),
+              )}
+            </div>
+          ))}
+        </div>
+      )}
       <ul className="divide-y divide-border border-border border-y">
         {entries.map((entry) => (
           <li

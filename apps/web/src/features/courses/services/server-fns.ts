@@ -1,12 +1,14 @@
 import { createServerFn } from '@tanstack/react-start';
-import { getRequest } from '@tanstack/react-start/server';
 import { BedrockProvider } from '@wordhold/ai/providers/bedrock';
 import { SentenceGen } from '@wordhold/ai/sentence';
 import { Tts } from '@wordhold/ai/tts';
 import { PgLive } from '@wordhold/db/client';
 import { Effect, Layer, ManagedRuntime, Schema } from 'effect';
-import { requireSession } from '../../../shared/auth/require-session';
-import { authRuntime } from '../../../shared/auth/runtime';
+import { billedTo, UsageLedger } from '../../../shared/ai/usage-ledger';
+import {
+  requestMember,
+  requestOwnedEntries,
+} from '../../../shared/auth/member-request';
 import { StorageLive } from '../../../shared/storage/server';
 import { decodeSetCourseDirections } from '../schemas/course-directions';
 import {
@@ -50,12 +52,13 @@ const vocabularyDependencies = Layer.mergeAll(
   SentenceGen.Default.pipe(Layer.provide(BedrockProvider.live)),
   StorageLive,
   Tts.Default,
+  UsageLedger.live.pipe(Layer.provide(PgLive)),
 );
 const vocabularyRuntime = ManagedRuntime.make(
-  Layer.merge(
+  Layer.mergeAll(
     VocabularyExampleService.Default,
     VocabularyEntryService.Default,
-  ).pipe(Layer.provide(vocabularyDependencies)),
+  ).pipe(Layer.provideMerge(vocabularyDependencies)),
 );
 
 const decodeId = Schema.decodeUnknownSync(Schema.UUID);
@@ -64,7 +67,7 @@ const decodeIds = Schema.decodeUnknownSync(Schema.Array(Schema.UUID));
 export const getCourseDirections = createServerFn()
   .validator(decodeId)
   .handler(async ({ data: courseId }) => {
-    await authRuntime.runPromise(requireSession(getRequest().headers));
+    await requestMember({ courses: [courseId] });
     return courseRuntime.runPromise(
       Effect.flatMap(CourseService, (service) =>
         service.getDirections(courseId),
@@ -75,7 +78,7 @@ export const getCourseDirections = createServerFn()
 export const setCourseDirections = createServerFn({ method: 'POST' })
   .validator(decodeSetCourseDirections)
   .handler(async ({ data }) => {
-    await authRuntime.runPromise(requireSession(getRequest().headers));
+    await requestMember({ courses: [data.courseId] });
     return courseRuntime.runPromise(
       Effect.flatMap(CourseService, (service) => service.setDirections(data)),
     );
@@ -84,16 +87,18 @@ export const setCourseDirections = createServerFn({ method: 'POST' })
 export const createSubject = createServerFn({ method: 'POST' })
   .validator(decodeCreateSubject)
   .handler(async ({ data }) => {
-    await authRuntime.runPromise(requireSession(getRequest().headers));
+    const member = await requestMember();
     return courseRuntime.runPromise(
-      Effect.flatMap(CourseService, (service) => service.createSubject(data)),
+      Effect.flatMap(CourseService, (service) =>
+        service.createSubject(member.userId, data),
+      ),
     );
   });
 
 export const renameSubject = createServerFn({ method: 'POST' })
   .validator(decodeRenameSubject)
   .handler(async ({ data }) => {
-    await authRuntime.runPromise(requireSession(getRequest().headers));
+    await requestMember({ courses: [data.courseId] });
     return courseRuntime.runPromise(
       Effect.flatMap(CourseService, (service) => service.renameSubject(data)),
     );
@@ -102,7 +107,7 @@ export const renameSubject = createServerFn({ method: 'POST' })
 export const getCourseOutline = createServerFn()
   .validator(decodeId)
   .handler(async ({ data: courseId }) => {
-    await authRuntime.runPromise(requireSession(getRequest().headers));
+    await requestMember({ courses: [courseId] });
     return courseRuntime.runPromise(
       Effect.flatMap(CourseService, (service) => service.getOutline(courseId)),
     );
@@ -111,7 +116,7 @@ export const getCourseOutline = createServerFn()
 export const createCourseBook = createServerFn({ method: 'POST' })
   .validator(decodeCreateCourseBook)
   .handler(async ({ data }) => {
-    await authRuntime.runPromise(requireSession(getRequest().headers));
+    await requestMember({ courses: [data.courseId] });
     return courseRuntime.runPromise(
       Effect.flatMap(CourseService, (service) => service.createBook(data)),
     );
@@ -120,7 +125,10 @@ export const createCourseBook = createServerFn({ method: 'POST' })
 export const renameCourseBook = createServerFn({ method: 'POST' })
   .validator(decodeRenameCourseBook)
   .handler(async ({ data }) => {
-    await authRuntime.runPromise(requireSession(getRequest().headers));
+    await requestMember({
+      courses: [data.courseId],
+      books: [data.bookId],
+    });
     return courseRuntime.runPromise(
       Effect.flatMap(CourseService, (service) => service.renameBook(data)),
     );
@@ -129,7 +137,10 @@ export const renameCourseBook = createServerFn({ method: 'POST' })
 export const createCourseUnit = createServerFn({ method: 'POST' })
   .validator(decodeCreateCourseUnit)
   .handler(async ({ data }) => {
-    await authRuntime.runPromise(requireSession(getRequest().headers));
+    await requestMember({
+      courses: [data.courseId],
+      books: [data.bookId],
+    });
     return courseRuntime.runPromise(
       Effect.flatMap(CourseService, (service) => service.createUnit(data)),
     );
@@ -138,7 +149,8 @@ export const createCourseUnit = createServerFn({ method: 'POST' })
 export const reorderCourseUnits = createServerFn({ method: 'POST' })
   .validator(decodeReorderCourseUnits)
   .handler(async ({ data }) => {
-    await authRuntime.runPromise(requireSession(getRequest().headers));
+    // Only units of this book are reordered, so the unit ids need no check.
+    await requestMember({ courses: [data.courseId], books: [data.bookId] });
     return courseRuntime.runPromise(
       Effect.flatMap(CourseService, (service) => service.reorderUnits(data)),
     );
@@ -147,7 +159,7 @@ export const reorderCourseUnits = createServerFn({ method: 'POST' })
 export const listCourseVocabulary = createServerFn()
   .validator(decodeId)
   .handler(async ({ data: courseId }) => {
-    await authRuntime.runPromise(requireSession(getRequest().headers));
+    await requestMember({ courses: [courseId] });
     return courseRuntime.runPromise(
       Effect.flatMap(CourseService, (service) =>
         service.listVocabulary(courseId),
@@ -158,40 +170,51 @@ export const listCourseVocabulary = createServerFn()
 export const generateVocabularyExample = createServerFn({ method: 'POST' })
   .validator(decodeId)
   .handler(async ({ data: entryId }) => {
-    await authRuntime.runPromise(requireSession(getRequest().headers));
+    const member = await requestMember({ entries: [entryId] });
     return vocabularyRuntime.runPromise(
       Effect.flatMap(VocabularyExampleService, (service) =>
         service.generate(entryId),
-      ),
+      ).pipe(billedTo(member.userId)),
     );
   });
 
 export const prepareVocabularyExamples = createServerFn({ method: 'POST' })
   .validator(decodeIds)
   .handler(async ({ data: entryIds }) => {
-    await authRuntime.runPromise(requireSession(getRequest().headers));
+    const { member, owned } = await requestOwnedEntries(entryIds);
     return vocabularyRuntime.runPromise(
       Effect.flatMap(VocabularyExampleService, (service) =>
-        service.prepare(entryIds),
-      ),
+        service.prepare(owned),
+      ).pipe(billedTo(member.userId)),
     );
   });
 
 export const createVocabularyEntry = createServerFn({ method: 'POST' })
   .validator(decodeCreateVocabularyEntry)
   .handler(async ({ data }) => {
-    await authRuntime.runPromise(requireSession(getRequest().headers));
+    const member = await requestMember({
+      courses: [data.courseId],
+      books: [data.bookId],
+      units: data.unitId === null ? [] : [data.unitId],
+    });
     return vocabularyRuntime.runPromise(
-      Effect.flatMap(VocabularyEntryService, (service) => service.create(data)),
+      Effect.flatMap(VocabularyEntryService, (service) =>
+        service.create(data),
+      ).pipe(billedTo(member.userId)),
     );
   });
 
 export const updateVocabularyEntry = createServerFn({ method: 'POST' })
   .validator(decodeUpdateVocabularyEntry)
   .handler(async ({ data }) => {
-    await authRuntime.runPromise(requireSession(getRequest().headers));
+    const member = await requestMember({
+      courses: [data.courseId],
+      entries: [data.entryId],
+    });
     return vocabularyRuntime.runPromise(
-      Effect.flatMap(VocabularyEntryService, (service) => service.update(data)),
+      Effect.flatMap(VocabularyEntryService, (service) =>
+        service.update(data),
+      ).pipe(billedTo(member.userId)),
     );
   });
 
@@ -199,7 +222,10 @@ export const updateVocabularyEntry = createServerFn({ method: 'POST' })
 export const deleteCourseEntry = createServerFn({ method: 'POST' })
   .validator(decodeDeleteEntry)
   .handler(async ({ data }) => {
-    await authRuntime.runPromise(requireSession(getRequest().headers));
+    await requestMember({
+      courses: [data.courseId],
+      entries: [data.entryId],
+    });
     return vocabularyRuntime.runPromise(
       Effect.flatMap(VocabularyEntryService, (service) => service.remove(data)),
     );
@@ -210,11 +236,11 @@ export const generateVocabularyDraftExample = createServerFn({
 })
   .validator(decodeVocabularyExampleRequest)
   .handler(async ({ data }) => {
-    await authRuntime.runPromise(requireSession(getRequest().headers));
+    const member = await requestMember({ courses: [data.courseId] });
     return vocabularyRuntime.runPromise(
       Effect.flatMap(VocabularyEntryService, (service) =>
         service.generateExample(data),
-      ),
+      ).pipe(billedTo(member.userId)),
     );
   });
 
@@ -223,21 +249,25 @@ export const translateVocabularyDraftExample = createServerFn({
 })
   .validator(decodeVocabularyTranslationRequest)
   .handler(async ({ data }) => {
-    await authRuntime.runPromise(requireSession(getRequest().headers));
+    const member = await requestMember({ courses: [data.courseId] });
     return vocabularyRuntime.runPromise(
       Effect.flatMap(VocabularyEntryService, (service) =>
         service.translateExample(data),
-      ),
+      ).pipe(billedTo(member.userId)),
     );
   });
 
 export const suggestVocabularyTranslation = createServerFn({ method: 'POST' })
   .validator(decodeVocabularyTranslationSuggestion)
   .handler(async ({ data }) => {
-    await authRuntime.runPromise(requireSession(getRequest().headers));
+    const member = await requestMember({
+      courses: [data.courseId],
+      books: [data.bookId],
+      units: data.unitId === null ? [] : [data.unitId],
+    });
     return vocabularyRuntime.runPromise(
       Effect.flatMap(VocabularyEntryService, (service) =>
         service.suggestTranslation(data),
-      ),
+      ).pipe(billedTo(member.userId)),
     );
   });

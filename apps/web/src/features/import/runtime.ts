@@ -3,18 +3,21 @@ import { BedrockProvider } from '@wordhold/ai/providers/bedrock';
 import { Tts } from '@wordhold/ai/tts';
 import { PgLive } from '@wordhold/db/client';
 import { Layer, ManagedRuntime } from 'effect';
-import { OwnerRepositoryLive } from '../../shared/auth/owner-repository';
+import { UsageLedger } from '../../shared/ai/usage-ledger';
+import { MemberRepositoryLive } from '../../shared/auth/member-repository';
 import { MediaRepositoryLive } from '../../shared/storage/media-service';
 import { StorageLive } from '../../shared/storage/server';
 import { AudioGenerationStoreLive } from './services/audio-generation-store';
 import { ImportRepositoryLive } from './services/repository-live';
 
+// Ownership checks query the database directly, so it stays in the runtime.
 const databaseServices = Layer.mergeAll(
   AudioGenerationStoreLive,
   ImportRepositoryLive,
-  OwnerRepositoryLive,
+  MemberRepositoryLive,
   MediaRepositoryLive,
-).pipe(Layer.provide(PgLive));
+  UsageLedger.live,
+).pipe(Layer.provideMerge(PgLive));
 
 const extraction = Extraction.Default.pipe(Layer.provide(BedrockProvider.live));
 

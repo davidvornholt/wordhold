@@ -4,7 +4,10 @@ import type { ExtractionResult } from '@wordhold/ai/extraction';
 import { SentenceGen } from '@wordhold/ai/sentence';
 import { Cause, Effect } from 'effect';
 import { sentenceRuntime } from '../../shared/ai/runtime';
-import { requireSession } from '../../shared/auth/require-session';
+import { billedTo } from '../../shared/ai/usage-ledger';
+import type { Member } from '../../shared/auth/member-repository';
+import type { OwnedReferences } from '../../shared/auth/ownership';
+import { requireOwner } from '../../shared/auth/require-member';
 import { englishNames } from '../../shared/languages';
 import { requireString } from '../../shared/validate/input';
 import { decodeGeneratedExample } from '../../shared/vocabulary/entry-fields';
@@ -26,10 +29,16 @@ import { discardPendingImportSession } from './services/discard-page';
 import { retryPendingExtraction } from './services/extraction-retry';
 import { ImportRepository } from './services/repository';
 
-// Log nested error messages before a failure leaves the server:
-// the learner sees the typed message, the log keeps the provider diagnostic.
-const authenticated = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
-  Effect.zipRight(requireSession(getRequest().headers), effect).pipe(
+// Runs `effect` for the signed-in member once every record the request names
+// is theirs, and bills its AI requests to them. Nested error messages are
+// logged before a failure leaves the server: the learner sees the typed
+// message, the log keeps the provider diagnostic.
+const asMember = <A, E, R>(
+  owned: OwnedReferences,
+  effect: (member: Member) => Effect.Effect<A, E, R>,
+) =>
+  requireOwner(getRequest().headers, owned).pipe(
+    Effect.flatMap((member) => effect(member).pipe(billedTo(member.userId))),
     Effect.tapErrorCause((cause) =>
       Effect.logError(
         'import request failed',
@@ -40,10 +49,10 @@ const authenticated = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
 
 export const listCourses = createServerFn().handler(() =>
   importRuntime.runPromise(
-    authenticated(
+    asMember({}, (member) =>
       Effect.gen(function* () {
         const repository = yield* ImportRepository;
-        return yield* repository.listOrSeedCourses;
+        return yield* repository.listOrSeedCourses(member.userId);
       }),
     ),
   ),
@@ -53,7 +62,7 @@ export const getCourse = createServerFn()
   .validator(requireString)
   .handler(({ data }) =>
     importRuntime.runPromise(
-      authenticated(
+      asMember({ courses: [data] }, () =>
         Effect.gen(function* () {
           const repository = yield* ImportRepository;
           const course = yield* repository.getCourse(data);
@@ -69,10 +78,10 @@ export const getCourse = createServerFn()
 
 export const listPendingImportSessions = createServerFn().handler(() =>
   importRuntime.runPromise(
-    authenticated(
+    asMember({}, (member) =>
       Effect.gen(function* () {
         const repository = yield* ImportRepository;
-        return yield* repository.listPendingImportSessions;
+        return yield* repository.listPendingImportSessions(member.userId);
       }),
     ),
   ),
@@ -82,7 +91,7 @@ export const getImportSession = createServerFn()
   .validator(requireString)
   .handler(({ data }) =>
     importRuntime.runPromise(
-      authenticated(
+      asMember({ importSessions: [data] }, () =>
         Effect.gen(function* () {
           const repository = yield* ImportRepository;
           const session = yield* repository.getImportSession(data);
@@ -97,20 +106,26 @@ export const getImportSession = createServerFn()
   );
 
 export const listAudioRecoveryPages = createServerFn().handler(() =>
-  importRuntime.runPromise(authenticated(audioRecoveryPages)),
+  importRuntime.runPromise(
+    asMember({}, (member) => audioRecoveryPages(member.userId)),
+  ),
 );
 
 export const discardImportSession = createServerFn({ method: 'POST' })
   .validator(requireString)
   .handler(({ data }) =>
-    importRuntime.runPromise(authenticated(discardPendingImportSession(data))),
+    importRuntime.runPromise(
+      asMember({ importSessions: [data] }, () =>
+        discardPendingImportSession(data),
+      ),
+    ),
   );
 
 export const getPage = createServerFn()
   .validator(requireString)
   .handler(({ data }) =>
     importRuntime.runPromise(
-      authenticated(
+      asMember({ pages: [data] }, () =>
         Effect.gen(function* () {
           const repository = yield* ImportRepository;
           const row = yield* repository.getPage(data);
@@ -138,7 +153,7 @@ export const retryExtraction = createServerFn({ method: 'POST' })
   .validator(requireString)
   .handler(({ data }) =>
     importRuntime.runPromise(
-      authenticated(
+      asMember({ pages: [data] }, () =>
         retryPendingExtraction(data).pipe(
           Effect.map((updated) => ({
             ...updated,
@@ -153,7 +168,7 @@ export const retryAudio = createServerFn({ method: 'POST' })
   .validator(requireString)
   .handler(({ data }) =>
     importRuntime.runPromise(
-      authenticated(
+      asMember({ pages: [data] }, () =>
         retryPageAudio(data).pipe(Effect.map(serializableAudioReport)),
       ),
     ),
@@ -162,7 +177,7 @@ export const retryAudio = createServerFn({ method: 'POST' })
 // A draft can only be worked on while its page awaits verification.
 const editablePage = (pageId: string) =>
   importRuntime.runPromise(
-    authenticated(
+    asMember({ pages: [pageId] }, (member) =>
       Effect.gen(function* () {
         const repository = yield* ImportRepository;
         const found = yield* repository.getPage(pageId);
@@ -174,7 +189,7 @@ const editablePage = (pageId: string) =>
             message: 'Diese Seite kann nicht mehr bearbeitet werden.',
           });
         }
-        return found;
+        return { ...found, member };
       }),
     ),
   );
@@ -193,7 +208,7 @@ export const translateDraftExample = createServerFn({ method: 'POST' })
           targetLanguage: englishNames[page.course.targetLanguage],
         });
         return { native: translated.native };
-      }),
+      }).pipe(billedTo(page.member.userId)),
     );
   });
 
@@ -224,6 +239,6 @@ export const generateDraftExample = createServerFn({ method: 'POST' })
               }),
           ),
         );
-      }),
+      }).pipe(billedTo(page.member.userId)),
     );
   });

@@ -6,6 +6,16 @@ The root `Dockerfile` builds the app with TanStack Start's Nitro Bun preset and 
 
 `GET /api/health` returns `200` only after a real PostgreSQL query succeeds. It returns `503` when the database is unavailable and always disables response caching. Runtime infrastructure should use this endpoint for readiness after migrations.
 
+## Accounts
+
+The GitHub account in `GITHUB_ALLOWED_USER_ID` is the administrator. It signs in with GitHub and manages everyone else at `/people`. Everyone else signs in with a passkey that they save through an invitation link.
+
+Passkeys are bound to the host name of `WORDHOLD_PUBLIC_URL`. Changing the domain makes every saved passkey unusable, and each person then needs a recovery code. Invitation and recovery links work once and expire after 24 hours. Only a digest of the code is stored, so a lost link cannot be shown again; issue a new code instead.
+
+## AI costs
+
+Every Bedrock and Polly request is recorded in `ai_usage` against the person it was made for, with the tokens or characters the provider reported. Estimates use the prices in `packages/ai/src/cost.ts`, and each request stores the price it was estimated with. Update those prices and their `checkedOn` date when AWS changes them or a production model changes. A request without a price or reported usage is counted with an unknown cost, not zero. The AWS bill is authoritative.
+
 ## Provider credentials
 
 All production AI tasks use Claude Sonnet 5.5 through Bedrock's `global.anthropic.claude-sonnet-5-5` inference profile with adaptive thinking and medium effort. The shared provider fixes the model and effort for page extraction, vocabulary and definition grading, definition writing, sentences, and translations. Bedrock instructs the model to return JSON; every answer is decoded with its Effect schema before use. Extraction makes one model call even for low-confidence pages.

@@ -21,7 +21,7 @@ import {
   type Page,
 } from './repository';
 
-const listPendingImportSessions = (sql: Database) =>
+const listPendingImportSessions = (sql: Database, ownerId: string) =>
   sql<{
     id: string;
     courseId: string;
@@ -45,6 +45,7 @@ const listPendingImportSessions = (sql: Database) =>
         and max(pages.import_position) = max(pages.import_expected_count) - 1 as "isComplete"
     from pages
     inner join courses on pages.course_id = courses.id
+    where courses.owner_id = ${ownerId}
     group by pages.import_session_id, pages.course_id, courses.name
     having count(*) filter(where pages.status = 'awaiting_verification') > 0
     order by min(pages.captured_at), pages.import_session_id
@@ -118,7 +119,7 @@ type AudioRecoveryRow = {
   readonly verifiedAt: Date;
 };
 
-const listAudioRecoveryPages = (sql: Database) =>
+const listAudioRecoveryPages = (sql: Database, ownerId: string) =>
   sql<AudioRecoveryRow>`
     select pages.id,
       pages.course_id as "courseId",
@@ -134,7 +135,8 @@ const listAudioRecoveryPages = (sql: Database) =>
     inner join courses on courses.id = pages.course_id
     inner join entries on entries.page_id = pages.id
     left join entry_audio on entry_audio.entry_id = entries.id
-    where pages.status = 'verified'
+    where courses.owner_id = ${ownerId}
+      and pages.status = 'verified'
       and pages.verified_at is not null
     group by pages.id, pages.course_id, courses.id, courses.name,
       entries.id, entries.target_text, courses.target_language,
@@ -172,9 +174,11 @@ const listAudioRecoveryPages = (sql: Database) =>
   );
 
 export const pageRepositoryLive = (sql: Database) => ({
-  listPendingImportSessions: listPendingImportSessions(sql),
+  listPendingImportSessions: (ownerId: string) =>
+    listPendingImportSessions(sql, ownerId),
   getImportSession: (sessionId: string) => getImportSession(sql, sessionId),
-  listAudioRecoveryPages: listAudioRecoveryPages(sql),
+  listAudioRecoveryPages: (ownerId: string) =>
+    listAudioRecoveryPages(sql, ownerId),
   getPage: (pageId: string) =>
     sql<{
       pageId: string;

@@ -1,5 +1,6 @@
 import { Effect } from 'effect';
 import { BedrockProvider, productionModelId } from '../providers/bedrock';
+import type { AiUsage } from '../usage';
 import { DefinitionError } from './error';
 import { generateDefinitionOutput } from './generate';
 import {
@@ -37,13 +38,14 @@ export class DefinitionJudge extends Effect.Service<DefinitionJudge>()(
       // stored points, so it is rejected like any other malformed answer.
       const judge = (
         input: DefinitionJudgeInput,
-      ): Effect.Effect<DefinitionVerdictData, DefinitionError> =>
-        generateDefinitionOutput(
+      ): Effect.Effect<DefinitionVerdictData, DefinitionError, AiUsage> =>
+        generateDefinitionOutput({
           model,
-          DefinitionVerdict,
-          definitionJudgePrompt(input),
-          judgeFailure,
-        ).pipe(
+          operation: 'definition-grading',
+          schema: DefinitionVerdict,
+          prompt: definitionJudgePrompt(input),
+          message: judgeFailure,
+        }).pipe(
           Effect.filterOrFail(
             (verdict) => verdict.keyPoints.length === input.keyPoints.length,
             (verdict) =>

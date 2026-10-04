@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import { untrackedAiUsage } from '@wordhold/ai/testing/usage';
 import type { cards } from '@wordhold/db/schema/practice';
 import { Effect, Layer } from 'effect';
 import { ratings } from '../../../shared/grading/rating';
@@ -141,6 +142,7 @@ const runSubmit = async (
   return Effect.runPromise(
     Effect.flatMap(PracticeService, (service) => service.submit(data)).pipe(
       Effect.provide(PracticeService.Default.pipe(Layer.provide(stores))),
+      Effect.provide(untrackedAiUsage),
     ),
   );
 };

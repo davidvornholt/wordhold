@@ -1,9 +1,7 @@
 import { createServerFn } from '@tanstack/react-start';
-import { getRequest } from '@tanstack/react-start/server';
 import { PgLive } from '@wordhold/db/client';
 import { Effect, Layer, ManagedRuntime, Schema } from 'effect';
-import { requireSession } from '../../../shared/auth/require-session';
-import { authRuntime } from '../../../shared/auth/runtime';
+import { requestMember } from '../../../shared/auth/member-request';
 import {
   PlaceSelection,
   VocabularySelection,
@@ -40,7 +38,8 @@ const decodeSelectionRequest = Schema.decodeUnknownSync(
 export const getLearnPass = createServerFn()
   .validator(decodePassRequest)
   .handler(async ({ data }) => {
-    await authRuntime.runPromise(requireSession(getRequest().headers));
+    // Every query below is limited to this course.
+    await requestMember({ courses: [data.courseId] });
     return learningRuntime.runPromise(
       Effect.flatMap(LearningService, (service) =>
         service.getPass(data.courseId, data.place ?? null),
@@ -51,7 +50,7 @@ export const getLearnPass = createServerFn()
 export const getLearnSelection = createServerFn()
   .validator(decodeSelectionRequest)
   .handler(async ({ data }) => {
-    await authRuntime.runPromise(requireSession(getRequest().headers));
+    await requestMember({ courses: [data.courseId] });
     return learningRuntime.runPromise(
       Effect.flatMap(LearningService, (service) =>
         service.getSelection(data.courseId, data.selection),
@@ -62,7 +61,7 @@ export const getLearnSelection = createServerFn()
 export const introduceCard = createServerFn({ method: 'POST' })
   .validator(decodeIntroductionRequest)
   .handler(async ({ data }) => {
-    await authRuntime.runPromise(requireSession(getRequest().headers));
+    await requestMember({ courses: [data.courseId] });
     return learningRuntime.runPromise(
       Effect.flatMap(LearningService, (service) =>
         service.introduce(data.courseId, data.cardId),

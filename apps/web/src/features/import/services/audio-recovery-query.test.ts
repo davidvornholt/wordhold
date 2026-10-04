@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import { untrackedAiUsage } from '@wordhold/ai/testing/usage';
 import { Tts } from '@wordhold/ai/tts';
 import { TtsError } from '@wordhold/ai/tts/error';
 import { Effect, Either, Option } from 'effect';
@@ -15,6 +16,7 @@ import {
   makeStorage,
 } from './test-services';
 
+const ownerId = 'owner';
 const pageId = 'd9428888-122b-41e1-b85c-61cd3cbb3210';
 const courseId = 'd9428888-122b-41e1-b85c-61cd3cbb3211';
 const entryId = 'd9428888-122b-41e1-b85c-61cd3cbb3212';
@@ -34,11 +36,11 @@ describe('audioRecoveryPages', () => {
       message: 'database unavailable',
     });
     const result = await Effect.runPromise(
-      audioRecoveryPages.pipe(
+      audioRecoveryPages(ownerId).pipe(
         Effect.provideService(
           ImportRepository,
           makeImportRepository({
-            listAudioRecoveryPages: Effect.fail(cause),
+            listAudioRecoveryPages: () => Effect.fail(cause),
           }),
         ),
         Effect.either,
@@ -54,9 +56,8 @@ describe('audioRecoveryPages', () => {
     let synthesize: Tts['synthesize'] = () =>
       Effect.fail(new TtsError({ cause: new Error('provider unavailable') }));
     const repository = makeImportRepository({
-      listAudioRecoveryPages: Effect.sync(() =>
-        verified && missingAudio ? [recoveryPage] : [],
-      ),
+      listAudioRecoveryPages: () =>
+        Effect.sync(() => (verified && missingAudio ? [recoveryPage] : [])),
       verifyPage: () =>
         Effect.sync(() => {
           verified = true;
@@ -92,6 +93,7 @@ describe('audioRecoveryPages', () => {
         Effect.provideService(AudioGenerationStore, audioStore),
         Effect.provideService(Storage, makeStorage()),
         Effect.provideService(Tts, provider),
+        Effect.provide(untrackedAiUsage),
       );
 
     const imported = await Effect.runPromise(
@@ -110,14 +112,16 @@ describe('audioRecoveryPages', () => {
       ),
     );
     expect(imported.audio.pending).toBe(1);
-    expect(await Effect.runPromise(provide(audioRecoveryPages))).toEqual([
-      recoveryPage,
-    ]);
+    expect(
+      await Effect.runPromise(provide(audioRecoveryPages(ownerId))),
+    ).toEqual([recoveryPage]);
 
     synthesize = () => Effect.succeed({ audio: new Uint8Array([1]) });
     expect(
       (await Effect.runPromise(provide(retryPageAudio(pageId)))).pending,
     ).toBe(0);
-    expect(await Effect.runPromise(provide(audioRecoveryPages))).toEqual([]);
+    expect(
+      await Effect.runPromise(provide(audioRecoveryPages(ownerId))),
+    ).toEqual([]);
   });
 });

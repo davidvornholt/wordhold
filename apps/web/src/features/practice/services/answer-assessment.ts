@@ -1,4 +1,5 @@
 import { isDefinitionCorrect } from '@wordhold/ai/definition/schema';
+import type { AiUsage } from '@wordhold/ai/usage';
 import { Effect } from 'effect';
 import {
   type AcceptedAnswer,
@@ -134,7 +135,7 @@ export const gradeAnswer = (input: GradeAnswerInput) => {
   const graded: Effect.Effect<
     AssessedAnswer,
     PracticeDatabaseError | PracticeJudgeError,
-    JudgeCacheStore | PracticeJudge | DefinitionGrader
+    JudgeCacheStore | PracticeJudge | DefinitionGrader | AiUsage
   > =
     input.row.courseKind === 'terms'
       ? gradeDefinition(input)
