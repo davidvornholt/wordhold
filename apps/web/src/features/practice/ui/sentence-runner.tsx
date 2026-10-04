@@ -102,6 +102,12 @@ export const SentenceRunner = ({
           check={check}
           deck={round.length - activeIndex - 1}
           key={prompt.entryId}
+          onAccept={() => {
+            setOutcomes((current) =>
+              new Map(current).set(prompt.entryId, 'correct'),
+            );
+            setDone((current) => new Set(current).add(prompt.entryId));
+          }}
           onNext={() =>
             setDone((current) => new Set(current).add(prompt.entryId))
           }
