@@ -5,7 +5,11 @@ import {
   unitsByBook,
   type WordProgress,
 } from '../../../features/courses/schemas/course-units';
-import type { PlaceSelectionData } from '../../../shared/session/vocabulary-selection';
+import { selectedEntryIds } from '../../../features/practice/schemas/session-request';
+import type {
+  PlaceSelectionData,
+  VocabularySelectionData,
+} from '../../../shared/session/vocabulary-selection';
 import { ActionLink } from '../../../shared/ui/action-link';
 import type { ActionVariant } from '../../../shared/ui/action-styles';
 import { BackLink } from '../../../shared/ui/back-link';
@@ -35,6 +39,19 @@ export const findCoursePlace = (
       ? selection.bookId === search.book
       : selection.unitId === search.unit,
   );
+
+// A book or unit named in the search wins over a hand-picked list of words,
+// given as comma-separated entry IDs.
+export const courseSelection = (
+  place: CoursePlace | undefined,
+  entries: string | undefined,
+): VocabularySelectionData | null => {
+  if (place !== undefined) {
+    return place.selection;
+  }
+  const [first, ...rest] = selectedEntryIds(entries);
+  return first === undefined ? null : { entryIds: [first, ...rest] };
+};
 
 // The search parameters that narrow practice or study to a place. Without a
 // place they cover the whole course, as a subject's list does.

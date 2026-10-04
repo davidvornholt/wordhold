@@ -6,10 +6,7 @@ import { getCourse } from '../../../features/import/server-fns';
 import type { Course } from '../../../features/import/services/repository';
 import { getLearnSelection } from '../../../features/learning/services/server-fns';
 import type { PracticeSession } from '../../../features/practice/schemas/practice-models';
-import {
-  type StudySearchData,
-  selectedEntryIds,
-} from '../../../features/practice/schemas/session-request';
+import type { StudySearchData } from '../../../features/practice/schemas/session-request';
 import { getStudySession } from '../../../features/practice/services/server-fns';
 import {
   directionsWithCards,
@@ -18,7 +15,7 @@ import {
 } from '../../../features/practice/services/session-options';
 import { attachPreparedExamples } from '../../../shared/examples/example-model';
 import type { VocabularySelectionData } from '../../../shared/session/vocabulary-selection';
-import { type CoursePlace, findCoursePlace } from './-course-place';
+import { courseSelection, findCoursePlace } from './-course-place';
 
 const loadLearningMode = async (
   course: Course,
@@ -89,18 +86,6 @@ const loadPracticeMode = async (
   };
 };
 
-// A book or unit named in the search wins over a hand-picked list of words.
-const studySelection = (
-  place: CoursePlace | undefined,
-  entryIds: ReadonlyArray<string>,
-): VocabularySelectionData | null => {
-  if (place !== undefined) {
-    return place.selection;
-  }
-  const [first, ...rest] = entryIds;
-  return first === undefined ? null : { entryIds: [first, ...rest] };
-};
-
 export const loadStudyData = async (
   courseId: string,
   deps: StudySearchData,
@@ -110,7 +95,7 @@ export const loadStudyData = async (
     getCourseOutline({ data: courseId }),
   ]);
   const place = findCoursePlace(outline, deps);
-  const selection = studySelection(place, selectedEntryIds(deps.entries));
+  const selection = courseSelection(place, deps.entries);
   if (selection === null) {
     return {
       availableDirections: [],

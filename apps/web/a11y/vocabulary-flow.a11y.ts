@@ -36,6 +36,21 @@ test('the vocabulary library exposes per-direction dates and cross-unit selectio
   );
 });
 
+test('selected words already met can be practised in their example sentences', async ({
+  page,
+}) => {
+  await page.goto('/?state=vocabulary');
+  await page.getByLabel('memory auswählen').check();
+  const sentences = page.getByRole('button', { name: 'Sätze übersetzen' });
+  await expect(sentences).toBeVisible();
+  assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
+  await sentences.click();
+  await expect(page.locator('body')).toHaveAttribute(
+    'data-fixture',
+    'sentence-practice',
+  );
+});
+
 test('difficult vocabulary can be selected as one practice set', async ({
   page,
 }) => {

@@ -21,9 +21,12 @@ export class SentenceService extends Effect.Service<SentenceService>()(
       const store = yield* SentenceStore;
       const grader = yield* SentenceGrader;
 
-      const getSession = ({ courseId, place }: SentenceSessionRequestData) =>
+      const getSession = ({
+        courseId,
+        selection,
+      }: SentenceSessionRequestData) =>
         Effect.map(
-          store.loadSession(courseId, place),
+          store.loadSession(courseId, selection),
           (items): SentenceSession => ({
             items: items.map((item) => ({ ...item, example: null })),
           }),

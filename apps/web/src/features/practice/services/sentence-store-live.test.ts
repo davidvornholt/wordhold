@@ -12,6 +12,7 @@ import {
   fixtureCourseId,
   fixtureUnitId,
   seedIntroducedCardFixture,
+  unintroducedEntryId,
 } from '../../../shared/testing/introduced-card-fixture';
 import { SentenceStore } from './sentence-store';
 
@@ -51,6 +52,13 @@ describe('SentenceStore', () => {
               bookId: fixtureBookId,
             }),
           ).toEqual([]);
+          // Picked words follow the same rule: one not met yet is left out.
+          const picked = yield* store.loadSession(fixtureCourseId, {
+            entryIds: [firstReviewEntryId, unintroducedEntryId],
+          });
+          expect(picked.map(({ entryId }) => entryId)).toEqual([
+            firstReviewEntryId,
+          ]);
 
           expect(yield* store.readTarget(firstReviewEntryId)).toEqual({
             targetLanguage: 'fr',

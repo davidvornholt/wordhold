@@ -7,10 +7,10 @@ import {
 } from '../../../features/courses/services/server-fns';
 import { VocabularyLibrary } from '../../../features/courses/ui/vocabulary-library';
 import { getCourse } from '../../../features/import/server-fns';
-import { ActionLink } from '../../../shared/ui/action-link';
 import { BackLink } from '../../../shared/ui/back-link';
 import { PageLayout } from '../../../shared/ui/page-layout';
 import { useCourseEntryActions } from './-entry-forms';
+import { SelectionActions } from './-selection-actions';
 
 const VocabularyScreen = () => {
   const { course, directions, entries, filter, place } = Route.useLoaderData();
@@ -42,13 +42,12 @@ const VocabularyScreen = () => {
         initialFilter={filter}
         initialPlaceId={place}
         renderStudyAction={(entryIds, intent) => (
-          <ActionLink
-            params={{ courseId: course.id }}
-            search={{ entries: entryIds.join(','), mode: intent }}
-            to="/courses/$courseId/study"
-          >
-            Auswahl {intent === 'learn' ? 'kennenlernen' : 'üben'}
-          </ActionLink>
+          <SelectionActions
+            courseId={course.id}
+            intent={intent}
+            search={{ entries: entryIds.join(',') }}
+            sentences={true}
+          />
         )}
         layout="by-place"
         subject={course}

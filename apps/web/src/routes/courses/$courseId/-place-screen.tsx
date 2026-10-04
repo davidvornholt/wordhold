@@ -24,6 +24,7 @@ import {
   useCourseEntryActions,
   VocabularyEntryForm,
 } from './-entry-forms';
+import { SelectionActions } from './-selection-actions';
 
 // The screens of a book and of a unit share their learning paths and their
 // word list; only what they cover differs.
@@ -166,17 +167,16 @@ export const PlaceWords = ({
       }
       place={place.unitId === null ? 'book' : 'unit'}
       renderStudyAction={(entryIds, intent) => (
-        <ActionLink
-          params={{ courseId }}
+        <SelectionActions
+          courseId={courseId}
+          intent={intent}
           search={
             entryIds.length === entries.length
-              ? { mode: intent, ...placeSearch(selection) }
-              : { entries: entryIds.join(','), mode: intent }
+              ? placeSearch(selection)
+              : { entries: entryIds.join(',') }
           }
-          to="/courses/$courseId/study"
-        >
-          Auswahl {intent === 'learn' ? 'kennenlernen' : 'üben'}
-        </ActionLink>
+          sentences={course.kind === 'language'}
+        />
       )}
       subject={course}
     />

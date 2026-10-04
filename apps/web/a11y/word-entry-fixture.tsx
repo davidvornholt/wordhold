@@ -61,19 +61,29 @@ export const FixtureVocabularyExample = ({
   />
 );
 
-// Starts learning or practicing the selected words.
+// Starts learning or practicing the selected words, as the routes do.
 export const FixtureStudyAction = ({
   intent,
 }: {
   readonly intent: 'learn' | 'practice';
 }) => (
-  <Button
-    onClick={() =>
-      navigateToFixture(intent === 'learn' ? 'learn-start' : 'study-start')
-    }
-  >
-    Auswahl {intent === 'learn' ? 'kennenlernen' : 'üben'}
-  </Button>
+  <>
+    {intent === 'practice' ? (
+      <Button
+        onClick={() => navigateToFixture('sentence-practice')}
+        variant="outline"
+      >
+        Sätze übersetzen
+      </Button>
+    ) : null}
+    <Button
+      onClick={() =>
+        navigateToFixture(intent === 'learn' ? 'learn-start' : 'study-start')
+      }
+    >
+      Auswahl {intent === 'learn' ? 'kennenlernen' : 'üben'}
+    </Button>
+  </>
 );
 
 type FixturePlaceVocabularyProps = {
