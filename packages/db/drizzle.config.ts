@@ -7,6 +7,7 @@ export default defineConfig({
     './src/schema/auth.ts',
     './src/schema/members.ts',
     './src/schema/ai-usage.ts',
+    './src/schema/bibles.ts',
     './src/schema/courses.ts',
     './src/schema/directions.ts',
     './src/schema/import-sessions.ts',

@@ -10,11 +10,12 @@ export const verse =
 // Two mistakes and a typo in 27 words: still known, though not well.
 export const nearlyRecited =
   'Also hat Gott die Welt geliebt, dass er seinen eingebornen Sohn gab, auf dass alle, die an ihn glauben, nicht verloren gehen, sondern das Leben haben.';
-const psalm = [
+export const psalmVerses = [
   'Der HERR ist mein Hirte; mir wird nichts mangeln.',
   'Er weidet mich auf einer grünen Aue und führet mich zum frischen Wasser.',
   'Er erquicket meine Seele; er führet mich auf rechter Straße um seines Namens willen.',
-].join('\n');
+];
+const psalm = psalmVerses.join('\n');
 
 const storedTexts = [
   { title: verseTitle, text: verse, introduced: true, failures: 1 },

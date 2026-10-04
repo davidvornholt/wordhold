@@ -1,5 +1,7 @@
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
+import type { BibleSummary } from '../../../features/bibles/schemas/bible-models';
+import { listBibles } from '../../../features/bibles/services/server-fns';
 import {
   type CourseOutline,
   courseTotals,
@@ -243,6 +245,7 @@ type SubjectScreenProps = {
   readonly directions: LoaderDirections;
   readonly entries: ReadonlyArray<VocabularyEntry>;
   readonly stats: CourseStats | undefined;
+  readonly bibles: ReadonlyArray<BibleSummary>;
 };
 
 const SubjectScreen = ({
@@ -250,6 +253,7 @@ const SubjectScreen = ({
   directions,
   entries,
   stats,
+  bibles,
 }: SubjectScreenProps) => {
   const { filter } = Route.useSearch();
   const entryActions = useCourseEntryActions(course, entries);
@@ -260,7 +264,7 @@ const SubjectScreen = ({
       entryActions={entryActions}
       entryForm={
         course.kind === 'texts' ? (
-          <TextEntryForm course={course} entries={entries} />
+          <TextEntryForm bibles={bibles} course={course} entries={entries} />
         ) : (
           <TermEntryForm course={course} entries={entries} />
         )
@@ -285,7 +289,8 @@ const SubjectScreen = ({
 // A language is organised into books and units; a subject is one list of
 // terms and a collection one list of texts.
 const CourseScreen = () => {
-  const { course, directions, entries, outline, stats } = Route.useLoaderData();
+  const { bibles, course, directions, entries, outline, stats } =
+    Route.useLoaderData();
   return (
     <PageLayout
       backControl={<BackLink to="/">Übersicht</BackLink>}
@@ -293,6 +298,7 @@ const CourseScreen = () => {
     >
       {isListCourse(course.kind) ? (
         <SubjectScreen
+          bibles={bibles}
           course={course}
           directions={directions}
           entries={entries}
@@ -315,16 +321,19 @@ type LoaderDirections = Awaited<ReturnType<typeof getCourseDirections>>;
 export const Route = createFileRoute('/courses/$courseId/')({
   validateSearch: parseSubjectSearch,
   loader: async ({ params }) => {
-    const [course, outline, directions, entries, dashboard] = await Promise.all(
-      [
+    // Bibles are looked up in from any collection, so they are listed for
+    // every course; the list is short and cheap.
+    const [course, outline, directions, entries, dashboard, bibles] =
+      await Promise.all([
         getCourse({ data: params.courseId }),
         getCourseOutline({ data: params.courseId }),
         getCourseDirections({ data: params.courseId }),
         listCourseVocabulary({ data: params.courseId }),
         getDashboard(),
-      ],
-    );
+        listBibles(),
+      ]);
     return {
+      bibles,
       course,
       directions,
       entries,

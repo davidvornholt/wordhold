@@ -26,6 +26,8 @@ import { CardRail } from '../src/shared/ui/card-rail';
 import { FocusLayout } from '../src/shared/ui/focus-layout';
 import { PageLayout } from '../src/shared/ui/page-layout';
 import { WordCard } from '../src/shared/ui/word-card';
+import { fixtureTextLookup } from './bible-fixture-data';
+import { FixtureBibleLibrary } from './bible-fixtures';
 import { textsSubject } from './course-fixture-data';
 import { fixtureBackControl, fixtureControl } from './fixture-controls';
 import { navigateToFixture } from './fixture-state';
@@ -254,7 +256,13 @@ export const TextsCourseFixture = ({
         enabledDirections={['to_native']}
         entries={entries}
         entryActions={entryActions}
-        entryForm={<NewTextForm createEntry={createEntry} entries={entries} />}
+        entryForm={
+          <NewTextForm
+            createEntry={createEntry}
+            entries={entries}
+            lookup={fixtureTextLookup}
+          />
+        }
         initialFilter="all"
         primaryAction={
           empty
@@ -282,16 +290,19 @@ export const TextsSettingsFixture = () => {
       backControl={fixtureBackControl(name, 'texts-course')}
       title={`${name}: Einstellungen`}
     >
-      <SubjectSettings
-        courseId={collectionId}
-        courses={[{ id: collectionId, name: collectionName }]}
-        kind="texts"
-        name={name}
-        rename={(next) => {
-          setName(next);
-          return Promise.resolve();
-        }}
-      />
+      <div className="flex flex-col gap-10">
+        <SubjectSettings
+          courseId={collectionId}
+          courses={[{ id: collectionId, name: collectionName }]}
+          kind="texts"
+          name={name}
+          rename={(next) => {
+            setName(next);
+            return Promise.resolve();
+          }}
+        />
+        <FixtureBibleLibrary />
+      </div>
     </PageLayout>
   );
 };

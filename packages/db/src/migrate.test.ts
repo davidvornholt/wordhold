@@ -34,6 +34,8 @@ const accountsMigrationHash =
   '11807e707f9b69fa911f86330be224490e390025efec6354bf5888a82841d1c6';
 const textsKindMigrationHash =
   'aa594d379bfe20233c70c96f1aeacb742b377fec7169f18cc9d7a7a4d0fb42c4';
+const biblesMigrationHash =
+  '3bdb05eb80984f57fc406e8b7ef18bf8c552b83ba38252a978b75d7afd11ca2f';
 const fullMigrationTestTimeoutMs = 15_000;
 
 const getMigrationError = (url: string) =>
@@ -57,6 +59,7 @@ it(
             ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', 0, 2, 'pages/one.png'),
             ('dddddddd-dddd-4ddd-8ddd-dddddddddddd', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', 1, 2, 'pages/two.png')
         `;
+          yield* sql`drop table bible_verses, bibles`;
           yield* sql`drop table ai_usage, access_codes, members, passkey`;
           yield* sql`drop type ai_usage_status, ai_provider, access_code_kind`;
           yield* sql`alter table courses drop column owner_id`;
@@ -107,7 +110,8 @@ it(
             ${entryBookMigrationHash},
             ${courseKindMigrationHash},
             ${accountsMigrationHash},
-            ${textsKindMigrationHash}
+            ${textsKindMigrationHash},
+            ${biblesMigrationHash}
           )
         `;
           yield* migrateDatabase(database.url);

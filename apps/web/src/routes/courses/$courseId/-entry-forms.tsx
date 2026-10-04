@@ -1,4 +1,6 @@
 import { useRouter } from '@tanstack/react-router';
+import type { BibleSummary } from '../../../features/bibles/schemas/bible-models';
+import { lookUpBiblePassage } from '../../../features/bibles/services/server-fns';
 import type { VocabularyEntry } from '../../../features/courses/schemas/course-units';
 import {
   createVocabularyEntry,
@@ -73,9 +75,18 @@ export const TermEntryForm = ({ course, entries }: ListEntryFormProps) => {
   );
 };
 
+type TextEntryFormProps = ListEntryFormProps & {
+  // The Bibles the learner uploaded, which a typed reference is looked up in.
+  readonly bibles: ReadonlyArray<BibleSummary>;
+};
+
 // Typing a title with its text into a collection. Each saved text refreshes
 // the loader so the page's counts and list include it.
-export const TextEntryForm = ({ course, entries }: ListEntryFormProps) => {
+export const TextEntryForm = ({
+  course,
+  entries,
+  bibles,
+}: TextEntryFormProps) => {
   const router = useRouter();
   const courseId = course.id;
   return (
@@ -85,6 +96,18 @@ export const TextEntryForm = ({ course, entries }: ListEntryFormProps) => {
         await router.invalidate();
       }}
       entries={entries}
+      lookup={
+        bibles.length === 0
+          ? null
+          : {
+              sources: bibles.map(({ id, abbreviation }) => ({
+                id,
+                label: abbreviation,
+              })),
+              lookUp: (reference, bibleId) =>
+                lookUpBiblePassage({ data: { bibleId, reference } }),
+            }
+      }
     />
   );
 };
