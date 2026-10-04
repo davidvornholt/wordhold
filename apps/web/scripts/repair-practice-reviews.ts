@@ -30,7 +30,7 @@ const administratorUsage = Layer.effect(
     }
     return ledger.forPerson(administrator.userId);
   }),
-).pipe(Layer.provide(UsageLedger.live));
+).pipe(Layer.provide(UsageLedger.live(PgLive)));
 
 const services = PracticeJudge.live.pipe(
   Layer.provide(Judge.Default.pipe(Layer.provide(BedrockProvider.live))),
