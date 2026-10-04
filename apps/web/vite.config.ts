@@ -17,12 +17,14 @@ export default defineConfig({
       // whole bundle before the page becomes interactive. The build fails when
       // one of these imports survives into the client bundle.
       importProtection: {
+        // Workspace sources outside Vite's root have absolute importer paths.
+        include: ['src/**', '**/packages/**'],
         client: {
           specifiers: [
             '@wordhold/db/client',
             '@wordhold/db/drizzle',
-            '@effect/sql-pg',
-            'pg',
+            /^@effect\/sql-pg(?:\/|$)/u,
+            /^pg(?:\/|$)/u,
           ],
         },
       },
