@@ -10,6 +10,7 @@
     "check-types": "tsc --noEmit",
     "lint": "biome check --error-on-warnings .",
     "lint:fix": "biome check --write --error-on-warnings .",
+    "icons:render": "bun scripts/render-app-icons.ts",
     "provider:verify": "bun scripts/verify-ai-provider.ts",
     "test": "bun test",
     "test:a11y": "playwright install chromium && playwright test",

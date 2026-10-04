@@ -28,6 +28,19 @@ const RootDocument = ({ children }: RootDocumentProps) => (
   <html lang={documentLanguage}>
     <head>
       <HeadContent />
+      {/* The theme's background colors, so the browser bar and the installed
+          app's status bar blend into the page. They are written here because
+          `head` keeps only one meta tag per name. */}
+      <meta
+        content="#f5f3ee"
+        media="(prefers-color-scheme: light)"
+        name="theme-color"
+      />
+      <meta
+        content="#111813"
+        media="(prefers-color-scheme: dark)"
+        name="theme-color"
+      />
     </head>
     <body>
       {children}
@@ -64,6 +77,8 @@ export const Route = createRootRoute({
     links: [
       { rel: 'stylesheet', href: appCss },
       { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' },
+      { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
+      { rel: 'manifest', href: '/manifest.webmanifest' },
     ],
   }),
   beforeLoad: ({ location }) =>
