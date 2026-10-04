@@ -2,10 +2,15 @@ import type { CourseKind, LanguageCode } from '@wordhold/db/schema/courses';
 import { formatLearningDateInline } from '../../../shared/dates/learning-date';
 import type { PreparedExampleSentence } from '../../../shared/examples/example-model';
 import { normalizeAnswerForComparison } from '../../../shared/grading/normalize';
+import {
+  compareRecitation,
+  type Recitation,
+} from '../../../shared/grading/recitation';
 import { KeyPointList } from '../../../shared/ui/key-point-list';
 import type { SubmitResult } from '../schemas/practice-models';
 import { feedbackTone, toneDivider, toneText } from './feedback-tone';
 import { PracticeFeedbackExample } from './practice-feedback-example';
+import { RecitationFeedback } from './recitation-feedback';
 
 type FeedbackPanelProps = {
   readonly busy: boolean;
@@ -24,8 +29,10 @@ type FeedbackPanelProps = {
   readonly kind: CourseKind;
 };
 
+// A recited text with a few mistakes still counts, but not as right.
 const feedbackHeading = (
   result: SubmitResult,
+  recitation: Recitation | null,
   repeated: boolean,
   skipped: boolean,
 ): string => {
@@ -34,6 +41,9 @@ const feedbackHeading = (
   }
   if (!result.correct) {
     return skipped ? 'Nicht gewusst' : 'Noch nicht sicher';
+  }
+  if (recitation !== null && recitation.mistakes > 0) {
+    return 'Fast richtig';
   }
   return repeated ? 'Diesmal richtig' : 'Richtig';
 };
@@ -108,42 +118,87 @@ const JudgeNotes = ({
 // textbook or a novel, so "Im Buch" fits both.
 const expectedAnswerLabel = (
   result: SubmitResult,
-  definition: boolean,
+  kind: CourseKind,
 ): string => {
-  if (definition) {
+  if (kind === 'terms') {
     return 'Definition: ';
+  }
+  if (kind === 'texts') {
+    return 'Text: ';
   }
   return result.graded && result.correct ? 'Im Buch: ' : 'Erwartet: ';
 };
 
+const expectedAnswerClass = {
+  language: 'wrap-break-word hyphens-auto font-display text-2xl',
+  terms: 'wrap-break-word hyphens-auto text-lg',
+  texts: 'wrap-break-word hyphens-auto whitespace-pre-line text-lg',
+} as const satisfies Record<CourseKind, string>;
+
 const ExpectedAnswer = ({
   answerLanguage,
-  definition,
+  kind,
   expectedAnswer,
   label,
 }: {
   readonly answerLanguage: LanguageCode;
-  readonly definition: boolean;
+  readonly kind: CourseKind;
   readonly expectedAnswer: string;
   readonly label: string;
 }) => (
   <p>
     <span className="text-muted-foreground text-sm">{label}</span>
-    <span
-      className={
-        definition
-          ? 'wrap-break-word hyphens-auto text-lg'
-          : 'wrap-break-word hyphens-auto font-display text-2xl'
-      }
-      lang={answerLanguage}
-    >
+    <span className={expectedAnswerClass[kind]} lang={answerLanguage}>
       {expectedAnswer}
     </span>
   </p>
 );
 
+// The expected answer, unless the learner's repeats it, and a wrong attempt
+// beside it.
+const AnswerComparison = ({
+  answerLanguage,
+  kind,
+  result,
+  submittedAnswer,
+}: Pick<
+  FeedbackPanelProps,
+  'answerLanguage' | 'kind' | 'result' | 'submittedAnswer'
+>) => {
+  // Only the textbook answer itself makes it redundant: an accepted
+  // alternative still shows the solution the entry intends.
+  const repeatsSubmittedAnswer =
+    normalizeAnswerForComparison(result.expectedAnswer) ===
+    normalizeAnswerForComparison(submittedAnswer);
+  // The field below now asks for the answer to be written out, so the
+  // attempt is kept here for comparison.
+  const showsAttempt =
+    result.graded &&
+    !result.correct &&
+    !repeatsSubmittedAnswer &&
+    submittedAnswer.trim() !== '';
+  return (
+    <>
+      {repeatsSubmittedAnswer ? null : (
+        <ExpectedAnswer
+          answerLanguage={answerLanguage}
+          expectedAnswer={result.expectedAnswer}
+          kind={kind}
+          label={expectedAnswerLabel(result, kind)}
+        />
+      )}
+      {showsAttempt ? (
+        <p className="text-muted-foreground text-sm">
+          Deine Antwort: <span lang={answerLanguage}>{submittedAnswer}</span>
+        </p>
+      ) : null}
+    </>
+  );
+};
+
 // The back of the card: what the answer was, why, and what follows. Rendered
-// inside the card under the prompt once an answer has been judged.
+// inside the card under the prompt once an answer has been judged. A recited
+// text shows the original with every mistake marked in place.
 export const FeedbackPanel = ({
   busy,
   id,
@@ -158,21 +213,14 @@ export const FeedbackPanel = ({
   answerLanguage,
   kind,
 }: FeedbackPanelProps) => {
-  const definition = kind === 'terms';
-  // Only the textbook answer itself makes it redundant: an accepted
-  // alternative still shows the solution the entry intends.
-  const repeatsSubmittedAnswer =
-    normalizeAnswerForComparison(result.expectedAnswer) ===
-    normalizeAnswerForComparison(submittedAnswer);
+  const recitation =
+    kind === 'texts' && result.graded && !skipped
+      ? compareRecitation(result.expectedAnswer, submittedAnswer)
+      : null;
   const tone = feedbackTone(result);
+  // A recited text is never held back for overruling, so only a word or a
+  // definition gets here.
   const pendingWrong = result.graded && !result.stored;
-  // The field below now asks for the answer to be written out, so the
-  // attempt is kept here for comparison.
-  const showsAttempt =
-    result.graded &&
-    !result.correct &&
-    !repeatsSubmittedAnswer &&
-    submittedAnswer.trim() !== '';
 
   return (
     <div
@@ -183,21 +231,21 @@ export const FeedbackPanel = ({
       role="status"
     >
       <p className={`font-medium ${toneText[tone]}`}>
-        {feedbackHeading(result, repeated, skipped)}
+        {feedbackHeading(result, recitation, repeated, skipped)}
       </p>
-      {repeatsSubmittedAnswer ? null : (
-        <ExpectedAnswer
+      {recitation === null ? (
+        <AnswerComparison
           answerLanguage={answerLanguage}
-          definition={definition}
-          expectedAnswer={result.expectedAnswer}
-          label={expectedAnswerLabel(result, definition)}
+          kind={kind}
+          result={result}
+          submittedAnswer={submittedAnswer}
+        />
+      ) : (
+        <RecitationFeedback
+          original={result.expectedAnswer}
+          recitation={recitation}
         />
       )}
-      {showsAttempt ? (
-        <p className="text-muted-foreground text-sm">
-          Deine Antwort: <span lang={answerLanguage}>{submittedAnswer}</span>
-        </p>
-      ) : null}
       {result.graded ? <JudgeNotes result={result} /> : null}
       {result.graded && example !== null ? (
         <PracticeFeedbackExample
@@ -207,7 +255,7 @@ export const FeedbackPanel = ({
           targetLanguage={targetLanguage}
         />
       ) : null}
-      {result.graded && !definition && example === null && busy ? (
+      {result.graded && kind === 'language' && example === null && busy ? (
         <p className="text-muted-foreground text-sm">
           Beispielsatz wird vorbereitet …
         </p>
@@ -217,7 +265,7 @@ export const FeedbackPanel = ({
       ) : null}
       {pendingWrong ? (
         <p className="text-muted-foreground text-sm">
-          {definition
+          {kind === 'terms'
             ? 'Steht doch alles drin? Dann werte die Antwort als richtig. Die Karte kommt etwas früher wieder als nach einer auf Anhieb richtigen Antwort.'
             : 'Vertippt? Dann werte die Antwort als richtig. Die Karte kommt etwas früher wieder als nach einer auf Anhieb richtigen Antwort, und deine Antwort wird nicht als weitere Lösung gespeichert.'}
         </p>

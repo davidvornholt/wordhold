@@ -1,6 +1,6 @@
-import { maximumEntryTextLength } from '@wordhold/ai/extraction/schema';
 import { reviewModes } from '@wordhold/db/schema/practice';
 import { Schema } from 'effect';
+import { maximumMemorizedTextLength } from '../../../shared/vocabulary/entry-fields';
 
 const hoursPerDay = 24;
 const minutesPerHour = 60;
@@ -10,7 +10,9 @@ const maximumIncrementablePostgresInteger = 2_147_483_646;
 
 export const maximumElapsedMs =
   hoursPerDay * minutesPerHour * secondsPerMinute * millisecondsPerSecond;
-export const maximumSubmittedAnswerLength = maximumEntryTextLength;
+// The longest answer is a recited text. Answers the judge grades are held to
+// the entry length once their course is known.
+export const maximumSubmittedAnswerLength = maximumMemorizedTextLength;
 
 export const wrongAnswerResolutions = ['defer', 'again', 'hard'] as const;
 export type WrongAnswerResolution = (typeof wrongAnswerResolutions)[number];

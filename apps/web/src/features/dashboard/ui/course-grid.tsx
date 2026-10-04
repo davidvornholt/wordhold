@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { CourseSubject } from '../../../shared/directions';
+import type { CourseSubject, ListCourseKind } from '../../../shared/directions';
 import type { CourseStats } from '../schemas/dashboard-models';
 import { CourseCard } from './course-card';
 
@@ -15,13 +15,13 @@ type CourseGridProps = {
   readonly renderPracticeAction: (course: Course) => ReactNode;
   readonly renderLearnAction: (course: Course) => ReactNode;
   // What an empty course offers first: photographing a page for a
-  // language, typing a term for a subject.
+  // language, typing a term or text for a subject or collection.
   readonly renderStartAction: (course: Course) => ReactNode;
-  // Adds a subject; languages come with the app.
-  readonly newSubjectAction: ReactNode;
+  // Adds a subject or collection; languages come with the app.
+  readonly renderNewSubjectAction: (kind: ListCourseKind) => ReactNode;
 };
 
-type CourseListProps = Omit<CourseGridProps, 'newSubjectAction'>;
+type CourseListProps = Omit<CourseGridProps, 'renderNewSubjectAction'>;
 
 const CourseList = ({
   courses,
@@ -46,13 +46,33 @@ const CourseList = ({
   </ul>
 );
 
+// Subjects and collections are sections of their own, each with a short
+// explanation while it is still empty.
+const listSections = [
+  {
+    kind: 'terms',
+    heading: 'Fächer',
+    intro:
+      'In einem Fach lernst du Fachbegriffe mit ihrer Definition, zum Beispiel für Chemie oder Biologie.',
+  },
+  {
+    kind: 'texts',
+    heading: 'Sammlungen',
+    intro:
+      'In einer Sammlung lernst du Texte wortwörtlich auswendig, zum Beispiel Bibelverse oder Gedichte.',
+  },
+] as const satisfies ReadonlyArray<{
+  readonly kind: ListCourseKind;
+  readonly heading: string;
+  readonly intro: string;
+}>;
+
 export const CourseGrid = ({
   courses,
-  newSubjectAction,
+  renderNewSubjectAction,
   ...list
 }: CourseGridProps) => {
   const languages = courses.filter((course) => course.kind === 'language');
-  const subjects = courses.filter((course) => course.kind === 'terms');
   return (
     <>
       {languages.length === 0 ? null : (
@@ -61,18 +81,20 @@ export const CourseGrid = ({
           <CourseList courses={languages} {...list} />
         </section>
       )}
-      <section className="flex flex-col gap-4">
-        <h2 className="font-display text-xl">Fächer</h2>
-        {subjects.length === 0 ? (
-          <p className="text-muted-foreground text-sm">
-            In einem Fach lernst du Fachbegriffe mit ihrer Definition, zum
-            Beispiel für Chemie oder Biologie.
-          </p>
-        ) : (
-          <CourseList courses={subjects} {...list} />
-        )}
-        <div>{newSubjectAction}</div>
-      </section>
+      {listSections.map(({ kind, heading, intro }) => {
+        const listed = courses.filter((course) => course.kind === kind);
+        return (
+          <section className="flex flex-col gap-4" key={kind}>
+            <h2 className="font-display text-xl">{heading}</h2>
+            {listed.length === 0 ? (
+              <p className="text-muted-foreground text-sm">{intro}</p>
+            ) : (
+              <CourseList courses={listed} {...list} />
+            )}
+            <div>{renderNewSubjectAction(kind)}</div>
+          </section>
+        );
+      })}
     </>
   );
 };

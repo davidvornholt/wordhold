@@ -32,6 +32,8 @@ const courseKindMigrationHash =
   'b26fe74cf27edc2b2519861de4384dc66e43010d89be9fd629d03935959863af';
 const accountsMigrationHash =
   '11807e707f9b69fa911f86330be224490e390025efec6354bf5888a82841d1c6';
+const textsKindMigrationHash =
+  'aa594d379bfe20233c70c96f1aeacb742b377fec7169f18cc9d7a7a4d0fb42c4';
 const fullMigrationTestTimeoutMs = 15_000;
 
 const getMigrationError = (url: string) =>
@@ -58,7 +60,7 @@ it(
           yield* sql`drop table ai_usage, access_codes, members, passkey`;
           yield* sql`drop type ai_usage_status, ai_provider, access_code_kind`;
           yield* sql`alter table courses drop column owner_id`;
-          yield* sql`alter table courses drop constraint courses_terms_shape`;
+          yield* sql`alter table courses drop constraint courses_list_shape`;
           yield* sql`alter table courses drop column kind`;
           yield* sql`drop type course_kind`;
           yield* sql`alter table entries drop column key_points`;
@@ -104,7 +106,8 @@ it(
             ${unitBookIndexMigrationHash},
             ${entryBookMigrationHash},
             ${courseKindMigrationHash},
-            ${accountsMigrationHash}
+            ${accountsMigrationHash},
+            ${textsKindMigrationHash}
           )
         `;
           yield* migrateDatabase(database.url);

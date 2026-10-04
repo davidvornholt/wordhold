@@ -18,12 +18,15 @@ export const languageEnum = pgEnum('language', languageCodes);
 // What a course teaches. A `language` course pairs foreign words with German
 // ones. A `terms` course pairs German technical terms of one subject with
 // their definitions: an entry's `target_text` is the term, its `native_text`
-// the definition, and the only direction asked is term to definition.
-export const courseKinds = ['language', 'terms'] as const;
+// the definition, and the only direction asked is term to definition. A
+// `texts` course collects texts learned word for word, such as Bible verses:
+// `target_text` is the title or reference, `native_text` the text itself,
+// and the only direction asked is title to text.
+export const courseKinds = ['language', 'terms', 'texts'] as const;
 export type CourseKind = (typeof courseKinds)[number];
 export const courseKindEnum = pgEnum('course_kind', courseKinds);
 
-// A course is one language or one subject the learner studies: the
+// A course is one language, subject or collection the learner studies: the
 // organizing unit for books, pages, entries, and practice sessions. Sessions
 // are always course-scoped. Each course belongs to one person, and all of its
 // data goes with it when that person is deleted.
@@ -58,10 +61,11 @@ export const courses = pgTable(
       'courses_directions_non_empty',
       sql`cardinality(${table.directions}) > 0`,
     ),
-    // A terms course is German on both sides and asks only for the
-    // definition, which is why its direction settings are not offered.
+    // Every course other than a language is German on both sides and asks
+    // only for the entry's second side, which is why its direction settings
+    // are not offered.
     check(
-      'courses_terms_shape',
+      'courses_list_shape',
       sql`${table.kind} = 'language' or (${table.targetLanguage} = ${table.nativeLanguage} and ${table.directions} = '{to_native}'::answer_direction[])`,
     ),
   ],

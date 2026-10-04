@@ -36,7 +36,7 @@ describe('course direction constraint', () => {
   });
 });
 
-describe('terms course constraint', () => {
+describe('list course constraint', () => {
   it('keeps a terms course monolingual and definition-only', async () => {
     await Effect.runPromise(
       withMigratedTestDatabase((database) =>
@@ -67,6 +67,30 @@ describe('terms course constraint', () => {
             select kind from courses where id = ${courseId}
           `;
           expect(rows).toEqual([{ kind: 'terms' }]);
+        }).pipe(Effect.provide(testDatabaseLayer(database.url))),
+      ),
+    );
+  });
+
+  it('gives a texts course the same shape as a terms course', async () => {
+    await Effect.runPromise(
+      withMigratedTestDatabase((database) =>
+        Effect.gen(function* () {
+          const sql = yield* Database;
+          const bothDirections = yield* Effect.either(sql`
+            insert into courses (id, name, kind, target_language)
+            values (${courseId}, 'Bibelverse', 'texts', 'de')
+          `);
+          expect(bothDirections._tag).toBe('Left');
+
+          yield* sql`
+            insert into courses (id, name, kind, target_language, directions)
+            values (${courseId}, 'Bibelverse', 'texts', 'de', '{to_native}')
+          `;
+          const rows = yield* sql<{ readonly kind: string }>`
+            select kind from courses where id = ${courseId}
+          `;
+          expect(rows).toEqual([{ kind: 'texts' }]);
         }).pipe(Effect.provide(testDatabaseLayer(database.url))),
       ),
     );

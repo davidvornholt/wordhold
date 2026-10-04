@@ -23,11 +23,12 @@ type PracticeAnswerFormProps = {
   readonly busy: boolean;
   readonly disabled: boolean;
   readonly inputRef: RefObject<AnswerFieldElement | null>;
-  // Definitions are answered in a field that wraps.
+  // Definitions and texts are answered in a field that wraps.
   readonly multiline: boolean;
   readonly onAnswerChange: (answer: string) => void;
   readonly onSkip: () => void;
   readonly onSubmit: SubmitEventHandler<HTMLFormElement>;
+  readonly placeholder: string;
   readonly promptId: string;
   readonly retype: RetypeState | null;
   readonly skipping: boolean;
@@ -88,6 +89,7 @@ export const PracticeAnswerForm = ({
   onAnswerChange,
   onSkip,
   onSubmit,
+  placeholder,
   promptId,
   retype,
   skipping,
@@ -104,7 +106,7 @@ export const PracticeAnswerForm = ({
         fieldRef={inputRef}
         multiline={multiline}
         onChange={onAnswerChange}
-        placeholder={multiline ? 'Deine Definition' : 'Deine Antwort'}
+        placeholder={placeholder}
         value={submittedAnswer ?? answer}
       />
     ) : (

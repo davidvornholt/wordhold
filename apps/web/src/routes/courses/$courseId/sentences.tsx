@@ -11,6 +11,7 @@ import {
   getSentenceSession,
 } from '../../../features/practice/services/sentence-server-fns';
 import { SentenceRunner } from '../../../features/practice/ui/sentence-runner';
+import { isListCourse } from '../../../shared/directions';
 import { focusShell } from '../../../shared/routing/shell';
 import { ActionLink } from '../../../shared/ui/action-link';
 import { BackLink } from '../../../shared/ui/back-link';
@@ -119,7 +120,7 @@ export const Route = createFileRoute('/courses/$courseId/sentences')({
     const selection = courseSelection(place, deps.entries);
     // Sentences come from a language course's example sentences, and a
     // round is drawn from the book, unit or words it was opened from.
-    if (course.kind === 'terms' || selection === null) {
+    if (isListCourse(course.kind) || selection === null) {
       throw redirect({
         to: '/courses/$courseId',
         params: { courseId: course.id },

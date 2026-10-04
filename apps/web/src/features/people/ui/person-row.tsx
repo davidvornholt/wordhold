@@ -99,7 +99,7 @@ export const PersonRow = ({ person, actions, inspectLink }: PersonRowProps) => {
         busy={busy}
         cancelLabel="Abbrechen"
         confirmLabel="Endgültig löschen"
-        description={`Das Konto von ${person.name} wird mit allen Sprachen und Fächern, Einträgen, Fotos und Aufnahmen endgültig gelöscht. Die KI-Kosten bleiben in der Übersicht.`}
+        description={`Das Konto von ${person.name} wird mit allen Sprachen, Fächern, Sammlungen, Einträgen, Fotos und Aufnahmen endgültig gelöscht. Die KI-Kosten bleiben in der Übersicht.`}
         onCancel={() => setConfirmingDelete(false)}
         onConfirm={async () => {
           await run(() => actions.remove(person));

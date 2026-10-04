@@ -19,6 +19,10 @@ export class StaleAnswerSubmissionError extends Data.TaggedError(
   readonly message: string;
 }> {}
 
+export class AnswerTooLongError extends Data.TaggedError('AnswerTooLongError')<{
+  readonly message: string;
+}> {}
+
 export class StaleSentenceError extends Data.TaggedError('StaleSentenceError')<{
   readonly message: string;
 }> {}

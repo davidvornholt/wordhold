@@ -6,6 +6,7 @@ import {
 } from '../../../../../features/courses/services/server-fns';
 import { progressSummary } from '../../../../../features/courses/ui/progress-status';
 import { getCourse } from '../../../../../features/import/server-fns';
+import { isListCourse } from '../../../../../shared/directions';
 import { BackLink } from '../../../../../shared/ui/back-link';
 import { PageLayout } from '../../../../../shared/ui/page-layout';
 import { cardClass } from '../../../../../shared/ui/surface-styles';
@@ -87,9 +88,9 @@ export const Route = createFileRoute('/courses/$courseId/units/$unitId/')({
       getCourseDirections({ data: params.courseId }),
       listCourseVocabulary({ data: params.courseId }),
     ]);
-    // A subject keeps its terms in one list on its own page, so it has no
-    // unit pages.
-    if (course.kind === 'terms') {
+    // A subject or collection keeps its entries in one list on its own
+    // page, so it has no unit pages.
+    if (isListCourse(course.kind)) {
       throw redirect({
         to: '/courses/$courseId',
         params: { courseId: course.id },

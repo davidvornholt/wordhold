@@ -24,6 +24,7 @@ import {
   type CourseSubject,
   courseNouns,
   directionLabel,
+  isListCourse,
 } from '../../../shared/directions';
 import { countNoun } from '../../../shared/format/count';
 import { languageSubtitle } from '../../../shared/languages';
@@ -35,6 +36,7 @@ import { coursePlaces, PlaceLearnLink } from './-course-place';
 import {
   type EntryCourse,
   TermEntryForm,
+  TextEntryForm,
   useCourseEntryActions,
   VocabularyEntryForm,
 } from './-entry-forms';
@@ -207,13 +209,16 @@ const LanguageScreen = ({
   );
 };
 
-// Practice comes first while cards are ready, then the terms not yet
-// learned. A subject has one direction, so learning names no direction.
+// Practice comes first while cards are ready, then the terms or texts not
+// yet learned. A subject or collection has one direction, so learning names
+// no direction.
 const subjectPrimaryAction = (
-  courseId: string,
+  course: ScreenCourse,
   entries: ReadonlyArray<VocabularyEntry>,
   ready: number,
 ): ReactNode => {
+  const courseId = course.id;
+  const nouns = courseNouns(course);
   const unintroduced = entries.filter((entry) => !entry.introduced).length;
   if (ready > 0) {
     return <PracticeLink courseId={courseId} ready={ready} />;
@@ -223,7 +228,11 @@ const subjectPrimaryAction = (
   }
   return (
     <PlaceLearnLink courseId={courseId} direction={undefined} selection={null}>
-      {countNoun(itemsInNextSection(unintroduced), 'Begriff', 'Begriffe')}{' '}
+      {countNoun(
+        itemsInNextSection(unintroduced),
+        nouns.singular,
+        nouns.plural,
+      )}{' '}
       kennenlernen
     </PlaceLearnLink>
   );
@@ -249,13 +258,15 @@ const SubjectScreen = ({
       enabledDirections={directions}
       entries={entries}
       entryActions={entryActions}
-      entryForm={<TermEntryForm course={course} entries={entries} />}
+      entryForm={
+        course.kind === 'texts' ? (
+          <TextEntryForm course={course} entries={entries} />
+        ) : (
+          <TermEntryForm course={course} entries={entries} />
+        )
+      }
       initialFilter={filter ?? 'all'}
-      primaryAction={subjectPrimaryAction(
-        course.id,
-        entries,
-        stats?.ready ?? 0,
-      )}
+      primaryAction={subjectPrimaryAction(course, entries, stats?.ready ?? 0)}
       renderStudyAction={(entryIds, intent) => (
         <ActionLink
           params={{ courseId: course.id }}
@@ -272,7 +283,7 @@ const SubjectScreen = ({
 };
 
 // A language is organised into books and units; a subject is one list of
-// terms.
+// terms and a collection one list of texts.
 const CourseScreen = () => {
   const { course, directions, entries, outline, stats } = Route.useLoaderData();
   return (
@@ -280,7 +291,7 @@ const CourseScreen = () => {
       backControl={<BackLink to="/">Übersicht</BackLink>}
       title={course.name}
     >
-      {course.kind === 'terms' ? (
+      {isListCourse(course.kind) ? (
         <SubjectScreen
           course={course}
           directions={directions}

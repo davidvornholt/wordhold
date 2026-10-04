@@ -4,6 +4,7 @@ import {
   type CourseNouns,
   type CourseSubject,
   courseNouns,
+  isListCourse,
 } from '../../../shared/directions';
 import { countNoun } from '../../../shared/format/count';
 import { languageSubtitle } from '../../../shared/languages';
@@ -130,12 +131,11 @@ export const CourseCard = ({
   startAction,
 }: CourseCardProps) => {
   const nouns = courseNouns(course);
-  // A subject's name says what it is; a language course may need its
-  // language spelled out.
-  const subtitle =
-    course.kind === 'terms'
-      ? null
-      : languageSubtitle(course.name, course.targetLanguage);
+  // A subject's or collection's name says what it is; a language course may
+  // need its language spelled out.
+  const subtitle = isListCourse(course.kind)
+    ? null
+    : languageSubtitle(course.name, course.targetLanguage);
   return (
     <li className={`flex flex-col gap-5 ${cardCompactClass}`}>
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">

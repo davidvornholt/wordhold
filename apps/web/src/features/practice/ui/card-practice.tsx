@@ -1,6 +1,7 @@
+import type { CourseKind } from '@wordhold/db/schema/courses';
 import type { ReviewMode } from '@wordhold/db/schema/practice';
 import { useId, useRef } from 'react';
-import type { CourseSubject } from '../../../shared/directions';
+import { type CourseSubject, isListCourse } from '../../../shared/directions';
 import type { PrepareExamples } from '../../../shared/examples/example-model';
 import { germanLabels } from '../../../shared/languages';
 import type { RailOutcome } from '../../../shared/session/rail-outcome';
@@ -35,11 +36,19 @@ const practiceInstruction = (
   let instruction = 'Übersetze auf Deutsch';
   if (subject.kind === 'terms') {
     instruction = 'Erkläre den Begriff';
+  } else if (subject.kind === 'texts') {
+    instruction = 'Schreib den Text auswendig';
   } else if (direction === 'to_target') {
     instruction = `Übersetze auf ${germanLabels[subject.targetLanguage]}`;
   }
   return repeated ? `${instruction} · Noch einmal` : instruction;
 };
+
+const answerPlaceholders = {
+  language: 'Deine Antwort',
+  terms: 'Deine Definition',
+  texts: 'Dein Text',
+} as const satisfies Record<CourseKind, string>;
 
 type CardPracticeProps = {
   readonly item: SessionItem;
@@ -70,7 +79,6 @@ export const CardPractice = ({
 }: CardPracticeProps) => {
   const inputRef = useRef<AnswerFieldElement>(null);
   const { targetLanguage } = subject;
-  const definition = subject.kind === 'terms';
   const nextButtonRef = useRef<HTMLButtonElement>(null);
   const promptId = useId();
   const feedbackDescriptionId = useId();
@@ -147,10 +155,11 @@ export const CardPractice = ({
         busy={busy}
         disabled={result !== null}
         inputRef={inputRef}
-        multiline={definition}
+        multiline={isListCourse(subject.kind)}
         onAnswerChange={submission.setAnswer}
         onSkip={submission.skipCard}
         onSubmit={onSubmit}
+        placeholder={answerPlaceholders[subject.kind]}
         promptId={promptId}
         retype={retype.field}
         skipping={busy && submission.skipped}

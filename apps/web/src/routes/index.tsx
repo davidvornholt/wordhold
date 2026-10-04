@@ -31,7 +31,11 @@ import { PendingImportSessions } from '../features/import/ui/pending-import-sess
 import { authClient, rejectAuthError } from '../shared/auth/client';
 import { getSessionUser } from '../shared/auth/session-fn';
 import { earliestDate } from '../shared/dates/learning-date';
-import { type CourseSubject, courseNouns } from '../shared/directions';
+import {
+  type CourseSubject,
+  courseNouns,
+  isListCourse,
+} from '../shared/directions';
 import { countNoun } from '../shared/format/count';
 import { ActionLink } from '../shared/ui/action-link';
 
@@ -88,8 +92,8 @@ type CoursesProps = {
   readonly courses: ReadonlyArray<CourseSubject & CourseName>;
 };
 
-// Each course card starts its own sittings; a new subject is created from
-// below the cards and opens with its first term.
+// Each course card starts its own sittings; a new subject or collection is
+// created from below its cards and opens with its first entry.
 const Courses = ({ dashboard, courses }: CoursesProps) => {
   const navigate = useNavigate();
   return (
@@ -129,9 +133,9 @@ const Courses = ({ dashboard, courses }: CoursesProps) => {
         </ActionLink>
       )}
       renderStartAction={(course) =>
-        course.kind === 'terms' ? (
+        isListCourse(course.kind) ? (
           <ActionLink params={{ courseId: course.id }} to="/courses/$courseId">
-            Ersten Begriff eintragen
+            Ersten {courseNouns(course).singular} eintragen
           </ActionLink>
         ) : (
           <ActionLink
@@ -143,20 +147,21 @@ const Courses = ({ dashboard, courses }: CoursesProps) => {
         )
       }
       stats={dashboard.perCourse}
-      newSubjectAction={
+      renderNewSubjectAction={(kind) => (
         <NewSubjectDialog
           courses={courses}
           createSubject={async (name) => {
             const { courseId } = await createSubject({
-              data: { name },
+              data: { name, kind },
             });
             await navigate({
               to: '/courses/$courseId',
               params: { courseId },
             });
           }}
+          kind={kind}
         />
-      }
+      )}
     />
   );
 };

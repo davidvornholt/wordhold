@@ -149,15 +149,15 @@ const planTranslationRepair = (card: EntryCard) =>
   });
 
 // Definitions are graded against key points, which this repair does not know
-// how to replay.
+// how to replay, and recited texts never reach the judge.
 const planCardRepair = (card: EntryCard) =>
-  card.courseKind === 'terms'
-    ? Effect.fail(
+  card.courseKind === 'language'
+    ? planTranslationRepair(card)
+    : Effect.fail(
         new ReviewRepairError({
-          message: `${card.id} gehört zu einem Fach. Die Reparatur bewertet nur Übersetzungen neu.`,
+          message: `${card.id} gehört zu keiner Sprache. Die Reparatur bewertet nur Übersetzungen neu.`,
         }),
-      )
-    : planTranslationRepair(card);
+      );
 export const planReviewRepairs = (ids: ReadonlyArray<string>) =>
   Effect.gen(function* () {
     const cards = yield* loadCards(ids);

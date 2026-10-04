@@ -7,6 +7,7 @@ import {
 import { DirectionSettings } from '../../../features/courses/ui/direction-settings';
 import { SubjectSettings } from '../../../features/courses/ui/subject-settings';
 import { getCourse, listCourses } from '../../../features/import/server-fns';
+import { isListCourse } from '../../../shared/directions';
 import { BackLink } from '../../../shared/ui/back-link';
 import { PageLayout } from '../../../shared/ui/page-layout';
 
@@ -23,10 +24,11 @@ const CourseSettingsScreen = () => {
       }
       title={`${course.name}: Einstellungen`}
     >
-      {course.kind === 'terms' ? (
+      {isListCourse(course.kind) ? (
         <SubjectSettings
           courseId={course.id}
           courses={courses}
+          kind={course.kind}
           name={course.name}
           rename={async (name) => {
             await renameSubject({ data: { courseId: course.id, name } });

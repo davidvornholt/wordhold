@@ -1,17 +1,19 @@
 import type { Database } from '@wordhold/db/client';
 import type { CourseKind } from '@wordhold/db/schema/courses';
 import { Effect } from 'effect';
+import type { ListCourseKind } from '../../../shared/directions';
 import { CourseDatabaseError } from '../errors/courses-errors';
 
 const databaseError = (
   operation: string,
   cause: unknown,
-  message = 'Das Fach konnte nicht gespeichert werden.',
+  message = 'Das Fach oder die Sammlung konnte nicht gespeichert werden.',
 ) => new CourseDatabaseError({ operation, cause, message });
 
-// Every entry belongs to a book, while a subject keeps its terms in one list.
-// So a subject gets one book for all its terms when it is created, and the
-// learner never sees it. Books and units are refused for a subject.
+// Every entry belongs to a book, while a subject keeps its terms or texts in
+// one list. So a subject gets one book for all its entries when it is
+// created, and the learner never sees it. Books and units are refused for a
+// subject.
 const subjectBookName = 'Allgemein';
 
 export type CreateSubjectResult =
@@ -41,7 +43,7 @@ export const makeCourseSubjectMutations = (sql: Database) => {
       limit 1
     `.pipe(Effect.map((rows) => rows.length > 0));
 
-  const createSubject = (ownerId: string, name: string) =>
+  const createSubject = (ownerId: string, name: string, kind: ListCourseKind) =>
     sql
       .withTransaction(
         Effect.gen(function* () {
@@ -52,7 +54,7 @@ export const makeCourseSubjectMutations = (sql: Database) => {
           const [course] = yield* sql<{ readonly id: string }>`
             insert into courses
               (owner_id, name, kind, target_language, native_language, directions)
-            values (${ownerId}, ${name}, 'terms', 'de', 'de', '{to_native}')
+            values (${ownerId}, ${name}, ${kind}, 'de', 'de', '{to_native}')
             returning id
           `;
           if (course === undefined) {
@@ -74,8 +76,8 @@ export const makeCourseSubjectMutations = (sql: Database) => {
         ),
       );
 
-  // Only a subject is renamed here; a language course is named after its
-  // language.
+  // Only a subject or collection is renamed here; a language course is named
+  // after its language.
   const renameSubject = (courseId: string, name: string) =>
     sql
       .withTransaction(
@@ -86,7 +88,7 @@ export const makeCourseSubjectMutations = (sql: Database) => {
           }
           const renamed = yield* sql<{ readonly id: string }>`
             update courses set name = ${name}
-            where id = ${courseId} and kind = 'terms'
+            where id = ${courseId} and kind <> 'language'
             returning id
           `;
           return renamed.length === 0
@@ -105,7 +107,7 @@ export const makeCourseSubjectMutations = (sql: Database) => {
         databaseError(
           'read course kind',
           cause,
-          'Die Sprache oder das Fach konnte nicht geladen werden.',
+          'Die Sprache, das Fach oder die Sammlung konnte nicht geladen werden.',
         ),
       ),
     );

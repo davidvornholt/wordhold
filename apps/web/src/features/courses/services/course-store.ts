@@ -1,6 +1,7 @@
 import { Database } from '@wordhold/db/client';
 import type { CourseKind } from '@wordhold/db/schema/courses';
 import { Context, Effect, Layer } from 'effect';
+import type { ListCourseKind } from '../../../shared/directions';
 import { CourseDatabaseError } from '../errors/courses-errors';
 import {
   type CourseDirectionsData,
@@ -37,7 +38,8 @@ const databaseError = (operation: string, cause: unknown) =>
   new CourseDatabaseError({
     operation,
     cause,
-    message: 'Die Sprache oder das Fach konnte nicht geladen werden.',
+    message:
+      'Die Sprache, das Fach oder die Sammlung konnte nicht geladen werden.',
   });
 
 export class CourseStore extends Context.Tag('wordhold/CourseStore')<
@@ -57,6 +59,7 @@ export class CourseStore extends Context.Tag('wordhold/CourseStore')<
     readonly createSubject: (
       ownerId: string,
       name: string,
+      kind: ListCourseKind,
     ) => Effect.Effect<CreateSubjectResult, CourseDatabaseError>;
     readonly renameSubject: (
       courseId: string,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import type { LearnItem } from '../schemas/learning-models';
-import { matchesLearnItem } from './learn-check';
+import { copiesLearnText, matchesLearnItem } from './learn-check';
 
 const item: LearnItem = {
   cardId: '00000000-0000-0000-0000-000000000011',
@@ -154,5 +154,40 @@ describe('matchesLearnItem review notation', () => {
         'el programa',
       ),
     ).toBe(true);
+  });
+});
+
+describe('copiesLearnText', () => {
+  const verse: LearnItem = {
+    ...item,
+    direction: 'to_native',
+    targetText: 'Psalm 23,1',
+    nativeText: 'Der HERR ist mein Hirte;\nmir wird nichts mangeln.',
+    textbookAnswers: [],
+  };
+
+  it('counts only the words of the text', () => {
+    expect(
+      copiesLearnText(
+        verse,
+        'der Herr ist mein Hirte, mir wird nichts mangeln',
+      ),
+    ).toBe(true);
+  });
+
+  it('refuses a typo, a missing word and an extra word', () => {
+    expect(
+      copiesLearnText(
+        verse,
+        'Der HERR ist mein Hirte; mir wird nichts mangelm.',
+      ),
+    ).toBe(false);
+    expect(copiesLearnText(verse, 'Der HERR ist mein Hirte;')).toBe(false);
+    expect(
+      copiesLearnText(
+        verse,
+        'Der HERR ist mein guter Hirte; mir wird nichts mangeln.',
+      ),
+    ).toBe(false);
   });
 });

@@ -69,8 +69,8 @@ export const JoinScreen = ({ initialCode, register }: JoinScreenProps) => {
       </output>
       <p className="max-w-prose text-muted-foreground text-sm">
         Ein Wiederherstellungscode ersetzt deine bisherigen Passkeys und meldet
-        dich auf allen anderen Geräten ab. Deine Sprachen und Fächer bleiben
-        erhalten.
+        dich auf allen anderen Geräten ab. Deine Sprachen, Fächer und Sammlungen
+        bleiben erhalten.
       </p>
     </div>
   );

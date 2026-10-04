@@ -22,6 +22,7 @@ import { listItemNameClass } from '../../../../../features/courses/ui/list-item-
 import { bookSummary } from '../../../../../features/courses/ui/progress-status';
 import { UnitList } from '../../../../../features/courses/ui/unit-list';
 import { getCourse } from '../../../../../features/import/server-fns';
+import { isListCourse } from '../../../../../shared/directions';
 import { ActionLink } from '../../../../../shared/ui/action-link';
 import { BackLink } from '../../../../../shared/ui/back-link';
 import { PageLayout } from '../../../../../shared/ui/page-layout';
@@ -182,9 +183,9 @@ export const Route = createFileRoute('/courses/$courseId/books/$bookId/')({
       getCourseDirections({ data: params.courseId }),
       listCourseVocabulary({ data: params.courseId }),
     ]);
-    // A subject keeps its terms in one list on its own page, so it has no
-    // book pages.
-    if (course.kind === 'terms') {
+    // A subject or collection keeps its entries in one list on its own
+    // page, so it has no book pages.
+    if (isListCourse(course.kind)) {
       throw redirect({
         to: '/courses/$courseId',
         params: { courseId: course.id },

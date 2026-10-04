@@ -1,0 +1,230 @@
+import { maximumEntryTextLength } from '@wordhold/ai/extraction/schema';
+import {
+  type Dispatch,
+  type RefObject,
+  type SetStateAction,
+  type SubmitEvent,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
+import { Button } from '../../../shared/ui/button';
+import { fieldOnCardClass } from '../../../shared/ui/field-styles';
+import { maximumMemorizedTextLength } from '../../../shared/vocabulary/entry-fields';
+import type { VocabularyEntry } from '../schemas/course-units';
+import { EditEntryFooter } from './edit-entry-footer';
+import { type EntryEditorControl, useEntryEdit } from './entry-actions';
+import { listEntryDuplicate } from './entry-duplicates';
+import { quoted } from './use-new-vocabulary-entry';
+
+export type TextDraft = {
+  readonly title: string;
+  readonly text: string;
+};
+
+type TextFieldsProps = {
+  readonly draft: TextDraft;
+  readonly setDraft: Dispatch<SetStateAction<TextDraft>>;
+  readonly busy: boolean;
+  readonly titleRef: RefObject<HTMLInputElement | null>;
+};
+
+// A title, such as a Bible reference, and the text learned under it. Enter
+// starts a new line of the text, since verses and poems keep their lines;
+// the button saves.
+const TextFields = ({ draft, setDraft, busy, titleRef }: TextFieldsProps) => (
+  <div className="grid gap-3">
+    <label className="flex flex-col gap-1 text-sm">
+      <span className="font-medium">Titel</span>
+      <input
+        // biome-ignore lint/a11y/noAutofocus: The form appears on request; the learner asked to type, so the title takes focus.
+        autoFocus={true}
+        className={fieldOnCardClass}
+        disabled={busy}
+        maxLength={maximumEntryTextLength}
+        onChange={(event) =>
+          setDraft((current) => ({ ...current, title: event.target.value }))
+        }
+        placeholder="z. B. Johannes 3,16"
+        ref={titleRef}
+        value={draft.title}
+      />
+    </label>
+    <label className="flex flex-col gap-1 text-sm">
+      <span className="font-medium">Text</span>
+      <textarea
+        className={`${fieldOnCardClass} field-sizing-content min-h-32 resize-none`}
+        disabled={busy}
+        maxLength={maximumMemorizedTextLength}
+        onChange={(event) =>
+          setDraft((current) => ({ ...current, text: event.target.value }))
+        }
+        rows={5}
+        value={draft.text}
+      />
+    </label>
+  </div>
+);
+
+const trimmed = (draft: TextDraft): TextDraft => ({
+  title: draft.title.trim(),
+  text: draft.text.trim(),
+});
+
+export type CreateText = (draft: TextDraft) => Promise<void>;
+
+const emptyText: TextDraft = { title: '', text: '' };
+
+// Saving one text: the fields are disabled meanwhile, cleared on success,
+// and focus returns to the title once the form is enabled again, so the
+// next text can be typed right away.
+const useNewTextEntry = (createEntry: CreateText) => {
+  const [draft, setDraft] = useState(emptyText);
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const [status, setStatus] = useState('');
+  const titleRef = useRef<HTMLInputElement>(null);
+  const refocusRef = useRef(false);
+
+  useEffect(() => {
+    if (!busy && refocusRef.current) {
+      refocusRef.current = false;
+      titleRef.current?.focus();
+    }
+  }, [busy]);
+
+  const save = async () => {
+    const text = trimmed(draft);
+    setBusy(true);
+    setFailed(false);
+    setStatus(`${quoted(text.title)} wird eingetragen …`);
+    try {
+      await createEntry(text);
+      setDraft(emptyText);
+      setStatus(`${quoted(text.title)} eingetragen.`);
+      refocusRef.current = true;
+    } catch (cause) {
+      setFailed(true);
+      setStatus(
+        cause instanceof Error
+          ? cause.message
+          : 'Der Text wurde nicht eingetragen. Versuche es noch einmal.',
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return { draft, setDraft, busy, failed, status, titleRef, save } as const;
+};
+
+type NewTextFormProps = {
+  // Every stored text of the collection, so a repeated title is pointed out
+  // while typing.
+  readonly entries: ReadonlyArray<VocabularyEntry>;
+  readonly createEntry: CreateText;
+};
+
+// One text at a time, for as long as the form stays open. A title that
+// repeats a stored one exactly is stopped here; the same title in another
+// casing is pointed out and left to the learner.
+export const NewTextForm = ({ entries, createEntry }: NewTextFormProps) => {
+  const { draft, setDraft, busy, failed, status, titleRef, save } =
+    useNewTextEntry(createEntry);
+  const { title, text } = trimmed(draft);
+  const duplicate = listEntryDuplicate(entries, title, null);
+  const submittable =
+    !busy && title !== '' && text !== '' && !duplicate.blocked;
+
+  const submit = (event: SubmitEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (submittable) {
+      save().catch(() => undefined);
+    }
+  };
+
+  return (
+    <form className="grid gap-3" onSubmit={submit}>
+      <TextFields
+        busy={busy}
+        draft={draft}
+        setDraft={setDraft}
+        titleRef={titleRef}
+      />
+      {duplicate.hint === null ? null : (
+        <p className="text-sm text-warning-foreground">{duplicate.hint}</p>
+      )}
+      <div className="flex flex-wrap items-center gap-4">
+        <Button disabled={!submittable} type="submit">
+          Eintragen
+        </Button>
+        <output
+          aria-label="Status beim Eintragen eines Texts"
+          className={failed ? 'text-destructive text-sm' : 'text-sm'}
+        >
+          {status}
+        </output>
+      </div>
+    </form>
+  );
+};
+
+type EditTextFormProps = {
+  readonly entry: VocabularyEntry;
+  readonly control: EntryEditorControl;
+  // Every text of the collection, which the corrected title is checked
+  // against.
+  readonly entries: ReadonlyArray<VocabularyEntry>;
+  readonly updateEntry: (draft: TextDraft) => Promise<void>;
+};
+
+// A title and its text, as stored, to correct. The card keeps its schedule.
+export const EditTextForm = ({
+  entry,
+  control,
+  entries,
+  updateEntry,
+}: EditTextFormProps) => {
+  const [draft, setDraft] = useState<TextDraft>({
+    title: entry.targetText,
+    text: entry.nativeText,
+  });
+  const { busy, error, firstFieldRef, save } = useEntryEdit(
+    control,
+    'Der Text wurde nicht gespeichert. Versuche es noch einmal.',
+  );
+  const { title, text } = trimmed(draft);
+  const duplicate = listEntryDuplicate(entries, title, entry.id);
+  const submittable =
+    !busy && title !== '' && text !== '' && !duplicate.blocked;
+
+  const submit = (event: SubmitEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (submittable) {
+      save(async () => {
+        await updateEntry({ title, text });
+        return `${quoted(title)} gespeichert.`;
+      }).catch(() => undefined);
+    }
+  };
+
+  return (
+    <form className="grid gap-3" onSubmit={submit}>
+      <TextFields
+        busy={busy}
+        draft={draft}
+        setDraft={setDraft}
+        titleRef={firstFieldRef}
+      />
+      {duplicate.hint === null ? null : (
+        <p className="text-sm text-warning-foreground">{duplicate.hint}</p>
+      )}
+      <EditEntryFooter
+        busy={busy}
+        error={error}
+        onCancel={control.onCancel}
+        submittable={submittable}
+      />
+    </form>
+  );
+};

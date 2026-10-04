@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import type { DefinitionVerdictData } from '@wordhold/ai/definition/schema';
 import type { JudgeVerdictData } from '@wordhold/ai/judge/schema';
-import { deriveRating, isCorrect, ratings } from './rating';
+import { deriveRating, gradeRecitation, isCorrect, ratings } from './rating';
 
 const fastMs = 3000;
 const slowMs = 12_000;
@@ -168,5 +168,37 @@ describe('isCorrect', () => {
         },
       }),
     ).toBe(true);
+  });
+});
+
+describe('recitation rating', () => {
+  // From the Luther Bible of 1912, which is in the public domain.
+  const verse =
+    'Also hat Gott die Welt geliebt, daß er seinen eingeborenen Sohn gab.';
+
+  it('rates a word-perfect text Good however fast it came', () => {
+    const outcome = gradeRecitation(verse, verse.replace('geliebt', 'gelibt'));
+    expect(outcome).toEqual({
+      method: 'recitation',
+      words: 12,
+      mistakes: 0,
+      typos: 1,
+    });
+    expect(deriveRating(outcome, fastMs)).toBe(ratings.good);
+  });
+
+  it('rates a mistake per ten words Hard and counts it as correct', () => {
+    const outcome = gradeRecitation(verse, verse.replace('Welt', 'Erde'));
+    expect(isCorrect(outcome)).toBe(true);
+    expect(deriveRating(outcome, slowMs)).toBe(ratings.hard);
+  });
+
+  it('rates more mistakes Again', () => {
+    const outcome = gradeRecitation(
+      verse,
+      'Also hat Gott die Menschen geliebt',
+    );
+    expect(isCorrect(outcome)).toBe(false);
+    expect(deriveRating(outcome, slowMs)).toBe(ratings.again);
   });
 });

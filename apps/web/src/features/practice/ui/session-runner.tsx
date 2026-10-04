@@ -1,6 +1,6 @@
 import type { ReviewMode } from '@wordhold/db/schema/practice';
 import { type ReactNode, useState } from 'react';
-import type { CourseSubject } from '../../../shared/directions';
+import { type CourseSubject, isListCourse } from '../../../shared/directions';
 import {
   type PrepareExamples,
   withoutExamples,
@@ -64,10 +64,10 @@ export const SessionRunner = ({
 }: SessionRunnerProps) => {
   const [queue, setQueue] = useState(() => createSessionQueue(session.items));
   const [judged, setJudged] = useState<RailOutcome | null>(null);
-  // A definition has no example sentence to show.
+  // A definition or text has no example sentence to show.
   const warmup = useExampleWarmup(
     session.items,
-    subject.kind === 'terms' ? withoutExamples : prepareExamples,
+    isListCourse(subject.kind) ? withoutExamples : prepareExamples,
   );
   const head = queue.pending.at(0);
   const card =

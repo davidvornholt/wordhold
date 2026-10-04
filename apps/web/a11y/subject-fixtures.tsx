@@ -181,6 +181,7 @@ export const SubjectSettingsFixture = () => {
       <SubjectSettings
         courseId={subjectId}
         courses={overviewCourses}
+        kind="terms"
         name={name}
         rename={(next) => {
           setName(next);

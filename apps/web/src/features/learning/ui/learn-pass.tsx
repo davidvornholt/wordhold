@@ -1,5 +1,9 @@
 import { type ReactNode, useState } from 'react';
-import { type CourseSubject, courseNouns } from '../../../shared/directions';
+import {
+  type CourseSubject,
+  courseNouns,
+  isListCourse,
+} from '../../../shared/directions';
 import { CardRail } from '../../../shared/ui/card-rail';
 import type { LearnItem } from '../schemas/learning-models';
 import { LearnDone } from './learn-done';
@@ -26,8 +30,8 @@ export const LearnPass = ({
   const [index, setIndex] = useState(0);
   const item = items.at(index);
   const nouns = courseNouns(subject);
-  // A terms course has one direction, so naming it adds nothing.
-  const shownDirection = subject.kind === 'terms' ? null : directionLabel;
+  // A subject or collection has one direction, so naming it adds nothing.
+  const shownDirection = isListCourse(subject.kind) ? null : directionLabel;
   return (
     <>
       {items.length === 0 ? null : (

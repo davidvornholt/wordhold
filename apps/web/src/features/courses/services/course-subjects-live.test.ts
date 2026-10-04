@@ -40,6 +40,8 @@ const seedLanguageCourse = Effect.gen(function* () {
   `;
 });
 
+const terms = (name: string) => ({ name, kind: 'terms' as const });
+
 const failureTag = <A, E extends { readonly _tag: string }, R>(
   effect: Effect.Effect<A, E, R>,
 ) =>
@@ -54,9 +56,10 @@ describe('course subjects', () => {
       Effect.gen(function* () {
         const sql = yield* Database;
         const service = yield* CourseService;
-        const { courseId } = yield* service.createSubject(ownerId, {
-          name: 'Chemie',
-        });
+        const { courseId } = yield* service.createSubject(
+          ownerId,
+          terms('Chemie'),
+        );
         const [course] = yield* sql<{
           readonly ownerId: string;
           readonly name: string;
@@ -77,14 +80,53 @@ describe('course subjects', () => {
     );
   });
 
-  it('refuses books and units in a subject', async () => {
+  it('creates a collection of texts and renames it like a subject', async () => {
     await runServiceTest(
       Effect.gen(function* () {
         const sql = yield* Database;
         const service = yield* CourseService;
         const { courseId } = yield* service.createSubject(ownerId, {
-          name: 'Chemie',
+          name: 'Bibelverse',
+          kind: 'texts',
         });
+        expect(
+          yield* service.renameSubject({ courseId, name: 'Psalmen' }),
+        ).toEqual({ name: 'Psalmen' });
+        expect(
+          yield* failureTag(
+            service.setDirections({ courseId, directions: ['to_target'] }),
+          ),
+        ).toBe('CourseKindMismatchError');
+        expect(
+          yield* failureTag(service.createBook({ courseId, name: 'Psalter' })),
+        ).toBe('CourseKindMismatchError');
+        const [course] = yield* sql<{
+          readonly name: string;
+          readonly kind: string;
+          readonly directions: ReadonlyArray<string>;
+        }>`select name, kind, directions::text[] as directions from courses where id = ${courseId}`;
+        expect(course).toEqual({
+          name: 'Psalmen',
+          kind: 'texts',
+          directions: ['to_native'],
+        });
+        const books = yield* sql<{
+          readonly name: string;
+        }>`select name from books where course_id = ${courseId}`;
+        expect(books).toEqual([{ name: 'Allgemein' }]);
+      }),
+    );
+  });
+
+  it('refuses books and units in a subject', async () => {
+    await runServiceTest(
+      Effect.gen(function* () {
+        const sql = yield* Database;
+        const service = yield* CourseService;
+        const { courseId } = yield* service.createSubject(
+          ownerId,
+          terms('Chemie'),
+        );
         const [book] = yield* sql<{
           readonly id: string;
         }>`select id from books where course_id = ${courseId}`;
@@ -117,13 +159,13 @@ describe('course subject names', () => {
       Effect.gen(function* () {
         yield* seedLanguageCourse;
         const service = yield* CourseService;
-        yield* service.createSubject(ownerId, { name: 'Chemie' });
+        yield* service.createSubject(ownerId, terms('Chemie'));
         expect(
-          yield* failureTag(service.createSubject(ownerId, { name: 'chemie' })),
+          yield* failureTag(service.createSubject(ownerId, terms('chemie'))),
         ).toBe('SubjectConflictError');
         expect(
           yield* failureTag(
-            service.createSubject(ownerId, { name: 'Französisch' }),
+            service.createSubject(ownerId, terms('Französisch')),
           ),
         ).toBe('SubjectConflictError');
       }),
@@ -135,13 +177,14 @@ describe('course subject names', () => {
       Effect.gen(function* () {
         yield* seedLanguageCourse;
         const service = yield* CourseService;
-        yield* service.createSubject(ownerId, { name: 'Chemie' });
-        const { courseId } = yield* service.createSubject(otherOwnerId, {
-          name: 'Chemie',
-        });
+        yield* service.createSubject(ownerId, terms('Chemie'));
+        const { courseId } = yield* service.createSubject(
+          otherOwnerId,
+          terms('Chemie'),
+        );
         expect(
           yield* failureTag(
-            service.createSubject(otherOwnerId, { name: 'chemie' }),
+            service.createSubject(otherOwnerId, terms('chemie')),
           ),
         ).toBe('SubjectConflictError');
         expect(
@@ -157,10 +200,11 @@ describe('course subject names', () => {
         yield* seedLanguageCourse;
         const sql = yield* Database;
         const service = yield* CourseService;
-        const { courseId } = yield* service.createSubject(ownerId, {
-          name: 'Chemie',
-        });
-        yield* service.createSubject(ownerId, { name: 'Biologie' });
+        const { courseId } = yield* service.createSubject(
+          ownerId,
+          terms('Chemie'),
+        );
+        yield* service.createSubject(ownerId, terms('Biologie'));
         expect(
           yield* service.renameSubject({ courseId, name: 'Organische Chemie' }),
         ).toEqual({ name: 'Organische Chemie' });
@@ -194,9 +238,10 @@ describe('course subject names', () => {
       Effect.gen(function* () {
         yield* seedLanguageCourse;
         const service = yield* CourseService;
-        const { courseId } = yield* service.createSubject(ownerId, {
-          name: 'Chemie',
-        });
+        const { courseId } = yield* service.createSubject(
+          ownerId,
+          terms('Chemie'),
+        );
         expect(
           yield* failureTag(
             service.setDirections({ courseId, directions: ['to_target'] }),

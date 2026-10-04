@@ -2,7 +2,7 @@ import { type SubmitEvent, useState } from 'react';
 import type { VocabularyEntry } from '../schemas/course-units';
 import { EditEntryFooter } from './edit-entry-footer';
 import { type EntryEditorControl, useEntryEdit } from './entry-actions';
-import { termDuplicate } from './entry-duplicates';
+import { listEntryDuplicate } from './entry-duplicates';
 import {
   type SuggestDefinition,
   TermDefinitionFields,
@@ -39,7 +39,7 @@ export const EditTermForm = ({
   );
   const term = draft.term.trim();
   const definition = draft.definition.trim();
-  const duplicate = termDuplicate(entries, term, entry.id);
+  const duplicate = listEntryDuplicate(entries, term, entry.id);
   const submittable =
     !busy && term !== '' && definition !== '' && !duplicate.blocked;
   // Key points state what the old definition said, so they are derived anew.
