@@ -194,6 +194,11 @@ const DraftEntryList = ({
   </ul>
 );
 
+const defaultSubmitLabel = (entryCount: number): string =>
+  entryCount === 0
+    ? 'Seite abschließen'
+    : `${countNoun(entryCount, 'Eintrag', 'Einträge')} importieren`;
+
 export const VerifyForm = ({
   initialEntries,
   initialUnitName,
@@ -205,10 +210,7 @@ export const VerifyForm = ({
   units,
   busy,
   onSubmit,
-  submitLabel = (entryCount) =>
-    entryCount === 0
-      ? 'Seite abschließen'
-      : `${countNoun(entryCount, 'Eintrag', 'Einträge')} importieren`,
+  submitLabel = defaultSubmitLabel,
 }: VerifyFormProps) => {
   const {
     book,
