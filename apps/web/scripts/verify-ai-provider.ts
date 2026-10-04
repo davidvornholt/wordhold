@@ -5,6 +5,8 @@ import { Extraction } from '@wordhold/ai/extraction';
 import { Judge } from '@wordhold/ai/judge';
 import { BedrockProvider } from '@wordhold/ai/providers/bedrock';
 import { SentenceGen } from '@wordhold/ai/sentence';
+import { SentenceJudge } from '@wordhold/ai/sentence/judge';
+import { isSentenceCorrect } from '@wordhold/ai/sentence/judge-schema';
 import { Cause, Data, Effect, Exit, Layer, Option } from 'effect';
 
 class VerificationError extends Data.TaggedError('VerificationError')<{
@@ -17,6 +19,7 @@ const services = Layer.mergeAll(
   Extraction.Default,
   Judge.Default,
   SentenceGen.Default,
+  SentenceJudge.Default,
 ).pipe(Layer.provide(BedrockProvider.live));
 
 const report = (message: string) =>
@@ -24,9 +27,46 @@ const report = (message: string) =>
     globalThis.Bun.write(globalThis.Bun.stdout, `${message}\n`),
   );
 
+const verifySentences = Effect.gen(function* () {
+  const sentences = yield* SentenceGen;
+  const sentenceJudge = yield* SentenceJudge;
+  const batch = yield* sentences.generate({
+    targetText: 'the book',
+    nativeText: 'das Buch',
+    targetLanguage: 'English',
+    count: 1,
+  });
+  if (batch.sentences.length !== 1) {
+    return yield* new VerificationError({
+      message: 'Sentence generation returned the wrong count.',
+    });
+  }
+  yield* sentences.translate({
+    targetText: 'I read a book.',
+    targetLanguage: 'English',
+  });
+  yield* sentences.translateWord({
+    text: 'das Buch',
+    given: 'native',
+    targetLanguage: 'English',
+  });
+  const sentenceVerdict = yield* sentenceJudge.judge({
+    targetLanguage: 'English',
+    sentence: 'Ich lese ein Buch.',
+    reference: 'I read a book.',
+    word: { target: 'the book', german: 'das Buch' },
+    givenAnswer: 'I read a book.',
+  });
+  if (!isSentenceCorrect(sentenceVerdict)) {
+    return yield* new VerificationError({
+      message: 'Sentence judge rejected an exact translation.',
+    });
+  }
+  yield* report('Sentence generation, translations and grading verified.');
+});
+
 const verification = Effect.gen(function* () {
   const judge = yield* Judge;
-  const sentences = yield* SentenceGen;
   const extraction = yield* Extraction;
   const verdict = yield* judge.judge({
     direction: 'to_target',
@@ -60,27 +100,7 @@ const verification = Effect.gen(function* () {
   });
   yield* definitions.suggest({ term: 'Elektronendonator', subject: 'Chemie' });
   yield* report('Definition grading and writing verified.');
-  const batch = yield* sentences.generate({
-    targetText: 'the book',
-    nativeText: 'das Buch',
-    targetLanguage: 'English',
-    count: 1,
-  });
-  if (batch.sentences.length !== 1) {
-    return yield* new VerificationError({
-      message: 'Sentence generation returned the wrong count.',
-    });
-  }
-  yield* sentences.translate({
-    targetText: 'I read a book.',
-    targetLanguage: 'English',
-  });
-  yield* sentences.translateWord({
-    text: 'das Buch',
-    given: 'native',
-    targetLanguage: 'English',
-  });
-  yield* report('Sentence generation and translations verified.');
+  yield* verifySentences;
   const image = yield* Effect.tryPromise({
     try: () =>
       globalThis.Bun.file(
@@ -141,6 +161,6 @@ if (Exit.isFailure(result)) {
 } else {
   await globalThis.Bun.write(
     globalThis.Bun.stdout,
-    'Sonnet medium extraction, vocabulary and definition grading, writing, sentence generation and translations verified.\n',
+    'Sonnet medium extraction, vocabulary, definition and sentence grading, writing, sentence generation and translations verified.\n',
   );
 }

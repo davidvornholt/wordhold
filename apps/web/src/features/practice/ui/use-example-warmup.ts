@@ -90,5 +90,12 @@ export const useExampleWarmup = <T extends WarmupItem>(
       : item,
   );
 
-  return { items: withExamples, prepareExamples: prepareThroughWarmup };
+  // Whether preparing the entry has finished, with or without an example.
+  const isSettled = (entryId: string) => prepared.has(entryId);
+
+  return {
+    items: withExamples,
+    prepareExamples: prepareThroughWarmup,
+    isSettled,
+  };
 };

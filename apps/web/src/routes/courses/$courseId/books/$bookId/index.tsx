@@ -26,7 +26,11 @@ import { ActionLink } from '../../../../../shared/ui/action-link';
 import { BackLink } from '../../../../../shared/ui/back-link';
 import { PageLayout } from '../../../../../shared/ui/page-layout';
 import { cardClass } from '../../../../../shared/ui/surface-styles';
-import { PlaceDirectionPlan, PlaceWords } from '../../-place-screen';
+import {
+  PlaceDirectionPlan,
+  PlaceSentencePractice,
+  PlaceWords,
+} from '../../-place-screen';
 
 type BookUnitsProps = {
   readonly courseId: string;
@@ -141,6 +145,12 @@ const BookScreen = () => {
             subject={course}
           />
         )}
+        <PlaceSentencePractice
+          courseId={course.id}
+          place={wordPlace}
+          progress={book}
+          subject={course}
+        />
         {showWords ? (
           <PlaceWords
             course={course}

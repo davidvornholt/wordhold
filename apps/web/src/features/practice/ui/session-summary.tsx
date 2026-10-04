@@ -32,7 +32,7 @@ const firstPassOutcomes = (queue: SessionQueue): ReadonlyArray<RailOutcome> =>
     return queue.missedCardIds.includes(cardId) ? 'wrong' : 'correct';
   });
 
-const Figure = ({
+export const Figure = ({
   label,
   value,
 }: {

@@ -5,13 +5,7 @@ import {
 } from '../../../shared/ui/answer-field';
 import { Button } from '../../../shared/ui/button';
 import type { CardTone } from '../../../shared/ui/word-card';
-
-const toneField: Record<CardTone, string> = {
-  neutral: 'border-input',
-  positive: 'border-primary',
-  destructive: 'border-destructive',
-  warning: 'border-warning-foreground',
-};
+import { toneField } from './feedback-tone';
 
 // After a wrong or skipped answer the field asks for the answer to be written
 // out; the expected answer is its template until the learner types.

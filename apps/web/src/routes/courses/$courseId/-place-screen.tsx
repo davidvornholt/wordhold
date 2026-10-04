@@ -1,4 +1,5 @@
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
+import { useId } from 'react';
 import type {
   VocabularyEntry,
   WordProgress,
@@ -12,6 +13,7 @@ import {
   directionLabel,
 } from '../../../shared/directions';
 import { countNoun } from '../../../shared/format/count';
+import { germanLabels } from '../../../shared/languages';
 import { readyCardsInNextSection } from '../../../shared/practice/session-policy';
 import { itemsInNextSection } from '../../../shared/session/section-policy';
 import type { PlaceSelectionData } from '../../../shared/session/vocabulary-selection';
@@ -84,6 +86,46 @@ export const PlaceDirectionPlan = ({
       )}
       subject={subject}
     />
+  );
+};
+
+// Extra practice with the words already met: it opens once any word here is
+// introduced, in either direction, and leaves the schedule untouched.
+export const PlaceSentencePractice = ({
+  courseId,
+  place,
+  progress,
+  subject,
+}: PlaceDirectionPlanProps) => {
+  const headingId = useId();
+  if (
+    subject.kind !== 'language' ||
+    !progress.directions.some((direction) => direction.introduced > 0)
+  ) {
+    return null;
+  }
+  return (
+    <section aria-labelledby={headingId} className="flex flex-col gap-3">
+      <div className="flex flex-col gap-1">
+        <h2 className="font-display text-xl" id={headingId}>
+          Satzübung
+        </h2>
+        <p className="text-muted-foreground text-sm">
+          Übersetze Beispielsätze zu Wörtern, die du schon kennengelernt hast,
+          auf {germanLabels[subject.targetLanguage]}. Die KI prüft deine
+          Übersetzung; Lernstand und Termine bleiben unverändert.
+        </p>
+      </div>
+      <ActionLink
+        className="w-full sm:w-fit"
+        params={{ courseId }}
+        search={placeSearch(placeSelection(place))}
+        to="/courses/$courseId/sentences"
+        variant="outline"
+      >
+        Sätze übersetzen
+      </ActionLink>
+    </section>
   );
 };
 

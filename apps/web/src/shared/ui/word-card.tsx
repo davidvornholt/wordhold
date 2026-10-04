@@ -9,10 +9,17 @@ const toneBorder: Record<CardTone, string> = {
   warning: 'border-warning-foreground',
 };
 
+const wordSize = {
+  word: 'text-4xl sm:text-5xl',
+  // A sentence to translate runs to several words, so it is set smaller.
+  sentence: 'text-2xl sm:text-3xl',
+} as const;
+
 type WordCardProps = {
   // What to do with the word: "Übersetze auf Englisch".
   readonly eyebrow: string;
   readonly word: string;
+  readonly size?: keyof typeof wordSize;
   readonly wordId: string;
   readonly wordLang: string | undefined;
   readonly tone: CardTone;
@@ -32,6 +39,7 @@ const deckOffsets = [
 export const WordCard = ({
   eyebrow,
   word,
+  size = 'word',
   wordId,
   wordLang,
   tone,
@@ -51,7 +59,7 @@ export const WordCard = ({
     >
       <p className="eyebrow">{eyebrow}</p>
       <h2
-        className="wrap-break-word hyphens-auto text-balance font-display text-4xl leading-tight sm:text-5xl"
+        className={`wrap-break-word hyphens-auto text-balance font-display leading-tight ${wordSize[size]}`}
         id={wordId}
         lang={wordLang}
       >
