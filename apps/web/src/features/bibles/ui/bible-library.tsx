@@ -1,4 +1,4 @@
-import { type SubmitEvent, useId, useState } from 'react';
+import { type SubmitEvent, useId, useRef, useState } from 'react';
 import { Button } from '../../../shared/ui/button';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import {
@@ -33,6 +33,10 @@ export const BibleLibrary = ({ bibles, upload, remove }: BibleLibraryProps) => {
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState(noStatus);
   const [removing, setRemoving] = useState<BibleSummary | null>(null);
+  // A removed Bible takes its row and remove button with it, so focus then
+  // goes to the heading instead of the page body.
+  const [removed, setRemoved] = useState(false);
+  const headingRef = useRef<HTMLHeadingElement>(null);
   const headingId = useId();
 
   const submit = async (event: SubmitEvent<HTMLFormElement>) => {
@@ -71,6 +75,7 @@ export const BibleLibrary = ({ bibles, upload, remove }: BibleLibraryProps) => {
     setBusy(true);
     try {
       await remove(removing.id);
+      setRemoved(true);
       setStatus({ text: `${removing.abbreviation} entfernt.`, failed: false });
     } catch (cause) {
       setStatus({
@@ -88,7 +93,12 @@ export const BibleLibrary = ({ bibles, upload, remove }: BibleLibraryProps) => {
 
   return (
     <section aria-labelledby={headingId} className="flex flex-col gap-3">
-      <h2 className="font-display text-xl" id={headingId}>
+      <h2
+        className="font-display text-xl focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
+        id={headingId}
+        ref={headingRef}
+        tabIndex={-1}
+      >
         Bibeln
       </h2>
       <p className="max-w-prose text-muted-foreground text-sm">
@@ -116,7 +126,10 @@ export const BibleLibrary = ({ bibles, upload, remove }: BibleLibraryProps) => {
               <Button
                 aria-label={`${bible.abbreviation} entfernen`}
                 disabled={busy}
-                onClick={() => setRemoving(bible)}
+                onClick={() => {
+                  setRemoved(false);
+                  setRemoving(bible);
+                }}
                 variant="quiet"
               >
                 Entfernen
@@ -161,6 +174,7 @@ export const BibleLibrary = ({ bibles, upload, remove }: BibleLibraryProps) => {
           confirmRemoval().catch(() => undefined);
         }}
         open={removing !== null}
+        returnFocusRef={removed ? headingRef : undefined}
         title={`${removing?.abbreviation ?? 'Bibel'} entfernen?`}
       />
     </section>
