@@ -110,4 +110,19 @@ describe('readMySwordModule', () => {
       message: 'In der Datei stehen keine Bibelverse.',
     });
   });
+
+  it('refuses generated columns in either uploaded table', async () => {
+    expect(
+      await Promise.all(
+        (['Bible', 'Details'] as const).map((generatedTable) =>
+          refusal(
+            folder.write(`generated-${generatedTable}`, {
+              generatedTable,
+              verses: luther,
+            }),
+          ),
+        ),
+      ),
+    ).toEqual([notAModule, notAModule]);
+  });
 });

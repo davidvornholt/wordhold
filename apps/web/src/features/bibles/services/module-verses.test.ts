@@ -16,6 +16,34 @@ const numbered = (rows: ReadonlyArray<ModuleVerse>) =>
   );
 
 describe('moduleVerses text', () => {
+  it('preserves separators and decodes character references as literal text', () => {
+    for (const [scripture, text] of [
+      ['Himmel<CI>und Erde.', 'Himmel und Erde.'],
+      [
+        'Hirte;<br>mir wird nichts mangeln.',
+        'Hirte;\nmir wird nichts mangeln.',
+      ],
+      [
+        'Hirte;<BR />mir wird nichts mangeln.',
+        'Hirte;\nmir wird nichts mangeln.',
+      ],
+      ['Er f&#252;hret mich.', 'Er führet mich.'],
+      ['Er f&#xFC;hret mich.', 'Er führet mich.'],
+      ['&Auml;&auml; &Ouml;&ouml; &Uuml;&uuml; &szlig;', 'Ää Öö Üü ß'],
+      [
+        'Wort&nbsp;&amp; &quot;Wort&quot; &apos;Wort&apos;',
+        'Wort & "Wort" \'Wort\'',
+      ],
+      ['Wort &lt;i&gt;bleibt&lt;/i&gt; &amp;lt;', 'Wort <i>bleibt</i> &lt;'],
+      [
+        'Wort &unknown; &#0; &#xD800; &#1114112;',
+        'Wort &unknown; &#0; &#xD800; &#1114112;',
+      ],
+    ] as const) {
+      expect(moduleVerses([row(1, 1, 1, scripture)])[0]?.text).toBe(text);
+    }
+  });
+
   it('leaves out headings, footnotes and cross references', () => {
     expect(
       numbered([

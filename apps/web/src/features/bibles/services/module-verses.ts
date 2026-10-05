@@ -57,15 +57,56 @@ const isAfter = (a: Position, b: Position) =>
 const removeNotes = (scripture: string) =>
   notes.reduce((text, note) => text.replace(note, ''), scripture);
 
+const namedCharacters = new Map([
+  ['amp', '&'],
+  ['lt', '<'],
+  ['gt', '>'],
+  ['quot', '"'],
+  ['apos', "'"],
+  ['nbsp', ' '],
+  ['auml', 'ä'],
+  ['Auml', 'Ä'],
+  ['ouml', 'ö'],
+  ['Ouml', 'Ö'],
+  ['uuml', 'ü'],
+  ['Uuml', 'Ü'],
+  ['szlig', 'ß'],
+]);
+
+// Decode once, after removing markup, so escaped literal tags stay text.
+// Unknown references and invalid Unicode scalars remain as written.
+const maximumCodePoint = 0x10_ff_ff;
+const firstSurrogate = 0xd8_00;
+const lastSurrogate = 0xdf_ff;
+
+const decodeCharacters = (text: string) =>
+  text.replace(
+    /&(?<name>#x[\da-f]+|#\d+|[a-z]+);/giu,
+    (reference, name: string) => {
+      if (!name.startsWith('#')) {
+        return namedCharacters.get(name) ?? reference;
+      }
+      const hexadecimal = name[1]?.toLowerCase() === 'x';
+      const code = Number(hexadecimal ? `0${name.slice(1)}` : name.slice(1));
+      return code > 0 &&
+        code <= maximumCodePoint &&
+        !(code >= firstSurrogate && code <= lastSurrogate)
+        ? String.fromCodePoint(code)
+        : reference;
+    },
+  );
+
 // Paragraph marks become spaces and line breaks lines. A slash before a
 // space or at the end separates the lines of poetry, while one between
 // digits is part of a fraction. Brackets around words the translator added
 // and the musical note for "Sela" are not read aloud, so they are left out.
 const plainText = (text: string) =>
-  text
-    .replace(/<CM>/gu, ' ')
-    .replace(/<CL>/gu, '\n')
-    .replace(/<[^>]*>/gu, '')
+  decodeCharacters(
+    text
+      .replace(/<C[MI]>/gu, ' ')
+      .replace(/<CL>|<br\s*\/?\s*>/giu, '\n')
+      .replace(/<[^>]*>/gu, ''),
+  )
     .replace(/\s*\/(?:\s+|$)/gu, '\n')
     .replace(/[‹›♪]/gu, '')
     .split('\n')

@@ -41,18 +41,38 @@ const hasSqliteHeader = (bytes: Uint8Array) =>
 const shortened = (text: string, length: number) =>
   text.replace(/\s+/gu, ' ').trim().slice(0, length).trim();
 
+// Uploaded schemas must not evaluate expressions or invoke virtual tables
+// while reading content. Validate both tables before even counting rows.
+const validateTables = (database: DatabaseSync) => {
+  const tables = database.prepare('PRAGMA main.table_list').all();
+  let hasDetails = false;
+  for (const name of ['Bible', 'Details']) {
+    const table = tables.find(
+      (entry) =>
+        entry.schema === 'main' &&
+        typeof entry.name === 'string' &&
+        entry.name.toLowerCase() === name.toLowerCase(),
+    );
+    if (table !== undefined || name === 'Bible') {
+      if (
+        table?.type !== 'table' ||
+        database
+          .prepare(`PRAGMA main.table_xinfo(${name})`)
+          .all()
+          .some((column) => column.hidden !== 0)
+      ) {
+        throw notAModule();
+      }
+      hasDetails ||= name === 'Details';
+    }
+  }
+  return hasDetails;
+};
+
 // MySword keeps the title and abbreviation in a one-row Details table. Older
 // modules spell the column names differently, so they are matched without
 // case.
 const readDetails = (database: DatabaseSync) => {
-  const table = database
-    .prepare(
-      "select 1 from sqlite_master where type = 'table' and lower(name) = 'details'",
-    )
-    .get();
-  if (table === undefined) {
-    return { name: '', abbreviation: '' };
-  }
   const row = database.prepare('select * from Details limit 1').get() ?? {};
   const field = (name: string) => {
     const value = Object.entries(row).find(
@@ -82,14 +102,6 @@ const asModuleVerse = ({
     : [];
 
 const readRows = (database: DatabaseSync): Array<ModuleVerse> => {
-  const table = database
-    .prepare(
-      "select 1 from sqlite_master where type = 'table' and name = 'Bible'",
-    )
-    .get();
-  if (table === undefined) {
-    throw notAModule();
-  }
   const count = database.prepare('select count(*) as rows from Bible').get();
   if (Number(count?.rows) > maximumModuleRows) {
     throw notAModule();
@@ -105,7 +117,10 @@ const readRows = (database: DatabaseSync): Array<ModuleVerse> => {
 const readModuleFile = (path: string): BibleModule => {
   const database = new DatabaseSync(path, { readOnly: true });
   try {
-    const details = readDetails(database);
+    const hasDetails = validateTables(database);
+    const details = hasDetails
+      ? readDetails(database)
+      : { name: '', abbreviation: '' };
     const verses = moduleVerses(readRows(database));
     const name = details.name || details.abbreviation || 'Bibel';
     return {

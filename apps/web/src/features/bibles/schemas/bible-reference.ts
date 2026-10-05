@@ -19,7 +19,7 @@ export type ParsedReference =
 // optionally a verse with a comma or colon: "Joh 3", "Joh 3,16",
 // "Joh 3:16-18", "Ps 23,1–3", "Röm 8,28f".
 const referencePattern =
-  /^(?<book>(?:[1-3]\.?\s*)?\p{L}[\p{L}\s.]*?)\s*(?<chapter>\d{1,3})(?:\s*[,:]\s*(?<first>\d{1,3})(?:\s*(?:[-–—]\s*(?<last>\d{1,3})|(?<next>f)))?)?\s*$/u;
+  /^(?<book>(?:[1-5]\.?\s*)?\p{L}[\p{L}\s.]*?)\s*(?<chapter>\d{1,3})(?:\s*[,:]\s*(?<first>\d{1,3})(?:\s*(?:[-–—]\s*(?<last>\d{1,3})|(?<next>f)))?)?\s*$/u;
 
 const invalid = (message: string): ParsedReference => ({
   kind: 'invalid',

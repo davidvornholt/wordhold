@@ -15,12 +15,18 @@ export type ModuleFile = {
   readonly details?: ReadonlyArray<readonly [column: string, value: string]>;
   readonly verses?: ReadonlyArray<ModuleRow>;
   readonly bibleTable?: boolean;
+  // A small computed value exercises rejection before uploaded expressions run.
+  readonly generatedTable?: 'Bible' | 'Details';
 };
 
 const writeModule = (path: string, file: ModuleFile) => {
   rmSync(path, { force: true });
   const database = new DatabaseSync(path);
-  if (file.details !== undefined) {
+  if (file.generatedTable === 'Details') {
+    database.exec(
+      "create table Details (seed int, Title text generated always as (printf('%0*d', 100, 1)) virtual); insert into Details(seed) values (1)",
+    );
+  } else if (file.details !== undefined) {
     const columns = file.details.map(([column]) => `${column} text`);
     database.exec(`create table Details (${columns.join(', ')})`);
     database
@@ -29,7 +35,11 @@ const writeModule = (path: string, file: ModuleFile) => {
       )
       .run(...file.details.map(([, value]) => value));
   }
-  if (file.bibleTable !== false) {
+  if (file.generatedTable === 'Bible') {
+    database.exec(
+      "create table Bible (Book int, Chapter int, Verse int, Scripture text generated always as (printf('%0*d', 100, 1)) virtual); insert into Bible(Book, Chapter, Verse) values (1, 1, 1)",
+    );
+  } else if (file.bibleTable !== false) {
     database.exec(
       'create table Bible (Book int, Chapter int, Verse int, Scripture text)',
     );

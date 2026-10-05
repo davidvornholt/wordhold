@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import { bibleBooks } from './bible-books';
 import {
   type BibleReference,
   formatBibleReference,
@@ -11,6 +12,18 @@ const parsed = (typed: string): BibleReference | string => {
 };
 
 describe('parseBibleReference', () => {
+  it('accepts every supported book name and alias', () => {
+    for (const [index, book] of bibleBooks.entries()) {
+      for (const name of [book.name, ...book.aliases]) {
+        expect(parsed(`${name} 1,1`)).toEqual({
+          book: index + 1,
+          chapter: 1,
+          verses: { first: 1, last: 1 },
+        });
+      }
+    }
+  });
+
   it('reads a verse, a run of verses and a whole chapter', () => {
     expect(parsed('Joh 3,16')).toEqual({
       book: 43,
