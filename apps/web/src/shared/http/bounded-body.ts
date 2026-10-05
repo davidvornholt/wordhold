@@ -1,11 +1,14 @@
-import { Data, Effect } from 'effect';
+import { Effect, Schema } from 'effect';
 
 // A request body that cannot be accepted, with the HTTP status that says why.
-export class RequestBodyError extends Data.TaggedError('RequestBodyError')<{
-  readonly message: string;
-  readonly status: number;
-  readonly cause?: unknown;
-}> {}
+export class RequestBodyError extends Schema.TaggedError<RequestBodyError>()(
+  'RequestBodyError',
+  {
+    message: Schema.String,
+    status: Schema.Number,
+    cause: Schema.optional(Schema.Unknown),
+  },
+) {}
 
 export type BodyLimit = {
   readonly maximumBytes: number;

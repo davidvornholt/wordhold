@@ -1,11 +1,11 @@
 import type { SentenceGen } from '@wordhold/ai/sentence';
 import type { LanguageCode } from '@wordhold/db/schema/courses';
-import { type Context, Effect } from 'effect';
+import { Effect } from 'effect';
 import { englishNames } from '../../../shared/languages';
 import { decodeGeneratedExample } from '../../../shared/vocabulary/entry-fields';
 import { CourseExampleGenerationError } from '../errors/courses-errors';
 
-type SentenceGenerator = Context.Tag.Service<typeof SentenceGen>;
+type SentenceGenerator = SentenceGen['Service'];
 
 const generationFailed = (message: string) =>
   new CourseExampleGenerationError({ message });

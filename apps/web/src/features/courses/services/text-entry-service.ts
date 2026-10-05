@@ -1,4 +1,5 @@
-import { Effect } from 'effect';
+import { Context, Effect, Layer } from 'effect';
+import type { CourseDatabaseError } from '../errors/courses-errors';
 import {
   CourseKindMismatchError,
   CourseSettingsNotFoundError,
@@ -29,10 +30,31 @@ const duplicateTitle = (title: string) =>
     message: `„${title}“ ist in dieser Sammlung schon eingetragen.`,
   });
 
-export class TextEntryService extends Effect.Service<TextEntryService>()(
-  'wordhold/TextEntryService',
+export class TextEntryService extends Context.Service<
+  TextEntryService,
   {
-    effect: Effect.gen(function* () {
+    readonly create: (
+      input: CreateTextEntryData,
+    ) => Effect.Effect<
+      { entryId: string },
+      | CourseDatabaseError
+      | CourseSettingsNotFoundError
+      | CourseKindMismatchError
+      | VocabularyEntryConflictError
+    >;
+    readonly update: (
+      input: UpdateTextEntryData,
+    ) => Effect.Effect<
+      { title: string },
+      | CourseDatabaseError
+      | VocabularyEntryConflictError
+      | VocabularyEntryNotFoundError
+    >;
+  }
+>()('wordhold/TextEntryService') {
+  static readonly layer = Layer.effect(
+    TextEntryService,
+    Effect.gen(function* () {
       const store = yield* TextEntryStore;
 
       const create = (input: CreateTextEntryData) =>
@@ -67,7 +89,7 @@ export class TextEntryService extends Effect.Service<TextEntryService>()(
           }
         });
 
-      return { create, update } as const;
+      return TextEntryService.of({ create, update });
     }),
-  },
-) {}
+  );
+}

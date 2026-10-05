@@ -1,18 +1,19 @@
 import { Schema } from 'effect';
+import { Uuid } from '../../../shared/validate/uuid';
 
 // A typed reference is short; anything longer is not one.
 const maximumReferenceLength = 100;
 
 export const PassageLookup = Schema.Struct({
-  bibleId: Schema.UUID,
-  reference: Schema.Trim.pipe(
-    Schema.minLength(1),
-    Schema.maxLength(maximumReferenceLength),
+  bibleId: Uuid,
+  reference: Schema.Trim.check(
+    Schema.isMinLength(1),
+    Schema.isMaxLength(maximumReferenceLength),
   ),
 });
 
 export const BibleRemoval = Schema.Struct({
-  bibleId: Schema.UUID,
+  bibleId: Uuid,
 });
 
 export const decodePassageLookup = Schema.decodeUnknownSync(PassageLookup);

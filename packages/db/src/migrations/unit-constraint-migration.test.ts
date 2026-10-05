@@ -19,7 +19,7 @@ const provideDatabase = <A, E, R>(
 ) => effect.pipe(Effect.provide(testDatabaseLayer(url)));
 
 const migrateToPhaseOne = (url: string) =>
-  Effect.zipRight(migrateToPreUnitSchema(url), migrateToNullableUnits(url));
+  Effect.andThen(migrateToPreUnitSchema(url), migrateToNullableUnits(url));
 
 describe('required unit migration', () => {
   it('upgrades filed vocabulary and rejects future entries without a unit', async () => {
@@ -66,12 +66,12 @@ describe('required unit migration', () => {
               `;
               expect(columns).toEqual([{ nullable: 'NO' }]);
 
-              const unfiledInsert = yield* Effect.either(sql`
+              const unfiledInsert = yield* Effect.result(sql`
                 insert into entries (
                   course_id, type, target_text, native_text
                 ) values (${courseId}, 'word', 'mémoire', 'Erinnerung')
               `);
-              expect(unfiledInsert._tag).toBe('Left');
+              expect(unfiledInsert._tag).toBe('Failure');
               const entries = yield* sql<{ readonly count: number }>`
                 select count(*)::integer as count from entries
               `;
@@ -104,10 +104,10 @@ describe('required unit migration', () => {
             }),
           );
 
-          const migration = yield* Effect.either(
+          const migration = yield* Effect.result(
             migrateToRequiredUnits(database.url),
           );
-          expect(migration._tag).toBe('Left');
+          expect(migration._tag).toBe('Failure');
 
           yield* provideDatabase(
             database.url,

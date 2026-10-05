@@ -1,4 +1,4 @@
-import { Effect } from 'effect';
+import { Context, Effect, Layer } from 'effect';
 import { BedrockProvider } from '../providers/bedrock';
 import type { AiUsage } from '../usage';
 import type { DefinitionError } from './error';
@@ -31,10 +31,20 @@ export const definitionPrompt = (request: DefinitionRequest): string =>
     'typographic quotation marks.',
   ].join(' ');
 
-export class DefinitionWriter extends Effect.Service<DefinitionWriter>()(
-  '@wordhold/ai/DefinitionWriter',
+export class DefinitionWriter extends Context.Service<
+  DefinitionWriter,
   {
-    effect: Effect.gen(function* () {
+    readonly keyPoints: (
+      request: KeyPointRequest,
+    ) => Effect.Effect<KeyPointListData, DefinitionError, AiUsage>;
+    readonly suggest: (
+      request: DefinitionRequest,
+    ) => Effect.Effect<DefinitionSuggestionData, DefinitionError, AiUsage>;
+  }
+>()('@wordhold/ai/DefinitionWriter') {
+  static readonly layer = Layer.effect(
+    DefinitionWriter,
+    Effect.gen(function* () {
       const model = yield* BedrockProvider;
 
       const keyPoints = (
@@ -59,7 +69,7 @@ export class DefinitionWriter extends Effect.Service<DefinitionWriter>()(
           message: 'The definition could not be suggested.',
         });
 
-      return { keyPoints, suggest } as const;
+      return DefinitionWriter.of({ keyPoints, suggest });
     }),
-  },
-) {}
+  );
+}

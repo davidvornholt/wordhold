@@ -89,8 +89,9 @@ describe('PracticeReviewStore introduction contract', () => {
               direction: identity.direction,
               normalizedAnswer: 'nouveau',
             })
-            .pipe(Effect.either);
-          const failure = result._tag === 'Left' ? result.left : undefined;
+            .pipe(Effect.result);
+          const failure =
+            result._tag === 'Failure' ? result.failure : undefined;
           expect(failure).toBeInstanceOf(StaleAnswerSubmissionError);
 
           const [stored] = yield* sql<{

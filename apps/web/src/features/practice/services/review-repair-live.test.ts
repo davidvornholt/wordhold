@@ -62,8 +62,8 @@ it('plans without writes, refuses concurrent changes, and preserves original gra
         }>`select rating from reviews where card_id = ${card.id}`;
         expect(before?.rating).toBe(2);
         yield* sql`update cards set revision = revision + 1 where id = ${card.id}`;
-        const stale = yield* applyReviewRepairs(plans).pipe(Effect.either);
-        expect(stale._tag).toBe('Left');
+        const stale = yield* applyReviewRepairs(plans).pipe(Effect.result);
+        expect(stale._tag).toBe('Failure');
         const [unchanged] = yield* sql<{
           readonly rating: number;
         }>`select rating from reviews where card_id = ${card.id}`;
@@ -111,10 +111,10 @@ it('refuses to reassess a card from a terms course', async () => {
         if (card === undefined) {
           return yield* Effect.die('Fixture card missing');
         }
-        const plan = yield* planReviewRepairs([card.id]).pipe(Effect.either);
+        const plan = yield* planReviewRepairs([card.id]).pipe(Effect.result);
         expect(plan).toMatchObject({
-          _tag: 'Left',
-          left: { _tag: 'ReviewRepairError' },
+          _tag: 'Failure',
+          failure: { _tag: 'ReviewRepairError' },
         });
       }).pipe(
         Effect.provide(testDatabaseLayer(database.url)),

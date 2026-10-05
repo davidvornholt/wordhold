@@ -58,7 +58,7 @@ const text = (title: string, body = verse, courseId = collectionId) => ({
 });
 
 const createdId = (
-  result: Effect.Effect.Success<ReturnType<TextEntryStore['Type']['create']>>,
+  result: Effect.Success<ReturnType<TextEntryStore['Service']['create']>>,
 ) => (result.kind === 'created' ? result.entryId : '');
 
 describe('TextEntryStore', () => {

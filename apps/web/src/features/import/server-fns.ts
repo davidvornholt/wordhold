@@ -39,11 +39,8 @@ const asMember = <A, E, R>(
 ) =>
   requireOwner(getRequest().headers, owned).pipe(
     Effect.flatMap((member) => effect(member).pipe(billedTo(member.userId))),
-    Effect.tapErrorCause((cause) =>
-      Effect.logError(
-        'import request failed',
-        Cause.pretty(cause, { renderErrorCause: true }),
-      ),
+    Effect.tapCause((cause) =>
+      Effect.logError('import request failed', Cause.pretty(cause)),
     ),
   );
 

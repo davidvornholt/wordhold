@@ -37,7 +37,7 @@ const textSubmission: SubmissionRecord = {
 const reviewStore = (
   submission: SubmissionRecord,
   commits: Array<PersistReviewInput>,
-): PracticeReviewStore['Type'] => ({
+): PracticeReviewStore['Service'] => ({
   findSubmission: () => Effect.succeed(submission),
   saveKeyPoints: () => Effect.die('key points must not be saved'),
   listAcceptedAnswers: () =>
@@ -77,8 +77,8 @@ describe('PracticeService recited texts', () => {
   it('commits a word-perfect text as Good without asking the judge', async () => {
     const { result, commits } = submit(verse.toLowerCase());
     expect(await result).toMatchObject({
-      _tag: 'Right',
-      right: { correct: true, stored: true, rating: ratings.good },
+      _tag: 'Success',
+      success: { correct: true, stored: true, rating: ratings.good },
     });
     expect(commits.map((commit) => [commit.rating, commit.outcome])).toEqual([
       [
@@ -99,8 +99,8 @@ describe('PracticeService recited texts', () => {
     const spoken = verse.replace('daß', 'das');
     const dictated = submit(spoken, { dictated: true });
     expect(await dictated.result).toMatchObject({
-      _tag: 'Right',
-      right: { correct: true, rating: ratings.good },
+      _tag: 'Success',
+      success: { correct: true, rating: ratings.good },
     });
     expect(dictated.commits[0]?.outcome).toMatchObject({
       dictated: true,
@@ -110,16 +110,16 @@ describe('PracticeService recited texts', () => {
 
     const typed = submit(spoken);
     expect(await typed.result).toMatchObject({
-      _tag: 'Right',
-      right: { correct: true, rating: ratings.hard },
+      _tag: 'Success',
+      success: { correct: true, rating: ratings.hard },
     });
   });
 
   it('commits a wrong recitation at once, with nothing left to overrule', async () => {
     const { result, commits } = submit('Denn so hat Gott die Welt geliebt');
     expect(await result).toMatchObject({
-      _tag: 'Right',
-      right: {
+      _tag: 'Success',
+      success: {
         correct: false,
         stored: true,
         rating: ratings.again,
@@ -136,16 +136,16 @@ describe('PracticeService recited texts', () => {
     expect(long.length).toBeGreaterThan(maximumEntryTextLength);
     const { result } = submit(long);
     expect(await result).toMatchObject({
-      _tag: 'Right',
-      right: { correct: false, stored: true },
+      _tag: 'Success',
+      success: { correct: false, stored: true },
     });
 
     const { result: translation, commits } = submit(long, {
       submission: testSubmission,
     });
     expect(await translation).toMatchObject({
-      _tag: 'Left',
-      left: { _tag: 'AnswerTooLongError' },
+      _tag: 'Failure',
+      failure: { _tag: 'AnswerTooLongError' },
     });
     expect(commits).toHaveLength(0);
   });

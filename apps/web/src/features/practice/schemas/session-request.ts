@@ -4,19 +4,20 @@ import {
   PlaceSelection,
   VocabularySelection,
 } from '../../../shared/session/vocabulary-selection';
+import { Uuid } from '../../../shared/validate/uuid';
 
 // Which way round a sitting asks. The two single values narrow the queue to
 // one direction; `both` mixes whatever the course still practises.
-export const SessionDirectionSchema = Schema.Literal(
+export const SessionDirectionSchema = Schema.Literals([
   ...answerDirections,
   'both',
-);
+]);
 export type SessionDirection = typeof SessionDirectionSchema.Type;
 
 // Scheduled practice covers the whole course, or only one book's own words or
 // one unit.
 export const SessionRequest = Schema.Struct({
-  courseId: Schema.UUID,
+  courseId: Uuid,
   direction: SessionDirectionSchema,
   place: Schema.optional(PlaceSelection),
 });
@@ -29,7 +30,7 @@ export const decodeSessionRequest = Schema.decodeUnknownSync(SessionRequest);
 // switched off. The overview's Wackelkandidaten come from the directions the
 // course still practises, so their sitting stays in those.
 export const StudyRequest = Schema.Struct({
-  courseId: Schema.UUID,
+  courseId: Uuid,
   direction: SessionDirectionSchema,
   selection: VocabularySelection,
   includeSwitchedOff: Schema.Boolean,
@@ -41,8 +42,8 @@ export const decodeStudyRequest = Schema.decodeUnknownSync(StudyRequest);
 
 const PracticeSearch = Schema.Struct({
   direction: Schema.optional(SessionDirectionSchema),
-  book: Schema.optional(Schema.UUID),
-  unit: Schema.optional(Schema.UUID),
+  book: Schema.optional(Uuid),
+  unit: Schema.optional(Uuid),
 });
 
 export type PracticeSearchData = typeof PracticeSearch.Type;
@@ -56,10 +57,10 @@ export const parsePracticeSearch = (input: unknown): PracticeSearchData =>
 
 const StudySearch = Schema.Struct({
   direction: Schema.optional(SessionDirectionSchema),
-  book: Schema.optional(Schema.UUID),
-  unit: Schema.optional(Schema.UUID),
+  book: Schema.optional(Uuid),
+  unit: Schema.optional(Uuid),
   entries: Schema.optional(Schema.String),
-  mode: Schema.optional(Schema.Literal('learn', 'practice')),
+  mode: Schema.optional(Schema.Literals(['learn', 'practice'])),
   // The selection is the overview's Wackelkandidaten, so the sitting is named
   // after them and leads back to the overview.
   from: Schema.optional(Schema.Literal('fragile')),
@@ -77,4 +78,4 @@ export const selectedEntryIds = (
 ): ReadonlyArray<string> =>
   entries === undefined
     ? []
-    : entries.split(',').filter((entryId) => Schema.is(Schema.UUID)(entryId));
+    : entries.split(',').filter((entryId) => Schema.is(Uuid)(entryId));

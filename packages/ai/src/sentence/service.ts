@@ -1,16 +1,17 @@
-import { Effect, Schema } from 'effect';
+import { Context, Effect, Layer, Schema } from 'effect';
 import {
   maximumEntryTextLength,
   maximumExampleLength,
 } from '../extraction/schema';
 import { BedrockProvider } from '../providers/bedrock';
 import { generateStructured } from '../structured-generation';
+import { decodeModelOutput } from '../structured-output';
 import type { AiOperation, AiUsage } from '../usage';
 import { SentenceGenError } from './error';
 
-const SentenceText = Schema.Trim.pipe(
-  Schema.minLength(1),
-  Schema.maxLength(maximumExampleLength),
+const SentenceText = Schema.Trim.check(
+  Schema.isMinLength(1),
+  Schema.isMaxLength(maximumExampleLength),
 );
 
 export const SentenceBatch = Schema.Struct({
@@ -26,9 +27,9 @@ export type SentenceBatchData = typeof SentenceBatch.Type;
 export const SentenceTranslation = Schema.Struct({ native: SentenceText });
 export type SentenceTranslationData = typeof SentenceTranslation.Type;
 
-const WordText = Schema.Trim.pipe(
-  Schema.minLength(1),
-  Schema.maxLength(maximumEntryTextLength),
+const WordText = Schema.Trim.check(
+  Schema.isMinLength(1),
+  Schema.isMaxLength(maximumEntryTextLength),
 );
 
 export const WordTranslation = Schema.Struct({ translation: WordText });
@@ -93,15 +94,29 @@ export const wordTranslationPrompt = (
     .join(' ');
 };
 
-export class SentenceGen extends Effect.Service<SentenceGen>()(
-  '@wordhold/ai/SentenceGen',
+export class SentenceGen extends Context.Service<
+  SentenceGen,
   {
-    effect: Effect.gen(function* () {
+    readonly generate: (
+      request: SentenceRequest,
+    ) => Effect.Effect<SentenceBatchData, SentenceGenError, AiUsage>;
+    readonly translate: (request: {
+      readonly targetText: string;
+      readonly targetLanguage: string;
+    }) => Effect.Effect<SentenceTranslationData, SentenceGenError, AiUsage>;
+    readonly translateWord: (
+      request: WordTranslationRequest,
+    ) => Effect.Effect<WordTranslationData, SentenceGenError, AiUsage>;
+  }
+>()('@wordhold/ai/SentenceGen') {
+  static readonly layer = Layer.effect(
+    SentenceGen,
+    Effect.gen(function* () {
       const model = yield* BedrockProvider;
 
-      const generateSentenceOutput = <A, I>(
+      const generateSentenceOutput = <A>(
         operation: AiOperation,
-        schema: Schema.Schema<A, I>,
+        schema: Schema.Decoder<A>,
         prompt: string,
       ): Effect.Effect<A, SentenceGenError, AiUsage> =>
         generateStructured({
@@ -112,7 +127,7 @@ export class SentenceGen extends Effect.Service<SentenceGen>()(
           failure: (cause) => new SentenceGenError({ cause }),
         }).pipe(
           Effect.flatMap((output) =>
-            Schema.decodeUnknown(schema)(output).pipe(
+            decodeModelOutput(schema)(output).pipe(
               Effect.mapError((cause) => new SentenceGenError({ cause })),
             ),
           ),
@@ -146,7 +161,7 @@ export class SentenceGen extends Effect.Service<SentenceGen>()(
           wordTranslationPrompt(request),
         );
 
-      return { generate, translate, translateWord } as const;
+      return SentenceGen.of({ generate, translate, translateWord });
     }),
-  },
-) {}
+  );
+}

@@ -41,7 +41,7 @@ it('deletes the open pages in one import session and keeps verified pages', asyn
             Effect.sync(() => {
               removed.push(path);
             }).pipe(
-              Effect.zipRight(
+              Effect.andThen(
                 Effect.fail(
                   new StorageError({
                     operation: 'remove file',
@@ -63,11 +63,11 @@ it('deletes the open pages in one import session and keeps verified pages', asyn
         });
         expect(removed).toEqual(['pages/pending.png']);
 
-        const verifiedResult = yield* Effect.either(discard(importSessionId));
+        const verifiedResult = yield* Effect.result(discard(importSessionId));
         expect(verifiedResult).toEqual(
           expect.objectContaining({
-            _tag: 'Left',
-            left: expect.any(PageNotPendingError),
+            _tag: 'Failure',
+            failure: expect.any(PageNotPendingError),
           }),
         );
         expect(removed).toEqual(['pages/pending.png']);
@@ -83,7 +83,7 @@ it('deletes the open pages in one import session and keeps verified pages', asyn
         `;
         expect(tombstones).toEqual([{ id: importSessionId }]);
 
-        const lateUpload = yield* Effect.either(
+        const lateUpload = yield* Effect.result(
           repository.insertPage({
             id: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
             courseId,
@@ -95,8 +95,8 @@ it('deletes the open pages in one import session and keeps verified pages', asyn
         );
         expect(lateUpload).toEqual(
           expect.objectContaining({
-            _tag: 'Left',
-            left: expect.objectContaining({
+            _tag: 'Failure',
+            failure: expect.objectContaining({
               message: 'Database operation failed: insert page.',
             }),
           }),

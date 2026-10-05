@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import type { JudgeVerdictData } from '@wordhold/ai/judge/schema';
 import { untrackedAiUsage } from '@wordhold/ai/testing/usage';
-import { Effect, Layer } from 'effect';
+import { Effect, Layer, Semaphore } from 'effect';
 import {
   PracticeDatabaseError,
   PracticeJudgeError,
@@ -61,12 +61,13 @@ describe('judgeWithCache', () => {
           }),
         ),
       ),
-      Effect.either,
+      Effect.result,
       Effect.provide(untrackedAiUsage),
     );
     const result = await Effect.runPromise(program);
-    expect(result._tag).toBe('Left');
-    const receivedFailure = result._tag === 'Left' ? result.left : undefined;
+    expect(result._tag).toBe('Failure');
+    const receivedFailure =
+      result._tag === 'Failure' ? result.failure : undefined;
     expect(receivedFailure).toBe(failure);
     expect(judgeCalls).toBe(0);
   });
@@ -91,16 +92,17 @@ describe('judgeWithCache', () => {
             }),
           ),
         ),
-        Effect.either,
+        Effect.result,
         Effect.provide(untrackedAiUsage),
       ),
     );
-    expect(result._tag).toBe('Left');
-    const receivedFailure = result._tag === 'Left' ? result.left : undefined;
+    expect(result._tag).toBe('Failure');
+    const receivedFailure =
+      result._tag === 'Failure' ? result.failure : undefined;
     expect(receivedFailure).toBe(failure);
   });
   it('judges once when concurrent misses share a critical section', async () => {
-    const mutex = Effect.unsafeMakeSemaphore(1);
+    const mutex = Semaphore.makeUnsafe(1);
     let cached: CachedVerdict | undefined;
     let judgeCalls = 0;
     const layer = Layer.merge(

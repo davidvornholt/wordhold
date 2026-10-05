@@ -1,5 +1,6 @@
-import { Data } from 'effect';
+import { Schema } from 'effect';
 
-export class AuthorizationError extends Data.TaggedError('AuthorizationError')<{
-  readonly message: string;
-}> {}
+export class AuthorizationError extends Schema.TaggedError<AuthorizationError>()(
+  'AuthorizationError',
+  { message: Schema.String },
+) {}

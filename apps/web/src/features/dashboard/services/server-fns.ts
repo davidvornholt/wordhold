@@ -10,7 +10,7 @@ import { requireString } from '../../../shared/validate/input';
 import { DashboardService } from './dashboard-service';
 import { DashboardStore } from './dashboard-store';
 
-const dashboardLive = DashboardService.Default.pipe(
+const dashboardLive = DashboardService.layer.pipe(
   Layer.provide(DashboardStore.live.pipe(Layer.provide(PgLive))),
 );
 

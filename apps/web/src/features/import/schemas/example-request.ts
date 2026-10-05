@@ -1,11 +1,12 @@
 import { Schema } from 'effect';
+import { Uuid } from '../../../shared/validate/uuid';
 import {
   EntryText,
   ExampleText,
 } from '../../../shared/vocabulary/entry-fields';
 
 export const ExampleRequest = Schema.Struct({
-  pageId: Schema.UUID,
+  pageId: Uuid,
   targetText: EntryText,
   nativeText: EntryText,
 });
@@ -13,7 +14,7 @@ export const ExampleRequest = Schema.Struct({
 export const decodeExampleRequest = Schema.decodeUnknownSync(ExampleRequest);
 
 export const TranslationRequest = Schema.Struct({
-  pageId: Schema.UUID,
+  pageId: Uuid,
   targetText: ExampleText,
 });
 

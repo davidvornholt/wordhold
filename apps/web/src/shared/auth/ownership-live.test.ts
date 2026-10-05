@@ -22,7 +22,7 @@ const missingId = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
 const runWithFixture = <A, E>(work: Effect.Effect<A, E, Database>) =>
   Effect.runPromise(
     withMigratedTestDatabase((database) =>
-      Effect.zipRight(
+      Effect.andThen(
         Effect.all([seedIntroducedCardFixture, seedOwner(otherOwnerId)]),
         work,
       ).pipe(Effect.provide(testDatabaseLayer(database.url))),
@@ -34,7 +34,7 @@ const outcome = <A, E extends { readonly _tag: string }, R>(
 ) =>
   effect.pipe(
     Effect.as('owned'),
-    Effect.catchAll((failure) => Effect.succeed(failure._tag)),
+    Effect.catch((failure) => Effect.succeed(failure._tag)),
   );
 
 describe('assertOwned', () => {

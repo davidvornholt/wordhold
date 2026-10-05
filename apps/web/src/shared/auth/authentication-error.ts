@@ -1,8 +1,6 @@
-import { Data } from 'effect';
+import { Schema } from 'effect';
 
-export class AuthenticationError extends Data.TaggedError(
+export class AuthenticationError extends Schema.TaggedError<AuthenticationError>()(
   'AuthenticationError',
-)<{
-  readonly message: string;
-  readonly cause?: unknown;
-}> {}
+  { message: Schema.String, cause: Schema.optional(Schema.Unknown) },
+) {}

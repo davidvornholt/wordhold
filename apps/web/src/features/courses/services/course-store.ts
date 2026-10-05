@@ -42,7 +42,7 @@ const databaseError = (operation: string, cause: unknown) =>
       'Die Sprache, das Fach oder die Sammlung konnte nicht geladen werden.',
   });
 
-export class CourseStore extends Context.Tag('wordhold/CourseStore')<
+export class CourseStore extends Context.Service<
   CourseStore,
   {
     readonly readDirections: (
@@ -104,7 +104,7 @@ export class CourseStore extends Context.Tag('wordhold/CourseStore')<
       courseId: string,
     ) => Effect.Effect<ReadonlyArray<VocabularyEntry>, CourseDatabaseError>;
   }
->() {
+>()('wordhold/CourseStore') {
   static readonly live = Layer.effect(
     CourseStore,
     Effect.gen(function* () {

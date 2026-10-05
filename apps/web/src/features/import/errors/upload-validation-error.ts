@@ -1,8 +1,6 @@
-import { Data } from 'effect';
+import { Schema } from 'effect';
 
-export class UploadValidationError extends Data.TaggedError(
+export class UploadValidationError extends Schema.TaggedError<UploadValidationError>()(
   'UploadValidationError',
-)<{
-  readonly message: string;
-  readonly status: number;
-}> {}
+  { message: Schema.String, status: Schema.Number },
+) {}

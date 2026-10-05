@@ -1,5 +1,7 @@
 import { DefinitionWriter } from '@wordhold/ai/definition/writer';
-import { Effect } from 'effect';
+import type { AiUsage } from '@wordhold/ai/usage';
+import { Context, Effect, Layer } from 'effect';
+import type { CourseDatabaseError } from '../errors/courses-errors';
 import {
   CourseKindMismatchError,
   CourseSettingsNotFoundError,
@@ -44,10 +46,54 @@ const keyPointsFailed = new TermAssistError({
     'Die Kernpunkte konnten nicht bestimmt werden. Versuche es noch einmal oder trage sie selbst ein.',
 });
 
-export class TermEntryService extends Effect.Service<TermEntryService>()(
-  'wordhold/TermEntryService',
+export class TermEntryService extends Context.Service<
+  TermEntryService,
   {
-    effect: Effect.gen(function* () {
+    readonly create: (
+      input: CreateTermEntryData,
+    ) => Effect.Effect<
+      { entryId: string },
+      | CourseDatabaseError
+      | CourseSettingsNotFoundError
+      | CourseKindMismatchError
+      | VocabularyEntryConflictError
+    >;
+    readonly update: (
+      input: UpdateTermEntryData,
+    ) => Effect.Effect<
+      { definitionChanged: boolean },
+      | CourseDatabaseError
+      | VocabularyEntryConflictError
+      | VocabularyEntryNotFoundError
+    >;
+    readonly suggestDefinition: (
+      input: TermDefinitionSuggestionData,
+    ) => Effect.Effect<
+      { definition: string },
+      | CourseDatabaseError
+      | CourseSettingsNotFoundError
+      | CourseKindMismatchError
+      | TermAssistError,
+      AiUsage
+    >;
+    readonly deriveKeyPoints: (
+      input: TermKeyPointsRequestData,
+    ) => Effect.Effect<
+      { keyPoints: ReadonlyArray<string> },
+      CourseDatabaseError | VocabularyEntryNotFoundError | TermAssistError,
+      AiUsage
+    >;
+    readonly updateKeyPoints: (
+      input: UpdateTermKeyPointsData,
+    ) => Effect.Effect<
+      { keyPoints: ReadonlyArray<string> },
+      CourseDatabaseError | VocabularyEntryNotFoundError
+    >;
+  }
+>()('wordhold/TermEntryService') {
+  static readonly layer = Layer.effect(
+    TermEntryService,
+    Effect.gen(function* () {
       const store = yield* TermEntryStore;
       const writer = yield* DefinitionWriter;
 
@@ -145,13 +191,13 @@ export class TermEntryService extends Effect.Service<TermEntryService>()(
           return updated ? { keyPoints } : yield* termMissing;
         });
 
-      return {
+      return TermEntryService.of({
         create,
         update,
         suggestDefinition,
         deriveKeyPoints,
         updateKeyPoints,
-      } as const;
+      });
     }),
-  },
-) {}
+  );
+}

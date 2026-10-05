@@ -1,7 +1,6 @@
-import { Data } from 'effect';
+import { Schema } from 'effect';
 
-export class CourseNotFoundError extends Data.TaggedError(
+export class CourseNotFoundError extends Schema.TaggedError<CourseNotFoundError>()(
   'CourseNotFoundError',
-)<{
-  readonly message: string;
-}> {}
+  { message: Schema.String },
+) {}

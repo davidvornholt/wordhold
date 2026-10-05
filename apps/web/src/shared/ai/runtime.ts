@@ -8,23 +8,21 @@ import { PgLive } from '@wordhold/db/client';
 import { Layer, ManagedRuntime } from 'effect';
 import { UsageLedger } from './usage-ledger';
 
-export const judgeLayer = Judge.Default.pipe(
-  Layer.provide(BedrockProvider.live),
-);
+export const judgeLayer = Judge.layer.pipe(Layer.provide(BedrockProvider.live));
 
 export const definitionLayer = Layer.merge(
-  DefinitionJudge.Default,
-  DefinitionWriter.Default,
+  DefinitionJudge.layer,
+  DefinitionWriter.layer,
 ).pipe(Layer.provide(BedrockProvider.live));
 
-export const sentenceJudgeLayer = SentenceJudge.Default.pipe(
+export const sentenceJudgeLayer = SentenceJudge.layer.pipe(
   Layer.provide(BedrockProvider.live),
 );
 
 // Runtimes build lazily.
 export const sentenceRuntime = ManagedRuntime.make(
   Layer.merge(
-    SentenceGen.Default.pipe(Layer.provide(BedrockProvider.live)),
+    SentenceGen.layer.pipe(Layer.provide(BedrockProvider.live)),
     UsageLedger.live(PgLive),
   ),
 );

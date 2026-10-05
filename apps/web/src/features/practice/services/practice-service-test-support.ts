@@ -54,8 +54,8 @@ export const unavailableJudge = (cause: string) =>
   Effect.fail(new PracticeJudgeError({ cause, message: 'judge unavailable' }));
 
 export const testGrader = (
-  grader: Partial<Omit<DefinitionGrader['Type'], 'model'>> = {},
-): DefinitionGrader['Type'] => ({
+  grader: Partial<Omit<DefinitionGrader['Service'], 'model'>> = {},
+): DefinitionGrader['Service'] => ({
   model: 'vertex:test-model',
   judge: () => unavailableJudge('definition judge must not run'),
   keyPoints: () => unavailableJudge('key points must not be derived'),
@@ -63,8 +63,8 @@ export const testGrader = (
 });
 
 export const testJudge = (
-  judge: PracticeJudge['Type']['judge'],
-): PracticeJudge['Type'] => ({
+  judge: PracticeJudge['Service']['judge'],
+): PracticeJudge['Service'] => ({
   model: 'vertex:test-model',
   judge,
 });
@@ -90,15 +90,15 @@ const cacheStore = Layer.succeed(JudgeCacheStore, {
 });
 
 export const runSubmitPayload = (
-  reviewStore: PracticeReviewStore['Type'],
-  judge: PracticeJudge['Type'],
+  reviewStore: PracticeReviewStore['Service'],
+  judge: PracticeJudge['Service'],
   payload: SubmitPayloadData,
   grader = testGrader(),
 ) =>
   Effect.runPromise(
     Effect.flatMap(PracticeService, (service) => service.submit(payload)).pipe(
       Effect.provide(
-        PracticeService.Default.pipe(
+        PracticeService.layer.pipe(
           Layer.provide(
             Layer.mergeAll(
               sessionStore,
@@ -110,14 +110,14 @@ export const runSubmitPayload = (
           ),
         ),
       ),
-      Effect.either,
+      Effect.result,
       Effect.provide(untrackedAiUsage),
     ),
   );
 
 export const runSubmit = (
-  reviewStore: PracticeReviewStore['Type'],
-  judge: PracticeJudge['Type'],
+  reviewStore: PracticeReviewStore['Service'],
+  judge: PracticeJudge['Service'],
   answer = 'wrong',
 ) =>
   runSubmitPayload(reviewStore, judge, {

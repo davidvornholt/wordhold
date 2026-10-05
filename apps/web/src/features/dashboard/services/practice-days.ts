@@ -4,7 +4,7 @@ import type { PracticeDay } from '../schemas/dashboard-models';
 // Calendar days are the owner's local days: the same review counts for the
 // same day on the dashboard whether it happened at 00:30 or 23:30.
 const ownerDay = (at: Date, timeZone: string) =>
-  DateTime.startOf(DateTime.unsafeMakeZoned(at, { timeZone }), 'day');
+  DateTime.startOf(DateTime.makeZonedUnsafe(at, { timeZone }), 'day');
 
 export const ownerDayKey = (at: Date, timeZone: string): string =>
   DateTime.formatIsoDate(ownerDay(at, timeZone));

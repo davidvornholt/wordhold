@@ -18,7 +18,7 @@ const unavailable = (cause: unknown) =>
 // Grades a typed definition in a terms course. Key points are derived here
 // only for a term saved before they could be; the entry form derives them
 // when the term is saved.
-export class DefinitionGrader extends Context.Tag('wordhold/DefinitionGrader')<
+export class DefinitionGrader extends Context.Service<
   DefinitionGrader,
   {
     readonly model: string;
@@ -29,7 +29,7 @@ export class DefinitionGrader extends Context.Tag('wordhold/DefinitionGrader')<
       request: KeyPointRequest,
     ) => Effect.Effect<ReadonlyArray<string>, PracticeJudgeError, AiUsage>;
   }
->() {
+>()('wordhold/DefinitionGrader') {
   static readonly live = Layer.effect(
     DefinitionGrader,
     Effect.gen(function* () {

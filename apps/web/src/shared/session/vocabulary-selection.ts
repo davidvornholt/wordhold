@@ -1,21 +1,22 @@
 import type { Database } from '@wordhold/db/client';
 import { Schema } from 'effect';
+import { Uuid } from '../validate/uuid';
 
 // The words of one place: a unit's, or the words that live directly in a
 // book. A book's units are selected on their own.
-export const PlaceSelection = Schema.Union(
-  Schema.Struct({ bookId: Schema.UUID }),
-  Schema.Struct({ unitId: Schema.UUID }),
-);
+export const PlaceSelection = Schema.Union([
+  Schema.Struct({ bookId: Uuid }),
+  Schema.Struct({ unitId: Uuid }),
+]);
 
 export type PlaceSelectionData = typeof PlaceSelection.Type;
 
-export const VocabularySelection = Schema.Union(
+export const VocabularySelection = Schema.Union([
   ...PlaceSelection.members,
   Schema.Struct({
-    entryIds: Schema.Array(Schema.UUID).pipe(Schema.minItems(1)),
+    entryIds: Schema.Array(Uuid).check(Schema.isMinLength(1)),
   }),
-);
+]);
 
 export type VocabularySelectionData = typeof VocabularySelection.Type;
 

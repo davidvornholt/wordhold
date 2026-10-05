@@ -6,10 +6,11 @@ import {
   PlaceSelection,
   VocabularySelection,
 } from '../../../shared/session/vocabulary-selection';
+import { Uuid } from '../../../shared/validate/uuid';
 import { LearningService } from './learning-service';
 import { LearningStore } from './learning-store';
 
-const learningLive = LearningService.Default.pipe(
+const learningLive = LearningService.layer.pipe(
   Layer.provide(LearningStore.live.pipe(Layer.provide(PgLive))),
 );
 
@@ -18,19 +19,19 @@ const learningRuntime = ManagedRuntime.make(learningLive);
 // Without a place the pass covers the whole course.
 const decodePassRequest = Schema.decodeUnknownSync(
   Schema.Struct({
-    courseId: Schema.UUID,
+    courseId: Uuid,
     place: Schema.optional(PlaceSelection),
   }),
 );
 const decodeIntroductionRequest = Schema.decodeUnknownSync(
   Schema.Struct({
-    courseId: Schema.UUID,
-    cardId: Schema.UUID,
+    courseId: Uuid,
+    cardId: Uuid,
   }),
 );
 const decodeSelectionRequest = Schema.decodeUnknownSync(
   Schema.Struct({
-    courseId: Schema.UUID,
+    courseId: Uuid,
     selection: VocabularySelection,
   }),
 );

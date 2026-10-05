@@ -6,7 +6,7 @@ type DayBounds = {
 };
 
 export const ownerDayBounds = (now: Date, timeZone: string): DayBounds => {
-  const zonedNow = DateTime.unsafeMakeZoned(now, { timeZone });
+  const zonedNow = DateTime.makeZonedUnsafe(now, { timeZone });
   const start = DateTime.startOf(zonedNow, 'day');
   const end = DateTime.add(start, { days: 1 });
   return {

@@ -8,7 +8,7 @@ import { privateMediaResponse } from '../../../../shared/storage/media-response'
 import { loadExampleAudio } from '../../../../shared/storage/media-service';
 
 const audioResponse = (request: Request, entryId: string) =>
-  Effect.zipRight(
+  Effect.andThen(
     requireOwner(request.headers, { entries: [entryId] }),
     loadExampleAudio(entryId),
   ).pipe(

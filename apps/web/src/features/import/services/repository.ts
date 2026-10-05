@@ -195,6 +195,7 @@ export type ImportRepositoryShape = {
   >;
 };
 
-export class ImportRepository extends Context.Tag(
-  '@wordhold/web/import/ImportRepository',
-)<ImportRepository, ImportRepositoryShape>() {}
+export class ImportRepository extends Context.Service<
+  ImportRepository,
+  ImportRepositoryShape
+>()('@wordhold/web/import/ImportRepository') {}

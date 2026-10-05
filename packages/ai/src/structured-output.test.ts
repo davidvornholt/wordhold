@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import { Effect } from 'effect';
 import {
   DefinitionSuggestion,
   DefinitionVerdict,
@@ -9,7 +10,7 @@ import { ExtractedPage } from './extraction/schema';
 import { JudgeVerdict } from './judge/schema';
 import { SentenceVerdict } from './sentence/judge-schema';
 import { SentenceBatch } from './sentence/service';
-import { providerJsonSchema } from './structured-output';
+import { decodeModelOutput, providerJsonSchema } from './structured-output';
 
 // A schema the AI SDK cannot express as JSON Schema fails only once a model is
 // actually called, so every structured-output schema is converted here.
@@ -49,6 +50,16 @@ describe('providerJsonSchema', () => {
     });
   }
 
+  it('keeps extraction objects closed and confidences bounded', () => {
+    const schema = providerJsonSchema(ExtractedPage).jsonSchema;
+    expect(schema).toHaveProperty('additionalProperties', false);
+    expect(schema).toHaveProperty('properties.overallConfidence', {
+      type: 'number',
+      minimum: 0,
+      maximum: 1,
+    });
+  });
+
   it('keeps key point bounds in the schema sent to Bedrock', () => {
     const schema = providerJsonSchema(KeyPointList).jsonSchema;
     expect(schema).toHaveProperty('properties.keyPoints.minItems', 1);
@@ -79,4 +90,39 @@ describe('providerJsonSchema', () => {
       expect(incompleteObjects).toEqual([]);
     });
   }
+});
+
+describe('decodeModelOutput', () => {
+  // The schema sent to Bedrock allows null for absent optional fields.
+  it('reads a null optional field as absent', () => {
+    const page = Effect.runSync(
+      decodeModelOutput(ExtractedPage)({
+        unitName: null,
+        overallConfidence: 0.9,
+        entries: [
+          {
+            targetText: 'the book',
+            nativeText: 'das Buch',
+            grammar: null,
+            example: null,
+            confidence: 0.9,
+          },
+        ],
+      }),
+    );
+    expect(page.unitName).toBeUndefined();
+    expect(page.entries[0]?.grammar).toBeUndefined();
+  });
+
+  it('still rejects an answer outside the schema', () => {
+    const result = Effect.runSync(
+      Effect.result(
+        decodeModelOutput(ExtractedPage)({
+          overallConfidence: 2,
+          entries: [],
+        }),
+      ),
+    );
+    expect(result._tag).toBe('Failure');
+  });
 });

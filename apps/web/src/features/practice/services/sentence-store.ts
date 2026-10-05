@@ -28,7 +28,7 @@ type SentenceTargetRow = {
   readonly reference: string;
 };
 
-export class SentenceStore extends Context.Tag('wordhold/SentenceStore')<
+export class SentenceStore extends Context.Service<
   SentenceStore,
   {
     readonly loadSession: (
@@ -39,7 +39,7 @@ export class SentenceStore extends Context.Tag('wordhold/SentenceStore')<
       entryId: string,
     ) => Effect.Effect<SentenceTarget | undefined, PracticeDatabaseError>;
   }
->() {
+>()('wordhold/SentenceStore') {
   static readonly live = Layer.effect(
     SentenceStore,
     Effect.gen(function* () {

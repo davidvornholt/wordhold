@@ -1,6 +1,7 @@
-import { Effect, Schema } from 'effect';
+import { Context, Effect, Layer } from 'effect';
 import { BedrockProvider, productionModelId } from '../providers/bedrock';
 import { generateStructured } from '../structured-generation';
+import { decodeModelOutput } from '../structured-output';
 import type { AiUsage } from '../usage';
 import { SentenceJudgeError } from './judge-error';
 import {
@@ -30,13 +31,21 @@ export const sentenceJudgePrompt = (input: SentenceJudgeInput): string =>
 
 const judgeFailure = 'The sentence translation could not be graded.';
 
-export class SentenceJudge extends Effect.Service<SentenceJudge>()(
-  '@wordhold/ai/SentenceJudge',
+export class SentenceJudge extends Context.Service<
+  SentenceJudge,
   {
-    effect: Effect.gen(function* () {
+    readonly judge: (
+      input: SentenceJudgeInput,
+    ) => Effect.Effect<SentenceVerdictData, SentenceJudgeError, AiUsage>;
+    readonly modelId: string;
+  }
+>()('@wordhold/ai/SentenceJudge') {
+  static readonly layer = Layer.effect(
+    SentenceJudge,
+    Effect.gen(function* () {
       const model = yield* BedrockProvider;
       const modelId = productionModelId;
-      const decodeVerdict = Schema.decodeUnknown(SentenceVerdict);
+      const decodeVerdict = decodeModelOutput(SentenceVerdict);
       const failure = (cause: unknown) =>
         new SentenceJudgeError({ cause, message: judgeFailure });
 
@@ -55,7 +64,7 @@ export class SentenceJudge extends Effect.Service<SentenceJudge>()(
           ),
         );
 
-      return { judge, modelId } as const;
+      return SentenceJudge.of({ judge, modelId });
     }),
-  },
-) {}
+  );
+}

@@ -69,7 +69,7 @@ describe('Learning selection store live', () => {
     await Effect.runPromise(
       withMigratedTestDatabase((database) => {
         const databaseLayer = testDatabaseLayer(database.url);
-        const serviceLayer = LearningService.Default.pipe(
+        const serviceLayer = LearningService.layer.pipe(
           Layer.provide(LearningStore.live.pipe(Layer.provide(databaseLayer))),
         );
         return Effect.gen(function* () {
@@ -99,7 +99,7 @@ describe('LearningStore live', () => {
     await Effect.runPromise(
       withMigratedTestDatabase((database) => {
         const databaseLayer = testDatabaseLayer(database.url);
-        const serviceLayer = LearningService.Default.pipe(
+        const serviceLayer = LearningService.layer.pipe(
           Layer.provide(LearningStore.live.pipe(Layer.provide(databaseLayer))),
         );
         return Effect.gen(function* () {
@@ -171,23 +171,23 @@ describe('LearningStore live places', () => {
     await Effect.runPromise(
       withMigratedTestDatabase((database) => {
         const databaseLayer = testDatabaseLayer(database.url);
-        const serviceLayer = LearningService.Default.pipe(
+        const serviceLayer = LearningService.layer.pipe(
           Layer.provide(LearningStore.live.pipe(Layer.provide(databaseLayer))),
         );
         return Effect.gen(function* () {
           yield* seed.pipe(Effect.provide(databaseLayer));
           const service = yield* LearningService;
-          const wrongCourse = yield* Effect.either(
+          const wrongCourse = yield* Effect.result(
             service.getPass(courseB, { unitId: unitA }),
           );
-          const wrongCourseCard = yield* Effect.either(
+          const wrongCourseCard = yield* Effect.result(
             service.introduce(courseB, targetCard),
           );
-          expect(wrongCourse._tag === 'Left' && wrongCourse.left._tag).toBe(
-            'LearningPlaceNotFoundError',
-          );
           expect(
-            wrongCourseCard._tag === 'Left' && wrongCourseCard.left._tag,
+            wrongCourse._tag === 'Failure' && wrongCourse.failure._tag,
+          ).toBe('LearningPlaceNotFoundError');
+          expect(
+            wrongCourseCard._tag === 'Failure' && wrongCourseCard.failure._tag,
           ).toBe('LearningCardNotFoundError');
         }).pipe(Effect.provide(serviceLayer));
       }),
@@ -199,7 +199,7 @@ describe('LearningStore live places', () => {
     await Effect.runPromise(
       withMigratedTestDatabase((database) => {
         const databaseLayer = testDatabaseLayer(database.url);
-        const serviceLayer = LearningService.Default.pipe(
+        const serviceLayer = LearningService.layer.pipe(
           Layer.provide(LearningStore.live.pipe(Layer.provide(databaseLayer))),
         );
         return Effect.gen(function* () {
@@ -227,24 +227,24 @@ describe('LearningStore live places', () => {
           ]);
           const unitPass = yield* service.getPass(courseA, { unitId: unitA });
           expect(unitPass.items.map((item) => item.entryId)).toEqual([entryA]);
-          const wrongCourse = yield* Effect.either(
+          const wrongCourse = yield* Effect.result(
             service.getPass(courseB, { bookId: bookA }),
           );
-          expect(wrongCourse._tag === 'Left' && wrongCourse.left._tag).toBe(
-            'LearningPlaceNotFoundError',
-          );
+          expect(
+            wrongCourse._tag === 'Failure' && wrongCourse.failure._tag,
+          ).toBe('LearningPlaceNotFoundError');
           const coursePass = yield* service.getPass(courseA, null);
           expect(coursePass.name).toBe('French');
           expect(coursePass.items.map((item) => item.entryId)).toEqual([
             entryA,
             directEntry,
           ]);
-          const missingCourse = yield* Effect.either(
+          const missingCourse = yield* Effect.result(
             service.getPass(unitA, null),
           );
-          expect(missingCourse._tag === 'Left' && missingCourse.left._tag).toBe(
-            'LearningPlaceNotFoundError',
-          );
+          expect(
+            missingCourse._tag === 'Failure' && missingCourse.failure._tag,
+          ).toBe('LearningPlaceNotFoundError');
         }).pipe(Effect.provide(serviceLayer));
       }),
     );
@@ -256,7 +256,7 @@ describe('LearningStore live sections', () => {
     await Effect.runPromise(
       withMigratedTestDatabase((database) => {
         const databaseLayer = testDatabaseLayer(database.url);
-        const serviceLayer = LearningService.Default.pipe(
+        const serviceLayer = LearningService.layer.pipe(
           Layer.provide(LearningStore.live.pipe(Layer.provide(databaseLayer))),
         );
         return Effect.gen(function* () {

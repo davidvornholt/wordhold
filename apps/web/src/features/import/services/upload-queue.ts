@@ -1,4 +1,4 @@
-import { Effect, Either } from 'effect';
+import { Effect, Result } from 'effect';
 
 export const maximumUploadBatchSize = 10;
 
@@ -142,29 +142,29 @@ export const processQueuedPage = (
         { ...base, stage: 'uploading' },
         operations.onStageChange,
       );
-      const stored = yield* Effect.either(operations.store(page.file));
-      if (Either.isLeft(stored)) {
+      const stored = yield* Effect.result(operations.store(page.file));
+      if (Result.isFailure(stored)) {
         return {
           ...base,
           stage: 'failed' as const,
           pageId: null,
-          error: errorMessage(stored.left),
+          error: errorMessage(stored.failure),
         };
       }
-      pageId = stored.right;
+      pageId = stored.success;
     }
 
     yield* reportStage(
       { ...base, stage: 'extracting', pageId },
       operations.onStageChange,
     );
-    const extracted = yield* Effect.either(operations.extract(pageId));
-    if (Either.isLeft(extracted)) {
+    const extracted = yield* Effect.result(operations.extract(pageId));
+    if (Result.isFailure(extracted)) {
       return {
         ...base,
         stage: 'failed' as const,
         pageId,
-        error: errorMessage(extracted.left),
+        error: errorMessage(extracted.failure),
       };
     }
     return { ...base, stage: 'ready' as const, pageId };

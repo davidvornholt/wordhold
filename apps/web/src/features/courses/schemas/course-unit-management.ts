@@ -1,37 +1,38 @@
 import { maximumUnitNameLength } from '@wordhold/ai/extraction/schema';
 import { Schema } from 'effect';
+import { Uuid } from '../../../shared/validate/uuid';
 import { BookName } from '../../../shared/vocabulary/book-name';
 
-const UnitName = Schema.Trim.pipe(
-  Schema.minLength(1),
-  Schema.maxLength(maximumUnitNameLength),
+const UnitName = Schema.Trim.check(
+  Schema.isMinLength(1),
+  Schema.isMaxLength(maximumUnitNameLength),
 );
 
 export const CreateCourseBook = Schema.Struct({
-  courseId: Schema.UUID,
+  courseId: Uuid,
   name: BookName,
 });
 
 export type CreateCourseBookData = typeof CreateCourseBook.Type;
 
 export const RenameCourseBook = Schema.Struct({
-  courseId: Schema.UUID,
-  bookId: Schema.UUID,
+  courseId: Uuid,
+  bookId: Uuid,
   name: BookName,
 });
 
 export type RenameCourseBookData = typeof RenameCourseBook.Type;
 
 export const CreateCourseUnit = Schema.Struct({
-  courseId: Schema.UUID,
-  bookId: Schema.UUID,
+  courseId: Uuid,
+  bookId: Uuid,
   name: UnitName,
 });
 
 export type CreateCourseUnitData = typeof CreateCourseUnit.Type;
 
-const OrderedUnitIds = Schema.Array(Schema.UUID).pipe(
-  Schema.filter(
+const OrderedUnitIds = Schema.Array(Uuid).check(
+  Schema.makeFilter(
     (unitIds) =>
       new Set(unitIds).size === unitIds.length ||
       'Jede Einheit darf nur einmal in der Reihenfolge vorkommen.',
@@ -41,8 +42,8 @@ const OrderedUnitIds = Schema.Array(Schema.UUID).pipe(
 // Units are ordered within their book, so a reorder names the book it
 // rearranges and lists only that book's units.
 export const ReorderCourseUnits = Schema.Struct({
-  courseId: Schema.UUID,
-  bookId: Schema.UUID,
+  courseId: Uuid,
+  bookId: Uuid,
   expectedUnitIds: OrderedUnitIds,
   unitIds: OrderedUnitIds,
 });

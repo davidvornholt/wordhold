@@ -1,23 +1,18 @@
-import { Data } from 'effect';
+import { Schema } from 'effect';
 
-export class PeopleDatabaseError extends Data.TaggedError(
+export class PeopleDatabaseError extends Schema.TaggedError<PeopleDatabaseError>()(
   'PeopleDatabaseError',
-)<{
-  readonly operation: string;
-  readonly cause: unknown;
-  readonly message: string;
-}> {}
+  { operation: Schema.String, cause: Schema.Unknown, message: Schema.String },
+) {}
 
 // The person was deleted in the meantime, or the request named the
 // administrator, whose access cannot be changed here.
-export class PersonNotFoundError extends Data.TaggedError(
+export class PersonNotFoundError extends Schema.TaggedError<PersonNotFoundError>()(
   'PersonNotFoundError',
-)<{
-  readonly message: string;
-}> {}
+  { message: Schema.String },
+) {}
 
-export class PersonSuspendedError extends Data.TaggedError(
+export class PersonSuspendedError extends Schema.TaggedError<PersonSuspendedError>()(
   'PersonSuspendedError',
-)<{
-  readonly message: string;
-}> {}
+  { message: Schema.String },
+) {}

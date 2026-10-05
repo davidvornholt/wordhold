@@ -16,7 +16,7 @@ export const deletePerson = (userId: string) =>
         storage
           .remove(path)
           .pipe(
-            Effect.catchAll((error) =>
+            Effect.catch((error) =>
               Effect.logWarning(
                 'could not remove a deleted person’s file',
                 path,

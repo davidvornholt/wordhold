@@ -13,7 +13,7 @@ import { SentenceService } from './sentence-service';
 import { SentenceStore } from './sentence-store';
 
 const sentenceRuntime = ManagedRuntime.make(
-  SentenceService.Default.pipe(
+  SentenceService.layer.pipe(
     Layer.provide(
       Layer.merge(
         SentenceStore.live.pipe(Layer.provide(PgLive)),

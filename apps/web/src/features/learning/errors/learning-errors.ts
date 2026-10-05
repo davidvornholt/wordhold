@@ -1,21 +1,16 @@
-import { Data } from 'effect';
+import { Schema } from 'effect';
 
-export class LearningDatabaseError extends Data.TaggedError(
+export class LearningDatabaseError extends Schema.TaggedError<LearningDatabaseError>()(
   'LearningDatabaseError',
-)<{
-  readonly operation: string;
-  readonly cause: unknown;
-  readonly message: string;
-}> {}
+  { operation: Schema.String, cause: Schema.Unknown, message: Schema.String },
+) {}
 
-export class LearningPlaceNotFoundError extends Data.TaggedError(
+export class LearningPlaceNotFoundError extends Schema.TaggedError<LearningPlaceNotFoundError>()(
   'LearningPlaceNotFoundError',
-)<{
-  readonly message: string;
-}> {}
+  { message: Schema.String },
+) {}
 
-export class LearningCardNotFoundError extends Data.TaggedError(
+export class LearningCardNotFoundError extends Schema.TaggedError<LearningCardNotFoundError>()(
   'LearningCardNotFoundError',
-)<{
-  readonly message: string;
-}> {}
+  { message: Schema.String },
+) {}

@@ -1,7 +1,7 @@
 import { aiPrice, estimateUsd } from '@wordhold/ai/cost';
 import { type AiCall, type AiCallUsage, AiUsage } from '@wordhold/ai/usage';
 import { AiUsageError } from '@wordhold/ai/usage-error';
-import { Database, TransactionConnection } from '@wordhold/db/client';
+import { Database } from '@wordhold/db/client';
 import { Cause, Context, Effect, Layer } from 'effect';
 
 // USD estimates keep eight decimal places, as the column does.
@@ -28,23 +28,21 @@ const settledColumns = (call: AiCall, usage: AiCallUsage | undefined) => {
 // Records every paid AI request against the person it was made for. A
 // request for someone who is suspended or deleted is refused before it is
 // sent.
-export class UsageLedger extends Context.Tag('@wordhold/web/ai/UsageLedger')<
+export class UsageLedger extends Context.Service<
   UsageLedger,
-  { readonly forPerson: (userId: string) => AiUsage['Type'] }
->() {
+  { readonly forPerson: (userId: string) => AiUsage['Service'] }
+>()('@wordhold/web/ai/UsageLedger') {
   // A fresh pool cannot be exhausted by callers holding transaction locks.
   static readonly live = <E, R>(databaseLayer: Layer.Layer<Database, E, R>) =>
     Layer.effect(
       UsageLedger,
       Effect.gen(function* () {
         const sql = yield* Database;
-        // Statements use the ledger's own pool and omit the caller's transaction.
-        // Each autocommits and releases its connection, so the pool can replace
-        // disconnected clients without waiting on application transactions.
-        const independently = Effect.mapInputContext(
-          (context: Context.Context<never>) =>
-            Context.omit(TransactionConnection)(context),
-        );
+        // Statements use the ledger's own pool. Effect keys open transactions by
+        // client, so a caller's transaction on the application pool never
+        // reaches these statements. Each autocommits and releases its
+        // connection, so the pool can replace disconnected clients without
+        // waiting on application transactions.
         const forPerson = (userId: string) =>
           AiUsage.of({
             start: (call) =>
@@ -54,7 +52,6 @@ export class UsageLedger extends Context.Tag('@wordhold/web/ai/UsageLedger')<
               select ${userId}, ${call.operation}, ${call.provider}, ${call.model}
               where exists (select 1 from members where user_id = ${userId} and enabled)
               returning id`.pipe(
-                independently,
                 Effect.mapError(
                   (cause) =>
                     new AiUsageError({
@@ -83,12 +80,11 @@ export class UsageLedger extends Context.Tag('@wordhold/web/ai/UsageLedger')<
                             price_snapshot = ${columns.priceSnapshot}::jsonb,
                             estimated_usd = ${columns.estimatedUsd}::numeric
                           where id = ${row.id}`.pipe(
-                            independently,
                             Effect.asVoid,
-                            Effect.catchAllCause((cause) =>
+                            Effect.catchCause((cause) =>
                               Effect.logError(
                                 'AI usage could not be settled',
-                                Cause.pretty(cause, { renderErrorCause: true }),
+                                Cause.pretty(cause),
                               ),
                             ),
                           );
@@ -97,7 +93,7 @@ export class UsageLedger extends Context.Tag('@wordhold/web/ai/UsageLedger')<
                 ),
               ),
           });
-        return { forPerson };
+        return UsageLedger.of({ forPerson });
       }),
     ).pipe(Layer.provide(Layer.fresh(databaseLayer)));
 }

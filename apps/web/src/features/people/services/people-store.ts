@@ -96,7 +96,7 @@ const changeFailed = (operation: string) =>
 const withAccessLock = <A, E, R>(sql: Database, work: Effect.Effect<A, E, R>) =>
   sql.withTransaction(
     sql`select pg_advisory_xact_lock(hashtextextended('wordhold:access', 0))`.pipe(
-      Effect.zipRight(work),
+      Effect.andThen(work),
     ),
   );
 
@@ -240,9 +240,10 @@ const usage = (sql: Database, days: UsagePeriod) =>
     order by m.name nulls last, u.user_id, u.operation, u.model
   `;
 
-export class PeopleStore extends Context.Tag(
-  '@wordhold/web/people/PeopleStore',
-)<PeopleStore, PeopleStoreShape>() {
+export class PeopleStore extends Context.Service<
+  PeopleStore,
+  PeopleStoreShape
+>()('@wordhold/web/people/PeopleStore') {
   static readonly live = Layer.effect(
     PeopleStore,
     Effect.map(Database, (sql) =>

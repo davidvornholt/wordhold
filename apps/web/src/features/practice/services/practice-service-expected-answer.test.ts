@@ -31,8 +31,8 @@ describe('PracticeService expected answer', () => {
       'korrekt',
     );
     expect(result).toMatchObject({
-      _tag: 'Right',
-      right: { graded: true, correct: true, expectedAnswer: 'richtig' },
+      _tag: 'Success',
+      success: { graded: true, correct: true, expectedAnswer: 'richtig' },
     });
   });
 });

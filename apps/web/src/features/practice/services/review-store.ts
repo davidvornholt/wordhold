@@ -47,9 +47,7 @@ const loadEntryKnown = (sql: Database, entryId: string) =>
     Effect.mapError((cause) => databaseError('commit graded answer', cause)),
   );
 
-export class PracticeReviewStore extends Context.Tag(
-  'wordhold/PracticeReviewStore',
-)<
+export class PracticeReviewStore extends Context.Service<
   PracticeReviewStore,
   {
     readonly findSubmission: (
@@ -74,7 +72,7 @@ export class PracticeReviewStore extends Context.Tag(
       PracticeDatabaseError | StaleAnswerSubmissionError
     >;
   }
->() {
+>()('wordhold/PracticeReviewStore') {
   static readonly live = Layer.effect(
     PracticeReviewStore,
     Effect.gen(function* () {

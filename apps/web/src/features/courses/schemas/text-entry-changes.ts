@@ -1,4 +1,5 @@
 import { Schema } from 'effect';
+import { Uuid } from '../../../shared/validate/uuid';
 import {
   EntryText,
   MemorizedText,
@@ -7,7 +8,7 @@ import {
 // A text of a collection, learned word for word. The title, such as a Bible
 // reference, is what the card shows.
 export const CreateTextEntry = Schema.Struct({
-  courseId: Schema.UUID,
+  courseId: Uuid,
   title: EntryText,
   text: MemorizedText,
 });
@@ -16,8 +17,8 @@ export type CreateTextEntryData = typeof CreateTextEntry.Type;
 // A title and text as the learner corrected them. The card keeps its
 // schedule.
 export const UpdateTextEntry = Schema.Struct({
-  courseId: Schema.UUID,
-  entryId: Schema.UUID,
+  courseId: Uuid,
+  entryId: Uuid,
   title: EntryText,
   text: MemorizedText,
 });

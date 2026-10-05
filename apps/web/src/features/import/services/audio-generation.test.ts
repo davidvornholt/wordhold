@@ -26,12 +26,12 @@ const runGeneration = (
   count: number,
   store = makeAudioGenerationStore(),
   storage = makeStorage(),
-  synthesize: Tts['synthesize'] = () =>
+  synthesize: Tts['Service']['synthesize'] = () =>
     Effect.succeed({ audio: new Uint8Array([1]) }),
 ) =>
   Effect.runPromise(
     generateAudio(entries(count), 'fr').pipe(
-      Effect.provideService(Tts, Tts.make({ synthesize })),
+      Effect.provideService(Tts, Tts.of({ synthesize })),
       Effect.provideService(AudioGenerationStore, store),
       Effect.provideService(Storage, storage),
       Effect.provide(untrackedAiUsage),
@@ -93,7 +93,7 @@ describe('generateAudio', () => {
       makeAudioGenerationStore({
         upsertReference: () =>
           Effect.sync(() => actions.push('insert')).pipe(
-            Effect.zipRight(Effect.fail(cause)),
+            Effect.andThen(Effect.fail(cause)),
           ),
       }),
       makeStorage({
@@ -147,7 +147,7 @@ describe('pronunciation audio revisions', () => {
       generateAudio(insertedEntries, 'fr').pipe(
         Effect.provideService(
           Tts,
-          Tts.make({
+          Tts.of({
             synthesize: (request) =>
               Effect.sync(() => {
                 synthesized.push(request.text);

@@ -53,10 +53,10 @@ type GradeAnswerInput = {
   readonly accepted: ReadonlyArray<AcceptedAnswer>;
   readonly data: AnsweredSubmitData;
   readonly normalized: string;
-  readonly reviews: PracticeReviewStore['Type'];
-  readonly cache: JudgeCacheStore['Type'];
-  readonly judge: PracticeJudge['Type'];
-  readonly grader: DefinitionGrader['Type'];
+  readonly reviews: PracticeReviewStore['Service'];
+  readonly cache: JudgeCacheStore['Service'];
+  readonly judge: PracticeJudge['Service'];
+  readonly grader: DefinitionGrader['Service'];
 };
 
 const gradeTranslation = ({
@@ -169,8 +169,8 @@ type LoadRejectedAssessmentInput = {
   readonly answer: string;
   readonly normalized: string;
   readonly assessmentId: string;
-  readonly cache: JudgeCacheStore['Type'];
-  readonly grader: DefinitionGrader['Type'];
+  readonly cache: JudgeCacheStore['Service'];
+  readonly grader: DefinitionGrader['Service'];
 };
 
 const staleAssessment = () =>

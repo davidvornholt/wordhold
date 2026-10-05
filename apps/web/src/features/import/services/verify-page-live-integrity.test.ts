@@ -48,7 +48,7 @@ describe('verifyPageLive integrity', () => {
           const otherUnits = yield* seed;
           const sql = yield* Database;
           for (const unitId of [staleUnitId, otherUnits[0]?.id ?? '']) {
-            const result = yield* Effect.either(
+            const result = yield* Effect.result(
               verifyPageLive(
                 sql,
                 decodeImportPayload({
@@ -61,8 +61,8 @@ describe('verifyPageLive integrity', () => {
             );
             expect(result).toEqual(
               expect.objectContaining({
-                _tag: 'Left',
-                left: expect.any(UnitNotFoundError),
+                _tag: 'Failure',
+                failure: expect.any(UnitNotFoundError),
               }),
             );
           }
@@ -101,7 +101,7 @@ describe('verifyPageLive integrity', () => {
             before insert on cards
             for each statement execute function reject_card_insert()
           `;
-          const result = yield* Effect.either(
+          const result = yield* Effect.result(
             verifyPageLive(
               sql,
               decodeImportPayload({
@@ -118,7 +118,7 @@ describe('verifyPageLive integrity', () => {
               courseId,
             ),
           );
-          expect(result._tag).toBe('Left');
+          expect(result._tag).toBe('Failure');
           const residue = yield* sql<{
             readonly entries: number;
             readonly newUnits: number;
@@ -168,7 +168,7 @@ describe('verifyPageLive book integrity', () => {
             returning id
           `;
           const verify = (bookId: string, unitId: string) =>
-            Effect.either(
+            Effect.result(
               verifyPageLive(
                 sql,
                 decodeImportPayload({
@@ -184,20 +184,20 @@ describe('verifyPageLive book integrity', () => {
             earlierUnit?.id ?? '',
           );
           expect(
-            foreignBook._tag === 'Left' ? foreignBook.left : null,
+            foreignBook._tag === 'Failure' ? foreignBook.failure : null,
           ).toBeInstanceOf(BookNotFoundError);
           const otherBookUnit = yield* verify(
             books[1]?.id ?? '',
             earlierUnit?.id ?? '',
           );
           expect(
-            otherBookUnit._tag === 'Left' ? otherBookUnit.left : null,
+            otherBookUnit._tag === 'Failure' ? otherBookUnit.failure : null,
           ).toBeInstanceOf(UnitNotFoundError);
           const sameBook = yield* verify(
             books[0]?.id ?? '',
             earlierUnit?.id ?? '',
           );
-          expect(sameBook._tag).toBe('Right');
+          expect(sameBook._tag).toBe('Success');
         }).pipe(Effect.provide(testDatabaseLayer(database.url))),
       ),
     );

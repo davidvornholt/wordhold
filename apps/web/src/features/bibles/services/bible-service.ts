@@ -1,5 +1,10 @@
-import { Effect } from 'effect';
+import { Context, Effect, Layer } from 'effect';
 import { maximumMemorizedTextLength } from '../../../shared/vocabulary/entry-fields';
+import type {
+  BibleDatabaseError,
+  BibleFileError,
+  BibleModuleError,
+} from '../errors/bible-errors';
 import {
   BibleConflictError,
   BibleNotFoundError,
@@ -7,6 +12,7 @@ import {
   PassageNotFoundError,
   PassageTooLongError,
 } from '../errors/bible-errors';
+import type { BibleSummary } from '../schemas/bible-models';
 import {
   type BibleReference,
   formatBibleReference,
@@ -67,10 +73,43 @@ const bibleMissing = new BibleNotFoundError({
   message: 'Diese Bibel gibt es nicht mehr. Lade die Seite neu.',
 });
 
-export class BibleService extends Effect.Service<BibleService>()(
-  'wordhold/BibleService',
+export class BibleService extends Context.Service<
+  BibleService,
   {
-    effect: Effect.gen(function* () {
+    readonly importModule: (
+      ownerId: string,
+      bytes: Uint8Array,
+    ) => Effect.Effect<
+      BibleSummary,
+      | BibleConflictError
+      | BibleModuleError
+      | BibleFileError
+      | BibleDatabaseError
+    >;
+    readonly list: (
+      ownerId: string,
+    ) => Effect.Effect<ReadonlyArray<BibleSummary>, BibleDatabaseError>;
+    readonly lookUp: (
+      ownerId: string,
+      bibleId: string,
+      typed: string,
+    ) => Effect.Effect<
+      BiblePassage,
+      | BibleDatabaseError
+      | BibleReferenceError
+      | BibleNotFoundError
+      | PassageNotFoundError
+      | PassageTooLongError
+    >;
+    readonly remove: (
+      ownerId: string,
+      bibleId: string,
+    ) => Effect.Effect<void, BibleDatabaseError | BibleNotFoundError>;
+  }
+>()('wordhold/BibleService') {
+  static readonly layer = Layer.effect(
+    BibleService,
+    Effect.gen(function* () {
       const store = yield* BibleStore;
 
       const importModule = (ownerId: string, bytes: Uint8Array) =>
@@ -115,7 +154,7 @@ export class BibleService extends Effect.Service<BibleService>()(
             ),
           );
 
-      return { importModule, list, lookUp, remove } as const;
+      return BibleService.of({ importModule, list, lookUp, remove });
     }),
-  },
-) {}
+  );
+}

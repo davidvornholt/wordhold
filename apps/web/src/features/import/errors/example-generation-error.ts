@@ -1,7 +1,6 @@
-import { Data } from 'effect';
+import { Schema } from 'effect';
 
-export class ExampleGenerationError extends Data.TaggedError(
+export class ExampleGenerationError extends Schema.TaggedError<ExampleGenerationError>()(
   'ExampleGenerationError',
-)<{
-  readonly message: string;
-}> {}
+  { message: Schema.String },
+) {}

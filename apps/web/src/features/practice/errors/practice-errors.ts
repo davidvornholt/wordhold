@@ -1,28 +1,26 @@
-import { Data } from 'effect';
+import { Schema } from 'effect';
 
-export class PracticeDatabaseError extends Data.TaggedError(
+export class PracticeDatabaseError extends Schema.TaggedError<PracticeDatabaseError>()(
   'PracticeDatabaseError',
-)<{
-  readonly operation: string;
-  readonly cause: unknown;
-  readonly message: string;
-}> {}
+  { operation: Schema.String, cause: Schema.Unknown, message: Schema.String },
+) {}
 
-export class PracticeJudgeError extends Data.TaggedError('PracticeJudgeError')<{
-  readonly cause: unknown;
-  readonly message: string;
-}> {}
+export class PracticeJudgeError extends Schema.TaggedError<PracticeJudgeError>()(
+  'PracticeJudgeError',
+  { cause: Schema.Unknown, message: Schema.String },
+) {}
 
-export class StaleAnswerSubmissionError extends Data.TaggedError(
+export class StaleAnswerSubmissionError extends Schema.TaggedError<StaleAnswerSubmissionError>()(
   'StaleAnswerSubmissionError',
-)<{
-  readonly message: string;
-}> {}
+  { message: Schema.String },
+) {}
 
-export class AnswerTooLongError extends Data.TaggedError('AnswerTooLongError')<{
-  readonly message: string;
-}> {}
+export class AnswerTooLongError extends Schema.TaggedError<AnswerTooLongError>()(
+  'AnswerTooLongError',
+  { message: Schema.String },
+) {}
 
-export class StaleSentenceError extends Data.TaggedError('StaleSentenceError')<{
-  readonly message: string;
-}> {}
+export class StaleSentenceError extends Schema.TaggedError<StaleSentenceError>()(
+  'StaleSentenceError',
+  { message: Schema.String },
+) {}

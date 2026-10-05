@@ -33,7 +33,7 @@ export const courseRepositoryLive = (sql: Database) => ({
             list: listCourses(sql, ownerId),
             insertSeeds:
               sql`insert into courses ${sql.insert(seeds.map((course) => ({ ...course, ownerId })))}`.pipe(
-                Effect.zipRight(listCourses(sql, ownerId)),
+                Effect.andThen(listCourses(sql, ownerId)),
               ),
           });
         }),

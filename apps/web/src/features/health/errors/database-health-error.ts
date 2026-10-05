@@ -1,7 +1,6 @@
-import { Data } from 'effect';
+import { Schema } from 'effect';
 
-export class DatabaseHealthError extends Data.TaggedError(
+export class DatabaseHealthError extends Schema.TaggedError<DatabaseHealthError>()(
   'DatabaseHealthError',
-)<{
-  readonly message: string;
-}> {}
+  { message: Schema.String },
+) {}

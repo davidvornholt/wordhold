@@ -263,14 +263,15 @@ describe('CourseStore PostgreSQL course content errors', () => {
         yield* sql`drop table entries cascade`;
         const units = yield* store
           .listUnits(fixtureCourseId, fixtureNow)
-          .pipe(Effect.either);
+          .pipe(Effect.result);
         const entries = yield* store
           .listVocabulary(fixtureCourseId)
-          .pipe(Effect.either);
-        const unitsError = units._tag === 'Left' ? units.left : undefined;
-        const entriesError = entries._tag === 'Left' ? entries.left : undefined;
-        expect(units._tag).toBe('Left');
-        expect(entries._tag).toBe('Left');
+          .pipe(Effect.result);
+        const unitsError = units._tag === 'Failure' ? units.failure : undefined;
+        const entriesError =
+          entries._tag === 'Failure' ? entries.failure : undefined;
+        expect(units._tag).toBe('Failure');
+        expect(entries._tag).toBe('Failure');
         expect(unitsError).toBeInstanceOf(CourseDatabaseError);
         expect(entriesError).toBeInstanceOf(CourseDatabaseError);
         expect(unitsError?.operation).toBe('list units');

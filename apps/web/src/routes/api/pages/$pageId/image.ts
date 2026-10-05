@@ -9,7 +9,7 @@ import { loadPageImage } from '../../../../shared/storage/media-service';
 import { mimeForPath } from '../../../../shared/storage/media-type';
 
 const imageResponse = (request: Request, pageId: string) =>
-  Effect.zipRight(
+  Effect.andThen(
     requireOwner(request.headers, { pages: [pageId] }),
     loadPageImage(pageId),
   ).pipe(

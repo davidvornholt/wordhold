@@ -33,7 +33,7 @@ const administratorUsage = Layer.effect(
 ).pipe(Layer.provide(UsageLedger.live(PgLive)));
 
 const services = PracticeJudge.live.pipe(
-  Layer.provide(Judge.Default.pipe(Layer.provide(BedrockProvider.live))),
+  Layer.provide(Judge.layer.pipe(Layer.provide(BedrockProvider.live))),
   Layer.merge(administratorUsage),
   Layer.provideMerge(PgLive),
 );
@@ -70,18 +70,18 @@ if (ids.length === 0 || ids.some((id) => !uuid.test(id))) {
   // biome-ignore lint/correctness/noProcessGlobal: CLI usage failure must reach the shell.
   globalThis.process.exitCode = 1;
 } else {
-  const result = await Effect.runPromise(program.pipe(Effect.either));
-  if (result._tag === 'Left') {
+  const result = await Effect.runPromise(program.pipe(Effect.result));
+  if (result._tag === 'Failure') {
     await globalThis.Bun.write(
       globalThis.Bun.stderr,
-      `${result.left.message}\n`,
+      `${result.failure.message}\n`,
     );
     // biome-ignore lint/correctness/noProcessGlobal: CLI failure must reach the shell.
     globalThis.process.exitCode = 1;
   } else {
     await globalThis.Bun.write(
       globalThis.Bun.stdout,
-      `${JSON.stringify(result.right, null, 2)}\n`,
+      `${JSON.stringify(result.success, null, 2)}\n`,
     );
   }
 }

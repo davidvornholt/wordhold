@@ -48,8 +48,8 @@ describe('PracticeService skip', () => {
       outcome: { method: 'skip' },
     });
     expect(result).toMatchObject({
-      _tag: 'Right',
-      right: {
+      _tag: 'Success',
+      success: {
         graded: true,
         correct: false,
         stored: true,

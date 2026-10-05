@@ -24,9 +24,10 @@ export type MemberRepositoryShape = {
   ) => Effect.Effect<void, AuthDatabaseError>;
 };
 
-export class MemberRepository extends Context.Tag(
-  '@wordhold/web/auth/MemberRepository',
-)<MemberRepository, MemberRepositoryShape>() {}
+export class MemberRepository extends Context.Service<
+  MemberRepository,
+  MemberRepositoryShape
+>()('@wordhold/web/auth/MemberRepository') {}
 
 const databaseFailure = (operation: string, cause: unknown) =>
   new AuthDatabaseError({

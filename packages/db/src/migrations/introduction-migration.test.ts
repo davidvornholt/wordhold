@@ -24,8 +24,8 @@ const provideDatabase = <A, E, R>(
 
 const migrateBeforeLearning = (url: string) =>
   migrateToPreUnitSchema(url).pipe(
-    Effect.zipRight(migrateToNullableUnits(url)),
-    Effect.zipRight(migrateToRequiredUnits(url)),
+    Effect.andThen(migrateToNullableUnits(url)),
+    Effect.andThen(migrateToRequiredUnits(url)),
   );
 
 describe('introduction migration boundary', () => {

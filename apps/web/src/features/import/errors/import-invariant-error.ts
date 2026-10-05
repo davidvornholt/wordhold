@@ -1,7 +1,6 @@
-import { Data } from 'effect';
+import { Schema } from 'effect';
 
-export class ImportInvariantError extends Data.TaggedError(
+export class ImportInvariantError extends Schema.TaggedError<ImportInvariantError>()(
   'ImportInvariantError',
-)<{
-  readonly message: string;
-}> {}
+  { message: Schema.String },
+) {}

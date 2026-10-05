@@ -1,4 +1,5 @@
 import { Schema } from 'effect';
+import { Uuid } from '../../../shared/validate/uuid';
 import {
   EntryText,
   ExampleText,
@@ -7,14 +8,14 @@ import {
 
 // Where a typed word goes: a book, and optionally one of its units.
 const WordPlaceFields = {
-  bookId: Schema.UUID,
-  unitId: Schema.NullOr(Schema.UUID),
+  bookId: Uuid,
+  unitId: Schema.NullOr(Uuid),
 };
 
 // One typed vocabulary entry. The place is picked from existing books and
 // units, so unlike the verify screen there is nothing to resolve by name.
 export const CreateVocabularyEntry = Schema.Struct({
-  courseId: Schema.UUID,
+  courseId: Uuid,
   ...WordPlaceFields,
   targetText: EntryText,
   nativeText: EntryText,
@@ -23,14 +24,14 @@ export const CreateVocabularyEntry = Schema.Struct({
 export type CreateVocabularyEntryData = typeof CreateVocabularyEntry.Type;
 
 export const VocabularyExampleRequest = Schema.Struct({
-  courseId: Schema.UUID,
+  courseId: Uuid,
   targetText: EntryText,
   nativeText: EntryText,
 });
 export type VocabularyExampleRequestData = typeof VocabularyExampleRequest.Type;
 
 export const VocabularyTranslationRequest = Schema.Struct({
-  courseId: Schema.UUID,
+  courseId: Uuid,
   targetText: ExampleText,
 });
 export type VocabularyTranslationRequestData =
@@ -39,10 +40,10 @@ export type VocabularyTranslationRequestData =
 // One typed side of a word pair; the other is proposed in the course's
 // language or German. A unit gives the proposal its context.
 export const VocabularyTranslationSuggestion = Schema.Struct({
-  courseId: Schema.UUID,
+  courseId: Uuid,
   ...WordPlaceFields,
   text: EntryText,
-  given: Schema.Literal('target', 'native'),
+  given: Schema.Literals(['target', 'native']),
 });
 export type VocabularyTranslationSuggestionData =
   typeof VocabularyTranslationSuggestion.Type;

@@ -1,4 +1,4 @@
-import { Effect } from 'effect';
+import { Context, Effect, Layer } from 'effect';
 import { BedrockProvider, productionModelId } from '../providers/bedrock';
 import type { AiUsage } from '../usage';
 import { DefinitionError } from './error';
@@ -27,10 +27,18 @@ export const definitionJudgePrompt = (input: DefinitionJudgeInput): string =>
 
 const judgeFailure = 'The definition could not be graded.';
 
-export class DefinitionJudge extends Effect.Service<DefinitionJudge>()(
-  '@wordhold/ai/DefinitionJudge',
+export class DefinitionJudge extends Context.Service<
+  DefinitionJudge,
   {
-    effect: Effect.gen(function* () {
+    readonly judge: (
+      input: DefinitionJudgeInput,
+    ) => Effect.Effect<DefinitionVerdictData, DefinitionError, AiUsage>;
+    readonly modelId: string;
+  }
+>()('@wordhold/ai/DefinitionJudge') {
+  static readonly layer = Layer.effect(
+    DefinitionJudge,
+    Effect.gen(function* () {
       const model = yield* BedrockProvider;
       const modelId = productionModelId;
 
@@ -58,7 +66,7 @@ export class DefinitionJudge extends Effect.Service<DefinitionJudge>()(
           ),
         );
 
-      return { judge, modelId } as const;
+      return DefinitionJudge.of({ judge, modelId });
     }),
-  },
-) {}
+  );
+}

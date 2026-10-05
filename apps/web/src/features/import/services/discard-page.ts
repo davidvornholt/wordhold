@@ -1,4 +1,4 @@
-import { Effect, Either } from 'effect';
+import { Effect, Result } from 'effect';
 import { Storage } from '../../../shared/storage/server';
 import { PageNotPendingError } from '../errors/page-not-pending-error';
 import { ImportRepository } from './repository';
@@ -15,10 +15,10 @@ export const discardPendingImportSession = (sessionId: string) =>
     }
     const cleanup = yield* Effect.forEach(
       imagePaths,
-      (imagePath) => storage.remove(imagePath).pipe(Effect.either),
+      (imagePath) => storage.remove(imagePath).pipe(Effect.result),
       { concurrency: 3 },
     );
     // The database row is authoritative. A failed file removal leaves an
     // unreferenced generated file for the existing reconciliation pass.
-    return { cleanupPending: cleanup.some(Either.isLeft) };
+    return { cleanupPending: cleanup.some(Result.isFailure) };
   });

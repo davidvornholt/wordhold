@@ -1,12 +1,11 @@
-import { SqlClient } from '@effect/sql';
 import { PgClient } from '@effect/sql-pg';
 import { Config } from 'effect';
+import { SqlClient } from 'effect/sql';
 
-// Application services depend on this tag through @wordhold/db instead of
-// reaching through the package boundary to @effect/sql.
+// Application services depend on this service through @wordhold/db instead of
+// reaching through the package boundary to effect/sql.
 export const Database = SqlClient.SqlClient;
 export type Database = SqlClient.SqlClient;
-export const { TransactionConnection } = SqlClient;
 
 const toSnakeCase = (name: string): string =>
   name.replaceAll(/[A-Z]/gu, (character) => `_${character.toLowerCase()}`);
@@ -15,6 +14,6 @@ const toSnakeCase = (name: string): string =>
 // database. DATABASE_URL is read through Config so the env boundary stays in
 // one place.
 export const PgLive = PgClient.layerConfig({
-  url: Config.redacted('DATABASE_URL'),
+  url: Config.Redacted('DATABASE_URL'),
   transformQueryNames: Config.succeed(toSnakeCase),
 });

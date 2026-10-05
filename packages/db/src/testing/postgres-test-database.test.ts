@@ -4,7 +4,7 @@ import postgres from 'postgres';
 import { withTestDatabase } from './postgres-test-database';
 
 it('closes the allocation connection when PostgreSQL rejects database creation', async () => {
-  const rootUrl = await Effect.runPromise(Config.string('DATABASE_URL'));
+  const rootUrl = await Effect.runPromise(Config.String('DATABASE_URL'));
   const applicationName = `wordhold_alloc_${crypto.randomUUID()}`;
   const readOnlyUrl = new URL(rootUrl);
   readOnlyUrl.searchParams.set('application_name', applicationName);
@@ -17,9 +17,12 @@ it('closes the allocation connection when PostgreSQL rejects database creation',
   try {
     const error = await Effect.runPromise(
       withTestDatabase(() => Effect.void).pipe(
-        Effect.withConfigProvider(
-          ConfigProvider.fromMap(
-            new Map([['DATABASE_URL', readOnlyUrl.toString()]]),
+        Effect.provide(
+          ConfigProvider.layer(
+            ConfigProvider.fromUnknown({
+              // biome-ignore lint/style/useNamingConvention: Environment variable name.
+              DATABASE_URL: readOnlyUrl.toString(),
+            }),
           ),
         ),
         Effect.flip,

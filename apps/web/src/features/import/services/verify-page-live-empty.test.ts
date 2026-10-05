@@ -44,7 +44,7 @@ const verify = (
 ) =>
   Effect.gen(function* () {
     const sql = yield* Database;
-    return yield* Effect.either(
+    return yield* Effect.result(
       verifyPageLive(
         sql,
         decodeImportPayload({
@@ -67,14 +67,14 @@ describe('verifyPageLive duplicate-only pages', () => {
           const skipped = yield* verify(pageIds[1], [
             entry('mémoire', { skipDuplicate: true }),
           ]);
-          expect(skipped._tag).toBe('Right');
+          expect(skipped._tag).toBe('Success');
 
           const invalidSkip = yield* verify(pageIds[2], [
             entry('livre', { skipDuplicate: true }),
           ]);
-          expect(invalidSkip._tag).toBe('Left');
+          expect(invalidSkip._tag).toBe('Failure');
           expect(
-            invalidSkip._tag === 'Left' ? invalidSkip.left : undefined,
+            invalidSkip._tag === 'Failure' ? invalidSkip.failure : undefined,
           ).toBeInstanceOf(DuplicateEntryError);
 
           const sql = yield* Database;

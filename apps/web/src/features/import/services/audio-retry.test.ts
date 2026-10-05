@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { untrackedAiUsage } from '@wordhold/ai/testing/usage';
 import { Tts } from '@wordhold/ai/tts';
-import { Effect } from 'effect';
+import { Effect, Semaphore } from 'effect';
 import { Storage } from '../../../shared/storage/server';
 import { ImportDatabaseError } from '../errors/import-database-error';
 import {
@@ -30,7 +30,7 @@ const runRetry = (
     retryPageAudio('page').pipe(
       Effect.provideService(
         Tts,
-        Tts.make({
+        Tts.of({
           synthesize: () =>
             Effect.sync(() => {
               providerCall();
@@ -49,7 +49,7 @@ const makeStatefulStore = (
   failFirstReference = false,
 ) => {
   const references = new Set<string>();
-  const mutex = Effect.unsafeMakeSemaphore(1);
+  const mutex = Semaphore.makeUnsafe(1);
   let referenceAttempts = 0;
   const store = makeAudioGenerationStore({
     listMissingForPage: () =>

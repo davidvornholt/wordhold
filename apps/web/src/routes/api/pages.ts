@@ -9,6 +9,7 @@ import { storeUploadedPage } from '../../features/import/services/upload';
 import { maximumUploadBatchSize } from '../../features/import/services/upload-queue';
 import { assertOwned, NotOwnedError } from '../../shared/auth/ownership';
 import { requireMember } from '../../shared/auth/require-member';
+import { Uuid } from '../../shared/validate/uuid';
 
 const invalidForm = () =>
   new UploadValidationError({
@@ -18,19 +19,19 @@ const invalidForm = () =>
   });
 
 const UploadFields = Schema.Struct({
-  courseId: Schema.UUID,
-  importSessionId: Schema.UUID,
-  pageId: Schema.UUID,
-  importPosition: Schema.NumberFromString.pipe(
-    Schema.int(),
-    Schema.between(0, maximumUploadBatchSize - 1),
+  courseId: Uuid,
+  importSessionId: Uuid,
+  pageId: Uuid,
+  importPosition: Schema.NumberFromString.check(
+    Schema.isInt(),
+    Schema.isBetween({ minimum: 0, maximum: maximumUploadBatchSize - 1 }),
   ),
-  importExpectedCount: Schema.NumberFromString.pipe(
-    Schema.int(),
-    Schema.between(1, maximumUploadBatchSize),
+  importExpectedCount: Schema.NumberFromString.check(
+    Schema.isInt(),
+    Schema.isBetween({ minimum: 1, maximum: maximumUploadBatchSize }),
   ),
-}).pipe(
-  Schema.filter(
+}).check(
+  Schema.makeFilter(
     (fields) =>
       fields.importPosition < fields.importExpectedCount ||
       'Die Seitenposition muss innerhalb der erwarteten Stapelgröße liegen.',

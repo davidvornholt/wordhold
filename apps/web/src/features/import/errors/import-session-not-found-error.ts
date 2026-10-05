@@ -1,7 +1,6 @@
-import { Data } from 'effect';
+import { Schema } from 'effect';
 
-export class ImportSessionNotFoundError extends Data.TaggedError(
+export class ImportSessionNotFoundError extends Schema.TaggedError<ImportSessionNotFoundError>()(
   'ImportSessionNotFoundError',
-)<{
-  readonly message: string;
-}> {}
+  { message: Schema.String },
+) {}

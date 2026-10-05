@@ -1,6 +1,6 @@
 import { Tts } from '@wordhold/ai/tts';
 import type { LanguageCode } from '@wordhold/db/schema/courses';
-import { Effect, Either } from 'effect';
+import { Effect, Result } from 'effect';
 import {
   speechAudioProfile,
   synthesizeSpeechAudio,
@@ -73,9 +73,9 @@ const generateTargets = (targets: ReadonlyArray<AudioTarget>) =>
     let alreadyAvailable = 0;
     let consecutiveFailures = 0;
     for (const entry of targets.slice(0, maximumAudioProviderCallsPerImport)) {
-      const outcome = yield* generateEntryAudio(entry).pipe(Effect.either);
-      if (Either.isRight(outcome)) {
-        if (outcome.right === 'generated') {
+      const outcome = yield* generateEntryAudio(entry).pipe(Effect.result);
+      if (Result.isSuccess(outcome)) {
+        if (outcome.success === 'generated') {
           generated += 1;
         } else {
           alreadyAvailable += 1;
@@ -85,7 +85,7 @@ const generateTargets = (targets: ReadonlyArray<AudioTarget>) =>
         failures.push(
           new AudioGenerationFailure({
             entryId: entry.id,
-            cause: outcome.left,
+            cause: outcome.failure,
             message: 'Die Audiodatei konnte nicht erstellt werden.',
           }),
         );

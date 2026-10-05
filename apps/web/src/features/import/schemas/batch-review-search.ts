@@ -1,4 +1,5 @@
 import { Option, Schema } from 'effect';
+import { Uuid } from '../../../shared/validate/uuid';
 import { maximumUploadBatchSize } from '../services/upload-queue';
 
 const BatchReviewSearch = Schema.Struct({
@@ -13,7 +14,7 @@ const decodeSearch = Schema.decodeUnknownOption(BatchReviewSearch);
 export const parseBatchReviewSearch = (input: unknown): BatchReviewSearchData =>
   Option.getOrElse(decodeSearch(input), (): BatchReviewSearchData => ({}));
 
-const pageIdIsValid = Schema.is(Schema.UUID);
+const pageIdIsValid = Schema.is(Uuid);
 
 const uniquePageIds = (
   pageIds: ReadonlyArray<string>,

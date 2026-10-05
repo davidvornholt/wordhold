@@ -1,82 +1,68 @@
-import { Data } from 'effect';
+import { Schema } from 'effect';
 
-export class CourseDatabaseError extends Data.TaggedError(
+export class CourseDatabaseError extends Schema.TaggedError<CourseDatabaseError>()(
   'CourseDatabaseError',
-)<{
-  readonly operation: string;
-  readonly cause: unknown;
-  readonly message: string;
-}> {}
+  { operation: Schema.String, cause: Schema.Unknown, message: Schema.String },
+) {}
 
-export class CourseSettingsNotFoundError extends Data.TaggedError(
+export class CourseSettingsNotFoundError extends Schema.TaggedError<CourseSettingsNotFoundError>()(
   'CourseSettingsNotFoundError',
-)<{
-  readonly message: string;
-}> {}
+  { message: Schema.String },
+) {}
 
-export class CourseUnitConflictError extends Data.TaggedError(
+export class CourseUnitConflictError extends Schema.TaggedError<CourseUnitConflictError>()(
   'CourseUnitConflictError',
-)<{
-  readonly message: string;
-}> {}
+  { message: Schema.String },
+) {}
 
-export class CourseUnitOrderChangedError extends Data.TaggedError(
+export class CourseUnitOrderChangedError extends Schema.TaggedError<CourseUnitOrderChangedError>()(
   'CourseUnitOrderChangedError',
-)<{
-  readonly message: string;
-}> {}
+  { message: Schema.String },
+) {}
 
-export class CourseBookConflictError extends Data.TaggedError(
+export class CourseBookConflictError extends Schema.TaggedError<CourseBookConflictError>()(
   'CourseBookConflictError',
-)<{
-  readonly message: string;
-}> {}
+  { message: Schema.String },
+) {}
 
-export class CourseBookNotFoundError extends Data.TaggedError(
+export class CourseBookNotFoundError extends Schema.TaggedError<CourseBookNotFoundError>()(
   'CourseBookNotFoundError',
-)<{
-  readonly message: string;
-}> {}
+  { message: Schema.String },
+) {}
 
-export class CourseUnitNotFoundError extends Data.TaggedError(
+export class CourseUnitNotFoundError extends Schema.TaggedError<CourseUnitNotFoundError>()(
   'CourseUnitNotFoundError',
-)<{
-  readonly message: string;
-}> {}
+  { message: Schema.String },
+) {}
 
-export class VocabularyEntryNotFoundError extends Data.TaggedError(
+export class VocabularyEntryNotFoundError extends Schema.TaggedError<VocabularyEntryNotFoundError>()(
   'VocabularyEntryNotFoundError',
-)<{
-  readonly message: string;
-}> {}
+  { message: Schema.String },
+) {}
 
-export class VocabularyEntryConflictError extends Data.TaggedError(
+export class VocabularyEntryConflictError extends Schema.TaggedError<VocabularyEntryConflictError>()(
   'VocabularyEntryConflictError',
-)<{
-  readonly targetText: string;
-  readonly message: string;
-}> {}
+  { targetText: Schema.String, message: Schema.String },
+) {}
 
-export class CourseExampleGenerationError extends Data.TaggedError(
+export class CourseExampleGenerationError extends Schema.TaggedError<CourseExampleGenerationError>()(
   'CourseExampleGenerationError',
-)<{
-  readonly message: string;
-}> {}
+  { message: Schema.String },
+) {}
 
-export class SubjectConflictError extends Data.TaggedError(
+export class SubjectConflictError extends Schema.TaggedError<SubjectConflictError>()(
   'SubjectConflictError',
-)<{
-  readonly message: string;
-}> {}
+  { message: Schema.String },
+) {}
 
 // A language action asked of a subject, or a subject action of a language
 // course, such as photographing a page for a subject.
-export class CourseKindMismatchError extends Data.TaggedError(
+export class CourseKindMismatchError extends Schema.TaggedError<CourseKindMismatchError>()(
   'CourseKindMismatchError',
-)<{
-  readonly message: string;
-}> {}
+  { message: Schema.String },
+) {}
 
-export class TermAssistError extends Data.TaggedError('TermAssistError')<{
-  readonly message: string;
-}> {}
+export class TermAssistError extends Schema.TaggedError<TermAssistError>()(
+  'TermAssistError',
+  { message: Schema.String },
+) {}

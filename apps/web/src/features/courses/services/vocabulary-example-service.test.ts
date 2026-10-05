@@ -73,7 +73,7 @@ const runService = (
     }),
     Layer.succeed(
       SentenceGen,
-      SentenceGen.make({
+      SentenceGen.of({
         generate: () => {
           onGenerate();
           return Effect.succeed({
@@ -95,14 +95,12 @@ const runService = (
     Layer.succeed(Storage, storage),
     Layer.succeed(
       Tts,
-      Tts.make({
+      Tts.of({
         synthesize: () => Effect.succeed({ audio: new Uint8Array([1]) }),
       }),
     ),
   );
-  const live = VocabularyExampleService.Default.pipe(
-    Layer.provide(dependencies),
-  );
+  const live = VocabularyExampleService.layer.pipe(Layer.provide(dependencies));
   return Effect.runPromise(
     Effect.flatMap(VocabularyExampleService, (service) =>
       service.generate(entryId),

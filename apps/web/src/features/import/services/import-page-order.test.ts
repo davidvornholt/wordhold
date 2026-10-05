@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { untrackedAiUsage } from '@wordhold/ai/testing/usage';
 import { Tts } from '@wordhold/ai/tts';
-import { Effect, Either, Option } from 'effect';
+import { Effect, Option, Result } from 'effect';
 import { Storage } from '../../../shared/storage/server';
 import { PageReviewOrderError } from '../errors/page-review-order-error';
 import { AudioGenerationStore } from './audio-generation-store';
@@ -16,7 +16,7 @@ import {
 const earlierPageId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const currentPageId = 'd9428888-122b-41e1-b85c-61cd3cbb3210';
 
-const importCurrentPage = (repository: ImportRepository['Type']) =>
+const importCurrentPage = (repository: ImportRepository['Service']) =>
   Effect.runPromise(
     importVerifiedPage({
       pageId: currentPageId,
@@ -34,9 +34,9 @@ const importCurrentPage = (repository: ImportRepository['Type']) =>
       Effect.provideService(Storage, makeStorage()),
       Effect.provideService(
         Tts,
-        Tts.make({ synthesize: () => Effect.dieMessage('unexpected TTS') }),
+        Tts.of({ synthesize: () => Effect.die(new Error('unexpected TTS')) }),
       ),
-      Effect.either,
+      Effect.result,
       Effect.provide(untrackedAiUsage),
     ),
   );
@@ -80,7 +80,7 @@ describe('import page order', () => {
 
     const result = await importCurrentPage(repository);
 
-    expect(Option.getOrUndefined(Either.getLeft(result))).toBeInstanceOf(
+    expect(Option.getOrUndefined(Result.getFailure(result))).toBeInstanceOf(
       PageReviewOrderError,
     );
     expect(verified).toBe(false);
@@ -117,7 +117,7 @@ describe('import page order', () => {
 
     const result = await importCurrentPage(repository);
 
-    expect(Option.getOrUndefined(Either.getLeft(result))).toBeInstanceOf(
+    expect(Option.getOrUndefined(Result.getFailure(result))).toBeInstanceOf(
       PageReviewOrderError,
     );
     expect(verified).toBe(false);

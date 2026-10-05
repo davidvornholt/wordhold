@@ -10,6 +10,7 @@ import {
   requestOwnedEntries,
 } from '../../../shared/auth/member-request';
 import { StorageLive } from '../../../shared/storage/server';
+import { Uuid } from '../../../shared/validate/uuid';
 import { decodeSetCourseDirections } from '../schemas/course-directions';
 import {
   decodeCreateCourseBook,
@@ -38,7 +39,7 @@ import { VocabularyEntryStore } from './vocabulary-entry-store';
 import { VocabularyExampleService } from './vocabulary-example-service';
 import { VocabularyExampleStore } from './vocabulary-example-store';
 
-const courseLive = CourseService.Default.pipe(
+const courseLive = CourseService.layer.pipe(
   Layer.provide(CourseStore.live.pipe(Layer.provide(PgLive))),
 );
 
@@ -49,20 +50,20 @@ const courseRuntime = ManagedRuntime.make(courseLive);
 const vocabularyDependencies = Layer.mergeAll(
   VocabularyExampleStore.live.pipe(Layer.provide(PgLive)),
   VocabularyEntryStore.live.pipe(Layer.provide(PgLive)),
-  SentenceGen.Default.pipe(Layer.provide(BedrockProvider.live)),
+  SentenceGen.layer.pipe(Layer.provide(BedrockProvider.live)),
   StorageLive,
-  Tts.Default,
+  Tts.layer,
   UsageLedger.live(PgLive),
 );
 const vocabularyRuntime = ManagedRuntime.make(
   Layer.mergeAll(
-    VocabularyExampleService.Default,
-    VocabularyEntryService.Default,
+    VocabularyExampleService.layer,
+    VocabularyEntryService.layer,
   ).pipe(Layer.provideMerge(vocabularyDependencies)),
 );
 
-const decodeId = Schema.decodeUnknownSync(Schema.UUID);
-const decodeIds = Schema.decodeUnknownSync(Schema.Array(Schema.UUID));
+const decodeId = Schema.decodeUnknownSync(Uuid);
+const decodeIds = Schema.decodeUnknownSync(Schema.Array(Uuid));
 
 export const getCourseDirections = createServerFn()
   .validator(decodeId)

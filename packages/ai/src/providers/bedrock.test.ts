@@ -50,12 +50,12 @@ const capturedServices = (response: unknown) => {
     ),
   });
   const services = Layer.mergeAll(
-    Judge.Default,
-    SentenceGen.Default,
-    Extraction.Default,
-    DefinitionJudge.Default,
-    DefinitionWriter.Default,
-    SentenceJudge.Default,
+    Judge.layer,
+    SentenceGen.layer,
+    Extraction.layer,
+    DefinitionJudge.layer,
+    DefinitionWriter.layer,
+    SentenceJudge.layer,
   ).pipe(
     Layer.provide(Layer.succeed(BedrockProvider, bedrock(modelId))),
     Layer.merge(
@@ -180,11 +180,11 @@ describe('Bedrock sentence transport', () => {
           word: { target: 'lire', german: 'lesen' },
           givenAnswer: 'Je suis en train de lire.',
         });
-      }).pipe(Effect.provide(services), Effect.either),
+      }).pipe(Effect.provide(services), Effect.result),
     );
     expect(result).toMatchObject({
-      _tag: 'Left',
-      left: {
+      _tag: 'Failure',
+      failure: {
         _tag: 'SentenceJudgeError',
         message: 'The sentence translation could not be graded.',
       },
@@ -345,11 +345,11 @@ describe('Bedrock definition transport', () => {
             term: 'Elektronendonator',
             definition: 'Ein Elektronendonator gibt Elektronen ab.',
           });
-        }).pipe(Effect.provide(services), Effect.either),
+        }).pipe(Effect.provide(services), Effect.result),
       );
       expect(result).toMatchObject({
-        _tag: 'Left',
-        left: { _tag: 'DefinitionError' },
+        _tag: 'Failure',
+        failure: { _tag: 'DefinitionError' },
       });
     },
   );
@@ -368,11 +368,11 @@ describe('Bedrock definition transport', () => {
           keyPoints: ['gibt Elektronen ab'],
           givenAnswer: 'Er gibt Elektronen ab.',
         });
-      }).pipe(Effect.provide(services), Effect.either),
+      }).pipe(Effect.provide(services), Effect.result),
     );
     expect(result).toMatchObject({
-      _tag: 'Left',
-      left: { _tag: 'DefinitionError' },
+      _tag: 'Failure',
+      failure: { _tag: 'DefinitionError' },
     });
   });
 });

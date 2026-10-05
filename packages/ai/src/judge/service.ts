@@ -1,6 +1,7 @@
-import { Effect, Schema } from 'effect';
+import { Context, Effect, Layer } from 'effect';
 import { BedrockProvider, productionModelId } from '../providers/bedrock';
 import { generateStructured } from '../structured-generation';
+import { decodeModelOutput } from '../structured-output';
 import type { AiUsage } from '../usage';
 import { JudgeError } from './error';
 import { type JudgeInput, JudgeVerdict, type JudgeVerdictData } from './schema';
@@ -25,28 +26,39 @@ export const judgePrompt = (input: JudgeInput): string => {
   ].join('\n');
 };
 
-export class Judge extends Effect.Service<Judge>()('@wordhold/ai/Judge', {
-  effect: Effect.gen(function* () {
-    const model = yield* BedrockProvider;
-    const modelId = productionModelId;
-    const decodeVerdict = Schema.decodeUnknown(JudgeVerdict);
-
-    const judge = (
+export class Judge extends Context.Service<
+  Judge,
+  {
+    readonly judge: (
       input: JudgeInput,
-    ): Effect.Effect<JudgeVerdictData, JudgeError, AiUsage> =>
-      generateStructured({
-        model,
-        operation: 'answer-grading',
-        schema: JudgeVerdict,
-        prompt: judgePrompt(input),
-        failure: (cause) => new JudgeError({ cause }),
-      }).pipe(
-        Effect.flatMap((output) =>
-          decodeVerdict(output).pipe(
-            Effect.mapError((cause) => new JudgeError({ cause })),
+    ) => Effect.Effect<JudgeVerdictData, JudgeError, AiUsage>;
+    readonly modelId: string;
+  }
+>()('@wordhold/ai/Judge') {
+  static readonly layer = Layer.effect(
+    Judge,
+    Effect.gen(function* () {
+      const model = yield* BedrockProvider;
+      const modelId = productionModelId;
+      const decodeVerdict = decodeModelOutput(JudgeVerdict);
+
+      const judge = (
+        input: JudgeInput,
+      ): Effect.Effect<JudgeVerdictData, JudgeError, AiUsage> =>
+        generateStructured({
+          model,
+          operation: 'answer-grading',
+          schema: JudgeVerdict,
+          prompt: judgePrompt(input),
+          failure: (cause) => new JudgeError({ cause }),
+        }).pipe(
+          Effect.flatMap((output) =>
+            decodeVerdict(output).pipe(
+              Effect.mapError((cause) => new JudgeError({ cause })),
+            ),
           ),
-        ),
-      );
-    return { judge, modelId } as const;
-  }),
-}) {}
+        );
+      return Judge.of({ judge, modelId });
+    }),
+  );
+}

@@ -59,7 +59,7 @@ const rejectedTypo = {
 
 const assessmentId = '00000000-0000-0000-0000-000000000003';
 const runSubmit = async (
-  commit: PracticeReviewStore['Type']['commit'],
+  commit: PracticeReviewStore['Service']['commit'],
   wrongAnswerResolution: WrongAnswerResolution,
   acceptedText = 'correct',
 ) => {
@@ -143,7 +143,7 @@ const runSubmit = async (
         };
   return Effect.runPromise(
     Effect.flatMap(PracticeService, (service) => service.submit(data)).pipe(
-      Effect.provide(PracticeService.Default.pipe(Layer.provide(stores))),
+      Effect.provide(PracticeService.layer.pipe(Layer.provide(stores))),
       Effect.provide(untrackedAiUsage),
     ),
   );

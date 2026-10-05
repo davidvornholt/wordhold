@@ -28,21 +28,21 @@ const post = (
   });
 
 const read = (request: Request) =>
-  Effect.runPromise(Effect.either(readBoundedBody(request, limit)));
+  Effect.runPromise(Effect.result(readBoundedBody(request, limit)));
 
 describe('readBoundedBody', () => {
   it('reads a body within the limit', async () => {
     const result = await read(post(new Uint8Array([1, 2, 3])));
-    expect(result).toMatchObject({ _tag: 'Right' });
-    expect(Array.from(result._tag === 'Right' ? result.right : [])).toEqual([
-      1, 2, 3,
-    ]);
+    expect(result).toMatchObject({ _tag: 'Success' });
+    expect(Array.from(result._tag === 'Success' ? result.success : [])).toEqual(
+      [1, 2, 3],
+    );
   });
 
   it('refuses a body whose stated length is over the limit before reading it', async () => {
     expect(await read(post(new Uint8Array(5)))).toMatchObject({
-      _tag: 'Left',
-      left: { message: 'too large', status: 413 },
+      _tag: 'Failure',
+      failure: { message: 'too large', status: 413 },
     });
   });
 
@@ -55,8 +55,8 @@ describe('readBoundedBody', () => {
       },
     });
     expect(await read(post(stream, { 'content-length': '3' }))).toMatchObject({
-      _tag: 'Left',
-      left: { status: 413 },
+      _tag: 'Failure',
+      failure: { status: 413 },
     });
   });
 
@@ -65,12 +65,12 @@ describe('readBoundedBody', () => {
       start: (controller) => controller.close(),
     });
     expect(await read(post(stream))).toMatchObject({
-      _tag: 'Left',
-      left: { message: 'length missing', status: 411 },
+      _tag: 'Failure',
+      failure: { message: 'length missing', status: 411 },
     });
     expect(await read(post(new Uint8Array(0)))).toMatchObject({
-      _tag: 'Left',
-      left: { message: 'empty', status: 400 },
+      _tag: 'Failure',
+      failure: { message: 'empty', status: 400 },
     });
   });
 });

@@ -10,7 +10,7 @@ import { TextEntryService } from './text-entry-service';
 import { TextEntryStore } from './text-entry-store';
 
 const textRuntime = ManagedRuntime.make(
-  TextEntryService.Default.pipe(
+  TextEntryService.layer.pipe(
     Layer.provide(TextEntryStore.live.pipe(Layer.provide(PgLive))),
   ),
 );

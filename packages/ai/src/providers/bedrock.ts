@@ -10,10 +10,10 @@ export const sonnetMediumProviderOptions = {
   },
 } as const;
 
-export class BedrockProvider extends Context.Tag('@wordhold/ai/Bedrock')<
+export class BedrockProvider extends Context.Service<
   BedrockProvider,
   LanguageModel
->() {
+>()('@wordhold/ai/Bedrock') {
   static readonly live = Layer.effect(
     BedrockProvider,
     Effect.gen(function* () {

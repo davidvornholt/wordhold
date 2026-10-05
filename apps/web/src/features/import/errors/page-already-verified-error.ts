@@ -1,7 +1,6 @@
-import { Data } from 'effect';
+import { Schema } from 'effect';
 
-export class PageAlreadyVerifiedError extends Data.TaggedError(
+export class PageAlreadyVerifiedError extends Schema.TaggedError<PageAlreadyVerifiedError>()(
   'PageAlreadyVerifiedError',
-)<{
-  readonly message: string;
-}> {}
+  { message: Schema.String },
+) {}

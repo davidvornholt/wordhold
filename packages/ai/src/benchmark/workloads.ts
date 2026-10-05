@@ -1,5 +1,4 @@
 import type { ModelMessage } from 'ai';
-import { Schema } from 'effect';
 import { definitionJudgePrompt } from '../definition/judge';
 import {
   type DefinitionJudgeInput,
@@ -18,7 +17,7 @@ import {
   type SentenceVerdictData,
 } from '../sentence/judge-schema';
 import { SentenceBatch, sentencePrompt } from '../sentence/service';
-import { providerJsonSchema } from './structured-output';
+import { providerJsonSchema, readModelOutput } from './structured-output';
 
 const sentenceCount = 3;
 const printedPageNumber = 42;
@@ -43,8 +42,9 @@ const judgeWorkload = (
     prompt,
     messages: [{ role: 'user', content: prompt }],
     schema: providerJsonSchema(JudgeVerdict),
-    qualityFailures: (output) => {
-      if (!Schema.is(JudgeVerdict)(output)) {
+    qualityFailures: (answer) => {
+      const output = readModelOutput(JudgeVerdict)(answer);
+      if (output === undefined) {
         return ['Invalid verdict schema'];
       }
       const failures: Array<string> = [];
@@ -88,8 +88,9 @@ const definitionWorkload = (
     prompt,
     messages: [{ role: 'user', content: prompt }],
     schema: providerJsonSchema(DefinitionVerdict),
-    qualityFailures: (output) => {
-      if (!Schema.is(DefinitionVerdict)(output)) {
+    qualityFailures: (answer) => {
+      const output = readModelOutput(DefinitionVerdict)(answer);
+      if (output === undefined) {
         return ['Invalid verdict schema'];
       }
       if (output.keyPoints.length !== expectedCoverage.length) {
@@ -137,8 +138,9 @@ const sentenceJudgeWorkload = (
     prompt,
     messages: [{ role: 'user', content: prompt }],
     schema: providerJsonSchema(SentenceVerdict),
-    qualityFailures: (output) => {
-      if (!Schema.is(SentenceVerdict)(output)) {
+    qualityFailures: (answer) => {
+      const output = readModelOutput(SentenceVerdict)(answer);
+      if (output === undefined) {
         return ['Invalid verdict schema'];
       }
       const failures = findings.flatMap((finding) => {
@@ -276,8 +278,9 @@ export const workloads = async (): Promise<ReadonlyArray<Workload>> => {
       prompt: sentence,
       messages: [{ role: 'user', content: sentence }],
       schema: providerJsonSchema(SentenceBatch),
-      qualityFailures: (output) => {
-        if (!Schema.is(SentenceBatch)(output)) {
+      qualityFailures: (answer) => {
+        const output = readModelOutput(SentenceBatch)(answer);
+        if (output === undefined) {
           return ['Invalid sentence schema'];
         }
         const failures: Array<string> = [];
@@ -305,8 +308,9 @@ export const workloads = async (): Promise<ReadonlyArray<Workload>> => {
         },
       ],
       schema: providerJsonSchema(ExtractedPage),
-      qualityFailures: (output) => {
-        if (!Schema.is(ExtractedPage)(output)) {
+      qualityFailures: (answer) => {
+        const output = readModelOutput(ExtractedPage)(answer);
+        if (output === undefined) {
           return ['Invalid extraction schema'];
         }
         const failures: Array<string> = [];

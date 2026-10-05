@@ -14,26 +14,31 @@ const recording = (bytes: number, contentType = dictationContentType) =>
   });
 
 const read = (request: Request) =>
-  Effect.runPromise(Effect.either(readDictation(request)));
+  Effect.runPromise(Effect.result(readDictation(request)));
 
 describe('readDictation', () => {
   it('reads a recording in the agreed format', async () => {
     const result = await read(recording(3200));
-    expect(result._tag === 'Right' ? result.right.byteLength : null).toBe(3200);
+    expect(result._tag === 'Success' ? result.success.byteLength : null).toBe(
+      3200,
+    );
   });
 
   it('refuses another format, a cut-off sample and an overlong recording', async () => {
     expect(await read(recording(3200, 'audio/webm'))).toMatchObject({
-      _tag: 'Left',
-      left: { status: 415 },
+      _tag: 'Failure',
+      failure: { status: 415 },
     });
     expect(await read(recording(3201))).toMatchObject({
-      _tag: 'Left',
-      left: { message: 'Die Aufnahme ist unvollständig.', status: 400 },
+      _tag: 'Failure',
+      failure: { message: 'Die Aufnahme ist unvollständig.', status: 400 },
     });
     expect(await read(recording(16_000 * 2 * 302))).toMatchObject({
-      _tag: 'Left',
-      left: { message: 'Die Aufnahme ist länger als 5 Minuten.', status: 413 },
+      _tag: 'Failure',
+      failure: {
+        message: 'Die Aufnahme ist länger als 5 Minuten.',
+        status: 413,
+      },
     });
   });
 });
@@ -48,7 +53,7 @@ describe('transcribeDictation', () => {
       transcribeDictation('anna', new Uint8Array(3200)).pipe(
         Effect.provideService(
           Stt,
-          Stt.make({
+          Stt.of({
             transcribe: () =>
               Effect.flatMap(AiUsage, (current) =>
                 current.start({

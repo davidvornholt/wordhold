@@ -38,7 +38,7 @@ const databaseError = (cause: unknown) =>
     message: 'Die Übersicht konnte nicht geladen werden.',
   });
 
-export class DashboardStore extends Context.Tag('wordhold/DashboardStore')<
+export class DashboardStore extends Context.Service<
   DashboardStore,
   {
     readonly courses: (
@@ -67,7 +67,7 @@ export class DashboardStore extends Context.Tag('wordhold/DashboardStore')<
       timeZone: string,
     ) => Effect.Effect<ReadonlyArray<string>, DashboardDatabaseError>;
   }
->() {
+>()('wordhold/DashboardStore') {
   static readonly live = Layer.effect(
     DashboardStore,
     Effect.gen(function* () {

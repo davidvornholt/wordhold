@@ -78,13 +78,13 @@ describe('verifyPageLive review order', () => {
               (${page49Id}, ${courseId}, ${sessionId}, 2, 3, 'pages/49.png', ${extraction(page49Number)}::jsonb)
           `;
 
-          const outOfOrder = yield* Effect.either(
+          const outOfOrder = yield* Effect.result(
             verifyPageLive(sql, payload(page48Id), courseId),
           );
           expect(outOfOrder).toEqual(
             expect.objectContaining({
-              _tag: 'Left',
-              left: expect.any(PageAlreadyVerifiedError),
+              _tag: 'Failure',
+              failure: expect.any(PageAlreadyVerifiedError),
             }),
           );
 

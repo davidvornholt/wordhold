@@ -38,7 +38,7 @@ type Stubs = {
 const subject: TermCourse = { kind: 'terms', name: 'Chemie' };
 
 const runService = <A, E>(
-  use: (service: TermEntryService) => Effect.Effect<A, E, AiUsage>,
+  use: (service: TermEntryService['Service']) => Effect.Effect<A, E, AiUsage>,
   {
     createResult = { kind: 'created', entryId },
     updateResult = { kind: 'updated', definitionChanged: true },
@@ -63,7 +63,7 @@ const runService = <A, E>(
     }),
     Layer.succeed(
       DefinitionWriter,
-      DefinitionWriter.make({
+      DefinitionWriter.of({
         suggest: (request) => {
           suggestions.push(request);
           return writerFails
@@ -81,11 +81,9 @@ const runService = <A, E>(
   );
   return Effect.runPromise(
     Effect.flatMap(TermEntryService, use).pipe(
-      Effect.provide(
-        TermEntryService.Default.pipe(Layer.provide(dependencies)),
-      ),
+      Effect.provide(TermEntryService.layer.pipe(Layer.provide(dependencies))),
       Effect.provide(untrackedAiUsage),
-      Effect.either,
+      Effect.result,
       Effect.map((result) => ({ result, suggestions, derivations })),
     ),
   );
@@ -93,13 +91,13 @@ const runService = <A, E>(
 
 const failureTag = (result: {
   readonly _tag: string;
-  readonly left?: unknown;
+  readonly failure?: unknown;
 }) =>
-  result._tag === 'Left' &&
-  typeof result.left === 'object' &&
-  result.left !== null &&
-  '_tag' in result.left
-    ? result.left._tag
+  result._tag === 'Failure' &&
+  typeof result.failure === 'object' &&
+  result.failure !== null &&
+  '_tag' in result.failure
+    ? result.failure._tag
     : undefined;
 
 const input = {
@@ -112,7 +110,7 @@ describe('TermEntryService', () => {
   it('names each refused term as a typed failure', async () => {
     const created = await runService((service) => service.create(input));
     expect(created.result).toEqual(
-      expect.objectContaining({ right: { entryId } }),
+      expect.objectContaining({ success: { entryId } }),
     );
     const cases = [
       [{ kind: 'duplicate' }, 'VocabularyEntryConflictError'],
@@ -134,7 +132,9 @@ describe('TermEntryService', () => {
     const { result, suggestions } = await runService((service) =>
       service.suggestDefinition(request),
     );
-    expect(result).toEqual(expect.objectContaining({ right: { definition } }));
+    expect(result).toEqual(
+      expect.objectContaining({ success: { definition } }),
+    );
     expect(suggestions).toEqual([{ term: 'Base', subject: 'Chemie' }]);
     const failed = await runService(
       (service) => service.suggestDefinition(request),
@@ -160,7 +160,7 @@ describe('TermEntryService', () => {
       service.deriveKeyPoints({ courseId, entryId }),
     );
     expect(fresh.result).toEqual(
-      expect.objectContaining({ right: { keyPoints: derived } }),
+      expect.objectContaining({ success: { keyPoints: derived } }),
     );
     expect(fresh.derivations).toEqual([{ term: 'Katalysator', definition }]);
     const existing = ['wird nicht verbraucht'];
@@ -169,7 +169,7 @@ describe('TermEntryService', () => {
       { stored: { term: 'Katalysator', definition, keyPoints: existing } },
     );
     expect(known.result).toEqual(
-      expect.objectContaining({ right: { keyPoints: existing } }),
+      expect.objectContaining({ success: { keyPoints: existing } }),
     );
     expect(known.derivations).toEqual([]);
     const raced = await runService(
@@ -177,7 +177,7 @@ describe('TermEntryService', () => {
       { saved: existing },
     );
     expect(raced.result).toEqual(
-      expect.objectContaining({ right: { keyPoints: existing } }),
+      expect.objectContaining({ success: { keyPoints: existing } }),
     );
     const failed = await runService(
       (service) => service.deriveKeyPoints({ courseId, entryId }),
@@ -196,7 +196,7 @@ describe('TermEntryService', () => {
       service.updateKeyPoints({ courseId, entryId, keyPoints: derived }),
     );
     expect(edited.result).toEqual(
-      expect.objectContaining({ right: { keyPoints: derived } }),
+      expect.objectContaining({ success: { keyPoints: derived } }),
     );
     const missing = await runService(
       (service) =>
@@ -212,7 +212,7 @@ describe('TermEntryService edits', () => {
     const edit = { ...input, entryId };
     const edited = await runService((service) => service.update(edit));
     expect(edited.result).toEqual(
-      expect.objectContaining({ right: { definitionChanged: true } }),
+      expect.objectContaining({ success: { definitionChanged: true } }),
     );
     const cases = [
       [{ kind: 'duplicate' }, 'VocabularyEntryConflictError'],

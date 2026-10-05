@@ -1,15 +1,16 @@
 import type { LanguageModel } from 'ai';
-import { Effect, Schema } from 'effect';
+import { Effect, type Schema } from 'effect';
 import { generateStructured } from '../structured-generation';
+import { decodeModelOutput } from '../structured-output';
 import type { AiOperation, AiUsage } from '../usage';
 import { DefinitionError } from './error';
 
 // One structured request, decoded with the Effect schema. The message names
 // what could not be produced; the cause keeps the provider diagnostic.
-export const generateDefinitionOutput = <A, I>(input: {
+export const generateDefinitionOutput = <A>(input: {
   readonly model: LanguageModel;
   readonly operation: AiOperation;
-  readonly schema: Schema.Schema<A, I>;
+  readonly schema: Schema.Decoder<A>;
   readonly prompt: string;
   readonly message: string;
 }): Effect.Effect<A, DefinitionError, AiUsage> => {
@@ -23,7 +24,7 @@ export const generateDefinitionOutput = <A, I>(input: {
     failure,
   }).pipe(
     Effect.flatMap((output) =>
-      Schema.decodeUnknown(input.schema)(output).pipe(Effect.mapError(failure)),
+      decodeModelOutput(input.schema)(output).pipe(Effect.mapError(failure)),
     ),
   );
 };

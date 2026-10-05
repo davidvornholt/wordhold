@@ -1,6 +1,6 @@
-import { Data } from 'effect';
+import { Schema } from 'effect';
 
-export class SttError extends Data.TaggedError('SttError')<{
-  readonly message: string;
-  readonly cause: unknown;
-}> {}
+export class SttError extends Schema.TaggedError<SttError>()('SttError', {
+  message: Schema.String,
+  cause: Schema.Unknown,
+}) {}

@@ -52,7 +52,7 @@ export const backfillIntroductions = (url: string) =>
   );
 
 if (import.meta.main) {
-  const program = Effect.flatMap(Config.redacted('DATABASE_URL'), (url) =>
+  const program = Effect.flatMap(Config.Redacted('DATABASE_URL'), (url) =>
     backfillIntroductions(Redacted.value(url)),
   ).pipe(
     Effect.tap(() =>

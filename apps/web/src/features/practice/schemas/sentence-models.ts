@@ -2,11 +2,12 @@ import { maximumExampleLength } from '@wordhold/ai/extraction/schema';
 import { Option, Schema } from 'effect';
 import type { PreparedExampleSentence } from '../../../shared/examples/example-model';
 import { VocabularySelection } from '../../../shared/session/vocabulary-selection';
+import { Uuid } from '../../../shared/validate/uuid';
 
 // Sentence practice draws from one book's own words, one unit, or the words
 // picked in a word list, like the sittings it is opened from.
 export const SentenceSessionRequest = Schema.Struct({
-  courseId: Schema.UUID,
+  courseId: Uuid,
   selection: VocabularySelection,
 });
 
@@ -20,11 +21,11 @@ export const decodeSentenceSessionRequest = Schema.decodeUnknownSync(
 // against the example stored now, so a sentence edited in the meantime is
 // refused instead of being graded against a translation of something else.
 export const SentenceAnswer = Schema.Struct({
-  entryId: Schema.UUID,
-  sentence: Schema.String.pipe(Schema.maxLength(maximumExampleLength)),
-  answer: Schema.Trim.pipe(
-    Schema.nonEmptyString(),
-    Schema.maxLength(maximumExampleLength),
+  entryId: Uuid,
+  sentence: Schema.String.check(Schema.isMaxLength(maximumExampleLength)),
+  answer: Schema.Trim.check(
+    Schema.isNonEmpty(),
+    Schema.isMaxLength(maximumExampleLength),
   ),
 });
 
@@ -62,8 +63,8 @@ export type SentenceResult =
     };
 
 const SentenceSearch = Schema.Struct({
-  book: Schema.optional(Schema.UUID),
-  unit: Schema.optional(Schema.UUID),
+  book: Schema.optional(Uuid),
+  unit: Schema.optional(Uuid),
   entries: Schema.optional(Schema.String),
 });
 

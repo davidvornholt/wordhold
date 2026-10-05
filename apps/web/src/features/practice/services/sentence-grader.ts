@@ -7,14 +7,14 @@ import type { AiUsage } from '@wordhold/ai/usage';
 import { Context, Effect, Layer } from 'effect';
 import { PracticeJudgeError } from '../errors/practice-errors';
 
-export class SentenceGrader extends Context.Tag('wordhold/SentenceGrader')<
+export class SentenceGrader extends Context.Service<
   SentenceGrader,
   {
     readonly judge: (
       input: SentenceJudgeInput,
     ) => Effect.Effect<SentenceVerdictData, PracticeJudgeError, AiUsage>;
   }
->() {
+>()('wordhold/SentenceGrader') {
   static readonly live = Layer.effect(
     SentenceGrader,
     Effect.gen(function* () {
