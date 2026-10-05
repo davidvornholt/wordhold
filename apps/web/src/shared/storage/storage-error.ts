@@ -1,7 +1,6 @@
-import { Data } from 'effect';
+import { Schema } from 'effect';
 
-export class StorageError extends Data.TaggedError('StorageError')<{
-  readonly operation: string;
-  readonly cause: unknown;
-  readonly message: string;
-}> {}
+export class StorageError extends Schema.TaggedError<StorageError>()(
+  'StorageError',
+  { operation: Schema.String, cause: Schema.Unknown, message: Schema.String },
+) {}

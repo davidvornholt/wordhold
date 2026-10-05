@@ -1,5 +1,5 @@
-import { Data } from 'effect';
+import { Schema } from 'effect';
 
-export class JudgeError extends Data.TaggedError('JudgeError')<{
-  readonly cause: unknown;
-}> {}
+export class JudgeError extends Schema.TaggedError<JudgeError>()('JudgeError', {
+  cause: Schema.Unknown,
+}) {}

@@ -1,6 +1,6 @@
 import type { Tts } from '@wordhold/ai/tts';
 import type { LanguageCode } from '@wordhold/db/schema/courses';
-import { Cause, type Context, Effect, Either } from 'effect';
+import { Cause, Effect, Result } from 'effect';
 import {
   speechAudioProfile,
   synthesizeSpeechAudio,
@@ -13,9 +13,9 @@ import {
 import type { VocabularyEntryStore } from './vocabulary-entry-store';
 
 type EntryAudioDependencies = {
-  readonly tts: Context.Tag.Service<typeof Tts>;
-  readonly storage: Context.Tag.Service<typeof Storage>;
-  readonly store: Context.Tag.Service<typeof VocabularyEntryStore>;
+  readonly tts: Tts['Service'];
+  readonly storage: Storage['Service'];
+  readonly store: VocabularyEntryStore['Service'];
 };
 
 // Pronunciation is generated right away like after an import. A failure is
@@ -37,26 +37,23 @@ export const prepareEntryAudio = (
     });
     return 'generated' as const;
   }).pipe(
-    Effect.tapErrorCause((cause) =>
-      Effect.logWarning(
-        'entry audio generation failed',
-        Cause.pretty(cause, { renderErrorCause: true }),
-      ),
+    Effect.tapCause((cause) =>
+      Effect.logWarning('entry audio generation failed', Cause.pretty(cause)),
     ),
-    Effect.catchAll(() => Effect.succeed('failed' as const)),
+    Effect.catch(() => Effect.succeed('failed' as const)),
   );
 
 // The database is authoritative. A file that cannot be removed stays for the
 // reconciliation pass, which removes unreferenced files.
 export const removeEntryFiles = (
-  storage: Context.Tag.Service<typeof Storage>,
+  storage: Storage['Service'],
   paths: ReadonlyArray<string>,
 ) =>
-  Effect.forEach(paths, (path) => storage.remove(path).pipe(Effect.either), {
+  Effect.forEach(paths, (path) => storage.remove(path).pipe(Effect.result), {
     concurrency: 3,
   }).pipe(
     Effect.tap((removals) =>
-      removals.some(Either.isLeft)
+      removals.some(Result.isFailure)
         ? Effect.logWarning('entry audio removal failed')
         : Effect.void,
     ),

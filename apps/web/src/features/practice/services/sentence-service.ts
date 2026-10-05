@@ -1,7 +1,9 @@
 import { isSentenceCorrect } from '@wordhold/ai/sentence/judge-schema';
-import { Effect } from 'effect';
+import type { AiUsage } from '@wordhold/ai/usage';
+import { Context, Effect, Layer } from 'effect';
 import { normalizeAnswerForComparison } from '../../../shared/grading/normalize';
 import { englishNames } from '../../../shared/languages';
+import type { PracticeDatabaseError } from '../errors/practice-errors';
 import { StaleSentenceError } from '../errors/practice-errors';
 import type {
   SentenceAnswerData,
@@ -14,10 +16,24 @@ import { SentenceStore } from './sentence-store';
 
 // Sentence practice is extra practice: nothing here writes a review or moves
 // a card, so the schedule is the same before and after a sitting.
-export class SentenceService extends Effect.Service<SentenceService>()(
-  'wordhold/SentenceService',
+export class SentenceService extends Context.Service<
+  SentenceService,
   {
-    effect: Effect.gen(function* () {
+    readonly getSession: (
+      input: SentenceSessionRequestData,
+    ) => Effect.Effect<SentenceSession, PracticeDatabaseError>;
+    readonly check: (
+      input: SentenceAnswerData,
+    ) => Effect.Effect<
+      SentenceResult,
+      PracticeDatabaseError | StaleSentenceError,
+      AiUsage
+    >;
+  }
+>()('wordhold/SentenceService') {
+  static readonly layer = Layer.effect(
+    SentenceService,
+    Effect.gen(function* () {
       const store = yield* SentenceStore;
       const grader = yield* SentenceGrader;
 
@@ -85,7 +101,7 @@ export class SentenceService extends Effect.Service<SentenceService>()(
             );
         });
 
-      return { getSession, check } as const;
+      return SentenceService.of({ getSession, check });
     }),
-  },
-) {}
+  );
+}

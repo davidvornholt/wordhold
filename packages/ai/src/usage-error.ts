@@ -1,6 +1,6 @@
-import { Data } from 'effect';
+import { Schema } from 'effect';
 
-export class AiUsageError extends Data.TaggedError('AiUsageError')<{
-  readonly cause?: unknown;
-  readonly message: string;
-}> {}
+export class AiUsageError extends Schema.TaggedError<AiUsageError>()(
+  'AiUsageError',
+  { cause: Schema.optional(Schema.Unknown), message: Schema.String },
+) {}

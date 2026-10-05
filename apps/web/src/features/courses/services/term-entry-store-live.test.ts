@@ -65,7 +65,7 @@ const term = (text: string, courseId = subjectId) => ({
 });
 
 const createdId = (
-  result: Effect.Effect.Success<ReturnType<TermEntryStore['Type']['create']>>,
+  result: Effect.Success<ReturnType<TermEntryStore['Service']['create']>>,
 ) => (result.kind === 'created' ? result.entryId : '');
 
 describe('TermEntryStore', () => {

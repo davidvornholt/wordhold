@@ -8,7 +8,7 @@ import { BibleStore } from './services/bible-store';
 // the runtime as well.
 export const bibleRuntime = ManagedRuntime.make(
   Layer.mergeAll(
-    BibleService.Default.pipe(Layer.provide(BibleStore.live)),
+    BibleService.layer.pipe(Layer.provide(BibleStore.live)),
     MemberRepositoryLive,
   ).pipe(Layer.provideMerge(PgLive)),
 );

@@ -19,8 +19,8 @@ const databaseServices = Layer.mergeAll(
   UsageLedger.live(PgLive),
 ).pipe(Layer.provideMerge(PgLive));
 
-const extraction = Extraction.Default.pipe(Layer.provide(BedrockProvider.live));
+const extraction = Extraction.layer.pipe(Layer.provide(BedrockProvider.live));
 
 export const importRuntime = ManagedRuntime.make(
-  Layer.mergeAll(databaseServices, StorageLive, extraction, Tts.Default),
+  Layer.mergeAll(databaseServices, StorageLive, extraction, Tts.layer),
 );

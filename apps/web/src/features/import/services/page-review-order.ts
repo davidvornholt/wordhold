@@ -5,11 +5,13 @@ export const minimumPageNumberConfidence = 0.9;
 
 const StoredPageNumber = Schema.Struct({
   page: Schema.Struct({
-    pageNumber: Schema.Number.pipe(
-      Schema.int(),
-      Schema.between(1, maximumPageNumber),
+    pageNumber: Schema.Number.check(
+      Schema.isInt(),
+      Schema.isBetween({ minimum: 1, maximum: maximumPageNumber }),
     ),
-    pageNumberConfidence: Schema.Number.pipe(Schema.between(0, 1)),
+    pageNumberConfidence: Schema.Number.check(
+      Schema.isBetween({ minimum: 0, maximum: 1 }),
+    ),
   }),
 });
 

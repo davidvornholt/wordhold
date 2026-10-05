@@ -37,9 +37,7 @@ type AvailabilityRow = {
 const chosenDirection = (direction: SessionDirection) =>
   direction === 'both' ? null : direction;
 
-export class PracticeSessionStore extends Context.Tag(
-  'wordhold/PracticeSessionStore',
-)<
+export class PracticeSessionStore extends Context.Service<
   PracticeSessionStore,
   {
     readonly loadScheduled: (
@@ -63,7 +61,7 @@ export class PracticeSessionStore extends Context.Tag(
       request: StudyRequestData,
     ) => Effect.Effect<ReadonlyArray<ItemRow>, PracticeDatabaseError>;
   }
->() {
+>()('wordhold/PracticeSessionStore') {
   static readonly live = Layer.effect(
     PracticeSessionStore,
     Effect.gen(function* () {

@@ -1,12 +1,14 @@
-import { Clock, Effect } from 'effect';
+import { Clock, Context, Effect, Layer } from 'effect';
 import type {
   PlaceSelectionData,
   VocabularySelectionData,
 } from '../../../shared/session/vocabulary-selection';
+import type { LearningDatabaseError } from '../errors/learning-errors';
 import {
   LearningCardNotFoundError,
   LearningPlaceNotFoundError,
 } from '../errors/learning-errors';
+import type { LearnPass, LearnSelectionPass } from '../schemas/learning-models';
 import { LearningStore } from './learning-store';
 
 const placeMissingMessage = (place: PlaceSelectionData | null): string => {
@@ -16,10 +18,32 @@ const placeMissingMessage = (place: PlaceSelectionData | null): string => {
   return 'bookId' in place ? 'Buch nicht gefunden.' : 'Einheit nicht gefunden.';
 };
 
-export class LearningService extends Effect.Service<LearningService>()(
-  'wordhold/LearningService',
+export class LearningService extends Context.Service<
+  LearningService,
   {
-    effect: Effect.gen(function* () {
+    readonly getPass: (
+      courseId: string,
+      place: PlaceSelectionData | null,
+    ) => Effect.Effect<
+      LearnPass,
+      LearningDatabaseError | LearningPlaceNotFoundError
+    >;
+    readonly getSelection: (
+      courseId: string,
+      selection: VocabularySelectionData,
+    ) => Effect.Effect<LearnSelectionPass, LearningDatabaseError>;
+    readonly introduce: (
+      courseId: string,
+      cardId: string,
+    ) => Effect.Effect<
+      undefined,
+      LearningDatabaseError | LearningCardNotFoundError
+    >;
+  }
+>()('wordhold/LearningService') {
+  static readonly layer = Layer.effect(
+    LearningService,
+    Effect.gen(function* () {
       const store = yield* LearningStore;
       const getPass = (courseId: string, place: PlaceSelectionData | null) =>
         Effect.gen(function* () {
@@ -45,7 +69,7 @@ export class LearningService extends Effect.Service<LearningService>()(
             });
           }
         });
-      return { getPass, getSelection, introduce } as const;
+      return LearningService.of({ getPass, getSelection, introduce });
     }),
-  },
-) {}
+  );
+}

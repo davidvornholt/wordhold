@@ -1,6 +1,6 @@
-import { Data } from 'effect';
+import { Schema } from 'effect';
 
-export class DefinitionError extends Data.TaggedError('DefinitionError')<{
-  readonly cause: unknown;
-  readonly message: string;
-}> {}
+export class DefinitionError extends Schema.TaggedError<DefinitionError>()(
+  'DefinitionError',
+  { cause: Schema.Unknown, message: Schema.String },
+) {}

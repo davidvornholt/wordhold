@@ -1,6 +1,6 @@
-import { Data } from 'effect';
+import { Schema } from 'effect';
 
-export class PasskeyListError extends Data.TaggedError('PasskeyListError')<{
-  readonly cause: unknown;
-  readonly message: string;
-}> {}
+export class PasskeyListError extends Schema.TaggedError<PasskeyListError>()(
+  'PasskeyListError',
+  { cause: Schema.Unknown, message: Schema.String },
+) {}

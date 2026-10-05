@@ -19,12 +19,12 @@ describe('course direction constraint', () => {
             values (${courseId}, 'French', 'fr')
           `;
 
-          const update = yield* Effect.either(sql`
+          const update = yield* Effect.result(sql`
             update courses
             set directions = '{}'::answer_direction[]
             where id = ${courseId}
           `);
-          expect(update._tag).toBe('Left');
+          expect(update._tag).toBe('Failure');
           const rows = yield* sql<{ readonly directions: string }>`
             select directions::text as directions
             from courses where id = ${courseId}
@@ -42,27 +42,27 @@ describe('list course constraint', () => {
       withMigratedTestDatabase((database) =>
         Effect.gen(function* () {
           const sql = yield* Database;
-          const bilingual = yield* Effect.either(sql`
+          const bilingual = yield* Effect.result(sql`
             insert into courses (id, name, kind, target_language, directions)
             values (${courseId}, 'Chemie', 'terms', 'fr', '{to_native}')
           `);
-          expect(bilingual._tag).toBe('Left');
-          const bothDirections = yield* Effect.either(sql`
+          expect(bilingual._tag).toBe('Failure');
+          const bothDirections = yield* Effect.result(sql`
             insert into courses (id, name, kind, target_language)
             values (${courseId}, 'Chemie', 'terms', 'de')
           `);
-          expect(bothDirections._tag).toBe('Left');
+          expect(bothDirections._tag).toBe('Failure');
 
           yield* sql`
             insert into courses (id, name, kind, target_language, directions)
             values (${courseId}, 'Chemie', 'terms', 'de', '{to_native}')
           `;
-          const widen = yield* Effect.either(sql`
+          const widen = yield* Effect.result(sql`
             update courses
             set directions = '{to_target,to_native}'::answer_direction[]
             where id = ${courseId}
           `);
-          expect(widen._tag).toBe('Left');
+          expect(widen._tag).toBe('Failure');
           const rows = yield* sql<{ readonly kind: string }>`
             select kind from courses where id = ${courseId}
           `;
@@ -77,11 +77,11 @@ describe('list course constraint', () => {
       withMigratedTestDatabase((database) =>
         Effect.gen(function* () {
           const sql = yield* Database;
-          const bothDirections = yield* Effect.either(sql`
+          const bothDirections = yield* Effect.result(sql`
             insert into courses (id, name, kind, target_language)
             values (${courseId}, 'Bibelverse', 'texts', 'de')
           `);
-          expect(bothDirections._tag).toBe('Left');
+          expect(bothDirections._tag).toBe('Failure');
 
           yield* sql`
             insert into courses (id, name, kind, target_language, directions)

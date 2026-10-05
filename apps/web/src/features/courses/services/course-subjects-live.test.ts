@@ -21,9 +21,9 @@ const runServiceTest = <A, E>(
     withMigratedTestDatabase((database) => {
       const databaseLayer = testDatabaseLayer(database.url);
       return Effect.all([seedOwner(ownerId), seedOwner(otherOwnerId)]).pipe(
-        Effect.zipRight(effect),
+        Effect.andThen(effect),
         Effect.provide(
-          CourseService.Default.pipe(
+          CourseService.layer.pipe(
             Layer.provide(CourseStore.live.pipe(Layer.provide(databaseLayer))),
           ),
         ),

@@ -31,7 +31,7 @@ const databaseError =
   (operation: string, message: string) => (cause: unknown) =>
     Effect.fail(new BibleDatabaseError({ operation, cause, message }));
 
-export class BibleStore extends Context.Tag('wordhold/BibleStore')<
+export class BibleStore extends Context.Service<
   BibleStore,
   {
     readonly insert: (
@@ -52,7 +52,7 @@ export class BibleStore extends Context.Tag('wordhold/BibleStore')<
       bibleId: string,
     ) => Effect.Effect<boolean, BibleDatabaseError>;
   }
->() {
+>()('wordhold/BibleStore') {
   static readonly live = Layer.effect(
     BibleStore,
     Effect.gen(function* () {

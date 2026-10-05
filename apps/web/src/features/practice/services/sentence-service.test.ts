@@ -4,7 +4,7 @@ import type {
   SentenceVerdictData,
 } from '@wordhold/ai/sentence/judge-schema';
 import { untrackedAiUsage } from '@wordhold/ai/testing/usage';
-import { Effect, Either, Layer } from 'effect';
+import { Effect, Layer, Result } from 'effect';
 import { PracticeJudgeError } from '../errors/practice-errors';
 import type { SentenceAnswerData } from '../schemas/sentence-models';
 import { SentenceGrader } from './sentence-grader';
@@ -46,9 +46,9 @@ const runCheck = (
 ) =>
   Effect.runPromise(
     Effect.flatMap(SentenceService, (service) => service.check(data)).pipe(
-      Effect.either,
+      Effect.result,
       Effect.provide(
-        SentenceService.Default.pipe(
+        SentenceService.layer.pipe(
           Layer.provide(
             Layer.merge(
               Layer.succeed(SentenceStore, {
@@ -74,7 +74,7 @@ describe('SentenceService check', () => {
       judgeMustNotRun,
     );
     expect(result).toEqual(
-      Either.right({
+      Result.succeed({
         graded: true,
         correct: true,
         reference: target.reference,
@@ -90,8 +90,8 @@ describe('SentenceService check', () => {
       judgeMustNotRun,
     );
     expect(result).toMatchObject({
-      _tag: 'Left',
-      left: { _tag: 'StaleSentenceError' },
+      _tag: 'Failure',
+      failure: { _tag: 'StaleSentenceError' },
     });
   });
 
@@ -117,7 +117,7 @@ describe('SentenceService check', () => {
       },
     ]);
     expect(result).toEqual(
-      Either.right({
+      Result.succeed({
         graded: true,
         correct: false,
         reference: target.reference,
@@ -136,7 +136,7 @@ describe('SentenceService check', () => {
         ),
     );
     expect(result).toEqual(
-      Either.right({
+      Result.succeed({
         graded: true,
         correct: true,
         reference: target.reference,
@@ -156,8 +156,8 @@ describe('SentenceService check', () => {
       ),
     );
     expect(result).toMatchObject({
-      _tag: 'Right',
-      right: { graded: false, reference: target.reference },
+      _tag: 'Success',
+      success: { graded: false, reference: target.reference },
     });
   });
 });

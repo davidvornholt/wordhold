@@ -1,9 +1,10 @@
-import { Data } from 'effect';
+import { Schema } from 'effect';
 
-export class IntroductionBackfillError extends Data.TaggedError(
+export class IntroductionBackfillError extends Schema.TaggedError<IntroductionBackfillError>()(
   'IntroductionBackfillError',
-)<{
-  readonly operation: string;
-  readonly cause: unknown;
-  readonly message: string;
-}> {}
+  {
+    operation: Schema.String,
+    cause: Schema.Unknown,
+    message: Schema.String,
+  },
+) {}

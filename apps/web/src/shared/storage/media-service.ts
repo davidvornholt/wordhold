@@ -18,9 +18,10 @@ export type MediaRepositoryShape = {
   ) => Effect.Effect<string | undefined, MediaDatabaseError>;
 };
 
-export class MediaRepository extends Context.Tag(
-  '@wordhold/web/storage/MediaRepository',
-)<MediaRepository, MediaRepositoryShape>() {}
+export class MediaRepository extends Context.Service<
+  MediaRepository,
+  MediaRepositoryShape
+>()('@wordhold/web/storage/MediaRepository') {}
 
 export const MediaRepositoryLive = Layer.effect(
   MediaRepository,

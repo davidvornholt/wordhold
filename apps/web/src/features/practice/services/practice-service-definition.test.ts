@@ -68,7 +68,7 @@ const reviewStore = (
   submission: SubmissionRecord,
   recorded: Recorded,
   { storedFirst }: SubmitOptions,
-): PracticeReviewStore['Type'] => ({
+): PracticeReviewStore['Service'] => ({
   findSubmission: () => Effect.succeed(submission),
   saveKeyPoints: (_entryId, _definition, points) =>
     Effect.sync(() => {
@@ -123,8 +123,8 @@ describe('PracticeService definitions', () => {
       'Ein Stoff, der Reaktionen beschleunigt und nicht verbraucht wird.',
     );
     expect(await result).toMatchObject({
-      _tag: 'Right',
-      right: {
+      _tag: 'Success',
+      success: {
         graded: true,
         correct: false,
         stored: false,
@@ -154,8 +154,8 @@ describe('PracticeService definitions', () => {
       { storedFirst },
     );
     expect(await result).toMatchObject({
-      _tag: 'Right',
-      right: {
+      _tag: 'Success',
+      success: {
         keyPoints: [
           { text: 'ist ein Stoff' },
           { text: 'beschleunigt Reaktionen' },
@@ -173,8 +173,8 @@ describe('PracticeService definitions', () => {
       'Ein Stoff, der die Aktivierungsenergie senkt und dabei nicht verbraucht wird.',
     );
     expect(await result).toMatchObject({
-      _tag: 'Right',
-      right: { graded: true, correct: true, stored: true },
+      _tag: 'Success',
+      success: { graded: true, correct: true, stored: true },
     });
     expect(recorded.saved).toHaveLength(0);
     expect(recorded.commits.at(0)).toMatchObject({
@@ -188,8 +188,8 @@ describe('PracticeService definitions', () => {
       elapsedMs: 3000,
     });
     expect(await result).toMatchObject({
-      _tag: 'Right',
-      right: { graded: true, correct: true, keyPoints: null },
+      _tag: 'Success',
+      success: { graded: true, correct: true, keyPoints: null },
     });
     expect(recorded.saved).toHaveLength(0);
     expect(recorded.judged).toHaveLength(0);

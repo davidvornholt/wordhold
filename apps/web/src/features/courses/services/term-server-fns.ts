@@ -15,7 +15,7 @@ import { TermEntryService } from './term-entry-service';
 import { TermEntryStore } from './term-entry-store';
 
 const termRuntime = ManagedRuntime.make(
-  TermEntryService.Default.pipe(
+  TermEntryService.layer.pipe(
     Layer.provide(
       Layer.mergeAll(
         TermEntryStore.live.pipe(Layer.provide(PgLive)),

@@ -1,6 +1,6 @@
-import { Data } from 'effect';
+import { Schema } from 'effect';
 
-export class SentenceJudgeError extends Data.TaggedError('SentenceJudgeError')<{
-  readonly cause: unknown;
-  readonly message: string;
-}> {}
+export class SentenceJudgeError extends Schema.TaggedError<SentenceJudgeError>()(
+  'SentenceJudgeError',
+  { cause: Schema.Unknown, message: Schema.String },
+) {}

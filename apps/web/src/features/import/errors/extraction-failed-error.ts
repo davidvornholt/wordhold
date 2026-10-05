@@ -1,8 +1,6 @@
-import { Data } from 'effect';
+import { Schema } from 'effect';
 
-export class ExtractionFailedError extends Data.TaggedError(
+export class ExtractionFailedError extends Schema.TaggedError<ExtractionFailedError>()(
   'ExtractionFailedError',
-)<{
-  readonly message: string;
-  readonly cause: unknown;
-}> {}
+  { message: Schema.String, cause: Schema.Unknown },
+) {}

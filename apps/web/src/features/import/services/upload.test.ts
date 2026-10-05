@@ -143,7 +143,7 @@ describe('storeUploadedPage', () => {
     const repository = makeImportRepository({
       insertPage: () =>
         Effect.sync(() => actions.push('insert')).pipe(
-          Effect.zipRight(
+          Effect.andThen(
             Effect.fail(
               new ImportDatabaseError({
                 operation: 'insert page',

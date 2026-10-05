@@ -29,9 +29,9 @@ const runServiceTest = <A, E>(
     withMigratedTestDatabase((database) => {
       const databaseLayer = testDatabaseLayer(database.url);
       return Effect.all([seedOwner(ownerId), seedOwner(otherOwnerId)]).pipe(
-        Effect.zipRight(effect),
+        Effect.andThen(effect),
         Effect.provide(
-          BibleService.Default.pipe(
+          BibleService.layer.pipe(
             Layer.provide(BibleStore.live.pipe(Layer.provide(databaseLayer))),
           ),
         ),

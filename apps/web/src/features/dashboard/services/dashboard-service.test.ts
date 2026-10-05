@@ -21,12 +21,13 @@ describe('DashboardService', () => {
       Effect.flatMap(DashboardService, (service) =>
         service.load('owner', 'Europe/Berlin'),
       ).pipe(
-        Effect.provide(DashboardService.Default.pipe(Layer.provide(store))),
-        Effect.either,
+        Effect.provide(DashboardService.layer.pipe(Layer.provide(store))),
+        Effect.result,
       ),
     );
-    expect(result._tag).toBe('Left');
-    const receivedFailure = result._tag === 'Left' ? result.left : undefined;
+    expect(result._tag).toBe('Failure');
+    const receivedFailure =
+      result._tag === 'Failure' ? result.failure : undefined;
     expect(receivedFailure).toBe(failure);
   });
 
@@ -49,9 +50,7 @@ describe('DashboardService', () => {
     await Effect.runPromise(
       Effect.flatMap(DashboardService, (service) =>
         service.load('owner', 'Europe/Berlin'),
-      ).pipe(
-        Effect.provide(DashboardService.Default.pipe(Layer.provide(store))),
-      ),
+      ).pipe(Effect.provide(DashboardService.layer.pipe(Layer.provide(store)))),
     );
     expect(askedFor).toEqual(['owner', 'owner', 'owner', 'owner']);
   });

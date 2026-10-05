@@ -144,10 +144,9 @@ export type StorageShape = {
   ) => Effect.Effect<ReadonlyArray<string>, StorageError>;
 };
 
-export class Storage extends Context.Tag('@wordhold/web/storage/Storage')<
-  Storage,
-  StorageShape
->() {}
+export class Storage extends Context.Service<Storage, StorageShape>()(
+  '@wordhold/web/storage/Storage',
+) {}
 
 export const StorageLive = Layer.succeed(
   Storage,

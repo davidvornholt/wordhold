@@ -31,7 +31,7 @@
     "@wordhold/ui": "workspace:*",
     "better-auth": "^1.7.6",
     "drizzle-orm": "^0.45.3",
-    "effect": "^3.22.2",
+    "effect": "^4.0.1",
     "image-dimensions": "^2.6.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",

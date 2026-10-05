@@ -1,5 +1,6 @@
-import { Data } from 'effect';
+import { Schema } from 'effect';
 
-export class MediaNotFoundError extends Data.TaggedError('MediaNotFoundError')<{
-  readonly message: string;
-}> {}
+export class MediaNotFoundError extends Schema.TaggedError<MediaNotFoundError>()(
+  'MediaNotFoundError',
+  { message: Schema.String },
+) {}

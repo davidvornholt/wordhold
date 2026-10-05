@@ -71,7 +71,7 @@ const rejection = (attempt: () => Promise<unknown>) =>
 
 const refusal = (options: Parameters<typeof seedCode>[0]) =>
   runWithCodes((codes) =>
-    Effect.zipRight(
+    Effect.andThen(
       seedCode(options),
       rejection(() => resolveAccessCode(codes, code)),
     ),

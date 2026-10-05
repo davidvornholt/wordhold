@@ -49,16 +49,16 @@ export const usagePeriods = [week, month, year] as const;
 export type UsagePeriod = (typeof usagePeriods)[number];
 export const defaultUsagePeriod: UsagePeriod = month;
 
-const PersonName = Schema.Trim.pipe(
-  Schema.minLength(1, { message: () => 'Gib einen Namen ein.' }),
-  Schema.maxLength(maximumPersonNameLength, {
-    message: () => `Ein Name hat höchstens ${maximumPersonNameLength} Zeichen.`,
+const PersonName = Schema.Trim.check(
+  Schema.isMinLength(1, { message: 'Gib einen Namen ein.' }),
+  Schema.isMaxLength(maximumPersonNameLength, {
+    message: `Ein Name hat höchstens ${maximumPersonNameLength} Zeichen.`,
   }),
 );
 
-const UserId = Schema.String.pipe(
-  Schema.minLength(1),
-  Schema.maxLength(maximumUserIdLength),
+const UserId = Schema.String.check(
+  Schema.isMinLength(1),
+  Schema.isMaxLength(maximumUserIdLength),
 );
 
 export const decodeInvitation = Schema.decodeUnknownSync(
@@ -71,7 +71,7 @@ export const decodeAccessChange = Schema.decodeUnknownSync(
   Schema.Struct({ userId: UserId, enabled: Schema.Boolean }),
 );
 
-const UsagePeriodSchema = Schema.Literal(...usagePeriods);
+const UsagePeriodSchema = Schema.Literals(usagePeriods);
 export const decodeUsagePeriod = Schema.decodeUnknownSync(UsagePeriodSchema);
 
 export type PeopleSearch = { readonly days?: UsagePeriod };

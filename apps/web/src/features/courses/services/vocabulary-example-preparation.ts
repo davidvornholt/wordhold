@@ -1,5 +1,5 @@
 import type { SentenceGen } from '@wordhold/ai/sentence';
-import { type Context, Effect } from 'effect';
+import { Effect } from 'effect';
 import type { PreparedEntryExample } from '../../../shared/examples/example-model';
 import { englishNames } from '../../../shared/languages';
 import {
@@ -12,8 +12,8 @@ import type {
   VocabularyExampleStore,
 } from './vocabulary-example-store';
 
-type SentenceGenerator = Context.Tag.Service<typeof SentenceGen>;
-type ExampleStore = Context.Tag.Service<typeof VocabularyExampleStore>;
+type SentenceGenerator = SentenceGen['Service'];
+type ExampleStore = VocabularyExampleStore['Service'];
 
 const generationFailed = new CourseExampleGenerationError({
   message: 'Der Beispielsatz konnte nicht erzeugt werden.',
@@ -28,9 +28,7 @@ export const prepareExampleBatch = <E, R>(
     [...new Set(entryIds)],
     (entryId) =>
       prepareOne(entryId).pipe(
-        Effect.catchAll(() =>
-          Effect.succeed({ entryId, example: null } as const),
-        ),
+        Effect.catch(() => Effect.succeed({ entryId, example: null } as const)),
       ),
     { concurrency: preparationConcurrency },
   );
@@ -92,5 +90,5 @@ export const completeExampleTranslation = ({
       translated.native,
     );
     return stored ? { ...example, nativeText: translated.native } : example;
-  }).pipe(Effect.catchAll(() => Effect.succeed(example)));
+  }).pipe(Effect.catch(() => Effect.succeed(example)));
 };

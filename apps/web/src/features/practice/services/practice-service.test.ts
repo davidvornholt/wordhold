@@ -29,7 +29,8 @@ describe('PracticeService', () => {
       },
       testJudge(() => unavailableJudge('unused')),
     );
-    const receivedFailure = result._tag === 'Left' ? result.left : undefined;
+    const receivedFailure =
+      result._tag === 'Failure' ? result.failure : undefined;
     expect(receivedFailure).toBe(failure);
   });
 
@@ -55,7 +56,10 @@ describe('PracticeService', () => {
       }),
       'onne',
     );
-    expect(result).toMatchObject({ _tag: 'Right', right: { graded: false } });
+    expect(result).toMatchObject({
+      _tag: 'Success',
+      success: { graded: false },
+    });
     expect(judgeCalls).toBe(1);
   });
 
@@ -91,7 +95,7 @@ describe('PracticeService', () => {
       ),
       'profesora',
     );
-    const value = result._tag === 'Right' ? result.right : undefined;
+    const value = result._tag === 'Success' ? result.success : undefined;
     expect(value).toMatchObject({ graded: true, correct: true });
     expect(judgeCalls).toBe(0);
   });
@@ -113,8 +117,8 @@ describe('PracticeService', () => {
       },
       testJudge(() => unavailableJudge('offline')),
     );
-    expect(result._tag).toBe('Right');
-    const value = result._tag === 'Right' ? result.right : undefined;
+    expect(result._tag).toBe('Success');
+    const value = result._tag === 'Success' ? result.success : undefined;
     expect(value).toMatchObject({ graded: false });
     expect(commits).toBe(0);
   });

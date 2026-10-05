@@ -33,7 +33,7 @@ export const orphanedDataFiles = (
         nowMs - file.modifiedAtMs >= orphanGracePeriodMs,
     )
     .map((file) => file.relativePath)
-    .sort(Order.string);
+    .sort(Order.String);
 
 type PersistFileReferenceInput<T, WriteError, PersistenceError, RemoveError> = {
   readonly write: Effect.Effect<void, WriteError>;
@@ -57,9 +57,9 @@ export const persistFileReference = <
   input.write.pipe(
     Effect.flatMap(() =>
       input.persistReference.pipe(
-        Effect.catchAll((persistenceError) =>
+        Effect.catch((persistenceError) =>
           input.remove.pipe(
-            Effect.catchAll((cleanupError) =>
+            Effect.catch((cleanupError) =>
               Effect.fail(
                 new FileReferenceError({
                   persistenceError,
@@ -68,7 +68,7 @@ export const persistFileReference = <
                 }),
               ),
             ),
-            Effect.zipRight(Effect.fail(persistenceError)),
+            Effect.andThen(Effect.fail(persistenceError)),
           ),
         ),
       ),

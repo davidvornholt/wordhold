@@ -1,7 +1,10 @@
-import { Data } from 'effect';
+import { Schema } from 'effect';
 
-export class FileReferenceError extends Data.TaggedError('FileReferenceError')<{
-  readonly persistenceError: unknown;
-  readonly cleanupError: unknown;
-  readonly message: string;
-}> {}
+export class FileReferenceError extends Schema.TaggedError<FileReferenceError>()(
+  'FileReferenceError',
+  {
+    persistenceError: Schema.Unknown,
+    cleanupError: Schema.Unknown,
+    message: Schema.String,
+  },
+) {}

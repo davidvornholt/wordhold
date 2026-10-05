@@ -1,15 +1,14 @@
 import { sql } from 'drizzle-orm';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
-import { Data, Effect } from 'effect';
+import { Effect, Schema } from 'effect';
 import { makeDrizzle } from './drizzle';
 
 export const migrationsFolder = `${import.meta.dir}/../drizzle`;
 
-export class DatabaseMigrationError extends Data.TaggedError(
+export class DatabaseMigrationError extends Schema.TaggedError<DatabaseMigrationError>()(
   'DatabaseMigrationError',
-)<{
-  readonly message: string;
-}> {}
+  { message: Schema.String },
+) {}
 
 const migrationError = () =>
   new DatabaseMigrationError({

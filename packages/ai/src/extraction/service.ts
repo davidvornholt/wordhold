@@ -1,6 +1,7 @@
-import { Effect, Schema } from 'effect';
+import { Context, Effect, Layer } from 'effect';
 import { BedrockProvider, productionModelId } from '../providers/bedrock';
 import { generateStructured } from '../structured-generation';
+import { decodeModelOutput } from '../structured-output';
 import type { AiUsage } from '../usage';
 import { ExtractionError } from './error';
 import { ExtractedPage, type ExtractedPageData } from './schema';
@@ -26,14 +27,21 @@ export type ExtractionResult = {
   readonly modelId: string;
 };
 
-export class Extraction extends Effect.Service<Extraction>()(
-  '@wordhold/ai/Extraction',
+export class Extraction extends Context.Service<
+  Extraction,
   {
-    effect: Effect.gen(function* () {
+    readonly extract: (
+      input: PageImage,
+    ) => Effect.Effect<ExtractionResult, ExtractionError, AiUsage>;
+  }
+>()('@wordhold/ai/Extraction') {
+  static readonly layer = Layer.effect(
+    Extraction,
+    Effect.gen(function* () {
       const model = yield* BedrockProvider;
       const modelId = productionModelId;
 
-      const decodePage = Schema.decodeUnknown(ExtractedPage);
+      const decodePage = decodeModelOutput(ExtractedPage);
 
       const callModel = (input: PageImage) =>
         generateStructured({
@@ -87,7 +95,7 @@ export class Extraction extends Effect.Service<Extraction>()(
       ): Effect.Effect<ExtractionResult, ExtractionError, AiUsage> =>
         runModel(input).pipe(Effect.map((page) => ({ page, modelId })));
 
-      return { extract } as const;
+      return Extraction.of({ extract });
     }),
-  },
-) {}
+  );
+}

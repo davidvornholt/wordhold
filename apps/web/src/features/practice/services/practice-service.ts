@@ -1,5 +1,15 @@
-import { Clock, Effect } from 'effect';
-import type { PracticeItem, PracticeSession } from '../schemas/practice-models';
+import type { AiUsage } from '@wordhold/ai/usage';
+import { Clock, Context, Effect, Layer } from 'effect';
+import type {
+  AnswerTooLongError,
+  PracticeDatabaseError,
+  StaleAnswerSubmissionError,
+} from '../errors/practice-errors';
+import type {
+  PracticeItem,
+  PracticeSession,
+  SubmitResult,
+} from '../schemas/practice-models';
 import type {
   SessionRequestData,
   StudyRequestData,
@@ -20,10 +30,36 @@ const withPrompt = (
   prompt: item.direction === 'to_target' ? item.nativeText : item.targetText,
 });
 
-export class PracticeService extends Effect.Service<PracticeService>()(
-  'wordhold/PracticeService',
+export class PracticeService extends Context.Service<
+  PracticeService,
   {
-    effect: Effect.gen(function* () {
+    readonly getSession: (input: SessionRequestData) => Effect.Effect<
+      {
+        items: Array<PracticeItem>;
+        available: {
+          readonly due: number;
+          readonly firstReviews: number;
+          readonly ready: number;
+          readonly nextDueAt: Date | null;
+        };
+      },
+      PracticeDatabaseError
+    >;
+    readonly getStudySession: (
+      data: StudyRequestData,
+    ) => Effect.Effect<PracticeSession, PracticeDatabaseError>;
+    readonly submit: (
+      data: SubmitPayloadData,
+    ) => Effect.Effect<
+      SubmitResult,
+      PracticeDatabaseError | StaleAnswerSubmissionError | AnswerTooLongError,
+      AiUsage
+    >;
+  }
+>()('wordhold/PracticeService') {
+  static readonly layer = Layer.effect(
+    PracticeService,
+    Effect.gen(function* () {
       const sessions = yield* PracticeSessionStore;
       const reviews = yield* PracticeReviewStore;
       const cache = yield* JudgeCacheStore;
@@ -58,7 +94,7 @@ export class PracticeService extends Effect.Service<PracticeService>()(
         );
       const submit = (data: SubmitPayloadData) =>
         resolveAnswerSubmission(data, { reviews, cache, judge, grader });
-      return { getSession, getStudySession, submit } as const;
+      return PracticeService.of({ getSession, getStudySession, submit });
     }),
-  },
-) {}
+  );
+}

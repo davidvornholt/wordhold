@@ -8,7 +8,7 @@ export const speechAudioProfile = (
 ): string => ttsAudioProfile(text, language);
 
 export const synthesizeSpeechAudio = (
-  tts: Tts,
+  tts: Tts['Service'],
   text: string,
   language: LanguageCode,
 ) => tts.synthesize({ text, language });

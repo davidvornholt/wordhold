@@ -79,7 +79,7 @@ const repeatsTitle = (
 const lockCourse = (sql: Database, courseId: string) =>
   sql`select pg_advisory_xact_lock(hashtextextended(${courseId}, 0))`;
 
-export class TextEntryStore extends Context.Tag('wordhold/TextEntryStore')<
+export class TextEntryStore extends Context.Service<
   TextEntryStore,
   {
     readonly create: (
@@ -89,7 +89,7 @@ export class TextEntryStore extends Context.Tag('wordhold/TextEntryStore')<
       input: UpdateTextEntryData,
     ) => Effect.Effect<UpdateTextEntryResult, CourseDatabaseError>;
   }
->() {
+>()('wordhold/TextEntryStore') {
   static readonly live = Layer.effect(
     TextEntryStore,
     Effect.gen(function* () {

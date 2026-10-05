@@ -28,9 +28,10 @@ export type AudioGenerationStoreShape = {
   ) => Effect.Effect<A, E | ImportDatabaseError, R>;
 };
 
-export class AudioGenerationStore extends Context.Tag(
-  '@wordhold/web/import/AudioGenerationStore',
-)<AudioGenerationStore, AudioGenerationStoreShape>() {}
+export class AudioGenerationStore extends Context.Service<
+  AudioGenerationStore,
+  AudioGenerationStoreShape
+>()('@wordhold/web/import/AudioGenerationStore') {}
 
 const databaseFailure = (operation: string, cause: unknown) =>
   new ImportDatabaseError({
@@ -88,7 +89,7 @@ export const AudioGenerationStoreLive = Layer.effect(
       hasReference,
       upsertReference: (entryId, voice, path) =>
         sql`delete from entry_audio where entry_id = ${entryId}`.pipe(
-          Effect.zipRight(sql`
+          Effect.andThen(sql`
             insert into entry_audio (entry_id, voice, path)
             values (${entryId}, ${voice}, ${path})
           `),
@@ -103,7 +104,7 @@ export const AudioGenerationStoreLive = Layer.effect(
       ) =>
         sql
           .withTransaction(
-            Effect.zipRight(
+            Effect.andThen(
               sql`select pg_advisory_xact_lock(hashtextextended(${`wordhold:entry-audio:${entryId}`}, 0))`,
               effect,
             ),

@@ -1,7 +1,6 @@
-import { Data } from 'effect';
+import { Schema } from 'effect';
 
-export class PageReviewOrderError extends Data.TaggedError(
+export class PageReviewOrderError extends Schema.TaggedError<PageReviewOrderError>()(
   'PageReviewOrderError',
-)<{
-  readonly message: string;
-}> {}
+  { message: Schema.String },
+) {}

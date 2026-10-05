@@ -42,7 +42,7 @@ const missedVerdict: DefinitionVerdictData = {
 const cacheWith = (
   verdict: StoredVerdict,
   model: string,
-): JudgeCacheStore['Type'] => {
+): JudgeCacheStore['Service'] => {
   const cached: CachedVerdict = { assessmentId, verdict, model };
   return {
     read: () => Effect.succeed(cached),
@@ -72,15 +72,15 @@ const load = async (
       assessmentId,
       cache: cacheWith(verdict, model),
       grader,
-    }).pipe(Effect.either),
+    }).pipe(Effect.result),
   );
 };
 
 describe('loadRejectedAssessment for definitions', () => {
   it('returns the rejected definition with the key points it was graded against', async () => {
     expect(await load(termRow(), missedVerdict)).toMatchObject({
-      _tag: 'Right',
-      right: {
+      _tag: 'Success',
+      success: {
         assessmentId,
         outcome: { method: 'definition', keyPoints, verdict: missedVerdict },
       },
@@ -90,16 +90,16 @@ describe('loadRejectedAssessment for definitions', () => {
   it('refuses a verdict that no longer lines up with the key points', async () => {
     const edited = termRow([...keyPoints, 'wird nicht verbraucht']);
     expect(await load(edited, missedVerdict)).toMatchObject({
-      _tag: 'Left',
-      left: { _tag: 'StaleAnswerSubmissionError' },
+      _tag: 'Failure',
+      failure: { _tag: 'StaleAnswerSubmissionError' },
     });
   });
 
   it('refuses a verdict judged against other key points of the same number', async () => {
     const edited = termRow(['ist ein Stoff', 'beschleunigt Reaktionen']);
     expect(await load(edited, missedVerdict)).toMatchObject({
-      _tag: 'Left',
-      left: { _tag: 'StaleAnswerSubmissionError' },
+      _tag: 'Failure',
+      failure: { _tag: 'StaleAnswerSubmissionError' },
     });
   });
 
@@ -115,8 +115,8 @@ describe('loadRejectedAssessment for definitions', () => {
       explanation: 'Falsch.',
     };
     expect(await load(termRow(), translation)).toMatchObject({
-      _tag: 'Left',
-      left: { _tag: 'StaleAnswerSubmissionError' },
+      _tag: 'Failure',
+      failure: { _tag: 'StaleAnswerSubmissionError' },
     });
   });
 
@@ -129,8 +129,8 @@ describe('loadRejectedAssessment for definitions', () => {
       ],
     };
     expect(await load(termRow(), covered)).toMatchObject({
-      _tag: 'Left',
-      left: { _tag: 'StaleAnswerSubmissionError' },
+      _tag: 'Failure',
+      failure: { _tag: 'StaleAnswerSubmissionError' },
     });
   });
 });

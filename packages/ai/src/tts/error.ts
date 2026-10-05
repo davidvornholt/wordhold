@@ -1,5 +1,5 @@
-import { Data } from 'effect';
+import { Schema } from 'effect';
 
-export class TtsError extends Data.TaggedError('TtsError')<{
-  readonly cause: unknown;
-}> {}
+export class TtsError extends Schema.TaggedError<TtsError>()('TtsError', {
+  cause: Schema.Unknown,
+}) {}

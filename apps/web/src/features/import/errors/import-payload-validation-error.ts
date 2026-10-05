@@ -1,8 +1,6 @@
-import { Data } from 'effect';
+import { Schema } from 'effect';
 
-export class ImportPayloadValidationError extends Data.TaggedError(
+export class ImportPayloadValidationError extends Schema.TaggedError<ImportPayloadValidationError>()(
   'ImportPayloadValidationError',
-)<{
-  readonly message: string;
-  readonly cause: unknown;
-}> {}
+  { message: Schema.String, cause: Schema.Unknown },
+) {}

@@ -1,7 +1,6 @@
-import { Data } from 'effect';
+import { Schema } from 'effect';
 
-export class AuthDatabaseError extends Data.TaggedError('AuthDatabaseError')<{
-  readonly operation: string;
-  readonly message: string;
-  readonly cause: unknown;
-}> {}
+export class AuthDatabaseError extends Schema.TaggedError<AuthDatabaseError>()(
+  'AuthDatabaseError',
+  { operation: Schema.String, message: Schema.String, cause: Schema.Unknown },
+) {}

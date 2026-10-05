@@ -4,25 +4,25 @@ import { maximumEntryTextLength } from '../extraction/schema';
 export const maximumKeyPoints = 4;
 export const maximumKeyPointLength = 160;
 
-export const KeyPointText = Schema.Trim.pipe(
-  Schema.minLength(1),
-  Schema.maxLength(maximumKeyPointLength),
+export const KeyPointText = Schema.Trim.check(
+  Schema.isMinLength(1),
+  Schema.isMaxLength(maximumKeyPointLength),
 );
 
 // What an answer must state for a definition to count, one fact per point.
 // The learner reviews and edits them, so they stay few and short.
-export const KeyPoints = Schema.Array(KeyPointText).pipe(
-  Schema.minItems(1),
-  Schema.maxItems(maximumKeyPoints),
+export const KeyPoints = Schema.Array(KeyPointText).check(
+  Schema.isMinLength(1),
+  Schema.isMaxLength(maximumKeyPoints),
 );
 
 export const KeyPointList = Schema.Struct({ keyPoints: KeyPoints });
 export type KeyPointListData = typeof KeyPointList.Type;
 
 export const DefinitionSuggestion = Schema.Struct({
-  definition: Schema.Trim.pipe(
-    Schema.minLength(1),
-    Schema.maxLength(maximumEntryTextLength),
+  definition: Schema.Trim.check(
+    Schema.isMinLength(1),
+    Schema.isMaxLength(maximumEntryTextLength),
   ),
 });
 export type DefinitionSuggestionData = typeof DefinitionSuggestion.Type;

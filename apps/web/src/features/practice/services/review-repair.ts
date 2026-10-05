@@ -1,7 +1,7 @@
 import type { JudgeInput } from '@wordhold/ai/judge/schema';
 import { Database } from '@wordhold/db/client';
 import type { CourseKind, LanguageCode } from '@wordhold/db/schema/courses';
-import { Data, Effect } from 'effect';
+import { Effect, Schema } from 'effect';
 import {
   type AcceptedAnswer,
   isDeterministicMatch,
@@ -22,10 +22,10 @@ import {
   replayCorrectedReviews,
 } from './review-repair-plan';
 
-export class ReviewRepairError extends Data.TaggedError('ReviewRepairError')<{
-  readonly message: string;
-  readonly cause?: unknown;
-}> {}
+export class ReviewRepairError extends Schema.TaggedError<ReviewRepairError>()(
+  'ReviewRepairError',
+  { message: Schema.String, cause: Schema.optional(Schema.Unknown) },
+) {}
 
 type EntryCard = RepairCard & {
   readonly targetText: string;

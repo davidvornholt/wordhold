@@ -10,7 +10,7 @@ type TestDatabase = {
 };
 
 const allocate = Effect.gen(function* () {
-  const rootUrl = yield* Config.string('DATABASE_URL').pipe(
+  const rootUrl = yield* Config.String('DATABASE_URL').pipe(
     Effect.mapError(
       (cause) =>
         new Error('DATABASE_URL is required for PostgreSQL tests.', { cause }),
@@ -53,7 +53,7 @@ export const withMigratedTestDatabase = <A, E, R>(
   use: (database: TestDatabase) => Effect.Effect<A, E, R>,
 ): Effect.Effect<A, E | Error, R> =>
   withTestDatabase((database) =>
-    Effect.zipRight(migrateDatabase(database.url), use(database)),
+    Effect.andThen(migrateDatabase(database.url), use(database)),
   );
 
 export const testDatabaseLayer = (url: string) =>

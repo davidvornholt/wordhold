@@ -64,7 +64,7 @@ const passFromRows = (
   };
 };
 
-export class LearningStore extends Context.Tag('wordhold/LearningStore')<
+export class LearningStore extends Context.Service<
   LearningStore,
   {
     // A null place covers the whole course, as a subject's list does.
@@ -82,7 +82,7 @@ export class LearningStore extends Context.Tag('wordhold/LearningStore')<
       at: Date,
     ) => Effect.Effect<boolean, LearningDatabaseError>;
   }
->() {
+>()('wordhold/LearningStore') {
   static readonly live = Layer.effect(
     LearningStore,
     Effect.gen(function* () {

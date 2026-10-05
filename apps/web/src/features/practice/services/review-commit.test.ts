@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import type { JudgeVerdictData } from '@wordhold/ai/judge/schema';
-import { Effect } from 'effect';
+import { Effect, Semaphore } from 'effect';
 import { StaleAnswerSubmissionError } from '../errors/practice-errors';
 import { commitGradedAnswer, type RunReviewTransaction } from './review-commit';
 
@@ -22,7 +22,7 @@ const verdict = (
 
 const makeTransactionalStore = () => {
   const store: Store = { revision: 0, reviews: 0, alternatives: 0 };
-  const mutex = Effect.unsafeMakeSemaphore(1);
+  const mutex = Semaphore.makeUnsafe(1);
   const transaction =
     (
       expectedRevision: number,
@@ -65,20 +65,21 @@ describe('commitGradedAnswer', () => {
     const { store, transaction } = makeTransactionalStore();
     const results = await Promise.all([
       Effect.runPromise(
-        commitGradedAnswer(transaction(0), verdict(), true).pipe(Effect.either),
+        commitGradedAnswer(transaction(0), verdict(), true).pipe(Effect.result),
       ),
       Effect.runPromise(
-        commitGradedAnswer(transaction(0), verdict(), true).pipe(Effect.either),
+        commitGradedAnswer(transaction(0), verdict(), true).pipe(Effect.result),
       ),
     ]);
-    const accepted = results.filter((result) => result._tag === 'Right');
+    const accepted = results.filter((result) => result._tag === 'Success');
     expect(accepted).toHaveLength(1);
     expect(
-      accepted.at(0)?._tag === 'Right' ? accepted.at(0)?.right : undefined,
+      accepted.at(0)?._tag === 'Success' ? accepted.at(0)?.success : undefined,
     ).toEqual({ revision: 1, entryKnown: true });
-    const rejection = results.find((result) => result._tag === 'Left');
-    expect(rejection?._tag).toBe('Left');
-    const failure = rejection?._tag === 'Left' ? rejection.left : undefined;
+    const rejection = results.find((result) => result._tag === 'Failure');
+    expect(rejection?._tag).toBe('Failure');
+    const failure =
+      rejection?._tag === 'Failure' ? rejection.failure : undefined;
     expect(failure).toBeInstanceOf(StaleAnswerSubmissionError);
     expect(store).toEqual({ revision: 1, reviews: 1, alternatives: 1 });
   });

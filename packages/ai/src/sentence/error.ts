@@ -1,5 +1,6 @@
-import { Data } from 'effect';
+import { Schema } from 'effect';
 
-export class SentenceGenError extends Data.TaggedError('SentenceGenError')<{
-  readonly cause: unknown;
-}> {}
+export class SentenceGenError extends Schema.TaggedError<SentenceGenError>()(
+  'SentenceGenError',
+  { cause: Schema.Unknown },
+) {}

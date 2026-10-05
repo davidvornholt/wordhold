@@ -67,7 +67,7 @@ const runReviewTest = <A, E>(
   Effect.runPromise(
     withMigratedTestDatabase((database) => {
       const databaseLayer = testDatabaseLayer(database.url);
-      return Effect.zipRight(seedIntroducedCardFixture, test).pipe(
+      return Effect.andThen(seedIntroducedCardFixture, test).pipe(
         Effect.provide(
           PracticeReviewStore.live.pipe(Layer.provide(databaseLayer)),
         ),
@@ -111,20 +111,20 @@ describe('PracticeReviewStore PostgreSQL transaction', () => {
         );
         const results = yield* Effect.all(
           [
-            store.commit(input).pipe(Effect.either),
-            store.commit(input).pipe(Effect.either),
+            store.commit(input).pipe(Effect.result),
+            store.commit(input).pipe(Effect.result),
           ],
           { concurrency: 'unbounded' },
         );
-        const accepted = results.filter((result) => result._tag === 'Right');
-        const rejected = results.filter((result) => result._tag === 'Left');
+        const accepted = results.filter((result) => result._tag === 'Success');
+        const rejected = results.filter((result) => result._tag === 'Failure');
         expect(accepted).toHaveLength(1);
         expect(
-          accepted.at(0)?._tag === 'Right' ? accepted[0].right : null,
+          accepted.at(0)?._tag === 'Success' ? accepted[0].success : null,
         ).toMatchObject({ revision: 1 });
         expect(rejected).toHaveLength(1);
         expect(
-          rejected.at(0)?._tag === 'Left' ? rejected[0].left : null,
+          rejected.at(0)?._tag === 'Failure' ? rejected[0].failure : null,
         ).toBeInstanceOf(StaleAnswerSubmissionError);
         const rows = yield* sql<{
           readonly revision: number;
@@ -155,8 +155,8 @@ describe('PracticeReviewStore PostgreSQL transaction', () => {
           'to_native',
           'force rollback',
         );
-        expect((yield* store.commit(input).pipe(Effect.either))._tag).toBe(
-          'Left',
+        expect((yield* store.commit(input).pipe(Effect.result))._tag).toBe(
+          'Failure',
         );
         const cards = yield* sql<{ readonly revision: number }>`
           select revision from cards where id = ${input.card.id}

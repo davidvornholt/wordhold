@@ -1,5 +1,5 @@
 import { afterAll, describe, expect, it } from 'bun:test';
-import { Effect, Either } from 'effect';
+import { Effect, Result } from 'effect';
 import { readMySwordModule } from './mysword-module';
 import { moduleFolder, readerFolders } from './mysword-module-fixture';
 
@@ -19,7 +19,7 @@ const luther = [
 ] as const;
 
 const read = (bytes: Uint8Array) =>
-  Effect.runPromise(Effect.either(readMySwordModule(bytes)));
+  Effect.runPromise(Effect.result(readMySwordModule(bytes)));
 
 const refusal = (bytes: Uint8Array) =>
   Effect.runPromise(
@@ -47,7 +47,7 @@ describe('readMySwordModule', () => {
       }),
     );
     expect(result).toEqual(
-      Either.right({
+      Result.succeed({
         name: 'Lutherbibel 1912',
         abbreviation: 'LUT1912',
         verses: [
@@ -78,19 +78,19 @@ describe('readMySwordModule', () => {
     );
     const untitled = await read(folder.write('untitled', { verses: luther }));
     expect(
-      Either.map(titled, ({ name, abbreviation }) => ({ name, abbreviation })),
+      Result.map(titled, ({ name, abbreviation }) => ({ name, abbreviation })),
     ).toEqual(
-      Either.right({
+      Result.succeed({
         name: 'Lutherbibel 1912',
         abbreviation: 'Lutherbibel 1912',
       }),
     );
     expect(
-      Either.map(untitled, ({ name, abbreviation }) => ({
+      Result.map(untitled, ({ name, abbreviation }) => ({
         name,
         abbreviation,
       })),
-    ).toEqual(Either.right({ name: 'Bibel', abbreviation: 'Bibel' }));
+    ).toEqual(Result.succeed({ name: 'Bibel', abbreviation: 'Bibel' }));
   });
 
   it('refuses a file that is not a Bible module', async () => {

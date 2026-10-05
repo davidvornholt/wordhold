@@ -25,7 +25,7 @@ const runRetry = (
     retryPendingExtraction('page').pipe(
       Effect.provideService(ImportRepository, repository),
       Effect.provideService(Storage, makeStorage()),
-      Effect.provideService(Extraction, Extraction.make({ extract })),
+      Effect.provideService(Extraction, Extraction.of({ extract })),
       Effect.provide(untrackedAiUsage),
     ),
   );
@@ -59,7 +59,7 @@ describe('retryPendingExtraction', () => {
           ),
           Effect.provideService(
             Extraction,
-            Extraction.make({
+            Extraction.of({
               extract: () => {
                 providerCalls += 1;
                 return Effect.succeed(extraction);
@@ -92,7 +92,7 @@ describe('retryPendingExtraction', () => {
           ),
           Effect.provideService(
             Extraction,
-            Extraction.make({
+            Extraction.of({
               extract: () => {
                 providerCalls += 1;
                 return Effect.succeed(extraction);
@@ -120,7 +120,7 @@ describe('retryPendingExtraction', () => {
           Effect.provideService(Storage, makeStorage()),
           Effect.provideService(
             Extraction,
-            Extraction.make({ extract: () => Effect.fail(providerError) }),
+            Extraction.of({ extract: () => Effect.fail(providerError) }),
           ),
           Effect.provide(untrackedAiUsage),
         ),
@@ -150,7 +150,7 @@ describe('retryPendingExtraction guards', () => {
           Effect.provideService(Storage, makeStorage()),
           Effect.provideService(
             Extraction,
-            Extraction.make({
+            Extraction.of({
               extract: () => {
                 providerCalls += 1;
                 return Effect.succeed(extraction);

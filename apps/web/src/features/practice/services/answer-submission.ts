@@ -31,10 +31,10 @@ import type { PracticeJudge } from './practice-judge';
 import type { PracticeReviewStore } from './review-store';
 
 type SubmissionDependencies = {
-  readonly reviews: PracticeReviewStore['Type'];
-  readonly cache: JudgeCacheStore['Type'];
-  readonly judge: PracticeJudge['Type'];
-  readonly grader: DefinitionGrader['Type'];
+  readonly reviews: PracticeReviewStore['Service'];
+  readonly cache: JudgeCacheStore['Service'];
+  readonly judge: PracticeJudge['Service'];
+  readonly grader: DefinitionGrader['Service'];
 };
 
 type AssessedOutcome = AssessedAnswer['outcome'];
@@ -81,7 +81,7 @@ const pendingRejectedResult = (
 };
 
 type CommitOutcomeInput = {
-  readonly reviews: PracticeReviewStore['Type'];
+  readonly reviews: PracticeReviewStore['Service'];
   readonly row: SubmissionRecord;
   readonly data: SubmitPayloadData;
   readonly outcome: GradeOutcome;

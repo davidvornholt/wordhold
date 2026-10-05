@@ -21,10 +21,10 @@ import { AiUsageError } from './usage-error';
 
 // One metered structured request to the production model. The answer is
 // returned undecoded; callers decode it with the same Effect schema.
-export const generateStructured = <A, I, E>(input: {
+export const generateStructured = <E>(input: {
   readonly model: LanguageModel;
   readonly operation: AiOperation;
-  readonly schema: Schema.Schema<A, I>;
+  readonly schema: Schema.Top;
   readonly prompt: string | Array<ModelMessage>;
   readonly failure: (cause: unknown) => E;
 }): Effect.Effect<unknown, E, AiUsage> =>

@@ -1,11 +1,12 @@
 import { Option, Schema } from 'effect';
+import { Uuid } from '../../../shared/validate/uuid';
 
-const Filter = Schema.Literal('all', 'due', 'first-reviews', 'difficult');
+const Filter = Schema.Literals(['all', 'due', 'first-reviews', 'difficult']);
 
 const VocabularySearch = Schema.Struct({
   filter: Schema.optional(Filter),
   // A book or unit to show on arrival.
-  place: Schema.optional(Schema.UUID),
+  place: Schema.optional(Uuid),
 });
 
 // A subject's page is its list of terms, so it takes the list's filter.

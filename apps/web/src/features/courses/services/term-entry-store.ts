@@ -140,7 +140,7 @@ const correctTerm = (sql: Database, input: UpdateTermEntryData) =>
     return { kind: 'updated', definitionChanged } as const;
   });
 
-export class TermEntryStore extends Context.Tag('wordhold/TermEntryStore')<
+export class TermEntryStore extends Context.Service<
   TermEntryStore,
   {
     readonly readCourse: (
@@ -170,7 +170,7 @@ export class TermEntryStore extends Context.Tag('wordhold/TermEntryStore')<
       keyPoints: ReadonlyArray<string>,
     ) => Effect.Effect<boolean, CourseDatabaseError>;
   }
->() {
+>()('wordhold/TermEntryStore') {
   static readonly live = Layer.effect(
     TermEntryStore,
     Effect.gen(function* () {

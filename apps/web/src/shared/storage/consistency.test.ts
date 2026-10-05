@@ -23,7 +23,7 @@ describe('persistFileReference', () => {
           }),
           persistReference: Effect.sync(() => {
             actions.push('persist');
-          }).pipe(Effect.zipRight(Effect.fail(new Error('insert failed')))),
+          }).pipe(Effect.andThen(Effect.fail(new Error('insert failed')))),
           remove: Effect.sync(() => {
             actions.push('remove');
           }),

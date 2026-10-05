@@ -12,11 +12,13 @@ export const checkDatabaseHealth = Effect.gen(function* () {
         message: 'The Wordhold database health query failed.',
       }),
   ),
-  Effect.timeoutFail({
+  Effect.timeoutOrElse({
     duration: Duration.seconds(2),
-    onTimeout: () =>
-      new DatabaseHealthError({
-        message: 'The Wordhold database health query timed out.',
-      }),
+    orElse: () =>
+      Effect.fail(
+        new DatabaseHealthError({
+          message: 'The Wordhold database health query timed out.',
+        }),
+      ),
   }),
 );

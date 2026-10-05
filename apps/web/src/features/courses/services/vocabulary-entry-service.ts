@@ -1,8 +1,13 @@
 import { SentenceGen } from '@wordhold/ai/sentence';
 import { Tts } from '@wordhold/ai/tts';
-import { Effect } from 'effect';
+import type { AiUsage } from '@wordhold/ai/usage';
+import { Context, Effect, Layer } from 'effect';
 import { isListCourse } from '../../../shared/directions';
 import { Storage } from '../../../shared/storage/server';
+import type {
+  CourseDatabaseError,
+  CourseExampleGenerationError,
+} from '../errors/courses-errors';
 import {
   CourseBookNotFoundError,
   CourseKindMismatchError,
@@ -70,10 +75,71 @@ const placeMissing = ({ unitId }: WordPlace) =>
         message: 'Diese Einheit gibt es nicht mehr. Lade die Seite neu.',
       });
 
-export class VocabularyEntryService extends Effect.Service<VocabularyEntryService>()(
-  'wordhold/VocabularyEntryService',
+export class VocabularyEntryService extends Context.Service<
+  VocabularyEntryService,
   {
-    effect: Effect.gen(function* () {
+    readonly create: (
+      input: CreateVocabularyEntryData,
+    ) => Effect.Effect<
+      { entryId: string; audio: 'generated' | 'failed' },
+      | CourseDatabaseError
+      | CourseSettingsNotFoundError
+      | CourseKindMismatchError
+      | CourseBookNotFoundError
+      | VocabularyEntryConflictError
+      | CourseUnitNotFoundError,
+      AiUsage
+    >;
+    readonly update: (
+      input: UpdateVocabularyEntryData,
+    ) => Effect.Effect<
+      { audio: 'generated' | 'failed' | 'kept' },
+      | CourseDatabaseError
+      | CourseSettingsNotFoundError
+      | CourseKindMismatchError
+      | VocabularyEntryConflictError
+      | VocabularyEntryNotFoundError,
+      AiUsage
+    >;
+    readonly remove: (
+      input: DeleteEntryData,
+    ) => Effect.Effect<void, CourseDatabaseError>;
+    readonly generateExample: (
+      input: VocabularyExampleRequestData,
+    ) => Effect.Effect<
+      { readonly target: string; readonly native: string },
+      | CourseDatabaseError
+      | CourseSettingsNotFoundError
+      | CourseKindMismatchError
+      | CourseExampleGenerationError,
+      AiUsage
+    >;
+    readonly translateExample: (
+      input: VocabularyTranslationRequestData,
+    ) => Effect.Effect<
+      { native: string },
+      | CourseDatabaseError
+      | CourseSettingsNotFoundError
+      | CourseKindMismatchError
+      | CourseExampleGenerationError,
+      AiUsage
+    >;
+    readonly suggestTranslation: (
+      input: VocabularyTranslationSuggestionData,
+    ) => Effect.Effect<
+      { translation: string },
+      | CourseDatabaseError
+      | CourseKindMismatchError
+      | CourseBookNotFoundError
+      | CourseUnitNotFoundError
+      | CourseExampleGenerationError,
+      AiUsage
+    >;
+  }
+>()('wordhold/VocabularyEntryService') {
+  static readonly layer = Layer.effect(
+    VocabularyEntryService,
+    Effect.gen(function* () {
       const store = yield* VocabularyEntryStore;
       const generator = yield* SentenceGen;
       const storage = yield* Storage;
@@ -181,14 +247,14 @@ export class VocabularyEntryService extends Effect.Service<VocabularyEntryServic
           );
         });
 
-      return {
+      return VocabularyEntryService.of({
         create,
         update,
         remove,
         generateExample,
         translateExample,
         suggestTranslation,
-      } as const;
+      });
     }),
-  },
-) {}
+  );
+}

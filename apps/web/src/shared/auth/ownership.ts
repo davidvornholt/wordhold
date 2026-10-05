@@ -1,5 +1,5 @@
 import { Database } from '@wordhold/db/client';
-import { Data, Effect } from 'effect';
+import { Effect, Schema } from 'effect';
 import { AuthDatabaseError } from './auth-database-error';
 
 // Records a request names, each of which must belong to a course of the
@@ -16,9 +16,10 @@ export type OwnedReferences = {
 
 // Someone else's record is reported like a missing one, so its existence
 // stays private.
-export class NotOwnedError extends Data.TaggedError('NotOwnedError')<{
-  readonly message: string;
-}> {}
+export class NotOwnedError extends Schema.TaggedError<NotOwnedError>()(
+  'NotOwnedError',
+  { message: Schema.String },
+) {}
 
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;

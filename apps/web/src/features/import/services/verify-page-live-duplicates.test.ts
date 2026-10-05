@@ -47,7 +47,7 @@ const importEntries = (
 ) =>
   Effect.gen(function* () {
     const sql = yield* Database;
-    return yield* Effect.either(
+    return yield* Effect.result(
       verifyPageLive(
         sql,
         decodeImportPayload({ pageId, book, entries }),
@@ -77,10 +77,10 @@ describe('verifyPageLive duplicates', () => {
             entry('  mémoire!! '),
             entry('livre'),
           ]);
-          expect(rescan._tag).toBe('Left');
-          expect(rescan._tag === 'Left' ? rescan.left : null).toBeInstanceOf(
-            DuplicateEntryError,
-          );
+          expect(rescan._tag).toBe('Failure');
+          expect(
+            rescan._tag === 'Failure' ? rescan.failure : null,
+          ).toBeInstanceOf(DuplicateEntryError);
           const sql = yield* Database;
           const pages = yield* sql<{ readonly status: string }>`
             select status from pages where id = ${pageIds[1]}
@@ -113,7 +113,7 @@ describe('verifyPageLive duplicates', () => {
               },
             }),
           ]);
-          expect(unconfirmed._tag).toBe('Left');
+          expect(unconfirmed._tag).toBe('Failure');
           const casingVariant = yield* importEntries(pageIds[1], [
             entry('Mémoire', {
               example: {
@@ -123,7 +123,7 @@ describe('verifyPageLive duplicates', () => {
               duplicateException: true,
             }),
           ]);
-          expect(casingVariant._tag).toBe('Right');
+          expect(casingVariant._tag).toBe('Success');
           const exampleVariant = yield* importEntries(pageIds[2], [
             entry('mémoire', {
               example: {
@@ -133,7 +133,7 @@ describe('verifyPageLive duplicates', () => {
               duplicateException: true,
             }),
           ]);
-          expect(exampleVariant._tag).toBe('Right');
+          expect(exampleVariant._tag).toBe('Success');
           expect(yield* entryCount).toBe(originalPlusTwoExceptions);
         }).pipe(Effect.provide(testDatabaseLayer(database.url))),
       ),
@@ -153,7 +153,7 @@ describe('verifyPageLive course-wide duplicates', () => {
           });
           const repeated = yield* importEntries(pageIds[1], [entry('mémoire')]);
           expect(
-            repeated._tag === 'Left' ? repeated.left : null,
+            repeated._tag === 'Failure' ? repeated.failure : null,
           ).toBeInstanceOf(DuplicateEntryError);
           expect(yield* entryCount).toBe(1);
         }).pipe(Effect.provide(testDatabaseLayer(database.url))),
@@ -170,7 +170,7 @@ describe('verifyPageLive course-wide duplicates', () => {
           const rescan = yield* importEntries(pageIds[1], [
             entry('mémoire', { duplicateException: true }),
           ]);
-          expect(rescan._tag).toBe('Left');
+          expect(rescan._tag).toBe('Failure');
           expect(yield* entryCount).toBe(1);
         }).pipe(Effect.provide(testDatabaseLayer(database.url))),
       ),
@@ -186,11 +186,11 @@ describe('verifyPageLive course-wide duplicates', () => {
             entry('mémoire'),
             entry('mémoire.'),
           ]);
-          expect(doubled._tag).toBe('Left');
+          expect(doubled._tag).toBe('Failure');
           expect(
-            doubled._tag === 'Left' &&
-              doubled.left instanceof DuplicateEntryError
-              ? doubled.left.duplicates
+            doubled._tag === 'Failure' &&
+              doubled.failure instanceof DuplicateEntryError
+              ? doubled.failure.duplicates
               : [],
           ).toEqual(['mémoire.']);
           expect(yield* entryCount).toBe(0);

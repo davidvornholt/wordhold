@@ -1,5 +1,6 @@
-import { Data } from 'effect';
+import { Schema } from 'effect';
 
-export class PageNotFoundError extends Data.TaggedError('PageNotFoundError')<{
-  readonly message: string;
-}> {}
+export class PageNotFoundError extends Schema.TaggedError<PageNotFoundError>()(
+  'PageNotFoundError',
+  { message: Schema.String },
+) {}

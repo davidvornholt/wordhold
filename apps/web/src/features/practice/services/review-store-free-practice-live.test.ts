@@ -151,15 +151,17 @@ describe('PracticeReviewStore free-practice failure handling', () => {
         });
         const results = yield* Effect.all(
           [
-            store.commit(input).pipe(Effect.either),
-            store.commit(input).pipe(Effect.either),
+            store.commit(input).pipe(Effect.result),
+            store.commit(input).pipe(Effect.result),
           ],
           { concurrency: 'unbounded' },
         );
-        expect(results.filter(({ _tag }) => _tag === 'Right')).toHaveLength(1);
-        const rejection = results.find(({ _tag }) => _tag === 'Left');
+        expect(results.filter(({ _tag }) => _tag === 'Success')).toHaveLength(
+          1,
+        );
+        const rejection = results.find(({ _tag }) => _tag === 'Failure');
         expect(
-          rejection?._tag === 'Left' ? rejection.left : undefined,
+          rejection?._tag === 'Failure' ? rejection.failure : undefined,
         ).toBeInstanceOf(StaleAnswerSubmissionError);
         const rows = yield* sql<{
           readonly revision: number;

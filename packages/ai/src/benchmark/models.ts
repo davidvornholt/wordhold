@@ -6,7 +6,7 @@ import { VertexProvider } from './vertex';
 
 export const benchmarkModels = Effect.gen(function* () {
   const vertex = yield* VertexProvider;
-  const key = Redacted.value(yield* Config.redacted('AWS_BEDROCK_API_KEY'));
+  const key = Redacted.value(yield* Config.Redacted('AWS_BEDROCK_API_KEY'));
   const openaiOptions = {
     openai: {
       strictJsonSchema: true,
@@ -19,7 +19,7 @@ export const benchmarkModels = Effect.gen(function* () {
   const models: ReadonlyArray<BenchmarkModel> = [
     {
       name: 'gemini-3.8-flash',
-      region: yield* Config.string('GOOGLE_VERTEX_LOCATION'),
+      region: yield* Config.String('GOOGLE_VERTEX_LOCATION'),
       model: vertex('gemini-3.8-flash'),
       providerOptions: geminiHighProviderOptions,
     },

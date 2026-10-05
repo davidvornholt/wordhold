@@ -5,7 +5,7 @@ import {
   NoObjectGeneratedError,
   Output,
 } from 'ai';
-import { Data, Effect } from 'effect';
+import { Effect, Schema } from 'effect';
 import { type Sample, tokenCounts } from './metrics';
 import type { Workload } from './workloads';
 
@@ -21,10 +21,10 @@ export type BenchmarkModel = {
   >;
 };
 
-class BenchmarkRequestError extends Data.TaggedError('BenchmarkRequestError')<{
-  readonly message: string;
-  readonly cause: unknown;
-}> {}
+class BenchmarkRequestError extends Schema.TaggedError<BenchmarkRequestError>()(
+  'BenchmarkRequestError',
+  { message: Schema.String, cause: Schema.Unknown },
+) {}
 
 const safeError = (cause: unknown): string => {
   if (APICallError.isInstance(cause)) {
@@ -50,17 +50,19 @@ const completionSample = (
       try: () => generated.output,
       catch: (cause) =>
         new BenchmarkRequestError({ message: safeError(cause), cause }),
-    }).pipe(Effect.either);
-    const error = parsed._tag === 'Left' ? parsed.left.message : null;
+    }).pipe(Effect.result);
+    const error = parsed._tag === 'Failure' ? parsed.failure.message : null;
     return {
       ...tokenCounts(generated.usage),
       qualityFailures:
-        parsed._tag === 'Right' ? workload.qualityFailures(parsed.right) : [],
+        parsed._tag === 'Success'
+          ? workload.qualityFailures(parsed.success)
+          : [],
       error:
         generated.finishReason === 'length'
           ? 'Output token limit reached'
           : error,
-      output: parsed._tag === 'Right' ? parsed.right : generated.text,
+      output: parsed._tag === 'Success' ? parsed.success : generated.text,
       finishReason: generated.finishReason,
       responseModelId: generated.response.modelId,
     };
@@ -86,7 +88,7 @@ export const runSample = (
         }),
       catch: (cause) =>
         new BenchmarkRequestError({ message: safeError(cause), cause }),
-    }).pipe(Effect.either);
+    }).pipe(Effect.result);
     const elapsedMs = performance.now() - started;
     const base = {
       model: model.name,
@@ -94,8 +96,8 @@ export const runSample = (
       repetition,
       elapsedMs,
     };
-    if (result._tag === 'Left') {
-      const { cause } = result.left;
+    if (result._tag === 'Failure') {
+      const { cause } = result.failure;
       const generatedError = NoObjectGeneratedError.isInstance(cause)
         ? cause
         : null;
@@ -116,11 +118,11 @@ export const runSample = (
         error:
           generatedError?.finishReason === 'length'
             ? 'Output token limit reached'
-            : result.left.message,
+            : result.failure.message,
         output: generatedError?.text ?? null,
         finishReason: generatedError?.finishReason ?? null,
         responseModelId: generatedError?.response?.modelId ?? null,
       };
     }
-    return { ...base, ...(yield* completionSample(result.right, workload)) };
+    return { ...base, ...(yield* completionSample(result.success, workload)) };
   });

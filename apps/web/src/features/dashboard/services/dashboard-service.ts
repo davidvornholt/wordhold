@@ -1,5 +1,12 @@
-import { Clock, Effect } from 'effect';
-import type { DashboardData } from '../schemas/dashboard-models';
+import { Clock, Context, Effect, Layer } from 'effect';
+import type { DashboardDatabaseError } from '../errors/dashboard-errors';
+import type {
+  CourseStats,
+  CourseSummary,
+  DashboardData,
+  FragileEntry,
+  PracticeDay,
+} from '../schemas/dashboard-models';
 import { DashboardStore } from './dashboard-store';
 import { ownerDayBounds } from './day-boundary';
 import { ownerWeek, practiceStreak } from './practice-days';
@@ -9,10 +16,45 @@ import { ownerWeek, practiceStreak } from './practice-days';
 const streakWindowDays = 400;
 const millisecondsPerDay = 86_400_000;
 
-export class DashboardService extends Effect.Service<DashboardService>()(
-  'wordhold/DashboardService',
+export class DashboardService extends Context.Service<
+  DashboardService,
   {
-    effect: Effect.gen(function* () {
+    readonly load: (
+      ownerId: string,
+      timeZone: string,
+    ) => Effect.Effect<
+      {
+        perCourse: ReadonlyArray<CourseStats>;
+        fragile: ReadonlyArray<FragileEntry>;
+        reviewsToday: number;
+        cardsToday: number;
+        week: ReadonlyArray<PracticeDay>;
+        streak: number;
+      },
+      DashboardDatabaseError
+    >;
+    readonly progress: (
+      ownerId: string,
+      timeZone: string,
+    ) => Effect.Effect<
+      {
+        courses: ReadonlyArray<CourseSummary>;
+        dashboard: {
+          perCourse: ReadonlyArray<CourseStats>;
+          fragile: ReadonlyArray<FragileEntry>;
+          reviewsToday: number;
+          cardsToday: number;
+          week: ReadonlyArray<PracticeDay>;
+          streak: number;
+        };
+      },
+      DashboardDatabaseError
+    >;
+  }
+>()('wordhold/DashboardService') {
+  static readonly layer = Layer.effect(
+    DashboardService,
+    Effect.gen(function* () {
       const store = yield* DashboardStore;
       const load = (ownerId: string, timeZone: string) =>
         Effect.gen(function* () {
@@ -54,7 +96,7 @@ export class DashboardService extends Effect.Service<DashboardService>()(
           },
           { concurrency: 'unbounded' },
         );
-      return { load, progress } as const;
+      return DashboardService.of({ load, progress });
     }),
-  },
-) {}
+  );
+}

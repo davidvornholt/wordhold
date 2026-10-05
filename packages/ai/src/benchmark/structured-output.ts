@@ -1,5 +1,6 @@
 import { jsonSchema } from 'ai';
-import { JSONSchema, type Schema } from 'effect';
+import type { Schema } from 'effect';
+import { jsonSchemaOf } from '../structured-output';
 
 // Gemini receives the schema verbatim as `responseJsonSchema` and rejects
 // array length bounds with "Request contains an invalid argument". The bound
@@ -26,10 +27,10 @@ export const providerCompatibleJsonSchema = (value: unknown): unknown => {
 // and Effect's bridge does not, so convert here and decode the model's answer
 // with the Effect schema afterwards. The output type stays `unknown`: what a
 // model returns is untrusted until decoding validates it.
-export const providerJsonSchema = <A, I>(schema: Schema.Schema<A, I>) =>
+export const providerJsonSchema = (schema: Schema.Top) =>
   jsonSchema<unknown>(
-    providerCompatibleJsonSchema(JSONSchema.make(schema)) as ReturnType<
-      typeof JSONSchema.make
+    providerCompatibleJsonSchema(jsonSchemaOf(schema)) as ReturnType<
+      typeof jsonSchemaOf
     >,
   );
 

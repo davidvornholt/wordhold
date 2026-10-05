@@ -67,9 +67,9 @@ describe('CourseStore PostgreSQL direction contract', () => {
         `;
         const result = yield* store
           .readDirections(courseId)
-          .pipe(Effect.either);
-        const error = result._tag === 'Left' ? result.left : undefined;
-        expect(result._tag).toBe('Left');
+          .pipe(Effect.result);
+        const error = result._tag === 'Failure' ? result.failure : undefined;
+        expect(result._tag).toBe('Failure');
         expect(error).toBeInstanceOf(CourseDatabaseError);
         expect(error?.operation).toBe('read course directions');
       }),
@@ -82,14 +82,14 @@ describe('CourseStore PostgreSQL direction contract', () => {
         const sql = yield* Database;
         const store = yield* CourseStore;
         yield* sql`drop table courses cascade`;
-        const read = yield* store.readDirections(courseId).pipe(Effect.either);
+        const read = yield* store.readDirections(courseId).pipe(Effect.result);
         const write = yield* store
           .writeDirections(courseId, ['to_target'])
-          .pipe(Effect.either);
-        const readError = read._tag === 'Left' ? read.left : undefined;
-        const writeError = write._tag === 'Left' ? write.left : undefined;
-        expect(read._tag).toBe('Left');
-        expect(write._tag).toBe('Left');
+          .pipe(Effect.result);
+        const readError = read._tag === 'Failure' ? read.failure : undefined;
+        const writeError = write._tag === 'Failure' ? write.failure : undefined;
+        expect(read._tag).toBe('Failure');
+        expect(write._tag).toBe('Failure');
         expect(readError?.operation).toBe('read course directions');
         expect(writeError?.operation).toBe('write course directions');
       }),

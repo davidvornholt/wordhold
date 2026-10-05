@@ -33,9 +33,7 @@ const databaseError = (operation: string, cause: unknown) =>
     message: 'Der Beispielsatz konnte nicht gespeichert werden.',
   });
 
-export class VocabularyExampleStore extends Context.Tag(
-  'wordhold/VocabularyExampleStore',
-)<
+export class VocabularyExampleStore extends Context.Service<
   VocabularyExampleStore,
   {
     readonly read: (
@@ -64,7 +62,7 @@ export class VocabularyExampleStore extends Context.Tag(
       effect: Effect.Effect<A, E, R>,
     ) => Effect.Effect<A, E | CourseDatabaseError, R>;
   }
->() {
+>()('wordhold/VocabularyExampleStore') {
   static readonly live = Layer.effect(
     VocabularyExampleStore,
     Effect.gen(function* () {
@@ -121,7 +119,7 @@ export class VocabularyExampleStore extends Context.Tag(
       ) =>
         sql
           .withTransaction(
-            Effect.zipRight(
+            Effect.andThen(
               sql`select pg_advisory_xact_lock(hashtextextended(${`wordhold:entry-example:${entryId}`}, 0))`,
               effect,
             ),

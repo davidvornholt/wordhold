@@ -14,7 +14,7 @@ it('returns 503 while PostgreSQL is unavailable and 200 after it recovers', asyn
     withTestDatabase((database) =>
       Effect.gen(function* () {
         const databaseAvailable = yield* Ref.make(false);
-        const recoverableDatabaseLayer = Layer.unwrapEffect(
+        const recoverableDatabaseLayer = Layer.unwrap(
           Ref.get(databaseAvailable).pipe(
             Effect.flatMap((isAvailable) =>
               isAvailable

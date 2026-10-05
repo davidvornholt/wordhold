@@ -132,18 +132,18 @@ describe('loadEntryAudio', () => {
             )
           `;
 
-          const staleWord = yield* Effect.either(
+          const staleWord = yield* Effect.result(
             loadEntryAudio(entryId).pipe(
               Effect.provideService(Storage, dataStorage),
             ),
           );
-          const staleExample = yield* Effect.either(
+          const staleExample = yield* Effect.result(
             loadExampleAudio(entryId).pipe(
               Effect.provideService(Storage, dataStorage),
             ),
           );
-          expect(staleWord._tag).toBe('Left');
-          expect(staleExample._tag).toBe('Left');
+          expect(staleWord._tag).toBe('Failure');
+          expect(staleExample._tag).toBe('Failure');
           expect(storageReads).toBe(0);
 
           yield* sql`

@@ -1,7 +1,6 @@
-import { Data } from 'effect';
+import { Schema } from 'effect';
 
-export class PageNotPendingError extends Data.TaggedError(
+export class PageNotPendingError extends Schema.TaggedError<PageNotPendingError>()(
   'PageNotPendingError',
-)<{
-  readonly message: string;
-}> {}
+  { message: Schema.String },
+) {}

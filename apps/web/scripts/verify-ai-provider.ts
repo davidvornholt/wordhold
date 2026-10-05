@@ -10,11 +10,12 @@ import { SentenceJudge } from '@wordhold/ai/sentence/judge';
 import { isSentenceCorrect } from '@wordhold/ai/sentence/judge-schema';
 import { Stt } from '@wordhold/ai/stt';
 import { AiUsage } from '@wordhold/ai/usage';
-import { Cause, Data, Effect, Exit, Layer, Option } from 'effect';
+import { Cause, Effect, Exit, Layer, Option, Schema } from 'effect';
 
-class VerificationError extends Data.TaggedError('VerificationError')<{
-  readonly message: string;
-}> {}
+class VerificationError extends Schema.TaggedError<VerificationError>()(
+  'VerificationError',
+  { message: Schema.String },
+) {}
 
 // Small requests cost fractions of a cent.
 const reportedUsdDecimals = 4;
@@ -46,15 +47,15 @@ const printedUsage = Layer.succeed(
 );
 
 const services = Layer.mergeAll(
-  DefinitionJudge.Default,
-  DefinitionWriter.Default,
-  Extraction.Default,
-  Judge.Default,
-  SentenceGen.Default,
-  SentenceJudge.Default,
+  DefinitionJudge.layer,
+  DefinitionWriter.layer,
+  Extraction.layer,
+  Judge.layer,
+  SentenceGen.layer,
+  SentenceJudge.layer,
 ).pipe(
   Layer.provide(BedrockProvider.live),
-  Layer.merge(Stt.Default),
+  Layer.merge(Stt.layer),
   Layer.merge(printedUsage),
 );
 
@@ -191,7 +192,7 @@ const verification = Effect.gen(function* () {
 
 const result = await Effect.runPromiseExit(verification);
 if (Exit.isFailure(result)) {
-  const failure = Cause.failureOption(result.cause);
+  const failure = Cause.findErrorOption(result.cause);
   if (Option.isSome(failure)) {
     const error = failure.value;
     const providerCause = 'cause' in error ? error.cause : undefined;

@@ -22,7 +22,7 @@ const storesLive = Layer.mergeAll(
   JudgeCacheStore.live,
 ).pipe(Layer.provide(PgLive));
 
-const practiceLive = PracticeService.Default.pipe(
+const practiceLive = PracticeService.layer.pipe(
   Layer.provide(
     Layer.mergeAll(
       storesLive,

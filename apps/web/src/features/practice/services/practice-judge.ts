@@ -5,7 +5,7 @@ import { Context, Effect, Layer } from 'effect';
 import { PracticeJudgeError } from '../errors/practice-errors';
 import type { JudgeVerdict } from '../schemas/practice-models';
 
-export class PracticeJudge extends Context.Tag('wordhold/PracticeJudge')<
+export class PracticeJudge extends Context.Service<
   PracticeJudge,
   {
     readonly model: string;
@@ -13,7 +13,7 @@ export class PracticeJudge extends Context.Tag('wordhold/PracticeJudge')<
       input: JudgeInput,
     ) => Effect.Effect<JudgeVerdict, PracticeJudgeError, AiUsage>;
   }
->() {
+>()('wordhold/PracticeJudge') {
   static readonly live = Layer.effect(
     PracticeJudge,
     Effect.gen(function* () {

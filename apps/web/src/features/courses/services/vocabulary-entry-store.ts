@@ -41,9 +41,7 @@ const databaseError = (operation: string, cause: unknown) =>
     message: 'Die Vokabel konnte nicht gespeichert werden.',
   });
 
-export class VocabularyEntryStore extends Context.Tag(
-  'wordhold/VocabularyEntryStore',
-)<
+export class VocabularyEntryStore extends Context.Service<
   VocabularyEntryStore,
   {
     readonly readCourse: (
@@ -70,7 +68,7 @@ export class VocabularyEntryStore extends Context.Tag(
       input: DeleteEntryData,
     ) => Effect.Effect<RemovedEntry, CourseDatabaseError>;
   }
->() {
+>()('wordhold/VocabularyEntryStore') {
   static readonly live = Layer.effect(
     VocabularyEntryStore,
     Effect.gen(function* () {

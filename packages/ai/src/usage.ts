@@ -53,7 +53,7 @@ export type AiUsageRecord = {
 
 // Records who caused each paid request. The application provides one per
 // person, so every service method that calls a provider requires it.
-export class AiUsage extends Context.Tag('@wordhold/ai/AiUsage')<
+export class AiUsage extends Context.Service<
   AiUsage,
   {
     // Fails when the request must not start, such as for a suspended person.
@@ -61,7 +61,7 @@ export class AiUsage extends Context.Tag('@wordhold/ai/AiUsage')<
       call: AiCall,
     ) => Effect.Effect<AiUsageRecord, AiUsageError>;
   }
->() {}
+>()('@wordhold/ai/AiUsage') {}
 
 const tokenCount = (value: number | undefined): number | undefined =>
   value !== undefined && Number.isSafeInteger(value) && value >= 0

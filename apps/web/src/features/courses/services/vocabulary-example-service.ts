@@ -1,6 +1,7 @@
 import { SentenceGen } from '@wordhold/ai/sentence';
 import { Tts } from '@wordhold/ai/tts';
-import { Effect } from 'effect';
+import type { AiUsage } from '@wordhold/ai/usage';
+import { Context, Effect, Layer } from 'effect';
 import {
   speechAudioProfile,
   synthesizeSpeechAudio,
@@ -12,6 +13,10 @@ import {
   exampleAudioRelativePath,
   Storage,
 } from '../../../shared/storage/server';
+import type {
+  CourseDatabaseError,
+  CourseExampleGenerationError,
+} from '../errors/courses-errors';
 import { VocabularyEntryNotFoundError } from '../errors/courses-errors';
 import {
   completeExampleTranslation,
@@ -20,10 +25,35 @@ import {
 } from './vocabulary-example-preparation';
 import { VocabularyExampleStore } from './vocabulary-example-store';
 
-export class VocabularyExampleService extends Effect.Service<VocabularyExampleService>()(
-  'wordhold/VocabularyExampleService',
+export class VocabularyExampleService extends Context.Service<
+  VocabularyExampleService,
   {
-    effect: Effect.gen(function* () {
+    readonly generate: (entryId: string) => Effect.Effect<
+      {
+        targetText: string;
+        nativeText: string | null;
+        source: 'textbook' | 'generated';
+      },
+      | CourseDatabaseError
+      | VocabularyEntryNotFoundError
+      | CourseExampleGenerationError,
+      AiUsage
+    >;
+    readonly prepare: (
+      entryIds: ReadonlyArray<string>,
+    ) => Effect.Effect<
+      Array<
+        | PreparedEntryExample
+        | { readonly entryId: string; readonly example: null }
+      >,
+      never,
+      AiUsage
+    >;
+  }
+>()('wordhold/VocabularyExampleService') {
+  static readonly layer = Layer.effect(
+    VocabularyExampleService,
+    Effect.gen(function* () {
       const store = yield* VocabularyExampleStore;
       const generator = yield* SentenceGen;
       const storage = yield* Storage;
@@ -71,7 +101,7 @@ export class VocabularyExampleService extends Effect.Service<VocabularyExampleSe
             remove: storage.remove(path),
           });
           return true;
-        }).pipe(Effect.catchAll(() => Effect.succeed(false)));
+        }).pipe(Effect.catch(() => Effect.succeed(false)));
       };
 
       const prepareOne = (entryId: string) =>
@@ -120,7 +150,7 @@ export class VocabularyExampleService extends Effect.Service<VocabularyExampleSe
           })),
         );
 
-      return { generate, prepare } as const;
+      return VocabularyExampleService.of({ generate, prepare });
     }),
-  },
-) {}
+  );
+}

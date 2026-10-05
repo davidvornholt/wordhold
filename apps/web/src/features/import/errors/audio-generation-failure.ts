@@ -1,21 +1,22 @@
-import type { Tts } from '@wordhold/ai/tts';
-import { Data, type Effect } from 'effect';
-import type { FileReferenceError } from '../../../shared/storage/file-reference-error';
-import type { StorageError } from '../../../shared/storage/storage-error';
-import type { ImportDatabaseError } from './import-database-error';
+import { TtsError } from '@wordhold/ai/tts/error';
+import { Schema } from 'effect';
+import { FileReferenceError } from '../../../shared/storage/file-reference-error';
+import { StorageError } from '../../../shared/storage/storage-error';
+import { ImportDatabaseError } from './import-database-error';
 
-type TtsFailure = Effect.Effect.Error<ReturnType<Tts['synthesize']>>;
+export const AudioGenerationCause = Schema.Union([
+  TtsError,
+  StorageError,
+  ImportDatabaseError,
+  FileReferenceError,
+]);
+export type AudioGenerationCause = typeof AudioGenerationCause.Type;
 
-export type AudioGenerationCause =
-  | TtsFailure
-  | StorageError
-  | ImportDatabaseError
-  | FileReferenceError;
-
-export class AudioGenerationFailure extends Data.TaggedError(
+export class AudioGenerationFailure extends Schema.TaggedError<AudioGenerationFailure>()(
   'AudioGenerationFailure',
-)<{
-  readonly entryId: string;
-  readonly cause: AudioGenerationCause;
-  readonly message: string;
-}> {}
+  {
+    entryId: Schema.String,
+    cause: AudioGenerationCause,
+    message: Schema.String,
+  },
+) {}

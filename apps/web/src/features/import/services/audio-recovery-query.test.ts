@@ -2,7 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import { untrackedAiUsage } from '@wordhold/ai/testing/usage';
 import { Tts } from '@wordhold/ai/tts';
 import { TtsError } from '@wordhold/ai/tts/error';
-import { Effect, Either, Option } from 'effect';
+import { Effect, Option, Result } from 'effect';
 import { Storage } from '../../../shared/storage/server';
 import { ImportDatabaseError } from '../errors/import-database-error';
 import { retryPageAudio } from './audio-generation';
@@ -43,17 +43,17 @@ describe('audioRecoveryPages', () => {
             listAudioRecoveryPages: () => Effect.fail(cause),
           }),
         ),
-        Effect.either,
+        Effect.result,
       ),
     );
 
-    expect(Option.getOrUndefined(Either.getLeft(result))).toBe(cause);
+    expect(Option.getOrUndefined(Result.getFailure(result))).toBe(cause);
   });
 
   it('lists an audio failure until a later retry creates the reference', async () => {
     let verified = false;
     let missingAudio = false;
-    let synthesize: Tts['synthesize'] = () =>
+    let synthesize: Tts['Service']['synthesize'] = () =>
       Effect.fail(new TtsError({ cause: new Error('provider unavailable') }));
     const repository = makeImportRepository({
       listAudioRecoveryPages: () =>
@@ -84,7 +84,7 @@ describe('audioRecoveryPages', () => {
           missingAudio = false;
         }),
     });
-    const provider = Tts.make({
+    const provider = Tts.of({
       synthesize: (input) => synthesize(input),
     });
     const provide = <A, E, R>(effect: Effect.Effect<A, E, R>) =>

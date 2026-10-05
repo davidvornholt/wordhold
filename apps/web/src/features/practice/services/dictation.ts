@@ -58,7 +58,7 @@ export const transcribeDictation = (userId: string, audio: Uint8Array) =>
 // runtime as well.
 export const dictationRuntime = ManagedRuntime.make(
   Layer.mergeAll(
-    Stt.Default,
+    Stt.layer,
     UsageLedger.live(PgLive),
     MemberRepositoryLive.pipe(Layer.provide(PgLive)),
   ),

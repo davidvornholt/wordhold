@@ -9,7 +9,7 @@ import { Tts } from '@wordhold/ai/tts';
 import { TtsError } from '@wordhold/ai/tts/error';
 import type { AiUsage } from '@wordhold/ai/usage';
 import type { CourseKind } from '@wordhold/db/schema/courses';
-import { Effect, Either, Layer } from 'effect';
+import { Effect, Layer, Result } from 'effect';
 import { Storage, type StorageShape } from '../../../shared/storage/server';
 import { StorageError } from '../../../shared/storage/storage-error';
 import {
@@ -60,7 +60,9 @@ type Stubs = {
 };
 
 const runService = <A, E>(
-  use: (service: VocabularyEntryService) => Effect.Effect<A, E, AiUsage>,
+  use: (
+    service: VocabularyEntryService['Service'],
+  ) => Effect.Effect<A, E, AiUsage>,
   {
     createResult = { kind: 'created', entryId },
     updateResult = {
@@ -130,7 +132,7 @@ const runService = <A, E>(
     }),
     Layer.succeed(
       SentenceGen,
-      SentenceGen.make({
+      SentenceGen.of({
         generate: () =>
           generatorFails
             ? Effect.fail(new SentenceGenError({ cause: 'down' }))
@@ -153,7 +155,7 @@ const runService = <A, E>(
     Layer.succeed(Storage, storage),
     Layer.succeed(
       Tts,
-      Tts.make({
+      Tts.of({
         synthesize: () =>
           ttsFails
             ? Effect.fail(new TtsError({ cause: 'down' }))
@@ -161,12 +163,12 @@ const runService = <A, E>(
       }),
     ),
   );
-  const live = VocabularyEntryService.Default.pipe(Layer.provide(dependencies));
+  const live = VocabularyEntryService.layer.pipe(Layer.provide(dependencies));
   return Effect.runPromise(
     Effect.flatMap(VocabularyEntryService, use).pipe(
       Effect.provide(live),
       Effect.provide(untrackedAiUsage),
-      Effect.either,
+      Effect.result,
       Effect.map((result) => ({
         result,
         written,
@@ -178,12 +180,15 @@ const runService = <A, E>(
   );
 };
 
+const failureOf = <A, E>(result: Result.Result<A, E>) =>
+  Result.isFailure(result) ? result.failure : undefined;
+
 describe('VocabularyEntryService', () => {
   it('stores the entry and its pronunciation', async () => {
     const { result, written, audioReferences } = await runService((service) =>
       service.create(input),
     );
-    expect(Either.getOrNull(result)).toEqual({
+    expect(Result.getOrNull(result)).toEqual({
       entryId,
       audio: 'generated',
     });
@@ -196,7 +201,7 @@ describe('VocabularyEntryService', () => {
       (service) => service.create(input),
       { ttsFails: true },
     );
-    expect(Either.getOrNull(result)).toEqual({ entryId, audio: 'failed' });
+    expect(Result.getOrNull(result)).toEqual({ entryId, audio: 'failed' });
     expect(audioReferences).toHaveLength(0);
   });
 
@@ -204,31 +209,29 @@ describe('VocabularyEntryService', () => {
     const duplicate = await runService((service) => service.create(input), {
       createResult: { kind: 'duplicate', location: 'Green Line 3 · Unit 1' },
     });
-    expect(duplicate.result._tag).toBe('Left');
-    expect(
-      duplicate.result._tag === 'Left' ? duplicate.result.left : undefined,
-    ).toBeInstanceOf(VocabularyEntryConflictError);
+    expect(duplicate.result._tag).toBe('Failure');
+    expect(failureOf(duplicate.result)).toBeInstanceOf(
+      VocabularyEntryConflictError,
+    );
     const unitMissing = await runService((service) => service.create(input), {
       createResult: { kind: 'place-missing' },
     });
-    expect(
-      unitMissing.result._tag === 'Left' ? unitMissing.result.left : undefined,
-    ).toBeInstanceOf(CourseUnitNotFoundError);
+    expect(failureOf(unitMissing.result)).toBeInstanceOf(
+      CourseUnitNotFoundError,
+    );
     const bookMissing = await runService(
       (service) => service.create({ ...input, unitId: null }),
       { createResult: { kind: 'place-missing' } },
     );
-    expect(
-      bookMissing.result._tag === 'Left' ? bookMissing.result.left : undefined,
-    ).toBeInstanceOf(CourseBookNotFoundError);
+    expect(failureOf(bookMissing.result)).toBeInstanceOf(
+      CourseBookNotFoundError,
+    );
     const courseMissing = await runService((service) => service.create(input), {
       courseKnown: false,
     });
-    expect(
-      courseMissing.result._tag === 'Left'
-        ? courseMissing.result.left
-        : undefined,
-    ).toBeInstanceOf(CourseSettingsNotFoundError);
+    expect(failureOf(courseMissing.result)).toBeInstanceOf(
+      CourseSettingsNotFoundError,
+    );
   });
 
   it('generates and translates draft examples in the course language', async () => {
@@ -239,7 +242,7 @@ describe('VocabularyEntryService', () => {
         nativeText: input.nativeText,
       }),
     );
-    expect(Either.getOrNull(generated.result)).toEqual({
+    expect(Result.getOrNull(generated.result)).toEqual({
       target: 'Ce voyage est un bon souvenir.',
       native: 'Diese Reise ist eine schöne Erinnerung.',
     });
@@ -249,7 +252,7 @@ describe('VocabularyEntryService', () => {
         targetText: 'Ce voyage est un bon souvenir.',
       }),
     );
-    expect(Either.getOrNull(translated.result)).toEqual({
+    expect(Result.getOrNull(translated.result)).toEqual({
       native: 'Diese Reise ist eine schöne Erinnerung.',
     });
     const failed = await runService(
@@ -261,9 +264,7 @@ describe('VocabularyEntryService', () => {
         }),
       { generatorFails: true },
     );
-    expect(
-      failed.result._tag === 'Left' ? failed.result.left._tag : undefined,
-    ).toBe('CourseExampleGenerationError');
+    expect(failureOf(failed.result)?._tag).toBe('CourseExampleGenerationError');
   });
 
   it('proposes the missing side of a word pair with the unit as context', async () => {
@@ -276,7 +277,7 @@ describe('VocabularyEntryService', () => {
         given: 'target',
       }),
     );
-    expect(Either.getOrNull(suggested.result)).toEqual({
+    expect(Result.getOrNull(suggested.result)).toEqual({
       translation: 'die Erinnerung',
     });
     expect(suggested.wordRequests).toEqual([
@@ -298,9 +299,9 @@ describe('VocabularyEntryService', () => {
         }),
       { courseKnown: false },
     );
-    expect(
-      unitMissing.result._tag === 'Left' ? unitMissing.result.left : undefined,
-    ).toBeInstanceOf(CourseUnitNotFoundError);
+    expect(failureOf(unitMissing.result)).toBeInstanceOf(
+      CourseUnitNotFoundError,
+    );
   });
 });
 
@@ -309,7 +310,7 @@ describe('VocabularyEntryService corrections', () => {
     const { result, written, removed } = await runService((service) =>
       service.update(correction),
     );
-    expect(Either.getOrNull(result)).toEqual({ audio: 'generated' });
+    expect(Result.getOrNull(result)).toEqual({ audio: 'generated' });
     expect(removed).toEqual(staleFiles);
     expect(written).toHaveLength(1);
   });
@@ -325,7 +326,7 @@ describe('VocabularyEntryService corrections', () => {
         },
       },
     );
-    expect(Either.getOrNull(result)).toEqual({ audio: 'kept' });
+    expect(Result.getOrNull(result)).toEqual({ audio: 'kept' });
     expect(written).toHaveLength(0);
   });
 
@@ -336,15 +337,15 @@ describe('VocabularyEntryService corrections', () => {
         updateResult: { kind: 'duplicate', location: 'Green Line 3 · Unit 1' },
       },
     );
-    expect(
-      duplicate.result._tag === 'Left' ? duplicate.result.left : undefined,
-    ).toBeInstanceOf(VocabularyEntryConflictError);
+    expect(failureOf(duplicate.result)).toBeInstanceOf(
+      VocabularyEntryConflictError,
+    );
     const missing = await runService((service) => service.update(correction), {
       updateResult: { kind: 'entry-missing' },
     });
-    expect(
-      missing.result._tag === 'Left' ? missing.result.left : undefined,
-    ).toBeInstanceOf(VocabularyEntryNotFoundError);
+    expect(failureOf(missing.result)).toBeInstanceOf(
+      VocabularyEntryNotFoundError,
+    );
     expect([...duplicate.removed, ...missing.removed]).toEqual([]);
   });
 
@@ -352,13 +353,13 @@ describe('VocabularyEntryService corrections', () => {
     const deleted = await runService((service) =>
       service.remove({ courseId, entryId }),
     );
-    expect(deleted.result._tag).toBe('Right');
+    expect(deleted.result._tag).toBe('Success');
     expect(deleted.removed).toEqual(staleFiles);
     const stuck = await runService(
       (service) => service.remove({ courseId, entryId }),
       { removeFails: true },
     );
-    expect(stuck.result._tag).toBe('Right');
+    expect(stuck.result._tag).toBe('Success');
   });
 });
 
@@ -388,9 +389,7 @@ describe('VocabularyEntryService for a subject', () => {
       attempts.map((attempt) => runService(attempt, { courseKind: 'terms' })),
     );
     for (const { result, written, wordRequests } of runs) {
-      expect(result._tag === 'Left' ? result.left : undefined).toBeInstanceOf(
-        CourseKindMismatchError,
-      );
+      expect(failureOf(result)).toBeInstanceOf(CourseKindMismatchError);
       expect(written).toHaveLength(0);
       expect(wordRequests).toHaveLength(0);
     }

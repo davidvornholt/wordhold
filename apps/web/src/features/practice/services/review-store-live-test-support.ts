@@ -87,7 +87,7 @@ export const runReviewTest = <A, E>(
   Effect.runPromise(
     withMigratedTestDatabase((database) => {
       const databaseLayer = testDatabaseLayer(database.url);
-      return Effect.zipRight(seedIntroducedCardFixture, test).pipe(
+      return Effect.andThen(seedIntroducedCardFixture, test).pipe(
         Effect.provide(
           PracticeReviewStore.live.pipe(Layer.provide(databaseLayer)),
         ),

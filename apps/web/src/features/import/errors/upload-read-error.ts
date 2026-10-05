@@ -1,6 +1,6 @@
-import { Data } from 'effect';
+import { Schema } from 'effect';
 
-export class UploadReadError extends Data.TaggedError('UploadReadError')<{
-  readonly message: string;
-  readonly cause: unknown;
-}> {}
+export class UploadReadError extends Schema.TaggedError<UploadReadError>()(
+  'UploadReadError',
+  { message: Schema.String, cause: Schema.Unknown },
+) {}

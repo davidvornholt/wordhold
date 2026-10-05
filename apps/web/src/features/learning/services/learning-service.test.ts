@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
-import { Effect, Layer, TestContext } from 'effect';
+import { Effect, Layer } from 'effect';
+import { TestClock } from 'effect/testing';
 import { LearningService } from './learning-service';
 import { LearningStore } from './learning-store';
 
@@ -7,8 +8,8 @@ const cardId = '00000000-0000-0000-0000-000000000001';
 const courseId = '00000000-0000-0000-0000-000000000002';
 const unitId = '00000000-0000-0000-0000-000000000003';
 
-const storeWith = (store: Partial<LearningStore['Type']>) =>
-  LearningService.Default.pipe(
+const storeWith = (store: Partial<LearningStore['Service']>) =>
+  LearningService.layer.pipe(
     Layer.provide(
       Layer.succeed(LearningStore, {
         loadPass: () => Effect.succeed(undefined),
@@ -24,11 +25,11 @@ describe('LearningService', () => {
     const result = await Effect.runPromise(
       Effect.flatMap(LearningService, (service) =>
         service.getPass(courseId, { unitId }),
-      ).pipe(Effect.provide(storeWith({})), Effect.either),
+      ).pipe(Effect.provide(storeWith({})), Effect.result),
     );
 
-    expect(result._tag).toBe('Left');
-    const failure = result._tag === 'Left' ? result.left : undefined;
+    expect(result._tag).toBe('Failure');
+    const failure = result._tag === 'Failure' ? result.failure : undefined;
     expect(failure?._tag).toBe('LearningPlaceNotFoundError');
   });
 
@@ -49,7 +50,7 @@ describe('LearningService', () => {
               }).pipe(Effect.as(true)),
           }),
         ),
-        Effect.provide(TestContext.TestContext),
+        Effect.provide(TestClock.layer()),
       ),
     );
 
@@ -64,13 +65,13 @@ describe('LearningService', () => {
         service.introduce(courseId, cardId),
       ).pipe(
         Effect.provide(storeWith({ introduce: () => Effect.succeed(false) })),
-        Effect.provide(TestContext.TestContext),
-        Effect.either,
+        Effect.provide(TestClock.layer()),
+        Effect.result,
       ),
     );
 
-    expect(result._tag).toBe('Left');
-    const failure = result._tag === 'Left' ? result.left : undefined;
+    expect(result._tag).toBe('Failure');
+    const failure = result._tag === 'Failure' ? result.failure : undefined;
     expect(failure?._tag).toBe('LearningCardNotFoundError');
   });
 });

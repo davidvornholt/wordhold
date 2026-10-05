@@ -5,7 +5,7 @@ import { Context, Effect, Layer, Schema } from 'effect';
 import { PracticeDatabaseError } from '../errors/practice-errors';
 import type { CachedVerdict, JudgeCacheKey } from '../schemas/practice-models';
 
-const StoredVerdict = Schema.Union(JudgeVerdict, DefinitionVerdict);
+const StoredVerdict = Schema.Union([JudgeVerdict, DefinitionVerdict]);
 
 type CacheRow = {
   readonly assessmentId: string;
@@ -25,7 +25,7 @@ const databaseError = (operation: string, cause: unknown) =>
       'Die zwischengespeicherte Bewertung konnte nicht verarbeitet werden.',
   });
 
-export class JudgeCacheStore extends Context.Tag('wordhold/JudgeCacheStore')<
+export class JudgeCacheStore extends Context.Service<
   JudgeCacheStore,
   {
     readonly read: (
@@ -41,7 +41,7 @@ export class JudgeCacheStore extends Context.Tag('wordhold/JudgeCacheStore')<
       effect: Effect.Effect<A, E, R>,
     ) => Effect.Effect<A, E | PracticeDatabaseError, R>;
   }
->() {
+>()('wordhold/JudgeCacheStore') {
   static readonly live = Layer.effect(
     JudgeCacheStore,
     Effect.gen(function* () {
@@ -62,7 +62,7 @@ export class JudgeCacheStore extends Context.Tag('wordhold/JudgeCacheStore')<
             if (row === undefined) {
               return Effect.succeed(undefined);
             }
-            return Schema.decodeUnknown(StoredVerdict)(row.verdict).pipe(
+            return Schema.decodeUnknownEffect(StoredVerdict)(row.verdict).pipe(
               Effect.map((verdict) => ({
                 assessmentId: row.assessmentId,
                 verdict,
@@ -103,7 +103,7 @@ export class JudgeCacheStore extends Context.Tag('wordhold/JudgeCacheStore')<
         ]);
         return sql
           .withTransaction(
-            Effect.zipRight(
+            Effect.andThen(
               sql`select pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))`,
               effect,
             ),
