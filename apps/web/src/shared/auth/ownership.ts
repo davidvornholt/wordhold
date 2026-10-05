@@ -1,5 +1,6 @@
 import { Database } from '@wordhold/db/client';
 import { Effect, Schema } from 'effect';
+import { Uuid } from '../validate/uuid';
 import { AuthDatabaseError } from './auth-database-error';
 
 // Records a request names, each of which must belong to a course of the
@@ -21,8 +22,7 @@ export class NotOwnedError extends Schema.TaggedError<NotOwnedError>()(
   { message: Schema.String },
 ) {}
 
-const uuidPattern =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
+const isUuid = Schema.is(Uuid);
 
 const ownedCount = (
   sql: Database,
@@ -78,7 +78,7 @@ export const assertOwned = (ownerId: string, references: OwnedReferences) =>
       .map(([kind, ids]) => [kind, [...new Set(ids ?? [])]] as const)
       .filter(([, unique]) => unique.length > 0);
     for (const [kind, unique] of named) {
-      if (!unique.every((id) => uuidPattern.test(id))) {
+      if (!unique.every(isUuid)) {
         return yield* notFound;
       }
       const [row] = yield* ownedCount(
@@ -109,7 +109,7 @@ export const ownedEntryIds = (
   entryIds: ReadonlyArray<string>,
 ) =>
   Effect.gen(function* () {
-    const unique = [...new Set(entryIds)].filter((id) => uuidPattern.test(id));
+    const unique = [...new Set(entryIds)].filter(isUuid);
     if (unique.length === 0) {
       return [];
     }

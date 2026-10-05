@@ -2,18 +2,19 @@ import { Judge } from '@wordhold/ai/judge';
 import { BedrockProvider } from '@wordhold/ai/providers/bedrock';
 import { AiUsage } from '@wordhold/ai/usage';
 import { Database, PgLive } from '@wordhold/db/client';
-import { Effect, Layer } from 'effect';
+import { Effect, Layer, Schema } from 'effect';
 import { PracticeJudge } from '../src/features/practice/services/practice-judge';
 import {
   applyReviewRepairs,
   planReviewRepairs,
 } from '../src/features/practice/services/review-repair';
 import { UsageLedger } from '../src/shared/ai/usage-ledger';
+import { Uuid } from '../src/shared/validate/uuid';
 
 const args = globalThis.Bun.argv.slice(2);
 const apply = args.includes('--apply');
 const ids = args.filter((arg) => arg !== '--apply');
-const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
+const isUuid = Schema.is(Uuid);
 // A repair is maintenance, so its grading is billed to the administrator.
 const administratorUsage = Layer.effect(
   AiUsage,
@@ -62,7 +63,7 @@ const program = Effect.gen(function* () {
   };
 }).pipe(Effect.provide(services));
 
-if (ids.length === 0 || ids.some((id) => !uuid.test(id))) {
+if (ids.length === 0 || !ids.every(isUuid)) {
   await globalThis.Bun.write(
     globalThis.Bun.stderr,
     'Usage: bun run practice:repair [--apply] <card UUID> ...\nDefault: read-only reassessment. Provider calls may incur costs.\n',
