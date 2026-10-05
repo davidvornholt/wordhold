@@ -1,7 +1,7 @@
 import { type SubmitEvent, useEffect, useRef, useState } from 'react';
 import { Button } from '../../../shared/ui/button';
 import type { VocabularyEntry } from '../schemas/course-units';
-import { termDuplicate } from './entry-duplicates';
+import { listEntryDuplicate } from './entry-duplicates';
 import {
   type SuggestDefinition,
   TermDefinitionFields,
@@ -75,7 +75,7 @@ export const NewTermForm = ({
   const { draft, setDraft, busy, failed, status, termRef, save } =
     useNewTermEntry(createEntry);
   const term = draft.term.trim();
-  const duplicate = termDuplicate(entries, term, null);
+  const duplicate = listEntryDuplicate(entries, term, null);
   const submittable =
     !busy &&
     term !== '' &&

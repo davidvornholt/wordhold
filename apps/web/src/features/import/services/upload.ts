@@ -1,5 +1,6 @@
 import { Effect } from 'effect';
 import { imageDimensionsFromData } from 'image-dimensions';
+import { isListCourse } from '../../../shared/directions';
 import { persistFileReference } from '../../../shared/storage/consistency';
 import { pageImageRelativePath, Storage } from '../../../shared/storage/server';
 import { CourseNotFoundError } from '../errors/course-not-found-error';
@@ -120,11 +121,12 @@ export const storeUploadedPage = (input: {
         message: 'Sprache nicht gefunden.',
       });
     }
-    // A subject's terms are typed, not photographed.
-    if (course.kind === 'terms') {
+    // A subject's terms and a collection's texts are typed, not
+    // photographed.
+    if (isListCourse(course.kind)) {
       return yield* new UploadValidationError({
         message:
-          'Ein Fach hat keinen Fotoimport. Trage Begriffe auf seiner Seite ein.',
+          'Ein Fach oder eine Sammlung hat keinen Fotoimport. Trage die Einträge auf ihrer Seite ein.',
         status: 409,
       });
     }

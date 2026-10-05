@@ -5,7 +5,11 @@ import {
   type AcceptedAnswer,
   isDeterministicMatch,
 } from '../../../shared/grading/deterministic-match';
-import type { AssessedGradeOutcome } from '../../../shared/grading/rating';
+import {
+  type AssessedGradeOutcome,
+  gradeRecitation,
+  type RecitationOutcome,
+} from '../../../shared/grading/rating';
 import { englishNames } from '../../../shared/languages';
 import {
   type PracticeDatabaseError,
@@ -29,15 +33,17 @@ import { JudgeCacheStore } from './judge-cache-store';
 import { PracticeJudge } from './practice-judge';
 import type { PracticeReviewStore } from './review-store';
 
+// Only a judge verdict is cached and can be overruled later, so only a judge
+// verdict has an assessment.
 export type AssessedAnswer =
   | {
-      readonly outcome: { readonly method: 'exact' };
+      readonly outcome: { readonly method: 'exact' } | RecitationOutcome;
       readonly assessmentId: null;
     }
   | {
       readonly outcome: Exclude<
         AssessedGradeOutcome,
-        { readonly method: 'exact' }
+        { readonly method: 'exact' | 'recitation' }
       >;
       readonly assessmentId: string;
     };
@@ -124,8 +130,15 @@ const gradeDefinition = (input: GradeAnswerInput) =>
   });
 
 // Null when the judge could not be reached: the answer stays ungraded and the
-// card untouched.
+// card untouched. A text learned by heart is compared word for word and never
+// reaches the judge, since only its exact wording counts.
 export const gradeAnswer = (input: GradeAnswerInput) => {
+  if (input.row.courseKind === 'texts') {
+    return Effect.succeed<AssessedAnswer>({
+      outcome: gradeRecitation(input.row.entry.nativeText, input.data.answer),
+      assessmentId: null,
+    });
+  }
   if (isDeterministicMatch(input.data.answer, input.accepted)) {
     return Effect.succeed<AssessedAnswer>({
       outcome: { method: 'exact' },
@@ -227,9 +240,16 @@ export const loadRejectedAssessment = (input: LoadRejectedAssessmentInput) =>
           if (cached === undefined) {
             return Effect.fail(staleAssessment());
           }
-          return input.row.courseKind === 'terms'
-            ? rejectedDefinition(input, cached)
-            : rejectedTranslation(cached);
+          switch (input.row.courseKind) {
+            case 'terms':
+              return rejectedDefinition(input, cached);
+            case 'language':
+              return rejectedTranslation(cached);
+            case 'texts':
+              return Effect.fail(staleAssessment());
+            default:
+              return input.row.courseKind satisfies never;
+          }
         },
       ),
     );

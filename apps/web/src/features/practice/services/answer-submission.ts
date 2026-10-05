@@ -1,3 +1,4 @@
+import { maximumEntryTextLength } from '@wordhold/ai/extraction/schema';
 import { isAcceptedAlternative } from '@wordhold/ai/judge/schema';
 import { Clock, Effect } from 'effect';
 import { normalizeAnswer } from '../../../shared/grading/normalize';
@@ -6,7 +7,10 @@ import {
   type GradeOutcome,
   isCorrect,
 } from '../../../shared/grading/rating';
-import { StaleAnswerSubmissionError } from '../errors/practice-errors';
+import {
+  AnswerTooLongError,
+  StaleAnswerSubmissionError,
+} from '../errors/practice-errors';
 import type {
   KeyPointFinding,
   SubmissionRecord,
@@ -36,7 +40,9 @@ type SubmissionDependencies = {
 type AssessedOutcome = AssessedAnswer['outcome'];
 
 const explanationOf = (assessed: AssessedOutcome): string | null =>
-  assessed.method === 'exact' ? null : assessed.verdict.explanation;
+  assessed.method === 'exact' || assessed.method === 'recitation'
+    ? null
+    : assessed.verdict.explanation;
 
 // Lines each key point up with the judge's finding for it, so the feedback
 // can mark what the definition covered.
@@ -95,11 +101,11 @@ const commitOutcome = ({
 }: CommitOutcomeInput) =>
   Effect.gen(function* () {
     const elapsedMs = data.elapsedMs ?? null;
-    // How fast a definition was written says little about how well it is
-    // known, so even an exact one is never rated easy.
+    // How fast a definition or a text was written says little about how well
+    // it is known, so even an exact one is never rated easy.
     const rating = deriveRating(
       outcome,
-      row.courseKind === 'terms' ? null : elapsedMs,
+      row.courseKind === 'language' ? elapsedMs : null,
     );
     const reviewedAt = new Date(yield* Clock.currentTimeMillis);
     const persisted = yield* reviews.commit({
@@ -132,6 +138,17 @@ const commitOutcome = ({
       entryKnown: persisted.entryKnown,
     };
   });
+
+// The submission schema admits a recited text; an answer the judge grades is
+// held to the length of an entry.
+const checkAnswerLength = (row: SubmissionRecord, answer: string) =>
+  row.courseKind !== 'texts' && answer.length > maximumEntryTextLength
+    ? Effect.fail(
+        new AnswerTooLongError({
+          message: `Eine Antwort darf höchstens ${maximumEntryTextLength} Zeichen lang sein.`,
+        }),
+      )
+    : Effect.void;
 
 export const resolveAnswerSubmission = (
   data: SubmitPayloadData,
@@ -170,6 +187,7 @@ export const resolveAnswerSubmission = (
         expectedAnswer,
       });
     }
+    yield* checkAnswerLength(row, data.answer);
     const normalized = normalizeAnswer(data.answer);
     const assessment = yield* data.wrongAnswerResolution === 'defer'
       ? gradeAnswer({

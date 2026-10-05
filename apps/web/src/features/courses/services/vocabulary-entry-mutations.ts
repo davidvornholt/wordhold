@@ -229,10 +229,10 @@ export const makeVocabularyEntryMutations = (sql: Database) => {
         ),
       );
 
-  // Words and terms alike. The cards, their reviews and every other row of
-  // the entry go with it; its audio files are read first, since nothing
-  // refers to them afterwards. An entry that is already gone counts as
-  // deleted.
+  // Words, terms and texts alike. The cards, their reviews and every other
+  // row of the entry go with it; its audio files are read first, since
+  // nothing refers to them afterwards. An entry that is already gone counts
+  // as deleted.
   const remove = ({ courseId, entryId }: DeleteEntryData) =>
     sql
       .withTransaction(

@@ -14,7 +14,11 @@ import {
   resolveAnswerDirection,
 } from '../../../features/practice/services/session-options';
 import { SessionStart } from '../../../features/practice/ui/session-start';
-import { courseNouns, directionLabel } from '../../../shared/directions';
+import {
+  courseNouns,
+  directionLabel,
+  isListCourse,
+} from '../../../shared/directions';
 import { attachPreparedExamples } from '../../../shared/examples/example-model';
 import { countNoun } from '../../../shared/format/count';
 import { itemsInNextSection } from '../../../shared/session/section-policy';
@@ -43,9 +47,9 @@ export const loadLearnScreen = async (
       data: { courseId, ...(selection === null ? {} : { place: selection }) },
     }),
   ]);
-  // A subject keeps its terms in one list, so its terms are learned from
-  // that list and never from the book that holds them.
-  if (course.kind === 'terms' && selection !== null) {
+  // A subject or collection keeps its entries in one list, so they are
+  // learned from that list and never from the book that holds them.
+  if (isListCourse(course.kind) && selection !== null) {
     throw redirect({
       to: '/courses/$courseId/learn',
       params: { courseId },
@@ -59,9 +63,9 @@ export const loadLearnScreen = async (
     requestedDirection,
     availableDirections,
   );
-  // A definition has no example sentence to show.
+  // A definition or text has no example sentence to show.
   const prepared =
-    direction === undefined || course.kind === 'terms'
+    direction === undefined || isListCourse(course.kind)
       ? []
       : await prepareVocabularyExamples({
           data: pass.items

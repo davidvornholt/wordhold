@@ -1,5 +1,5 @@
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
-import type { CourseSubject } from '../../../shared/directions';
+import { type CourseSubject, isListCourse } from '../../../shared/directions';
 import { Checkbox } from '../../../shared/ui/selection-controls';
 import type { VocabularyEntry } from '../schemas/course-units';
 import { listItemNameClass } from './list-item-name-styles';
@@ -17,8 +17,9 @@ type VocabularyEntryRowProps = {
 };
 
 // A word and its translation share one line. A term's definition is a
-// sentence or two, so it gets a line of its own under the term. The word or
-// term opens the entry's details.
+// sentence or two, so it gets a line of its own under the term. A text can
+// be long, so its row starts it and its details show all of it. The word,
+// term or title opens the entry's details.
 export const VocabularyEntryRow = ({
   entry,
   enabledDirections,
@@ -32,7 +33,7 @@ export const VocabularyEntryRow = ({
     <button
       aria-haspopup="dialog"
       className={listItemNameClass}
-      lang={subject.kind === 'terms' ? undefined : subject.targetLanguage}
+      lang={isListCourse(subject.kind) ? undefined : subject.targetLanguage}
       onClick={onOpen}
       type="button"
     >
@@ -48,10 +49,16 @@ export const VocabularyEntryRow = ({
         onChange={onToggle}
       />
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-        {subject.kind === 'terms' ? (
+        {isListCourse(subject.kind) ? (
           <>
             {name}
-            <p className="hyphens-auto text-muted-foreground">
+            <p
+              className={
+                subject.kind === 'texts'
+                  ? 'line-clamp-2 hyphens-auto text-muted-foreground'
+                  : 'hyphens-auto text-muted-foreground'
+              }
+            >
               {entry.nativeText}
             </p>
           </>

@@ -7,7 +7,11 @@ import { submitAnswer } from '../../../features/practice/services/server-fns';
 import { sessionOptions } from '../../../features/practice/services/session-options';
 import { SessionRunner } from '../../../features/practice/ui/session-runner';
 import { SessionStart } from '../../../features/practice/ui/session-start';
-import { type CourseSubject, courseNouns } from '../../../shared/directions';
+import {
+  type CourseSubject,
+  courseNouns,
+  isListCourse,
+} from '../../../shared/directions';
 import { countNoun } from '../../../shared/format/count';
 import { focusShell } from '../../../shared/routing/shell';
 import { ActionLink } from '../../../shared/ui/action-link';
@@ -33,8 +37,8 @@ type StudyOriginProps = {
   readonly fromFragile: boolean;
 };
 
-// A free selection is made in a language's word list, or on a subject's own
-// page, which is its list of terms. The overview's Wackelkandidaten lead back
+// A free selection is made in a language's word list, or on a subject's or
+// collection's own page, which is its list of entries. The overview's Wackelkandidaten lead back
 // to the overview.
 const StudySelectionControl = ({
   course,
@@ -59,7 +63,7 @@ const StudySelectionControl = ({
       </ActionLink>
     );
   }
-  return course.kind === 'terms' ? (
+  return isListCourse(course.kind) ? (
     <PlacePageLink courseId={course.id} selection={null} variant="quiet-muted">
       Neue Auswahl treffen
     </PlacePageLink>
@@ -86,7 +90,7 @@ const StudyBackControl = ({ course, place, fromFragile }: StudyOriginProps) => {
   if (fromFragile) {
     return <BackLink to="/">Übersicht</BackLink>;
   }
-  return course.kind === 'terms' ? (
+  return isListCourse(course.kind) ? (
     <PlaceBackLink courseId={course.id} selection={null}>
       {course.name}
     </PlaceBackLink>
@@ -128,8 +132,8 @@ const StudyScreen = () => {
   if (selection === null) {
     content = (
       <p className={`${cardClass} text-sm`}>
-        {course.kind === 'terms'
-          ? 'Wähle zuerst mindestens einen Begriff aus.'
+        {isListCourse(course.kind)
+          ? `Wähle zuerst mindestens einen ${nouns.singular} aus.`
           : 'Wähle zuerst mindestens eine Vokabel, ein Buch oder eine Einheit aus.'}
       </p>
     );

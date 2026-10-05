@@ -7,6 +7,7 @@ import {
 } from '../../../features/courses/services/server-fns';
 import { VocabularyLibrary } from '../../../features/courses/ui/vocabulary-library';
 import { getCourse } from '../../../features/import/server-fns';
+import { isListCourse } from '../../../shared/directions';
 import { BackLink } from '../../../shared/ui/back-link';
 import { PageLayout } from '../../../shared/ui/page-layout';
 import { useCourseEntryActions } from './-entry-forms';
@@ -68,8 +69,8 @@ export const Route = createFileRoute('/courses/$courseId/vocabulary')({
       getCourseDirections({ data: params.courseId }),
       listCourseVocabulary({ data: params.courseId }),
     ]);
-    // A subject's page is its list of terms.
-    if (course.kind === 'terms') {
+    // A subject's or collection's page is its list of entries.
+    if (isListCourse(course.kind)) {
       throw redirect({
         to: '/courses/$courseId',
         params: { courseId: course.id },

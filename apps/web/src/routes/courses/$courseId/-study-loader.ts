@@ -13,6 +13,7 @@ import {
   resolveAnswerDirection,
   resolveSessionDirection,
 } from '../../../features/practice/services/session-options';
+import { isListCourse } from '../../../shared/directions';
 import { attachPreparedExamples } from '../../../shared/examples/example-model';
 import type { VocabularySelectionData } from '../../../shared/session/vocabulary-selection';
 import { courseSelection, findCoursePlace } from './-course-place';
@@ -29,9 +30,9 @@ const loadLearningMode = async (
     (progress) => progress.direction,
   );
   const direction = resolveAnswerDirection(deps.direction, availableDirections);
-  // A definition has no example sentence to show.
+  // A definition or text has no example sentence to show.
   const prepared =
-    direction === undefined || course.kind === 'terms'
+    direction === undefined || isListCourse(course.kind)
       ? []
       : await prepareVocabularyExamples({
           data: pass.items

@@ -16,6 +16,10 @@ import {
   updateTermEntry,
   updateTermKeyPoints,
 } from '../../../features/courses/services/term-server-fns';
+import {
+  createTextEntry,
+  updateTextEntry,
+} from '../../../features/courses/services/text-server-fns';
 import { EditTermForm } from '../../../features/courses/ui/edit-term-form';
 import { EditVocabularyForm } from '../../../features/courses/ui/edit-vocabulary-form';
 import type {
@@ -25,6 +29,10 @@ import type {
 import { NewTermForm } from '../../../features/courses/ui/new-term-form';
 import { NewVocabularyForm } from '../../../features/courses/ui/new-vocabulary-form';
 import { TermKeyPoints } from '../../../features/courses/ui/term-key-points';
+import {
+  EditTextForm,
+  NewTextForm,
+} from '../../../features/courses/ui/text-entry-forms';
 import { VocabularyExample } from '../../../features/courses/ui/vocabulary-example';
 import type { WordPlace } from '../../../features/courses/ui/word-places';
 import type { CourseSubject } from '../../../shared/directions';
@@ -32,9 +40,10 @@ import { germanLabels } from '../../../shared/languages';
 
 export type EntryCourse = CourseSubject & { readonly id: string };
 
-type TermEntryFormProps = {
+type ListEntryFormProps = {
   readonly course: EntryCourse;
-  // Every term of the subject, which a typed term is checked against.
+  // Every entry of the subject or collection, which a typed term or title is
+  // checked against.
   readonly entries: ReadonlyArray<VocabularyEntry>;
 };
 
@@ -42,7 +51,7 @@ type TermEntryFormProps = {
 // the loader so the page's counts and list include it. Its key points are
 // derived after it is saved, without holding up the next term; practice
 // derives them itself if that has not finished.
-export const TermEntryForm = ({ course, entries }: TermEntryFormProps) => {
+export const TermEntryForm = ({ course, entries }: ListEntryFormProps) => {
   const router = useRouter();
   const courseId = course.id;
   return (
@@ -60,6 +69,22 @@ export const TermEntryForm = ({ course, entries }: TermEntryFormProps) => {
       suggestDefinition={(term) =>
         suggestTermDefinition({ data: { courseId, term } })
       }
+    />
+  );
+};
+
+// Typing a title with its text into a collection. Each saved text refreshes
+// the loader so the page's counts and list include it.
+export const TextEntryForm = ({ course, entries }: ListEntryFormProps) => {
+  const router = useRouter();
+  const courseId = course.id;
+  return (
+    <NewTextForm
+      createEntry={async (draft) => {
+        await createTextEntry({ data: { courseId, ...draft } });
+        await router.invalidate();
+      }}
+      entries={entries}
     />
   );
 };
@@ -117,6 +142,7 @@ type CourseEntryDetailProps = {
 // What an entry's details show besides its schedule: a word's example
 // sentence, generated on request, or a term's key points. Each change
 // refreshes the loader, so the details show it when they are opened again.
+// A text has nothing besides itself.
 const CourseEntryDetail = ({ course, entry }: CourseEntryDetailProps) => {
   const router = useRouter();
   const refreshed = async <Result,>(change: Promise<Result>) => {
@@ -124,6 +150,9 @@ const CourseEntryDetail = ({ course, entry }: CourseEntryDetailProps) => {
     await router.invalidate();
     return result;
   };
+  if (course.kind === 'texts') {
+    return null;
+  }
   return course.kind === 'terms' ? (
     <TermKeyPoints
       derive={() =>
@@ -159,9 +188,9 @@ type CourseEntryEditorProps = {
   readonly control: EntryEditorControl;
 };
 
-// Correcting a word or term from its details. A saved correction refreshes
-// the loader before the details are shown again, so they show it. A term
-// with a new definition gets its key points derived again in the
+// Correcting a word, term or text from its details. A saved correction
+// refreshes the loader before the details are shown again, so they show it.
+// A term with a new definition gets its key points derived again in the
 // background, as a typed term does.
 const CourseEntryEditor = ({
   course,
@@ -172,6 +201,19 @@ const CourseEntryEditor = ({
   const router = useRouter();
   const courseId = course.id;
   const entryId = entry.id;
+  if (course.kind === 'texts') {
+    return (
+      <EditTextForm
+        control={control}
+        entries={entries}
+        entry={entry}
+        updateEntry={async (draft) => {
+          await updateTextEntry({ data: { courseId, entryId, ...draft } });
+          await router.invalidate();
+        }}
+      />
+    );
+  }
   if (course.kind === 'terms') {
     return (
       <EditTermForm

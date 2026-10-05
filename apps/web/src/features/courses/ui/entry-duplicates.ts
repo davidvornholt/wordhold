@@ -49,7 +49,8 @@ export const wordDuplicate = (
   }
 };
 
-export const termDuplicate = (
+// A subject's term or a collection's title, which has no example sentence.
+export const listEntryDuplicate = (
   entries: ReadonlyArray<VocabularyEntry>,
   draftTerm: string,
   correctedEntryId: string | null,

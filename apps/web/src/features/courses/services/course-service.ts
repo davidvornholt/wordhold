@@ -1,4 +1,5 @@
 import { Clock, type Context, Effect } from 'effect';
+import { isListCourse } from '../../../shared/directions';
 import {
   CourseBookConflictError,
   CourseBookNotFoundError,
@@ -26,11 +27,11 @@ import type {
 import { CourseStore } from './course-store';
 
 const notFound = new CourseSettingsNotFoundError({
-  message: 'Sprache oder Fach nicht gefunden.',
+  message: 'Sprache, Fach oder Sammlung nicht gefunden.',
 });
 
 const subjectMissing = new CourseSettingsNotFoundError({
-  message: 'Fach nicht gefunden.',
+  message: 'Fach oder Sammlung nicht gefunden.',
 });
 
 const subjectTaken = (name: string) =>
@@ -39,12 +40,13 @@ const subjectTaken = (name: string) =>
   });
 
 const directionsFixed = new CourseKindMismatchError({
-  message: 'Ein Fach fragt immer vom Begriff zur Definition.',
+  message:
+    'Ein Fach fragt immer vom Begriff zur Definition, eine Sammlung vom Titel zum Text.',
 });
 
 const noBooksInSubject = new CourseKindMismatchError({
   message:
-    'Ein Fach hat keine Bücher oder Einheiten. Trag die Begriffe direkt auf der Seite des Fachs ein.',
+    'Ein Fach oder eine Sammlung hat keine Bücher oder Einheiten. Trag die Einträge direkt auf ihrer Seite ein.',
 });
 
 const bookMissing = new CourseBookNotFoundError({
@@ -57,27 +59,28 @@ const bookTaken = (name: string) =>
   });
 
 // The settings a language and a subject differ in: a language chooses its
-// directions, a subject is created and renamed from the overview.
+// directions, a subject or collection is created and renamed from the
+// overview.
 const courseSettings = (store: Context.Tag.Service<typeof CourseStore>) => {
   // Switching a direction off only stops it being asked, counted and
   // scheduled. Its cards keep their schedule, so switching it back on
   // resumes where it left off instead of starting the entries over. A
-  // subject has only the one direction.
+  // subject or collection has only the one direction.
   const setDirections = ({ courseId, directions }: SetCourseDirectionsData) =>
     Effect.gen(function* () {
       const kind = yield* store.readKind(courseId);
       if (kind === undefined) {
         return yield* notFound;
       }
-      if (kind === 'terms') {
+      if (isListCourse(kind)) {
         return yield* directionsFixed;
       }
       const updated = yield* store.writeDirections(courseId, directions);
       return updated ? directions : yield* notFound;
     });
-  const createSubject = (ownerId: string, { name }: CreateSubjectData) =>
+  const createSubject = (ownerId: string, { name, kind }: CreateSubjectData) =>
     Effect.gen(function* () {
-      const result = yield* store.createSubject(ownerId, name);
+      const result = yield* store.createSubject(ownerId, name, kind);
       return result.kind === 'duplicate'
         ? yield* subjectTaken(name)
         : { courseId: result.courseId };
@@ -125,12 +128,13 @@ export class CourseService extends Effect.Service<CourseService>()(
           ]);
           return { books, units } satisfies CourseOutline;
         });
-      // A subject keeps its terms in one list, so only a language course
-      // has books and units to manage. A course never changes its kind, so
-      // checking it before the mutation cannot race.
+      // A subject or collection keeps its entries in one list, so only a
+      // language course has books and units to manage. A course never
+      // changes its kind, so checking it before the mutation cannot race.
       const requireLanguage = (courseId: string) =>
         Effect.gen(function* () {
-          if ((yield* store.readKind(courseId)) === 'terms') {
+          const kind = yield* store.readKind(courseId);
+          if (kind !== undefined && isListCourse(kind)) {
             return yield* noBooksInSubject;
           }
         });

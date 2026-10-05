@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { courseNouns } from '../../../shared/directions';
 import {
   type FragileEntry,
   type FragileGroup,
@@ -6,14 +7,15 @@ import {
   fragileGroups,
 } from '../schemas/dashboard-models';
 
-// The list can mix words from language courses with terms from subjects.
+const nounList = new Intl.ListFormat('de', { type: 'conjunction' });
+
+// The list can mix words from language courses with terms from subjects and
+// texts from collections.
 const listedNouns = (entries: ReadonlyArray<FragileEntry>): string => {
-  if (entries.every((entry) => entry.courseKind === 'language')) {
-    return 'Diese Vokabeln sind';
-  }
-  return entries.every((entry) => entry.courseKind === 'terms')
-    ? 'Diese Begriffe sind'
-    : 'Diese Vokabeln und Begriffe sind';
+  const plurals = new Set(
+    entries.map((entry) => courseNouns({ kind: entry.courseKind }).plural),
+  );
+  return `Diese ${nounList.format(plurals)} sind`;
 };
 
 // The rows only name the entries; the actions above them practise exactly
@@ -57,10 +59,13 @@ export const FragileList = ({
             className="flex flex-wrap items-baseline justify-between gap-2 px-1 py-2 text-sm"
             key={entry.entryId}
           >
-            {/* A definition is too long for one row, so terms show alone. */}
+            {/* A definition or text is too long for one row, so terms and
+                texts show alone. */}
             <span>
               <span className="font-medium">{entry.targetText}</span>
-              {entry.courseKind === 'terms' ? null : ` · ${entry.nativeText}`}
+              {entry.courseKind === 'language'
+                ? ` · ${entry.nativeText}`
+                : null}
             </span>
             <span className="text-muted-foreground text-xs">
               {entry.courseName} · {entry.failures}× daneben

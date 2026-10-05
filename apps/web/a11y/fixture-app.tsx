@@ -47,6 +47,13 @@ import {
   TermsLearnFixture,
   TermsPracticeFixture,
 } from './terms-fixtures';
+import {
+  TextsCourseFixture,
+  TextsFeedbackFixture,
+  TextsLearnFixture,
+  TextsPracticeFixture,
+  TextsSettingsFixture,
+} from './text-fixtures';
 import { verificationFixture } from './verification-fixture-router';
 import { VocabularyFixture } from './vocabulary-fixtures';
 
@@ -76,6 +83,9 @@ const bareStates: ReadonlySet<FixtureState> = new Set<FixtureState>([
   'terms-learn',
   'terms-practice',
   'terms-feedback',
+  'texts-learn',
+  'texts-practice',
+  'texts-feedback',
   'loading',
   'error',
   'not-found',
@@ -165,7 +175,14 @@ const practiceFixture = (state: FixtureState) => {
   }
 };
 
-const termsFixture = (state: FixtureState) => {
+// The pages of subjects and collections, which every state not handled
+// elsewhere belongs to.
+type ListCourseState = Extract<
+  FixtureState,
+  `terms-${string}` | `texts-${string}`
+>;
+
+const listCourseFixture = (state: ListCourseState) => {
   switch (state) {
     case 'terms-learn':
       return <TermsLearnFixture />;
@@ -179,8 +196,20 @@ const termsFixture = (state: FixtureState) => {
       return <SubjectCourseFixture empty={true} />;
     case 'terms-settings':
       return <SubjectSettingsFixture />;
+    case 'texts-learn':
+      return <TextsLearnFixture />;
+    case 'texts-practice':
+      return <TextsPracticeFixture />;
+    case 'texts-feedback':
+      return <TextsFeedbackFixture />;
+    case 'texts-course':
+      return <TextsCourseFixture />;
+    case 'texts-course-empty':
+      return <TextsCourseFixture empty={true} />;
+    case 'texts-settings':
+      return <TextsSettingsFixture />;
     default:
-      return null;
+      return state satisfies never;
   }
 };
 
@@ -314,19 +343,12 @@ const fixtureContent = (state: FixtureState) => {
     case 'practice-deferred':
     case 'sentence-practice':
       return practiceFixture(state);
-    case 'terms-learn':
-    case 'terms-practice':
-    case 'terms-feedback':
-    case 'terms-course':
-    case 'terms-course-empty':
-    case 'terms-settings':
-      return termsFixture(state);
     case 'loading':
     case 'error':
     case 'not-found':
       return rootFixture(state);
     default:
-      return state satisfies never;
+      return listCourseFixture(state);
   }
 };
 

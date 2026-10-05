@@ -6,7 +6,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import type { CourseSubject } from '../../../shared/directions';
+import { type CourseSubject, isListCourse } from '../../../shared/directions';
 import { Button } from '../../../shared/ui/button';
 import { Dialog } from '../../../shared/ui/dialog';
 import type { VocabularyEntry } from '../schemas/course-units';
@@ -19,12 +19,20 @@ type VocabularyEntryDetailsProps = {
   readonly enabledDirections: ReadonlyArray<AnswerDirection>;
   readonly now: Date;
   readonly subject: CourseSubject;
-  // The example sentence of a word, or the key points of a term.
+  // The example sentence of a word, or the key points of a term. A text has
+  // none.
   readonly detail: ReactNode;
 };
 
+const nativeLabels = {
+  language: 'Übersetzung',
+  terms: 'Definition',
+  texts: 'Text',
+} as const satisfies Record<CourseSubject['kind'], string>;
+
 // What an entry's row leaves out: each direction's schedule and the example
-// sentence or key points, which can be changed here.
+// sentence or key points, which can be changed here. A text keeps its line
+// breaks.
 const VocabularyEntryDetails = ({
   entry,
   enabledDirections,
@@ -35,10 +43,16 @@ const VocabularyEntryDetails = ({
   <div className="flex flex-col gap-4 text-sm">
     <dl className="grid gap-3">
       <div className="grid gap-0.5">
-        <dt className="font-medium">
-          {subject.kind === 'terms' ? 'Definition' : 'Übersetzung'}
-        </dt>
-        <dd className="hyphens-auto">{entry.nativeText}</dd>
+        <dt className="font-medium">{nativeLabels[subject.kind]}</dt>
+        <dd
+          className={
+            subject.kind === 'texts'
+              ? 'hyphens-auto whitespace-pre-line'
+              : 'hyphens-auto'
+          }
+        >
+          {entry.nativeText}
+        </dd>
       </div>
       <ScheduleItems
         enabledDirections={enabledDirections}
@@ -217,7 +231,7 @@ export const VocabularyEntryDialog = ({
       returnFocusRef={returnFocusRef}
       title={
         <span
-          lang={subject.kind === 'terms' ? undefined : subject.targetLanguage}
+          lang={isListCourse(subject.kind) ? undefined : subject.targetLanguage}
         >
           {entry?.targetText}
         </span>

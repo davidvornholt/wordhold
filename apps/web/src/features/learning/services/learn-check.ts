@@ -1,4 +1,5 @@
 import { isDeterministicMatch } from '../../../shared/grading/deterministic-match';
+import { isVerbatimCopy } from '../../../shared/grading/recitation';
 import { type LearnItem, learnAnswer } from '../schemas/learning-models';
 
 // The learning pass introduces one card direction without grading or scheduling
@@ -14,3 +15,8 @@ export const matchesLearnItem = (item: LearnItem, typed: string): boolean =>
       source: 'textbook',
     })),
   );
+
+// A text learned by heart is copied from the card. Only its words count, as
+// in practice, but a copy has no excuse for a typo.
+export const copiesLearnText = (item: LearnItem, typed: string): boolean =>
+  isVerbatimCopy(learnAnswer(item), typed);

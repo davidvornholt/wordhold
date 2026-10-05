@@ -20,6 +20,11 @@ export const termsSubject: CourseSubject = {
   targetLanguage: 'de',
 };
 
+export const textsSubject: CourseSubject = {
+  kind: 'texts',
+  targetLanguage: 'de',
+};
+
 const holidaysCount = 18;
 const holidaysReverseIntroduced = 16;
 const sportCount = 25;

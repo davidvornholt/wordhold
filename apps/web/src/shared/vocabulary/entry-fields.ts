@@ -9,6 +9,15 @@ export const EntryText = Schema.Trim.pipe(
   Schema.maxLength(maximumEntryTextLength),
 );
 
+// A text learned by heart can be a whole psalm or poem, far longer than a
+// word or a definition.
+export const maximumMemorizedTextLength = 4000;
+
+export const MemorizedText = Schema.Trim.pipe(
+  Schema.minLength(1),
+  Schema.maxLength(maximumMemorizedTextLength),
+);
+
 export const ExampleText = Schema.Trim.pipe(
   Schema.minLength(1),
   Schema.maxLength(maximumExampleLength),

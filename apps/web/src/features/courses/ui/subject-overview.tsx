@@ -1,6 +1,10 @@
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import { type ReactNode, useId, useRef, useState } from 'react';
-import type { CourseSubject } from '../../../shared/directions';
+import {
+  type CourseNouns,
+  type CourseSubject,
+  courseNouns,
+} from '../../../shared/directions';
 import { countNoun } from '../../../shared/format/count';
 import { Button } from '../../../shared/ui/button';
 import { Dialog } from '../../../shared/ui/dialog';
@@ -13,11 +17,11 @@ type SubjectOverviewProps = {
   readonly subject: CourseSubject;
   readonly entries: ReadonlyArray<VocabularyEntry>;
   readonly enabledDirections: ReadonlyArray<AnswerDirection>;
-  // The filter shown on arrival, such as the difficult terms the overview
+  // The filter shown on arrival, such as the difficult entries the overview
   // links to.
   readonly initialFilter: VocabularyFilter;
   readonly primaryAction: ReactNode | null;
-  // The form for a term, saving into this subject.
+  // The form for a term or text, saving into this subject or collection.
   readonly entryForm: ReactNode;
   readonly settingsAction: ReactNode;
   readonly renderStudyAction: (
@@ -27,24 +31,27 @@ type SubjectOverviewProps = {
   readonly entryActions: CourseEntryActions;
 };
 
-const subjectSummary = (entries: ReadonlyArray<VocabularyEntry>): string => {
+const subjectSummary = (
+  entries: ReadonlyArray<VocabularyEntry>,
+  nouns: CourseNouns,
+): string => {
   if (entries.length === 0) {
-    return 'Noch keine Begriffe';
+    return `Noch keine ${nouns.plural}`;
   }
   const unintroduced = entries.filter((entry) => !entry.introduced).length;
   return [
-    countNoun(entries.length, 'Begriff', 'Begriffe'),
+    countNoun(entries.length, nouns.singular, nouns.plural),
     unintroduced === 0 ? null : `${unintroduced} noch kennenlernen`,
   ]
     .filter((part): part is string => part !== null)
     .join(' · ');
 };
 
-// A subject's page is its list of terms: the next thing to do, typing new
-// terms, and the list with its search and filters. Terms are typed in a
-// dialog that stays open for the next one and adds each saved term to the
-// list behind it. An empty subject leads with typing, since its first term is
-// all there is to do.
+// A subject's page is its list of terms, a collection's its list of texts:
+// the next thing to do, typing new entries, and the list with its search and
+// filters. Entries are typed in a dialog that stays open for the next one
+// and adds each saved entry to the list behind it. An empty subject leads
+// with typing, since its first entry is all there is to do.
 export const SubjectOverview = ({
   subject,
   entries,
@@ -57,10 +64,11 @@ export const SubjectOverview = ({
   entryActions,
 }: SubjectOverviewProps) => {
   const isEmpty = entries.length === 0;
+  const nouns = courseNouns(subject);
   const [adding, setAdding] = useState(false);
   const headingId = useId();
-  // Takes focus once a term is deleted, since its row is gone, and counts
-  // the terms that are left.
+  // Takes focus once an entry is deleted, since its row is gone, and counts
+  // the entries that are left.
   const summaryRef = useRef<HTMLParagraphElement>(null);
   let nextStep: ReactNode = primaryAction;
   if (primaryAction === null && !isEmpty) {
@@ -75,7 +83,7 @@ export const SubjectOverview = ({
         ref={summaryRef}
         tabIndex={-1}
       >
-        {subjectSummary(entries)}
+        {subjectSummary(entries, nouns)}
       </p>
       <div className="flex flex-wrap items-center gap-4">
         {nextStep}
@@ -84,7 +92,7 @@ export const SubjectOverview = ({
           onClick={() => setAdding(true)}
           variant={isEmpty ? 'primary' : 'quiet'}
         >
-          Begriff eintragen
+          {nouns.singular} eintragen
         </Button>
         {settingsAction}
       </div>
@@ -93,14 +101,14 @@ export const SubjectOverview = ({
         closeLabel="Fertig"
         onClose={() => setAdding(false)}
         open={adding}
-        title="Begriff eintragen"
+        title={`${nouns.singular} eintragen`}
       >
         {entryForm}
       </Dialog>
       {isEmpty ? null : (
         <section aria-labelledby={headingId} className="flex flex-col gap-3">
           <h2 className="font-display text-xl" id={headingId}>
-            Begriffe
+            {nouns.plural}
           </h2>
           <VocabularyLibrary
             enabledDirections={enabledDirections}

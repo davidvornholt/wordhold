@@ -1,3 +1,4 @@
+import type { CourseKind } from '@wordhold/db/schema/courses';
 import { useState } from 'react';
 import { HomeShell } from '../src/app/home-shell';
 import { NewSubjectDialog } from '../src/features/courses/ui/new-subject-dialog';
@@ -16,29 +17,25 @@ import { PendingImportSessions } from '../src/features/import/ui/pending-import-
 import { type CourseSubject, courseNouns } from '../src/shared/directions';
 import { actionClass } from '../src/shared/ui/action-styles';
 import { AudioRecoveryPagesFixture } from './audio-recovery-pages-fixture';
+import {
+  collection,
+  collectionStats,
+  course,
+  fixtureNextDueAt,
+  fragileTerm,
+  fragileWord,
+  secondCourse,
+  secondCourseStats,
+  subject,
+  subjectStats,
+} from './dashboard-fixture-data';
 import { fixtureControl } from './fixture-controls';
-import { audioRecoveryIsComplete, navigateToFixture } from './fixture-state';
+import {
+  audioRecoveryIsComplete,
+  type FixtureState,
+  navigateToFixture,
+} from './fixture-state';
 
-const course = {
-  id: '00000000-0000-0000-0000-000000000001',
-  name: 'English A2',
-  kind: 'language' as const,
-  targetLanguage: 'en' as const,
-};
-const secondCourse = {
-  id: '00000000-0000-0000-0000-000000000005',
-  name: 'Französisch',
-  kind: 'language' as const,
-  targetLanguage: 'fr' as const,
-};
-const subject = {
-  id: '00000000-0000-0000-0000-000000000006',
-  name: 'Chemie',
-  kind: 'terms' as const,
-  targetLanguage: 'de' as const,
-};
-const subjectReady = 3;
-const secondCourseReady = 20;
 const fixtureUser = { name: 'David' };
 const fixtureReviewsToday = 7;
 const fixtureCardsToday = 5;
@@ -48,10 +45,6 @@ const fixtureUnintroduced = 6;
 const fixtureEntries = 18;
 const fixtureKnown = 9;
 const fixtureStreak = 4;
-const millisecondsPerDay = 86_400_000;
-// Relative to the real clock so the resting copy reads "morgen um …" on any
-// day the suite runs.
-const fixtureNextDueAt = new Date(Date.now() + millisecondsPerDay);
 const recoveryPage = {
   id: '00000000-0000-0000-0000-000000000003',
   courseName: course.name,
@@ -81,35 +74,34 @@ const fixtureWeek: ReadonlyArray<PracticeDay> = [
   { day: '2026-08-24', weekday: 1, practiced: true },
 ];
 
-type FixtureAction =
-  | 'course'
-  | 'fragile'
-  | 'import'
-  | 'learn'
-  | 'practice'
-  | 'today'
-  | 'subject'
-  | 'subject-start';
+const fixtureDestinations = {
+  course: 'course',
+  collection: 'texts-course',
+  'collection-learn': 'texts-learn',
+  fragile: 'study-start',
+  import: 'import',
+  learn: 'course',
+  practice: 'practice',
+  today: 'practice',
+  subject: 'terms-course',
+  'subject-start': 'terms-course-empty',
+} as const satisfies Record<string, FixtureState>;
 
-const fixtureDestination = (destination: FixtureAction) => {
-  if (destination === 'today') {
-    return 'practice';
-  }
-  if (destination === 'subject') {
-    return 'terms-course';
-  }
-  if (destination === 'subject-start') {
-    return 'terms-course-empty';
-  }
-  if (destination === 'fragile') {
-    return 'study-start';
-  }
-  return destination === 'learn' ? 'course' : destination;
-};
+type FixtureAction = keyof typeof fixtureDestinations;
+
+const courseDestinations = {
+  language: 'course',
+  terms: 'subject',
+  texts: 'collection',
+} as const satisfies Record<CourseKind, FixtureAction>;
 
 // The fixture mirrors the variants the dashboard route gives each action.
 const fixtureActionClass = (destination: FixtureAction) => {
-  if (destination === 'course' || destination === 'subject') {
+  if (
+    destination === 'course' ||
+    destination === 'subject' ||
+    destination === 'collection'
+  ) {
     return 'font-display text-xl underline decoration-border underline-offset-4 hover:decoration-current';
   }
   return actionClass(
@@ -124,72 +116,12 @@ const fixtureActionClass = (destination: FixtureAction) => {
 const action = (label: string, destination: FixtureAction) => (
   <button
     className={fixtureActionClass(destination)}
-    onClick={() => navigateToFixture(fixtureDestination(destination))}
+    onClick={() => navigateToFixture(fixtureDestinations[destination])}
     type="button"
   >
     {label}
   </button>
 );
-
-const secondCourseStats: CourseStats = {
-  courseId: secondCourse.id,
-  due: secondCourseReady,
-  firstReviews: 0,
-  ready: secondCourseReady,
-  unintroduced: 0,
-  entries: 80,
-  known: 12,
-  nextDueAt: fixtureNextDueAt,
-  directions: [
-    {
-      direction: 'to_target' as const,
-      due: secondCourseReady,
-      firstReviews: 0,
-      ready: secondCourseReady,
-      nextDueAt: fixtureNextDueAt,
-    },
-  ],
-};
-
-const subjectStats: CourseStats = {
-  courseId: subject.id,
-  due: subjectReady,
-  firstReviews: 0,
-  ready: subjectReady,
-  unintroduced: 2,
-  entries: 14,
-  known: 5,
-  nextDueAt: fixtureNextDueAt,
-  directions: [
-    {
-      direction: 'to_native' as const,
-      due: subjectReady,
-      firstReviews: 0,
-      ready: subjectReady,
-      nextDueAt: fixtureNextDueAt,
-    },
-  ],
-};
-
-const fragileWord = {
-  entryId: '00000000-0000-0000-0000-000000000002',
-  courseId: course.id,
-  courseKind: 'language' as const,
-  targetText: 'memory',
-  nativeText: 'Erinnerung',
-  courseName: 'English A2',
-  failures: 2,
-};
-
-const fragileTerm = {
-  entryId: '00000000-0000-0000-0000-000000000007',
-  courseId: subject.id,
-  courseKind: 'terms' as const,
-  targetText: 'Katalysator',
-  nativeText: 'Ein Stoff, der die Aktivierungsenergie einer Reaktion senkt.',
-  courseName: 'Chemie',
-  failures: 3,
-};
 
 const dashboardStats = (
   empty: boolean,
@@ -236,12 +168,12 @@ const fixtureCourseList = ({
   courses: [
     course,
     ...(twoCourses ? [secondCourse] : []),
-    ...(subjects ? [subject] : []),
+    ...(subjects ? [subject, collection] : []),
   ] satisfies ReadonlyArray<FixtureCourse>,
   stats: [
     ...dashboardStats(empty, resting),
     ...(twoCourses ? [secondCourseStats] : []),
-    ...(subjects ? [subjectStats] : []),
+    ...(subjects ? [subjectStats, collectionStats] : []),
   ],
 });
 
@@ -264,13 +196,13 @@ const FixtureCourses = ({
     <CourseGrid
       courses={courses}
       renderCourseLink={(candidate) =>
-        action(
-          candidate.name,
-          candidate.kind === 'terms' ? 'subject' : 'course',
-        )
+        action(candidate.name, courseDestinations[candidate.kind])
       }
       renderLearnAction={(candidate) =>
-        action(`Neue ${courseNouns(candidate).plural} kennenlernen`, 'learn')
+        action(
+          `Neue ${courseNouns(candidate).plural} kennenlernen`,
+          candidate.kind === 'texts' ? 'collection-learn' : 'learn',
+        )
       }
       renderPracticeAction={(candidate) =>
         action(
@@ -284,12 +216,17 @@ const FixtureCourses = ({
           : action('Erste Seite fotografieren', 'import')
       }
       stats={stats}
-      newSubjectAction={
+      renderNewSubjectAction={(kind) => (
         <NewSubjectDialog
           courses={courses}
-          createSubject={async () => navigateToFixture('terms-course-empty')}
+          createSubject={async () =>
+            navigateToFixture(
+              kind === 'terms' ? 'terms-course-empty' : 'texts-course-empty',
+            )
+          }
+          kind={kind}
         />
-      }
+      )}
     />
     <FragileList
       entries={empty ? [] : [fragileWord, ...(subjects ? [fragileTerm] : [])]}

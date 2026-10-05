@@ -12,7 +12,8 @@ export type EntryEditorControl = {
 
 // What can be done with an entry from its dialog.
 export type CourseEntryActions = {
-  // The example sentence of a word, or the key points of a term.
+  // The example sentence of a word, the key points of a term, or nothing
+  // for a text.
   readonly renderDetail: (entry: VocabularyEntry) => ReactNode;
   readonly renderEditor: (
     entry: VocabularyEntry,

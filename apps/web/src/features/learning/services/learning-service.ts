@@ -11,7 +11,7 @@ import { LearningStore } from './learning-store';
 
 const placeMissingMessage = (place: PlaceSelectionData | null): string => {
   if (place === null) {
-    return 'Sprache oder Fach nicht gefunden.';
+    return 'Sprache, Fach oder Sammlung nicht gefunden.';
   }
   return 'bookId' in place ? 'Buch nicht gefunden.' : 'Einheit nicht gefunden.';
 };

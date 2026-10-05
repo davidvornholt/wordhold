@@ -3,6 +3,7 @@ import { getCourse } from '../../../features/import/server-fns';
 import { hasStoredUpload } from '../../../features/import/services/upload-queue';
 import { CaptureScreen as CaptureScreenView } from '../../../features/import/ui/capture-screen';
 import { useUploadQueue } from '../../../features/import/ui/use-upload-queue';
+import { isListCourse } from '../../../shared/directions';
 import { ActionLink } from '../../../shared/ui/action-link';
 import { BackLink } from '../../../shared/ui/back-link';
 
@@ -78,10 +79,10 @@ const CaptureScreen = () => {
 };
 
 export const Route = createFileRoute('/courses/$courseId/import')({
-  // A subject's terms are typed on its own page.
+  // A subject's terms and a collection's texts are typed on its own page.
   loader: async ({ params }) => {
     const course = await getCourse({ data: params.courseId });
-    if (course.kind === 'terms') {
+    if (isListCourse(course.kind)) {
       throw redirect({
         to: '/courses/$courseId',
         params: { courseId: course.id },

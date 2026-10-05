@@ -1,6 +1,7 @@
 import { SentenceGen } from '@wordhold/ai/sentence';
 import { Tts } from '@wordhold/ai/tts';
 import { Effect } from 'effect';
+import { isListCourse } from '../../../shared/directions';
 import { Storage } from '../../../shared/storage/server';
 import {
   CourseBookNotFoundError,
@@ -40,13 +41,14 @@ export type UpdatedVocabularyEntry = {
 };
 
 const courseMissing = new CourseSettingsNotFoundError({
-  message: 'Sprache oder Fach nicht gefunden.',
+  message: 'Sprache, Fach oder Sammlung nicht gefunden.',
 });
 
-// A subject's terms have a definition instead of a translation, and no
-// example sentences or pronunciation.
+// A subject's terms have a definition and a collection's texts the text
+// itself instead of a translation, and neither has example sentences or
+// pronunciation.
 const notLanguage = new CourseKindMismatchError({
-  message: 'In einem Fach trägst du Begriffe mit Definition ein.',
+  message: 'Vokabeln mit Übersetzung trägst du nur in einer Sprache ein.',
 });
 
 const entryMissing = new VocabularyEntryNotFoundError({
@@ -83,7 +85,7 @@ export class VocabularyEntryService extends Effect.Service<VocabularyEntryServic
           if (course === undefined) {
             return yield* courseMissing;
           }
-          return course.kind === 'terms'
+          return isListCourse(course.kind)
             ? yield* notLanguage
             : course.targetLanguage;
         });
@@ -134,7 +136,7 @@ export class VocabularyEntryService extends Effect.Service<VocabularyEntryServic
           return { audio } satisfies UpdatedVocabularyEntry;
         });
 
-      // Words and terms alike.
+      // Words, terms and texts alike.
       const remove = (input: DeleteEntryData) =>
         Effect.gen(function* () {
           const removed = yield* store.remove(input);
@@ -168,7 +170,7 @@ export class VocabularyEntryService extends Effect.Service<VocabularyEntryServic
           if (place === undefined) {
             return yield* placeMissing({ bookId, unitId });
           }
-          if (place.kind === 'terms') {
+          if (isListCourse(place.kind)) {
             return yield* notLanguage;
           }
           return yield* suggestDraftTranslation(

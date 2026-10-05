@@ -71,8 +71,8 @@ export const ProgressOverview = ({
     </section>
     {courses.length === 0 ? (
       <p className="text-muted-foreground">
-        {name} hat noch keine Sprachen oder Fächer. Sie erscheinen nach der
-        ersten Anmeldung.
+        {name} hat noch keine Sprachen, Fächer oder Sammlungen. Sie erscheinen
+        nach der ersten Anmeldung.
       </p>
     ) : (
       <>
@@ -85,6 +85,11 @@ export const ProgressOverview = ({
           courses={courses.filter((course) => course.kind === 'terms')}
           dashboard={dashboard}
           title="Fächer"
+        />
+        <CourseSection
+          courses={courses.filter((course) => course.kind === 'texts')}
+          dashboard={dashboard}
+          title="Sammlungen"
         />
       </>
     )}

@@ -50,8 +50,8 @@ export const PeopleScreen = ({
     <div className="flex flex-col gap-10">
       <p className="max-w-prose text-muted-foreground">
         Lade Familienmitglieder ein. Jede Person meldet sich mit einem Passkey
-        an und hat eigene Sprachen und Fächer. Du kannst ihren Lernstand
-        ansehen, aber nichts darin ändern.
+        an und hat eigene Sprachen, Fächer und Sammlungen. Du kannst ihren
+        Lernstand ansehen, aber nichts darin ändern.
       </p>
       <section className={`${cardClass} flex flex-col gap-4`}>
         <h2 className="font-display text-xl">Person einladen</h2>

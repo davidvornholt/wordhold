@@ -1,9 +1,14 @@
 import { type SubmitEvent, useEffect, useId, useRef, useState } from 'react';
-import { type CourseSubject, directionLabel } from '../../../shared/directions';
+import {
+  type CourseSubject,
+  directionLabel,
+  isListCourse,
+} from '../../../shared/directions';
 import {
   copyDifference,
   copyDifferenceMessage,
 } from '../../../shared/grading/copy-difference';
+import { copyMistakeMessage } from '../../../shared/grading/recitation';
 import {
   AnswerField,
   type AnswerFieldElement,
@@ -16,7 +21,7 @@ import {
   learnAnswer,
   learnPrompt,
 } from '../schemas/learning-models';
-import { matchesLearnItem } from '../services/learn-check';
+import { copiesLearnText, matchesLearnItem } from '../services/learn-check';
 import { LearnExampleAudio } from './learn-example-audio';
 
 type LearnEntryProps = {
@@ -30,7 +35,8 @@ type LearnEntryProps = {
 };
 
 // A definition is shown to be copied, with what it must state once known. A
-// word has its example sentence and audio instead.
+// text is shown to be copied with its own line breaks. A word has its example
+// sentence and audio instead.
 const LearnCardBody = ({
   item,
   subject,
@@ -39,8 +45,15 @@ const LearnCardBody = ({
   readonly item: LearnItem;
   readonly subject: CourseSubject;
   readonly definitionId: string;
-}) =>
-  subject.kind === 'terms' ? (
+}) => {
+  if (subject.kind === 'texts') {
+    return (
+      <p className="whitespace-pre-line text-lg" id={definitionId}>
+        {learnAnswer(item)}
+      </p>
+    );
+  }
+  return subject.kind === 'terms' ? (
     <>
       <p className="text-lg" id={definitionId}>
         {learnAnswer(item)}
@@ -58,13 +71,61 @@ const LearnCardBody = ({
   ) : (
     <LearnExampleAudio item={item} targetLanguage={subject.targetLanguage} />
   );
+};
 
-// A missed word is typed again from scratch; a missed definition keeps the
-// copy and names the first word that differs.
-const missMessage = (definition: boolean, answer: string, typed: string) =>
-  definition
-    ? copyDifferenceMessage(copyDifference(answer, typed))
-    : 'Noch nicht ganz. Schreib die Vokabel genau so ab.';
+// What the learner is asked to copy, and what is said when saving fails.
+const copyLabels = {
+  language: {
+    field: 'Schreib die Antwort',
+    // The word itself, until typing starts.
+    placeholder: null,
+    saveFailed: 'Die Vokabel wurde nicht gespeichert. Versuch es noch einmal.',
+  },
+  terms: {
+    field: 'Schreib die Definition ab',
+    placeholder: 'Die Definition',
+    saveFailed: 'Der Begriff wurde nicht gespeichert. Versuch es noch einmal.',
+  },
+  texts: {
+    field: 'Schreib den Text ab',
+    placeholder: 'Der Text',
+    saveFailed: 'Der Text wurde nicht gespeichert. Versuch es noch einmal.',
+  },
+} as const satisfies Record<
+  CourseSubject['kind'],
+  {
+    readonly field: string;
+    readonly placeholder: string | null;
+    readonly saveFailed: string;
+  }
+>;
+
+const matchesCopy = (
+  subject: CourseSubject,
+  item: LearnItem,
+  typed: string,
+): boolean =>
+  subject.kind === 'texts'
+    ? copiesLearnText(item, typed)
+    : matchesLearnItem(item, typed);
+
+// A missed word is typed again from scratch; a missed definition or text
+// keeps the copy and names the first word that differs.
+const missMessage = (subject: CourseSubject, answer: string, typed: string) => {
+  switch (subject.kind) {
+    case 'texts':
+      return (
+        copyMistakeMessage(answer, typed) ??
+        'Noch nicht ganz. Schreib den Text genau so ab.'
+      );
+    case 'terms':
+      return copyDifferenceMessage(copyDifference(answer, typed));
+    case 'language':
+      return 'Noch nicht ganz. Schreib die Vokabel genau so ab.';
+    default:
+      return subject.kind satisfies never;
+  }
+};
 
 const actionLabelFor = (busy: boolean, saveFailed: boolean): string => {
   if (busy) {
@@ -75,8 +136,9 @@ const actionLabelFor = (busy: boolean, saveFailed: boolean): string => {
 
 // One direction of the learning pass. A word's answer starts as the field's
 // prompt, then disappears once typing begins so the learner has to hold it in
-// memory. A definition is too long for that, so it stays on the card and is
-// copied; recalling it is left to practice. Being wrong only asks again.
+// memory. A definition or text is too long for that, so it stays on the card
+// and is copied; recalling it is left to practice. Being wrong only asks
+// again.
 export const LearnEntry = ({
   item,
   deck,
@@ -91,7 +153,8 @@ export const LearnEntry = ({
   const inputId = useId();
   const promptId = useId();
   const inputRef = useRef<AnswerFieldElement>(null);
-  const definition = subject.kind === 'terms';
+  // Copied from the card rather than recalled.
+  const copied = isListCourse(subject.kind);
   const answer = learnAnswer(item);
   const prompt = learnPrompt(item);
   const answerLanguage =
@@ -111,10 +174,10 @@ export const LearnEntry = ({
     if (busy) {
       return;
     }
-    if (!matchesLearnItem(item, typed)) {
+    if (!matchesCopy(subject, item, typed)) {
       setSaveFailed(false);
-      setMissedMessage(missMessage(definition, answer, typed));
-      if (!definition) {
+      setMissedMessage(missMessage(subject, answer, typed));
+      if (!copied) {
         setTyped('');
       }
       inputRef.current?.focus();
@@ -132,7 +195,7 @@ export const LearnEntry = ({
     }
   };
 
-  const hintVisible = definition || typed === '';
+  const hintVisible = copied || typed === '';
   return (
     <>
       <WordCard
@@ -157,9 +220,9 @@ export const LearnEntry = ({
         onSubmit={onSubmit}
       >
         <label className="sr-only" htmlFor={inputId}>
-          {definition ? 'Schreib die Definition ab' : 'Schreib die Antwort'}
+          {copyLabels[subject.kind].field}
         </label>
-        {!definition && typed === '' ? (
+        {!copied && typed === '' ? (
           <span className="sr-only" id={answerHintId}>
             Vorlage: <span lang={answerLanguage}>{answer}</span>
           </span>
@@ -176,12 +239,12 @@ export const LearnEntry = ({
           disabled={busy}
           fieldRef={inputRef}
           id={inputId}
-          multiline={definition}
+          multiline={copied}
           onChange={(value) => {
             setTyped(value);
             setSaveFailed(false);
           }}
-          placeholder={definition ? 'Die Definition' : answer}
+          placeholder={copyLabels[subject.kind].placeholder ?? answer}
           value={typed}
         />
         <Button disabled={busy || typed.trim() === ''} type="submit">
@@ -193,9 +256,7 @@ export const LearnEntry = ({
       </p>
       {saveFailed ? (
         <p className="text-destructive text-sm" role="alert">
-          {definition
-            ? 'Der Begriff wurde nicht gespeichert. Versuch es noch einmal.'
-            : 'Die Vokabel wurde nicht gespeichert. Versuch es noch einmal.'}
+          {copyLabels[subject.kind].saveFailed}
         </p>
       ) : null}
     </>
