@@ -1,5 +1,5 @@
 import { jsonSchema } from 'ai';
-import type { Schema } from 'effect';
+import { Option, Schema } from 'effect';
 import { jsonSchemaOf } from '../structured-output';
 
 // Gemini receives the schema verbatim as `responseJsonSchema` and rejects
@@ -33,6 +33,16 @@ export const providerJsonSchema = (schema: Schema.Top) =>
       typeof jsonSchemaOf
     >,
   );
+
+// Answers follow the canonical JSON form the provider was shown, where an
+// absent optional field may arrive as null. Quality scoring reads them through
+// the same JSON codec as production decoding, so a valid answer is not scored
+// as a schema failure. Returns undefined when the answer does not decode.
+export const readModelOutput = <A>(schema: Schema.Decoder<A>) => {
+  const decode = Schema.decodeUnknownOption(Schema.toCodecJson(schema));
+  return (answer: unknown): A | undefined =>
+    Option.getOrUndefined(decode(answer));
+};
 
 // Vertex forwards this to generationConfig.thinkingConfig for every workload.
 export const geminiHighProviderOptions = {
