@@ -444,37 +444,30 @@ jobs:
           sparse-checkout-cone-mode: false
 
       - name: Resolve broker App ID
+        id: broker-app-id
         uses: ./.github/actions/sops-secret
         with:
           age-key: ${{ secrets.SOPS_AGE_KEY }}
           secret-file: secrets/ci.yaml
           secret-key: broker_app.app_id
-          env-name: BROKER_APP_ID
 
       - name: Resolve broker App private key
+        id: broker-app-private-key
         uses: ./.github/actions/sops-secret
         with:
           age-key: ${{ secrets.SOPS_AGE_KEY }}
           secret-file: secrets/ci.yaml
           secret-key: broker_app.private_key
-          env-name: BROKER_APP_PRIVATE_KEY
 
       - name: Mint the personal-infra announcement token
         id: broker
         uses: actions/create-github-app-token@v3
         with:
-          app-id: ${{ env.BROKER_APP_ID }}
-          private-key: ${{ env.BROKER_APP_PRIVATE_KEY }}
+          app-id: ${{ steps.broker-app-id.outputs.value }}
+          private-key: ${{ steps.broker-app-private-key.outputs.value }}
           owner: davidvornholt
           repositories: personal-infra
           permission-contents: write
-
-      - name: Clear broker App credentials
-        run: |
-          {
-            echo "BROKER_APP_ID="
-            echo "BROKER_APP_PRIVATE_KEY="
-          } >> "$GITHUB_ENV"
 
       - name: Announce the exact production image
         env:
