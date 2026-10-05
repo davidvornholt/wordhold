@@ -90,7 +90,20 @@ test('Bibles are uploaded and removed in the collection settings', async ({
   await expect(bibles.getByText('31.102 Verse', { exact: true })).toBeVisible();
   await expect(upload).toBeDisabled();
 
-  await bibles.getByRole('button', { name: 'LUT1912 entfernen' }).click();
+  // A removed Bible's button is gone, so focus moves to the list's heading.
+  const heading = bibles.getByRole('heading', { name: 'Bibeln' });
+  await bibles.getByRole('button', { name: 'KJV entfernen' }).click();
+  await page
+    .getByRole('dialog', { name: 'KJV entfernen?' })
+    .getByRole('button', { name: 'Entfernen' })
+    .click();
+  await expect(status).toHaveText('KJV entfernt.');
+  await expect(heading).toBeFocused();
+
+  const removeLuther = bibles.getByRole('button', {
+    name: 'LUT1912 entfernen',
+  });
+  await removeLuther.click();
   const dialog = page.getByRole('dialog', { name: 'LUT1912 entfernen?' });
   await expect(
     dialog.getByText(
@@ -98,7 +111,13 @@ test('Bibles are uploaded and removed in the collection settings', async ({
     ),
   ).toBeVisible();
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
+  // A kept Bible still has its button, which gets focus back.
+  await dialog.getByRole('button', { name: 'Abbrechen' }).click();
+  await expect(removeLuther).toBeFocused();
+
+  await removeLuther.click();
   await dialog.getByRole('button', { name: 'Entfernen' }).click();
   await expect(status).toHaveText('LUT1912 entfernt.');
   await expect(bibles.getByText('Lutherbibel 1912')).toHaveCount(0);
+  await expect(heading).toBeFocused();
 });
