@@ -4,6 +4,7 @@ import {
   useNavigate,
   useRouter,
 } from '@tanstack/react-router';
+import { type RefObject, useRef } from 'react';
 import { HomeShell } from '../app/home-shell';
 import { SignInPanel } from '../features/access/ui/sign-in-panel';
 import { createSubject } from '../features/courses/services/server-fns';
@@ -50,11 +51,12 @@ type CourseName = {
 type TodayProps = {
   readonly dashboard: DashboardData;
   readonly courses: ReadonlyArray<CourseName>;
+  readonly headingRef: RefObject<HTMLHeadingElement | null>;
 };
 
 // The course cards start sittings; the "Heute" action is a shortcut to the
 // busiest one and says so when the total spans several courses.
-const Today = ({ dashboard, courses }: TodayProps) => {
+const Today = ({ dashboard, courses, headingRef }: TodayProps) => {
   const ready = totalReady(dashboard.perCourse);
   const busiest = busiestCourse(dashboard.perCourse);
   const busiestName = courses.find(
@@ -76,6 +78,7 @@ const Today = ({ dashboard, courses }: TodayProps) => {
         )
       }
       cardsToday={dashboard.cardsToday}
+      headingRef={headingRef}
       nextDueAt={earliestDate(
         dashboard.perCourse.map((stats) => stats.nextDueAt),
       )}
@@ -170,6 +173,7 @@ const Home = () => {
   const { user, courses, pendingImportSessions, audioRecovery, dashboard } =
     Route.useLoaderData();
   const router = useRouter();
+  const todayHeadingRef = useRef<HTMLHeadingElement>(null);
 
   return (
     <HomeShell
@@ -213,7 +217,11 @@ const Home = () => {
     >
       {dashboard === null ? null : (
         <>
-          <Today courses={courses} dashboard={dashboard} />
+          <Today
+            courses={courses}
+            dashboard={dashboard}
+            headingRef={todayHeadingRef}
+          />
 
           <Courses courses={courses} dashboard={dashboard} />
 
@@ -242,6 +250,7 @@ const Home = () => {
           />
 
           <PendingImportSessions
+            fallbackFocusRef={todayHeadingRef}
             onDiscard={async (session) => {
               await discardImportSession({ data: session.id });
               await clearUploadQueueIfSession(session.courseId, session.id);

@@ -42,6 +42,26 @@ test('an open import can be confirmed and removed from the dashboard', async ({
   await expect(
     page.getByRole('heading', { name: 'Offene Importe' }),
   ).toHaveCount(0);
+  // The list is gone with its last batch, so focus goes to the page title.
+  await expect(page.getByRole('heading', { level: 1 })).toBeFocused();
+});
+
+test('discarding one of several open imports focuses their heading', async ({
+  page,
+}) => {
+  await page.goto('/?state=dashboard-pending&batches=2');
+  const deleteAction = page.getByRole('button', { name: deleteName });
+  await deleteAction.press('Enter');
+  await page.getByRole('button', { name: 'Endgültig löschen' }).press('Enter');
+  await expect(deleteAction).toHaveCount(0);
+  await expect(
+    page.getByRole('heading', { name: 'Offene Importe' }),
+  ).toBeFocused();
+  await expect(
+    page.getByRole('button', {
+      name: 'English A2, 2 Seiten, 25.8.2026 löschen',
+    }),
+  ).toBeVisible();
 });
 
 const actionIsRejected = async (action: Promise<unknown>): Promise<boolean> =>

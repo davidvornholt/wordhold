@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactNode, RefObject } from 'react';
 import { formatLearningDateInline } from '../../../shared/dates/learning-date';
 import { countNoun } from '../../../shared/format/count';
 import type { PracticeDay } from '../schemas/dashboard-models';
@@ -13,7 +13,13 @@ type TodayPanelProps = {
   readonly streak: number;
   // The one primary action of the page, or null when nothing is ready.
   readonly action: ReactNode | null;
+  // The page title, which takes focus when the section that had it is gone,
+  // such as the open imports after the last one is discarded.
+  readonly headingRef: RefObject<HTMLHeadingElement | null>;
 };
+
+const focusableHeadingClass =
+  'font-display focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2';
 
 const restingHeading = (nextDueAt: Date | null): string =>
   nextDueAt === null
@@ -48,7 +54,7 @@ const detailLine = ({
 // The page opens with today's state as its title: how many cards are ready
 // and the one action that starts them, beside the last seven days.
 export const TodayPanel = (props: TodayPanelProps) => {
-  const { ready, nextDueAt, week, streak, action } = props;
+  const { ready, nextDueAt, week, streak, action, headingRef } = props;
   const detail = detailLine(props);
   return (
     <section className="grid gap-6 border-border border-b pb-8 sm:grid-cols-[1fr_auto] sm:items-start">
@@ -56,7 +62,11 @@ export const TodayPanel = (props: TodayPanelProps) => {
         <div className="flex flex-col gap-2">
           <p className="eyebrow">Heute</p>
           {ready > 0 ? (
-            <h1 className="flex flex-wrap items-baseline gap-x-3 font-display">
+            <h1
+              className={`flex flex-wrap items-baseline gap-x-3 ${focusableHeadingClass}`}
+              ref={headingRef}
+              tabIndex={-1}
+            >
               <span className="text-6xl tabular-nums leading-none sm:text-7xl">
                 {ready}
               </span>
@@ -65,7 +75,11 @@ export const TodayPanel = (props: TodayPanelProps) => {
               </span>
             </h1>
           ) : (
-            <h1 className="text-balance font-display text-3xl sm:text-4xl">
+            <h1
+              className={`text-balance text-3xl sm:text-4xl ${focusableHeadingClass}`}
+              ref={headingRef}
+              tabIndex={-1}
+            >
               {restingHeading(nextDueAt)}
             </h1>
           )}

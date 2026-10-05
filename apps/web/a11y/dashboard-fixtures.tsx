@@ -1,5 +1,5 @@
 import type { CourseKind } from '@wordhold/db/schema/courses';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { HomeShell } from '../src/app/home-shell';
 import { NewSubjectDialog } from '../src/features/courses/ui/new-subject-dialog';
 import {
@@ -61,6 +61,17 @@ const pendingImportSession = {
   verifiedCount: 0,
   pendingCount: 3,
   isComplete: true,
+};
+
+// A second batch for `&batches=2`, so one can be discarded while another
+// stays open.
+const laterPendingImportSession = {
+  ...pendingImportSession,
+  id: '00000000-0000-0000-0000-000000000005',
+  capturedAt: new Date('2026-08-25T13:00:00Z'),
+  pageCount: 2,
+  uploadedCount: 2,
+  pendingCount: 2,
 };
 
 // Tuesday to Monday, with a gap on Thursday and today still open.
@@ -243,11 +254,17 @@ export const DashboardFixture = ({
   twoCourses = false,
   subjects = false,
 }) => {
-  const queueRecovery =
-    new URLSearchParams(globalThis.location.search).get('queue') === 'true';
-  const [pendingImportSessions, setPendingImportSessions] = useState(
-    pending ? [pendingImportSession] : [],
-  );
+  const todayHeadingRef = useRef<HTMLHeadingElement>(null);
+  const search = new URLSearchParams(globalThis.location.search);
+  const queueRecovery = search.get('queue') === 'true';
+  const [pendingImportSessions, setPendingImportSessions] = useState(() => {
+    if (!pending) {
+      return [];
+    }
+    return search.get('batches') === '2'
+      ? [pendingImportSession, laterPendingImportSession]
+      : [pendingImportSession];
+  });
   const { courses, stats } = fixtureCourseList({
     empty,
     resting,
@@ -280,6 +297,7 @@ export const DashboardFixture = ({
               )
         }
         cardsToday={empty ? 0 : fixtureCardsToday}
+        headingRef={todayHeadingRef}
         nextDueAt={stats[0]?.nextDueAt ?? null}
         ready={ready}
         reviewsToday={empty ? 0 : fixtureReviewsToday}
@@ -308,6 +326,7 @@ export const DashboardFixture = ({
         />
       )}
       <PendingImportSessions
+        fallbackFocusRef={todayHeadingRef}
         onDiscard={async (session) =>
           setPendingImportSessions((current) =>
             current.filter((candidate) => candidate.id !== session.id),

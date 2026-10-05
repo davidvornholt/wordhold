@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { cardClass, cardListClass } from '../../../shared/ui/surface-styles';
 import type {
   IssuedCode,
@@ -45,6 +45,21 @@ export const PeopleScreen = ({
     setIssued((current) =>
       current?.userId === person.userId ? null : current,
     );
+  // A deleted person's row takes its buttons and the dialog that confirmed
+  // the deletion with it, so once the list no longer shows them, focus goes
+  // to the list heading instead of the page body.
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const removingRef = useRef<string | null>(null);
+  useEffect(() => {
+    const removing = removingRef.current;
+    if (
+      removing !== null &&
+      !people.some((person) => person.userId === removing)
+    ) {
+      removingRef.current = null;
+      headingRef.current?.focus();
+    }
+  }, [people]);
 
   return (
     <div className="flex flex-col gap-10">
@@ -70,7 +85,13 @@ export const PeopleScreen = ({
         />
       )}
       <section className="flex flex-col gap-4">
-        <h2 className="font-display text-xl">Personen</h2>
+        <h2
+          className="font-display text-xl focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
+          ref={headingRef}
+          tabIndex={-1}
+        >
+          Personen
+        </h2>
         <ul className={cardListClass}>
           {people.map((person) => (
             <PersonRow
@@ -89,7 +110,13 @@ export const PeopleScreen = ({
                   }
                 },
                 remove: async (target) => {
-                  await remove(target);
+                  removingRef.current = target.userId;
+                  try {
+                    await remove(target);
+                  } catch (error) {
+                    removingRef.current = null;
+                    throw error;
+                  }
                   forget(target);
                 },
               }}
