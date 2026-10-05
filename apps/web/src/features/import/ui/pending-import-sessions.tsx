@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
-import { useState } from 'react';
+import type { ReactNode, RefObject } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { countNoun } from '../../../shared/format/count';
 import { Button } from '../../../shared/ui/button';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
@@ -24,6 +24,8 @@ type PendingImportSessionsProps = {
     label: string,
   ) => ReactNode;
   readonly onDiscard: (session: PendingImportSession) => Promise<void>;
+  // Where focus goes once the last batch is discarded and the list is gone.
+  readonly fallbackFocusRef: RefObject<HTMLElement | null>;
 };
 
 const progressLabel = (
@@ -40,11 +42,27 @@ export const PendingImportSessions = ({
   sessions,
   renderSessionAction,
   onDiscard,
+  fallbackFocusRef,
 }: PendingImportSessionsProps) => {
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [discardingId, setDiscardingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const confirming = sessions.find((session) => session.id === confirmingId);
+  // A discarded batch takes its delete button with it, and the last one the
+  // whole list, so once the batch is gone, focus goes to the list heading or
+  // to fallbackFocusRef instead of the page body.
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const discardedRef = useRef<string | null>(null);
+  useEffect(() => {
+    const discarded = discardedRef.current;
+    if (
+      discarded !== null &&
+      !sessions.some((session) => session.id === discarded)
+    ) {
+      discardedRef.current = null;
+      (sessions.length === 0 ? fallbackFocusRef : headingRef).current?.focus();
+    }
+  }, [sessions, fallbackFocusRef]);
 
   if (sessions.length === 0) {
     return null;
@@ -55,9 +73,11 @@ export const PendingImportSessions = ({
   ): Promise<void> => {
     setDiscardingId(session.id);
     setError(null);
+    discardedRef.current = session.id;
     try {
       await onDiscard(session);
     } catch {
+      discardedRef.current = null;
       setError(
         'Der Stapel konnte nicht gelöscht werden. Versuche es noch einmal.',
       );
@@ -70,7 +90,13 @@ export const PendingImportSessions = ({
   return (
     <section className="flex flex-col gap-4" data-testid="open-imports">
       <div className="flex flex-col gap-1">
-        <h2 className="font-display text-xl">Offene Importe</h2>
+        <h2
+          className="font-display text-xl focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
+          ref={headingRef}
+          tabIndex={-1}
+        >
+          Offene Importe
+        </h2>
         <p className="text-muted-foreground text-sm">
           Jeder Stapel bleibt erhalten, bis alle Seiten geprüft sind.
         </p>

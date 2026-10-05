@@ -68,6 +68,9 @@ test('the administrator recovers, suspends and deletes accounts', async ({
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
   await dialog.getByRole('button', { name: 'Endgültig löschen' }).click();
   await expect(row('Clara')).toHaveCount(0);
+  await expect(
+    page.getByRole('heading', { level: 2, name: 'Personen' }),
+  ).toBeFocused();
 
   // The administrator's own account is managed through GitHub.
   await expect(row('David').getByRole('button')).toHaveCount(0);
