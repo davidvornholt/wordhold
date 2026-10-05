@@ -69,6 +69,23 @@
       }
     },
     {
+      // MySword Bibles are SQLite databases, which node:sqlite opens only from
+      // a file, so the module reader and its test fixture write temporary
+      // files. Biome does not know the node:sqlite builtin.
+      "includes": [
+        "apps/web/src/features/bibles/services/mysword-module.ts",
+        "apps/web/src/features/bibles/services/mysword-module-fixture.ts"
+      ],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noNodejsModules": "off",
+            "noUnresolvedImports": "off"
+          }
+        }
+      }
+    },
+    {
       // AWS Polly's SDK commands require PascalCase request properties.
       "includes": ["packages/ai/src/tts/service.ts"],
       "linter": {

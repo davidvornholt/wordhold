@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as JoinRouteImport } from './routes/join'
 import { Route as PasskeysRouteImport } from './routes/passkeys'
+import { Route as ApiBiblesRouteImport } from './routes/api/bibles'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiPagesRouteImport } from './routes/api/pages'
 import { Route as ImportsSessionIdRouteImport } from './routes/imports/$sessionId'
@@ -49,6 +50,11 @@ const JoinRoute = JoinRouteImport.update({
 const PasskeysRoute = PasskeysRouteImport.update({
   id: '/passkeys',
   path: '/passkeys',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiBiblesRoute = ApiBiblesRouteImport.update({
+  id: '/api/bibles',
+  path: '/api/bibles',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiHealthRoute = ApiHealthRouteImport.update({
@@ -178,6 +184,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/join': typeof JoinRoute
   '/passkeys': typeof PasskeysRoute
+  '/api/bibles': typeof ApiBiblesRoute
   '/api/health': typeof ApiHealthRoute
   '/api/pages': typeof ApiPagesRouteWithChildren
   '/imports/$sessionId': typeof ImportsSessionIdRoute
@@ -206,6 +213,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/join': typeof JoinRoute
   '/passkeys': typeof PasskeysRoute
+  '/api/bibles': typeof ApiBiblesRoute
   '/api/health': typeof ApiHealthRoute
   '/api/pages': typeof ApiPagesRouteWithChildren
   '/imports/$sessionId': typeof ImportsSessionIdRoute
@@ -235,6 +243,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/join': typeof JoinRoute
   '/passkeys': typeof PasskeysRoute
+  '/api/bibles': typeof ApiBiblesRoute
   '/api/health': typeof ApiHealthRoute
   '/api/pages': typeof ApiPagesRouteWithChildren
   '/imports/$sessionId': typeof ImportsSessionIdRoute
@@ -265,6 +274,7 @@ export interface FileRouteTypes {
     | '/'
     | '/join'
     | '/passkeys'
+    | '/api/bibles'
     | '/api/health'
     | '/api/pages'
     | '/imports/$sessionId'
@@ -293,6 +303,7 @@ export interface FileRouteTypes {
     | '/'
     | '/join'
     | '/passkeys'
+    | '/api/bibles'
     | '/api/health'
     | '/api/pages'
     | '/imports/$sessionId'
@@ -321,6 +332,7 @@ export interface FileRouteTypes {
     | '/'
     | '/join'
     | '/passkeys'
+    | '/api/bibles'
     | '/api/health'
     | '/api/pages'
     | '/imports/$sessionId'
@@ -350,6 +362,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   JoinRoute: typeof JoinRoute
   PasskeysRoute: typeof PasskeysRoute
+  ApiBiblesRoute: typeof ApiBiblesRoute
   ApiHealthRoute: typeof ApiHealthRoute
   ApiPagesRoute: typeof ApiPagesRouteWithChildren
   ImportsSessionIdRoute: typeof ImportsSessionIdRoute
@@ -395,6 +408,13 @@ declare module '@tanstack/react-router' {
       path: '/passkeys'
       fullPath: '/passkeys'
       preLoaderRoute: typeof PasskeysRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/bibles': {
+      id: '/api/bibles'
+      path: '/api/bibles'
+      fullPath: '/api/bibles'
+      preLoaderRoute: typeof ApiBiblesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/health': {
@@ -577,6 +597,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   JoinRoute: JoinRoute,
   PasskeysRoute: PasskeysRoute,
+  ApiBiblesRoute: ApiBiblesRoute,
   ApiHealthRoute: ApiHealthRoute,
   ApiPagesRoute: ApiPagesRouteWithChildren,
   ImportsSessionIdRoute: ImportsSessionIdRoute,

@@ -1,5 +1,11 @@
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import {
+  listBibles,
+  removeBible,
+} from '../../../features/bibles/services/server-fns';
+import { BibleLibrary } from '../../../features/bibles/ui/bible-library';
+import { uploadBible } from '../../../features/bibles/ui/upload-bible';
+import {
   getCourseDirections,
   renameSubject,
   setCourseDirections,
@@ -12,7 +18,7 @@ import { BackLink } from '../../../shared/ui/back-link';
 import { PageLayout } from '../../../shared/ui/page-layout';
 
 const CourseSettingsScreen = () => {
-  const { course, courses, directions } = Route.useLoaderData();
+  const { bibles, course, courses, directions } = Route.useLoaderData();
   const router = useRouter();
 
   return (
@@ -25,16 +31,32 @@ const CourseSettingsScreen = () => {
       title={`${course.name}: Einstellungen`}
     >
       {isListCourse(course.kind) ? (
-        <SubjectSettings
-          courseId={course.id}
-          courses={courses}
-          kind={course.kind}
-          name={course.name}
-          rename={async (name) => {
-            await renameSubject({ data: { courseId: course.id, name } });
-            await router.invalidate();
-          }}
-        />
+        <div className="flex flex-col gap-10">
+          <SubjectSettings
+            courseId={course.id}
+            courses={courses}
+            kind={course.kind}
+            name={course.name}
+            rename={async (name) => {
+              await renameSubject({ data: { courseId: course.id, name } });
+              await router.invalidate();
+            }}
+          />
+          {course.kind === 'texts' ? (
+            <BibleLibrary
+              bibles={bibles}
+              remove={async (bibleId) => {
+                await removeBible({ data: { bibleId } });
+                await router.invalidate();
+              }}
+              upload={async (file) => {
+                const bible = await uploadBible(file);
+                await router.invalidate();
+                return bible;
+              }}
+            />
+          ) : null}
+        </div>
       ) : (
         <DirectionSettings
           initial={directions}
@@ -52,12 +74,13 @@ const CourseSettingsScreen = () => {
 
 export const Route = createFileRoute('/courses/$courseId/settings')({
   loader: async ({ params }) => {
-    const [course, courses, directions] = await Promise.all([
+    const [course, courses, directions, bibles] = await Promise.all([
       getCourse({ data: params.courseId }),
       listCourses(),
       getCourseDirections({ data: params.courseId }),
+      listBibles(),
     ]);
-    return { course, courses, directions };
+    return { bibles, course, courses, directions };
   },
   component: CourseSettingsScreen,
 });

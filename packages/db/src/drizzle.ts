@@ -12,6 +12,7 @@ import {
   userRelations,
   verification,
 } from './schema/auth';
+import { bibles, bibleVerses } from './schema/bibles';
 import { courses } from './schema/courses';
 import {
   acceptedAnswers,
@@ -38,6 +39,8 @@ export const schema = {
   members,
   accessCodes,
   aiUsage,
+  bibles,
+  bibleVerses,
   courses,
   importSessionTombstones,
   pages,

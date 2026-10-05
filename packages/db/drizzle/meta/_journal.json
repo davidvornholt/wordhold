@@ -183,6 +183,13 @@
       "when": 1791133855808,
       "tag": "0025_flowery_true_believers",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1791135245098,
+      "tag": "0026_smart_dreadnoughts",
+      "breakpoints": true
     }
   ]
 }
