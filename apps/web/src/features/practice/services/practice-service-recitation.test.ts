@@ -49,21 +49,25 @@ const reviewStore = (
     }),
 });
 
-const payload = (answer: string): SubmitPayloadData => ({
+const payload = (answer: string, dictated: boolean): SubmitPayloadData => ({
   cardId: testCard.id,
   revision: testCard.revision,
   answer,
+  dictated,
   elapsedMs: 2000,
   wrongAnswerResolution: 'defer',
   mode: 'scheduled',
 });
 
-const submit = (answer: string, submission = textSubmission) => {
+const submit = (
+  answer: string,
+  { submission = textSubmission, dictated = false } = {},
+) => {
   const commits: Array<PersistReviewInput> = [];
   const result = runSubmitPayload(
     reviewStore(submission, commits),
     testJudge(() => unavailableJudge('the judge must not run')),
-    payload(answer),
+    payload(answer, dictated),
     testGrader(),
   );
   return { result, commits };
@@ -79,9 +83,36 @@ describe('PracticeService recited texts', () => {
     expect(commits.map((commit) => [commit.rating, commit.outcome])).toEqual([
       [
         ratings.good,
-        { method: 'recitation', words: 12, mistakes: 0, typos: 0 },
+        {
+          method: 'recitation',
+          dictated: false,
+          words: 12,
+          mistakes: 0,
+          typos: 0,
+          soundAlikes: 0,
+        },
       ],
     ]);
+  });
+
+  it('forgives a dictated word that sounds right but not a typed one', async () => {
+    const spoken = verse.replace('daß', 'das');
+    const dictated = submit(spoken, { dictated: true });
+    expect(await dictated.result).toMatchObject({
+      _tag: 'Right',
+      right: { correct: true, rating: ratings.good },
+    });
+    expect(dictated.commits[0]?.outcome).toMatchObject({
+      dictated: true,
+      mistakes: 0,
+      soundAlikes: 1,
+    });
+
+    const typed = submit(spoken);
+    expect(await typed.result).toMatchObject({
+      _tag: 'Right',
+      right: { correct: true, rating: ratings.hard },
+    });
   });
 
   it('commits a wrong recitation at once, with nothing left to overrule', async () => {
@@ -109,7 +140,9 @@ describe('PracticeService recited texts', () => {
       right: { correct: false, stored: true },
     });
 
-    const { result: translation, commits } = submit(long, testSubmission);
+    const { result: translation, commits } = submit(long, {
+      submission: testSubmission,
+    });
     expect(await translation).toMatchObject({
       _tag: 'Left',
       left: { _tag: 'AnswerTooLongError' },

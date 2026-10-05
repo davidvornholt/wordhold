@@ -11,7 +11,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { user } from './auth';
 
-export const aiProviders = ['bedrock', 'polly'] as const;
+export const aiProviders = ['bedrock', 'polly', 'transcribe'] as const;
 export type AiProvider = (typeof aiProviders)[number];
 export const aiProviderEnum = pgEnum('ai_provider', aiProviders);
 
@@ -39,6 +39,7 @@ export const aiUsage = pgTable(
     outputTokens: integer('output_tokens'),
     cachedInputTokens: integer('cached_input_tokens'),
     characters: integer('characters'),
+    audioSeconds: integer('audio_seconds'),
     usage: jsonb('usage'),
     priceSnapshot: jsonb('price_snapshot'),
     estimatedUsd: numeric('estimated_usd', { precision: 18, scale: 8 }),

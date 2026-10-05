@@ -1,7 +1,6 @@
-import type { CourseKind } from '@wordhold/db/schema/courses';
 import type { ReviewMode } from '@wordhold/db/schema/practice';
 import { useId, useRef } from 'react';
-import { type CourseSubject, isListCourse } from '../../../shared/directions';
+import type { CourseSubject } from '../../../shared/directions';
 import type { PrepareExamples } from '../../../shared/examples/example-model';
 import { germanLabels } from '../../../shared/languages';
 import type { RailOutcome } from '../../../shared/session/rail-outcome';
@@ -43,12 +42,6 @@ const practiceInstruction = (
   }
   return repeated ? `${instruction} · Noch einmal` : instruction;
 };
-
-const answerPlaceholders = {
-  language: 'Deine Antwort',
-  terms: 'Deine Definition',
-  texts: 'Dein Text',
-} as const satisfies Record<CourseKind, string>;
 
 type CardPracticeProps = {
   readonly item: SessionItem;
@@ -115,7 +108,6 @@ export const CardPractice = ({
     retypeRequired: retype.required,
   });
   const tone = result === null ? 'neutral' : feedbackTone(result);
-  const pendingWrong = result?.graded === true && !result.stored;
   const { continueCard, onSubmit } = useCardContinuation({
     submission,
     checkRetype: retype.check,
@@ -137,6 +129,7 @@ export const CardPractice = ({
           <FeedbackPanel
             answerLanguage={answerLanguage}
             busy={busy || resolution !== null}
+            dictated={submission.submittedDictated}
             example={example}
             id={feedbackDescriptionId}
             kind={subject.kind}
@@ -155,11 +148,11 @@ export const CardPractice = ({
         busy={busy}
         disabled={result !== null}
         inputRef={inputRef}
-        multiline={isListCourse(subject.kind)}
+        kind={subject.kind}
         onAnswerChange={submission.setAnswer}
+        onDictation={submission.appendDictation}
         onSkip={submission.skipCard}
         onSubmit={onSubmit}
-        placeholder={answerPlaceholders[subject.kind]}
         promptId={promptId}
         retype={retype.field}
         skipping={busy && submission.skipped}
@@ -182,7 +175,7 @@ export const CardPractice = ({
           nextDisabled={retype.required && retype.empty}
           onNext={continueCard}
           onResolveWrong={submission.resolveWrongAnswer}
-          pendingWrong={pendingWrong}
+          pendingWrong={result.graded && !result.stored}
           playWord={audio.playWord}
           resolution={resolution}
           stopAudio={audio.stopAudio}

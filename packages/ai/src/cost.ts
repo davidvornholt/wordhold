@@ -2,9 +2,9 @@ import type { AiCall, AiCallUsage } from './usage';
 
 const million = 1_000_000;
 
-// USD per million tokens or characters for standard on-demand requests,
-// excluding contracts and tax. Stored with each request, so a later price
-// change does not rewrite past estimates.
+// USD per million tokens or characters, or per second of audio, for standard
+// on-demand requests, excluding contracts and tax. Stored with each request,
+// so a later price change does not rewrite past estimates.
 export type PriceSnapshot =
   | {
       readonly unit: 'tokens';
@@ -18,6 +18,13 @@ export type PriceSnapshot =
   | {
       readonly unit: 'characters';
       readonly characters: number;
+      readonly source: string;
+      readonly checkedOn: string;
+      readonly basis: string;
+    }
+  | {
+      readonly unit: 'audio-seconds';
+      readonly audioSeconds: number;
       readonly source: string;
       readonly checkedOn: string;
       readonly basis: string;
@@ -49,6 +56,16 @@ export const aiPrice = (
       basis: 'Polly generative voices, beyond the free tier',
     };
   }
+  if (call.provider === 'transcribe' && call.model === 'standard') {
+    return {
+      unit: 'audio-seconds',
+      audioSeconds: 0.000_166_7,
+      source: 'https://aws.amazon.com/transcribe/pricing/',
+      checkedOn: '2026-10-04',
+      basis:
+        'Transcribe standard streaming in EU (Frankfurt), first tier, beyond the free tier',
+    };
+  }
   return undefined;
 };
 
@@ -63,6 +80,11 @@ export const estimateUsd = (
     return usage.characters === undefined
       ? undefined
       : (usage.characters * price.characters) / million;
+  }
+  if (price.unit === 'audio-seconds') {
+    return usage.audioSeconds === undefined
+      ? undefined
+      : usage.audioSeconds * price.audioSeconds;
   }
   const { tokens } = usage;
   if (tokens === undefined || tokens.cacheWrite > 0) {

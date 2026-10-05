@@ -18,6 +18,7 @@ const settledColumns = (call: AiCall, usage: AiCallUsage | undefined) => {
     outputTokens: usage?.tokens?.output ?? null,
     cachedInputTokens: usage?.tokens?.cachedInput ?? null,
     characters: usage?.characters ?? null,
+    audioSeconds: usage?.audioSeconds ?? null,
     usage: usage === undefined ? null : JSON.stringify(usage.raw ?? null),
     priceSnapshot: price === undefined ? null : JSON.stringify(price),
     estimatedUsd: estimate === undefined ? null : estimate.toFixed(usdDecimals),
@@ -77,6 +78,7 @@ export class UsageLedger extends Context.Tag('@wordhold/web/ai/UsageLedger')<
                             output_tokens = ${columns.outputTokens},
                             cached_input_tokens = ${columns.cachedInputTokens},
                             characters = ${columns.characters},
+                            audio_seconds = ${columns.audioSeconds},
                             usage = ${columns.usage}::jsonb,
                             price_snapshot = ${columns.priceSnapshot}::jsonb,
                             estimated_usd = ${columns.estimatedUsd}::numeric

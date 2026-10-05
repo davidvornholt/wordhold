@@ -18,6 +18,8 @@ type FeedbackPanelProps = {
   readonly id: string;
   readonly result: SubmitResult;
   readonly submittedAnswer: string;
+  // Whether speech recognition wrote the answer.
+  readonly dictated: boolean;
   readonly example: PreparedExampleSentence | null;
   readonly playSentence: (() => Promise<void>) | null;
   readonly playWord: (() => Promise<void>) | null;
@@ -204,6 +206,7 @@ export const FeedbackPanel = ({
   id,
   result,
   submittedAnswer,
+  dictated,
   example,
   playSentence,
   playWord,
@@ -215,7 +218,7 @@ export const FeedbackPanel = ({
 }: FeedbackPanelProps) => {
   const recitation =
     kind === 'texts' && result.graded && !skipped
-      ? compareRecitation(result.expectedAnswer, submittedAnswer)
+      ? compareRecitation(result.expectedAnswer, submittedAnswer, { dictated })
       : null;
   const tone = feedbackTone(result);
   // A recited text is never held back for overruling, so only a word or a

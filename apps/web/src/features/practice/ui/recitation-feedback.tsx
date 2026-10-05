@@ -9,18 +9,41 @@ import {
 const mistakeCount = (count: number) => countNoun(count, 'Fehler', 'Fehler');
 const typoCount = (count: number) =>
   countNoun(count, 'Tippfehler', 'Tippfehler');
+const soundAlikeCount = (count: number) =>
+  countNoun(count, 'gleich klingendes Wort', 'gleich klingende Wörter');
+
+// "1 Fehler, 2 Tippfehler und 1 gleich klingendes Wort"
+const listed = (items: ReadonlyArray<string>): string =>
+  items.length < 2
+    ? items.join('')
+    : `${items.slice(0, -1).join(', ')} und ${items.at(-1)}`;
+
+const forgivenCounts = ({ typos, soundAlikes }: Recitation) => [
+  ...(typos === 0 ? [] : [typoCount(typos)]),
+  ...(soundAlikes === 0 ? [] : [soundAlikeCount(soundAlikes)]),
+];
+
+const forgivenNote = ({ typos, soundAlikes }: Recitation): string => {
+  if (soundAlikes === 0) {
+    return 'Tippfehler zählen nicht als Fehler.';
+  }
+  return typos === 0
+    ? 'Gleich klingende Wörter zählen nicht als Fehler.'
+    : 'Tippfehler und gleich klingende Wörter zählen nicht als Fehler.';
+};
 
 // How many words were wrong, and how many mistakes were allowed.
-const recitationSummary = ({ words, mistakes, typos }: Recitation): string => {
+const recitationSummary = (recitation: Recitation): string => {
+  const { words, mistakes } = recitation;
   const wordCount = countNoun(words, 'Wort', 'Wörtern');
+  const forgiven = forgivenCounts(recitation);
   if (mistakes === 0) {
-    return typos === 0
+    return forgiven.length === 0
       ? 'Kein Fehler.'
-      : `${typoCount(typos)} bei ${wordCount}. Tippfehler zählen nicht als Fehler.`;
+      : `${listed(forgiven)} bei ${wordCount}. ${forgivenNote(recitation)}`;
   }
   const allowed = allowedMistakes(words);
-  const typoNote = typos === 0 ? '' : ` und ${typoCount(typos)}`;
-  return `${mistakeCount(mistakes)}${typoNote} bei ${wordCount}. Erlaubt ${allowed === 1 ? 'ist' : 'sind'} ${mistakeCount(allowed)}.`;
+  return `${listed([mistakeCount(mistakes), ...forgiven])} bei ${wordCount}. Erlaubt ${allowed === 1 ? 'ist' : 'sind'} ${mistakeCount(allowed)}.`;
 };
 
 const removedClass = 'text-muted-foreground line-through';
@@ -68,6 +91,13 @@ const Segment = ({ segment }: { readonly segment: RecitationSegment }) => {
           <span className="sr-only"> (vertippt als {segment.typed})</span>
         </span>
       );
+    case 'soundAlike':
+      return (
+        <span className="underline decoration-muted-foreground decoration-dotted underline-offset-4">
+          {segment.text}
+          <span className="sr-only"> (gehört als {segment.typed})</span>
+        </span>
+      );
     default:
       return segment satisfies never;
   }
@@ -75,8 +105,8 @@ const Segment = ({ segment }: { readonly segment: RecitationSegment }) => {
 
 // The text as written in the collection, with what the recitation got wrong
 // marked in place: a wrong word struck through before the right one, a
-// missing word highlighted, an extra word struck through, and a typo
-// underlined.
+// missing word highlighted, an extra word struck through, a typo underlined
+// with a wavy line, and a word that sounds right with a dotted one.
 export const RecitationFeedback = ({
   original,
   recitation,

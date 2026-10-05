@@ -32,15 +32,34 @@ const seedMember = (enabled: boolean) =>
       values (${memberId}, 'Anna', ${enabled})`;
   });
 
+const characterRows = Effect.flatMap(
+  Database,
+  (sql) => sql<{
+    readonly userId: string;
+    readonly status: string;
+    readonly characters: number;
+    readonly estimatedUsd: string;
+  }>`select user_id as "userId", status, characters,
+      estimated_usd::text as "estimatedUsd"
+    from ai_usage`,
+);
+
 const speech = Effect.flatMap(AiUsage, (usage) =>
   usage.start({ operation: 'speech', provider: 'polly', model: 'generative' }),
+);
+
+const transcription = Effect.flatMap(AiUsage, (usage) =>
+  usage.start({
+    operation: 'transcription',
+    provider: 'transcribe',
+    model: 'standard',
+  }),
 );
 
 describe('UsageLedger', () => {
   it('records a request for the person and stores its estimated cost', async () => {
     await runWithLedger(
       Effect.gen(function* () {
-        const sql = yield* Database;
         yield* seedMember(true);
 
         const record = yield* billedTo(memberId)(speech);
@@ -49,20 +68,43 @@ describe('UsageLedger', () => {
           usage: { characters: 1000, raw: { characters: 1000 } },
         });
 
-        const rows = yield* sql<{
-          readonly userId: string;
-          readonly status: string;
-          readonly characters: number;
-          readonly estimatedUsd: string;
-        }>`select user_id as "userId", status, characters,
-            estimated_usd::text as "estimatedUsd"
-          from ai_usage`;
+        const rows = yield* characterRows;
         expect(rows).toEqual([
           {
             userId: memberId,
             status: 'succeeded',
             characters: 1000,
             estimatedUsd: '0.03000000',
+          },
+        ]);
+      }),
+    );
+  });
+
+  it('records the seconds of a transcribed recording', async () => {
+    await runWithLedger(
+      Effect.gen(function* () {
+        const sql = yield* Database;
+        yield* seedMember(true);
+
+        const record = yield* billedTo(memberId)(transcription);
+        yield* record.settle({
+          succeeded: true,
+          usage: { audioSeconds: 60, raw: { seconds: 59.5 } },
+        });
+
+        const rows = yield* sql<{
+          readonly provider: string;
+          readonly audioSeconds: number;
+          readonly estimatedUsd: string;
+        }>`select provider, audio_seconds as "audioSeconds",
+            estimated_usd::text as "estimatedUsd"
+          from ai_usage`;
+        expect(rows).toEqual([
+          {
+            provider: 'transcribe',
+            audioSeconds: 60,
+            estimatedUsd: '0.01000200',
           },
         ]);
       }),
@@ -102,14 +144,7 @@ describe('UsageLedger', () => {
         );
 
         expect(failure).toBe('Provider returned an invalid answer');
-        const rows = yield* sql<{
-          readonly userId: string;
-          readonly status: string;
-          readonly characters: number;
-          readonly estimatedUsd: string;
-        }>`select user_id as "userId", status, characters,
-            estimated_usd::text as "estimatedUsd"
-          from ai_usage`;
+        const rows = yield* characterRows;
         expect(rows).toEqual([
           {
             userId: memberId,

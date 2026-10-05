@@ -128,6 +128,7 @@ const runSubmit = async (
           cardId: card.id,
           revision: 0,
           answer: 'corect',
+          dictated: false,
           wrongAnswerResolution,
           mode: 'scheduled' as const,
         }
@@ -135,6 +136,7 @@ const runSubmit = async (
           cardId: card.id,
           revision: 0,
           answer: 'corect',
+          dictated: false,
           wrongAnswerResolution,
           assessmentId,
           mode: 'scheduled' as const,

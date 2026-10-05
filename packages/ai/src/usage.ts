@@ -14,12 +14,13 @@ export const aiOperations = [
   'example-translation',
   'word-translation',
   'speech',
+  'transcription',
 ] as const;
 export type AiOperation = (typeof aiOperations)[number];
 
 export type AiCall = {
   readonly operation: AiOperation;
-  readonly provider: 'bedrock' | 'polly';
+  readonly provider: 'bedrock' | 'polly' | 'transcribe';
   readonly model: string;
 };
 
@@ -36,6 +37,8 @@ export type TokenCounts = {
 export type AiCallUsage = {
   readonly tokens?: TokenCounts;
   readonly characters?: number;
+  // Seconds of audio, as billed.
+  readonly audioSeconds?: number;
   readonly raw: unknown;
 };
 

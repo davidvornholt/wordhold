@@ -36,6 +36,8 @@ const textsKindMigrationHash =
   'aa594d379bfe20233c70c96f1aeacb742b377fec7169f18cc9d7a7a4d0fb42c4';
 const biblesMigrationHash =
   '3bdb05eb80984f57fc406e8b7ef18bf8c552b83ba38252a978b75d7afd11ca2f';
+const transcriptionUsageMigrationHash =
+  'b01829ba1894314d9860d5ba5cfb9c019b77f3beaeed39493692d313aba79e37';
 const fullMigrationTestTimeoutMs = 15_000;
 
 const getMigrationError = (url: string) =>
@@ -111,7 +113,8 @@ it(
             ${courseKindMigrationHash},
             ${accountsMigrationHash},
             ${textsKindMigrationHash},
-            ${biblesMigrationHash}
+            ${biblesMigrationHash},
+            ${transcriptionUsageMigrationHash}
           )
         `;
           yield* migrateDatabase(database.url);
