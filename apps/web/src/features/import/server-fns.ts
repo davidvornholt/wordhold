@@ -20,12 +20,16 @@ import {
   decodeExampleRequest,
   decodeTranslationRequest,
 } from './schemas/example-request';
+import { decodePageRemovalRequest } from './schemas/page-removal';
 import {
   retryPageAudio,
   serializableAudioReport,
 } from './services/audio-generation';
 import { audioRecoveryPages } from './services/audio-recovery-query';
-import { discardPendingImportSession } from './services/discard-page';
+import {
+  discardPendingImportPage,
+  discardPendingImportSession,
+} from './services/discard-page';
 import { retryPendingExtraction } from './services/extraction-retry';
 import { ImportRepository } from './services/repository';
 
@@ -114,6 +118,18 @@ export const discardImportSession = createServerFn({ method: 'POST' })
     importRuntime.runPromise(
       asMember({ importSessions: [data] }, () =>
         discardPendingImportSession(data),
+      ),
+    ),
+  );
+
+// The batch may not exist on the server yet when every upload failed, so the
+// course is what must be the learner's; the removal stays inside it.
+export const removeImportPage = createServerFn({ method: 'POST' })
+  .validator(decodePageRemovalRequest)
+  .handler(({ data }) =>
+    importRuntime.runPromise(
+      asMember({ courses: [data.courseId] }, () =>
+        discardPendingImportPage(data),
       ),
     ),
   );

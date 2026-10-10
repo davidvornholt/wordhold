@@ -8,6 +8,8 @@ import {
   processQueuedPages,
   type QueuedPage,
 } from '../services/upload-queue';
+import { usePageRemoval } from './use-page-removal';
+import { useQueueLock } from './use-queue-lock';
 import { useQueueSelection } from './use-queue-selection';
 import { useUploadQueuePersistence } from './use-upload-queue-persistence';
 
@@ -81,14 +83,15 @@ export const useUploadQueue = (courseId: string) => {
     pagesRef,
     setPages,
     previewUrlsRef,
+    updatePage,
     removePage,
     selectionsRef,
     selecting,
     error,
     setError,
   } = useQueueSelection();
-  const processingRef = useRef({ busy: false, started: false });
-  const [busy, setBusy] = useState(false);
+  const startedRef = useRef(false);
+  const lock = useQueueLock(selectionsRef);
   const [processingStarted, setProcessingStarted] = useState(false);
 
   const { clearPersistedQueue, hydrated } = useUploadQueuePersistence({
@@ -102,12 +105,6 @@ export const useUploadQueue = (courseId: string) => {
     setProcessingStarted,
   });
 
-  const updatePage = (updated: QueuedPage): void => {
-    setPages((current) =>
-      current.map((page) => (page.id === updated.id ? updated : page)),
-    );
-  };
-
   const runPages = async (
     selected: ReadonlyArray<ProcessableQueuedPage>,
   ): Promise<void> => {
@@ -115,29 +112,23 @@ export const useUploadQueue = (courseId: string) => {
       !hydrated ||
       selectionsRef.current === null ||
       selectionsRef.current.pending ||
-      processingRef.current.busy ||
+      lock.held() ||
       selected.length === 0
     ) {
       return;
     }
-    processingRef.current = { busy: true, started: true };
+    startedRef.current = true;
     setProcessingStarted(true);
-    setBusy(true);
     setError(null);
     const expectedPageCount = pagesRef.current.length;
-    try {
-      await Effect.runPromise(
+    await lock.run(() =>
+      Effect.runPromise(
         processQueuedPages(
           selected,
           processPage(courseId, importSessionId, expectedPageCount, updatePage),
         ),
-      );
-    } finally {
-      processingRef.current.busy = false;
-      if (selectionsRef.current !== null) {
-        setBusy(false);
-      }
-    }
+      ),
+    );
   };
 
   const onSubmit = (event: SubmitEvent<HTMLFormElement>) => {
@@ -150,40 +141,46 @@ export const useUploadQueue = (courseId: string) => {
     );
   };
 
+  const batchStarted = () =>
+    startedRef.current ||
+    processingStarted ||
+    hasStoredUpload(pagesRef.current);
+
   const addFiles = async (files: ReadonlyArray<File>): Promise<void> => {
-    if (
-      !hydrated ||
-      processingRef.current.started ||
-      processingStarted ||
-      hasStoredUpload(pagesRef.current)
-    ) {
+    if (!hydrated || batchStarted()) {
       setError(
-        'Die Fotoauswahl ist nach dem ersten Verarbeitungsversuch gesperrt. Versuche fehlgeschlagene Seiten erneut.',
+        'Die Fotoauswahl ist nach dem ersten Verarbeitungsversuch gesperrt. Versuche fehlgeschlagene Seiten erneut oder entferne sie.',
       );
       return;
     }
     await selectionsRef.current?.addFiles(files);
   };
 
+  const removeQueuedPage = usePageRemoval({
+    courseId,
+    importSessionId,
+    hydrated,
+    lock,
+    pagesRef,
+    batchStarted,
+    removePage,
+    setError,
+    startOver: () => {
+      startedRef.current = false;
+      setProcessingStarted(false);
+      setImportSessionId(crypto.randomUUID());
+    },
+  });
+
   return {
-    busy: busy || selecting || !hydrated,
+    busy: lock.busy || selecting || !hydrated,
     clearPersistedQueue,
     error,
     importSessionId,
     pages,
     processingStarted,
     addFiles,
-    removePage: (pageId: string) => {
-      if (
-        !(
-          processingRef.current.started ||
-          processingStarted ||
-          hasStoredUpload(pagesRef.current)
-        )
-      ) {
-        removePage(pageId);
-      }
-    },
+    removePage: removeQueuedPage,
     retryPage: (page: ProcessableQueuedPage) => runPages([page]),
     onSubmit,
   };

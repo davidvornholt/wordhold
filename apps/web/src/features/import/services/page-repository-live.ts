@@ -7,6 +7,7 @@ import { insertPage } from './page-repository-insert';
 import {
   deletePendingImportSession,
   getPageUpload,
+  removePendingImportPage,
 } from './page-repository-session';
 import { failure, sessionLock } from './page-repository-utils';
 import {
@@ -16,6 +17,7 @@ import {
 import {
   type AudioRecoveryPage,
   type ImportPageInput,
+  type ImportPageRemoval,
   type ImportSession,
   maximumAudioRecoveryPages,
   type Page,
@@ -256,4 +258,6 @@ export const pageRepositoryLive = (sql: Database) => ({
   insertPage: (input: ImportPageInput) => insertPage(sql, input),
   deletePendingImportSession: (sessionId: string) =>
     deletePendingImportSession(sql, sessionId),
+  removePendingImportPage: (removal: ImportPageRemoval) =>
+    removePendingImportPage(sql, removal),
 });

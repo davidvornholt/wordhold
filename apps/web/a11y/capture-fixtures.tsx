@@ -1,5 +1,8 @@
 import { useState } from 'react';
-import type { QueuedPage } from '../src/features/import/services/upload-queue';
+import {
+  type QueuedPage,
+  withoutQueuedPage,
+} from '../src/features/import/services/upload-queue';
 import { CaptureScreen } from '../src/features/import/ui/capture-screen';
 import { fixtureBackControl } from './fixture-controls';
 import { navigateToFixture } from './fixture-state';
@@ -90,7 +93,7 @@ export const ImportFixture = ({
         ]);
       }}
       onRemove={(pageId) =>
-        setPages((current) => current.filter((page) => page.id !== pageId))
+        setPages((current) => withoutQueuedPage(current, pageId))
       }
       onRetry={(failed) =>
         setPages((current) =>

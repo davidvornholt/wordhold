@@ -107,8 +107,8 @@ export const CaptureScreen = ({
         </fieldset>
         {batchLocked ? (
           <p className="text-muted-foreground text-sm" role="status">
-            Die Fotoauswahl ist gesperrt. Versuche fehlgeschlagene Seiten
-            erneut.
+            Die Fotoauswahl ist gesperrt. Versuche fehlgeschlagene Seiten erneut
+            oder entferne sie.
           </p>
         ) : null}
         <CaptureUploadQueue

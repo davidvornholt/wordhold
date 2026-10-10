@@ -3,7 +3,6 @@ import { countNoun } from '../../../shared/format/count';
 import { Button } from '../../../shared/ui/button';
 import { ProgressMeter } from '../../../shared/ui/progress-meter';
 import {
-  hasStoredUpload,
   processedUploadCount,
   type QueuedPage,
 } from '../services/upload-queue';
@@ -63,7 +62,6 @@ export const CaptureUploadQueue = ({
   }
 
   const processed = processedUploadCount(pages);
-  const hasStoredPage = hasStoredUpload(pages);
   return (
     <section aria-labelledby={headingId} className="flex flex-col gap-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -85,9 +83,7 @@ export const CaptureUploadQueue = ({
         {pages.map((page, index) => {
           const status = statusDetails(page);
           const removable =
-            !hasStoredPage &&
-            (page.stage === 'waiting' ||
-              (page.stage === 'failed' && page.pageId === null));
+            page.stage !== 'uploading' && page.stage !== 'extracting';
           return (
             <li
               className={`flex gap-3 border border-border border-l-4 bg-card p-3 ${status.borderClass}`}

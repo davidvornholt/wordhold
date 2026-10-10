@@ -27,7 +27,7 @@ const CaptureScreen = () => {
     captureStatus = 'Bitte warte, bis alle Fotos verarbeitet sind.';
   } else if (hasUnstoredPage && hasStoredUpload(queue.pages)) {
     captureStatus =
-      'Bitte wiederhole fehlgeschlagene Seiten, bevor du den Stapel verlässt.';
+      'Wiederhole oder entferne fehlgeschlagene Seiten, bevor du den Stapel verlässt.';
   } else if (hasUnstoredPage) {
     captureStatus =
       'Verarbeite oder entferne die offenen Seiten, bevor du den Stapel verlässt.';

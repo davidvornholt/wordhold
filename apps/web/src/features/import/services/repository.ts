@@ -114,6 +114,15 @@ export type PageUploadIdentity = Pick<
   | 'imagePath'
 >;
 
+// A page leaving a batch that is still being captured, as the learner's queue
+// knows it. A photo whose upload failed holds its position only there.
+export type ImportPageRemoval = {
+  readonly courseId: string;
+  readonly importSessionId: string;
+  readonly pageId: string;
+  readonly position: number;
+};
+
 export type InsertedEntry = {
   readonly id: string;
   readonly targetText: string;
@@ -178,6 +187,14 @@ export type ImportRepositoryShape = {
   readonly deletePendingImportSession: (
     sessionId: string,
   ) => Effect.Effect<ReadonlyArray<string>, ImportDatabaseError>;
+  // Undefined once the batch review has started; otherwise the stored image
+  // the page leaves behind, if it was uploaded.
+  readonly removePendingImportPage: (
+    removal: ImportPageRemoval,
+  ) => Effect.Effect<
+    { readonly imagePath: string | null } | undefined,
+    ImportDatabaseError
+  >;
   readonly verifyPage: (
     payload: ImportPayloadData,
     courseId: string,

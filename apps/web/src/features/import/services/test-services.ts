@@ -81,6 +81,8 @@ export const makeImportRepository = (
       Effect.succeed({ ...page, extraction }),
     insertPage: () => Effect.void,
     deletePendingImportSession: () => Effect.succeed([page.imagePath]),
+    removePendingImportPage: () =>
+      Effect.succeed({ imagePath: page.imagePath }),
     verifyPage: () => Effect.succeed([]),
     referencedPaths: Effect.succeed(new Set()),
     ...overrides,

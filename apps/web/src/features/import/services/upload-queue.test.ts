@@ -11,6 +11,7 @@ import {
   type QueuedPage,
   selectFiles,
   uploadConcurrency,
+  withoutQueuedPage,
 } from './upload-queue';
 
 const file = new File(['page'], 'page.jpg', { type: 'image/jpeg' });
@@ -130,9 +131,43 @@ describe('processQueuedPage', () => {
 });
 
 describe('nextUploadPosition', () => {
-  it('fills the first available slot after a queued page is removed', () => {
+  it('fills the first free position', () => {
     const usedPositions = new Set([firstPosition, holePosition, lastPosition]);
     expect(nextUploadPosition(usedPositions)).toBe(firstPosition + 1);
+  });
+});
+
+describe('withoutQueuedPage', () => {
+  it('moves later pages up so the positions stay without gaps', () => {
+    const pages: ReadonlyArray<QueuedPage> = [
+      waitingPage,
+      {
+        ...waitingPage,
+        id: 'page-2',
+        position: 1,
+        stage: 'ready',
+        pageId: 'page-2',
+      },
+      {
+        ...waitingPage,
+        id: 'page-3',
+        position: 2,
+        stage: 'failed',
+        pageId: null,
+        error: 'Hochladen fehlgeschlagen.',
+      },
+    ];
+
+    expect(
+      withoutQueuedPage(pages, 'page-2').map(({ id, position }) => ({
+        id,
+        position,
+      })),
+    ).toEqual([
+      { id: 'page-1', position: 0 },
+      { id: 'page-3', position: 1 },
+    ]);
+    expect(withoutQueuedPage(pages, 'unknown')).toBe(pages);
   });
 });
 
