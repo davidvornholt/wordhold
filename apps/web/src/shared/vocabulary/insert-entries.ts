@@ -45,7 +45,10 @@ export const insertVocabularyEntries = (
           pageId: entry.pageId,
           targetText: entry.targetText,
           nativeText: entry.nativeText,
-          grammar: entry.grammar,
+          // The client binds only scalars; Postgres reads the JSON text as the
+          // column's jsonb.
+          grammar:
+            entry.grammar === null ? null : JSON.stringify(entry.grammar),
         })),
       )} returning id, target_text as "targetText"`;
     const examples = entries.flatMap((entry, index) => {

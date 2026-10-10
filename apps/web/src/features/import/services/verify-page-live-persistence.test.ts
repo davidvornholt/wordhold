@@ -33,6 +33,46 @@ const seedCourse = Effect.gen(function* () {
   `;
 });
 
+// Grammar is the one JSON value an entry stores, and the client binds only
+// scalars, so it has to reach the column as JSON text.
+const importDetailedWord = Effect.gen(function* () {
+  yield* seedCourse;
+  const sql = yield* Database;
+  yield* verifyPageLive(
+    sql,
+    decodeImportPayload({
+      pageId: firstPageId,
+      book: { kind: 'new', name: 'Découvertes 3' },
+      entries: [
+        {
+          ...entry('Unit 3', 'prendre'),
+          grammar: { _tag: 'verb', irregularForms: ['pris'] },
+          example: {
+            targetText: 'Je prends le bus.',
+            nativeText: 'Ich nehme den Bus.',
+            source: 'textbook',
+          },
+          synonyms: ['saisir'],
+        },
+      ],
+    }),
+    courseId,
+  );
+  const [stored] = yield* sql<{
+    readonly grammar: unknown;
+    readonly synonyms: ReadonlyArray<string> | null;
+    readonly example: string | null;
+  }>`
+    select e.grammar, e.synonyms, x.target_text as example
+    from entries e
+    left join entry_examples x on x.entry_id = e.id
+  `;
+  const cards = yield* sql<{ readonly direction: string }>`
+    select direction from cards order by direction
+  `;
+  return { stored, directions: cards.map((card) => card.direction) };
+});
+
 describe('verifyPageLive persistence', () => {
   it('routes one page into two units and reuses a matching name', async () => {
     await Effect.runPromise(
@@ -91,6 +131,22 @@ describe('verifyPageLive persistence', () => {
         }).pipe(Effect.provide(testDatabaseLayer(database.url))),
       ),
     );
+  });
+
+  it('stores the grammar, example and synonyms read from the page', async () => {
+    const { stored, directions } = await Effect.runPromise(
+      withMigratedTestDatabase((database) =>
+        importDetailedWord.pipe(
+          Effect.provide(testDatabaseLayer(database.url)),
+        ),
+      ),
+    );
+    expect(stored).toEqual({
+      grammar: { _tag: 'verb', irregularForms: ['pris'] },
+      synonyms: ['saisir'],
+      example: 'Je prends le bus.',
+    });
+    expect(directions).toEqual(['to_target', 'to_native', 'to_synonym']);
   });
 
   it('allocates sequential positions across concurrent imports', async () => {
