@@ -3,8 +3,8 @@ import { createVertex } from '@ai-sdk/google-vertex';
 import { Effect, Schema } from 'effect';
 import { runSample } from './runner';
 import {
+  compatibleJsonSchema,
   geminiHighProviderOptions,
-  providerJsonSchema,
 } from './structured-output';
 
 it('retains known usage when Vertex exhausts reasoning tokens without visible output', async () => {
@@ -40,14 +40,19 @@ it('retains known usage when Vertex exhausts reasoning tokens without visible ou
       {
         name: modelId,
         region: 'global',
+        reasoning: 'high',
+        usdPerMillionTokens: { input: 1, output: 2 },
         model: vertex(modelId),
         providerOptions: geminiHighProviderOptions,
+        jsonSchema: compatibleJsonSchema,
+        maxOutputTokens: 4096,
       },
       {
         name: 'truncated',
+        operation: 'answer-grading',
         prompt: 'Answer.',
         messages: [{ role: 'user', content: 'Answer.' }],
-        schema: providerJsonSchema(Schema.Struct({ answer: Schema.Boolean })),
+        schema: Schema.Struct({ answer: Schema.Boolean }),
         qualityFailures: () => [],
       },
       1,
@@ -59,6 +64,8 @@ it('retains known usage when Vertex exhausts reasoning tokens without visible ou
     reasoningTokens: 4096,
     visibleOutputTokens: 0,
     totalTokens: 4196,
+    usd: 0.008_292,
+    capacityRetries: 0,
     finishReason: 'length',
     responseModelId: modelId,
     error: 'Output token limit reached',
