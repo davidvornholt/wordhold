@@ -17,9 +17,9 @@ type VocabularyEntryRowProps = {
 };
 
 // A word and its translation share one line. A term's definition is a
-// sentence or two, so it gets a line of its own under the term. A text can
-// be long, so its row starts it and its details show all of it. The word,
-// term or title opens the entry's details.
+// sentence or two, so it gets a line of its own under the term and keeps its
+// line breaks. A text can be long, so its row starts it and its details show
+// all of it. The word, term or title opens the entry's details.
 export const VocabularyEntryRow = ({
   entry,
   enabledDirections,
@@ -56,7 +56,7 @@ export const VocabularyEntryRow = ({
               className={
                 subject.kind === 'texts'
                   ? 'line-clamp-2 hyphens-auto text-muted-foreground'
-                  : 'hyphens-auto text-muted-foreground'
+                  : 'hyphens-auto whitespace-pre-line text-muted-foreground'
               }
             >
               {entry.nativeText}

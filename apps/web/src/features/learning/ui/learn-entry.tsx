@@ -39,8 +39,8 @@ type LearnEntryProps = {
 };
 
 // A definition is shown to be copied, with what it must state once known. A
-// text is shown to be copied with its own line breaks. A word has its example
-// sentence and audio instead, and its synonyms and antonyms the German
+// text is shown to be copied. Both keep their own line breaks. A word has its
+// example sentence and audio instead, and its synonyms and antonyms the German
 // meaning they are asked in.
 const LearnCardBody = ({
   item,
@@ -60,7 +60,7 @@ const LearnCardBody = ({
   }
   return subject.kind === 'terms' ? (
     <>
-      <p className="text-lg" id={definitionId}>
+      <p className="whitespace-pre-line text-lg" id={definitionId}>
         {cardAnswer(item)}
       </p>
       {item.keyPoints === null ? null : (

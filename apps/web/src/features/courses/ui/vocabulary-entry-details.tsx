@@ -31,8 +31,8 @@ const nativeLabels = {
 } as const satisfies Record<CourseSubject['kind'], string>;
 
 // What an entry's row leaves out: each direction's schedule and the example
-// sentence or key points, which can be changed here. A text keeps its line
-// breaks.
+// sentence or key points, which can be changed here. A definition or text
+// keeps its line breaks.
 const VocabularyEntryDetails = ({
   entry,
   enabledDirections,
@@ -46,7 +46,7 @@ const VocabularyEntryDetails = ({
         <dt className="font-medium">{nativeLabels[subject.kind]}</dt>
         <dd
           className={
-            subject.kind === 'texts'
+            isListCourse(subject.kind)
               ? 'hyphens-auto whitespace-pre-line'
               : 'hyphens-auto'
           }
