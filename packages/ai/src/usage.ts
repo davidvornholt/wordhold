@@ -13,6 +13,7 @@ export const aiOperations = [
   'example-generation',
   'example-translation',
   'word-translation',
+  'word-relations',
   'speech',
   'transcription',
 ] as const;

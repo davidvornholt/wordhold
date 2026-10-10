@@ -39,6 +39,7 @@ export const fixtureStates = [
   'unit-unintroduced',
   'unit-due',
   'unit-empty',
+  'word-relations',
   'learn',
   'learn-audio',
   'learn-start',

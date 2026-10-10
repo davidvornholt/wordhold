@@ -2,6 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import { definitionJudgePrompt } from './definition/judge';
 import { definitionPrompt, keyPointPrompt } from './definition/writer';
 import { extractionPrompt } from './extraction/service';
+import { relationPrompt } from './relations/service';
 import { sentenceJudgePrompt } from './sentence/judge';
 import {
   sentencePrompt,
@@ -11,12 +12,13 @@ import {
 
 // Limit instruction overhead independently of learner or textbook text.
 // Character budgets are deterministic across provider tokenizer versions.
-const extractionInstructionBudget = 550;
+const extractionInstructionBudget = 600;
 const sentenceInstructionBudget = 300;
 const translationInstructionBudget = 450;
 const definitionJudgeInstructionBudget = 800;
 const definitionInstructionBudget = 400;
 const sentenceJudgeInstructionBudget = 900;
+const relationInstructionBudget = 450;
 
 describe('prompt instruction budgets', () => {
   it('keeps page extraction instructions compact', () => {
@@ -70,5 +72,11 @@ describe('prompt instruction budgets', () => {
     expect(
       definitionPrompt({ term: '', subject: '' }).length,
     ).toBeLessThanOrEqual(definitionInstructionBudget);
+  });
+
+  it('keeps synonym and opposite instructions compact', () => {
+    expect(
+      relationPrompt({ targetLanguage: '', words: [] }).length,
+    ).toBeLessThanOrEqual(relationInstructionBudget);
   });
 });

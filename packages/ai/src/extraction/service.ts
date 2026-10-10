@@ -18,6 +18,7 @@ export const extractionPrompt = (targetLanguage: string): string =>
     `Extract this German school textbook vocabulary page for ${targetLanguage} in reading order.`,
     'Copy every target entry, German translation, printed grammar and example exactly, including accents.',
     'Translate printed examples faithfully into German as exampleTranslation; invent none.',
+    'Copy printed synonyms and opposites into synonyms and antonyms; invent none.',
     'Give entry and overall confidence from 0 to 1; lower it for unclear or cropped print.',
     'Report pageNumber and pageNumberConfidence only for a visible printed page number; never infer it.',
     'Include unitName only when a visible unit heading clearly applies.',

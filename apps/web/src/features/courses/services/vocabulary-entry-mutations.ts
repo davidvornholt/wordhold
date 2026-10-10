@@ -1,6 +1,7 @@
 import type { Database } from '@wordhold/db/client';
 import { Effect } from 'effect';
 import type { NewExampleData } from '../../../shared/vocabulary/entry-fields';
+import { writeRelatedWords } from '../../../shared/vocabulary/related-words-store';
 import { CourseDatabaseError } from '../errors/courses-errors';
 import type {
   DeleteEntryData,
@@ -216,6 +217,7 @@ export const makeVocabularyEntryMutations = (sql: Database) => {
             input.entryId,
             exampleCorrection(stored, input.example),
           );
+          yield* writeRelatedWords(sql, [input]);
           return {
             kind: 'updated',
             wordChanged: stored.targetText !== input.targetText,

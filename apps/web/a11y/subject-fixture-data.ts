@@ -38,6 +38,8 @@ export const termEntry = (
   targetText: term,
   nativeText: definition,
   keyPoints,
+  synonyms: null,
+  antonyms: null,
   example: null,
   introduced,
   cards: [

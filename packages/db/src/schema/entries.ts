@@ -46,6 +46,12 @@ export const entries = pgTable(
     // `native_text` and editable by the learner. Null until derived, and
     // always null in a language course.
     keyPoints: text('key_points').array(),
+    // For a word: synonyms and antonyms in the target language. Null until
+    // the textbook page, the learner or a reviewed suggestion settles the
+    // list; empty once settled for a word that has none. Always null outside
+    // a language course.
+    synonyms: text('synonyms').array(),
+    antonyms: text('antonyms').array(),
     notes: text('notes'),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()

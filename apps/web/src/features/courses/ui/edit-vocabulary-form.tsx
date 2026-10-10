@@ -7,11 +7,17 @@ import {
   matchesGenerationSource,
 } from '../../../shared/examples/example-draft';
 import { ExampleDraftEditor } from '../../../shared/ui/example-draft-editor';
+import {
+  editedRelatedWords,
+  type RelatedWordListsData,
+  relatedWordsText,
+} from '../../../shared/vocabulary/related-words';
 import type { VocabularyEntry } from '../schemas/course-units';
 import type { UpdatedVocabularyEntry } from '../services/vocabulary-entry-service';
 import { EditEntryFooter } from './edit-entry-footer';
 import { type EntryEditorControl, useEntryEdit } from './entry-actions';
 import { wordDuplicate } from './entry-duplicates';
+import { RelatedWordFields } from './related-word-fields';
 import {
   exampleOf,
   type NewVocabularyEntryDraft,
@@ -27,7 +33,7 @@ type EditVocabularyFormProps = {
   // Every entry of the course, which the corrected word is checked against.
   readonly entries: ReadonlyArray<VocabularyEntry>;
   readonly updateEntry: (
-    draft: NewVocabularyEntryDraft,
+    draft: NewVocabularyEntryDraft & RelatedWordListsData,
   ) => Promise<UpdatedVocabularyEntry>;
   readonly generateExample: (
     targetText: string,
@@ -53,7 +59,8 @@ const savedNotice = (targetText: string, updated: UpdatedVocabularyEntry) =>
     ? `${quoted(targetText)} gespeichert. Die Aussprache konnte nicht erzeugt werden.`
     : `${quoted(targetText)} gespeichert.`;
 
-// A word, its translation and its example sentence, as stored, to correct.
+// A word, its translation, its example sentence and its synonyms and
+// antonyms, as stored, to correct.
 // Like a typed word, an exact repeat of another stored word is stopped here
 // and a variant is pointed out.
 export const EditVocabularyForm = ({
@@ -68,6 +75,10 @@ export const EditVocabularyForm = ({
   suggestTranslation,
 }: EditVocabularyFormProps) => {
   const [draft, setDraft] = useState(() => storedDraft(entry));
+  const [relatedWords, setRelatedWords] = useState(() => ({
+    synonyms: relatedWordsText(entry.synonyms),
+    antonyms: relatedWordsText(entry.antonyms),
+  }));
   const { busy, error, firstFieldRef, save } = useEntryEdit(
     control,
     'Die Vokabel wurde nicht gespeichert. Versuche es noch einmal.',
@@ -88,6 +99,8 @@ export const EditVocabularyForm = ({
             targetText,
             nativeText,
             example: exampleOf(draft),
+            synonyms: editedRelatedWords(entry.synonyms, relatedWords.synonyms),
+            antonyms: editedRelatedWords(entry.antonyms, relatedWords.antonyms),
           }),
         ),
       ).catch(() => undefined);
@@ -140,6 +153,11 @@ export const EditVocabularyForm = ({
         reviewStep="Speichern"
         translate={translateExample}
         variant="form"
+      />
+      <RelatedWordFields
+        disabled={busy}
+        onChange={setRelatedWords}
+        texts={relatedWords}
       />
       <EditEntryFooter
         busy={busy}

@@ -1,5 +1,9 @@
 import type { ExtractionResult } from '@wordhold/ai/extraction';
 import { useEffect, useRef, useState } from 'react';
+import {
+  parseRelatedWords,
+  type RelationKind,
+} from '../../../shared/vocabulary/related-words';
 import { importPage } from '../import-fn';
 import type { BatchReviewSearchData } from '../schemas/batch-review-search';
 import type {
@@ -15,6 +19,11 @@ type VerificationPage = {
   readonly extraction: ExtractionResult | null;
   readonly id: string;
   readonly status: 'awaiting_verification' | 'verified';
+};
+
+const relatedWordsPayload = (kind: RelationKind, text: string | undefined) => {
+  const words = parseRelatedWords(text ?? '');
+  return words.length === 0 ? {} : { [kind]: words };
 };
 
 const toPayloadEntry = (
@@ -38,6 +47,8 @@ const toPayloadEntry = (
               : ('textbook' as const),
         },
       }),
+  ...relatedWordsPayload('synonyms', draft.synonyms),
+  ...relatedWordsPayload('antonyms', draft.antonyms),
   ...(draft.duplicateException === true ? { duplicateException: true } : {}),
   ...(draft.skipDuplicate === true ? { skipDuplicate: true } : {}),
 });

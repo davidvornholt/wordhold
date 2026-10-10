@@ -23,6 +23,7 @@ import { useVerificationFlow } from '../../../features/import/ui/use-verificatio
 import { VerificationWorkbench } from '../../../features/import/ui/verification-workbench';
 import { germanLabels } from '../../../shared/languages';
 import { BackLink } from '../../../shared/ui/back-link';
+import { relatedWordsText } from '../../../shared/vocabulary/related-words';
 
 const draftsFromExtraction = (
   extraction: ExtractionResult | null,
@@ -35,6 +36,8 @@ const draftsFromExtraction = (
         example: entry.example ?? '',
         exampleNativeText: entry.exampleTranslation ?? '',
         ...(entry.grammar === undefined ? {} : { grammar: entry.grammar }),
+        synonyms: relatedWordsText(entry.synonyms ?? null),
+        antonyms: relatedWordsText(entry.antonyms ?? null),
         confidence: entry.confidence,
       }));
 

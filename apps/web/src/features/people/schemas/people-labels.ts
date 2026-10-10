@@ -45,6 +45,7 @@ const operationLabels: Readonly<Record<AiOperation, string>> = {
   'example-generation': 'Beispielsätze schreiben',
   'example-translation': 'Beispielsätze übersetzen',
   'word-translation': 'Wörter übersetzen',
+  'word-relations': 'Synonyme und Gegenteile vorschlagen',
   speech: 'Vorlesen',
   transcription: 'Diktate erkennen',
 };

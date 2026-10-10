@@ -202,6 +202,8 @@ export const fixtureEntry = (
   targetText: target,
   nativeText: native,
   keyPoints: null,
+  synonyms: null,
+  antonyms: null,
   example: null,
   introduced,
   cards: [

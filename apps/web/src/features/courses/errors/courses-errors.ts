@@ -50,6 +50,11 @@ export class CourseExampleGenerationError extends Schema.TaggedError<CourseExamp
   { message: Schema.String },
 ) {}
 
+export class WordRelationSuggestionError extends Schema.TaggedError<WordRelationSuggestionError>()(
+  'WordRelationSuggestionError',
+  { message: Schema.String },
+) {}
+
 export class SubjectConflictError extends Schema.TaggedError<SubjectConflictError>()(
   'SubjectConflictError',
   { message: Schema.String },

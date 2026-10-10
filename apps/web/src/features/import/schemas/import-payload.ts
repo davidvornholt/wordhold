@@ -7,6 +7,7 @@ import { Schema } from 'effect';
 import { Uuid } from '../../../shared/validate/uuid';
 import { BookName } from '../../../shared/vocabulary/book-name';
 import { EntryText, NewExample } from '../../../shared/vocabulary/entry-fields';
+import { RelatedWords } from '../../../shared/vocabulary/related-words';
 import { ImportPayloadValidationError } from '../errors/import-payload-validation-error';
 
 // A page comes from one textbook of the course. The extraction rarely sees the
@@ -54,6 +55,10 @@ export const VerifiedEntry = Schema.Struct({
   nativeText: EntryText,
   grammar: Schema.optional(Grammar),
   example: Schema.optional(NewExample),
+  // Only lists the page printed or the learner typed. A word without one
+  // keeps it open for a suggestion later.
+  synonyms: Schema.optional(RelatedWords),
+  antonyms: Schema.optional(RelatedWords),
   // Present only when the learner confirmed importing a word that already
   // exists in the course with a different casing or example sentence. The
   // server refuses such an entry without this consent, so a stale verify
