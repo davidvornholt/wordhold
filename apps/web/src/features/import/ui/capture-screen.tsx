@@ -8,6 +8,7 @@ import {
   type QueuedPage,
 } from '../services/upload-queue';
 import { CaptureUploadQueue } from './capture-upload-queue';
+import { useDroppedImages } from './use-dropped-images';
 import { usePastedImages } from './use-pasted-images';
 
 type CaptureScreenProps = {
@@ -52,15 +53,17 @@ export const CaptureScreen = ({
   const acceptsPhotos =
     !(busy || batchLocked) && pages.length < maximumUploadBatchSize;
   usePastedImages(onFilesSelected, acceptsPhotos);
+  const dragging = useDroppedImages(onFilesSelected, acceptsPhotos);
   return (
     <PageLayout
       backControl={backControl}
       title={`${courseName}: Seiten erfassen`}
     >
       <p className="text-muted-foreground text-sm">
-        Fotografiere eine Vokabelseite, wähle bis zu zehn vorhandene Fotos oder
-        füge ein Bild aus der Zwischenablage ein (Strg+V). Wordhold speichert
-        und liest jede Seite einzeln. Danach prüfst du die erkannten Einträge.
+        Fotografiere eine Vokabelseite, wähle bis zu zehn vorhandene Fotos,
+        ziehe sie hierher oder füge ein Bild aus der Zwischenablage ein
+        (Strg+V). Wordhold speichert und liest jede Seite einzeln. Danach prüfst
+        du die erkannten Einträge.
       </p>
       <form
         aria-busy={busy}
@@ -72,10 +75,16 @@ export const CaptureScreen = ({
           disabled={!acceptsPhotos}
         >
           <legend className="sr-only">Fotos hinzufügen</legend>
-          <label className="flex flex-col gap-2 border border-input bg-card p-4 text-sm">
+          <label
+            className={`flex flex-col gap-2 border p-4 text-sm ${
+              dragging ? 'border-primary bg-accent' : 'border-input bg-card'
+            }`}
+          >
             <span className="font-display text-lg">Fotos auswählen</span>
             <span className="text-muted-foreground">
-              Mehrere JPEG-, PNG- oder WebP-Dateien
+              {dragging
+                ? 'Loslassen, um die Fotos hinzuzufügen'
+                : 'Mehrere JPEG-, PNG- oder WebP-Dateien'}
             </span>
             <input
               accept="image/jpeg, image/png, image/webp"

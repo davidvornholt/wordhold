@@ -2,6 +2,14 @@ import { Effect, Result } from 'effect';
 
 export const maximumUploadBatchSize = 10;
 
+// The formats the page upload stores. A dropped file can be anything, such
+// as an iPhone photo in HEIC, and is left out before upload.
+export const acceptedImageTypes: ReadonlySet<string> = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+]);
+
 type QueuedPageBase = {
   readonly id: string;
   readonly file: File;
@@ -47,20 +55,25 @@ export type FileSelection = {
     readonly file: File;
     readonly digest: string;
   }>;
+  readonly unsupported: number;
   readonly duplicates: number;
   readonly overLimit: number;
 };
 
-// Applies the batch rules to a selection: drop bytes already in the queue or
-// earlier in the same selection, then cut at the batch size.
+// Applies the batch rules to a selection: drop files in other formats and
+// bytes already in the queue or earlier in the same selection, then cut at
+// the batch size. A file without a type is kept; the upload checks its bytes.
 export const selectFiles = async (
   files: ReadonlyArray<File>,
   knownDigests: ReadonlySet<string>,
   remaining: number,
 ): Promise<FileSelection> => {
+  const images = files.filter(
+    (file) => file.type === '' || acceptedImageTypes.has(file.type),
+  );
   const seen = new Set(knownDigests);
   const fresh: Array<{ readonly file: File; readonly digest: string }> = [];
-  for (const file of files) {
+  for (const file of images) {
     // Sequential on purpose: a duplicate within the selection is only known
     // once the earlier file has been hashed.
     // biome-ignore lint/performance/noAwaitInLoops: See above.
@@ -72,7 +85,8 @@ export const selectFiles = async (
   }
   return {
     accepted: fresh.slice(0, Math.max(remaining, 0)),
-    duplicates: files.length - fresh.length,
+    unsupported: files.length - images.length,
+    duplicates: images.length - fresh.length,
     overLimit: Math.max(fresh.length - remaining, 0),
   };
 };
