@@ -14,6 +14,10 @@ import { BedrockProvider, productionModelId } from './bedrock';
 
 const modelId = productionModelId;
 
+const onePixelPng = Uint8Array.fromBase64(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+);
+
 const capturedServices = (response: unknown) => {
   const calls: Array<{ url: string; body: Record<string, unknown> }> = [];
   const usage: Array<{
@@ -256,8 +260,7 @@ describe('Bedrock extraction transport', () => {
       const result = await Effect.runPromise(
         Effect.gen(function* () {
           return yield* (yield* Extraction).extract({
-            imageBase64: 'aW1hZ2U=',
-            mediaType: 'image/png',
+            image: onePixelPng,
             targetLanguage: 'French',
           });
         }).pipe(Effect.provide(services)),
@@ -275,7 +278,10 @@ describe('Bedrock extraction transport', () => {
       );
       expect(JSON.stringify(calls[0]?.body.system)).toContain('JSON schema');
       expect(calls[0]?.body).not.toHaveProperty('toolConfig');
-      expect(JSON.stringify(calls[0]?.body)).toContain('aW1hZ2U=');
+      expect(calls[0]?.body).toHaveProperty(
+        'messages.0.content.0.image.format',
+        'webp',
+      );
     },
   );
 });

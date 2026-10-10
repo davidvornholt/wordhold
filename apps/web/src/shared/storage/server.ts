@@ -1,6 +1,5 @@
 // The designated filesystem boundary: the only application module allowed to
 // use Node APIs. Database rows store paths relative to WORDHOLD_DATA_DIR.
-import { Buffer } from 'node:buffer';
 import type { Dirent } from 'node:fs';
 import {
   mkdir,
@@ -181,6 +180,3 @@ export const StorageLive = Layer.succeed(
       ),
   }),
 );
-
-export const toBase64 = (bytes: Uint8Array): string =>
-  Buffer.from(bytes).toString('base64');

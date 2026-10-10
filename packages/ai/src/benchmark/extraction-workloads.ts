@@ -1,3 +1,5 @@
+import { Effect } from 'effect';
+import { fitPageImage } from '../extraction/page-image';
 import {
   type ExtractedEntryData,
   ExtractedPage,
@@ -34,7 +36,6 @@ const recordsGender = (
 
 type PrintedPage = {
   readonly file: string;
-  readonly mediaType: string;
   readonly targetLanguage: string;
   readonly pageNumber: number;
   readonly entries: ReadonlyArray<PrintedEntry>;
@@ -116,9 +117,14 @@ const extractionWorkload = async (
   page: PrintedPage,
 ): Promise<Workload> => {
   const prompt = extractionPrompt(page.targetLanguage);
-  const image = await globalThis.Bun.file(
-    new URL(`./fixtures/${page.file}`, import.meta.url),
-  ).bytes();
+  // Production fits every photo before the request, so the benchmark does too.
+  const image = await Effect.runPromise(
+    fitPageImage(
+      await globalThis.Bun.file(
+        new URL(`./fixtures/${page.file}`, import.meta.url),
+      ).bytes(),
+    ),
+  );
   return {
     name,
     operation: 'page-extraction',
@@ -129,8 +135,8 @@ const extractionWorkload = async (
         content: [
           {
             type: 'file',
-            data: image.toBase64(),
-            mediaType: page.mediaType,
+            data: image.data.toBase64(),
+            mediaType: image.mediaType,
           },
           { type: 'text', text: prompt },
         ],
@@ -148,7 +154,6 @@ const extractionWorkload = async (
 
 export const simplePage: PrintedPage = {
   file: 'page.png',
-  mediaType: 'image/png',
   targetLanguage: 'Spanish',
   pageNumber: 42,
   entries: [
@@ -169,7 +174,6 @@ export const simplePage: PrintedPage = {
 // A photographed page, rendered from dense-page.html with headless Chrome.
 export const densePage: PrintedPage = {
   file: 'dense-page.jpg',
-  mediaType: 'image/jpeg',
   targetLanguage: 'English',
   pageNumber: 117,
   entries: [

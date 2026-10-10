@@ -6,6 +6,8 @@ import { englishNames } from '../../../shared/languages';
 import { ExtractionFailedError } from '../errors/extraction-failed-error';
 
 const failureMessages: Record<ExtractionError['reason'], string> = {
+  unreadableImage:
+    'Das Foto lässt sich nicht lesen. Entferne es und importiere die Seite mit einem neuen Foto.',
   provider:
     'Der Lesedienst konnte die Seite nicht auslesen. Versuche es in ein paar Minuten noch einmal.',
   invalidOutput:
@@ -21,15 +23,13 @@ export const extractionFailed = (error: ExtractionError) =>
   });
 
 export const extractPage = (input: {
-  readonly imageBase64: string;
-  readonly mediaType: string;
+  readonly image: Uint8Array;
   readonly language: LanguageCode;
 }) =>
   Effect.gen(function* () {
     const extraction = yield* Extraction;
     return yield* extraction.extract({
-      imageBase64: input.imageBase64,
-      mediaType: input.mediaType,
+      image: input.image,
       targetLanguage: englishNames[input.language],
     });
   }).pipe(Effect.mapError(extractionFailed));
