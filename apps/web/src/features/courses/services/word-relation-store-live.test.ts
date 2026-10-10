@@ -67,7 +67,7 @@ const storedLists = Effect.gen(function* () {
     readonly id: string;
     readonly synonyms: ReadonlyArray<string> | null;
     readonly antonyms: ReadonlyArray<string> | null;
-  }>`select id, synonyms, antonyms from entries order by target_text`;
+  }>`select id, synonyms, antonyms from entries order by id`;
 });
 
 describe('WordRelationStore', () => {
@@ -128,10 +128,10 @@ describe('WordRelationStore', () => {
     );
     expect(result.written).toBe(2);
     expect(result.lists).toEqual([
-      { id: braveId, synonyms: [], antonyms: null },
       { id: hostileId, synonyms: ['unfriendly'], antonyms: ['friendly'] },
-      { id: termId, synonyms: null, antonyms: null },
+      { id: braveId, synonyms: [], antonyms: null },
       { id: otherWordId, synonyms: null, antonyms: null },
+      { id: termId, synonyms: null, antonyms: null },
     ]);
   });
 
