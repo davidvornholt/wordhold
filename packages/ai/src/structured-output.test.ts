@@ -8,6 +8,7 @@ import {
 } from './definition/schema';
 import { ExtractedPage } from './extraction/schema';
 import { JudgeVerdict } from './judge/schema';
+import { RelationSuggestions } from './relations/schema';
 import { SentenceVerdict } from './sentence/judge-schema';
 import { SentenceBatch } from './sentence/service';
 import { decodeModelOutput, providerJsonSchema } from './structured-output';
@@ -20,6 +21,7 @@ const outputSchemas = [
   ['ExtractedPage', () => providerJsonSchema(ExtractedPage)],
   ['KeyPointList', () => providerJsonSchema(KeyPointList)],
   ['JudgeVerdict', () => providerJsonSchema(JudgeVerdict)],
+  ['RelationSuggestions', () => providerJsonSchema(RelationSuggestions)],
   ['SentenceBatch', () => providerJsonSchema(SentenceBatch)],
   ['SentenceVerdict', () => providerJsonSchema(SentenceVerdict)],
 ] as const;
@@ -72,6 +74,7 @@ describe('providerJsonSchema', () => {
   for (const [name, convert] of [
     ['DefinitionVerdict', () => providerJsonSchema(DefinitionVerdict)],
     ['JudgeVerdict', () => providerJsonSchema(JudgeVerdict)],
+    ['RelationSuggestions', () => providerJsonSchema(RelationSuggestions)],
     ['SentenceBatch', () => providerJsonSchema(SentenceBatch)],
     ['SentenceVerdict', () => providerJsonSchema(SentenceVerdict)],
   ] as const) {
@@ -105,6 +108,8 @@ describe('decodeModelOutput', () => {
             nativeText: 'das Buch',
             grammar: null,
             example: null,
+            synonyms: null,
+            antonyms: null,
             confidence: 0.9,
           },
         ],
@@ -112,6 +117,7 @@ describe('decodeModelOutput', () => {
     );
     expect(page.unitName).toBeUndefined();
     expect(page.entries[0]?.grammar).toBeUndefined();
+    expect(page.entries[0]?.synonyms).toBeUndefined();
   });
 
   it('still rejects an answer outside the schema', () => {

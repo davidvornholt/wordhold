@@ -45,6 +45,8 @@ const correction = {
   entryId,
   targetText: 'le souvenir',
   nativeText: 'die Erinnerung',
+  synonyms: null,
+  antonyms: null,
 };
 
 const staleFiles = ['audio/old-word.mp3', 'audio/old-example.mp3'];

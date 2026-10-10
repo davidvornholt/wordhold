@@ -56,6 +56,7 @@ import {
 } from './text-fixtures';
 import { verificationFixture } from './verification-fixture-router';
 import { VocabularyFixture } from './vocabulary-fixtures';
+import { WordRelationFixture } from './word-relation-fixtures';
 
 // States that production renders without the home shell: focus routes and
 // the root feedback screens, which replace the root layout entirely.
@@ -312,6 +313,8 @@ const fixtureContent = (state: FixtureState) => {
       return <UnitFixture state="due" />;
     case 'unit-empty':
       return <UnitFixture state="empty" />;
+    case 'word-relations':
+      return <WordRelationFixture />;
     case 'learn':
     case 'learn-audio':
     case 'learn-start':

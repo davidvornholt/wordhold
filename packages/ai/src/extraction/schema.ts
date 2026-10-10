@@ -7,6 +7,7 @@ export const maximumUnitNameLength = 80;
 export const maximumPageNumber = 9999;
 export const maximumGrammarFieldLength = 200;
 export const maximumIrregularForms = 20;
+export const maximumRelatedWords = 8;
 
 const GrammarText = Schema.String.check(
   Schema.isMaxLength(maximumGrammarFieldLength),
@@ -43,6 +44,10 @@ export const Grammar = Schema.Union([
 ]);
 export type GrammarInfo = typeof Grammar.Type;
 
+const RelatedWords = Schema.Array(
+  Schema.String.check(Schema.isMaxLength(maximumEntryTextLength)),
+).check(Schema.isMaxLength(maximumRelatedWords));
+
 export const ExtractedEntry = Schema.Struct({
   targetText: Schema.String.check(Schema.isMaxLength(maximumEntryTextLength)),
   nativeText: Schema.String.check(Schema.isMaxLength(maximumEntryTextLength)),
@@ -55,6 +60,10 @@ export const ExtractedEntry = Schema.Struct({
   exampleTranslation: Schema.optional(
     Schema.String.check(Schema.isMaxLength(maximumExampleLength)),
   ),
+  // Only what the page prints beside the entry, such as a synonym or an
+  // opposite marked with an arrow; never the model's own suggestions.
+  synonyms: Schema.optional(RelatedWords),
+  antonyms: Schema.optional(RelatedWords),
   confidence: Schema.Finite.check(Schema.isBetween({ minimum: 0, maximum: 1 })),
 });
 export type ExtractedEntryData = typeof ExtractedEntry.Type;

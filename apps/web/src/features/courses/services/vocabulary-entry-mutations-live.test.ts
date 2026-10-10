@@ -98,7 +98,9 @@ const storedWord = (entryId: string) =>
       readonly nativeText: string;
       readonly bookId: string;
       readonly unitId: string | null;
-    }>`select target_text as "targetText", native_text as "nativeText", book_id as "bookId", unit_id as "unitId" from entries where id = ${entryId}`;
+      readonly synonyms: ReadonlyArray<string> | null;
+      readonly antonyms: ReadonlyArray<string> | null;
+    }>`select target_text as "targetText", native_text as "nativeText", book_id as "bookId", unit_id as "unitId", synonyms, antonyms from entries where id = ${entryId}`;
     const answers = yield* sql<{
       readonly text: string;
       readonly source: string;
@@ -137,7 +139,13 @@ describe('VocabularyEntryStore corrections', () => {
         yield* seedCourses;
         const store = yield* VocabularyEntryStore;
         const entryId = yield* practisedWord('la mémoire', 'die Erinnerung');
-        const edit = { courseId, entryId, example };
+        const edit = {
+          courseId,
+          entryId,
+          example,
+          synonyms: ['la réminiscence'],
+          antonyms: [],
+        };
         expect(
           yield* store.update({
             ...edit,
@@ -155,6 +163,8 @@ describe('VocabularyEntryStore corrections', () => {
             nativeText: 'die Erinnerung',
             bookId,
             unitId,
+            synonyms: ['la réminiscence'],
+            antonyms: [],
           },
           // The judge's alternative was accepted for the old word; the
           // learner's own is kept.
@@ -183,6 +193,8 @@ describe('VocabularyEntryStore corrections', () => {
           entryId,
           targetText: 'la mémoire',
           nativeText: 'die Erinnerung',
+          synonyms: null,
+          antonyms: null,
         };
         const translated = { ...example, nativeText: 'Die Reise.' };
         expect(yield* store.update({ ...word, example: translated })).toEqual({
@@ -219,7 +231,9 @@ describe('VocabularyEntryStore corrections', () => {
       }),
     );
   });
+});
 
+describe('VocabularyEntryStore refused corrections', () => {
   it('refuses an exact repeat of another word and a word of another course', async () => {
     await runStoreTest(
       Effect.gen(function* () {
@@ -227,7 +241,14 @@ describe('VocabularyEntryStore corrections', () => {
         const store = yield* VocabularyEntryStore;
         yield* practisedWord('vous', 'ihr');
         const entryId = yield* practisedWord('merci', 'danke');
-        const edit = { courseId, entryId, nativeText: 'danke', example };
+        const edit = {
+          courseId,
+          entryId,
+          nativeText: 'danke',
+          example,
+          synonyms: null,
+          antonyms: null,
+        };
         expect(yield* store.update({ ...edit, targetText: 'vous' })).toEqual({
           kind: 'duplicate',
           location: 'Découvertes 3 · Unité 1',

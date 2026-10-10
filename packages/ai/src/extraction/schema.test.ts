@@ -5,6 +5,7 @@ import {
   maximumEntriesPerPage,
   maximumEntryTextLength,
   maximumPageNumber,
+  maximumRelatedWords,
   maximumUnitNameLength,
 } from './schema';
 
@@ -33,6 +34,8 @@ describe('ExtractedPage', () => {
           grammar: { _tag: 'verb', irregularForms: ['je me souviens'] },
           example: 'Je me souviens de mes vacances.',
           exampleTranslation: 'Ich erinnere mich an meine Ferien.',
+          synonyms: ['se rappeler'],
+          antonyms: ['oublier'],
           confidence: 0.9,
         },
         {
@@ -47,6 +50,8 @@ describe('ExtractedPage', () => {
     expect(page.entries[1]?.exampleTranslation).toBe(
       'Ich erinnere mich an meine Ferien.',
     );
+    expect(page.entries[1]?.synonyms).toEqual(['se rappeler']);
+    expect(page.entries[1]?.antonyms).toEqual(['oublier']);
     expect(page.pageNumber).toBe(printedPageNumber);
     expect(page.unitName).toBe('Unité 3');
   });
@@ -105,6 +110,25 @@ describe('ExtractedPage', () => {
         unitName: 'x'.repeat(maximumUnitNameLength + 1),
         overallConfidence: 1,
         entries: [],
+      }),
+    ).toThrow();
+  });
+
+  it('rejects more printed synonyms than an entry can keep', () => {
+    expect(() =>
+      decode({
+        overallConfidence: 1,
+        entries: [
+          {
+            targetText: 'x',
+            nativeText: 'y',
+            synonyms: Array.from(
+              { length: maximumRelatedWords + 1 },
+              (_, index) => `word ${index}`,
+            ),
+            confidence: 1,
+          },
+        ],
       }),
     ).toThrow();
   });

@@ -156,6 +156,11 @@ describe('CourseStore PostgreSQL entry contents', () => {
           )
         `;
 
+        yield* sql`
+          update entries set synonyms = array['bouquin'], antonyms = '{}'
+          where id = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd'
+        `;
+
         const listed = yield* store.listVocabulary(fixtureCourseId);
         expect(listed.map(({ cards: _cards, ...entry }) => entry)).toEqual([
           {
@@ -163,6 +168,8 @@ describe('CourseStore PostgreSQL entry contents', () => {
             targetText: 'livre',
             nativeText: 'Buch',
             keyPoints: null,
+            synonyms: ['bouquin'],
+            antonyms: [],
             example: {
               targetText: 'Je lis un livre.',
               nativeText: 'Ich lese ein Buch.',
@@ -179,6 +186,8 @@ describe('CourseStore PostgreSQL entry contents', () => {
             targetText: 'mémoire',
             nativeText: 'Erinnerung',
             keyPoints: null,
+            synonyms: null,
+            antonyms: null,
             example: null,
             introduced: true,
             bookId: fixtureBookId,
@@ -191,6 +200,8 @@ describe('CourseStore PostgreSQL entry contents', () => {
             targetText: 'neuf',
             nativeText: 'neu',
             keyPoints: null,
+            synonyms: null,
+            antonyms: null,
             example: null,
             introduced: true,
             bookId: fixtureBookId,
@@ -226,6 +237,8 @@ describe('CourseStore PostgreSQL entry contents', () => {
           targetText: 'neuf',
           nativeText: 'neu',
           keyPoints: null,
+          synonyms: null,
+          antonyms: null,
           example: null,
           introduced: true,
           bookId: fixtureBookId,

@@ -34,6 +34,8 @@ export const persistVerifiedEntries = (
         nativeText: entry.nativeText,
         grammar: entry.grammar ?? null,
         example: entry.example,
+        synonyms: entry.synonyms ?? null,
+        antonyms: entry.antonyms ?? null,
       })),
     );
     if (inserted.length !== entriesToInsert.length) {

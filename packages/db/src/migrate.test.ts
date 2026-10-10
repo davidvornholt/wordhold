@@ -38,6 +38,8 @@ const biblesMigrationHash =
   '3bdb05eb80984f57fc406e8b7ef18bf8c552b83ba38252a978b75d7afd11ca2f';
 const transcriptionUsageMigrationHash =
   'b01829ba1894314d9860d5ba5cfb9c019b77f3beaeed39493692d313aba79e37';
+const relatedWordsMigrationHash =
+  '4549fe65b6fcf021610e4fddb0bfd22b3fb65783a8d2c576e2786ec65750d456';
 const fullMigrationTestTimeoutMs = 15_000;
 
 const getMigrationError = (url: string) =>
@@ -69,6 +71,7 @@ it(
           yield* sql`alter table courses drop column kind`;
           yield* sql`drop type course_kind`;
           yield* sql`alter table entries drop column key_points`;
+          yield* sql`alter table entries drop column synonyms, drop column antonyms`;
           yield* sql`drop index "account_providerId_accountId_idx"`;
           yield* sql`alter table account alter column issuer set not null`;
           yield* sql`create unique index "account_issuer_accountId_idx" on account (issuer, account_id)`;
@@ -114,7 +117,8 @@ it(
             ${accountsMigrationHash},
             ${textsKindMigrationHash},
             ${biblesMigrationHash},
-            ${transcriptionUsageMigrationHash}
+            ${transcriptionUsageMigrationHash},
+            ${relatedWordsMigrationHash}
           )
         `;
           yield* migrateDatabase(database.url);

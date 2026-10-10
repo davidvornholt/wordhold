@@ -10,11 +10,18 @@ import { Button } from '../../../shared/ui/button';
 import { ExampleDraftEditor } from '../../../shared/ui/example-draft-editor';
 import { fieldCompactClass } from '../../../shared/ui/field-styles';
 import { Checkbox } from '../../../shared/ui/selection-controls';
+import {
+  relationKinds,
+  relationLabels,
+} from '../../../shared/vocabulary/related-words';
 import type { DraftDuplicate } from './draft-duplicates';
 
 export type DraftEntry = ExampleDraft & {
   readonly grammar?: GrammarInfo;
   readonly confidence?: number;
+  // Comma-separated, as typed or as read from the page.
+  readonly synonyms?: string;
+  readonly antonyms?: string;
 };
 
 const lowConfidence = 0.8;
@@ -179,6 +186,21 @@ export const EntryRow = ({
         translate={translateExample}
         variant="row"
       />
+      <div className="grid gap-2 sm:grid-cols-2">
+        {relationKinds.map((kind) => (
+          <input
+            aria-label={relationLabels[kind]}
+            className={inputClass}
+            disabled={disabled}
+            key={kind}
+            onChange={(event) =>
+              onChange({ ...entry, [kind]: event.target.value })
+            }
+            placeholder={`${relationLabels[kind]}, mit Komma getrennt`}
+            value={entry[kind] ?? ''}
+          />
+        ))}
+      </div>
       {grammar === '' ? null : (
         <p className="text-muted-foreground text-xs">{grammar}</p>
       )}

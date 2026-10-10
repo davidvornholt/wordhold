@@ -192,7 +192,7 @@ export class CourseStore extends Context.Service<
           select e.id, e.book_id as "bookId", b.name as "bookName",
             e.unit_id as "unitId", u.name as "unitName",
             e.target_text as "targetText", e.native_text as "nativeText",
-            e.key_points as "keyPoints",
+            e.key_points as "keyPoints", e.synonyms, e.antonyms,
             example.target_text as "exampleTargetText",
             example.native_text as "exampleNativeText",
             example.source as "exampleSource",

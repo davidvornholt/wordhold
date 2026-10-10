@@ -18,6 +18,8 @@ const storedEntries: ReadonlyArray<VocabularyEntry> = [
     targetText: 'memory',
     nativeText: 'die Erinnerung',
     keyPoints: null,
+    synonyms: null,
+    antonyms: null,
     example: {
       targetText: 'That trip is a happy memory.',
       nativeText: 'Diese Reise ist eine schöne Erinnerung.',
@@ -52,6 +54,8 @@ const storedEntries: ReadonlyArray<VocabularyEntry> = [
     targetText: 'the referee',
     nativeText: 'der Schiedsrichter',
     keyPoints: null,
+    synonyms: null,
+    antonyms: null,
     example: null,
     introduced: true,
     cards: [

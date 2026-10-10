@@ -1,16 +1,19 @@
 import { Schema } from 'effect';
 import { Uuid } from '../../../shared/validate/uuid';
 import { EntryText, NewExample } from '../../../shared/vocabulary/entry-fields';
+import { RelatedWords } from '../../../shared/vocabulary/related-words';
 
 // A word's texts as the learner corrected them. The word stays in its book
 // or unit, and its cards keep their schedule. Without an example, a stored
-// one is removed.
+// one is removed. Both lists of related words are stored as given.
 export const UpdateVocabularyEntry = Schema.Struct({
   courseId: Uuid,
   entryId: Uuid,
   targetText: EntryText,
   nativeText: EntryText,
   example: Schema.optional(NewExample),
+  synonyms: Schema.NullOr(RelatedWords),
+  antonyms: Schema.NullOr(RelatedWords),
 });
 export type UpdateVocabularyEntryData = typeof UpdateVocabularyEntry.Type;
 

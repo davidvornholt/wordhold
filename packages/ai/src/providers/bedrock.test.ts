@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'bun:test';
-import { createAmazonBedrock } from '@ai-sdk/amazon-bedrock';
 import { Effect, Layer } from 'effect';
 import { DefinitionJudge } from '../definition/judge';
 import { DefinitionWriter } from '../definition/writer';
@@ -9,6 +8,7 @@ import type { JudgeVerdictData } from '../judge/schema';
 import { Judge } from '../judge/service';
 import { SentenceJudge } from '../sentence/judge';
 import { SentenceGen } from '../sentence/service';
+import { capturedBedrockModel } from '../testing/bedrock';
 import { type AiCall, type AiCallUsage, AiUsage } from '../usage';
 import { BedrockProvider, productionModelId } from './bedrock';
 
@@ -19,40 +19,12 @@ const onePixelPng = Uint8Array.fromBase64(
 );
 
 const capturedServices = (response: unknown) => {
-  const calls: Array<{ url: string; body: Record<string, unknown> }> = [];
+  const { calls, model } = capturedBedrockModel(response);
   const usage: Array<{
     call: AiCall;
     succeeded: boolean;
     usage: AiCallUsage | undefined;
   }> = [];
-  const bedrock = createAmazonBedrock({
-    // Fake SigV4 credentials keep authentication offline; serialization is real.
-    accessKeyId: 'test-access-key',
-    secretAccessKey: 'test-secret-key',
-    region: 'eu-central-1',
-    fetch: Object.assign(
-      (url: RequestInfo | URL, init?: RequestInit) => {
-        calls.push({
-          url: String(url),
-          body: JSON.parse(String(init?.body)) as Record<string, unknown>,
-        });
-        return Promise.resolve(
-          Response.json({
-            output: {
-              message: {
-                role: 'assistant',
-                content: [{ text: JSON.stringify(response) }],
-              },
-            },
-            stopReason: 'end_turn',
-            usage: { inputTokens: 10, outputTokens: 20, totalTokens: 30 },
-            metrics: { latencyMs: 1 },
-          }),
-        );
-      },
-      { preconnect: globalThis.fetch.preconnect },
-    ),
-  });
   const services = Layer.mergeAll(
     Judge.layer,
     SentenceGen.layer,
@@ -61,7 +33,7 @@ const capturedServices = (response: unknown) => {
     DefinitionWriter.layer,
     SentenceJudge.layer,
   ).pipe(
-    Layer.provide(Layer.succeed(BedrockProvider, bedrock(modelId))),
+    Layer.provide(Layer.succeed(BedrockProvider, model)),
     Layer.merge(
       Layer.succeed(
         AiUsage,

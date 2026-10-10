@@ -30,6 +30,7 @@ import type {
 } from '../../../features/courses/ui/entry-actions';
 import { NewTermForm } from '../../../features/courses/ui/new-term-form';
 import { NewVocabularyForm } from '../../../features/courses/ui/new-vocabulary-form';
+import { RelatedWordsSummary } from '../../../features/courses/ui/related-words-summary';
 import { TermKeyPoints } from '../../../features/courses/ui/term-key-points';
 import {
   EditTextForm,
@@ -162,8 +163,9 @@ type CourseEntryDetailProps = {
   readonly entry: VocabularyEntry;
 };
 
-// What an entry's details show besides its schedule: a word's example
-// sentence, generated on request, or a term's key points. Each change
+// What an entry's details show besides its schedule: a word's synonyms,
+// antonyms and example sentence, generated on request, or a term's key
+// points. Each change
 // refreshes the loader, so the details show it when they are opened again.
 // A text has nothing besides itself.
 const CourseEntryDetail = ({ course, entry }: CourseEntryDetailProps) => {
@@ -195,11 +197,19 @@ const CourseEntryDetail = ({ course, entry }: CourseEntryDetailProps) => {
       }
     />
   ) : (
-    <VocabularyExample
-      entry={entry}
-      generate={() => refreshed(generateVocabularyExample({ data: entry.id }))}
-      targetLanguage={course.targetLanguage}
-    />
+    <>
+      <RelatedWordsSummary
+        lists={entry}
+        targetLanguage={course.targetLanguage}
+      />
+      <VocabularyExample
+        entry={entry}
+        generate={() =>
+          refreshed(generateVocabularyExample({ data: entry.id }))
+        }
+        targetLanguage={course.targetLanguage}
+      />
+    </>
   );
 };
 

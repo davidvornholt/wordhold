@@ -144,6 +144,8 @@ export class VocabularyEntryStore extends Context.Service<
                   nativeText: input.nativeText,
                   grammar: null,
                   example: input.example,
+                  synonyms: null,
+                  antonyms: null,
                 },
               ]);
               const [entry] = inserted;

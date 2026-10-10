@@ -30,6 +30,7 @@ import { cardClass } from '../../../../../shared/ui/surface-styles';
 import {
   PlaceDirectionPlan,
   PlaceSentencePractice,
+  PlaceWordRelations,
   PlaceWords,
 } from '../../-place-screen';
 
@@ -147,6 +148,12 @@ const BookScreen = () => {
           />
         )}
         <PlaceSentencePractice
+          courseId={course.id}
+          place={wordPlace}
+          progress={book}
+          subject={course}
+        />
+        <PlaceWordRelations
           courseId={course.id}
           place={wordPlace}
           progress={book}

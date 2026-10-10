@@ -130,6 +130,42 @@ export const PlaceSentencePractice = ({
   );
 };
 
+// Synonyms and antonyms are learned for a test alongside the words. Their
+// lists are reviewed on a screen of their own, a book or unit at a time.
+export const PlaceWordRelations = ({
+  courseId,
+  place,
+  progress,
+  subject,
+}: PlaceDirectionPlanProps) => {
+  const headingId = useId();
+  if (subject.kind !== 'language' || progress.entries === 0) {
+    return null;
+  }
+  return (
+    <section aria-labelledby={headingId} className="flex flex-col gap-3">
+      <div className="flex flex-col gap-1">
+        <h2 className="font-display text-xl" id={headingId}>
+          Synonyme und Gegenteile
+        </h2>
+        <p className="text-muted-foreground text-sm">
+          Trage ein, welche Synonyme und Gegenteile du zu den Wörtern lernen
+          sollst, oder lass dir fehlende vorschlagen.
+        </p>
+      </div>
+      <ActionLink
+        className="w-full sm:w-fit"
+        params={{ courseId }}
+        search={placeSearch(placeSelection(place))}
+        to="/courses/$courseId/relations"
+        variant="outline"
+      >
+        Synonyme und Gegenteile bearbeiten
+      </ActionLink>
+    </section>
+  );
+};
+
 type PlaceWordsProps = {
   readonly course: EntryCourse;
   readonly place: WordPlace;

@@ -32,6 +32,8 @@ const pageAnswer = (
       grammar: printedGrammar(entry),
       example: entry.example ?? null,
       exampleTranslation: entry.example === undefined ? null : 'Übersetzung',
+      synonyms: null,
+      antonyms: null,
       confidence: 0.9,
     }),
   ),

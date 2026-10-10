@@ -3,8 +3,10 @@ import type { Database } from '@wordhold/db/client';
 import { Effect } from 'effect';
 import { normalizeAnswer } from '../grading/normalize';
 import type { NewExampleData } from './entry-fields';
+import type { RelatedWordListsData } from './related-words';
+import { writeRelatedWords } from './related-words-store';
 
-export type NewVocabularyEntry = {
+export type NewVocabularyEntry = RelatedWordListsData & {
   readonly courseId: string;
   readonly bookId: string;
   // Null for a word that lives directly in its book.
@@ -23,9 +25,9 @@ export type InsertedVocabularyEntry = {
 };
 
 // Every new entry gets the same companions whichever way it arrived: its
-// example sentence, both texts as accepted answers for deterministic
-// grading, and one card per direction so it can be learned and scheduled.
-// Runs inside the caller's transaction.
+// example sentence, its synonyms and antonyms, both texts as accepted
+// answers for deterministic grading, and one card per direction so it can be
+// learned and scheduled. Runs inside the caller's transaction.
 export const insertVocabularyEntries = (
   sql: Database,
   entries: ReadonlyArray<NewVocabularyEntry>,
@@ -61,6 +63,23 @@ export const insertVocabularyEntries = (
     });
     if (examples.length > 0) {
       yield* sql`insert into entry_examples ${sql.insert(examples)}`;
+    }
+    const relatedWords = entries.flatMap((entry, index) => {
+      const entryId = inserted[index]?.id;
+      return entryId === undefined ||
+        (entry.synonyms === null && entry.antonyms === null)
+        ? []
+        : [
+            {
+              courseId: entry.courseId,
+              entryId,
+              synonyms: entry.synonyms,
+              antonyms: entry.antonyms,
+            },
+          ];
+    });
+    if (relatedWords.length > 0) {
+      yield* writeRelatedWords(sql, relatedWords);
     }
     const answers = entries.flatMap((entry, index) => {
       const entryId = inserted[index]?.id;
