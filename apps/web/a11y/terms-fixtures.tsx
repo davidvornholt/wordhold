@@ -16,8 +16,9 @@ import { fixtureBackControl, fixtureControl } from './fixture-controls';
 import { navigateToFixture } from './fixture-state';
 
 const term = 'Katalysator';
+// A definition keeps the lines it was written in.
 const definition =
-  'Ein Stoff, der die Aktivierungsenergie einer Reaktion senkt und dabei nicht verbraucht wird.';
+  'Ein Stoff, der die Aktivierungsenergie einer Reaktion senkt und dabei nicht verbraucht wird.\nBeispiel: Platin im Abgaskatalysator.';
 const keyPoints = [
   'Ein Katalysator ist ein Stoff.',
   'Er senkt die Aktivierungsenergie einer Reaktion.',

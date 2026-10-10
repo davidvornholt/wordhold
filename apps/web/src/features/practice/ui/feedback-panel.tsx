@@ -133,7 +133,7 @@ const expectedAnswerLabel = (
 
 const expectedAnswerClass = {
   language: 'wrap-break-word hyphens-auto font-display text-2xl',
-  terms: 'wrap-break-word hyphens-auto text-lg',
+  terms: 'wrap-break-word hyphens-auto whitespace-pre-line text-lg',
   texts: 'wrap-break-word hyphens-auto whitespace-pre-line text-lg',
 } as const satisfies Record<CourseKind, string>;
 

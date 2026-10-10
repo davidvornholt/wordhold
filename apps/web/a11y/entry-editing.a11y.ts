@@ -193,6 +193,37 @@ test('a term with a new definition loses its key points', async ({ page }) => {
   ).toBeVisible();
 });
 
+test('a definition keeps the lines it is written in', async ({ page }) => {
+  await page.goto('/?state=terms-course');
+  const dialog = await openEntry(page, 'Isotop');
+  await dialog.getByRole('button', { exact: true, name: 'Bearbeiten' }).click();
+  const definition = dialog.getByRole('textbox', {
+    exact: true,
+    name: 'Definition',
+  });
+  const firstLine =
+    'Atome desselben Elements mit gleicher Protonenzahl, aber unterschiedlicher Neutronenzahl.';
+  const secondLine = 'Beispiel: Kohlenstoff-12 und Kohlenstoff-14.';
+  await definition.fill(firstLine);
+  await definition.press('Shift+Enter');
+  await definition.pressSequentially(secondLine);
+  await definition.press('Enter');
+  await expect(notice(page)).toHaveText('„Isotop“ gespeichert.');
+
+  // innerText keeps a line break only where the page shows one.
+  const shown = `${firstLine}\n${secondLine}`;
+  await expect(dialog.getByText(secondLine)).toHaveJSProperty(
+    'innerText',
+    shown,
+  );
+  await dialog.getByRole('button', { name: 'Schließen' }).click();
+  await expect(dialog).toBeHidden();
+  const row = page.getByRole('listitem').filter({
+    has: page.getByRole('button', { exact: true, name: 'Isotop' }),
+  });
+  await expect(row.getByText(secondLine)).toHaveJSProperty('innerText', shown);
+});
+
 test('a deleted term hands focus to the count of those left', async ({
   page,
 }) => {

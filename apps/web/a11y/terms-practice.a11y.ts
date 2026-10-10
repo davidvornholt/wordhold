@@ -3,9 +3,10 @@ import { expect, test } from '@playwright/test';
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
 const definition =
-  'Ein Stoff, der die Aktivierungsenergie einer Reaktion senkt und dabei nicht verbraucht wird.';
-const slippedCopy =
-  'Ein Stoff, der die Aktivierungsenergie einer Reaktion erhöht und dabei nicht verbraucht wird.';
+  'Ein Stoff, der die Aktivierungsenergie einer Reaktion senkt und dabei nicht verbraucht wird.\nBeispiel: Platin im Abgaskatalysator.';
+const slippedCopy = definition.replace('senkt', 'erhöht');
+// innerText keeps a line break only where the page shows one.
+const secondLine = 'Beispiel: Platin im Abgaskatalysator.';
 
 test('a definition names the missed key point and keeps a slipped copy', async ({
   page,
@@ -30,6 +31,12 @@ test('a definition names the missed key point and keeps a slipped copy', async (
   await expect(
     page.getByRole('listitem').filter({ hasText: 'Genannt:' }),
   ).toHaveCount(2);
+  await expect(
+    page
+      .getByRole('status')
+      .filter({ hasText: 'Noch nicht sicher' })
+      .getByText(secondLine),
+  ).toHaveJSProperty('innerText', definition);
 
   const retype = page.getByLabel('Schreib die Antwort ab');
   await expect(retype).toBeFocused();
@@ -56,6 +63,10 @@ test('the learning pass shows a definition to copy and keeps a slipped copy', as
     page.getByRole('heading', { level: 2, name: 'Katalysator' }),
   ).toBeVisible();
   await expect(page.getByText('0 von 1 Begriff kennengelernt')).toBeVisible();
+  await expect(page.getByText(secondLine)).toHaveJSProperty(
+    'innerText',
+    definition,
+  );
   const field = page.getByLabel('Schreib die Definition ab');
   await expect(field).toBeFocused();
   await expect(field).toHaveAccessibleDescription(`Katalysator ${definition}`);
