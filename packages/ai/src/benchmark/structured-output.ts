@@ -22,12 +22,9 @@ export const providerCompatibleJsonSchema = (value: unknown): unknown => {
   return value;
 };
 
-// Providers describe structured output as JSON Schema. The AI SDK can derive
-// one from a standard schema only when the vendor supports that conversion,
-// and Effect's bridge does not, so convert here and decode the model's answer
-// with the Effect schema afterwards. The output type stays `unknown`: what a
-// model returns is untrusted until decoding validates it.
-export const providerJsonSchema = (schema: Schema.Top) =>
+// The production JSON Schema without array length bounds, for the Gemini and
+// OpenAI candidates. Claude candidates receive the production schema as is.
+export const compatibleJsonSchema = (schema: Schema.Top) =>
   jsonSchema<unknown>(
     providerCompatibleJsonSchema(jsonSchemaOf(schema)) as ReturnType<
       typeof jsonSchemaOf

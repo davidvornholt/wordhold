@@ -26,4 +26,4 @@ Rotate the AWS SigV4 pair with the replace, verify, revoke order. Store both rep
 
 Run `bun run --cwd apps/web provider:verify` with the generated environment before deployment. The check uses a synthetic textbook page and a synthetic recording and exercises every production AI task with the application's credentials.
 
-`GOOGLE_SERVICE_ACCOUNT_JSON` and `GOOGLE_VERTEX_LOCATION` are used only by the model benchmark. They are not production application requirements.
+`GOOGLE_SERVICE_ACCOUNT_JSON` and `GOOGLE_VERTEX_LOCATION` are used only by the model benchmark. They are not production application requirements. The benchmark (`bun run --cwd packages/ai benchmark:models`) signs Claude requests with the developer's `aws login` session instead of the application's IAM users, which may not be allowed to invoke every candidate model.
