@@ -8,7 +8,7 @@ describe('copyDifference', () => {
   it('names the first word that differs, as written in the definition', () => {
     const difference = copyDifference(
       definition,
-      'ein Stoff der die Energie einer Reaktion senkt',
+      'Ein Stoff der die Energie einer Reaktion senkt',
     );
     expect(difference).toEqual({
       kind: 'wrong-word',
@@ -33,13 +33,35 @@ describe('copyDifference', () => {
     ).toEqual({ kind: 'extra', rest: 'Er wird nicht verbraucht.' });
   });
 
-  it('ignores case, commas and closing punctuation like grading does', () => {
+  it('ignores commas and closing punctuation like grading does', () => {
     expect(
       copyDifference(
         definition,
-        'ein stoff der die aktivierungsenergie einer reaktion senkt',
+        'Ein Stoff der die Aktivierungsenergie einer Reaktion senkt',
       ),
     ).toBeNull();
+  });
+
+  it('names a word written in the wrong case', () => {
+    expect(
+      copyDifference(definition, 'Ein stoff, der die Aktivierungsenergie'),
+    ).toEqual({
+      kind: 'wrong-word',
+      position: 2,
+      expected: 'Stoff,',
+      typed: 'stoff,',
+    });
+  });
+
+  it('accepts the indices of a formula typed on the line', () => {
+    const acid = 'Eine Säure mit der Formel H₂SO₄.';
+    expect(copyDifference(acid, 'Eine Säure mit der Formel H2SO4.')).toBeNull();
+    expect(copyDifference(acid, 'Eine Säure mit der Formel H²SO₄.')).toEqual({
+      kind: 'wrong-word',
+      position: 6,
+      expected: 'H₂SO₄.',
+      typed: 'H²SO₄.',
+    });
   });
 
   it('shortens a long remainder', () => {

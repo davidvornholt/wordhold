@@ -1,4 +1,5 @@
 import type { AnswerSource } from '@wordhold/db/schema/entries';
+import { isSameReading } from './formula-notation';
 import { normalizeAnswerForComparison } from './normalize';
 import { answerVariants } from './variants';
 
@@ -27,29 +28,27 @@ export const isDeterministicMatch = (
   accepted: ReadonlyArray<AcceptedAnswer>,
 ): boolean => {
   const normalized = normalizeAnswerForComparison(submittedAnswer);
-  if (
-    accepted.some(
-      (answer) => normalizeAnswerForComparison(answer.text) === normalized,
-    )
-  ) {
+  const acceptedTexts = accepted.map((answer) =>
+    normalizeAnswerForComparison(answer.text),
+  );
+  if (acceptedTexts.some((text) => isSameReading(text, normalized))) {
     return true;
   }
 
-  const acceptedReadings = new Set(
-    accepted.map((answer) => normalizeAnswerForComparison(answer.text)),
-  );
-  for (const answer of accepted) {
-    if (answer.source === 'textbook') {
-      for (const reading of textbookReadings(answer.text)) {
-        acceptedReadings.add(reading);
-      }
-    }
-  }
-
+  const acceptedReadings = [
+    ...acceptedTexts,
+    ...accepted.flatMap((answer) =>
+      answer.source === 'textbook' ? textbookReadings(answer.text) : [],
+    ),
+  ];
   const submitted = answerVariants(submittedAnswer);
   return (
     submitted._tag === 'Expanded' &&
     submitted.readings.length > 0 &&
-    submitted.readings.every((reading) => acceptedReadings.has(reading))
+    submitted.readings.every((reading) =>
+      acceptedReadings.some((acceptedReading) =>
+        isSameReading(acceptedReading, reading),
+      ),
+    )
   );
 };

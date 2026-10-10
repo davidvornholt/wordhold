@@ -88,3 +88,39 @@ test('the learning pass shows a definition to copy and keeps a slipped copy', as
     }),
   ).toBeVisible();
 });
+
+test('the special characters write a formula at the cursor', async ({
+  page,
+}) => {
+  await page.goto('/?state=terms-practice');
+  const answer = page.getByLabel('Deine Antwort');
+  await expect(answer).toBeFocused();
+  const toggle = page.getByRole('button', { name: 'Sonderzeichen' });
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.getByRole('group', { name: 'Tiefgestellt' })).toBeHidden();
+
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(answer).toBeFocused();
+  await answer.pressSequentially('HO');
+  await answer.press('ArrowLeft');
+  await page.getByRole('button', { name: 'tiefgestellt 2' }).click();
+  await expect(answer).toBeFocused();
+  await answer.press('End');
+  await page.getByRole('button', { name: 'hochgestellt plus' }).click();
+  await expect(answer).toHaveValue('H₂O⁺');
+
+  // A keyboard user stays on the palette to add several characters.
+  const minus = page.getByRole('button', { name: 'hochgestellt minus' });
+  await minus.focus();
+  await minus.press('Enter');
+  await expect(minus).toBeFocused();
+  await expect(answer).toHaveValue('H₂O⁺⁻');
+
+  // The palette stays open on the next visit.
+  await page.reload();
+  await expect(
+    page.getByRole('button', { name: 'Sonderzeichen' }),
+  ).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.getByRole('group', { name: 'Tiefgestellt' })).toBeVisible();
+});

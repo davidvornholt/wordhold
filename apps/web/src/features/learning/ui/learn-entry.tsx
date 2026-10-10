@@ -21,6 +21,7 @@ import {
   type AnswerFieldElement,
 } from '../../../shared/ui/answer-field';
 import { Button } from '../../../shared/ui/button';
+import { CharacterPalette } from '../../../shared/ui/character-palette';
 import { KeyPointList } from '../../../shared/ui/key-point-list';
 import { RelationQuestion } from '../../../shared/ui/relation-question';
 import { WordCard } from '../../../shared/ui/word-card';
@@ -270,6 +271,9 @@ export const LearnEntry = ({
           placeholder={copyLabels[subject.kind].placeholder ?? answer}
           value={typed}
         />
+        {subject.kind === 'terms' ? (
+          <CharacterPalette disabled={busy} fieldRef={inputRef} />
+        ) : null}
         <Button disabled={busy || typed.trim() === ''} type="submit">
           {actionLabel}
         </Button>

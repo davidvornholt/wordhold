@@ -39,6 +39,12 @@ describe('sentenceJudgePrompt', () => {
       'not the only one',
     );
   });
+
+  it('counts case as spelling', () => {
+    expect(sentenceJudgePrompt({ ...lawyer, givenAnswer: '' })).toContain(
+      'spelledCorrectly judge the answer itself, case included',
+    );
+  });
 });
 
 describe('SentenceVerdict', () => {
