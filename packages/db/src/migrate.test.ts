@@ -40,6 +40,8 @@ const transcriptionUsageMigrationHash =
   'b01829ba1894314d9860d5ba5cfb9c019b77f3beaeed39493692d313aba79e37';
 const relatedWordsMigrationHash =
   '4549fe65b6fcf021610e4fddb0bfd22b3fb65783a8d2c576e2786ec65750d456';
+const relationCardsMigrationHash =
+  '8335a14fcdd2b947452db288da06c3349f01678de25f34d6f8d6e1680bc37091';
 const fullMigrationTestTimeoutMs = 15_000;
 
 const getMigrationError = (url: string) =>
@@ -72,6 +74,15 @@ it(
           yield* sql`drop type course_kind`;
           yield* sql`alter table entries drop column key_points`;
           yield* sql`alter table entries drop column synonyms, drop column antonyms`;
+          yield* sql`
+          alter table courses
+            drop constraint courses_directions_translations,
+            drop column practises_related_words
+        `;
+          // Postgres cannot drop an enum value; renaming one frees its label
+          // for the replayed migration to add again.
+          yield* sql`alter type answer_direction rename value 'to_synonym' to 'replayed_to_synonym'`;
+          yield* sql`alter type answer_direction rename value 'to_antonym' to 'replayed_to_antonym'`;
           yield* sql`drop index "account_providerId_accountId_idx"`;
           yield* sql`alter table account alter column issuer set not null`;
           yield* sql`create unique index "account_issuer_accountId_idx" on account (issuer, account_id)`;
@@ -118,7 +129,8 @@ it(
             ${textsKindMigrationHash},
             ${biblesMigrationHash},
             ${transcriptionUsageMigrationHash},
-            ${relatedWordsMigrationHash}
+            ${relatedWordsMigrationHash},
+            ${relationCardsMigrationHash}
           )
         `;
           yield* migrateDatabase(database.url);

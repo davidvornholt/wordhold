@@ -1,10 +1,18 @@
 import type { ReviewMode } from '@wordhold/db/schema/practice';
-import { useId, useRef } from 'react';
-import type { CourseSubject } from '../../../shared/directions';
+import { type ReactNode, useId, useRef } from 'react';
+import {
+  type CourseSubject,
+  isRelationDirection,
+} from '../../../shared/directions';
 import type { PrepareExamples } from '../../../shared/examples/example-model';
 import { germanLabels } from '../../../shared/languages';
+import {
+  answerLanguage,
+  foreignPromptLanguage,
+} from '../../../shared/practice/card-texts';
 import type { RailOutcome } from '../../../shared/session/rail-outcome';
 import type { AnswerFieldElement } from '../../../shared/ui/answer-field';
+import { RelationQuestion } from '../../../shared/ui/relation-question';
 import { WordCard } from '../../../shared/ui/word-card';
 import type {
   PracticeSession,
@@ -26,12 +34,22 @@ import { useRetype } from './use-retype';
 type SessionItem = PracticeSession['items'][number];
 
 // "auf" takes the plain language name, so every target language declines
-// correctly ("auf Französisch", "auf Latein" — never "ins Lateine").
+// correctly ("auf Französisch", "auf Latein" — never "ins Lateine"). A
+// synonym or antonym is asked in the course's language, as a test does.
 const practiceInstruction = (
   direction: SessionItem['direction'],
   subject: CourseSubject,
   repeated: boolean,
-) => {
+): ReactNode => {
+  if (isRelationDirection(direction)) {
+    const question = (
+      <RelationQuestion
+        direction={direction}
+        language={subject.targetLanguage}
+      />
+    );
+    return repeated ? <>{question} · Noch einmal</> : question;
+  }
   let instruction = 'Übersetze auf Deutsch';
   if (subject.kind === 'terms') {
     instruction = 'Erkläre den Begriff';
@@ -95,8 +113,8 @@ export const CardPractice = ({
     onNext,
   });
   const { result, busy, resolution } = submission;
-  const answerLanguage = item.direction === 'to_target' ? targetLanguage : 'de';
-  const retype = useRetype(result, answerLanguage, subject.kind);
+  const answerLang = answerLanguage(item.direction, targetLanguage);
+  const retype = useRetype(result, answerLang, subject.kind, item.relatedWords);
   useCardFlow({
     busy,
     result,
@@ -123,11 +141,11 @@ export const CardPractice = ({
         tone={tone}
         word={item.prompt}
         wordId={promptId}
-        wordLang={item.direction === 'to_native' ? targetLanguage : undefined}
+        wordLang={foreignPromptLanguage(item.direction, targetLanguage)}
       >
         {result === null ? null : (
           <FeedbackPanel
-            answerLanguage={answerLanguage}
+            answerLanguage={answerLang}
             busy={busy || resolution !== null}
             dictated={submission.submittedDictated}
             example={example}

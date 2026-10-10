@@ -19,23 +19,34 @@ export const needsRetype = (result: SubmitResult | null): boolean =>
   result?.graded === true && !result.correct;
 
 // The template is the card's textbook answer, so the copy passes whenever
-// review grading would accept it. A text is compared word for word, without
-// the typos a recitation is forgiven.
+// review grading would accept it. A synonym or antonym card shows its whole
+// list, and any one of its words passes. A text is compared word for word,
+// without the typos a recitation is forgiven.
 export const matchesShownAnswer = (
   expectedAnswer: string,
   typed: string,
   kind: CourseKind,
+  relatedWords: ReadonlyArray<string>,
 ): boolean =>
   kind === 'texts'
     ? isVerbatimCopy(expectedAnswer, typed)
-    : isDeterministicMatch(typed, [
-        { text: expectedAnswer, source: 'textbook' },
-      ]);
+    : isDeterministicMatch(
+        typed,
+        [expectedAnswer, ...relatedWords].map((text) => ({
+          text,
+          source: 'textbook',
+        })),
+      );
 
 // A missed word is typed again from scratch; a missed definition or text
 // keeps the copy and names the first word that differs, since most of it is
 // usually right.
-const missedCopy = (kind: CourseKind, template: string, typed: string) => {
+const missedCopy = (
+  kind: CourseKind,
+  template: string,
+  typed: string,
+  relatedWords: ReadonlyArray<string>,
+) => {
   switch (kind) {
     case 'texts':
       return {
@@ -51,7 +62,10 @@ const missedCopy = (kind: CourseKind, template: string, typed: string) => {
       };
     case 'language':
       return {
-        message: 'Noch nicht ganz. Schreib die Vokabel genau so ab.',
+        message:
+          relatedWords.length > 0
+            ? 'Noch nicht ganz. Schreib eines der Wörter genau so ab.'
+            : 'Noch nicht ganz. Schreib die Vokabel genau so ab.',
         keepsCopy: false,
       };
     default:
@@ -63,6 +77,8 @@ export const useRetype = (
   result: SubmitResult | null,
   templateLanguage: string,
   kind: CourseKind,
+  // For a synonym or antonym card, its words, any one of which passes.
+  relatedWords: ReadonlyArray<string>,
 ) => {
   const [typed, setTypedText] = useState('');
   const [missedMessage, setMissedMessage] = useState<string | null>(null);
@@ -74,11 +90,11 @@ export const useRetype = (
     if (!required) {
       return true;
     }
-    if (matchesShownAnswer(template, typed, kind)) {
+    if (matchesShownAnswer(template, typed, kind, relatedWords)) {
       setMissedMessage(null);
       return true;
     }
-    const missed = missedCopy(kind, template, typed);
+    const missed = missedCopy(kind, template, typed, relatedWords);
     setMissedMessage(missed.message);
     if (!missed.keepsCopy) {
       setTypedText('');

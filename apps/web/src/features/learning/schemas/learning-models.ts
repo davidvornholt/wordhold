@@ -10,18 +10,14 @@ export type LearnItem = {
   readonly entryId: string;
   readonly targetText: string;
   readonly nativeText: string;
+  // For a synonym or antonym card, the words it asks for; empty otherwise.
+  readonly relatedWords: ReadonlyArray<string>;
   readonly hasAudio: boolean;
   readonly example: PreparedExampleSentence | null;
   readonly textbookAnswers: ReadonlyArray<string>;
   // What a definition must state, once derived. Always null for vocabulary.
   readonly keyPoints: ReadonlyArray<string> | null;
 };
-
-export const learnPrompt = (item: LearnItem): string =>
-  item.direction === 'to_target' ? item.nativeText : item.targetText;
-
-export const learnAnswer = (item: LearnItem): string =>
-  item.direction === 'to_target' ? item.targetText : item.nativeText;
 
 export type LearnSelectionPass = {
   readonly items: ReadonlyArray<LearnItem>;

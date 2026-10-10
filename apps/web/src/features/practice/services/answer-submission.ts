@@ -7,6 +7,7 @@ import {
   type GradeOutcome,
   isCorrect,
 } from '../../../shared/grading/rating';
+import { cardAnswer } from '../../../shared/practice/card-texts';
 import {
   AnswerTooLongError,
   StaleAnswerSubmissionError,
@@ -170,10 +171,10 @@ export const resolveAnswerSubmission = (
       row.card.direction,
     );
     // The entry's own text for the asked direction: its textbook answer.
-    const expectedAnswer =
-      row.card.direction === 'to_target'
-        ? row.entry.targetText
-        : row.entry.nativeText;
+    const expectedAnswer = cardAnswer({
+      direction: row.card.direction,
+      ...row.entry,
+    });
     if ('skipped' in data) {
       // A skip is never graded: it reveals the solution and commits a lapse
       // without consulting the matcher or the judge.

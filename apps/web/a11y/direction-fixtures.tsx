@@ -59,7 +59,7 @@ export const PracticeStartFixture = ({
 export const CourseSettingsFixture = () => (
   <PageLayout backControl={backControl} title="English A2: Einstellungen">
     <DirectionSettings
-      initial={['to_target', 'to_native']}
+      initial={['to_target', 'to_native', 'to_synonym', 'to_antonym']}
       save={() => Promise.resolve()}
       subject={englishSubject}
     />

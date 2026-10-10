@@ -35,6 +35,10 @@ import {
   FutureStudySessionFixture,
   PracticeSessionFixture,
 } from './practice-session-fixtures';
+import {
+  SynonymLearnFixture,
+  SynonymPracticeFixture,
+} from './relation-card-fixtures';
 import { rootFixture } from './root-fixtures';
 import { SentencePracticeFixture } from './sentence-fixtures';
 import { StudyStartFixture } from './study-fixtures';
@@ -140,6 +144,8 @@ const learningFixture = (state: FixtureState) => {
       return <LearnDoneFixture />;
     case 'learn-section-done':
       return <LearnSectionDoneFixture />;
+    case 'synonym-learn':
+      return <SynonymLearnFixture />;
     default:
       return null;
   }
@@ -171,6 +177,8 @@ const practiceFixture = (state: FixtureState) => {
       return <DeferredPracticeFixture />;
     case 'sentence-practice':
       return <SentencePracticeFixture />;
+    case 'synonym-practice':
+      return <SynonymPracticeFixture />;
     default:
       return null;
   }
@@ -322,6 +330,7 @@ const fixtureContent = (state: FixtureState) => {
     case 'learn-retry':
     case 'learn-done':
     case 'learn-section-done':
+    case 'synonym-learn':
       return learningFixture(state);
     case 'course-settings':
       return <CourseSettingsFixture />;
@@ -345,6 +354,7 @@ const fixtureContent = (state: FixtureState) => {
     case 'practice-ungraded-one-card':
     case 'practice-deferred':
     case 'sentence-practice':
+    case 'synonym-practice':
       return practiceFixture(state);
     case 'loading':
     case 'error':

@@ -17,7 +17,7 @@ const wordSize = {
 
 type WordCardProps = {
   // What to do with the word: "Übersetze auf Englisch".
-  readonly eyebrow: string;
+  readonly eyebrow: ReactNode;
   readonly word: string;
   readonly size?: keyof typeof wordSize;
   readonly wordId: string;

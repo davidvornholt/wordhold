@@ -9,6 +9,7 @@ import {
   fixtureUnitId,
   seedIntroducedCardFixture,
 } from '../../../shared/testing/introduced-card-fixture';
+import { seedDueSynonymCard } from '../../../shared/testing/relation-card-fixture';
 import { CourseDatabaseError } from '../errors/courses-errors';
 import { CourseStore } from './course-store';
 import {
@@ -261,6 +262,48 @@ describe('CourseStore PostgreSQL entry contents', () => {
           nextDueAt: new Date('2026-08-21T12:00:00.000Z'),
           lastAddedAt: fixtureAddedAt,
           directions: directionsAfterNativeRemoved,
+        });
+      }),
+    );
+  });
+});
+
+describe('CourseStore PostgreSQL synonym and antonym progress', () => {
+  it('lists synonyms beside the translations only while the course practises them', async () => {
+    await runCourseStoreTest(
+      Effect.gen(function* () {
+        yield* seedIntroducedCardFixture;
+        yield* seedDueSynonymCard;
+        const sql = yield* Database;
+        const store = yield* CourseStore;
+        const unit = Effect.map(
+          store.listUnits(fixtureCourseId, fixtureNow),
+          (units) => units.find((candidate) => candidate.id === fixtureUnitId),
+        );
+
+        // No word has antonyms, so they are not listed at all.
+        expect(yield* unit).toMatchObject({
+          due: 2,
+          directions: [
+            ...initialDirections,
+            {
+              direction: 'to_synonym',
+              total: 1,
+              introduced: 1,
+              unintroduced: 0,
+              due: 1,
+              firstReviews: 0,
+              nextDueAt: null,
+            },
+          ],
+        });
+        yield* sql`
+          update courses set practises_related_words = false
+          where id = ${fixtureCourseId}
+        `;
+        expect(yield* unit).toMatchObject({
+          due: 1,
+          directions: initialDirections,
         });
       }),
     );

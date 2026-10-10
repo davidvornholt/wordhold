@@ -39,8 +39,8 @@ const optionStatus = (
   option: SessionOption,
   itemNoun: SessionStartProps['itemNoun'],
 ): string => {
-  if (option.availability === 'needs_both_directions') {
-    return 'In einer Richtung fehlen Karten';
+  if (option.availability === 'needs_two_directions') {
+    return 'Nur eine Richtung hat Karten';
   }
   if (option.availability === 'no_cards') {
     return `Keine ${itemNoun.plural} bereit`;

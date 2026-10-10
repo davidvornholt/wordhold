@@ -1,7 +1,11 @@
 import { Database } from '@wordhold/db/client';
 import type { CourseKind } from '@wordhold/db/schema/courses';
 import { Context, Effect, Layer } from 'effect';
-import type { ListCourseKind } from '../../../shared/directions';
+import {
+  isRelationDirection,
+  type ListCourseKind,
+} from '../../../shared/directions';
+import { practisedDirections } from '../../../shared/practice/practised-directions';
 import { CourseDatabaseError } from '../errors/courses-errors';
 import {
   type CourseDirectionsData,
@@ -109,18 +113,19 @@ export class CourseStore extends Context.Service<
     CourseStore,
     Effect.gen(function* () {
       const sql = yield* Database;
-      // The column is unnested into one row per direction rather than read as
-      // an array: the Postgres driver hands an array column back as the raw
-      // text `{to_target,to_native}`, so a query that returns rows is the only
-      // one whose shape this code decides. No rows means no such course.
+      // The directions are unnested into one row each rather than read as an
+      // array: the Postgres driver hands an array back as the raw text
+      // `{to_target,to_native}`, so a query that returns rows is the only one
+      // whose shape this code decides. No rows means no such course.
       const readDirections = (
         courseId: string,
       ): Effect.Effect<CourseDirectionsData | undefined, CourseDatabaseError> =>
         sql<{ readonly direction: unknown }>`
           select d.direction
-          from courses c
-          left join lateral unnest(c.directions) as d(direction) on true
-          where c.id = ${courseId}
+          from courses co
+          left join lateral unnest(${practisedDirections(sql)})
+            as d(direction) on true
+          where co.id = ${courseId}
         `.pipe(
           Effect.mapError((cause) =>
             databaseError('read course directions', cause),
@@ -135,16 +140,21 @@ export class CourseStore extends Context.Service<
                 ),
           ),
         );
-      // The array is written as one text literal rather than as a parameter
-      // per element: the values are enum names the schema already validated,
-      // and this keeps the driver out of deciding how an array is shaped.
+      // The translation directions are written as one text literal rather
+      // than as a parameter per element: the values are enum names the schema
+      // already validated, and this keeps the driver out of deciding how an
+      // array is shaped. Synonyms and antonyms are the course's one switch.
       const writeDirections = (
         courseId: string,
         directions: CourseDirectionsData,
-      ) =>
-        sql<{ readonly id: string }>`
+      ) => {
+        const translations = directions.filter(
+          (direction) => !isRelationDirection(direction),
+        );
+        return sql<{ readonly id: string }>`
           update courses
-          set directions = ${`{${directions.join(',')}}`}::answer_direction[]
+          set directions = ${`{${translations.join(',')}}`}::answer_direction[],
+            practises_related_words = ${directions.includes('to_synonym')}
           where id = ${courseId}
           returning id
         `.pipe(
@@ -153,6 +163,7 @@ export class CourseStore extends Context.Service<
             databaseError('write course directions', cause),
           ),
         );
+      };
       const listBooks = (courseId: string, now: Date) =>
         sql<WordProgressRow<Pick<CourseBook, 'id' | 'name'>>>`
           select b.id, b.name, ${wordProgressColumns(sql, now)}
@@ -161,7 +172,7 @@ export class CourseStore extends Context.Service<
           left join entries e on e.book_id = b.id and e.unit_id is null
           left join cards on cards.entry_id = e.id
           where b.course_id = ${courseId}
-          group by b.id, co.directions
+          group by b.id, co.id
           order by b.position, b.id
         `.pipe(
           Effect.map((rows) => rows.map(wordProgressFromRow)),
@@ -177,7 +188,7 @@ export class CourseStore extends Context.Service<
           left join entries e on e.unit_id = u.id
           left join cards on cards.entry_id = e.id
           where u.course_id = ${courseId}
-          group by u.id, b.id, co.directions
+          group by u.id, b.id, co.id
           order by b.position, u.position, u.name, u.id
         `.pipe(
           Effect.map((rows) => rows.map(wordProgressFromRow)),

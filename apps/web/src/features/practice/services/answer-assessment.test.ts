@@ -24,6 +24,7 @@ const termRow = (
     id: testCard.entryId,
     targetText: 'Katalysator',
     nativeText: 'Ein Stoff, der die Aktivierungsenergie senkt.',
+    relatedWords: [],
     keyPoints: stored,
   },
   targetLanguage: 'de',

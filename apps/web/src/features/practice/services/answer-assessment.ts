@@ -10,7 +10,6 @@ import {
   gradeRecitation,
   type RecitationOutcome,
 } from '../../../shared/grading/rating';
-import { englishNames } from '../../../shared/languages';
 import {
   type PracticeDatabaseError,
   type PracticeJudgeError,
@@ -32,6 +31,7 @@ import {
 import { JudgeCacheStore } from './judge-cache-store';
 import { PracticeJudge } from './practice-judge';
 import type { PracticeReviewStore } from './review-store';
+import { vocabularyJudgeInput } from './vocabulary-judge-input';
 
 // Only a judge verdict is cached and can be overruled later, so only a judge
 // verdict has an assessment.
@@ -69,16 +69,16 @@ const gradeTranslation = ({
     entryId: row.entry.id,
     direction: row.card.direction,
     normalizedAnswer: normalized,
-    input: {
-      direction: row.card.direction,
-      targetLanguage: englishNames[row.targetLanguage],
-      prompt:
-        row.card.direction === 'to_target'
-          ? row.entry.nativeText
-          : row.entry.targetText,
-      expectedAnswers: accepted.map((answer) => answer.text),
-      givenAnswer: data.answer,
-    },
+    input: vocabularyJudgeInput(
+      {
+        direction: row.card.direction,
+        targetText: row.entry.targetText,
+        nativeText: row.entry.nativeText,
+        targetLanguage: row.targetLanguage,
+      },
+      accepted.map((answer) => answer.text),
+      data.answer,
+    ),
   }).pipe(
     Effect.map(
       ({ assessmentId, verdict }): AssessedAnswer => ({

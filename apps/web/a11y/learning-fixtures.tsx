@@ -20,6 +20,7 @@ const items: ReadonlyArray<LearnItem> = [
     entryId: '00000000-0000-0000-0000-000000000001',
     targetText: 'memory',
     nativeText: 'die Erinnerung',
+    relatedWords: [],
     hasAudio: false,
     example: {
       targetText: 'This memory still makes me smile.',
@@ -36,6 +37,7 @@ const items: ReadonlyArray<LearnItem> = [
     entryId: '00000000-0000-0000-0000-000000000002',
     targetText: 'holiday',
     nativeText: 'die Ferien',
+    relatedWords: [],
     hasAudio: false,
     example: {
       targetText: 'We spend the holidays by the sea.',
@@ -52,6 +54,7 @@ const items: ReadonlyArray<LearnItem> = [
     entryId: '00000000-0000-0000-0000-000000000003',
     targetText: 'to look (at)',
     nativeText: 'ansehen',
+    relatedWords: [],
     hasAudio: false,
     example: {
       targetText: 'I look at the map before we leave.',

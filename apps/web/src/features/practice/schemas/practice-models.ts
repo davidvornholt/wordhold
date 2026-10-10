@@ -16,6 +16,8 @@ export type PracticeItem = {
   readonly entryId: string;
   readonly targetText: string;
   readonly nativeText: string;
+  // For a synonym or antonym card, the words it asks for; empty otherwise.
+  readonly relatedWords: ReadonlyArray<string>;
   readonly hasAudio: boolean;
   // Whether the entry already counted as "sicher" when the sitting loaded, so
   // the summary can count the entries the sitting made sicher.
@@ -59,7 +61,8 @@ export type KeyPointFinding = {
 };
 
 // `expectedAnswer` is the card's textbook answer: the solution the entry
-// intends, never an alternative the judge accepted along the way.
+// intends, never an alternative the judge accepted along the way. For a
+// synonym or antonym card it is the whole stored list.
 export type SubmitResult =
   | {
       readonly graded: false;
@@ -104,6 +107,8 @@ export type SubmissionRecord = {
     readonly targetText: string;
     readonly nativeText: string;
     readonly keyPoints: ReadonlyArray<string> | null;
+    // For a synonym or antonym card, the words it asks for; empty otherwise.
+    readonly relatedWords: ReadonlyArray<string>;
   };
   readonly courseKind: CourseKind;
   readonly targetLanguage: LanguageCode;

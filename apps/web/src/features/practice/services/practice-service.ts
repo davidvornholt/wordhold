@@ -1,5 +1,6 @@
 import type { AiUsage } from '@wordhold/ai/usage';
 import { Clock, Context, Effect, Layer } from 'effect';
+import { cardPrompt } from '../../../shared/practice/card-texts';
 import type {
   AnswerTooLongError,
   PracticeDatabaseError,
@@ -27,7 +28,7 @@ const withPrompt = (
 ): PracticeItem => ({
   ...item,
   example: null,
-  prompt: item.direction === 'to_target' ? item.nativeText : item.targetText,
+  prompt: cardPrompt(item),
 });
 
 export class PracticeService extends Context.Service<

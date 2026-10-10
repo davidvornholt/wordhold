@@ -25,6 +25,7 @@ const item = {
   entryId: '00000000-0000-0000-0000-000000000002',
   targetText: 'memory',
   nativeText: 'Erinnerung',
+  relatedWords: [],
   hasAudio: false,
   entryKnown: false,
   example: {

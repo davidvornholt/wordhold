@@ -19,7 +19,7 @@ test('the session picker remembers the last temporary direction', async ({
   await expect(reverse).toBeChecked();
 });
 
-test('mixed practice stays disabled until both directions have cards', async ({
+test('mixed practice stays disabled until two directions have cards', async ({
   page,
 }) => {
   await page.goto('/?state=practice-start-partial');
@@ -30,7 +30,7 @@ test('mixed practice stays disabled until both directions have cards', async ({
   await expect(forward).toBeEnabled();
   await expect(reverse).toBeDisabled();
   await expect(mixed).toBeDisabled();
-  await expect(page.getByText('In einer Richtung fehlen Karten')).toBeVisible();
+  await expect(page.getByText('Nur eine Richtung hat Karten')).toBeVisible();
 });
 
 const pageColumnClass = /page-column/u;
@@ -53,10 +53,35 @@ test('the course settings save a direction change but refuse to switch off the l
   // Deliberately a click and not `uncheck()`: the point is that the box does
   // not come off, which `uncheck()` would report as a failure of its own.
   await toTarget.click();
-  await expect(status).toHaveText(
-    'Eine Richtung bleibt immer an, sonst gibt es nichts zu üben.',
-  );
+  await expect(status).toHaveText('Eine Übersetzungsrichtung bleibt immer an.');
   await expect(toTarget).toBeChecked();
+});
+
+test('synonyms and antonyms switch together but never stand alone', async ({
+  page,
+}) => {
+  await page.goto('/?state=course-settings');
+  const toTarget = page.getByLabel('Deutsch → Englisch');
+  const toNative = page.getByLabel('Englisch → Deutsch');
+  const relatedWords = page.getByLabel('Synonyme und Gegenteile');
+  const status = page.getByRole('status', { name: 'Speicherstatus' });
+  await expect(relatedWords).toHaveAccessibleDescription(
+    'Du siehst eine Vokabel auf Englisch und schreibst ein Synonym oder ein Gegenteil dazu. Nur Vokabeln, zu denen du Synonyme oder Gegenteile gespeichert hast, bekommen diese Karten.',
+  );
+
+  await toNative.uncheck();
+  await expect(status).toHaveText('Gespeichert.');
+  // Synonyms alone would leave no translation to learn the word by.
+  await toTarget.click();
+  await expect(status).toHaveText('Eine Übersetzungsrichtung bleibt immer an.');
+  await expect(toTarget).toBeChecked();
+
+  await relatedWords.uncheck();
+  await expect(status).toHaveText('Gespeichert.');
+  await expect(relatedWords).not.toBeChecked();
+  await relatedWords.check();
+  await expect(status).toHaveText('Gespeichert.');
+  await expect(relatedWords).toBeChecked();
 });
 
 const actionIsRejected = async (action: Promise<unknown>): Promise<boolean> =>

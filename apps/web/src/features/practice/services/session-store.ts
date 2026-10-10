@@ -1,6 +1,10 @@
 import { Database } from '@wordhold/db/client';
 import { Context, Effect, Layer } from 'effect';
 import { entryIsKnown } from '../../../shared/practice/known-entry';
+import {
+  cardRelatedWords,
+  practisedDirections,
+} from '../../../shared/practice/practised-directions';
 import { readyCardsInNextSection } from '../../../shared/practice/session-policy';
 import { sessionSectionSize } from '../../../shared/session/section-policy';
 import {
@@ -20,8 +24,9 @@ import type {
 // and FSRS would schedule the entry on that failure.
 //
 // They all require the direction to be one the course still practises
-// (`co.directions`) as well as the one picked for this sitting. The exception
-// is a hand-picked selection, which may also ask a switched-off direction.
+// (`practisedDirections`) as well as the one picked for this sitting. The
+// exception is a hand-picked selection, which may also ask a switched-off
+// direction.
 // "Both" is passed as null, which the null check in each query turns into "no
 // extra restriction"; the casts keep Postgres from having to guess the
 // parameter's type when it is null.
@@ -81,6 +86,7 @@ export class PracticeSessionStore extends Context.Service<
               select c.id as "cardId", c.revision, c.direction,
                 e.id as "entryId", ${entryIsKnown(sql)} as "entryKnown",
                 e.target_text as "targetText", e.native_text as "nativeText",
+                ${cardRelatedWords(sql)} as "relatedWords",
                 exists(select 1 from entry_audio a where a.entry_id = e.id) as "hasAudio"
               from cards c
               join entries e on e.id = c.entry_id
@@ -88,7 +94,7 @@ export class PracticeSessionStore extends Context.Service<
               where e.course_id = ${courseId}
                 and ${inPlace}
                 and c.introduced_at is not null
-                and c.direction = any(co.directions)
+                and c.direction = any(${practisedDirections(sql)})
                 and (${only}::answer_direction is null
                   or c.direction = ${only}::answer_direction)
                 and (
@@ -113,7 +119,7 @@ export class PracticeSessionStore extends Context.Service<
               where e.course_id = ${courseId}
                 and ${inPlace}
                 and c.introduced_at is not null
-                and c.direction = any(co.directions)
+                and c.direction = any(${practisedDirections(sql)})
                 and (${only}::answer_direction is null
                   or c.direction = ${only}::answer_direction)
               group by e.course_id
@@ -157,6 +163,7 @@ export class PracticeSessionStore extends Context.Service<
           select c.id as "cardId", c.revision, c.direction,
             e.id as "entryId", ${entryIsKnown(sql)} as "entryKnown",
             e.target_text as "targetText", e.native_text as "nativeText",
+            ${cardRelatedWords(sql)} as "relatedWords",
             exists(select 1 from entry_audio a where a.entry_id = e.id) as "hasAudio"
           from cards c
           join entries e on e.id = c.entry_id
@@ -164,7 +171,7 @@ export class PracticeSessionStore extends Context.Service<
           where e.course_id = ${courseId}
             and ${selectionClause}
             and (${includeSwitchedOff}::boolean
-              or c.direction = any(co.directions))
+              or c.direction = any(${practisedDirections(sql)}))
             and (${only}::answer_direction is null
               or c.direction = ${only}::answer_direction)
           order by c.due_at asc nulls last, e.created_at asc, c.direction asc

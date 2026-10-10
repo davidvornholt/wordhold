@@ -7,6 +7,7 @@ import { Context, Effect, Layer } from 'effect';
 import type { AcceptedAnswer } from '../../../shared/grading/deterministic-match';
 import { ratings } from '../../../shared/grading/rating';
 import { entryIsKnown } from '../../../shared/practice/known-entry';
+import { cardRelatedWords } from '../../../shared/practice/practised-directions';
 import { saveDerivedKeyPoints } from '../../../shared/vocabulary/key-points';
 import {
   PracticeDatabaseError,
@@ -25,6 +26,7 @@ type SubmissionRow = typeof cards.$inferSelect & {
   readonly targetText: string;
   readonly nativeText: string;
   readonly keyPoints: ReadonlyArray<string> | null;
+  readonly relatedWords: ReadonlyArray<string>;
   readonly courseKind: CourseKind;
   readonly targetLanguage: LanguageCode;
 };
@@ -90,6 +92,7 @@ export class PracticeReviewStore extends Context.Service<
             c.last_reviewed_at as "lastReviewedAt", c.revision,
             e.target_text as "targetText",
             e.native_text as "nativeText", e.key_points as "keyPoints",
+            ${cardRelatedWords(sql)} as "relatedWords",
             co.kind as "courseKind", co.target_language as "targetLanguage"
           from cards c
           join entries e on e.id = c.entry_id
@@ -111,6 +114,7 @@ export class PracticeReviewStore extends Context.Service<
                     targetText: row.targetText,
                     nativeText: row.nativeText,
                     keyPoints: row.keyPoints,
+                    relatedWords: row.relatedWords,
                   },
                   courseKind: row.courseKind,
                   targetLanguage: row.targetLanguage,

@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
 import {
+  boolean,
   check,
   index,
   pgEnum,
@@ -9,7 +10,11 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 import { user } from './auth';
-import { answerDirectionEnum, answerDirections } from './directions';
+import {
+  answerDirectionEnum,
+  type TranslationDirection,
+  translationDirections,
+} from './directions';
 
 export const languageCodes = ['de', 'en', 'es', 'fr'] as const;
 export type LanguageCode = (typeof languageCodes)[number];
@@ -43,14 +48,20 @@ export const courses = pgTable(
     kind: courseKindEnum('kind').notNull().default('language'),
     targetLanguage: languageEnum('target_language').notNull(),
     nativeLanguage: languageEnum('native_language').notNull().default('de'),
-    // Which directions this course is practised in. A direction taken out is
-    // hidden rather than deleted: its cards keep their schedule, stop being
-    // asked, counted and scheduled, and pick up where they left off if it is
-    // put back.
+    // Which translation directions this course is practised in. A direction
+    // taken out is hidden rather than deleted: its cards keep their schedule,
+    // stop being asked, counted and scheduled, and pick up where they left
+    // off if it is put back.
     directions: answerDirectionEnum('directions')
       .array()
+      .$type<Array<TranslationDirection>>()
       .notNull()
-      .default([...answerDirections]),
+      .default([...translationDirections]),
+    // Whether a language course asks for the synonyms and antonyms of its
+    // words. Taken out, those cards are hidden the way a direction is.
+    practisesRelatedWords: boolean('practises_related_words')
+      .notNull()
+      .default(true),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -60,6 +71,11 @@ export const courses = pgTable(
     check(
       'courses_directions_non_empty',
       sql`cardinality(${table.directions}) > 0`,
+    ),
+    // Synonyms and antonyms are switched by `practises_related_words`.
+    check(
+      'courses_directions_translations',
+      sql`${table.directions} <@ '{to_target,to_native}'::answer_direction[]`,
     ),
     // Every course other than a language is German on both sides and asks
     // only for the entry's second side, which is why its direction settings

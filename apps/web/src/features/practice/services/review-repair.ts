@@ -11,7 +11,6 @@ import {
   type GradeOutcome,
   ratings,
 } from '../../../shared/grading/rating';
-import { englishNames } from '../../../shared/languages';
 import { judgeCacheIdentity } from './judge-cache';
 import { PracticeJudge } from './practice-judge';
 import {
@@ -21,6 +20,7 @@ import {
   type ReviewCorrection,
   replayCorrectedReviews,
 } from './review-repair-plan';
+import { vocabularyJudgeInput } from './vocabulary-judge-input';
 
 export class ReviewRepairError extends Schema.TaggedError<ReviewRepairError>()(
   'ReviewRepairError',
@@ -107,14 +107,11 @@ const planTranslationRepair = (card: EntryCard) =>
       });
     }
     const corrections: Array<ReviewCorrection> = [];
-    const input = {
-      direction: card.direction,
-      targetLanguage: englishNames[card.targetLanguage],
-      prompt:
-        card.direction === 'to_target' ? card.nativeText : card.targetText,
-      expectedAnswers: accepted.map((answer) => answer.text),
-      givenAnswer: '',
-    };
+    const input = vocabularyJudgeInput(
+      card,
+      accepted.map((answer) => answer.text),
+      '',
+    );
     // Identical old answers share this temporary cache. Planning does not write
     // judge_cache or teach accepted_answers before an operator applies the plan.
     const assessments = new Map<string, GradeOutcome>();

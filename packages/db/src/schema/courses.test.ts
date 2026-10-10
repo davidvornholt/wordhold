@@ -34,6 +34,41 @@ describe('course direction constraint', () => {
       ),
     );
   });
+
+  it('keeps synonyms and antonyms out of the translation directions', async () => {
+    await Effect.runPromise(
+      withMigratedTestDatabase((database) =>
+        Effect.gen(function* () {
+          const sql = yield* Database;
+          yield* sql`
+            insert into courses (id, name, target_language)
+            values (${courseId}, 'English', 'en')
+          `;
+
+          const update = yield* Effect.result(sql`
+            update courses
+            set directions = '{to_target,to_synonym}'::answer_direction[]
+            where id = ${courseId}
+          `);
+          expect(update._tag).toBe('Failure');
+          const rows = yield* sql<{
+            readonly directions: string;
+            readonly practisesRelatedWords: boolean;
+          }>`
+            select directions::text as directions,
+              practises_related_words as "practisesRelatedWords"
+            from courses where id = ${courseId}
+          `;
+          expect(rows).toEqual([
+            {
+              directions: '{to_target,to_native}',
+              practisesRelatedWords: true,
+            },
+          ]);
+        }).pipe(Effect.provide(testDatabaseLayer(database.url))),
+      ),
+    );
+  });
 });
 
 describe('list course constraint', () => {

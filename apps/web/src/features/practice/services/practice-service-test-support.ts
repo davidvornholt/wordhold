@@ -34,6 +34,7 @@ export const testSubmission: SubmissionRecord = {
     id: testCard.entryId,
     targetText: 'correct',
     nativeText: 'richtig',
+    relatedWords: [],
     keyPoints: null,
   },
   targetLanguage: 'en',

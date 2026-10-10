@@ -2,6 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import {
   directionOptions,
   directionsWithCards,
+  offeredDirections,
   resolveAnswerDirection,
   resolveSessionDirection,
   sessionOptions,
@@ -63,16 +64,73 @@ describe('sessionOptions', () => {
     ]);
   });
 
-  it('disables mixed practice while either direction has no cards', () => {
+  it('disables mixed practice while only one direction has cards', () => {
     const options = sessionOptions(['to_target', 'to_native'], english, [
       { direction: 'to_target', ready: 7 },
       { direction: 'to_native', ready: 0 },
       { direction: 'both', ready: 7 },
     ]);
     expect(options.find((option) => option.value === 'both')).toMatchObject({
-      availability: 'needs_both_directions',
+      availability: 'needs_two_directions',
       cards: 7,
     });
+  });
+});
+
+describe('sessionOptions with synonyms and antonyms', () => {
+  const allDirections = [
+    'to_target',
+    'to_native',
+    'to_synonym',
+    'to_antonym',
+  ] as const;
+
+  it('mixes the translations while no synonym or antonym is due', () => {
+    const options = sessionOptions(allDirections, english, [
+      ...counts,
+      { direction: 'to_synonym', ready: 0 },
+      { direction: 'to_antonym', ready: 0 },
+    ]);
+    expect(
+      options.map(({ value, availability }) => [value, availability]),
+    ).toEqual([
+      ['to_target', 'available'],
+      ['to_native', 'available'],
+      ['to_synonym', 'no_cards'],
+      ['to_antonym', 'no_cards'],
+      ['both', 'available'],
+    ]);
+    expect(options.at(-1)?.description).toBe(
+      'Alle Richtungen in einer Sitzung.',
+    );
+  });
+
+  it('mixes a translation with synonyms', () => {
+    const options = sessionOptions(['to_target', 'to_synonym'], english, [
+      { direction: 'to_target', ready: 3 },
+      { direction: 'to_synonym', ready: 2 },
+      { direction: 'both', ready: 5 },
+    ]);
+    expect(options.at(-1)).toMatchObject({
+      value: 'both',
+      availability: 'available',
+      description: 'Beide Richtungen in einer Sitzung.',
+    });
+  });
+});
+
+describe('offeredDirections', () => {
+  it('offers synonyms and antonyms only where some word has such a list', () => {
+    expect(
+      offeredDirections(
+        ['to_target', 'to_native', 'to_synonym', 'to_antonym'],
+        [
+          { direction: 'to_target' },
+          { direction: 'to_synonym' },
+          { direction: 'both' },
+        ],
+      ),
+    ).toEqual(['to_target', 'to_native', 'to_synonym']);
   });
 });
 
@@ -129,6 +187,16 @@ describe('resolveSessionDirection', () => {
         ['to_target'],
       ),
     ).toBeUndefined();
+  });
+
+  it('allows a mixed sitting once two of several directions have cards', () => {
+    expect(
+      resolveSessionDirection(
+        'both',
+        ['to_target', 'to_native', 'to_synonym'],
+        ['to_native', 'to_synonym'],
+      ),
+    ).toBe('both');
   });
 
   it('asks first when nothing was requested and there is a choice', () => {

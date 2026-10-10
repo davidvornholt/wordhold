@@ -1,5 +1,8 @@
 import type { CourseKind, LanguageCode } from '@wordhold/db/schema/courses';
-import type { AnswerDirection } from '@wordhold/db/schema/directions';
+import type {
+  AnswerDirection,
+  RelationDirection,
+} from '@wordhold/db/schema/directions';
 import { germanLabels } from './languages';
 
 // What a course's cards ask for. A language course translates between German
@@ -55,12 +58,21 @@ export const courseNouns = (subject: Pick<CourseSubject, 'kind'>) =>
 
 export type CourseNouns = ReturnType<typeof courseNouns>;
 
+// A synonym or antonym card asks for a word in the course's own language.
+export const isRelationDirection = (
+  direction: AnswerDirection,
+): direction is RelationDirection =>
+  direction === 'to_synonym' || direction === 'to_antonym';
+
 // The session picker and the course settings both name the directions, so the
 // wording lives in one place. The native side is always German.
 export const directionLabel = (
   direction: AnswerDirection,
   subject: CourseSubject,
 ): string => {
+  if (isRelationDirection(direction)) {
+    return direction === 'to_synonym' ? 'Synonyme' : 'Gegenteile';
+  }
   if (subject.kind === 'terms') {
     return 'Begriff → Definition';
   }
@@ -77,6 +89,13 @@ export const directionDescription = (
   direction: AnswerDirection,
   subject: CourseSubject,
 ): string => {
+  const targetLabel = germanLabels[subject.targetLanguage];
+  if (direction === 'to_synonym') {
+    return `Du siehst eine Vokabel auf ${targetLabel} und schreibst ein Synonym dazu.`;
+  }
+  if (direction === 'to_antonym') {
+    return `Du siehst eine Vokabel auf ${targetLabel} und schreibst ein Gegenteil dazu.`;
+  }
   if (subject.kind === 'terms') {
     return 'Du siehst den Begriff und schreibst seine Definition.';
   }
@@ -84,6 +103,6 @@ export const directionDescription = (
     return 'Du siehst den Titel und schreibst den Text wortgetreu aus dem Gedächtnis.';
   }
   return direction === 'to_target'
-    ? `Du siehst die deutsche Vokabel und schreibst sie auf ${germanLabels[subject.targetLanguage]}.`
+    ? `Du siehst die deutsche Vokabel und schreibst sie auf ${targetLabel}.`
     : 'Du siehst die fremdsprachige Vokabel und schreibst sie auf Deutsch.';
 };

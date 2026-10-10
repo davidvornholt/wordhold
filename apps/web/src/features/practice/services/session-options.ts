@@ -4,6 +4,7 @@ import {
   type CourseSubject,
   directionDescription,
   directionLabel,
+  isRelationDirection,
 } from '../../../shared/directions';
 import type { SessionDirection } from '../schemas/session-request';
 
@@ -12,7 +13,7 @@ export type SessionOption = {
   readonly label: string;
   readonly description: string;
   readonly cards: number;
-  readonly availability: 'available' | 'no_cards' | 'needs_both_directions';
+  readonly availability: 'available' | 'no_cards' | 'needs_two_directions';
 };
 
 type DirectionCount = {
@@ -20,15 +21,33 @@ type DirectionCount = {
   readonly ready: number;
 };
 
+// A mix needs cards in at least two directions; with one, it would be that
+// direction's sitting under another name.
 const mixedAvailability = (
   singles: ReadonlyArray<SessionOption>,
   mixedCards: number,
 ): SessionOption['availability'] => {
-  if (singles.some((option) => option.availability !== 'available')) {
-    return 'needs_both_directions';
+  const withCards = singles.filter(
+    (option) => option.availability === 'available',
+  ).length;
+  if (withCards === 1) {
+    return 'needs_two_directions';
   }
-  return mixedCards > 0 ? 'available' : 'no_cards';
+  return withCards > 1 && mixedCards > 0 ? 'available' : 'no_cards';
 };
+
+// The directions a scheduled sitting can offer. A translation direction the
+// course practises is always offered; synonyms and antonyms only where the
+// counts show some word with such a list.
+export const offeredDirections = (
+  enabled: ReadonlyArray<AnswerDirection>,
+  counts: ReadonlyArray<{ readonly direction: SessionDirection }>,
+): ReadonlyArray<AnswerDirection> =>
+  enabled.filter(
+    (direction) =>
+      !isRelationDirection(direction) ||
+      counts.some((count) => count.direction === direction),
+  );
 
 export const directionsWithCards = (
   cards: ReadonlyArray<{ readonly direction: AnswerDirection }>,
@@ -74,7 +93,10 @@ export const sessionOptions = (
         {
           value: 'both' as const,
           label: 'Gemischt',
-          description: 'Beide Richtungen in einer Sitzung.',
+          description:
+            singles.length === 2
+              ? 'Beide Richtungen in einer Sitzung.'
+              : 'Alle Richtungen in einer Sitzung.',
           cards: mixedCards,
           availability: mixedAvailability(singles, mixedCards),
         },
@@ -104,8 +126,7 @@ export const resolveSessionDirection = (
   const offered =
     requested !== undefined &&
     (requested === 'both'
-      ? enabled.length > 1 &&
-        enabled.every((direction) => ready.includes(direction))
+      ? enabled.filter((direction) => ready.includes(direction)).length > 1
       : enabled.includes(requested) && ready.includes(requested));
   if (offered) {
     return requested;
