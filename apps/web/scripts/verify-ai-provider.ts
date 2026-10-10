@@ -160,15 +160,14 @@ const verification = Effect.gen(function* () {
     try: () =>
       globalThis.Bun.file(
         new URL('./fixtures/provider-page.png', import.meta.url),
-      ).arrayBuffer(),
+      ).bytes(),
     catch: () =>
       new VerificationError({
         message: 'Could not read the synthetic page fixture.',
       }),
   });
   const extracted = yield* extraction.extract({
-    imageBase64: Buffer.from(image).toString('base64'),
-    mediaType: 'image/png',
+    image,
     targetLanguage: 'English',
   });
   const fixturePageNumber = 12;

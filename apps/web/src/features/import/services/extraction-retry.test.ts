@@ -135,6 +135,45 @@ describe('retryPendingExtraction', () => {
   });
 });
 
+describe('retryPendingExtraction photo', () => {
+  it('sends the stored photo and asks for a new one when it cannot be read', async () => {
+    const stored = new Uint8Array([1, 2, 3]);
+    const sent: Array<Uint8Array> = [];
+    const unreadable = new ExtractionError({
+      reason: 'unreadableImage',
+      message: 'The page photo could not be decoded.',
+      cause: new Error('decode failed'),
+    });
+    const failure = await Effect.runPromise(
+      Effect.flip(
+        retryPendingExtraction('page').pipe(
+          Effect.provideService(ImportRepository, makeImportRepository()),
+          Effect.provideService(
+            Storage,
+            makeStorage({ read: () => Effect.succeed(stored) }),
+          ),
+          Effect.provideService(
+            Extraction,
+            Extraction.of({
+              extract: ({ image }) => {
+                sent.push(image);
+                return Effect.fail(unreadable);
+              },
+            }),
+          ),
+          Effect.provide(untrackedAiUsage),
+        ),
+      ),
+    );
+    expect(sent).toEqual([stored]);
+    expect(failure).toMatchObject({
+      message:
+        'Das Foto lässt sich nicht lesen. Entferne es und importiere die Seite mit einem neuen Foto.',
+      cause: unreadable,
+    });
+  });
+});
+
 describe('retryPendingExtraction guards', () => {
   it('spends no provider call on a verified page', async () => {
     let providerCalls = 0;

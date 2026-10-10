@@ -4,11 +4,12 @@ import { generateStructured } from '../structured-generation';
 import { decodeModelOutput } from '../structured-output';
 import type { AiUsage } from '../usage';
 import { ExtractionError } from './error';
+import { fitPageImage, type ModelImage } from './page-image';
 import { ExtractedPage, type ExtractedPageData } from './schema';
 
 export type PageImage = {
-  readonly imageBase64: string;
-  readonly mediaType: string;
+  // The photo as uploaded; it is fitted to the model's image limits here.
+  readonly image: Uint8Array;
   readonly targetLanguage: string;
 };
 
@@ -43,7 +44,7 @@ export class Extraction extends Context.Service<
 
       const decodePage = decodeModelOutput(ExtractedPage);
 
-      const callModel = (input: PageImage) =>
+      const callModel = (image: ModelImage, targetLanguage: string) =>
         generateStructured({
           model,
           operation: 'page-extraction',
@@ -52,15 +53,8 @@ export class Extraction extends Context.Service<
             {
               role: 'user',
               content: [
-                {
-                  type: 'file',
-                  data: input.imageBase64,
-                  mediaType: input.mediaType,
-                },
-                {
-                  type: 'text',
-                  text: extractionPrompt(input.targetLanguage),
-                },
+                { type: 'file', data: image.data, mediaType: image.mediaType },
+                { type: 'text', text: extractionPrompt(targetLanguage) },
               ],
             },
           ],
@@ -73,9 +67,10 @@ export class Extraction extends Context.Service<
         });
 
       const runModel = (
-        input: PageImage,
+        image: ModelImage,
+        targetLanguage: string,
       ): Effect.Effect<ExtractedPageData, ExtractionError, AiUsage> =>
-        callModel(input).pipe(
+        callModel(image, targetLanguage).pipe(
           Effect.flatMap((output) =>
             decodePage(output).pipe(
               Effect.mapError(
@@ -93,7 +88,10 @@ export class Extraction extends Context.Service<
       const extract = (
         input: PageImage,
       ): Effect.Effect<ExtractionResult, ExtractionError, AiUsage> =>
-        runModel(input).pipe(Effect.map((page) => ({ page, modelId })));
+        fitPageImage(input.image).pipe(
+          Effect.flatMap((image) => runModel(image, input.targetLanguage)),
+          Effect.map((page) => ({ page, modelId })),
+        );
 
       return Extraction.of({ extract });
     }),

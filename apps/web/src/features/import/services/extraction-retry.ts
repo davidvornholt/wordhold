@@ -1,6 +1,5 @@
 import { Effect } from 'effect';
-import { mimeForPath } from '../../../shared/storage/media-type';
-import { Storage, toBase64 } from '../../../shared/storage/server';
+import { Storage } from '../../../shared/storage/server';
 import { PageNotPendingError } from '../errors/page-not-pending-error';
 import { extractPage } from './extract';
 import { ImportRepository } from './repository';
@@ -16,12 +15,8 @@ export const retryPendingExtraction = (pageId: string) =>
           'Nur noch nicht importierte Seiten können erneut ausgelesen werden.',
       });
     }
-    const bytes = yield* storage.read(pending.imagePath);
-    const result = yield* extractPage({
-      imageBase64: toBase64(bytes),
-      mediaType: mimeForPath(pending.imagePath),
-      language: pending.language,
-    });
+    const image = yield* storage.read(pending.imagePath);
+    const result = yield* extractPage({ image, language: pending.language });
     const updated = yield* repository.saveExtractionIfPending(pageId, result);
     if (updated === undefined) {
       return yield* new PageNotPendingError({

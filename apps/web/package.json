@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite dev",
+    "dev": "bun --bun vite dev",
     "build": "vite build && bun build --target=bun --outdir=.output/maintenance scripts/repair-practice-reviews.ts",
     "start": "bun .output/server/index.mjs",
     "check-types": "tsc --noEmit",
