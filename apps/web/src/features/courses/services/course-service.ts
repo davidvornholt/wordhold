@@ -111,13 +111,13 @@ export class CourseService extends Context.Service<
     readonly getDirections: (
       courseId: string,
     ) => Effect.Effect<
-      ReadonlyArray<'to_target' | 'to_native'>,
+      CourseDirectionsData,
       CourseDatabaseError | CourseSettingsNotFoundError
     >;
     readonly setDirections: (
       input: SetCourseDirectionsData,
     ) => Effect.Effect<
-      ReadonlyArray<'to_target' | 'to_native'>,
+      CourseDirectionsData,
       | CourseDatabaseError
       | CourseSettingsNotFoundError
       | CourseKindMismatchError

@@ -47,6 +47,32 @@ describe('judgePrompt', () => {
     expect(prompt).toContain('"fredom"');
   });
 
+  it('grades a synonym or antonym in the sense of its German meaning', () => {
+    const base = {
+      targetLanguage: 'English',
+      prompt: 'hostile',
+      meaning: 'feindselig',
+      expectedAnswers: ['unfriendly', 'aggressive'],
+      givenAnswer: 'antagonistic',
+    } as const;
+    const synonym = judgePrompt({ ...base, direction: 'to_synonym' });
+    const antonym = judgePrompt({ ...base, direction: 'to_antonym' });
+
+    expect(synonym).toContain(
+      "Grade a learner's synonym of the shown English word",
+    );
+    expect(synonym).toContain('not only the expected answers');
+    expect(synonym).toContain('Reject the shown word itself');
+    expect(synonym).toContain(
+      '{"word":"hostile","meaning":"feindselig","expected":["unfriendly","aggressive"],"answer":"antagonistic"}',
+    );
+    expect(antonym).toContain(
+      "Grade a learner's antonym of the shown English word",
+    );
+    expect(antonym).toContain('Reject a bare negation');
+    expect(antonym.length).toBeLessThan(representativePromptCharacterBudget);
+  });
+
   // The feedback heading already says the answer was right, so a note on an
   // accepted answer must teach something about the difference.
   it('asks for a difference worth knowing instead of a bare confirmation', () => {

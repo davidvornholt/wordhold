@@ -11,6 +11,13 @@ export type VocabularyCard = VocabularyEntry['cards'][number];
 const isPracticed = (card: VocabularyCard): boolean =>
   card.introducedAt !== null && card.state !== 'new';
 
+const dueSummary = (due: number, active: number): string => {
+  if (due < active) {
+    return `${due} von ${active} Richtungen fällig`;
+  }
+  return active === 2 ? 'Beide Richtungen fällig' : 'Alle Richtungen fällig';
+};
+
 // One line for an entry's row: whether it is still to be learned, and when
 // its enabled directions come up next.
 export const scheduleSummary = (
@@ -42,10 +49,7 @@ export const scheduleSummary = (
     if (activeCards.length === 1 && nextDueAt !== null) {
       return formatLearningDate(nextDueAt, now);
     }
-    if (due.length === activeCards.length) {
-      return 'Beide Richtungen fällig';
-    }
-    return `${due.length} von ${activeCards.length} Richtungen fällig`;
+    return dueSummary(due.length, activeCards.length);
   }
   return nextDueAt === null
     ? 'Noch kein weiterer Termin'

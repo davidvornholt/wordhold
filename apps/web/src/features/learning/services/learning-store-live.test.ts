@@ -6,6 +6,7 @@ import {
 } from '@wordhold/db/testing/postgres-test-database';
 import { Effect, Layer } from 'effect';
 import { sessionSectionSize } from '../../../shared/session/section-policy';
+import { writeRelatedWords } from '../../../shared/vocabulary/related-words-store';
 import { LearningService } from './learning-service';
 import { LearningStore } from './learning-store';
 
@@ -89,6 +90,55 @@ describe('Learning selection store live', () => {
           });
           expect(wrongCourse.items).toEqual([]);
         }).pipe(Effect.provide(serviceLayer));
+      }),
+    );
+  });
+});
+
+describe('Learning pass of synonyms and antonyms', () => {
+  it('introduces a new synonym card with its words, and leaves it out once switched off', async () => {
+    await Effect.runPromise(
+      withMigratedTestDatabase((database) => {
+        const databaseLayer = testDatabaseLayer(database.url);
+        const serviceLayer = LearningService.layer.pipe(
+          Layer.provide(LearningStore.live.pipe(Layer.provide(databaseLayer))),
+        );
+        return Effect.gen(function* () {
+          const sql = yield* Database;
+          yield* seed;
+          yield* writeRelatedWords(sql, [
+            {
+              courseId: courseA,
+              entryId: entryA,
+              synonyms: ['to watch', 'to view'],
+              antonyms: null,
+            },
+          ]);
+          const service = yield* LearningService;
+          const pass = yield* service.getPass(courseA, { unitId: unitA });
+          expect(pass.directions).toEqual([
+            { direction: 'to_target', unintroduced: 1 },
+            { direction: 'to_synonym', unintroduced: 1 },
+          ]);
+          expect(
+            pass.items.find((item) => item.direction === 'to_synonym'),
+          ).toMatchObject({
+            targetText: 'to look (at)',
+            relatedWords: ['to watch', 'to view'],
+            textbookAnswers: ['to watch', 'to view'],
+          });
+
+          yield* sql`
+            update courses set practises_related_words = false
+            where id = ${courseA}
+          `;
+          const switchedOff = yield* service.getPass(courseA, {
+            unitId: unitA,
+          });
+          expect(switchedOff.directions).toEqual([
+            { direction: 'to_target', unintroduced: 1 },
+          ]);
+        }).pipe(Effect.provide(serviceLayer), Effect.provide(databaseLayer));
       }),
     );
   });

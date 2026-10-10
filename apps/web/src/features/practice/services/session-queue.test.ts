@@ -21,6 +21,7 @@ const item = (index: number): PracticeItem => ({
   entryId: `entry-${index}`,
   targetText: `word-${index}`,
   nativeText: `Wort-${index}`,
+  relatedWords: [],
   hasAudio: false,
   entryKnown: false,
   example: null,

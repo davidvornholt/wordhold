@@ -22,7 +22,7 @@ const options = [
     label: 'Gemischt',
     description: 'Beide Richtungen in einer Sitzung.',
     cards: 4,
-    availability: 'needs_both_directions',
+    availability: 'needs_two_directions',
   },
 ] as const;
 
@@ -47,7 +47,7 @@ describe('SessionStart', () => {
 
   it('disables mixed practice when one direction has no cards', () => {
     const markup = render();
-    expect(markup).toContain('In einer Richtung fehlen Karten');
+    expect(markup).toContain('Nur eine Richtung hat Karten');
     expect(markup).toContain('disabled="" id="practice-direction-both"');
   });
 

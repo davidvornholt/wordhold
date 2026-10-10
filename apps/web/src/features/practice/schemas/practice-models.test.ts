@@ -13,6 +13,7 @@ const session = (
     entryId: `00000000-0000-0000-0000-00000000010${index}`,
     targetText: 'memory',
     nativeText: 'Erinnerung',
+    relatedWords: [],
     hasAudio: false,
     entryKnown: true,
     example: null,

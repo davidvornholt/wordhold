@@ -28,6 +28,7 @@ const textSubmission: SubmissionRecord = {
     id: testCard.entryId,
     targetText: 'Johannes 3,16',
     nativeText: verse,
+    relatedWords: [],
     keyPoints: null,
   },
   targetLanguage: 'de',

@@ -198,4 +198,52 @@ export const answerGradingWorkloads: ReadonlyArray<Workload> = [
     },
     { correct: null, faults: ['spelling'] },
   ),
+  judgeWorkload(
+    'judge-unlisted-synonym',
+    {
+      direction: 'to_synonym',
+      targetLanguage: 'English',
+      prompt: 'hostile',
+      meaning: 'feindselig',
+      expectedAnswers: ['unfriendly', 'aggressive'],
+      givenAnswer: 'antagonistic',
+    },
+    accepted,
+  ),
+  judgeWorkload(
+    'judge-synonym-of-other-sense',
+    {
+      direction: 'to_synonym',
+      targetLanguage: 'English',
+      prompt: 'bank',
+      meaning: 'das Ufer',
+      expectedAnswers: ['shore'],
+      givenAnswer: 'savings institution',
+    },
+    { correct: false, faults: ['meaning'] },
+  ),
+  judgeWorkload(
+    'judge-unlisted-antonym',
+    {
+      direction: 'to_antonym',
+      targetLanguage: 'English',
+      prompt: 'hostile',
+      meaning: 'feindselig',
+      expectedAnswers: ['friendly'],
+      givenAnswer: 'welcoming',
+    },
+    accepted,
+  ),
+  judgeWorkload(
+    'judge-synonym-for-antonym',
+    {
+      direction: 'to_antonym',
+      targetLanguage: 'English',
+      prompt: 'hostile',
+      meaning: 'feindselig',
+      expectedAnswers: ['friendly'],
+      givenAnswer: 'unfriendly',
+    },
+    { correct: false, faults: ['meaning'] },
+  ),
 ];

@@ -3,6 +3,7 @@ import {
   type CourseSubject,
   directionLabel,
   isListCourse,
+  isRelationDirection,
 } from '../../../shared/directions';
 import {
   copyDifference,
@@ -10,17 +11,20 @@ import {
 } from '../../../shared/grading/copy-difference';
 import { copyMistakeMessage } from '../../../shared/grading/recitation';
 import {
+  answerLanguage,
+  cardAnswer,
+  cardPrompt,
+  foreignPromptLanguage,
+} from '../../../shared/practice/card-texts';
+import {
   AnswerField,
   type AnswerFieldElement,
 } from '../../../shared/ui/answer-field';
 import { Button } from '../../../shared/ui/button';
 import { KeyPointList } from '../../../shared/ui/key-point-list';
+import { RelationQuestion } from '../../../shared/ui/relation-question';
 import { WordCard } from '../../../shared/ui/word-card';
-import {
-  type LearnItem,
-  learnAnswer,
-  learnPrompt,
-} from '../schemas/learning-models';
+import type { LearnItem } from '../schemas/learning-models';
 import { copiesLearnText, matchesLearnItem } from '../services/learn-check';
 import { LearnExampleAudio } from './learn-example-audio';
 
@@ -36,7 +40,8 @@ type LearnEntryProps = {
 
 // A definition is shown to be copied, with what it must state once known. A
 // text is shown to be copied with its own line breaks. A word has its example
-// sentence and audio instead.
+// sentence and audio instead, and its synonyms and antonyms the German
+// meaning they are asked in.
 const LearnCardBody = ({
   item,
   subject,
@@ -49,14 +54,14 @@ const LearnCardBody = ({
   if (subject.kind === 'texts') {
     return (
       <p className="whitespace-pre-line text-lg" id={definitionId}>
-        {learnAnswer(item)}
+        {cardAnswer(item)}
       </p>
     );
   }
   return subject.kind === 'terms' ? (
     <>
       <p className="text-lg" id={definitionId}>
-        {learnAnswer(item)}
+        {cardAnswer(item)}
       </p>
       {item.keyPoints === null ? null : (
         <KeyPointList
@@ -69,7 +74,12 @@ const LearnCardBody = ({
       )}
     </>
   ) : (
-    <LearnExampleAudio item={item} targetLanguage={subject.targetLanguage} />
+    <>
+      {isRelationDirection(item.direction) ? (
+        <p className="text-muted-foreground">Bedeutung: {item.nativeText}</p>
+      ) : null}
+      <LearnExampleAudio item={item} targetLanguage={subject.targetLanguage} />
+    </>
   );
 };
 
@@ -111,7 +121,12 @@ const matchesCopy = (
 
 // A missed word is typed again from scratch; a missed definition or text
 // keeps the copy and names the first word that differs.
-const missMessage = (subject: CourseSubject, answer: string, typed: string) => {
+const missMessage = (
+  subject: CourseSubject,
+  item: LearnItem,
+  typed: string,
+) => {
+  const answer = cardAnswer(item);
   switch (subject.kind) {
     case 'texts':
       return (
@@ -121,7 +136,9 @@ const missMessage = (subject: CourseSubject, answer: string, typed: string) => {
     case 'terms':
       return copyDifferenceMessage(copyDifference(answer, typed));
     case 'language':
-      return 'Noch nicht ganz. Schreib die Vokabel genau so ab.';
+      return isRelationDirection(item.direction)
+        ? 'Noch nicht ganz. Schreib eines der Wörter genau so ab.'
+        : 'Noch nicht ganz. Schreib die Vokabel genau so ab.';
     default:
       return subject.kind satisfies never;
   }
@@ -155,10 +172,9 @@ export const LearnEntry = ({
   const inputRef = useRef<AnswerFieldElement>(null);
   // Copied from the card rather than recalled.
   const copied = isListCourse(subject.kind);
-  const answer = learnAnswer(item);
-  const prompt = learnPrompt(item);
-  const answerLanguage =
-    item.direction === 'to_target' ? subject.targetLanguage : 'de';
+  const answer = cardAnswer(item);
+  const prompt = cardPrompt(item);
+  const answerLang = answerLanguage(item.direction, subject.targetLanguage);
   useEffect(() => {
     if (busy) {
       return;
@@ -176,7 +192,7 @@ export const LearnEntry = ({
     }
     if (!matchesCopy(subject, item, typed)) {
       setSaveFailed(false);
-      setMissedMessage(missMessage(subject, answer, typed));
+      setMissedMessage(missMessage(subject, item, typed));
       if (!copied) {
         setTyped('');
       }
@@ -200,13 +216,20 @@ export const LearnEntry = ({
     <>
       <WordCard
         deck={deck}
-        eyebrow={directionLabel(item.direction, subject)}
+        eyebrow={
+          isRelationDirection(item.direction) ? (
+            <RelationQuestion
+              direction={item.direction}
+              language={subject.targetLanguage}
+            />
+          ) : (
+            directionLabel(item.direction, subject)
+          )
+        }
         tone={missedMessage === null ? 'neutral' : 'warning'}
         word={prompt}
         wordId={promptId}
-        wordLang={
-          item.direction === 'to_native' ? subject.targetLanguage : undefined
-        }
+        wordLang={foreignPromptLanguage(item.direction, subject.targetLanguage)}
       >
         <LearnCardBody
           definitionId={answerHintId}
@@ -224,7 +247,7 @@ export const LearnEntry = ({
         </label>
         {!copied && typed === '' ? (
           <span className="sr-only" id={answerHintId}>
-            Vorlage: <span lang={answerLanguage}>{answer}</span>
+            Vorlage: <span lang={answerLang}>{answer}</span>
           </span>
         ) : null}
         <AnswerField

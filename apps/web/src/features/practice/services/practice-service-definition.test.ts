@@ -35,6 +35,7 @@ const termSubmission = (
     id: testCard.entryId,
     targetText: 'Katalysator',
     nativeText: definition,
+    relatedWords: [],
     keyPoints: stored,
   },
   targetLanguage: 'de',

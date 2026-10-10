@@ -18,6 +18,7 @@ import {
   submitAnswer,
 } from '../../../features/practice/services/server-fns';
 import {
+  offeredDirections,
   resolveSessionDirection,
   sessionOptions,
 } from '../../../features/practice/services/session-options';
@@ -137,7 +138,7 @@ export const Route = createFileRoute('/courses/$courseId/practice')({
     unit: search.unit,
   }),
   loader: async ({ params, deps }) => {
-    const [course, directions, dashboard, outline] = await Promise.all([
+    const [course, enabledDirections, dashboard, outline] = await Promise.all([
       getCourse({ data: params.courseId }),
       getCourseDirections({ data: params.courseId }),
       getDashboard(),
@@ -166,6 +167,10 @@ export const Route = createFileRoute('/courses/$courseId/practice')({
       place === undefined
         ? (stats?.ready ?? 0)
         : readyCardsInNextSection(placeDue, placeFirstReviews);
+    const directions = offeredDirections(
+      enabledDirections,
+      directionAvailability,
+    );
     const readyDirections = directionAvailability
       .filter((candidate) => candidate.ready > 0)
       .map((candidate) => candidate.direction);

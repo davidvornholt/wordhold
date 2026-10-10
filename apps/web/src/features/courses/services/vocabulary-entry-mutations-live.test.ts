@@ -116,7 +116,7 @@ const storedWord = (entryId: string) =>
     }>`select path from entry_audio where entry_id = ${entryId}`;
     const cards = yield* sql<{
       readonly reps: number;
-    }>`select reps from cards where entry_id = ${entryId}`;
+    }>`select reps from cards where entry_id = ${entryId} order by direction`;
     const [reviews] = yield* sql<{ readonly count: number }>`
       select count(*)::int as count from reviews r
       join cards c on c.id = r.card_id
@@ -167,15 +167,17 @@ describe('VocabularyEntryStore corrections', () => {
             antonyms: [],
           },
           // The judge's alternative was accepted for the old word; the
-          // learner's own is kept.
+          // learner's own is kept. The new synonym is its card's answer.
           answers: [
             { text: 'die Erinnerung', source: 'textbook' },
             { text: 'die Gedächtnis', source: 'manual' },
+            { text: 'la réminiscence', source: 'textbook' },
             { text: 'le souvenir', source: 'textbook' },
           ],
           examples: [{ ...example, audioPath: exampleAudio }],
           audio: [],
-          reps: [practisedReps, practisedReps],
+          // The synonym card starts new beside the practised ones.
+          reps: [practisedReps, practisedReps, 0],
           reviews: 2,
         });
       }),

@@ -1,6 +1,10 @@
 import { Database } from '@wordhold/db/client';
 import { answerDirections } from '@wordhold/db/schema/directions';
 import { Context, Effect, Layer } from 'effect';
+import {
+  cardRelatedWords,
+  practisedDirections,
+} from '../../../shared/practice/practised-directions';
 import { sessionSectionSize } from '../../../shared/session/section-policy';
 import {
   type PlaceSelectionData,
@@ -53,6 +57,7 @@ const passFromRows = (
       entryId: item.entryId,
       targetText: item.targetText,
       nativeText: item.nativeText,
+      relatedWords: item.relatedWords,
       hasAudio: item.hasAudio,
       example: null,
       keyPoints: item.keyPoints,
@@ -97,13 +102,15 @@ export class LearningStore extends Context.Service<
           {
             items: sql<ItemRow>`
               select "cardId", direction, "entryId", "targetText",
-                "nativeText", "keyPoints", "hasAudio", "directionTotal"
+                "nativeText", "relatedWords", "keyPoints", "hasAudio",
+                "directionTotal"
               from (
                 select c.id as "cardId", c.direction,
                   e.id as "entryId",
                   e.target_text as "targetText",
                   e.native_text as "nativeText",
                   e.key_points as "keyPoints",
+                  ${cardRelatedWords(sql)} as "relatedWords",
                   exists(
                     select 1 from entry_audio a where a.entry_id = e.id
                   ) as "hasAudio",
@@ -117,7 +124,7 @@ export class LearningStore extends Context.Service<
                 join courses co on co.id = e.course_id
                 join cards c on c.entry_id = e.id
                 where e.course_id = ${courseId} and ${selected}
-                  and c.direction = any(co.directions)
+                  and c.direction = any(${practisedDirections(sql)})
                   and c.introduced_at is null
               ) section
               where "sectionPosition" <= ${sessionSectionSize}
@@ -188,7 +195,7 @@ export class LearningStore extends Context.Service<
             join entries e on e.id = c.entry_id
             join courses co on co.id = e.course_id
             where c.id = ${cardId} and e.course_id = ${courseId}
-              and c.direction = any(co.directions)
+              and c.direction = any(${practisedDirections(sql)})
           ), updated as (
             update cards set introduced_at = ${at}
             where id in (select id from matching_card)

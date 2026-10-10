@@ -1,8 +1,10 @@
 import { Database } from '@wordhold/db/client';
+import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import { Context, Effect, Layer } from 'effect';
 import { earliestDate } from '../../../shared/dates/learning-date';
 import { ratings } from '../../../shared/grading/rating';
 import { entryIsKnown } from '../../../shared/practice/known-entry';
+import { practisedDirections } from '../../../shared/practice/practised-directions';
 import { readyCardsInNextSection } from '../../../shared/practice/session-policy';
 import { DashboardDatabaseError } from '../errors/dashboard-errors';
 import type {
@@ -18,7 +20,7 @@ const fragileLimit = 8;
 type CountRow = { readonly courseId: string; readonly count: number };
 type CardCountRow = {
   readonly courseId: string;
-  readonly direction: 'to_target' | 'to_native';
+  readonly direction: AnswerDirection;
   readonly due: number;
   readonly firstReviews: number;
   readonly nextDueAt: Date | null;
@@ -81,6 +83,9 @@ export class DashboardStore extends Context.Service<
       const courseCounts = (ownerId: string, now: Date) =>
         Effect.all(
           {
+            // A translation direction the course practises is listed even
+            // without cards; synonyms and antonyms only once some word has
+            // an introduced card for them.
             cards: sql<CardCountRow>`
               select co.id as "courseId", d.direction,
                 count(c.id) filter (
@@ -90,13 +95,15 @@ export class DashboardStore extends Context.Service<
                 count(c.id) filter (where c.state = 'new')::int as "firstReviews",
                 min(c.due_at) filter (where c.due_at > ${now}) as "nextDueAt"
               from courses co
-              cross join lateral unnest(co.directions) as d(direction)
+              cross join lateral unnest(${practisedDirections(sql)})
+                as d(direction)
               left join entries e on e.course_id = co.id
               left join cards c on c.entry_id = e.id
                 and c.direction = d.direction
                 and c.introduced_at is not null
               where co.owner_id = ${ownerId}
               group by co.id, d.direction
+              having d.direction = any(co.directions) or count(c.id) > 0
             `,
             // Counted per entry for the CTA, but only across enabled card
             // directions. Enabling a direction later makes its untouched
@@ -108,7 +115,7 @@ export class DashboardStore extends Context.Service<
               where co.owner_id = ${ownerId} and exists (
                 select 1 from cards c
                 where c.entry_id = e.id
-                  and c.direction = any(co.directions)
+                  and c.direction = any(${practisedDirections(sql)})
                   and c.introduced_at is null
               )
               group by e.course_id
@@ -193,7 +200,7 @@ export class DashboardStore extends Context.Service<
           join courses co on co.id = e.course_id
           where co.owner_id = ${ownerId}
             and r.rating = ${ratings.again}
-            and c.direction = any(co.directions)
+            and c.direction = any(${practisedDirections(sql)})
             and r.reviewed_at >= now() - make_interval(days => ${fragileWindowDays})
           group by e.id, e.target_text, e.native_text, co.name, co.kind
           having count(*) >= ${fragileMinFailures}

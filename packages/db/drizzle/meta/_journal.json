@@ -204,6 +204,13 @@
       "when": 1791634686169,
       "tag": "0028_jittery_wilson_fisk",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1791639150947,
+      "tag": "0029_pretty_betty_ross",
+      "breakpoints": true
     }
   ]
 }

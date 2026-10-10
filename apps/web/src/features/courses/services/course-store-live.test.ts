@@ -41,15 +41,45 @@ describe('CourseStore PostgreSQL direction contract', () => {
         expect(yield* store.readDirections(courseId)).toEqual([
           'to_target',
           'to_native',
+          'to_synonym',
+          'to_antonym',
         ]);
         expect(yield* store.writeDirections(courseId, ['to_native'])).toBe(
           true,
         );
         expect(yield* store.readDirections(courseId)).toEqual(['to_native']);
+        expect(
+          yield* store.writeDirections(courseId, [
+            'to_target',
+            'to_synonym',
+            'to_antonym',
+          ]),
+        ).toBe(true);
+        expect(yield* store.readDirections(courseId)).toEqual([
+          'to_target',
+          'to_synonym',
+          'to_antonym',
+        ]);
         expect(yield* store.readDirections(missingCourseId)).toBeUndefined();
         expect(
           yield* store.writeDirections(missingCourseId, ['to_target']),
         ).toBe(false);
+      }),
+    );
+  });
+
+  it('leaves synonyms and antonyms out of a subject of terms', async () => {
+    await runStoreTest(
+      Effect.gen(function* () {
+        const sql = yield* Database;
+        yield* sql`
+          insert into courses
+            (id, name, kind, target_language, native_language, directions)
+          values
+            (${courseId}, 'Chemie', 'terms', 'de', 'de', '{to_native}')
+        `;
+        const store = yield* CourseStore;
+        expect(yield* store.readDirections(courseId)).toEqual(['to_native']);
       }),
     );
   });

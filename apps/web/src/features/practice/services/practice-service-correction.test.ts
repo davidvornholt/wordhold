@@ -40,6 +40,7 @@ const submission: SubmissionRecord = {
     id: card.entryId,
     targetText: 'correct',
     nativeText: 'richtig',
+    relatedWords: [],
     keyPoints: null,
   },
   targetLanguage: 'en',

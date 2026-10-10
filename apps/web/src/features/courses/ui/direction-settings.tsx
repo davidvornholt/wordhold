@@ -1,13 +1,17 @@
 import {
   type AnswerDirection,
   answerDirections,
+  relationDirections,
+  translationDirections,
 } from '@wordhold/db/schema/directions';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import {
   type CourseSubject,
   directionDescription,
   directionLabel,
+  isRelationDirection,
 } from '../../../shared/directions';
+import { germanLabels } from '../../../shared/languages';
 import { Checkbox } from '../../../shared/ui/selection-controls';
 import { cardCompactClass } from '../../../shared/ui/surface-styles';
 
@@ -21,9 +25,10 @@ type DirectionSettingsProps = {
 
 // Which directions this course practises at all. Switching one off hides its
 // cards without destroying them. Switching it back on resumes learned cards and
-// sends untouched ones through the learning pass first. Each change saves on its
-// own, which is why there is no save button. The controls stay locked until that
-// save settles, so the server cannot receive snapshots out of order.
+// sends untouched ones through the learning pass first. Synonyms and antonyms
+// share one switch. Each change saves on its own, which is why there is no
+// save button. The controls stay locked until that save settles, so the
+// server cannot receive snapshots out of order.
 export const DirectionSettings = ({
   initial,
   subject,
@@ -45,20 +50,20 @@ export const DirectionSettings = ({
   }, [saving]);
 
   const toggle = async (
-    direction: AnswerDirection,
+    switched: ReadonlyArray<AnswerDirection>,
     trigger: HTMLInputElement,
   ) => {
     if (saving) {
       return;
     }
-    const next = directions.includes(direction)
-      ? directions.filter((value) => value !== direction)
+    const next = switched.every((direction) => directions.includes(direction))
+      ? directions.filter((value) => !switched.includes(value))
       : answerDirections.filter(
-          (value) => value === direction || directions.includes(value),
+          (value) => switched.includes(value) || directions.includes(value),
         );
-    if (next.length === 0) {
+    if (next.every(isRelationDirection)) {
       setFailed(false);
-      setStatus('Eine Richtung bleibt immer an, sonst gibt es nichts zu üben.');
+      setStatus('Eine Übersetzungsrichtung bleibt immer an.');
       return;
     }
     restoreFocusRef.current = trigger;
@@ -102,28 +107,21 @@ export const DirectionSettings = ({
         disabled={saving}
       >
         <legend className="sr-only">Regelmäßige Abfragerichtungen</legend>
-        {answerDirections.map((direction) => (
-          <div className="flex items-start gap-3 text-sm" key={direction}>
-            <Checkbox
-              aria-describedby={`${direction}-description`}
-              checked={directions.includes(direction)}
-              className="mt-1"
-              id={direction}
-              onChange={(event) => toggle(direction, event.currentTarget)}
-            />
-            <span className="flex flex-col gap-0.5">
-              <label className="font-medium" htmlFor={direction}>
-                {directionLabel(direction, subject)}
-              </label>
-              <span
-                className="text-muted-foreground"
-                id={`${direction}-description`}
-              >
-                {directionDescription(direction, subject)}
-              </span>
-            </span>
-          </div>
+        {translationDirections.map((direction) => (
+          <DirectionSwitch
+            checked={directions.includes(direction)}
+            description={directionDescription(direction, subject)}
+            key={direction}
+            label={directionLabel(direction, subject)}
+            onChange={(trigger) => toggle([direction], trigger)}
+          />
         ))}
+        <DirectionSwitch
+          checked={directions.includes('to_synonym')}
+          description={`Du siehst eine Vokabel auf ${germanLabels[subject.targetLanguage]} und schreibst ein Synonym oder ein Gegenteil dazu. Nur Vokabeln, zu denen du Synonyme oder Gegenteile gespeichert hast, bekommen diese Karten.`}
+          label="Synonyme und Gegenteile"
+          onChange={(trigger) => toggle(relationDirections, trigger)}
+        />
       </fieldset>
       <output
         aria-label="Speicherstatus"
@@ -132,5 +130,40 @@ export const DirectionSettings = ({
         {status}
       </output>
     </section>
+  );
+};
+
+type DirectionSwitchProps = {
+  readonly label: string;
+  readonly description: string;
+  readonly checked: boolean;
+  readonly onChange: (trigger: HTMLInputElement) => void;
+};
+
+const DirectionSwitch = ({
+  label,
+  description,
+  checked,
+  onChange,
+}: DirectionSwitchProps) => {
+  const id = useId();
+  return (
+    <div className="flex items-start gap-3 text-sm">
+      <Checkbox
+        aria-describedby={`${id}-description`}
+        checked={checked}
+        className="mt-1"
+        id={id}
+        onChange={(event) => onChange(event.currentTarget)}
+      />
+      <span className="flex flex-col gap-0.5">
+        <label className="font-medium" htmlFor={id}>
+          {label}
+        </label>
+        <span className="text-muted-foreground" id={`${id}-description`}>
+          {description}
+        </span>
+      </span>
+    </div>
   );
 };

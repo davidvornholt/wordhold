@@ -50,10 +50,21 @@ export type JudgeVerdictData = typeof JudgeVerdict.Type;
 export const isAcceptedAlternative = (verdict: JudgeVerdictData): boolean =>
   verdict.acceptAsAlternative && verdict.correct && allDimensionsPass(verdict);
 
-export type JudgeInput = {
-  readonly direction: 'to_target' | 'to_native';
+type JudgeAnswer = {
   readonly targetLanguage: string;
+  // The word or text the card shows.
   readonly prompt: string;
   readonly expectedAnswers: ReadonlyArray<string>;
   readonly givenAnswer: string;
 };
+
+// A translation between German and the target language, or a synonym or
+// antonym of a target-language word in that same language. A word can have
+// several senses, so a synonym or antonym is judged in the sense its German
+// meaning names.
+export type JudgeInput =
+  | (JudgeAnswer & { readonly direction: 'to_target' | 'to_native' })
+  | (JudgeAnswer & {
+      readonly direction: 'to_synonym' | 'to_antonym';
+      readonly meaning: string;
+    });

@@ -21,6 +21,7 @@ const card = (index: number, target: string, native: string): FixtureCard => ({
   entryId: `0000000-0000-0000-0000-00000000010${index}`,
   targetText: target,
   nativeText: native,
+  relatedWords: [],
   hasAudio: false,
   entryKnown: false,
   example: null,
