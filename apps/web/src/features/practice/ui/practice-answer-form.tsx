@@ -6,10 +6,11 @@ import {
   type AnswerFieldElement,
 } from '../../../shared/ui/answer-field';
 import { Button } from '../../../shared/ui/button';
+import { CharacterPalette } from '../../../shared/ui/character-palette';
 import type { CardTone } from '../../../shared/ui/word-card';
 import { DictationButton } from './dictation-button';
 import { toneField } from './feedback-tone';
-import { useDictation } from './use-dictation';
+import { type Dictation, useDictation } from './use-dictation';
 
 // After a wrong or skipped answer the field asks for the answer to be written
 // out; the expected answer is its template until the learner types.
@@ -88,6 +89,24 @@ const RetypeField = ({
   </>
 );
 
+// Help with writing the answer: a subject's formulas need characters the
+// keyboard lacks, and a text can be recited aloud.
+const AnswerAids = ({
+  busy,
+  dictation,
+  inputRef,
+  kind,
+}: Pick<PracticeAnswerFormProps, 'busy' | 'inputRef' | 'kind'> & {
+  readonly dictation: Dictation;
+}) => {
+  if (kind === 'terms') {
+    return <CharacterPalette disabled={busy} fieldRef={inputRef} />;
+  }
+  return kind === 'texts' && dictation.supported ? (
+    <DictationButton dictation={dictation} disabled={busy} />
+  ) : null;
+};
+
 export const PracticeAnswerForm = ({
   answer,
   busy,
@@ -147,9 +166,12 @@ export const PracticeAnswerForm = ({
       )}
       {disabled ? null : (
         <>
-          {kind === 'texts' && dictation.supported ? (
-            <DictationButton dictation={dictation} disabled={busy} />
-          ) : null}
+          <AnswerAids
+            busy={busy}
+            dictation={dictation}
+            inputRef={inputRef}
+            kind={kind}
+          />
           <Button
             disabled={busy || dictating || answer.trim() === ''}
             type="submit"

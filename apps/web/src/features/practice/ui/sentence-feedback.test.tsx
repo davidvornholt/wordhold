@@ -74,7 +74,7 @@ describe('SentenceFeedback', () => {
 
   it('does not repeat the stored translation when the answer was it', () => {
     const markup = render(
-      checked('mi hermana es abogada', {
+      checked('Mi hermana es abogada', {
         graded: true,
         correct: true,
         reference,

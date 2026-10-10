@@ -1,6 +1,10 @@
 import type { ReactNode } from 'react';
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { countNoun } from '../../../shared/format/count';
+import {
+  rememberPreference,
+  useRememberedPreference,
+} from '../../../shared/ui/remembered-preference';
 import { RadioButton } from '../../../shared/ui/selection-controls';
 import type { SessionDirection } from '../schemas/session-request';
 import type { SessionOption } from '../services/session-options';
@@ -15,24 +19,6 @@ type SessionStartProps = {
     option: SessionOption,
     rememberDirection: () => void,
   ) => ReactNode;
-};
-
-const subscribeToNothing = () => () => undefined;
-
-const readPreference = (storageKey: string): string | null => {
-  try {
-    return globalThis.localStorage.getItem(storageKey);
-  } catch {
-    return null;
-  }
-};
-
-const writePreference = (storageKey: string, value: string): void => {
-  try {
-    globalThis.localStorage.setItem(storageKey, value);
-  } catch {
-    // Remembering the choice is optional. The explicit selection still starts.
-  }
 };
 
 const optionStatus = (
@@ -60,11 +46,7 @@ export const SessionStart = ({
     return () => globalThis.clearTimeout(focusTask);
   }, []);
   const storageKey = `wordhold-practice-direction-${preferenceKey}`;
-  const remembered = useSyncExternalStore(
-    subscribeToNothing,
-    () => readPreference(storageKey),
-    () => null,
-  );
+  const remembered = useRememberedPreference(storageKey);
   // A remembered direction that has no cards right now would start an empty
   // sitting, so it falls back to an explicit choice.
   const rememberedDirection = options.some(
@@ -127,7 +109,7 @@ export const SessionStart = ({
         </p>
       ) : (
         renderStartAction(selectedOption, () =>
-          writePreference(storageKey, selectedOption.value),
+          rememberPreference(storageKey, selectedOption.value),
         )
       )}
     </section>

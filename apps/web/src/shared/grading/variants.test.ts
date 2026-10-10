@@ -8,7 +8,7 @@ describe('answerVariants', () => {
   it('keeps a plain answer as its only reading', () => {
     expect(answerVariants('die Erinnerung')).toEqual({
       _tag: 'Expanded',
-      readings: ['die erinnerung'],
+      readings: ['die Erinnerung'],
     });
   });
 
@@ -30,7 +30,7 @@ describe('answerVariants', () => {
   it('expands complete word alternatives and suffix shorthand', () => {
     expect(answerVariants('der/die Angestellte')).toEqual({
       _tag: 'Expanded',
-      readings: ['der angestellte', 'die angestellte'],
+      readings: ['der Angestellte', 'die Angestellte'],
     });
     expect(answerVariants('amigo/a')).toEqual({
       _tag: 'Expanded',
@@ -65,7 +65,7 @@ describe('answerVariants punctuation and separators', () => {
     }
     expect(answerVariants('der / die Angestellte')).toEqual({
       _tag: 'Expanded',
-      readings: ['der angestellte', 'die angestellte'],
+      readings: ['der Angestellte', 'die Angestellte'],
     });
   });
 
@@ -95,7 +95,7 @@ describe('answerVariants punctuation and separators', () => {
     ]) {
       expect(answerVariants(notation)).toEqual({
         _tag: 'Expanded',
-        readings: ['die straße', 'der weg'],
+        readings: ['die Straße', 'der Weg'],
       });
     }
   });
@@ -103,7 +103,7 @@ describe('answerVariants punctuation and separators', () => {
   it('keeps literal slash names whole', () => {
     expect(answerVariants('AC/DC')).toEqual({
       _tag: 'Expanded',
-      readings: ['ac/dc'],
+      readings: ['AC/DC'],
     });
   });
 
@@ -137,6 +137,27 @@ describe('answerVariants punctuation and separators', () => {
     });
   });
 
+  it('keeps the parentheses of a chemical formula or name', () => {
+    for (const formula of [
+      'Ca(OH)₂',
+      'Ca(OH)2',
+      '(NH₄)₂SO₄',
+      'Al₂(SO₄)₃',
+      '[Fe(CN)₆]⁴⁻',
+      'Eisen(III)-oxid',
+      'Kupfer(II)-sulfat',
+    ]) {
+      expect(answerVariants(formula)).toEqual({
+        _tag: 'Expanded',
+        readings: [formula],
+      });
+    }
+    expect(answerVariants('Eisen(III)-oxid (Rost)')).toEqual({
+      _tag: 'Expanded',
+      readings: ['Eisen(III)-oxid Rost', 'Eisen(III)-oxid'],
+    });
+  });
+
   it('ignores commas within a reading', () => {
     expect(answerVariants('hello, world')).toEqual({
       _tag: 'Expanded',
@@ -149,7 +170,7 @@ describe('answerVariants combinations and bounds', () => {
   it('expands each non-empty semicolon-separated textbook answer', () => {
     expect(answerVariants('lingua franca; Verkehrssprache')).toEqual({
       _tag: 'Expanded',
-      readings: ['lingua franca', 'verkehrssprache'],
+      readings: ['lingua franca', 'Verkehrssprache'],
     });
     expect(answerVariants('to intend (to); plan to')).toEqual({
       _tag: 'Expanded',

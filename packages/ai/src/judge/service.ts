@@ -65,6 +65,7 @@ const taskData = (input: JudgeInput) =>
 export const judgePrompt = (input: JudgeInput): string =>
   [
     ...(asksRelation(input) ? relationTask(input) : translationTask(input)),
+    "Capitalization counts: a word capitalized against its language's rules, such as a lower-case German noun or English I, fails spelling and makes the answer incorrect.",
     'Set correct=true for an acceptable answer; acceptAsAlternative=true only when every dimension passes. Use null notes for passing dimensions.',
     'Write the explanation in German, quoting words with single quotes. Explain a rejection or qualification in at most two short sentences.',
     'When an acceptable answer differs from the expected answers in a way a learner should know, such as usage, register or region, explain the difference in one short sentence. Otherwise use a null explanation, never a bare confirmation.',

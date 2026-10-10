@@ -6,6 +6,10 @@ describe('normalizeAnswer', () => {
     expect(normalizeAnswer('  The Memory ')).toBe('the memory');
   });
 
+  it('keeps the indices and charges of a formula', () => {
+    expect(normalizeAnswer('SO₄²⁻')).toBe('so₄²⁻');
+  });
+
   it('collapses inner whitespace', () => {
     expect(normalizeAnswer('se   souvenir de')).toBe('se souvenir de');
   });
@@ -58,6 +62,17 @@ describe('normalizeAnswerForComparison', () => {
     expect(normalizeAnswerForComparison('algo…')).toBe('algo');
     expect(normalizeAnswerForComparison('ir – fui')).toBe('ir - fui');
     expect(normalizeAnswerForComparison('ir — fui')).toBe('ir - fui');
+  });
+
+  it('keeps case, which is part of the spelling', () => {
+    expect(normalizeAnswerForComparison('  der Weg. ')).toBe('der Weg');
+    expect(normalizeAnswerForComparison('CO')).not.toBe(
+      normalizeAnswerForComparison('Co'),
+    );
+  });
+
+  it('reads a minus sign as a hyphen', () => {
+    expect(normalizeAnswerForComparison('pH − Wert')).toBe('pH - Wert');
   });
 
   it('keeps textbook notation for the variant parser', () => {

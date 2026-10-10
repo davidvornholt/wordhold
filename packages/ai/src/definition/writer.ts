@@ -28,7 +28,8 @@ export const definitionPrompt = (request: DefinitionRequest): string =>
     'does: what kind of thing it is and what sets it apart, in the',
     "subject's technical terms, without examples or further properties.",
     'Return only the definition as `definition`. Never use double or',
-    'typographic quotation marks.',
+    'typographic quotation marks. Write formulas with sub- and superscript',
+    'characters, like H₂O or SO₄²⁻.',
   ].join(' ');
 
 export class DefinitionWriter extends Context.Service<
