@@ -129,6 +129,25 @@ test('capture keeps a batch open while a page upload has failed', async ({
   ).toBeVisible();
 });
 
+test('removing a failed page from a started batch lets it be reviewed', async ({
+  page,
+}) => {
+  await page.goto('/?state=import-failed');
+  await page.getByRole('button', { name: 'Seite 2 entfernen' }).click();
+  await expect(
+    page.getByRole('button', { name: 'Seite 3 entfernen' }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole('button', { name: 'Seite 2 entfernen' }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Erneut versuchen' }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole('button', { name: 'Stapel prüfen' }),
+  ).toBeVisible();
+});
+
 test('batch review requires every page in order', async ({ page }) => {
   await page.goto('/?state=verification-batch-first');
   await expect(

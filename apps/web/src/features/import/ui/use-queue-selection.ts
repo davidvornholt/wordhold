@@ -5,7 +5,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import type { QueuedPage } from '../services/upload-queue';
+import { type QueuedPage, withoutQueuedPage } from '../services/upload-queue';
 import { createQueueSelection } from './queue-selection';
 
 export const useQueueSelection = () => {
@@ -49,6 +49,12 @@ export const useQueueSelection = () => {
     };
   }, [setPages]);
 
+  const updatePage = (updated: QueuedPage): void => {
+    setPages((current) =>
+      current.map((page) => (page.id === updated.id ? updated : page)),
+    );
+  };
+
   const removePage = (pageId: string): void => {
     if (selectionsRef.current === null || selectionsRef.current.pending) {
       return;
@@ -60,7 +66,7 @@ export const useQueueSelection = () => {
         previewUrlsRef.current.delete(removed.previewUrl);
         digestsRef.current.delete(removed.id);
       }
-      return current.filter((page) => page.id !== pageId);
+      return withoutQueuedPage(current, pageId);
     });
   };
 
@@ -69,6 +75,7 @@ export const useQueueSelection = () => {
     pagesRef,
     setPages,
     previewUrlsRef,
+    updatePage,
     removePage,
     selectionsRef,
     selecting,

@@ -121,6 +121,25 @@ export const nextUploadPosition = (usedPositions: ReadonlySet<number>) => {
   return position;
 };
 
+// Later pages move up into the freed position, as they do on the server: a
+// batch completes once it holds every position below its size.
+export const withoutQueuedPage = (
+  pages: ReadonlyArray<QueuedPage>,
+  pageId: string,
+): ReadonlyArray<QueuedPage> => {
+  const removed = pages.find((page) => page.id === pageId);
+  if (removed === undefined) {
+    return pages;
+  }
+  return pages
+    .filter((page) => page.id !== pageId)
+    .map((page) =>
+      page.position > removed.position
+        ? { ...page, position: page.position - 1 }
+        : page,
+    );
+};
+
 export const processQueuedPages = <A, B, E, R>(
   pages: ReadonlyArray<A>,
   process: (page: A) => Effect.Effect<B, E, R>,
