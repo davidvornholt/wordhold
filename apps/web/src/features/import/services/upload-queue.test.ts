@@ -215,6 +215,25 @@ describe('selectFiles', () => {
     expect(selection.overLimit).toBe(0);
   });
 
+  it('leaves out files in formats the upload does not store', async () => {
+    const selection = await selectFiles(
+      [
+        new File(['heic'], 'IMG_0001.HEIC', { type: 'image/heic' }),
+        photo('page.png', 'page'),
+        new File(['pdf'], 'worksheet.pdf', { type: 'application/pdf' }),
+        new File(['jpeg'], 'page.jpg', { type: '' }),
+      ],
+      new Set(),
+      maximumUploadBatchSize,
+    );
+    expect(selection.accepted.map((item) => item.file.name)).toEqual([
+      'page.png',
+      'page.jpg',
+    ]);
+    expect(selection.unsupported).toBe(2);
+    expect(selection.duplicates).toBe(0);
+  });
+
   it('cuts fresh files at the remaining batch size', async () => {
     const selection = await selectFiles(
       [photo('a.png', 'a'), photo('b.png', 'b'), photo('c.png', 'c')],

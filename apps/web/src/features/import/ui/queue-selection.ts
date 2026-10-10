@@ -9,10 +9,14 @@ import {
 
 export const selectionNotice = ({
   accepted,
+  unsupported,
   duplicates,
   overLimit,
 }: FileSelection): string | null => {
   const notices = [
+    unsupported === 0
+      ? null
+      : `${unsupported === 1 ? '1 Datei ist kein JPEG-, PNG- oder WebP-Bild und wurde' : `${unsupported} Dateien sind keine JPEG-, PNG- oder WebP-Bilder und wurden`} nicht hinzugefügt.`,
     duplicates === 0
       ? null
       : `${duplicates === 1 ? '1 Foto war' : `${duplicates} Fotos waren`} schon in der Auswahl.`,

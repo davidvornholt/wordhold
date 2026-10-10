@@ -4,7 +4,7 @@ import {
   maximumUploadBatchSize,
   type QueuedPage,
 } from '../services/upload-queue';
-import { createQueueSelection } from './queue-selection';
+import { createQueueSelection, selectionNotice } from './queue-selection';
 
 const scenarios = [
   {
@@ -123,3 +123,16 @@ it.each(scenarios)(
     }
   },
 );
+
+it('names the files left out for their format', () => {
+  expect(
+    selectionNotice({
+      accepted: [],
+      unsupported: 2,
+      duplicates: 0,
+      overLimit: 0,
+    }),
+  ).toBe(
+    '2 Dateien sind keine JPEG-, PNG- oder WebP-Bilder und wurden nicht hinzugefügt.',
+  );
+});

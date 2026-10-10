@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
-
-const acceptedImageTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
+import { acceptedImageTypes } from '../services/upload-queue';
 
 const isEditable = (target: EventTarget | null): boolean =>
   target instanceof HTMLElement &&
