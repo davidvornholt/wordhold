@@ -44,6 +44,11 @@ export const handleLedgerKeyDown = (event: KeyboardEvent<HTMLFormElement>) => {
     return;
   }
   const { target } = event;
+  if (target instanceof HTMLInputElement && target.type === 'checkbox') {
+    // Checkboxes use Space to toggle; Enter must not implicitly submit.
+    event.preventDefault();
+    return;
+  }
   if (!isTextField(target) || event.altKey) {
     return;
   }

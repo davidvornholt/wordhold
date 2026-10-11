@@ -50,7 +50,16 @@ test('VerifyForm imports a variant only after the exception is confirmed', async
 }) => {
   await page.goto('/?state=verification-duplicates');
   const luggageRow = page.locator('form li[data-row-id]').nth(1);
-  await luggageRow.getByRole('checkbox', { name: exceptionCheckbox }).check();
+  const confirmation = luggageRow.getByRole('checkbox', {
+    name: exceptionCheckbox,
+  });
+  await confirmation.focus();
+  await confirmation.press('Enter');
+  await expect(page).toHaveURL('/?state=verification-duplicates');
+  await expect(confirmation).toBeFocused();
+  await expect(confirmation).not.toBeChecked();
+  await confirmation.press('Space');
+  await expect(confirmation).toBeChecked();
   await expect(
     page.getByRole('button', { name: '11 Einträge importieren' }),
   ).toBeEnabled();
@@ -58,6 +67,16 @@ test('VerifyForm imports a variant only after the exception is confirmed', async
     page.getByText('1 Duplikat wird nicht importiert.'),
   ).toBeVisible();
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
+  await page
+    .getByRole('button', { name: '11 Einträge importieren' })
+    .press('Enter');
+  await expect(page).toHaveURL(dashboardState);
+
+  for (const shortcut of ['Control+Enter', 'Meta+Enter']) {
+    await page.goto('/?state=verification-duplicates');
+    await confirmation.press(shortcut);
+    await expect(page).toHaveURL(dashboardState);
+  }
 });
 
 test('VerifyForm turns an exact duplicate into an exception when the example changes', async ({
