@@ -34,16 +34,6 @@ type ExampleDraftInput<T extends ExampleDraft> = {
 
 type TextField = HTMLInputElement | HTMLTextAreaElement;
 
-// Which parts of the example are AI text the learner still has to review.
-// A saved sentence was reviewed when it was stored.
-export const exampleReview = (entry: ExampleDraft) => ({
-  sentence: entry.exampleStored !== true && entry.exampleGenerated === true,
-  translation:
-    entry.exampleStored !== true &&
-    entry.example.trim() !== '' &&
-    entry.exampleNativeText !== '',
-});
-
 // The example sentence and its German translation, both editable. A typed
 // sentence gets its translation from the page reading or, failing that,
 // from a translation requested here; rewriting the sentence clears the

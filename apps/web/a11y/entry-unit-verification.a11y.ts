@@ -5,9 +5,6 @@ import { assertNoAccessibilityViolations } from './a11y-assertions';
 const generatedExampleIndex = 3;
 const unitTwoId = '11111111-1111-4111-8111-111111111111';
 const unitThreeId = '22222222-2222-4222-8222-222222222222';
-const generatedHint = 'Mit KI erzeugt. Prüfe den Satz vor dem Import.';
-const translatedHint =
-  'Mit KI übersetzt. Prüfe die Übersetzung vor dem Import.';
 
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
@@ -111,17 +108,15 @@ test('VerifyForm generates an editable sentence and German translation', async (
   await row.getByRole('button', { name: 'Beispielsatz erzeugen' }).click();
   const sentence = row.getByLabel('Beispielsatz', { exact: true });
   await expect(sentence).toHaveValue('This memory makes me smile.');
-  await expect(sentence).toHaveAccessibleDescription(generatedHint);
   const translation = row.getByLabel('Deutsche Übersetzung des Beispielsatzes');
   await expect(translation).toHaveValue(
     'Diese Erinnerung bringt mich zum Lächeln.',
   );
-  await expect(translation).toHaveAccessibleDescription(translatedHint);
   await expect(translation).toBeFocused();
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
 });
 
-test('VerifyForm marks a machine translation of a printed example and re-translates a rewrite', async ({
+test('VerifyForm re-translates a rewritten printed example', async ({
   page,
 }) => {
   await page.goto('/?state=verification');
@@ -131,9 +126,7 @@ test('VerifyForm marks a machine translation of a printed example and re-transla
   );
   const sentence = first.getByLabel('Beispielsatz', { exact: true });
   await expect(sentence).toHaveValue('The journey takes three hours.');
-  await expect(sentence).toHaveAccessibleDescription('');
   await expect(translation).toHaveValue('Die Reise dauert drei Stunden.');
-  await expect(translation).toHaveAccessibleDescription(translatedHint);
 
   await sentence.fill('The journey takes two hours.');
   await expect(translation).toHaveValue('');

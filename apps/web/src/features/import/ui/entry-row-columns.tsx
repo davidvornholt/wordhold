@@ -1,52 +1,20 @@
 import { maximumEntryTextLength } from '@wordhold/ai/extraction/schema';
 import { SparklesIcon } from 'lucide-react';
-import { type ReactNode, useCallback, useId, useRef, useState } from 'react';
+import { useCallback, useId, useRef, useState } from 'react';
 import { Button } from '../../../shared/ui/button';
 import { ExampleErrors } from '../../../shared/ui/example-draft-editor';
 import { ledgerFieldClass } from '../../../shared/ui/field-styles';
-import {
-  exampleReview,
-  type useExampleDraft,
-} from '../../../shared/ui/use-example-draft';
+import type { useExampleDraft } from '../../../shared/ui/use-example-draft';
 import {
   relationKinds,
   relationLabels,
 } from '../../../shared/vocabulary/related-words';
-import { AiBadge } from './ai-badge';
 import type { DraftEntry } from './entry-row';
-import { grammarSummary } from './grammar-summary';
 import { ledgerField } from './ledger-keyboard';
 
 // Example text is a sentence: it wraps instead of scrolling out of its
 // column, and Enter moves to the next line of the ledger.
 const exampleFieldClass = `${ledgerFieldClass} field-sizing-content resize-none font-display italic`;
-
-type AiMarkedProps = {
-  readonly marked: boolean;
-  readonly hint: string;
-  readonly children: (describedBy: string | undefined) => ReactNode;
-};
-
-// The wrapper stays the same whether or not the mark shows, so a field
-// keeps focus while an edit adds or removes its mark.
-const AiMarked = ({ marked, hint, children }: AiMarkedProps) => {
-  const hintId = useId();
-  return (
-    <div className="flex items-start gap-2">
-      {children(marked ? hintId : undefined)}
-      {marked ? (
-        <>
-          <span className="mt-2.5">
-            <AiBadge />
-          </span>
-          <span className="sr-only" id={hintId}>
-            {hint}
-          </span>
-        </>
-      ) : null}
-    </div>
-  );
-};
 
 type ColumnProps = {
   readonly entry: DraftEntry;
@@ -60,9 +28,9 @@ type ColumnProps = {
 const RelationFields = ({
   entry,
   disabled,
-  grammar,
   onChange,
-}: Omit<ColumnProps, 'example'> & { readonly grammar: string }) => {
+}: Omit<ColumnProps, 'example'>) => {
+  const fieldId = useId();
   const hasRelations = relationKinds.some((kind) => (entry[kind] ?? '') !== '');
   // Once open, the lines stay: clearing them must not pull the field away
   // from under the cursor.
@@ -78,48 +46,50 @@ const RelationFields = ({
 
   return (
     <>
-      {grammar === '' && shown ? null : (
-        <div className="flex flex-wrap items-baseline gap-x-3 px-1 pt-1">
-          {grammar === '' ? null : (
-            <p className="text-muted-foreground text-xs">{grammar}</p>
-          )}
-          {shown ? null : (
-            <Button
-              disabled={disabled}
-              onClick={() => {
-                openedByToggleRef.current = true;
-                setOpened(true);
-              }}
-              variant="fine-print"
-            >
-              + Synonyme, Gegenteile
-            </Button>
-          )}
-        </div>
+      {shown ? null : (
+        <Button
+          className="self-start px-1"
+          disabled={disabled}
+          onClick={() => {
+            openedByToggleRef.current = true;
+            setOpened(true);
+          }}
+          variant="fine-print"
+        >
+          + Synonyme, Gegenteile
+        </Button>
       )}
+      {/* A filled line no longer shows its placeholder, so each one keeps a
+          visible name. */}
       {shown
         ? relationKinds.map((kind) => (
-            <input
-              {...ledgerField(kind)}
-              aria-label={relationLabels[kind]}
-              className={ledgerFieldClass}
-              disabled={disabled}
-              key={kind}
-              onChange={(event) =>
-                onChange({ ...entry, [kind]: event.target.value })
-              }
-              placeholder={`${relationLabels[kind]}, mit Komma getrennt`}
-              ref={kind === 'synonyms' ? focusOpened : undefined}
-              value={entry[kind] ?? ''}
-            />
+            <div className="flex items-baseline gap-2" key={kind}>
+              <label
+                className="w-20 shrink-0 pl-1 text-muted-foreground text-xs"
+                htmlFor={`${fieldId}-${kind}`}
+              >
+                {relationLabels[kind]}
+              </label>
+              <input
+                {...ledgerField(kind)}
+                className={ledgerFieldClass}
+                disabled={disabled}
+                id={`${fieldId}-${kind}`}
+                onChange={(event) =>
+                  onChange({ ...entry, [kind]: event.target.value })
+                }
+                placeholder="mit Komma getrennt"
+                ref={kind === 'synonyms' ? focusOpened : undefined}
+                value={entry[kind] ?? ''}
+              />
+            </div>
           ))
         : null}
     </>
   );
 };
 
-// The left page of the notebook: the word, its example sentence and what
-// the book prints about it.
+// The left page of the notebook: the word and its example sentence.
 export const TermColumn = ({
   entry,
   disabled,
@@ -140,28 +110,15 @@ export const TermColumn = ({
       placeholder={targetLabel}
       value={entry.targetText}
     />
-    <AiMarked
-      hint="Mit KI erzeugt. Prüfe den Satz vor dem Import."
-      marked={exampleReview(entry).sentence}
-    >
-      {(describedBy) => (
-        <textarea
-          {...ledgerField('example')}
-          {...example.sentenceField}
-          aria-describedby={describedBy}
-          aria-label="Beispielsatz"
-          className={exampleFieldClass}
-          placeholder="Beispielsatz (optional)"
-          rows={1}
-        />
-      )}
-    </AiMarked>
-    <RelationFields
-      disabled={disabled}
-      entry={entry}
-      grammar={entry.grammar === undefined ? '' : grammarSummary(entry.grammar)}
-      onChange={onChange}
+    <textarea
+      {...ledgerField('example')}
+      {...example.sentenceField}
+      aria-label="Beispielsatz"
+      className={exampleFieldClass}
+      placeholder="Beispielsatz (optional)"
+      rows={1}
     />
+    <RelationFields disabled={disabled} entry={entry} onChange={onChange} />
   </div>
 );
 
@@ -196,26 +153,18 @@ export const NativeColumn = ({
         {example.generating ? 'Satz wird erzeugt …' : 'Beispielsatz erzeugen'}
       </Button>
     ) : (
-      <AiMarked
-        hint="Mit KI übersetzt. Prüfe die Übersetzung vor dem Import."
-        marked={exampleReview(entry).translation}
-      >
-        {(describedBy) => (
-          <textarea
-            {...ledgerField('exampleNative')}
-            {...example.translationField}
-            aria-describedby={describedBy}
-            aria-label="Deutsche Übersetzung des Beispielsatzes"
-            className={exampleFieldClass}
-            placeholder={
-              example.translating
-                ? 'Übersetzung wird erzeugt …'
-                : 'Deutsche Übersetzung'
-            }
-            rows={1}
-          />
-        )}
-      </AiMarked>
+      <textarea
+        {...ledgerField('exampleNative')}
+        {...example.translationField}
+        aria-label="Deutsche Übersetzung des Beispielsatzes"
+        className={exampleFieldClass}
+        placeholder={
+          example.translating
+            ? 'Übersetzung wird erzeugt …'
+            : 'Deutsche Übersetzung'
+        }
+        rows={1}
+      />
     )}
     <ExampleErrors
       generationError={example.generationError}

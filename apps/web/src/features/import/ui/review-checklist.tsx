@@ -9,8 +9,6 @@ import { type RefObject, useId, useRef } from 'react';
 import { countNoun } from '../../../shared/format/count';
 import { Button } from '../../../shared/ui/button';
 import { focusRing } from '../../../shared/ui/field-styles';
-import { exampleReview } from '../../../shared/ui/use-example-draft';
-import { AiBadge } from './ai-badge';
 import { type IdentifiedDraftRow, isUncertain } from './draft-rows';
 import { ledgerFieldAttribute } from './ledger-keyboard';
 import type { BulkExamples } from './use-bulk-examples';
@@ -150,21 +148,12 @@ export const ReviewChecklist = ({
     (_row, index) =>
       (formState.duplicates[index]?.verdict ?? 'none') !== 'none',
   );
-  const aiText = rows.some((row) => {
-    const review = exampleReview(row);
-    return review.sentence || review.translation;
-  });
   const bulkActive =
     bulk.missing > 0 ||
     bulk.progress !== null ||
     bulk.failed > 0 ||
     bulk.generated > 0;
-  if (
-    uncertain.length === 0 &&
-    duplicates.length === 0 &&
-    !bulkActive &&
-    !aiText
-  ) {
+  if (uncertain.length === 0 && duplicates.length === 0 && !bulkActive) {
     return null;
   }
 
@@ -200,12 +189,6 @@ export const ReviewChecklist = ({
         </ul>
       )}
       {bulkActive ? <BulkExamplesItem bulk={bulk} disabled={disabled} /> : null}
-      {aiText ? (
-        <p className="flex items-center gap-2 text-muted-foreground text-sm">
-          <AiBadge />
-          Mit KI erzeugt oder übersetzt. Prüfe diese Texte vor dem Import.
-        </p>
-      ) : null}
     </section>
   );
 };

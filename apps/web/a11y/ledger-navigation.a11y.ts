@@ -106,3 +106,22 @@ test('removing every entry leaves focus on adding one', async ({ page }) => {
   ).toBeDisabled();
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
 });
+
+test('synonyms and opposites open on request and are imported', async ({
+  page,
+}) => {
+  await page.goto('/?state=verification-deferred');
+  const row = page.locator('form li[data-row-id]').first();
+  await expect(row.getByLabel('Synonyme', { exact: true })).toHaveCount(0);
+  await row.getByRole('button', { name: '+ Synonyme, Gegenteile' }).click();
+  const synonyms = row.getByLabel('Synonyme', { exact: true });
+  await expect(synonyms).toBeFocused();
+  await synonyms.fill('voyage, trip');
+  await row.getByLabel('Gegenteile', { exact: true }).fill('stay');
+  assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
+
+  await page.getByRole('button', { name: '1 Eintrag importieren' }).click();
+  const snapshot = page.getByLabel('Verification snapshot');
+  await expect(snapshot).toContainText('voyage');
+  await expect(snapshot).toContainText('stay');
+});
