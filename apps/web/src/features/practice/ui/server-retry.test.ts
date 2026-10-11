@@ -102,6 +102,29 @@ const scriptedCall = (failures: ReadonlyArray<unknown>) => {
 };
 
 describe('retryUnreachable', () => {
+  it('does not start another call after the caller leaves during backoff', async () => {
+    const { timing, waits } = fakeTiming();
+    const offline = new TypeError('Failed to fetch');
+    const { call, calls } = scriptedCall([offline]);
+    let active = true;
+
+    const retried = retryUnreachable(call, {
+      isActive: () => active,
+      onReconnecting: () => undefined,
+      timing: {
+        ...timing,
+        wait: async (milliseconds) => {
+          await timing.wait(milliseconds);
+          active = false;
+        },
+      },
+    });
+
+    await expect(retried).rejects.toBe(offline);
+    expect(calls()).toBe(1);
+    expect(waits).toEqual([500]);
+  });
+
   it('repeats a call the proxy answered until the app answers', async () => {
     const { timing, waits } = fakeTiming();
     const { call, calls } = scriptedCall([
@@ -111,6 +134,7 @@ describe('retryUnreachable', () => {
     let reconnecting = 0;
 
     const result = await retryUnreachable(call, {
+      isActive: () => true,
       onReconnecting: () => {
         reconnecting += 1;
       },
@@ -130,6 +154,7 @@ describe('retryUnreachable', () => {
     let reconnecting = 0;
 
     await retryUnreachable(call, {
+      isActive: () => true,
       onReconnecting: () => {
         reconnecting += 1;
       },
@@ -149,6 +174,7 @@ describe('retryUnreachable', () => {
     const { call, calls } = scriptedCall(failures);
 
     const retried = retryUnreachable(call, {
+      isActive: () => true,
       onReconnecting: () => undefined,
       timing,
     });
@@ -169,6 +195,7 @@ describe('retryUnreachable', () => {
     };
 
     const retried = retryUnreachable(slowCall, {
+      isActive: () => true,
       onReconnecting: () => undefined,
       timing,
     });
@@ -183,6 +210,7 @@ describe('retryUnreachable', () => {
     const { call, calls } = scriptedCall([stale]);
 
     const retried = retryUnreachable(call, {
+      isActive: () => true,
       onReconnecting: () => undefined,
       timing,
     });

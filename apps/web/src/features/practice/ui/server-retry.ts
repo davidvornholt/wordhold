@@ -83,6 +83,7 @@ const delayBefore = (retry: number): number =>
 const quietRetries = 2;
 
 type RetryOptions = {
+  readonly isActive: () => boolean;
   // Called once, when the retries have taken long enough to mention.
   readonly onReconnecting: () => void;
   readonly timing?: RetryTiming;
@@ -94,7 +95,7 @@ type RetryOptions = {
 // whose call is safe to repeat may use this.
 export const retryUnreachable = <A>(
   call: () => Promise<A>,
-  { onReconnecting, timing = browserTiming }: RetryOptions,
+  { isActive, onReconnecting, timing = browserTiming }: RetryOptions,
 ): Promise<A> => {
   const startedAt = timing.now();
   const attempt = async (retries: number): Promise<A> => {
@@ -103,6 +104,7 @@ export const retryUnreachable = <A>(
     } catch (cause) {
       const delay = delayBefore(retries);
       if (
+        !isActive() ||
         classifyServerFailure(cause).kind === 'reported' ||
         timing.now() - startedAt + delay > retryWindowMs
       ) {
@@ -112,6 +114,11 @@ export const retryUnreachable = <A>(
         onReconnecting();
       }
       await timing.wait(delay);
+      // The caller may have left while waiting. Do not start a new request
+      // that could save an answer after its card has left the screen.
+      if (!isActive()) {
+        throw cause;
+      }
       return attempt(retries + 1);
     }
   };
