@@ -231,7 +231,7 @@ export const useDraftForm = ({
     appendRow: () => {
       const next = appendedRow(rows, pageUnit(book));
       const added = next.at(-1);
-      editRows(() => next);
+      restructure(() => next);
       if (added !== undefined) {
         requestFocus({ kind: 'term', rowId: added.rowId });
       }

@@ -88,6 +88,26 @@ test('a removed entry can be restored where it was', async ({ page }) => {
   await expect(restored).toHaveValue('luggage');
   await expect(restored).toBeFocused();
   await expect(removedLine).toHaveCount(0);
+
+  // Adding a replacement ends undo: restoring a removed final unit boundary
+  // would silently move the replacement into that unit.
+  await page
+    .getByRole('button', { name: 'Andere Einheit ab Eintrag 12' })
+    .click();
+  await expect(
+    page.getByLabel('Einheit ab Eintrag 12', { exact: true }),
+  ).toHaveValue('22222222-2222-4222-8222-222222222222');
+  await page.getByRole('button', { name: 'Eintrag 12 entfernen' }).click();
+  await expect(page.getByRole('button', { name: 'Rückgängig' })).toBeVisible();
+  await page.getByRole('button', { name: 'Eintrag hinzufügen' }).click();
+  await expect(rows).toHaveCount(12);
+  await expect(rows.last().getByLabel('Englisch')).toBeFocused();
+  await expect(page.getByRole('button', { name: 'Rückgängig' })).toHaveCount(0);
+  await expect(
+    page
+      .getByRole('list', { name: 'Unit 2: Einträge 1–12' })
+      .locator('li[data-row-id]'),
+  ).toHaveCount(12);
 });
 
 test('removing every entry leaves focus on adding one', async ({ page }) => {
