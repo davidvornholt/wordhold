@@ -112,7 +112,7 @@ jobs:
           file: ./Dockerfile
           load: true
           tags: wordhold:pull-request
-          cache-from: type=gha,scope=wordhold
+          cache-from: type=registry,ref=ghcr.io/davidvornholt/wordhold:buildcache
           labels: |
             org.opencontainers.image.revision=${{ github.event.pull_request.head.sha }}
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
@@ -374,8 +374,8 @@ jobs:
           labels: |
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
-          cache-from: type=gha,scope=wordhold
-          cache-to: type=gha,scope=wordhold,mode=max
+          cache-from: type=registry,ref=ghcr.io/davidvornholt/wordhold:buildcache
+          cache-to: type=registry,ref=ghcr.io/davidvornholt/wordhold:buildcache,mode=max,image-manifest=true,oci-mediatypes=true
 
       - name: Require anonymous access to the exact digest
         env:
