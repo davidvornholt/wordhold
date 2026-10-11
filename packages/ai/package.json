@@ -35,8 +35,6 @@
   },
   "scripts": {
     "check-types": "tsc --noEmit",
-    "lint": "biome check --error-on-warnings .",
-    "lint:fix": "biome check --write --error-on-warnings .",
     "test": "bun test",
     "benchmark:models": "bun src/benchmark/cli.ts"
   },
