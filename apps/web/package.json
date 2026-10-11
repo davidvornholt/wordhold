@@ -8,8 +8,6 @@
     "build": "vite build && bun build --target=bun --outdir=.output/maintenance scripts/repair-practice-reviews.ts",
     "start": "bun .output/server/index.mjs",
     "check-types": "tsc --noEmit",
-    "lint": "biome check --error-on-warnings .",
-    "lint:fix": "biome check --write --error-on-warnings .",
     "icons:render": "bun scripts/render-app-icons.ts",
     "provider:verify": "bun scripts/verify-ai-provider.ts",
     "test": "bun test",
