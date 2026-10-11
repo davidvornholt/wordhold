@@ -32,6 +32,10 @@ describe('normalizeAnswer', () => {
   it('keeps accents intact', () => {
     expect(normalizeAnswer('École')).toBe('école');
   });
+
+  it('keeps placeholders as printed, since stored answers use this form', () => {
+    expect(normalizeAnswer('to stalk sb./sth.')).toBe('to stalk sb./sth');
+  });
 });
 
 describe('normalizeAnswerForComparison', () => {
@@ -73,6 +77,33 @@ describe('normalizeAnswerForComparison', () => {
 
   it('reads a minus sign as a hyphen', () => {
     expect(normalizeAnswerForComparison('pH − Wert')).toBe('pH - Wert');
+  });
+
+  it('reads placeholders without their dot and a slot in any order', () => {
+    for (const text of [
+      'to stalk sb./sth.',
+      'to stalk sb/sth',
+      'to stalk sth/sb',
+      'to stalk sth. / sb',
+    ]) {
+      expect(normalizeAnswerForComparison(text)).toBe('to stalk sb/sth');
+    }
+    expect(normalizeAnswerForComparison('jdm./etw. nachstellen')).toBe(
+      'etw/jdm nachstellen',
+    );
+    expect(normalizeAnswerForComparison('to get on sb.’s nerves')).toBe(
+      "to get on sb's nerves",
+    );
+    expect(normalizeAnswerForComparison('donner qc. à qn.')).toBe(
+      'donner qc à qn',
+    );
+  });
+
+  it('keeps other abbreviations and real word alternatives as written', () => {
+    expect(normalizeAnswerForComparison('etw. usw. machen')).toBe(
+      'etw usw. machen',
+    );
+    expect(normalizeAnswerForComparison('la/el tenista')).toBe('la/el tenista');
   });
 
   it('keeps textbook notation for the variant parser', () => {
