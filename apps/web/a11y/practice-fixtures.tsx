@@ -257,11 +257,26 @@ export const DeferredPracticeFixture = () => {
         </button>
         <button
           onClick={() =>
-            deferredRef.current?.reject(new Error('Test rejection'))
+            deferredRef.current?.reject(
+              new Error(
+                'Diese Karte wurde bereits beantwortet. Lade die Übung neu.',
+              ),
+            )
           }
           type="button"
         >
           Reject submission
+        </button>
+        <button
+          onClick={() =>
+            deferredRef.current?.reject(
+              // biome-ignore lint/suspicious/useErrorMessage: Start's client throws exactly this for the empty 502 Caddy sends while the app restarts.
+              new Error(''),
+            )
+          }
+          type="button"
+        >
+          Fail submission
         </button>
       </fieldset>
     </FocusLayout>
