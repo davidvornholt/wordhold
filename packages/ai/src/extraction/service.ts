@@ -1,7 +1,7 @@
 import { Context, Effect, Layer } from 'effect';
 import { BedrockProvider, productionModelId } from '../providers/bedrock';
 import { generateStructured } from '../structured-generation';
-import { decodeModelOutput } from '../structured-output';
+import { UnusableAnswerError } from '../unusable-answer-error';
 import type { AiUsage } from '../usage';
 import { ExtractionError } from './error';
 import { fitPageImage, type ModelImage } from './page-image';
@@ -43,9 +43,10 @@ export class Extraction extends Context.Service<
       const model = yield* BedrockProvider;
       const modelId = productionModelId;
 
-      const decodePage = decodeModelOutput(ExtractedPage);
-
-      const callModel = (image: ModelImage, targetLanguage: string) =>
+      const runModel = (
+        image: ModelImage,
+        targetLanguage: string,
+      ): Effect.Effect<ExtractedPageData, ExtractionError, AiUsage> =>
         generateStructured({
           model,
           operation: 'page-extraction',
@@ -60,31 +61,18 @@ export class Extraction extends Context.Service<
             },
           ],
           failure: (cause) =>
-            new ExtractionError({
-              reason: 'provider',
-              message: `The reading service rejected or did not answer the request for ${modelId}.`,
-              cause,
-            }),
+            cause instanceof UnusableAnswerError
+              ? new ExtractionError({
+                  reason: 'invalidOutput',
+                  message: `${modelId} answered outside the page schema.`,
+                  cause,
+                })
+              : new ExtractionError({
+                  reason: 'provider',
+                  message: `The reading service rejected or did not answer the request for ${modelId}.`,
+                  cause,
+                }),
         });
-
-      const runModel = (
-        image: ModelImage,
-        targetLanguage: string,
-      ): Effect.Effect<ExtractedPageData, ExtractionError, AiUsage> =>
-        callModel(image, targetLanguage).pipe(
-          Effect.flatMap((output) =>
-            decodePage(output).pipe(
-              Effect.mapError(
-                (cause) =>
-                  new ExtractionError({
-                    reason: 'invalidOutput',
-                    message: `${modelId} answered outside the page schema.`,
-                    cause,
-                  }),
-              ),
-            ),
-          ),
-        );
 
       const extract = (
         input: PageImage,

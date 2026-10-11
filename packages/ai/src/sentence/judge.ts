@@ -1,7 +1,6 @@
 import { Context, Effect, Layer } from 'effect';
 import { BedrockProvider, productionModelId } from '../providers/bedrock';
 import { generateStructured } from '../structured-generation';
-import { decodeModelOutput } from '../structured-output';
 import type { AiUsage } from '../usage';
 import { SentenceJudgeError } from './judge-error';
 import {
@@ -45,7 +44,6 @@ export class SentenceJudge extends Context.Service<
     Effect.gen(function* () {
       const model = yield* BedrockProvider;
       const modelId = productionModelId;
-      const decodeVerdict = decodeModelOutput(SentenceVerdict);
       const failure = (cause: unknown) =>
         new SentenceJudgeError({ cause, message: judgeFailure });
 
@@ -58,11 +56,7 @@ export class SentenceJudge extends Context.Service<
           schema: SentenceVerdict,
           prompt: sentenceJudgePrompt(input),
           failure,
-        }).pipe(
-          Effect.flatMap((output) =>
-            decodeVerdict(output).pipe(Effect.mapError(failure)),
-          ),
-        );
+        });
 
       return SentenceJudge.of({ judge, modelId });
     }),

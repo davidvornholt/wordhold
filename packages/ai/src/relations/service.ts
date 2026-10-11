@@ -1,7 +1,6 @@
 import { Context, Effect, Layer } from 'effect';
 import { BedrockProvider } from '../providers/bedrock';
 import { generateStructured } from '../structured-generation';
-import { decodeModelOutput } from '../structured-output';
 import type { AiUsage } from '../usage';
 import { RelationError } from './error';
 import {
@@ -40,7 +39,6 @@ export class WordRelations extends Context.Service<
     WordRelations,
     Effect.gen(function* () {
       const model = yield* BedrockProvider;
-      const decodeSuggestions = decodeModelOutput(RelationSuggestions);
       const failure = (cause: unknown) =>
         new RelationError({ cause, message: suggestionFailure });
 
@@ -55,20 +53,11 @@ export class WordRelations extends Context.Service<
           schema: RelationSuggestions,
           prompt: relationPrompt(request),
           failure,
-        }).pipe(
-          Effect.flatMap((output) =>
-            decodeSuggestions(output).pipe(Effect.mapError(failure)),
-          ),
-          Effect.filterOrFail(
-            (suggestions) => suggestions.words.length === request.words.length,
-            (suggestions) =>
-              failure(
-                new Error(
-                  `Expected ${request.words.length} words, received ${suggestions.words.length}.`,
-                ),
-              ),
-          ),
-        );
+          validate: (suggestions) =>
+            suggestions.words.length === request.words.length
+              ? undefined
+              : `Expected ${request.words.length} words, received ${suggestions.words.length}.`,
+        });
 
       return WordRelations.of({ suggest });
     }),

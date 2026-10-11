@@ -5,7 +5,6 @@ import {
 } from '../extraction/schema';
 import { BedrockProvider } from '../providers/bedrock';
 import { generateStructured } from '../structured-generation';
-import { decodeModelOutput } from '../structured-output';
 import type { AiOperation, AiUsage } from '../usage';
 import { SentenceGenError } from './error';
 
@@ -125,13 +124,7 @@ export class SentenceGen extends Context.Service<
           schema,
           prompt,
           failure: (cause) => new SentenceGenError({ cause }),
-        }).pipe(
-          Effect.flatMap((output) =>
-            decodeModelOutput(schema)(output).pipe(
-              Effect.mapError((cause) => new SentenceGenError({ cause })),
-            ),
-          ),
-        );
+        });
 
       const generate = (
         request: SentenceRequest,
