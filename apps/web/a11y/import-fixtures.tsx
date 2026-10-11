@@ -99,7 +99,9 @@ export const VerificationFixture = ({
                 native: `Übersetzt: ${sentence}`,
               })}
               initialEntries={verificationEntries}
-              initialUnitName={noUnits ? undefined : '  UNIT   2  '}
+              initialUnitName={
+                noUnits ? undefined : '  GREEN LINE 3 ·  Unit   2  '
+              }
               onSubmit={() => navigateToFixture('dashboard')}
               targetLabel="Englisch"
               units={noUnits ? [] : verificationUnits}
