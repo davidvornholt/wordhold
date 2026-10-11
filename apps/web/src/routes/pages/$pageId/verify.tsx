@@ -19,6 +19,7 @@ import type {
   UnitEntry,
 } from '../../../features/import/services/repository';
 import type { DraftEntry } from '../../../features/import/ui/entry-row';
+import { withoutPhoneticTranscription } from '../../../features/import/ui/phonetic-transcription';
 import { useVerificationFlow } from '../../../features/import/ui/use-verification-flow';
 import { VerificationWorkbench } from '../../../features/import/ui/verification-workbench';
 import { germanLabels } from '../../../shared/languages';
@@ -31,7 +32,7 @@ const draftsFromExtraction = (
   extraction === null
     ? []
     : extraction.page.entries.map((entry) => ({
-        targetText: entry.targetText,
+        targetText: withoutPhoneticTranscription(entry.targetText),
         nativeText: entry.nativeText,
         example: entry.example ?? '',
         exampleNativeText: entry.exampleTranslation ?? '',
