@@ -1,20 +1,17 @@
 import type { GrammarInfo } from '@wordhold/ai/extraction/schema';
-import { maximumEntryTextLength } from '@wordhold/ai/extraction/schema';
-import type { ReactNode } from 'react';
+import { BetweenHorizontalStartIcon, XIcon } from 'lucide-react';
 import type {
   ExampleDraft,
   ExampleGenerationSource,
   GeneratedExample,
 } from '../../../shared/examples/example-draft';
 import { Button } from '../../../shared/ui/button';
-import { ExampleDraftEditor } from '../../../shared/ui/example-draft-editor';
-import { fieldCompactClass } from '../../../shared/ui/field-styles';
-import { Checkbox } from '../../../shared/ui/selection-controls';
-import {
-  relationKinds,
-  relationLabels,
-} from '../../../shared/vocabulary/related-words';
+import { useExampleDraft } from '../../../shared/ui/use-example-draft';
 import type { DraftDuplicate } from './draft-duplicates';
+import { isUncertain } from './draft-rows';
+import { NativeColumn, TermColumn } from './entry-row-columns';
+import { ledgerGrid } from './ledger-grid';
+import { RowFlags } from './row-flags';
 
 export type DraftEntry = ExampleDraft & {
   readonly grammar?: GrammarInfo;
@@ -24,63 +21,18 @@ export type DraftEntry = ExampleDraft & {
   readonly antonyms?: string;
 };
 
-const lowConfidence = 0.8;
-
-const genderLabels = {
-  masculine: 'maskulin',
-  feminine: 'feminin',
-  neuter: 'neutrum',
-} as const;
-
-// The book's own annotations (gender, plural, verb forms), read from the scan
-// and stored with the entry. Rendered as dictionary-style fine print under the
-// word pair so the learner can check them against the photographed page.
-const grammarSummary = (grammar: GrammarInfo): string => {
-  switch (grammar._tag) {
-    case 'noun':
-      return [
-        'Nomen',
-        grammar.gender === undefined ? undefined : genderLabels[grammar.gender],
-        grammar.plural === undefined ? undefined : `Plural: ${grammar.plural}`,
-      ]
-        .filter(Boolean)
-        .join(' · ');
-    case 'verb':
-      return [
-        'Verb',
-        grammar.irregularForms === undefined ||
-        grammar.irregularForms.length === 0
-          ? undefined
-          : `Formen: ${grammar.irregularForms.join(', ')}`,
-        grammar.note,
-      ]
-        .filter(Boolean)
-        .join(' · ');
-    case 'adjective': {
-      const comparison = [grammar.comparative, grammar.superlative]
-        .filter(Boolean)
-        .join(', ');
-      return comparison === ''
-        ? 'Adjektiv'
-        : `Adjektiv · Steigerung: ${comparison}`;
-    }
-    case 'other':
-      return grammar.note ?? '';
-    default:
-      return '';
-  }
-};
-
 type EntryRowProps = {
   readonly entry: DraftEntry;
+  readonly rowId: string;
   readonly entryNumber: number;
+  // Added by hand on this screen rather than read from the page.
+  readonly added: boolean;
   readonly disabled: boolean;
   readonly targetLabel: string;
-  readonly unitControl: ReactNode;
   readonly generateExample: (
     targetText: string,
     nativeText: string,
-  ) => Promise<{ readonly target: string; readonly native: string }>;
+  ) => Promise<GeneratedExample>;
   readonly translateExample: (
     targetText: string,
   ) => Promise<{ readonly native: string }>;
@@ -94,14 +46,20 @@ type EntryRowProps = {
   ) => void;
   readonly onDuplicateConfirmedChange: (confirmed: boolean) => void;
   readonly onRemove: () => void;
+  // Null on a row that already starts a unit.
+  readonly onStartUnit: (() => void) | null;
 };
 
+// One line of the ledger: the word and its example sentence in the left
+// column, their German in the right, as a vocabulary notebook is kept.
+// Rows the reading was unsure about carry a warning edge.
 export const EntryRow = ({
   entry,
+  rowId,
   entryNumber,
+  added,
   disabled,
   targetLabel,
-  unitControl,
   generateExample,
   translateExample,
   duplicate,
@@ -111,122 +69,78 @@ export const EntryRow = ({
   onTranslatedExample,
   onDuplicateConfirmedChange,
   onRemove,
+  onStartUnit,
 }: EntryRowProps) => {
-  const duplicateConfirmationId = `duplicate-confirmation-${entryNumber}`;
-  const uncertain =
-    entry.confidence !== undefined && entry.confidence < lowConfidence;
+  const example = useExampleDraft({
+    disabled,
+    entry,
+    generate: generateExample,
+    translate: translateExample,
+    onChange,
+    onGenerated: onGeneratedExample,
+    onTranslated: onTranslatedExample,
+  });
+  const uncertain = isUncertain(entry);
   const flagged = uncertain || duplicate.verdict !== 'none';
-  const grammar =
-    entry.grammar === undefined ? '' : grammarSummary(entry.grammar);
-  const inputClass = fieldCompactClass;
+  const tone = flagged
+    ? 'bg-warning/40 shadow-[inset_4px_0_0_var(--color-warning-foreground)]'
+    : 'focus-within:bg-accent/20';
+
   return (
     <li
-      className={`flex flex-col gap-2 border p-3 ${
-        flagged
-          ? 'border-warning-foreground/40 border-l-4 border-l-warning-foreground bg-warning'
-          : 'border-border bg-card'
-      }`}
+      className={`${ledgerGrid} border-border border-b transition-colors ${tone} ${added ? 'animate-rise' : ''}`}
+      data-row-id={rowId}
     >
-      <div className="flex items-center gap-3">
-        <span className="eyebrow">Eintrag {entryNumber}</span>
-        {uncertain ? (
-          <span className="font-medium text-warning-foreground text-xs">
-            Unsicher gelesen – bitte prüfen
-          </span>
-        ) : null}
-        {duplicate.verdict === 'none' ? null : (
-          <span className="font-medium text-warning-foreground text-xs">
-            {duplicate.location === null
-              ? 'Schon auf dieser Seite'
-              : `Schon in ${duplicate.location}`}
-          </span>
+      <span className="pt-3.5 pr-2 text-right font-display text-muted-foreground tabular-nums">
+        <span className="sr-only">Eintrag </span>
+        {entryNumber}
+      </span>
+      <TermColumn
+        disabled={disabled}
+        entry={entry}
+        example={example}
+        onChange={onChange}
+        targetLabel={targetLabel}
+      />
+      <NativeColumn
+        disabled={disabled}
+        entry={entry}
+        example={example}
+        onChange={onChange}
+      />
+      <div className="col-start-3 row-start-1 flex items-start justify-end sm:col-start-4">
+        {onStartUnit === null ? null : (
+          <Button
+            aria-label={`Andere Einheit ab Eintrag ${entryNumber}`}
+            data-row-split={true}
+            disabled={disabled}
+            onClick={onStartUnit}
+            title="Andere Einheit ab hier"
+            variant="icon"
+          >
+            <BetweenHorizontalStartIcon aria-hidden={true} className="size-4" />
+          </Button>
         )}
         <Button
           aria-label={`Eintrag ${entryNumber} entfernen`}
-          className="ml-auto"
+          data-row-remove={true}
           disabled={disabled}
           onClick={onRemove}
-          variant="quiet-muted"
+          title="Eintrag entfernen"
+          variant="icon"
         >
-          Entfernen
+          <XIcon aria-hidden={true} className="size-4" />
         </Button>
       </div>
-      <div className="grid gap-2 sm:grid-cols-2">
-        <input
-          aria-label={targetLabel}
-          className={inputClass}
+      {flagged ? (
+        <RowFlags
           disabled={disabled}
-          maxLength={maximumEntryTextLength}
-          onChange={(event) =>
-            onChange({ ...entry, targetText: event.target.value })
-          }
-          placeholder={targetLabel}
-          value={entry.targetText}
+          duplicate={duplicate}
+          duplicateConfirmed={duplicateConfirmed}
+          onDuplicateConfirmedChange={onDuplicateConfirmedChange}
+          uncertain={uncertain}
         />
-        <input
-          aria-label="Deutsch"
-          className={inputClass}
-          disabled={disabled}
-          maxLength={maximumEntryTextLength}
-          onChange={(event) =>
-            onChange({ ...entry, nativeText: event.target.value })
-          }
-          placeholder="Deutsch"
-          value={entry.nativeText}
-        />
-      </div>
-      <ExampleDraftEditor
-        disabled={disabled}
-        entry={entry}
-        generate={generateExample}
-        onChange={onChange}
-        onGenerated={onGeneratedExample}
-        onTranslated={onTranslatedExample}
-        reviewStep="Import"
-        translate={translateExample}
-        variant="row"
-      />
-      <div className="grid gap-2 sm:grid-cols-2">
-        {relationKinds.map((kind) => (
-          <input
-            aria-label={relationLabels[kind]}
-            className={inputClass}
-            disabled={disabled}
-            key={kind}
-            onChange={(event) =>
-              onChange({ ...entry, [kind]: event.target.value })
-            }
-            placeholder={`${relationLabels[kind]}, mit Komma getrennt`}
-            value={entry[kind] ?? ''}
-          />
-        ))}
-      </div>
-      {grammar === '' ? null : (
-        <p className="text-muted-foreground text-xs">{grammar}</p>
-      )}
-      {duplicate.verdict === 'exact' ? (
-        <p className="text-warning-foreground text-xs">
-          Wird nicht erneut importiert. Für eine Ausnahme ändere die
-          Schreibweise oder den Beispielsatz.
-        </p>
       ) : null}
-      {duplicate.verdict === 'exception' ? (
-        <label
-          className="flex items-center gap-2 text-sm"
-          htmlFor={duplicateConfirmationId}
-        >
-          <Checkbox
-            checked={duplicateConfirmed}
-            disabled={disabled}
-            id={duplicateConfirmationId}
-            onChange={(event) =>
-              onDuplicateConfirmedChange(event.target.checked)
-            }
-          />
-          Als Ausnahme importieren (andere Schreibweise oder anderes Beispiel)
-        </label>
-      ) : null}
-      {unitControl}
     </li>
   );
 };

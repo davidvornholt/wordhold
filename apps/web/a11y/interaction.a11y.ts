@@ -152,20 +152,14 @@ test('VerifyForm freezes every control and ignores resubmission', async ({
   await page.goto('/?state=verification-deferred');
   const target = page.getByLabel('Englisch');
   const add = page.getByRole('button', { name: 'Eintrag hinzufügen' });
-  const remove = page.getByRole('button', { name: 'Entfernen' });
-  await page
-    .getByRole('button', { name: 'Einheit für Eintrag 1 ändern' })
-    .click();
-  const unit = page.getByLabel('Einheit für Eintrag 1');
-  const bulkUnit = page.getByLabel('Einheit für alle Vokabeln');
-  const applyToAll = page.getByRole('button', {
-    name: 'Auf alle anwenden',
-  });
+  const remove = page.getByRole('button', { name: 'Eintrag 1 entfernen' });
+  const book = page.getByLabel('Buch', { exact: true });
+  const unit = page.getByLabel('Einheit', { exact: true });
   await target.fill('first target');
   await page.getByRole('button', { name: '1 Eintrag importieren' }).click();
 
   await Promise.all(
-    [target, unit, bulkUnit, applyToAll, add, remove].map((control) =>
+    [target, book, unit, add, remove].map((control) =>
       expect(control).toBeDisabled(),
     ),
   );
@@ -199,8 +193,8 @@ test('VerifyForm unlocks a rejected payload for a new submission', async ({
   await expect(page.getByLabel('Verification status')).toHaveText('rejected');
   await target.fill('recovered target');
   await page.getByRole('button', { name: 'Eintrag hinzufügen' }).click();
-  await expect(page.getByRole('button', { name: 'Entfernen' })).toHaveCount(2);
-  await page.getByRole('button', { name: 'Entfernen' }).last().click();
+  await page.getByRole('button', { name: 'Eintrag 2 entfernen' }).click();
+  await expect(page.locator('form li[data-row-id]')).toHaveCount(1);
   await page.getByRole('button', { name: '1 Eintrag importieren' }).click();
 
   await expect(page.getByLabel('Verification calls')).toHaveText('2');
