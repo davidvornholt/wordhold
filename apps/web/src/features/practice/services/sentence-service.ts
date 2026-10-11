@@ -1,6 +1,6 @@
 import { isSentenceCorrect } from '@wordhold/ai/sentence/judge-schema';
 import type { AiUsage } from '@wordhold/ai/usage';
-import { Context, Effect, Layer } from 'effect';
+import { Cause, Context, Effect, Layer } from 'effect';
 import { normalizeAnswerForComparison } from '../../../shared/grading/normalize';
 import { englishNames } from '../../../shared/languages';
 import type { PracticeDatabaseError } from '../errors/practice-errors';
@@ -90,13 +90,18 @@ export class SentenceService extends Context.Service<
                   explanation: correct ? null : verdict.explanation,
                 };
               }),
-              Effect.catchTag('PracticeJudgeError', () =>
-                Effect.succeed<SentenceResult>({
-                  graded: false,
-                  reference,
-                  message:
-                    'Der KI-Prüfer ist gerade nicht erreichbar; die Antwort wurde nicht gewertet.',
-                }),
+              Effect.catchTag('PracticeJudgeError', (error) =>
+                Effect.logWarning(
+                  'sentence left ungraded',
+                  Cause.pretty(Cause.fail(error)),
+                ).pipe(
+                  Effect.as<SentenceResult>({
+                    graded: false,
+                    reference,
+                    message:
+                      'Der KI-Prüfer ist gerade nicht erreichbar; die Antwort wurde nicht gewertet.',
+                  }),
+                ),
               ),
             );
         });

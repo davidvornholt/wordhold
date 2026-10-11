@@ -333,7 +333,7 @@ describe('Bedrock definition transport', () => {
   );
 
   it('rejects a verdict that omits a requested key point', async () => {
-    const { services } = capturedServices({
+    const { calls, services } = capturedServices({
       keyPoints: [],
       accuracy: { ok: true, note: null },
       explanation: null,
@@ -352,5 +352,7 @@ describe('Bedrock definition transport', () => {
       _tag: 'Failure',
       failure: { _tag: 'DefinitionError' },
     });
+    // The verdict is requested once more before the error is returned.
+    expect(calls).toHaveLength(2);
   });
 });

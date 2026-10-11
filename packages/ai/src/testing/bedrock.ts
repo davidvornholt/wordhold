@@ -6,11 +6,16 @@ export type CapturedBedrockCall = {
   readonly body: Record<string, unknown>;
 };
 
-// The production model with its requests recorded and every answer set to
-// `response` as JSON text. Fake SigV4 credentials keep authentication
+// The production model with its requests recorded. Each request receives the
+// next of `answers` and the last one repeats; a string is sent as raw text,
+// anything else as JSON text. Fake SigV4 credentials keep authentication
 // offline; serialization is real.
-export const capturedBedrockModel = (response: unknown) => {
+export const capturedBedrockModel = (...answers: ReadonlyArray<unknown>) => {
   const calls: Array<CapturedBedrockCall> = [];
+  const answerText = (index: number) => {
+    const answer = answers[Math.min(index, answers.length - 1)];
+    return typeof answer === 'string' ? answer : JSON.stringify(answer);
+  };
   const bedrock = createAmazonBedrock({
     accessKeyId: 'test-access-key',
     secretAccessKey: 'test-secret-key',
@@ -26,7 +31,7 @@ export const capturedBedrockModel = (response: unknown) => {
             output: {
               message: {
                 role: 'assistant',
-                content: [{ text: JSON.stringify(response) }],
+                content: [{ text: answerText(calls.length - 1) }],
               },
             },
             stopReason: 'end_turn',
