@@ -17,6 +17,8 @@ const releasePermissions = [
   '      id-token: write',
   '      packages: write',
 ].join('\n');
+const canonicalRepository = "github.repository == 'davidvornholt/wordhold'";
+const mainRef = "github.ref == 'refs/heads/main'";
 
 describe('production release trust boundary', () => {
   const buildJob = producer.slice(
@@ -38,7 +40,12 @@ describe('production release trust boundary', () => {
   it('releases only the built digest of a commit the gate passed', () => {
     expect(releaseJob).toContain('    needs:\n      - gate\n      - build\n');
     expect(releaseJob).toContain(
-      '    if: needs.gate.outputs.gated-sha == github.sha\n',
+      [
+        '    if: >-',
+        `      ${canonicalRepository} &&`,
+        `      ${mainRef} &&`,
+        '      needs.gate.outputs.gated-sha == github.sha\n',
+      ].join('\n'),
     );
     expect(releaseJob).toContain(
       `          images: wordhold@${githubExpression('needs.build.outputs.digest')}`,
@@ -72,15 +79,14 @@ describe('production release trust boundary', () => {
     expect(rollBack).toContain(releaseQueue);
   });
 
-  it('rolls back only from a manual run on main', () => {
+  it('rolls back only from a manual run on main of this repository', () => {
     expect(rollBack).toContain('\non: workflow_dispatch\n');
     expect(rollBack).toContain('\npermissions: {}\n');
     expect(rollBack).toContain(releasePermissions);
-    expect(rollBack).toContain('"$GITHUB_REF" != refs/heads/main');
+    expect(rollBack).toContain(
+      `\njobs:\n  roll-back:\n    if: ${canonicalRepository} && ${mainRef}\n`,
+    );
     expect(rollBack).toContain('          command: rollback');
     expect(rollBack).toContain('persist-credentials: false');
-    expect(rollBack.indexOf('"$GITHUB_REF" != refs/heads/main')).toBeLessThan(
-      rollBack.indexOf('        uses: ./.github/actions/app-release'),
-    );
   });
 });
