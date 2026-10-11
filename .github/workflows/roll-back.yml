@@ -1,0 +1,43 @@
+name: Roll back
+
+# Switches prod-1 back to the digest that was live before the current one,
+# without migrations. Running it again returns to the newer digest.
+on: workflow_dispatch
+
+permissions: {}
+
+jobs:
+  roll-back:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    concurrency:
+      group: app-release-wordhold
+      cancel-in-progress: false
+      queue: max
+    permissions:
+      contents: read
+      id-token: write
+      packages: write
+    steps:
+      - name: Require main
+        run: |
+          set -euo pipefail
+          if [ "$GITHUB_REF" != refs/heads/main ]; then
+            echo "::error::Run Roll back from main; prod-1 accepts only main"
+            exit 1
+          fi
+
+      - name: Checkout main
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+
+      - name: Roll back prod-1 to the previous image
+        uses: ./.github/actions/app-release
+        with:
+          command: rollback
+          unit: wordhold
+          host: prod-1.vornholt.online
+          known-host: prod-1.vornholt.online ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFkom7Y24gnBa9X+gUDBZvlCnXiuKTo87ROOtlMpgNH5
+          age-key: ${{ secrets.SOPS_AGE_KEY }}

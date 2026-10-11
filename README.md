@@ -17,7 +17,11 @@ Run `bun run check:fix` for the full gate. See [database operations](packages/db
 
 ## Deployment
 
-[personal-infra](https://github.com/davidvornholt/personal-infra) owns `https://wordhold.vornholt.online`. Back up PostgreSQL and `WORDHOLD_DATA_DIR` together; the latter contains original page images and generated audio.
+Merging to `main` releases `https://wordhold.vornholt.online`. `Publish container` builds the image while the `Standards` gate checks the same commit. Once that gate passes, the workflow's `release` job asks prod-1 to run migrations and switch traffic to that exact digest without downtime. The job fails when the release fails; the previous version keeps serving. [personal-infra](https://github.com/davidvornholt/personal-infra) owns the host, the `wordhold` app-release unit, and its runtime configuration. Back up PostgreSQL and `WORDHOLD_DATA_DIR` together; the latter contains original page images and generated audio.
+
+Run the `Roll back` workflow on `main` to switch prod-1 back to the previously live image. It runs no migrations, so every schema change must stay compatible with the previous release (expand, then contract in a later release). Running `Roll back` again returns to the newer image. To move past a bad release for good, revert it on `main`.
+
+To rotate the release SSH key, add the new public key to `services.appRelease.units.wordhold.sshKeys` in personal-infra, replace `ci.app_release.ssh_private_key` in `secrets/ci.yaml`, then remove the old public key after a release succeeds with the new one.
 
 Label a same-repository, non-draft PR `pr-preview` for `https://<number>.pr.wordhold.vornholt.online`. Remove the label to tear it down. If teardown fails, rerun the failed `pr-preview-deploy.yml` workflow through GitHub Actions.
 

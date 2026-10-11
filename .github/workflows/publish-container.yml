@@ -1,8 +1,9 @@
 name: Publish container
 
-# personal-infra binds this workflow by path and id and accepts only a
-# successful push run for the exact source commit. The publishing gate waits
-# for the canonical Standards run at that commit instead of duplicating it.
+# A push to main builds the image while the canonical Standards run checks the
+# same commit, then releases the exact digest to prod-1 once that gate passes.
+# Labeled pull requests use the same workflow id, but produce only a bounded
+# credential-free artifact for the trusted preview follow-up.
 on:
   pull_request:
     types:
@@ -98,8 +99,11 @@ jobs:
           test "$(git rev-parse HEAD)" = "$HEAD_SHA"
           bun run check
 
+      # The runner is discarded after the job, so skip the builder teardown.
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
+        with:
+          cleanup: false
 
       - name: Build the runtime image without credentials
         uses: docker/build-push-action@v7
@@ -108,6 +112,7 @@ jobs:
           file: ./Dockerfile
           load: true
           tags: wordhold:pull-request
+          cache-from: type=registry,ref=ghcr.io/davidvornholt/wordhold:buildcache
           labels: |
             org.opencontainers.image.revision=${{ github.event.pull_request.head.sha }}
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
@@ -323,14 +328,9 @@ jobs:
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
 
   build:
-    needs: gate
-    if: needs.gate.outputs.gated-sha == github.sha
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    concurrency:
-      group: ${{ github.workflow }}-publication
-      cancel-in-progress: false
-      queue: max
     permissions:
       contents: read
       packages: write
@@ -343,19 +343,16 @@ jobs:
           persist-credentials: false
           ref: ${{ github.sha }}
 
-      - name: Require the exact current main commit
-        env:
-          GATED_SHA: ${{ needs.gate.outputs.gated-sha }}
+      - name: Require the exact pushed commit
         run: |
           set -euo pipefail
-          checkout_sha=$(git rev-parse HEAD)
-          remote_main_sha=$(git ls-remote origin refs/heads/main | cut -f1)
-          test "$checkout_sha" = "$GATED_SHA"
-          test "$GATED_SHA" = "$GITHUB_SHA"
-          test "$GITHUB_SHA" = "$remote_main_sha"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
 
+      # The runner is discarded after the job, so skip the builder teardown.
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
+        with:
+          cleanup: false
 
       - name: Log in to the GitHub Container Registry
         uses: docker/login-action@v4
@@ -364,6 +361,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
+      # Only main pushes write the layer cache; pull request builds read it.
       - name: Build and publish the exact source tag
         id: build
         uses: docker/build-push-action@v7
@@ -376,40 +374,8 @@ jobs:
           labels: |
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
-
-      - name: Promote the exact current main image
-        env:
-          DIGEST: ${{ steps.build.outputs.digest }}
-          GATED_SHA: ${{ needs.gate.outputs.gated-sha }}
-          IMAGE: ghcr.io/davidvornholt/wordhold
-          REF: ${{ github.ref }}
-          REPOSITORY: ${{ github.repository }}
-          RUN_ID: ${{ github.run_id }}
-          SHA: ${{ github.sha }}
-        run: |
-          set -euo pipefail
-          [[ "$DIGEST" =~ ^sha256:[0-9a-f]{64}$ && "$SHA" =~ ^[0-9a-f]{40}$ && "$RUN_ID" =~ ^[1-9][0-9]*$ ]]
-          test "$REPOSITORY" = davidvornholt/wordhold
-          test "$REF" = refs/heads/main
-          test "$IMAGE" = ghcr.io/davidvornholt/wordhold
-
-          checkout_sha=$(git rev-parse HEAD)
-          remote_main_sha=$(git ls-remote origin refs/heads/main | cut -f1)
-          source_digest=$(docker buildx imagetools inspect "$IMAGE:$SHA" | awk '$1 == "Digest:" { print $2; exit }')
-          test "$checkout_sha" = "$GATED_SHA"
-          test "$GATED_SHA" = "$SHA"
-          test "$SHA" = "$GITHUB_SHA"
-          test "$GITHUB_SHA" = "$remote_main_sha"
-          test "$source_digest" = "$DIGEST"
-
-          docker buildx imagetools create --prefer-index=false --tag "$IMAGE:main" "$IMAGE@$DIGEST"
-          tracked_digest=$(docker buildx imagetools inspect "$IMAGE:main" | awk '$1 == "Digest:" { print $2; exit }')
-          test "$tracked_digest" = "$DIGEST"
-
-          record=$(jq -cn --arg repository "$REPOSITORY" --arg ref "$REF" --arg sha "$SHA" --arg runId "$RUN_ID" --arg image "$IMAGE" --arg digest "$DIGEST" '{repository:$repository,ref:$ref,sha:$sha,runId:$runId,image:$image,digest:$digest}')
-          marker_left=IMAGE_PROMOTION
-          marker_right=_RECORD
-          printf '%s %s\n' "${marker_left}${marker_right}" "$record"
+          cache-from: type=registry,ref=ghcr.io/davidvornholt/wordhold:buildcache
+          cache-to: type=registry,ref=ghcr.io/davidvornholt/wordhold:buildcache,mode=max,image-manifest=true,oci-mediatypes=true
 
       - name: Require anonymous access to the exact digest
         env:
@@ -418,6 +384,8 @@ jobs:
         run: |
           set -euo pipefail
           [[ "$DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          source_digest=$(docker buildx imagetools inspect "$IMAGE:$GITHUB_SHA" | awk '$1 == "Digest:" { print $2; exit }')
+          test "$source_digest" = "$DIGEST"
           docker logout ghcr.io
           anonymous_config="$RUNNER_TEMP/anonymous-docker"
           mkdir -p "$anonymous_config"
@@ -425,77 +393,62 @@ jobs:
           DOCKER_CONFIG="$anonymous_config" \
             docker buildx imagetools inspect "$IMAGE@$DIGEST" >/dev/null
 
-  announce:
-    needs: build
-    if: needs.build.result == 'success' && needs.build.outputs.digest != ''
+  # prod-1 verifies the GitHub OIDC token, the image's revision label, and the
+  # run order before it switches traffic, and reports the live digest back.
+  release:
+    needs:
+      - gate
+      - build
+    if: needs.gate.outputs.gated-sha == github.sha
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
+    concurrency:
+      group: app-release-wordhold
+      cancel-in-progress: false
+      queue: max
     permissions:
       contents: read
+      id-token: write
+      packages: write
     steps:
-      - name: Checkout trusted announcement inputs
+      - name: Checkout the released commit
         uses: actions/checkout@v7
         with:
           persist-credentials: false
           ref: ${{ github.sha }}
-          sparse-checkout: |
-            .github/actions/sops-secret
-            secrets/ci.yaml
-          sparse-checkout-cone-mode: false
 
-      - name: Resolve broker App ID
-        id: broker-app-id
-        uses: ./.github/actions/sops-secret
+      - name: Release the exact image to prod-1
+        id: release
+        uses: ./.github/actions/app-release
         with:
+          unit: wordhold
+          host: prod-1.vornholt.online
+          known-host: prod-1.vornholt.online ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFkom7Y24gnBa9X+gUDBZvlCnXiuKTo87ROOtlMpgNH5
+          images: wordhold@${{ needs.build.outputs.digest }}
           age-key: ${{ secrets.SOPS_AGE_KEY }}
-          secret-file: secrets/ci.yaml
-          secret-key: broker_app.app_id
 
-      - name: Resolve broker App private key
-        id: broker-app-private-key
-        uses: ./.github/actions/sops-secret
+      - name: Log in to the GitHub Container Registry
+        if: steps.release.outputs.result == 'released' || steps.release.outputs.result == 'unchanged'
+        uses: docker/login-action@v4
         with:
-          age-key: ${{ secrets.SOPS_AGE_KEY }}
-          secret-file: secrets/ci.yaml
-          secret-key: broker_app.private_key
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
 
-      - name: Mint the personal-infra announcement token
-        id: broker
-        uses: actions/create-github-app-token@v3
-        with:
-          app-id: ${{ steps.broker-app-id.outputs.value }}
-          private-key: ${{ steps.broker-app-private-key.outputs.value }}
-          owner: davidvornholt
-          repositories: personal-infra
-          permission-contents: write
-
-      - name: Announce the exact production image
+      # A superseded release leaves main to the newer run that superseded it.
+      - name: Move main to the released image
+        if: steps.release.outputs.result == 'released' || steps.release.outputs.result == 'unchanged'
         env:
-          BUILD_DIGEST: ${{ needs.build.outputs.digest }}
-          GH_TOKEN: ${{ steps.broker.outputs.token }}
-          IMAGE_REPOSITORY: ghcr.io/davidvornholt/wordhold
-          SOURCE_REF: ${{ github.ref }}
-          SOURCE_REPOSITORY: ${{ github.repository }}
-          SOURCE_RUN_ID: ${{ github.run_id }}
-          SOURCE_SHA: ${{ github.sha }}
+          DIGEST: ${{ needs.build.outputs.digest }}
+          IMAGE: ghcr.io/davidvornholt/wordhold
         run: |
           set -euo pipefail
-          [[ "$BUILD_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
-          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ && "$SOURCE_RUN_ID" =~ ^[1-9][0-9]*$ ]]
-          test "$SOURCE_REPOSITORY" = davidvornholt/wordhold
-          test "$SOURCE_REF" = refs/heads/main
-          test "$IMAGE_REPOSITORY" = ghcr.io/davidvornholt/wordhold
-          checkout_sha=$(git rev-parse HEAD)
+          [[ "$DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
           remote_main_sha=$(git ls-remote origin refs/heads/main | cut -f1)
-          test "$checkout_sha" = "$SOURCE_SHA"
-          test "$SOURCE_SHA" = "$GITHUB_SHA"
-          test "$GITHUB_SHA" = "$remote_main_sha"
-          gh api repos/davidvornholt/personal-infra/dispatches \
-            -f event_type=image-bump \
-            -f 'client_payload[app]=wordhold' \
-            -f "client_payload[source_repository]=$SOURCE_REPOSITORY" \
-            -f "client_payload[source_ref]=$SOURCE_REF" \
-            -f "client_payload[source_sha]=$SOURCE_SHA" \
-            -f "client_payload[source_run_id]=$SOURCE_RUN_ID" \
-            -f "client_payload[image_repository]=$IMAGE_REPOSITORY" \
-            -f "client_payload[digest]=$BUILD_DIGEST"
+          if [ "$remote_main_sha" != "$GITHUB_SHA" ]; then
+            echo "::notice::Main advanced to $remote_main_sha; its own release moves the main tag"
+            exit 0
+          fi
+          docker buildx imagetools create --prefer-index=false --tag "$IMAGE:main" "$IMAGE@$DIGEST"
+          tracked_digest=$(docker buildx imagetools inspect "$IMAGE:main" | awk '$1 == "Digest:" { print $2; exit }')
+          test "$tracked_digest" = "$DIGEST"
