@@ -30,6 +30,7 @@ import {
   bookChanged,
   bookSelectionIsComplete,
   initialBookSelection,
+  selectedBookName,
   unitsInBook,
 } from './initial-book-selection';
 import { initialUnitSelection } from './initial-unit-selection';
@@ -78,24 +79,22 @@ const useDraftForm = (
     initialBookSelection(books),
   );
   const bookUnits = unitsInBook(units, book);
+  const pageUnit = (selection: BookSelectionData): UnitSelectionData =>
+    initialUnitSelection(
+      unitsInBook(units, selection),
+      initialUnitName,
+      selectedBookName(books, selection),
+    );
   const [bulkUnit, setBulkUnit] = useState<UnitSelectionData>(() =>
-    initialUnitSelection(unitsInBook(units, book), initialUnitName),
+    pageUnit(book),
   );
   const [draftEntries, setDraftEntries] = useState<
     ReadonlyArray<IdentifiedDraftRow>
-  >(() =>
-    identifiedRows(
-      initialEntries,
-      initialUnitSelection(unitsInBook(units, book), initialUnitName),
-    ),
-  );
+  >(() => identifiedRows(initialEntries, pageUnit(book)));
   const changeBook = (next: BookSelectionData) => {
     setBook(next);
     if (bookChanged(book, next)) {
-      const unit = initialUnitSelection(
-        unitsInBook(units, next),
-        initialUnitName,
-      );
+      const unit = pageUnit(next);
       setBulkUnit(unit);
       setDraftEntries((current) => rowsWithUnit(current, unit));
     }
@@ -104,6 +103,7 @@ const useDraftForm = (
   return {
     book,
     changeBook,
+    pageUnit,
     bookUnits,
     bulkUnit,
     setBulkUnit,
@@ -215,6 +215,7 @@ export const VerifyForm = ({
   const {
     book,
     changeBook,
+    pageUnit,
     bookUnits,
     bulkUnit,
     setBulkUnit,
@@ -285,12 +286,7 @@ export const VerifyForm = ({
         <Button
           disabled={busy || draftEntries.length >= maximumEntriesPerPage}
           onClick={() =>
-            setDraftEntries((current) =>
-              appendedRow(
-                current,
-                initialUnitSelection(bookUnits, initialUnitName),
-              ),
-            )
+            setDraftEntries((current) => appendedRow(current, pageUnit(book)))
           }
           variant="outline"
         >

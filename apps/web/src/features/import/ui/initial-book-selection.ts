@@ -27,6 +27,14 @@ export const bookSelectionIsComplete = (
   selection: BookSelectionData,
 ): boolean => selection.kind === 'existing' || selection.name.trim() !== '';
 
+export const selectedBookName = (
+  books: ReadonlyArray<Book>,
+  selection: BookSelectionData,
+): string =>
+  selection.kind === 'existing'
+    ? (books.find((book) => book.id === selection.bookId)?.name ?? '')
+    : selection.name;
+
 // A new book starts without units, so every row then names a new unit.
 export const unitsInBook = (
   units: ReadonlyArray<Unit>,
