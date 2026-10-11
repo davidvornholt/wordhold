@@ -24,6 +24,7 @@ import { FeedbackActions } from './feedback-actions';
 import { FeedbackPanel } from './feedback-panel';
 import { feedbackTone } from './feedback-tone';
 import { PracticeAnswerForm } from './practice-answer-form';
+import { SubmissionNotice } from './submission-notice';
 import { useCardContinuation } from './use-card-continuation';
 import { useCardFlow } from './use-card-flow';
 import { useCardSubmission } from './use-card-submission';
@@ -112,7 +113,7 @@ export const CardPractice = ({
     submit,
     onNext,
   });
-  const { result, busy, resolution } = submission;
+  const { result, busy, resolution, error, reconnecting } = submission;
   const answerLang = answerLanguage(item.direction, targetLanguage);
   const retype = useRetype(result, answerLang, subject.kind, item.relatedWords);
   useCardFlow({
@@ -177,11 +178,7 @@ export const CardPractice = ({
         submittedAnswer={submission.submittedAnswer}
         tone={tone}
       />
-      {submission.error === null ? null : (
-        <p className="text-destructive text-sm" role="alert">
-          {submission.error}
-        </p>
-      )}
+      <SubmissionNotice error={error} reconnecting={reconnecting} />
       {result === null ? null : (
         <FeedbackActions
           audioPlaying={audio.playing}

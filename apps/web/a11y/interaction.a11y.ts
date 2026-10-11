@@ -129,11 +129,9 @@ test('CardPractice unlocks a rejected answer for a new submission', async ({
   await page.getByRole('button', { name: 'Prüfen' }).click();
   await page.getByRole('button', { name: 'Reject submission' }).click();
 
-  await expect(
-    page.getByText(
-      'Deine Antwort konnte nicht geprüft werden. Prüfe deine Verbindung und versuche es noch einmal.',
-    ),
-  ).toBeVisible();
+  await expect(page.getByRole('alert')).toHaveText(
+    'Diese Karte wurde bereits beantwortet. Lade die Übung neu.',
+  );
   await expect(answer).toBeEnabled();
   await answer.fill('recovered answer');
   await page.getByRole('button', { name: 'Prüfen' }).click();
@@ -144,6 +142,28 @@ test('CardPractice unlocks a rejected answer for a new submission', async ({
 
   await page.getByRole('button', { name: 'Resolve submission' }).click();
   await expect(page.getByText('Noch nicht sicher')).toBeVisible();
+});
+
+test('CardPractice sends an answer again while the server restarts', async ({
+  page,
+}) => {
+  await page.goto('/?state=practice-deferred');
+  const answer = page.getByLabel('Deine Antwort');
+  await answer.fill('first answer');
+  await page.getByRole('button', { name: 'Prüfen' }).click();
+  await page.getByRole('button', { name: 'Fail submission' }).click();
+
+  await expect(page.getByLabel('Submit calls')).toHaveText('2');
+  await expect(page.getByLabel('Submitted answer')).toHaveText('first answer');
+  await expect(answer).toBeDisabled();
+  await expect(page.getByRole('alert')).toHaveCount(0);
+  await expect(
+    page.getByText('Verbindung wird wiederhergestellt …'),
+  ).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'Resolve submission' }).click();
+  await expect(page.getByText('Noch nicht sicher')).toBeVisible();
+  await expect(page.getByRole('alert')).toHaveCount(0);
 });
 
 test('VerifyForm freezes every control and ignores resubmission', async ({
