@@ -7,15 +7,15 @@ export type CapturedBedrockCall = {
 };
 
 // The production model with its requests recorded. Each request receives the
-// next of `answers` and the last one repeats; a string is sent as raw text,
-// anything else as JSON text. Fake SigV4 credentials keep authentication
-// offline; serialization is real.
+// next of `answers` and the last one repeats; a Response is returned as is, a
+// string is sent as raw text, anything else as JSON text. Fake SigV4
+// credentials keep authentication offline; serialization is real.
 export const capturedBedrockModel = (...answers: ReadonlyArray<unknown>) => {
   const calls: Array<CapturedBedrockCall> = [];
-  const answerText = (index: number) => {
-    const answer = answers[Math.min(index, answers.length - 1)];
-    return typeof answer === 'string' ? answer : JSON.stringify(answer);
-  };
+  const answerAt = (index: number) =>
+    answers[Math.min(index, answers.length - 1)];
+  const answerText = (answer: unknown) =>
+    typeof answer === 'string' ? answer : JSON.stringify(answer);
   const bedrock = createAmazonBedrock({
     accessKeyId: 'test-access-key',
     secretAccessKey: 'test-secret-key',
@@ -26,18 +26,21 @@ export const capturedBedrockModel = (...answers: ReadonlyArray<unknown>) => {
           url: String(url),
           body: JSON.parse(String(init?.body)) as Record<string, unknown>,
         });
+        const answer = answerAt(calls.length - 1);
         return Promise.resolve(
-          Response.json({
-            output: {
-              message: {
-                role: 'assistant',
-                content: [{ text: answerText(calls.length - 1) }],
-              },
-            },
-            stopReason: 'end_turn',
-            usage: { inputTokens: 10, outputTokens: 20, totalTokens: 30 },
-            metrics: { latencyMs: 1 },
-          }),
+          answer instanceof Response
+            ? answer.clone()
+            : Response.json({
+                output: {
+                  message: {
+                    role: 'assistant',
+                    content: [{ text: answerText(answer) }],
+                  },
+                },
+                stopReason: 'end_turn',
+                usage: { inputTokens: 10, outputTokens: 20, totalTokens: 30 },
+                metrics: { latencyMs: 1 },
+              }),
         );
       },
       { preconnect: globalThis.fetch.preconnect },

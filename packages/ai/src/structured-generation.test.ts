@@ -73,6 +73,19 @@ describe('generateStructured', () => {
     expect(calls).toHaveLength(2);
   });
 
+  // A repeated request would be billed again without a better chance.
+  it('does not repeat a request the provider rejects', async () => {
+    const { calls, result, settled } = generate([
+      Response.json({ message: 'Malformed input request' }, { status: 400 }),
+    ]);
+    expect(await result).toMatchObject({
+      _tag: 'Failure',
+      failure: { cause: { statusCode: 400 } },
+    });
+    expect(calls).toHaveLength(1);
+    expect(settled).toEqual([false]);
+  });
+
   it('fails with the second unusable answer', async () => {
     const { calls, result } = generate(['{"correct": true,']);
     expect(await result).toMatchObject({
