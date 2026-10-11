@@ -18,7 +18,7 @@ export const sentenceJudgePrompt = (input: SentenceJudgeInput): string =>
     'The reference is one valid translation, not the only one. Accept any natural wording with the same meaning.',
     'meaningKept=false when the answer changes, adds or leaves out something the sentence says.',
     'wordUsed=false when the answer avoids the practised word, given in dictionary notation, or uses it wrongly. Any inflected form counts.',
-    'grammatical and spelledCorrectly judge the answer itself. Ignore the case of the first letter and the final punctuation mark.',
+    'grammatical and spelledCorrectly judge the answer itself, case included. Ignore the final punctuation mark.',
     'Set correction to the answer with the fewest changes that pass every check, or null when it passes already.',
     "Explain in German, at most two short sentences, what is wrong; otherwise say 'Richtig.'. Quote words with single quotes.",
     JSON.stringify({

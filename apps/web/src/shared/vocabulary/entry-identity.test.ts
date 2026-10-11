@@ -27,6 +27,12 @@ describe('comparableEntryText', () => {
     expect(comparableEntryText(raw)).toBe(comparable);
   });
 
+  it('keeps a charge and reads indices on the line', () => {
+    expect(comparableEntryText('Na⁺')).toBe('Na+');
+    expect(comparableEntryText('SO₄²⁻')).toBe('SO42−');
+    expect(entryIdentityKey('H₂O')).toBe(entryIdentityKey('H2O'));
+  });
+
   it('preserves casing so a deliberate difference stays visible', () => {
     expect(comparableEntryText('Sie?')).toBe('Sie');
     expect(entryIdentityKey('Sie?')).toBe('sie');
@@ -62,6 +68,13 @@ describe('findDuplicate', () => {
 
   it('allows an exception when the casing differs', () => {
     expect(duplicateVerdict(draft('Sie'), [stored('sie')])).toBe('exception');
+    expect(duplicateVerdict(draft('Co'), [stored('CO')])).toBe('exception');
+  });
+
+  it('tells an ion from its element', () => {
+    expect(duplicateVerdict(draft('Na⁺'), [stored('Na')])).toBe('none');
+    expect(duplicateVerdict(draft('Cl⁻'), [stored('Cl')])).toBe('none');
+    expect(duplicateVerdict(draft('Na+'), [stored('Na⁺')])).toBe('exact');
   });
 
   it('allows an exception when the example sentence differs', () => {

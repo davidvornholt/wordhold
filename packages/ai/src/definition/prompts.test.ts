@@ -41,6 +41,12 @@ describe('definitionJudgePrompt', () => {
     expect(prompt.length).toBeLessThan(representativePromptCharacterBudget);
   });
 
+  it('takes formulas and symbols as written, indices on the line aside', () => {
+    expect(definitionJudgePrompt({ ...catalyst, givenAnswer: '' })).toContain(
+      'except in formulas and symbols (CO is not Co, but H2O may mean H₂O)',
+    );
+  });
+
   it('requires the technical terms of a key point', () => {
     expect(definitionJudgePrompt({ ...catalyst, givenAnswer: '' })).toContain(
       'covered only by that term or an exact synonym',
@@ -117,6 +123,12 @@ describe('definition suggestion', () => {
     const prompt = definitionPrompt({ term: 'Base', subject: 'Chemie' });
     expect(prompt).toContain('"Base"');
     expect(prompt).toContain('"Chemie"');
+  });
+
+  it('asks for formulas in sub- and superscript characters', () => {
+    expect(definitionPrompt({ term: 'Sulfat', subject: 'Chemie' })).toContain(
+      'like H₂O or SO₄²⁻',
+    );
   });
 
   it('trims the suggestion and keeps it within an entry', () => {

@@ -70,7 +70,7 @@ const judgeMustNotRun = () =>
 describe('SentenceService check', () => {
   it('accepts the stored translation without asking the judge', async () => {
     const result = await runCheck(
-      answer('  mi hermana es abogada '),
+      answer('  Mi hermana es abogada '),
       judgeMustNotRun,
     );
     expect(result).toEqual(
@@ -82,6 +82,15 @@ describe('SentenceService check', () => {
         explanation: null,
       }),
     );
+  });
+
+  it('asks the judge about the stored translation in another case', async () => {
+    const asked: Array<string> = [];
+    await runCheck(answer('mi hermana es abogada'), (input) => {
+      asked.push(input.givenAnswer);
+      return Effect.succeed(verdict({ spelledCorrectly: false }));
+    });
+    expect(asked).toEqual(['mi hermana es abogada']);
   });
 
   it('refuses an answer to a sentence that has changed since it was shown', async () => {
