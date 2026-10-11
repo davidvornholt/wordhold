@@ -35,6 +35,18 @@ describe('judgePrompt', () => {
     expect(prompt).toContain('explicit in the shown task');
   });
 
+  it('fails an answer capitalized against its language', () => {
+    const prompt = judgePrompt({
+      direction: 'to_native',
+      targetLanguage: 'English',
+      prompt: 'the path',
+      expectedAnswers: ['der Weg'],
+      givenAnswer: 'der weg',
+    });
+    expect(prompt).toContain('a lower-case German noun or English I');
+    expect(prompt).toContain('fails spelling and makes the answer incorrect');
+  });
+
   it('quotes every expected answer and the given answer', () => {
     const prompt = judgePrompt({
       direction: 'to_target',

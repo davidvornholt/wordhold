@@ -5,6 +5,7 @@ import {
   type PrepareExamples,
   withoutExamples,
 } from '../../../shared/examples/example-model';
+import { useExampleWarmup } from '../../../shared/examples/use-example-warmup';
 import { countNoun } from '../../../shared/format/count';
 import type { RailOutcome } from '../../../shared/session/rail-outcome';
 import { CardRail } from '../../../shared/ui/card-rail';
@@ -23,7 +24,6 @@ import {
 } from '../services/session-queue';
 import { CardPractice } from './card-practice';
 import { SectionCheckpoint, SessionSummary } from './session-summary';
-import { useExampleWarmup } from './use-example-warmup';
 
 type SessionRunnerProps = {
   readonly session: PracticeSession;

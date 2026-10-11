@@ -1,15 +1,24 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { LearnItem } from '../src/features/learning/schemas/learning-models';
 import { LearnDone } from '../src/features/learning/ui/learn-done';
 import { LearnPass } from '../src/features/learning/ui/learn-pass';
 import { directionOptions } from '../src/features/practice/services/session-options';
 import { SessionStart } from '../src/features/practice/ui/session-start';
 import { courseNouns } from '../src/shared/directions';
+import {
+  type PrepareExamples,
+  withoutExamples,
+} from '../src/shared/examples/example-model';
 import { countNoun } from '../src/shared/format/count';
 import { sessionSectionSize } from '../src/shared/session/section-policy';
 import { Button } from '../src/shared/ui/button';
 import { FocusLayout } from '../src/shared/ui/focus-layout';
 import { englishSubject } from './course-fixture-data';
+import { DeferredExampleControls } from './deferred-example-controls';
+import {
+  type DeferredExamples,
+  makeDeferredExamples,
+} from './deferred-examples';
 import { fixtureBackControl, fixtureControl } from './fixture-controls';
 import { navigateToFixture } from './fixture-state';
 
@@ -137,6 +146,7 @@ export const LearnFixture = ({
           setIntroduced((current) => [...current, item.cardId]);
           return Promise.resolve();
         }}
+        prepareExamples={withoutExamples}
         subject={englishSubject}
       />
       <output aria-label="Introduced directions" className="sr-only">
@@ -145,6 +155,58 @@ export const LearnFixture = ({
       <output aria-label="Introduction attempts" className="sr-only">
         {attempts}
       </output>
+    </FocusLayout>
+  );
+};
+
+// The pass opens before any example is known, as it does for words met for
+// the first time. The first word has audio for itself and its sentence.
+const deferredItems: ReadonlyArray<LearnItem> = items
+  .filter((item) => item.direction === 'to_target')
+  .map((item, index) => ({ ...item, hasAudio: index === 0, example: null }));
+
+const deferredExamples = items.map((item, index) => ({
+  entryId: item.entryId,
+  example:
+    item.example === null ? null : { ...item.example, hasAudio: index === 0 },
+}));
+
+// Each example is ready only once the controls release it. With
+// failed-example=true, preparing fails instead.
+export const LearnDeferredFixture = () => {
+  const failed =
+    new URLSearchParams(globalThis.location.search).get('failed-example') ===
+    'true';
+  const deferredRef = useRef<DeferredExamples | null>(null);
+  const [showPass, setShowPass] = useState(true);
+  const prepareExamples: PrepareExamples = () => {
+    if (failed) {
+      return Promise.reject(new Error('Fixture example failure'));
+    }
+    const pending = makeDeferredExamples();
+    deferredRef.current = pending;
+    return pending.promise;
+  };
+  return (
+    <FocusLayout exit={backControl} title="Unit 3: Holidays · Kennenlernen">
+      {showPass ? (
+        <LearnPass
+          completionControls={fixtureControl(
+            'Jetzt üben · Deutsch → Englisch',
+            'practice',
+            'primary',
+          )}
+          directionLabel="Deutsch → Englisch"
+          items={deferredItems}
+          onIntroduce={() => Promise.resolve()}
+          prepareExamples={prepareExamples}
+          subject={englishSubject}
+        />
+      ) : null}
+      <DeferredExampleControls
+        onHide={() => setShowPass(false)}
+        onResolve={() => deferredRef.current?.resolve(deferredExamples)}
+      />
     </FocusLayout>
   );
 };

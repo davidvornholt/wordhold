@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type {
   ResolvedSubmitResult,
   SubmitResult,
@@ -7,6 +7,8 @@ import type {
   SubmitPayloadData,
   WrongAnswerResolution,
 } from '../schemas/submission-schema';
+import { failureMessage } from './server-retry';
+import { useServerRetry } from './use-server-retry';
 
 type DeferredSubmitData = Extract<
   SubmitPayloadData,
@@ -68,6 +70,30 @@ const useAnswerDraft = () => {
   return { answer, dictated, change, appendDictation };
 };
 
+// Sends this card's submissions and measures the time spent answering it.
+// Repeating a submission is safe: the server stores an answer only for the
+// card revision it was sent with, so a repeat after a lost response is
+// refused as already answered instead of counted twice, and the judge's
+// verdicts are cached.
+const useCardServer = (submit: CardSubmissionInput['submit']) => {
+  const [startedAt] = useState(() => performance.now());
+  // The learner was waiting for the server then, not thinking.
+  const failedMsRef = useRef(0);
+  const { reconnecting, retry } = useServerRetry();
+  const send = async (data: SubmitPayloadData) => {
+    const sentAt = performance.now();
+    try {
+      return await retry(() => submit({ data }));
+    } catch (cause) {
+      failedMsRef.current += performance.now() - sentAt;
+      throw cause;
+    }
+  };
+  const elapsedMs = () =>
+    Math.floor(performance.now() - startedAt - failedMsRef.current);
+  return { reconnecting, send, elapsedMs };
+};
+
 // All state around one card's answer round trip: the deferred first
 // submission, the optional skip, and the resolution of a rejected answer.
 export const useCardSubmission = ({
@@ -83,12 +109,12 @@ export const useCardSubmission = ({
     null,
   );
   const [skipped, setSkipped] = useState(false);
-  const [startedAt] = useState(() => performance.now());
   const [result, setResult] = useState<SubmitResult | null>(null);
   const [busy, setBusy] = useState(false);
   const [resolution, setResolution] = useState<StoredResolution | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submissionLock] = useState(createSubmissionLock);
+  const server = useCardServer(submit);
 
   const submitAndPresent = async (
     data: SubmitPayloadData,
@@ -97,14 +123,14 @@ export const useCardSubmission = ({
     setBusy(true);
     setError(null);
     try {
-      const submitted = await submit({ data });
+      const submitted = await server.send(data);
       setResult(submitted);
       if (submitted.graded) {
         await playFeedbackAudio();
       }
-    } catch {
+    } catch (cause) {
       rollback();
-      setError(submissionError);
+      setError(failureMessage(cause, submissionError));
     } finally {
       submissionLock.release();
       setBusy(false);
@@ -120,7 +146,7 @@ export const useCardSubmission = ({
       revision,
       answer: draft.answer,
       dictated: draft.dictated,
-      elapsedMs: Math.floor(performance.now() - startedAt),
+      elapsedMs: server.elapsedMs(),
       wrongAnswerResolution: 'defer',
       mode,
     };
@@ -137,7 +163,7 @@ export const useCardSubmission = ({
       {
         cardId,
         revision,
-        elapsedMs: Math.floor(performance.now() - startedAt),
+        elapsedMs: server.elapsedMs(),
         skipped: true,
         mode,
       },
@@ -162,20 +188,20 @@ export const useCardSubmission = ({
     setResolution(wrongAnswerResolution);
     setError(null);
     try {
-      const submitted = await submit({
-        data: {
-          ...submittedData,
-          wrongAnswerResolution,
-          assessmentId: result.assessmentId,
-        },
+      const submitted = await server.send({
+        ...submittedData,
+        wrongAnswerResolution,
+        assessmentId: result.assessmentId,
       });
+      // A resolution has to store the answer before the card can move on.
       if (submitted.graded && !submitted.stored) {
-        throw new Error('Die Antwort wurde noch nicht gespeichert.');
+        setError(resolutionError);
+      } else {
+        setResult(submitted);
+        onNext(submitted);
       }
-      setResult(submitted);
-      onNext(submitted);
-    } catch {
-      setError(resolutionError);
+    } catch (cause) {
+      setError(failureMessage(cause, resolutionError));
     } finally {
       submissionLock.release();
       setBusy(false);
@@ -194,6 +220,7 @@ export const useCardSubmission = ({
     busy,
     resolution,
     error,
+    reconnecting: server.reconnecting,
     submitAnswer,
     skipCard,
     resolveWrongAnswer,

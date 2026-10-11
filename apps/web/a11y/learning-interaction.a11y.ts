@@ -116,7 +116,7 @@ test('the learning pass asks again for a wrong copy and records only the correct
   );
   await expect(page.getByLabel('Introduced directions')).toHaveText('0');
 
-  await field.fill('Memory');
+  await field.fill('memory');
   await field.press('Enter');
   await expect(progress).toHaveText(
     '1 von 2 Vokabeln kennengelernt · Deutsch → Englisch',

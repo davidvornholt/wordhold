@@ -1,3 +1,4 @@
+import { isSameReading } from './formula-notation';
 import { normalizeAnswerForComparison } from './normalize';
 
 // Where a copied definition first departs from the original, word by word
@@ -40,7 +41,8 @@ const words = (text: string): ReadonlyArray<Word> =>
 // between sentences it has to match. The last typed word may simply be where
 // the copy stops so far.
 const sameWord = (want: Word, got: Word, atEnd: boolean): boolean =>
-  want.normalized === got.normalized && (atEnd || want.closing === got.closing);
+  isSameReading(want.normalized, got.normalized) &&
+  (atEnd || want.closing === got.closing);
 
 const shownWords = 6;
 

@@ -127,6 +127,12 @@ describe('isDeterministicMatch dictionary notation regressions', () => {
     ['AC/DC', 'AC/DC'],
     ['estar ilusionado/a (con algo)', 'estar ilusionado/-a (con algo)'],
     ['estar ilusionado/-a con algo', 'estar ilusionado/-a (con algo)'],
+    ['to stalk sb/sth', '(to) stalk sb./sth.'],
+    ['to stalk sth/sb', '(to) stalk sb./sth.'],
+    ['to stalk sth. / sb.', '(to) stalk sb./sth.'],
+    ['etw/jdn verfolgen', 'jdn./etw. verfolgen; jdm./etw. nachstellen'],
+    ["to get on sb's nerves", "to get on sb.'s nerves"],
+    ['donner qc à qn', 'donner qc. à qn.'],
   ])('accepts %s for %s', (submitted, expected) => {
     expect(isDeterministicMatch(submitted, [answer(expected)])).toBe(true);
   });
@@ -149,6 +155,10 @@ describe('isDeterministicMatch dictionary notation regressions', () => {
     ['AC', 'AC/DC'],
     ['DC', 'AC/DC'],
     ['estar ilusionado/a (con nada)', 'estar ilusionado/-a (con algo)'],
+    ['to stack sb/sth', '(to) stalk sb./sth.'],
+    ['to stalk sb', '(to) stalk sb./sth.'],
+    ['To stalk sb/sth', '(to) stalk sb./sth.'],
+    ['etw/jdm verfolgen', 'jdn./etw. verfolgen; jdm./etw. nachstellen'],
   ])('sends %s for %s to the judge', (submitted, expected) => {
     expect(isDeterministicMatch(submitted, [answer(expected)])).toBe(false);
   });
@@ -171,4 +181,46 @@ describe('isDeterministicMatch dictionary notation regressions', () => {
       ).toBe(false);
     },
   );
+});
+
+describe('isDeterministicMatch case and formulas', () => {
+  it('sends an answer in the wrong case to the judge', () => {
+    expect(isDeterministicMatch('der Weg', [answer('der Weg')])).toBe(true);
+    expect(isDeterministicMatch('der weg', [answer('der Weg')])).toBe(false);
+    expect(isDeterministicMatch('english', [answer('English')])).toBe(false);
+    expect(isDeterministicMatch('Co', [answer('CO')])).toBe(false);
+    expect(
+      isDeterministicMatch('der weg', [answer('die Straße/der Weg')]),
+    ).toBe(false);
+  });
+
+  it.each([
+    ['H2O', 'H₂O'],
+    ['H₂O', 'H₂O'],
+    ['H₂O', 'H2O'],
+    ['SO42-', 'SO₄²⁻'],
+    ['SO₄2-', 'SO₄²⁻'],
+    ['Na+', 'Na⁺'],
+    ['Fe3+', 'Fe³⁺'],
+    ['Ca(OH)2', 'Ca(OH)₂'],
+    ['(NH4)2SO4', '(NH₄)₂SO₄'],
+    ['Eisen(III)-oxid', 'Eisen(III)-oxid'],
+    ['H₂O; CO2', 'H₂O; CO₂'],
+  ])('accepts %s for %s', (submitted, expected) => {
+    expect(isDeterministicMatch(submitted, [answer(expected)])).toBe(true);
+  });
+
+  it.each([
+    ['H²O', 'H₂O'],
+    ['Na', 'Na⁺'],
+    ['Na-', 'Na⁺'],
+    ['h2o', 'H₂O'],
+    ['Ca2', 'Ca(OH)₂'],
+    ['CaOH2', 'Ca(OH)₂'],
+    ['(NH4)SO4', '(NH₄)₂SO₄'],
+    ['Eisen-oxid', 'Eisen(III)-oxid'],
+    ['Eisenoxid', 'Eisen(III)-oxid'],
+  ])('sends %s for %s to the judge', (submitted, expected) => {
+    expect(isDeterministicMatch(submitted, [answer(expected)])).toBe(false);
+  });
 });

@@ -6,120 +6,121 @@ test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
 const unitTwoId = '11111111-1111-4111-8111-111111111111';
 const unitThreeId = '22222222-2222-4222-8222-222222222222';
-const boundaryIndex = 6;
+const unitChangeLabel = /^Einheit ab Eintrag/u;
 
-test('VerifyForm selects the unit detected from the photographed page', async ({
+test('VerifyForm files the whole page into the unit detected from the photo', async ({
   page,
 }) => {
   await page.goto('/?state=verification');
-  await expect(page.getByLabel('Einheit für alle Vokabeln')).toHaveValue(
-    unitTwoId,
-  );
-  const firstRow = page.locator('form > ul > li').first();
+  const unit = page.getByLabel('Einheit', { exact: true });
+  await expect(unit).toHaveValue(unitTwoId);
+  await expect(unit).not.toBeFocused();
   await expect(
-    firstRow.getByText('Einheit: Unit 2', { exact: true }),
+    page.getByRole('list', { name: 'Unit 2: Einträge 1–12' }),
   ).toBeVisible();
-  await firstRow
-    .getByRole('button', { name: 'Einheit für Eintrag 1 ändern' })
-    .click();
-  await expect(firstRow.getByLabel('Einheit für Eintrag 1')).toHaveValue(
-    unitTwoId,
-  );
+  await expect(page.getByLabel(unitChangeLabel)).toHaveCount(0);
 });
 
-test('VerifyForm assigns one unit to every entry or from one entry onward', async ({
+test('VerifyForm files the rest of the page into the next unit from one entry onward', async ({
   page,
 }) => {
   await page.goto('/?state=verification');
-  const rows = page.locator('form > ul > li');
-
-  await page.getByLabel('Einheit für alle Vokabeln').selectOption(unitTwoId);
-  await page.getByRole('button', { name: 'Auf alle anwenden' }).click();
-  const initialEntryCount = await rows.count();
-  await expect(rows.getByText('Einheit: Unit 2', { exact: true })).toHaveCount(
-    initialEntryCount,
-  );
-
-  const boundaryPosition = boundaryIndex + 1;
-  await rows
-    .nth(boundaryIndex)
-    .getByRole('button', {
-      name: `Einheit für Eintrag ${boundaryPosition} ändern`,
-    })
-    .click();
   await page
-    .getByLabel(`Einheit für Eintrag ${boundaryPosition}`)
-    .selectOption(unitThreeId);
-  await page
-    .getByRole('button', {
-      name: `Einheit ab Vokabel ${boundaryPosition} anwenden`,
-    })
+    .getByRole('button', { name: 'Andere Einheit ab Eintrag 7' })
     .click();
 
-  // The boundary row keeps its open picker; every following row reports the
-  // new unit in its collapsed summary, every earlier row keeps the old one.
-  await expect(rows.getByText('Einheit: Unit 2', { exact: true })).toHaveCount(
-    boundaryIndex,
-  );
-  await expect(rows.getByText('Einheit: Unit 3', { exact: true })).toHaveCount(
-    initialEntryCount - boundaryPosition,
+  // The new run starts in the book's next unit, with the cursor on its
+  // picker in case the page moved on to another one.
+  const laterUnit = page.getByLabel('Einheit ab Eintrag 7', { exact: true });
+  await expect(laterUnit).toBeFocused();
+  await expect(laterUnit).toHaveValue(unitThreeId);
+  await expect(page.getByLabel('Einheit', { exact: true })).toHaveValue(
+    unitTwoId,
   );
   await expect(
-    page.getByLabel(`Einheit für Eintrag ${boundaryPosition}`),
-  ).toHaveValue(unitThreeId);
+    page.getByRole('list', { name: 'Unit 2: Einträge 1–6' }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('list', { name: 'Unit 3: Einträge 7–12' }),
+  ).toBeVisible();
+  // A run's first row starts it already, so it offers no split.
+  await expect(
+    page.getByRole('button', { name: 'Andere Einheit ab Eintrag 7' }),
+  ).toHaveCount(0);
+  assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
 
   await page.getByRole('button', { name: 'Eintrag hinzufügen' }).click();
   await expect(
-    rows.last().getByText('Einheit: Unit 3', { exact: true }),
+    page.getByRole('list', { name: 'Unit 3: Einträge 7–13' }),
+  ).toBeVisible();
+
+  await page
+    .getByRole('button', { name: 'Einheitenwechsel ab Eintrag 7 aufheben' })
+    .click();
+  await expect(
+    page.getByRole('list', { name: 'Unit 2: Einträge 1–13' }),
+  ).toBeVisible();
+  await expect(page.getByLabel(unitChangeLabel)).toHaveCount(0);
+  await expect(
+    page.getByRole('button', { name: 'Andere Einheit ab Eintrag 7' }),
+  ).toBeFocused();
+});
+
+test('VerifyForm files the whole page into a named new unit', async ({
+  page,
+}) => {
+  await page.goto('/?state=verification');
+  await page.getByLabel('Einheit', { exact: true }).selectOption('new');
+  const name = page.getByLabel('Name der Einheit');
+  const submit = page.getByRole('button', { name: '12 Einträge importieren' });
+  await expect(name).toHaveAttribute('required', '');
+  await expect(submit).toBeDisabled();
+  await name.fill('Unit 4');
+  await expect(submit).toBeEnabled();
+  await expect(
+    page.getByRole('list', { name: 'Unit 4 (neu): Einträge 1–12' }),
   ).toBeVisible();
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
 });
 
-test('VerifyForm applies a named new unit to every entry', async ({ page }) => {
-  await page.goto('/?state=verification');
-  const bulkAssignment = page.getByRole('group', {
-    name: 'Einheit zuordnen',
-  });
-  await bulkAssignment
-    .getByLabel('Einheit für alle Vokabeln')
-    .selectOption('new');
-  const apply = bulkAssignment.getByRole('button', {
-    name: 'Auf alle anwenden',
-  });
-  await expect(apply).toBeDisabled();
-  await bulkAssignment.getByLabel('Name der Einheit').fill('Unit 4');
-  await apply.click();
-
-  const rows = page.locator('form > ul > li');
-  await expect(
-    rows.getByText('Einheit: Unit 4 (neu)', { exact: true }),
-  ).toHaveCount(await rows.count());
-  assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
-});
-
-test('VerifyForm remains usable in its existing and new-unit mobile states', async ({
+test('VerifyForm keeps its filing and unit changes usable on a narrow phone', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 320, height: 720 });
   await page.goto('/?state=verification');
-  await expect(page.getByRole('group', { name: 'Buch' })).toBeInViewport();
-  const bulkUnit = page.getByRole('group', { name: 'Einheit zuordnen' });
-  await bulkUnit.scrollIntoViewIfNeeded();
-  await expect(bulkUnit).toBeInViewport();
-  const firstRow = page.locator('form > ul > li').first();
-  const changeUnit = firstRow.getByRole('button', {
-    name: 'Einheit für Eintrag 1 ändern',
-  });
-  await changeUnit.scrollIntoViewIfNeeded();
-  await expect(changeUnit).toBeInViewport();
+  const book = page.getByLabel('Buch', { exact: true });
+  await book.scrollIntoViewIfNeeded();
+  await expect(book).toBeInViewport();
+  const unit = page.getByLabel('Einheit', { exact: true });
+  await unit.scrollIntoViewIfNeeded();
+  await expect(unit).toBeInViewport();
+  expect(
+    await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth ===
+        document.documentElement.clientWidth,
+    ),
+  ).toBe(true);
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
-  await changeUnit.click();
-  const firstUnit = firstRow.getByLabel('Einheit für Eintrag 1');
-  await firstUnit.scrollIntoViewIfNeeded();
-  await expect(firstUnit).toBeInViewport();
-  await firstUnit.selectOption('new');
-  const name = firstRow.getByLabel('Name der Einheit');
+
+  const split = page.getByRole('button', {
+    name: 'Andere Einheit ab Eintrag 2',
+  });
+  await split.scrollIntoViewIfNeeded();
+  await expect(split).toBeInViewport();
+  await split.click();
+  const laterUnit = page.getByLabel('Einheit ab Eintrag 2', { exact: true });
+  await expect(laterUnit).toBeInViewport();
+  await laterUnit.selectOption('new');
+  const name = page.getByLabel('Name der Einheit');
   await name.scrollIntoViewIfNeeded();
   await expect(name).toBeInViewport();
+  expect(
+    await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth ===
+        document.documentElement.clientWidth,
+    ),
+  ).toBe(true);
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
 });

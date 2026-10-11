@@ -17,6 +17,7 @@ import { Button } from '../../../shared/ui/button';
 import { type CardTone, WordCard } from '../../../shared/ui/word-card';
 import { sentenceTone, toneField } from './feedback-tone';
 import { SentenceFeedback } from './sentence-feedback';
+import { SubmissionNotice } from './submission-notice';
 import {
   type CheckSentence,
   type SentenceOutcome,
@@ -201,7 +202,7 @@ export const SentenceCard = ({
       playSentence().catch(() => undefined);
     },
   });
-  const { busy, error, outcome } = sentenceCheck;
+  const { busy, error, reconnecting, outcome } = sentenceCheck;
   useEffect(() => {
     if (busy) {
       return;
@@ -250,11 +251,7 @@ export const SentenceCard = ({
         targetLanguage={targetLanguage}
         tone={tone}
       />
-      {error === null ? null : (
-        <p className="text-destructive text-sm" role="alert">
-          {error}
-        </p>
-      )}
+      <SubmissionNotice error={error} reconnecting={reconnecting} />
       {outcome === null ? null : (
         <SentenceActions
           feedbackId={feedbackId}

@@ -129,11 +129,9 @@ test('CardPractice unlocks a rejected answer for a new submission', async ({
   await page.getByRole('button', { name: 'Prüfen' }).click();
   await page.getByRole('button', { name: 'Reject submission' }).click();
 
-  await expect(
-    page.getByText(
-      'Deine Antwort konnte nicht geprüft werden. Prüfe deine Verbindung und versuche es noch einmal.',
-    ),
-  ).toBeVisible();
+  await expect(page.getByRole('alert')).toHaveText(
+    'Diese Karte wurde bereits beantwortet. Lade die Übung neu.',
+  );
   await expect(answer).toBeEnabled();
   await answer.fill('recovered answer');
   await page.getByRole('button', { name: 'Prüfen' }).click();
@@ -146,26 +144,42 @@ test('CardPractice unlocks a rejected answer for a new submission', async ({
   await expect(page.getByText('Noch nicht sicher')).toBeVisible();
 });
 
+test('CardPractice sends an answer again while the server restarts', async ({
+  page,
+}) => {
+  await page.goto('/?state=practice-deferred');
+  const answer = page.getByLabel('Deine Antwort');
+  await answer.fill('first answer');
+  await page.getByRole('button', { name: 'Prüfen' }).click();
+  await page.getByRole('button', { name: 'Fail submission' }).click();
+
+  await expect(page.getByLabel('Submit calls')).toHaveText('2');
+  await expect(page.getByLabel('Submitted answer')).toHaveText('first answer');
+  await expect(answer).toBeDisabled();
+  await expect(page.getByRole('alert')).toHaveCount(0);
+  await expect(
+    page.getByText('Verbindung wird wiederhergestellt …'),
+  ).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'Resolve submission' }).click();
+  await expect(page.getByText('Noch nicht sicher')).toBeVisible();
+  await expect(page.getByRole('alert')).toHaveCount(0);
+});
+
 test('VerifyForm freezes every control and ignores resubmission', async ({
   page,
 }) => {
   await page.goto('/?state=verification-deferred');
   const target = page.getByLabel('Englisch');
   const add = page.getByRole('button', { name: 'Eintrag hinzufügen' });
-  const remove = page.getByRole('button', { name: 'Entfernen' });
-  await page
-    .getByRole('button', { name: 'Einheit für Eintrag 1 ändern' })
-    .click();
-  const unit = page.getByLabel('Einheit für Eintrag 1');
-  const bulkUnit = page.getByLabel('Einheit für alle Vokabeln');
-  const applyToAll = page.getByRole('button', {
-    name: 'Auf alle anwenden',
-  });
+  const remove = page.getByRole('button', { name: 'Eintrag 1 entfernen' });
+  const book = page.getByLabel('Buch', { exact: true });
+  const unit = page.getByLabel('Einheit', { exact: true });
   await target.fill('first target');
   await page.getByRole('button', { name: '1 Eintrag importieren' }).click();
 
   await Promise.all(
-    [target, unit, bulkUnit, applyToAll, add, remove].map((control) =>
+    [target, book, unit, add, remove].map((control) =>
       expect(control).toBeDisabled(),
     ),
   );
@@ -199,8 +213,8 @@ test('VerifyForm unlocks a rejected payload for a new submission', async ({
   await expect(page.getByLabel('Verification status')).toHaveText('rejected');
   await target.fill('recovered target');
   await page.getByRole('button', { name: 'Eintrag hinzufügen' }).click();
-  await expect(page.getByRole('button', { name: 'Entfernen' })).toHaveCount(2);
-  await page.getByRole('button', { name: 'Entfernen' }).last().click();
+  await page.getByRole('button', { name: 'Eintrag 2 entfernen' }).click();
+  await expect(page.locator('form li[data-row-id]')).toHaveCount(1);
   await page.getByRole('button', { name: '1 Eintrag importieren' }).click();
 
   await expect(page.getByLabel('Verification calls')).toHaveText('2');

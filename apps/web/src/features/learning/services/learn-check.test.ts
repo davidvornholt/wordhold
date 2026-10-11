@@ -17,7 +17,8 @@ const item: LearnItem = {
 
 describe('matchesLearnItem', () => {
   it('accepts the prompted spelling', () => {
-    expect(matchesLearnItem(item, 'To Look (at)')).toBe(true);
+    expect(matchesLearnItem(item, 'to look (at)')).toBe(true);
+    expect(matchesLearnItem(item, 'To Look (at)')).toBe(false);
   });
 
   it('checks the native answer when learning the reverse direction', () => {
@@ -28,7 +29,7 @@ describe('matchesLearnItem', () => {
           direction: 'to_native',
           textbookAnswers: ['ansehen'],
         },
-        'Ansehen',
+        'ansehen',
       ),
     ).toBe(true);
     expect(

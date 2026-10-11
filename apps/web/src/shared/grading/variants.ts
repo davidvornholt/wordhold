@@ -5,8 +5,14 @@ import {
   maximumAnswerVariants,
   normalizeReadings,
 } from './bounded-variant-expansion';
+import { isPlaceholder, unifyPlaceholders } from './normalize';
 
 const optionalGroup = /\((?<inner>[^()]*)\)/u;
+const parenthesizedGroups = /\((?<inner>[^()]*)\)/gu;
+// Parentheses in a chemical formula or name are part of it, not an optional
+// addition: Ca(OH)₂, (NH₄)₂SO₄ and Eisen(III)-oxid.
+const indexOrCharge = /^[0-9₀-₉⁰¹²³⁴-⁹⁺⁻]/u;
+const romanNumeral = /^(?:I{1,3}|IV|VI{0,3}|IX)$/u;
 const whitespace = /\s+/u;
 const spacedPhraseSeparator = /(?:\s+\/\s*|\s*\/\s+)/u;
 const semicolonSeparator = /\s*;\s*/u;
@@ -132,6 +138,15 @@ const hasSimpleParentheses = (text: string): boolean => {
   return depth === 0;
 };
 
+const firstOptionalGroup = (text: string): RegExpExecArray | undefined =>
+  [...text.matchAll(parenthesizedGroups)].find(
+    (group) =>
+      !(
+        romanNumeral.test(group.groups?.inner ?? '') ||
+        indexOrCharge.test(text.slice(group.index + group[0].length))
+      ),
+  );
+
 const expandOptionalGroups = (text: string): ExpansionState => {
   // Agreement in compound shorthand is not an independent optional choice.
   // Delegate ambiguous forms such as eine/ein Angestellte(r) to the judge.
@@ -147,12 +162,14 @@ const expandOptionalGroups = (text: string): ExpansionState => {
   }
   let state: ExpansionState = { _tag: 'Values', values: [text] };
   while (state._tag === 'Values') {
-    if (!state.values.some((value) => optionalGroup.test(value))) {
+    if (
+      !state.values.some((value) => firstOptionalGroup(value) !== undefined)
+    ) {
       return state;
     }
     state = flatMapBounded(state.values, (value) => {
-      const match = optionalGroup.exec(value);
-      if (match === null) {
+      const match = firstOptionalGroup(value);
+      if (match === undefined) {
         return [value];
       }
       const before = value.slice(0, match.index);
@@ -197,7 +214,9 @@ const splitPhraseAlternatives = (text: string): ReadonlyArray<string> => {
 
 const expandSlashWord = (word: string): ExpansionState => {
   const parts = word.split('/');
-  if (parts.length !== 2) {
+  // A slash next to a placeholder joins whole words ("sb/sth"), never a
+  // word and its suffix.
+  if (parts.length !== 2 || parts.some(isPlaceholder)) {
     return { _tag: 'Values', values: [word] };
   }
   const [left = '', right = ''] = parts;
@@ -262,7 +281,7 @@ const expandWordAlternatives = (text: string): ExpansionState => {
 export const answerVariants = (text: string): AnswerVariantExpansion => {
   const phrases: Array<string> = [];
   for (const phrase of splitPhraseAlternatives(
-    normalizeCompactSlashSpacing(text),
+    normalizeCompactSlashSpacing(unifyPlaceholders(text)),
   )) {
     const optional = expandOptionalGroups(phrase);
     if (optional._tag === 'Overflow') {

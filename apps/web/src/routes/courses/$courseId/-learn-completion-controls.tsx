@@ -1,4 +1,5 @@
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
+import { type ReactNode, useState } from 'react';
 import {
   type CourseSubject,
   courseNouns,
@@ -25,6 +26,40 @@ type LearnCompletionControlsProps = {
   readonly subject: CourseSubject;
 };
 
+type ContinueLearningButtonProps = {
+  readonly onContinue: () => Promise<unknown>;
+  readonly children: ReactNode;
+};
+
+// The next section loads before it shows, so the button says so until the
+// new section replaces it, as the practice start buttons do.
+export const ContinueLearningButton = ({
+  onContinue,
+  children,
+}: ContinueLearningButtonProps) => {
+  const [loading, setLoading] = useState(false);
+  return (
+    <Button
+      aria-busy={loading}
+      onClick={async () => {
+        if (loading) {
+          return;
+        }
+        setLoading(true);
+        try {
+          await onContinue();
+        } finally {
+          setLoading(false);
+        }
+      }}
+      variant="outline"
+    >
+      {/* biome-ignore lint/suspicious/noLeakedRender: children is the button's own label, shown whenever it is not loading; nothing is rendered by accident. */}
+      {loading ? 'Wird vorbereitet …' : children}
+    </Button>
+  );
+};
+
 export const LearnCompletionControls = ({
   courseId,
   selection,
@@ -45,7 +80,7 @@ export const LearnCompletionControls = ({
         Jetzt üben · {directionLabel(current, subject)}
       </ActionLink>
       {currentRemaining === 0 ? null : (
-        <Button onClick={onContinueCurrent} variant="outline">
+        <ContinueLearningButton onContinue={onContinueCurrent}>
           Weitere{' '}
           {countNoun(
             itemsInNextSection(currentRemaining),
@@ -53,7 +88,7 @@ export const LearnCompletionControls = ({
             nouns.plural,
           )}{' '}
           kennenlernen · {directionLabel(current, subject)}
-        </Button>
+        </ContinueLearningButton>
       )}
       {next === null ? null : (
         <PlaceLearnLink

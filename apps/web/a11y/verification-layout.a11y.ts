@@ -121,8 +121,12 @@ test('the verification fixture represents a dense photographed page', async ({
 }) => {
   await page.goto('/?state=verification');
 
-  await expect(page.locator('form > ul > li')).toHaveCount(expectedEntryCount);
-  await expect(page.getByText('unsicher gelesen')).toHaveCount(1);
+  await expect(page.locator('form li[data-row-id]')).toHaveCount(
+    expectedEntryCount,
+  );
+  await expect(
+    page.getByText('Unsicher gelesen.', { exact: true }),
+  ).toHaveCount(1);
   const imageBounds = await box(
     page.getByRole('img', { name: 'Fotografierte Vokabelseite' }),
   );

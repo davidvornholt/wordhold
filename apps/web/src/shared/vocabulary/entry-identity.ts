@@ -2,8 +2,9 @@
 // the same word: punctuation, symbols, and extra whitespace never make two
 // spellings different. Case is kept out of the identity key but preserved in
 // the comparable text, because a casing difference ("Sie" next to "sie") is a
-// deliberate distinction that justifies importing the word again.
-const strippable = /[^\p{L}\p{N}\s]+/gu;
+// deliberate distinction that justifies importing the word again. A charge
+// stays, since Na⁺ is not Na; NFKC turns it into a plus or minus sign.
+const strippable = /[^\p{L}\p{N}\s+−]+/gu;
 const whitespace = /\s+/gu;
 
 export const comparableEntryText = (text: string): string =>

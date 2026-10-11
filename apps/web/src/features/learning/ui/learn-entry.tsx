@@ -21,6 +21,7 @@ import {
   type AnswerFieldElement,
 } from '../../../shared/ui/answer-field';
 import { Button } from '../../../shared/ui/button';
+import { CharacterPalette } from '../../../shared/ui/character-palette';
 import { KeyPointList } from '../../../shared/ui/key-point-list';
 import { RelationQuestion } from '../../../shared/ui/relation-question';
 import { WordCard } from '../../../shared/ui/word-card';
@@ -32,6 +33,8 @@ type LearnEntryProps = {
   readonly item: LearnItem;
   // Entries still waiting behind this one in the section.
   readonly deck: number;
+  // Whether the word's example sentence is still being prepared.
+  readonly examplePending: boolean;
   readonly subject: CourseSubject;
   // Records that this direction has been met. Only called once the learner has
   // written it correctly, and the next direction waits until it has been stored.
@@ -44,10 +47,12 @@ type LearnEntryProps = {
 // meaning they are asked in.
 const LearnCardBody = ({
   item,
+  examplePending,
   subject,
   definitionId,
 }: {
   readonly item: LearnItem;
+  readonly examplePending: boolean;
   readonly subject: CourseSubject;
   readonly definitionId: string;
 }) => {
@@ -78,7 +83,11 @@ const LearnCardBody = ({
       {isRelationDirection(item.direction) ? (
         <p className="text-muted-foreground">Bedeutung: {item.nativeText}</p>
       ) : null}
-      <LearnExampleAudio item={item} targetLanguage={subject.targetLanguage} />
+      <LearnExampleAudio
+        item={item}
+        pending={examplePending}
+        targetLanguage={subject.targetLanguage}
+      />
     </>
   );
 };
@@ -159,6 +168,7 @@ const actionLabelFor = (busy: boolean, saveFailed: boolean): string => {
 export const LearnEntry = ({
   item,
   deck,
+  examplePending,
   subject,
   onLearned,
 }: LearnEntryProps) => {
@@ -233,6 +243,7 @@ export const LearnEntry = ({
       >
         <LearnCardBody
           definitionId={answerHintId}
+          examplePending={examplePending}
           item={item}
           subject={subject}
         />
@@ -270,6 +281,9 @@ export const LearnEntry = ({
           placeholder={copyLabels[subject.kind].placeholder ?? answer}
           value={typed}
         />
+        {subject.kind === 'terms' ? (
+          <CharacterPalette disabled={busy} fieldRef={inputRef} />
+        ) : null}
         <Button disabled={busy || typed.trim() === ''} type="submit">
           {actionLabel}
         </Button>

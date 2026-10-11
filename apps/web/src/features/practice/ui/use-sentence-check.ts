@@ -4,7 +4,9 @@ import type {
   SentenceAnswerData,
   SentenceResult,
 } from '../schemas/sentence-models';
+import { failureMessage } from './server-retry';
 import { useLifetime } from './use-practice-audio';
+import { useServerRetry } from './use-server-retry';
 
 export type CheckSentence = (input: {
   readonly data: SentenceAnswerData;
@@ -51,6 +53,7 @@ export const useSentenceCheck = ({
   const [error, setError] = useState<string | null>(null);
   const [outcome, setOutcome] = useState<SentenceOutcome | null>(null);
   const isOnScreen = useLifetime();
+  const { reconnecting, retry } = useServerRetry();
 
   const finish = (next: SentenceOutcome) => {
     setOutcome(next);
@@ -64,14 +67,17 @@ export const useSentenceCheck = ({
     setBusy(true);
     setError(null);
     try {
-      const result = await check({ data: { entryId, sentence, answer } });
+      // Checking stores nothing, so it is safe to repeat.
+      const result = await retry(() =>
+        check({ data: { entryId, sentence, answer } }),
+      );
       // The judge can take several seconds; a learner who left meanwhile
       // must not hear the sentence play on another page.
       if (isOnScreen()) {
         finish({ kind: 'checked', answer, result });
       }
-    } catch {
-      setError(checkError);
+    } catch (cause) {
+      setError(failureMessage(cause, checkError));
     } finally {
       setBusy(false);
     }
@@ -85,5 +91,14 @@ export const useSentenceCheck = ({
     finish({ kind: 'skipped' });
   };
 
-  return { answer, setAnswer, busy, error, outcome, submit, skip } as const;
+  return {
+    answer,
+    setAnswer,
+    busy,
+    error,
+    reconnecting,
+    outcome,
+    submit,
+    skip,
+  } as const;
 };

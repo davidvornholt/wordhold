@@ -95,6 +95,7 @@ export const SynonymLearnFixture = () => (
       directionLabel={directionLabel('to_synonym', englishSubject)}
       items={[learnItem]}
       onIntroduce={() => Promise.resolve()}
+      prepareExamples={withoutExamples}
       subject={englishSubject}
     />
   </FocusLayout>

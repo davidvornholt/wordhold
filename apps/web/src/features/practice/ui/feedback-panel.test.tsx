@@ -73,7 +73,7 @@ const pendingWrongResult: SubmitResult = {
 
 describe('answer feedback', () => {
   it('does not repeat an expected answer that matches the submission', () => {
-    expect(render('  Waiter. ')).not.toContain('Im Buch:');
+    expect(render('  waiter. ')).not.toContain('Im Buch:');
     expect(
       render('hello world', { expectedAnswer: 'hello, world' }),
     ).not.toContain('Im Buch:');
@@ -83,6 +83,7 @@ describe('answer feedback', () => {
     const markup = render('server');
     expect(markup).toContain('Im Buch:');
     expect(markup).not.toContain('Erwartet:');
+    expect(render('Waiter')).toContain('Im Buch:');
   });
 
   it('shows the expected answer beside a wrong answer', () => {

@@ -15,40 +15,48 @@ test('VerifyForm starts in the book that received words last', async ({
   page,
 }) => {
   await page.goto('/?state=verification');
-  await expect(page.getByLabel('Buch dieser Seite')).toHaveValue(currentBookId);
-  await expect(page.getByLabel('Einheit für alle Vokabeln')).toHaveValue(
+  await expect(page.getByLabel('Buch', { exact: true })).toHaveValue(
+    currentBookId,
+  );
+  await expect(page.getByLabel('Einheit', { exact: true })).toHaveValue(
     currentUnitId,
   );
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
 });
 
-test('VerifyForm files every row into the unit of a newly picked book', async ({
+test('VerifyForm files the page into the unit of a newly picked book', async ({
   page,
 }) => {
   await page.goto('/?state=verification');
-  await page.getByLabel('Buch dieser Seite').selectOption(earlierBookId);
-  await expect(page.getByLabel('Einheit für alle Vokabeln')).toHaveValue(
+  await page
+    .getByRole('button', { name: 'Andere Einheit ab Eintrag 7' })
+    .click();
+  await page.getByLabel('Buch', { exact: true }).selectOption(earlierBookId);
+  await expect(page.getByLabel('Einheit', { exact: true })).toHaveValue(
     earlierUnitId,
   );
-  const firstRow = page.locator('form > ul > li').first();
-  await firstRow
-    .getByRole('button', { name: 'Einheit für Eintrag 1 ändern' })
-    .click();
-  const rowUnit = firstRow.getByLabel('Einheit für Eintrag 1');
-  await expect(rowUnit).toHaveValue(earlierUnitId);
-  await expect(rowUnit.locator('option')).toHaveCount(earlierBookUnitOptions);
+  await expect(
+    page.getByLabel('Einheit', { exact: true }).locator('option'),
+  ).toHaveCount(earlierBookUnitOptions);
+  // The other book's units replace any unit changes made for this one.
+  await expect(
+    page.getByLabel('Einheit ab Eintrag 7', { exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole('list', { name: 'Unit 2: Einträge 1–12' }),
+  ).toBeVisible();
 });
 
 test('VerifyForm asks for the name of a new book before importing', async ({
   page,
 }) => {
   await page.goto('/?state=verification');
-  await page.getByLabel('Buch dieser Seite').selectOption('new');
+  await page.getByLabel('Buch', { exact: true }).selectOption('new');
   const bookName = page.getByLabel('Name des Buchs');
   await expect(bookName).toHaveAttribute('required', '');
   const submit = page.getByRole('button', { name: '12 Einträge importieren' });
   await expect(submit).toBeDisabled();
-  await expect(page.getByLabel('Einheit für alle Vokabeln')).toHaveValue('new');
+  await expect(page.getByLabel('Einheit', { exact: true })).toHaveValue('new');
   await bookName.fill('Green Line 4');
   await expect(submit).toBeEnabled();
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
@@ -58,11 +66,9 @@ test('VerifyForm files a page without a unit heading directly into a new book', 
   page,
 }) => {
   await page.goto('/?state=verification-deferred');
-  await page.getByLabel('Buch dieser Seite').selectOption('new');
+  await page.getByLabel('Buch', { exact: true }).selectOption('new');
   await page.getByLabel('Name des Buchs').fill('The Hobbit');
-  await expect(page.getByLabel('Einheit für alle Vokabeln')).toHaveValue(
-    'none',
-  );
+  await expect(page.getByLabel('Einheit', { exact: true })).toHaveValue('none');
   await expect(page.getByLabel('Name der Einheit')).toHaveCount(0);
   await page.getByRole('button', { name: '1 Eintrag importieren' }).click();
   const snapshot = page.getByLabel('Verification snapshot');

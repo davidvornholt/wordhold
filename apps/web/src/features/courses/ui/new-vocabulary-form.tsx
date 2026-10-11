@@ -102,7 +102,6 @@ export const NewVocabularyForm = ({
         }
         reviewStep="Eintragen"
         translate={translateExample}
-        variant="form"
       />
       <div className="flex flex-wrap items-center gap-4">
         <Button disabled={!submittable} type="submit">

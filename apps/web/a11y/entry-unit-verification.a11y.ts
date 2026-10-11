@@ -3,59 +3,72 @@ import { expect, test } from '@playwright/test';
 import { assertNoAccessibilityViolations } from './a11y-assertions';
 
 const generatedExampleIndex = 3;
+const unitTwoId = '11111111-1111-4111-8111-111111111111';
+const unitThreeId = '22222222-2222-4222-8222-222222222222';
 
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
-test('VerifyForm defaults to the latest real unit and routes entries independently', async ({
+test('VerifyForm defaults to the latest real unit and files later entries into another', async ({
   page,
 }) => {
   await page.goto('/?state=verification-deferred');
-  const rows = page.locator('form > ul > li');
-  await rows
-    .first()
-    .getByRole('button', { name: 'Einheit für Eintrag 1 ändern' })
-    .click();
-  const firstUnit = rows.first().getByLabel('Einheit für Eintrag 1');
-  await expect(firstUnit).toBeFocused();
-  await expect(firstUnit).toHaveValue('22222222-2222-4222-8222-222222222222');
-  await firstUnit.selectOption('11111111-1111-4111-8111-111111111111');
+  const unit = page.getByLabel('Einheit', { exact: true });
+  await expect(unit).toHaveValue(unitThreeId);
+  await unit.selectOption(unitTwoId);
   await page.getByRole('button', { name: 'Eintrag hinzufügen' }).click();
+  await expect(page.getByLabel('Englisch').last()).toBeFocused();
   await page.getByLabel('Englisch').last().fill('remember');
-  await page.getByLabel('Deutsch').last().fill('sich erinnern');
-  await rows
-    .nth(1)
-    .getByRole('button', { name: 'Einheit für Eintrag 2 ändern' })
-    .click();
   await page
-    .getByLabel('Einheit für Eintrag 2')
-    .selectOption('22222222-2222-4222-8222-222222222222');
+    .getByLabel('Deutsch', { exact: true })
+    .last()
+    .fill('sich erinnern');
+  await page
+    .getByRole('button', { name: 'Andere Einheit ab Eintrag 2' })
+    .click();
+  // The page moves on from Unit 2 to the book's next unit.
+  await expect(
+    page.getByLabel('Einheit ab Eintrag 2', { exact: true }),
+  ).toHaveValue(unitThreeId);
   await page.getByRole('button', { name: '2 Einträge importieren' }).click();
 
   await expect(page.getByLabel('Verification calls')).toHaveText('1');
-  await expect(page.getByLabel('Verification snapshot')).toContainText(
-    '11111111-1111-4111-8111-111111111111',
-  );
-  await expect(page.getByLabel('Verification snapshot')).toContainText(
-    '22222222-2222-4222-8222-222222222222',
-  );
+  const snapshot = page.getByLabel('Verification snapshot');
+  await expect(snapshot).toContainText(unitTwoId);
+  await expect(snapshot).toContainText(unitThreeId);
 });
 
-test('VerifyForm requires a name when switching to a new unit', async ({
+test('VerifyForm never proposes the holding unit as the next unit', async ({
   page,
 }) => {
   await page.goto('/?state=verification-deferred');
-  const firstRow = page.locator('form > ul > li').first();
-  await firstRow
-    .getByRole('button', { name: 'Einheit für Eintrag 1 ändern' })
+  await page.getByRole('button', { name: 'Eintrag hinzufügen' }).click();
+  await page
+    .getByRole('button', { name: 'Andere Einheit ab Eintrag 2' })
     .click();
-  await firstRow.getByLabel('Einheit für Eintrag 1').selectOption('new');
+  // Unit 3 is the book's last real unit; only "Ohne Einheit" follows it.
+  await expect(
+    page.getByLabel('Einheit ab Eintrag 2', { exact: true }),
+  ).toHaveValue('new');
+});
+
+test('VerifyForm requires a name for a new unit and imports only on Ctrl+Enter', async ({
+  page,
+}) => {
+  await page.goto('/?state=verification-deferred');
+  await page.getByLabel('Einheit', { exact: true }).selectOption('new');
   const name = page.getByLabel('Name der Einheit');
   const submit = page.getByRole('button', { name: '1 Eintrag importieren' });
   await expect(name).toHaveAttribute('required', '');
   await expect(submit).toBeDisabled();
   await name.fill('Unit 4');
   await expect(submit).toBeEnabled();
+  await expect(submit).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Enter Meta+Enter',
+  );
   await name.press('Enter');
+  await expect(page.getByLabel('Verification calls')).toHaveText('0');
+  await name.press('Control+Enter');
   await expect(page.getByLabel('Verification calls')).toHaveText('1');
   await expect(page.getByLabel('Verification snapshot')).toContainText(
     '"name":"Unit 4"',
@@ -67,14 +80,8 @@ test('VerifyForm files the first page of a course directly into its new book', a
 }) => {
   await page.goto('/?state=verification-no-units');
   await page.getByLabel('Name des Buchs').fill('The Hobbit');
-  const firstRow = page.locator('form > ul > li').first();
-  await firstRow
-    .getByRole('button', { name: 'Einheit für Eintrag 1 ändern' })
-    .click();
-  await expect(firstRow.getByLabel('Einheit für Eintrag 1')).toHaveValue(
-    'none',
-  );
-  await expect(firstRow.getByLabel('Name der Einheit')).toHaveCount(0);
+  await expect(page.getByLabel('Einheit', { exact: true })).toHaveValue('none');
+  await expect(page.getByLabel('Name der Einheit')).toHaveCount(0);
   await expect(
     page.getByRole('button', { name: '12 Einträge importieren' }),
   ).toBeEnabled();
@@ -89,15 +96,7 @@ test('VerifyForm announces a stale unit failure and unlocks recovery', async ({
   await expect(page.getByRole('alert')).toHaveText(
     'Diese Einheit gibt es nicht mehr. Lade die Seite neu.',
   );
-  const changeUnit = page
-    .locator('form > ul > li')
-    .first()
-    .getByRole('button', { name: 'Einheit für Eintrag 1 ändern' });
-  await expect(changeUnit).toBeEnabled();
-  await changeUnit.click();
-  await expect(
-    page.locator('form > ul > li').first().getByLabel('Einheit für Eintrag 1'),
-  ).toBeEnabled();
+  await expect(page.getByLabel('Einheit', { exact: true })).toBeEnabled();
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
 });
 
@@ -105,44 +104,29 @@ test('VerifyForm generates an editable sentence and German translation', async (
   page,
 }) => {
   await page.goto('/?state=verification');
-  const generate = page
-    .getByRole('button', { name: 'Beispielsatz erzeugen' })
-    .first();
-  await generate.click();
-  const generatedExample = page
-    .getByLabel('Beispielsatz', { exact: true })
-    .nth(generatedExampleIndex);
-  await expect(generatedExample).toHaveValue('This memory makes me smile.');
-  const generatedTranslation = page
-    .getByLabel('Deutsche Übersetzung des Beispielsatzes')
-    .nth(generatedExampleIndex);
-  await expect(generatedTranslation).toHaveValue(
+  const row = page.locator('form li[data-row-id]').nth(generatedExampleIndex);
+  await row.getByRole('button', { name: 'Beispielsatz erzeugen' }).click();
+  const sentence = row.getByLabel('Beispielsatz', { exact: true });
+  await expect(sentence).toHaveValue('This memory makes me smile.');
+  const translation = row.getByLabel('Deutsche Übersetzung des Beispielsatzes');
+  await expect(translation).toHaveValue(
     'Diese Erinnerung bringt mich zum Lächeln.',
   );
-  await expect(generatedTranslation).toBeFocused();
-  await expect(
-    page.getByText(
-      'Mit KI erzeugt. Prüfe Satz und Übersetzung vor dem Import.',
-    ),
-  ).toBeVisible();
+  await expect(translation).toBeFocused();
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
 });
 
-test('VerifyForm shows a printed example with its translation and re-translates a rewrite', async ({
+test('VerifyForm re-translates a rewritten printed example', async ({
   page,
 }) => {
   await page.goto('/?state=verification');
-  const rows = page.locator('form > ul > li');
-  const first = rows.first();
+  const first = page.locator('form li[data-row-id]').first();
   const translation = first.getByLabel(
     'Deutsche Übersetzung des Beispielsatzes',
   );
   const sentence = first.getByLabel('Beispielsatz', { exact: true });
   await expect(sentence).toHaveValue('The journey takes three hours.');
   await expect(translation).toHaveValue('Die Reise dauert drei Stunden.');
-  await expect(
-    first.getByText('Übersetzung mit KI erzeugt. Prüfe sie vor dem Import.'),
-  ).toBeVisible();
 
   await sentence.fill('The journey takes two hours.');
   await expect(translation).toHaveValue('');
@@ -159,7 +143,7 @@ test('VerifyForm translates a rewrite blurred while an older request is pending'
   page,
 }) => {
   await page.goto('/?state=verification-deferred');
-  const row = page.locator('form > ul > li').first();
+  const row = page.locator('form li[data-row-id]').first();
   const sentence = row.getByLabel('Beispielsatz', { exact: true });
   const translation = row.getByLabel('Deutsche Übersetzung des Beispielsatzes');
   await sentence.fill('An older rewrite.');
@@ -193,16 +177,28 @@ test('VerifyForm fills every missing example sentence with one click', async ({
   page,
 }) => {
   await page.goto('/?state=verification');
-  await expect(page.getByText('2 Einträge ohne Beispielsatz')).toBeVisible();
-  await page.getByRole('button', { name: 'Beispielsätze erzeugen' }).click();
+  const checklist = page.getByRole('region', { name: 'Vor dem Import' });
+  await expect(
+    checklist.getByText('2 Einträge ohne Beispielsatz'),
+  ).toBeVisible();
+  await checklist
+    .getByRole('button', { name: 'Beispielsätze erzeugen' })
+    .click();
+  // The status line takes over from the button, so focus stays in place.
+  const status = checklist.getByText('2 Beispielsätze erzeugt.');
+  await expect(status).toBeVisible();
+  await expect(status).toBeFocused();
   await expect(page.getByText('ohne Beispielsatz')).toHaveCount(0);
   await expect(
     page.getByRole('button', { name: 'Beispielsatz erzeugen' }),
   ).toHaveCount(0);
   await expect(
-    page.getByLabel('Beispielsatz', { exact: true }).nth(generatedExampleIndex),
+    page
+      .locator('form li[data-row-id]')
+      .nth(generatedExampleIndex)
+      .getByLabel('Beispielsatz', { exact: true }),
   ).toHaveValue('This memory makes me smile.');
   // Focusing a filled row would scroll the page to it as each sentence lands.
-  await expect(page.locator('input:focus')).toHaveCount(0);
+  await expect(page.locator('input:focus, textarea:focus')).toHaveCount(0);
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
 });

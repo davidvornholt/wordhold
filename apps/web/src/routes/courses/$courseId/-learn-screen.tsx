@@ -19,7 +19,6 @@ import {
   directionLabel,
   isListCourse,
 } from '../../../shared/directions';
-import { attachPreparedExamples } from '../../../shared/examples/example-model';
 import { countNoun } from '../../../shared/format/count';
 import { itemsInNextSection } from '../../../shared/session/section-policy';
 import type { PlaceSelectionData } from '../../../shared/session/vocabulary-selection';
@@ -63,22 +62,10 @@ export const loadLearnScreen = async (
     requestedDirection,
     availableDirections,
   );
-  // A definition or text has no example sentence to show.
-  const prepared =
-    direction === undefined || isListCourse(course.kind)
-      ? []
-      : await prepareVocabularyExamples({
-          data: pass.items
-            .filter((item) => item.direction === direction)
-            .map((item) => item.entryId),
-        });
-  return {
-    availableDirections,
-    course,
-    direction,
-    pass: { ...pass, items: attachPreparedExamples(pass.items, prepared) },
-    selection,
-  };
+  // Example sentences are prepared in the background once the pass is on
+  // screen (see useExampleWarmup); waiting for them here made the start
+  // button appear to do nothing for seconds.
+  return { availableDirections, course, direction, pass, selection };
 };
 
 type LearnScreenProps = Awaited<ReturnType<typeof loadLearnScreen>>;
@@ -212,6 +199,7 @@ export const LearnScreen = ({
             data: { courseId: course.id, cardId: item.cardId },
           });
         }}
+        prepareExamples={prepareVocabularyExamples}
         subject={course}
       />
     );

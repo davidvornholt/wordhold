@@ -124,6 +124,7 @@ export const TextsLearnFixture = () => (
       directionLabel={directionLabel('to_native', textsSubject)}
       items={[learnItem]}
       onIntroduce={() => Promise.resolve()}
+      prepareExamples={withoutExamples}
       subject={textsSubject}
     />
   </FocusLayout>

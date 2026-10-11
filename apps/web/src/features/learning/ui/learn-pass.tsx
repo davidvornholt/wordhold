@@ -4,6 +4,11 @@ import {
   courseNouns,
   isListCourse,
 } from '../../../shared/directions';
+import {
+  type PrepareExamples,
+  withoutExamples,
+} from '../../../shared/examples/example-model';
+import { useExampleWarmup } from '../../../shared/examples/use-example-warmup';
 import { CardRail } from '../../../shared/ui/card-rail';
 import type { LearnItem } from '../schemas/learning-models';
 import { LearnDone } from './learn-done';
@@ -13,22 +18,31 @@ type LearnPassProps = {
   readonly items: ReadonlyArray<LearnItem>;
   readonly subject: CourseSubject;
   readonly onIntroduce: (item: LearnItem) => Promise<void>;
+  readonly prepareExamples: PrepareExamples;
   readonly directionLabel: string;
   readonly completionControls: ReactNode;
 };
 
 // One bounded section in one direction. Each entry is recorded as met the
 // moment it has been written correctly, so leaving halfway keeps what was
-// learned and the next section resumes with the rest.
+// learned and the next section resumes with the rest. The pass shows at once;
+// example sentences are prepared in pass order while it runs, the current
+// card first.
 export const LearnPass = ({
   items,
   subject,
   onIntroduce,
+  prepareExamples,
   directionLabel,
   completionControls,
 }: LearnPassProps) => {
   const [index, setIndex] = useState(0);
-  const item = items.at(index);
+  // A definition or text has no example sentence to show.
+  const warmup = useExampleWarmup(
+    items,
+    isListCourse(subject.kind) ? withoutExamples : prepareExamples,
+  );
+  const item = warmup.items.at(index);
   const nouns = courseNouns(subject);
   // A subject or collection has one direction, so naming it adds nothing.
   const shownDirection = isListCourse(subject.kind) ? null : directionLabel;
@@ -55,6 +69,9 @@ export const LearnPass = ({
       ) : (
         <LearnEntry
           deck={items.length - index - 1}
+          examplePending={
+            item.example === null && !warmup.isSettled(item.entryId)
+          }
           item={item}
           key={item.cardId}
           onLearned={async () => {

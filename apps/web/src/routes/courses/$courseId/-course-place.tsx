@@ -1,3 +1,4 @@
+import { useMatchRoute } from '@tanstack/react-router';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import type { ReactNode } from 'react';
 import {
@@ -161,6 +162,8 @@ const placeLearnTarget = (
       } as const);
 };
 
+// The learning pass loads before it shows, so the link says so while its
+// own pass is loading, as the practice start buttons do.
 export const PlaceLearnLink = ({
   courseId,
   selection,
@@ -169,14 +172,22 @@ export const PlaceLearnLink = ({
   className,
   onClick,
   children,
-}: PlaceLearnLinkProps) => (
-  <ActionLink
-    className={className}
-    onClick={onClick}
-    search={{ direction }}
-    variant={variant}
-    {...placeLearnTarget(courseId, selection)}
-  >
-    {children}
-  </ActionLink>
-);
+}: PlaceLearnLinkProps) => {
+  const target = placeLearnTarget(courseId, selection);
+  const matchRoute = useMatchRoute();
+  const preparing =
+    matchRoute({ ...target, search: { direction }, pending: true }) !== false;
+  return (
+    <ActionLink
+      aria-busy={preparing}
+      className={className}
+      onClick={onClick}
+      search={{ direction }}
+      variant={variant}
+      {...target}
+    >
+      {/* biome-ignore lint/suspicious/noLeakedRender: children is the link's own label, shown whenever it is not loading; nothing is rendered by accident. */}
+      {preparing ? 'Wird vorbereitet …' : children}
+    </ActionLink>
+  );
+};

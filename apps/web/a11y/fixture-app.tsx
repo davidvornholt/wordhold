@@ -18,6 +18,7 @@ import {
 import { type FixtureState, readFixtureState } from './fixture-state';
 import { ImportSessionFixture } from './import-session-fixture';
 import {
+  LearnDeferredFixture,
   LearnDoneFixture,
   LearnFixture,
   LearnSectionDoneFixture,
@@ -67,6 +68,7 @@ import { WordRelationFixture } from './word-relation-fixtures';
 const bareStates: ReadonlySet<FixtureState> = new Set<FixtureState>([
   'learn',
   'learn-audio',
+  'learn-deferred',
   'learn-start',
   'learn-native',
   'learn-retry',
@@ -134,6 +136,8 @@ const learningFixture = (state: FixtureState) => {
       return <LearnFixture />;
     case 'learn-audio':
       return <LearnFixture withAudio={true} />;
+    case 'learn-deferred':
+      return <LearnDeferredFixture />;
     case 'learn-start':
       return <LearnStartFixture />;
     case 'learn-native':
@@ -325,6 +329,7 @@ const fixtureContent = (state: FixtureState) => {
       return <WordRelationFixture />;
     case 'learn':
     case 'learn-audio':
+    case 'learn-deferred':
     case 'learn-start':
     case 'learn-native':
     case 'learn-retry':

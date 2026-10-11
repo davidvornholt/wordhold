@@ -1,44 +1,15 @@
-import { maximumEntriesPerPage } from '@wordhold/ai/extraction/schema';
-import { type Dispatch, type SetStateAction, useState } from 'react';
+import type { GeneratedExample } from '../../../shared/examples/example-draft';
 import { countNoun } from '../../../shared/format/count';
-import { Button } from '../../../shared/ui/button';
-import type {
-  BookSelectionData,
-  UnitSelectionData,
-} from '../schemas/import-payload';
+import type { BookSelectionData } from '../schemas/import-payload';
 import type { Book, Unit, UnitEntry } from '../services/repository';
-import { BookAssignment } from './book-assignment';
-import { BulkExampleGeneration } from './bulk-example-generation';
-import { BulkUnitAssignment } from './bulk-unit-assignment';
-import {
-  appendedRow,
-  draftFormState,
-  type IdentifiedDraftRow,
-  identifiedRows,
-  rowsWithUnit,
-  rowsWithUnitFrom,
-  rowWithConfirmation,
-  rowWithEntry,
-  rowWithGeneratedExample,
-  rowWithTranslatedExample,
-  rowWithUnit,
-  withoutRow,
-} from './draft-rows';
-import { type DraftEntry, EntryRow } from './entry-row';
-import { EntryUnitAssignment } from './entry-unit-assignment';
-import {
-  bookChanged,
-  bookSelectionIsComplete,
-  initialBookSelection,
-  unitsInBook,
-} from './initial-book-selection';
-import { initialUnitSelection } from './initial-unit-selection';
-import {
-  entryIsComplete,
-  skippedSummary,
-  unitSelectionIsComplete,
-  type VerificationEntry,
-} from './verify-form-selection';
+import { EntryLedger } from './entry-ledger';
+import type { DraftEntry } from './entry-row';
+import { handleLedgerKeyDown } from './ledger-keyboard';
+import { ReviewChecklist } from './review-checklist';
+import { useBulkExamples } from './use-bulk-examples';
+import { useDraftForm } from './use-draft-form';
+import { VerifyActionBar } from './verify-action-bar';
+import type { VerificationEntry } from './verify-form-selection';
 
 type VerifyFormProps = {
   readonly initialEntries: ReadonlyArray<DraftEntry>;
@@ -51,7 +22,7 @@ type VerifyFormProps = {
   readonly generateExample: (
     targetText: string,
     nativeText: string,
-  ) => Promise<{ readonly target: string; readonly native: string }>;
+  ) => Promise<GeneratedExample>;
   readonly translateExample: (
     targetText: string,
   ) => Promise<{ readonly native: string }>;
@@ -61,138 +32,6 @@ type VerifyFormProps = {
   ) => void;
   readonly submitLabel?: (entryCount: number) => string;
 };
-
-// The rows offer only the chosen book's units. Picking another book files
-// every row, and the bulk choice, into that book's most likely unit again.
-const useDraftForm = (
-  initialEntries: ReadonlyArray<DraftEntry>,
-  initialUnitName: string | undefined,
-  {
-    books,
-    units,
-    existingEntries,
-    busy,
-  }: Pick<VerifyFormProps, 'books' | 'units' | 'existingEntries' | 'busy'>,
-) => {
-  const [book, setBook] = useState<BookSelectionData>(() =>
-    initialBookSelection(books),
-  );
-  const bookUnits = unitsInBook(units, book);
-  const [bulkUnit, setBulkUnit] = useState<UnitSelectionData>(() =>
-    initialUnitSelection(unitsInBook(units, book), initialUnitName),
-  );
-  const [draftEntries, setDraftEntries] = useState<
-    ReadonlyArray<IdentifiedDraftRow>
-  >(() =>
-    identifiedRows(
-      initialEntries,
-      initialUnitSelection(unitsInBook(units, book), initialUnitName),
-    ),
-  );
-  const changeBook = (next: BookSelectionData) => {
-    setBook(next);
-    if (bookChanged(book, next)) {
-      const unit = initialUnitSelection(
-        unitsInBook(units, next),
-        initialUnitName,
-      );
-      setBulkUnit(unit);
-      setDraftEntries((current) => rowsWithUnit(current, unit));
-    }
-  };
-  const formState = draftFormState(draftEntries, existingEntries, busy);
-  return {
-    book,
-    changeBook,
-    bookUnits,
-    bulkUnit,
-    setBulkUnit,
-    draftEntries,
-    setDraftEntries,
-    formState: {
-      ...formState,
-      submittable: formState.submittable && bookSelectionIsComplete(book),
-    },
-  };
-};
-
-type DraftEntryListProps = Pick<
-  VerifyFormProps,
-  'busy' | 'generateExample' | 'translateExample' | 'targetLabel' | 'units'
-> & {
-  readonly draftEntries: ReadonlyArray<IdentifiedDraftRow>;
-  readonly setDraftEntries: Dispatch<
-    SetStateAction<ReadonlyArray<IdentifiedDraftRow>>
-  >;
-  readonly duplicates: ReturnType<typeof draftFormState>['duplicates'];
-};
-
-const DraftEntryList = ({
-  busy,
-  draftEntries,
-  generateExample,
-  setDraftEntries,
-  targetLabel,
-  translateExample,
-  units,
-  duplicates,
-}: DraftEntryListProps) => (
-  <ul className="flex flex-col gap-3">
-    {draftEntries.map((entry, index) => (
-      <EntryRow
-        disabled={busy}
-        duplicate={duplicates[index] ?? { verdict: 'none' }}
-        duplicateConfirmed={entry.duplicateConfirmed}
-        entry={entry}
-        entryNumber={index + 1}
-        generateExample={generateExample}
-        key={entry.rowId}
-        translateExample={translateExample}
-        onChange={(next) =>
-          setDraftEntries((current) => rowWithEntry(current, index, next))
-        }
-        onDuplicateConfirmedChange={(confirmed) =>
-          setDraftEntries((current) =>
-            rowWithConfirmation(current, index, confirmed),
-          )
-        }
-        onGeneratedExample={(source, generated) =>
-          setDraftEntries((current) =>
-            rowWithGeneratedExample(current, entry.rowId, source, generated),
-          )
-        }
-        onTranslatedExample={(sentence, native) =>
-          setDraftEntries((current) =>
-            rowWithTranslatedExample(current, entry.rowId, sentence, native),
-          )
-        }
-        onRemove={() =>
-          setDraftEntries((current) => withoutRow(current, index))
-        }
-        targetLabel={targetLabel}
-        unitControl={
-          <EntryUnitAssignment
-            disabled={busy}
-            entryNumber={index + 1}
-            hasFollowing={index < draftEntries.length - 1}
-            onApplyFollowing={() =>
-              setDraftEntries((current) =>
-                rowsWithUnitFrom(current, index, entry.unit),
-              )
-            }
-            onChange={(unit) =>
-              setDraftEntries((current) => rowWithUnit(current, index, unit))
-            }
-            required={entryIsComplete(entry)}
-            selection={entry.unit}
-            selectionComplete={unitSelectionIsComplete(entry.unit)}
-            units={units}
-          />
-        }
-      />
-    ))}
-  </ul>
-);
 
 const defaultSubmitLabel = (entryCount: number): string =>
   entryCount === 0
@@ -212,100 +51,56 @@ export const VerifyForm = ({
   onSubmit,
   submitLabel = defaultSubmitLabel,
 }: VerifyFormProps) => {
-  const {
-    book,
-    changeBook,
-    bookUnits,
-    bulkUnit,
-    setBulkUnit,
-    draftEntries,
-    setDraftEntries,
-    formState,
-  } = useDraftForm(initialEntries, initialUnitName, {
+  const form = useDraftForm({
+    initialEntries,
+    initialUnitName,
     books,
     units,
     existingEntries,
     busy,
   });
+  const bulk = useBulkExamples({
+    rows: form.rows,
+    generate: generateExample,
+    onGenerated: form.applyGeneratedExample,
+  });
+  const { formState } = form;
 
   return (
+    // biome-ignore lint/a11y/noNoninteractiveElementInteractions: Keydown bubbles up from the ledger's fields; the form delegates Enter and Ctrl+Enter for them and is never a keyboard target itself.
     <form
       aria-busy={busy}
       className="flex flex-col gap-4"
+      onKeyDown={handleLedgerKeyDown}
       onSubmit={(event) => {
         event.preventDefault();
         if (!formState.submittable) {
           return;
         }
-        onSubmit(book, formState.entriesToSubmit);
+        onSubmit(form.book, formState.entriesToSubmit);
       }}
+      ref={form.formRef}
     >
-      <BookAssignment
+      <ReviewChecklist bulk={bulk} disabled={busy} form={form} />
+      <EntryLedger
         books={books}
-        disabled={busy}
-        onChange={changeBook}
-        selection={book}
-      />
-      <BulkUnitAssignment
-        canApply={draftEntries.length > 0 && unitSelectionIsComplete(bulkUnit)}
-        disabled={busy}
-        onApply={() =>
-          setDraftEntries((current) => rowsWithUnit(current, bulkUnit))
-        }
-        onChange={setBulkUnit}
-        selection={bulkUnit}
-        units={bookUnits}
-      />
-      <BulkExampleGeneration
-        disabled={busy}
-        generate={generateExample}
-        onGenerated={(rowId, source, generated) =>
-          setDraftEntries((current) =>
-            rowWithGeneratedExample(current, rowId, source, generated),
-          )
-        }
-        rows={draftEntries}
-      />
-      <DraftEntryList
         busy={busy}
-        draftEntries={draftEntries}
+        form={form}
         generateExample={generateExample}
-        setDraftEntries={setDraftEntries}
         targetLabel={targetLabel}
         translateExample={translateExample}
-        units={bookUnits}
-        duplicates={formState.duplicates}
       />
-      {formState.selection.skipped > 0 ? (
-        <p className="text-muted-foreground text-sm">
-          {skippedSummary(formState.selection.skipped)}
-        </p>
-      ) : null}
-      <div className="flex flex-wrap items-center gap-3">
-        <Button
-          disabled={busy || draftEntries.length >= maximumEntriesPerPage}
-          onClick={() =>
-            setDraftEntries((current) =>
-              appendedRow(
-                current,
-                initialUnitSelection(bookUnits, initialUnitName),
-              ),
-            )
-          }
-          variant="outline"
-        >
-          Eintrag hinzufügen
-        </Button>
-        <Button disabled={!formState.submittable} type="submit">
-          {busy
-            ? 'Importiere …'
-            : submitLabel(
-                formState.completionWithoutImport
-                  ? 0
-                  : formState.selection.entries.length,
-              )}
-        </Button>
-      </div>
+      <VerifyActionBar
+        busy={busy}
+        removal={form.removal}
+        skipped={formState.selection.skipped}
+        submitLabel={submitLabel(
+          formState.completionWithoutImport
+            ? 0
+            : formState.selection.entries.length,
+        )}
+        submittable={formState.submittable}
+      />
     </form>
   );
 };
