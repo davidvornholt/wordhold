@@ -1,7 +1,7 @@
 import { Context, Effect, Layer } from 'effect';
 import { BedrockProvider, productionModelId } from '../providers/bedrock';
 import type { AiUsage } from '../usage';
-import { DefinitionError } from './error';
+import type { DefinitionError } from './error';
 import { generateDefinitionOutput } from './generate';
 import {
   type DefinitionJudgeInput,
@@ -53,18 +53,11 @@ export class DefinitionJudge extends Context.Service<
           schema: DefinitionVerdict,
           prompt: definitionJudgePrompt(input),
           message: judgeFailure,
-        }).pipe(
-          Effect.filterOrFail(
-            (verdict) => verdict.keyPoints.length === input.keyPoints.length,
-            (verdict) =>
-              new DefinitionError({
-                cause: new Error(
-                  `Expected ${input.keyPoints.length} key point findings, received ${verdict.keyPoints.length}.`,
-                ),
-                message: judgeFailure,
-              }),
-          ),
-        );
+          validate: (verdict) =>
+            verdict.keyPoints.length === input.keyPoints.length
+              ? undefined
+              : `Expected ${input.keyPoints.length} key point findings, received ${verdict.keyPoints.length}.`,
+        });
 
       return DefinitionJudge.of({ judge, modelId });
     }),

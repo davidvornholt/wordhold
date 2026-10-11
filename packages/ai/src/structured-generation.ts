@@ -10,7 +10,8 @@ import {
   productionModelId,
   sonnetMediumProviderOptions,
 } from './providers/bedrock';
-import { providerJsonSchema } from './structured-output';
+import { decodeModelOutput, providerJsonSchema } from './structured-output';
+import { UnusableAnswerError } from './unusable-answer-error';
 import {
   type AiOperation,
   type AiUsage,
@@ -19,16 +20,33 @@ import {
 } from './usage';
 import { AiUsageError } from './usage-error';
 
-// One metered structured request to the production model. The answer is
-// returned undecoded; callers decode it with the same Effect schema.
-export const generateStructured = <E>(input: {
+// What the log needs to see why an answer was unusable: the text that did not
+// parse, or the schema issue. A rejected answer is explained by the message.
+const unusableDetail = (cause: unknown): string => {
+  if (NoObjectGeneratedError.isInstance(cause)) {
+    return cause.text ?? '';
+  }
+  return cause instanceof Error ? cause.message : '';
+};
+
+// One structured request to the production model, decoded with the Effect
+// schema. Bedrock receives the schema only as an instruction, so the answer
+// text occasionally misses it; an unusable answer is requested once more, and
+// every request is metered. `validate` names why a decoded answer cannot be
+// used, such as a skipped item, and returns undefined to accept it.
+export const generateStructured = <A, E>(input: {
   readonly model: LanguageModel;
   readonly operation: AiOperation;
-  readonly schema: Schema.Top;
+  readonly schema: Schema.Decoder<A>;
   readonly prompt: string | Array<ModelMessage>;
   readonly failure: (cause: unknown) => E;
-}): Effect.Effect<unknown, E, AiUsage> =>
-  metered(
+  readonly validate?: (answer: A) => string | undefined;
+}): Effect.Effect<A, E, AiUsage> => {
+  const decode = decodeModelOutput(input.schema);
+  const unusable = (message: string, cause: unknown) =>
+    new UnusableAnswerError({ cause, message });
+
+  const request = metered(
     {
       operation: input.operation,
       provider: 'bedrock',
@@ -59,10 +77,48 @@ export const generateStructured = <E>(input: {
             throw error;
           }
         },
-        catch: input.failure,
+        // A truncated answer would be cut off again, so it is not repeated.
+        catch: (error) =>
+          NoObjectGeneratedError.isInstance(error) &&
+          error.finishReason !== 'length'
+            ? unusable('The answer is not a JSON object.', error)
+            : input.failure(error),
       }),
-  ).pipe(
-    Effect.mapError((error: E | AiUsageError) =>
-      error instanceof AiUsageError ? input.failure(error) : error,
+  );
+
+  const attempt = request.pipe(
+    Effect.flatMap((output) =>
+      decode(output).pipe(
+        Effect.mapError((cause) =>
+          unusable('The answer does not match the schema.', cause),
+        ),
+      ),
+    ),
+    Effect.flatMap((answer) => {
+      const problem = input.validate?.(answer);
+      return problem === undefined
+        ? Effect.succeed(answer)
+        : Effect.fail(unusable(problem, answer));
+    }),
+    Effect.tapError((error) =>
+      error instanceof UnusableAnswerError
+        ? Effect.logWarning(
+            `Unusable ${input.operation} answer: ${error.message}`,
+            unusableDetail(error.cause),
+          )
+        : Effect.void,
     ),
   );
+
+  return attempt.pipe(
+    Effect.retry({
+      times: 1,
+      while: (error) => error instanceof UnusableAnswerError,
+    }),
+    Effect.mapError((error) =>
+      error instanceof UnusableAnswerError || error instanceof AiUsageError
+        ? input.failure(error)
+        : error,
+    ),
+  );
+};

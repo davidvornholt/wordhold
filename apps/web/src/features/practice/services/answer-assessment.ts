@@ -1,6 +1,6 @@
 import { isDefinitionCorrect } from '@wordhold/ai/definition/schema';
 import type { AiUsage } from '@wordhold/ai/usage';
-import { Effect } from 'effect';
+import { Cause, Effect } from 'effect';
 import {
   type AcceptedAnswer,
   isDeterministicMatch,
@@ -129,7 +129,7 @@ const gradeDefinition = (input: GradeAnswerInput) =>
     } satisfies AssessedAnswer;
   });
 
-// Null when the judge could not be reached: the answer stays ungraded and the
+// Null when the judge could not grade the answer: it stays ungraded and the
 // card untouched. A text learned by heart is compared word for word and never
 // reaches the judge, since only its exact wording counts.
 export const gradeAnswer = (input: GradeAnswerInput) => {
@@ -159,7 +159,12 @@ export const gradeAnswer = (input: GradeAnswerInput) => {
     Effect.provideService(JudgeCacheStore, input.cache),
     Effect.provideService(PracticeJudge, input.judge),
     Effect.provideService(DefinitionGrader, input.grader),
-    Effect.catchTag('PracticeJudgeError', () => Effect.succeed(null)),
+    Effect.catchTag('PracticeJudgeError', (error) =>
+      Effect.logWarning(
+        'answer left ungraded',
+        Cause.pretty(Cause.fail(error)),
+      ).pipe(Effect.as(null)),
+    ),
   );
 };
 
