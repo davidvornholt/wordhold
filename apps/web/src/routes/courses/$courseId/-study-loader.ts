@@ -1,9 +1,5 @@
-import {
-  getCourseOutline,
-  prepareVocabularyExamples,
-} from '../../../features/courses/services/server-fns';
+import { getCourseOutline } from '../../../features/courses/services/server-fns';
 import { getCourse } from '../../../features/import/server-fns';
-import type { Course } from '../../../features/import/services/repository';
 import { getLearnSelection } from '../../../features/learning/services/server-fns';
 import type { PracticeSession } from '../../../features/practice/schemas/practice-models';
 import type { StudySearchData } from '../../../features/practice/schemas/session-request';
@@ -13,39 +9,25 @@ import {
   resolveAnswerDirection,
   resolveSessionDirection,
 } from '../../../features/practice/services/session-options';
-import { isListCourse } from '../../../shared/directions';
-import { attachPreparedExamples } from '../../../shared/examples/example-model';
 import type { VocabularySelectionData } from '../../../shared/session/vocabulary-selection';
 import { courseSelection, findCoursePlace } from './-course-place';
 
 const loadLearningMode = async (
-  course: Course,
+  courseId: string,
   selection: VocabularySelectionData,
   deps: StudySearchData,
 ) => {
-  const pass = await getLearnSelection({
-    data: { courseId: course.id, selection },
-  });
+  const pass = await getLearnSelection({ data: { courseId, selection } });
   const availableDirections = pass.directions.map(
     (progress) => progress.direction,
   );
   const direction = resolveAnswerDirection(deps.direction, availableDirections);
-  // A definition or text has no example sentence to show.
-  const prepared =
-    direction === undefined || isListCourse(course.kind)
-      ? []
-      : await prepareVocabularyExamples({
-          data: pass.items
-            .filter((item) => item.direction === direction)
-            .map((item) => item.entryId),
-        });
+  // Example sentences are prepared in the background once the pass is on
+  // screen, as on the learn routes.
   return {
     availableDirections,
     direction,
-    learningPass: {
-      ...pass,
-      items: attachPreparedExamples(pass.items, prepared),
-    },
+    learningPass: pass,
     mode: 'learn' as const,
     preview: { items: [] },
     session: null,
@@ -112,7 +94,7 @@ export const loadStudyData = async (
   }
   const mode =
     deps.mode === 'learn'
-      ? await loadLearningMode(course, selection, deps)
+      ? await loadLearningMode(course.id, selection, deps)
       : await loadPracticeMode(course.id, selection, deps);
   return { ...mode, course, place, selection };
 };

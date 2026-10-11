@@ -1,6 +1,7 @@
 import type { LanguageCode } from '@wordhold/db/schema/courses';
 import { type ReactNode, useState } from 'react';
 import type { PrepareExamples } from '../../../shared/examples/example-model';
+import { useExampleWarmup } from '../../../shared/examples/use-example-warmup';
 import { countNoun } from '../../../shared/format/count';
 import { CardRail } from '../../../shared/ui/card-rail';
 import type { SentenceItem, SentenceSession } from '../schemas/sentence-models';
@@ -15,7 +16,6 @@ import {
 } from '../services/sentence-round';
 import { SentenceCard, type SentencePrompt } from './sentence-card';
 import { SentenceSummary } from './sentence-summary';
-import { useExampleWarmup } from './use-example-warmup';
 import { type CheckSentence, railOutcomeOf } from './use-sentence-check';
 
 const promptOf = (item: SentenceItem): SentencePrompt | null => {

@@ -20,24 +20,3 @@ export type PrepareExamples = (input: {
 }) => Promise<ReadonlyArray<PreparedEntryExample>>;
 
 export const withoutExamples: PrepareExamples = () => Promise.resolve([]);
-
-export const preparedExamplesByEntry = (
-  prepared: ReadonlyArray<PreparedEntryExample>,
-): ReadonlyMap<string, PreparedExampleSentence | null> =>
-  new Map(prepared.map(({ entryId, example }) => [entryId, example]));
-
-export const attachPreparedExamples = <
-  T extends {
-    readonly entryId: string;
-    readonly example: PreparedExampleSentence | null;
-  },
->(
-  items: ReadonlyArray<T>,
-  prepared: ReadonlyArray<PreparedEntryExample>,
-): ReadonlyArray<T> => {
-  const byEntry = preparedExamplesByEntry(prepared);
-  return items.map((item) => ({
-    ...item,
-    example: byEntry.get(item.entryId) ?? item.example,
-  }));
-};
