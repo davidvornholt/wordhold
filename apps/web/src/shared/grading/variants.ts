@@ -5,6 +5,7 @@ import {
   maximumAnswerVariants,
   normalizeReadings,
 } from './bounded-variant-expansion';
+import { isPlaceholder, unifyPlaceholders } from './normalize';
 
 const optionalGroup = /\((?<inner>[^()]*)\)/u;
 const parenthesizedGroups = /\((?<inner>[^()]*)\)/gu;
@@ -213,7 +214,9 @@ const splitPhraseAlternatives = (text: string): ReadonlyArray<string> => {
 
 const expandSlashWord = (word: string): ExpansionState => {
   const parts = word.split('/');
-  if (parts.length !== 2) {
+  // A slash next to a placeholder joins whole words ("sb/sth"), never a
+  // word and its suffix.
+  if (parts.length !== 2 || parts.some(isPlaceholder)) {
     return { _tag: 'Values', values: [word] };
   }
   const [left = '', right = ''] = parts;
@@ -278,7 +281,7 @@ const expandWordAlternatives = (text: string): ExpansionState => {
 export const answerVariants = (text: string): AnswerVariantExpansion => {
   const phrases: Array<string> = [];
   for (const phrase of splitPhraseAlternatives(
-    normalizeCompactSlashSpacing(text),
+    normalizeCompactSlashSpacing(unifyPlaceholders(text)),
   )) {
     const optional = expandOptionalGroups(phrase);
     if (optional._tag === 'Overflow') {

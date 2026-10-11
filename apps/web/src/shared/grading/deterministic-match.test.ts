@@ -127,6 +127,12 @@ describe('isDeterministicMatch dictionary notation regressions', () => {
     ['AC/DC', 'AC/DC'],
     ['estar ilusionado/a (con algo)', 'estar ilusionado/-a (con algo)'],
     ['estar ilusionado/-a con algo', 'estar ilusionado/-a (con algo)'],
+    ['to stalk sb/sth', '(to) stalk sb./sth.'],
+    ['to stalk sth/sb', '(to) stalk sb./sth.'],
+    ['to stalk sth. / sb.', '(to) stalk sb./sth.'],
+    ['etw/jdn verfolgen', 'jdn./etw. verfolgen; jdm./etw. nachstellen'],
+    ["to get on sb's nerves", "to get on sb.'s nerves"],
+    ['donner qc à qn', 'donner qc. à qn.'],
   ])('accepts %s for %s', (submitted, expected) => {
     expect(isDeterministicMatch(submitted, [answer(expected)])).toBe(true);
   });
@@ -149,6 +155,10 @@ describe('isDeterministicMatch dictionary notation regressions', () => {
     ['AC', 'AC/DC'],
     ['DC', 'AC/DC'],
     ['estar ilusionado/a (con nada)', 'estar ilusionado/-a (con algo)'],
+    ['to stack sb/sth', '(to) stalk sb./sth.'],
+    ['to stalk sb', '(to) stalk sb./sth.'],
+    ['To stalk sb/sth', '(to) stalk sb./sth.'],
+    ['etw/jdm verfolgen', 'jdn./etw. verfolgen; jdm./etw. nachstellen'],
   ])('sends %s for %s to the judge', (submitted, expected) => {
     expect(isDeterministicMatch(submitted, [answer(expected)])).toBe(false);
   });

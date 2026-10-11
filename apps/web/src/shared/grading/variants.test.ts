@@ -158,6 +158,25 @@ describe('answerVariants punctuation and separators', () => {
     });
   });
 
+  it('reads placeholders joined by a slash as one slot', () => {
+    for (const notation of [
+      '(to) stalk sb./sth.',
+      '(to) stalk sth/sb',
+      '(to) stalk sb. / sth.',
+    ]) {
+      expect(answerVariants(notation)).toEqual({
+        _tag: 'Expanded',
+        readings: ['to stalk sb/sth', 'stalk sb/sth'],
+      });
+    }
+    expect(
+      answerVariants('jdn./etw. verfolgen; jdm./etw. nachstellen'),
+    ).toEqual({
+      _tag: 'Expanded',
+      readings: ['etw/jdn verfolgen', 'etw/jdm nachstellen'],
+    });
+  });
+
   it('ignores commas within a reading', () => {
     expect(answerVariants('hello, world')).toEqual({
       _tag: 'Expanded',
