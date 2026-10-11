@@ -1,10 +1,9 @@
 import { maximumUnitNameLength } from '@wordhold/ai/extraction/schema';
-import type { KeyboardEventHandler } from 'react';
-import { useCallback, useId } from 'react';
+import { type ReactNode, useId } from 'react';
 import { countNoun } from '../../../shared/format/count';
-import { fieldCompactClass } from '../../../shared/ui/field-styles';
 import type { UnitSelectionData } from '../schemas/import-payload';
 import type { Unit } from '../services/repository';
+import { FilingInput, FilingSelect } from './filing-select';
 
 const noUnitValue = 'none';
 const newUnitValue = 'new';
@@ -26,75 +25,68 @@ const valueFromSelection = (selection: UnitSelectionData): string => {
 };
 
 type UnitPickerProps = {
-  readonly focusOnMount?: boolean;
   readonly units: ReadonlyArray<Unit>;
   readonly selection: UnitSelectionData;
   readonly label: string;
+  // Shown beside the label, outside the select's accessible name.
+  readonly detail?: ReactNode;
   readonly required: boolean;
   readonly disabled: boolean;
-  readonly onNewUnitNameKeyDown?: KeyboardEventHandler<HTMLInputElement>;
   readonly onChange: (selection: UnitSelectionData) => void;
 };
 
+// The book's units come first, in book order: most pages continue one.
 export const UnitPicker = ({
-  focusOnMount = false,
   units,
   selection,
   label,
+  detail,
   required,
   disabled,
-  onNewUnitNameKeyDown,
   onChange,
 }: UnitPickerProps) => {
   const selectId = useId();
   const nameId = useId();
-  const focusSelectOnMount = useCallback(
-    (select: HTMLSelectElement | null) => {
-      if (focusOnMount) {
-        select?.focus();
-      }
-    },
-    [focusOnMount],
-  );
 
   return (
-    <div className="flex flex-col gap-2">
-      <label className="flex flex-col gap-1 text-sm" htmlFor={selectId}>
-        {label}
-        <select
-          className={fieldCompactClass}
-          disabled={disabled}
-          id={selectId}
-          onChange={(event) => onChange(selectionFromValue(event.target.value))}
-          ref={focusSelectOnMount}
-          value={valueFromSelection(selection)}
-        >
-          <option value={noUnitValue}>Keine Einheit</option>
-          <option value={newUnitValue}>Neue Einheit …</option>
-          {units.map((unit) => (
-            <option key={unit.id} value={unit.id}>
-              {unit.name} ({countNoun(unit.entryCount, 'Vokabel', 'Vokabeln')})
-            </option>
-          ))}
-        </select>
-      </label>
+    <div className="flex min-w-0 flex-col gap-1">
+      <div className="flex items-baseline gap-2">
+        <label className="eyebrow" htmlFor={selectId}>
+          {label}
+        </label>
+        {detail}
+      </div>
+      <FilingSelect
+        disabled={disabled}
+        id={selectId}
+        onChange={(event) => onChange(selectionFromValue(event.target.value))}
+        value={valueFromSelection(selection)}
+      >
+        {units.map((unit) => (
+          <option key={unit.id} value={unit.id}>
+            {unit.name} ({countNoun(unit.entryCount, 'Vokabel', 'Vokabeln')})
+          </option>
+        ))}
+        <option value={newUnitValue}>Neue Einheit …</option>
+        <option value={noUnitValue}>Keine Einheit</option>
+      </FilingSelect>
       {selection.kind === 'new' ? (
-        <label className="flex flex-col gap-1 text-sm" htmlFor={nameId}>
-          Name der Einheit
-          <input
-            className={fieldCompactClass}
+        <div className="mt-2 flex flex-col gap-1">
+          <label className="eyebrow" htmlFor={nameId}>
+            Name der Einheit
+          </label>
+          <FilingInput
             disabled={disabled}
             id={nameId}
             maxLength={maximumUnitNameLength}
             onChange={(event) =>
               onChange({ kind: 'new', name: event.target.value })
             }
-            onKeyDown={onNewUnitNameKeyDown}
             placeholder="z. B. Unité 3"
             required={required}
             value={selection.name}
           />
-        </label>
+        </div>
       ) : null}
     </div>
   );

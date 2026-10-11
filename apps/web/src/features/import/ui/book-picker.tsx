@@ -1,12 +1,12 @@
 import { useId } from 'react';
-import { fieldCompactClass } from '../../../shared/ui/field-styles';
 import { maximumBookNameLength } from '../../../shared/vocabulary/book-name';
 import type { BookSelectionData } from '../schemas/import-payload';
 import type { Book } from '../services/repository';
+import { FilingInput, FilingSelect } from './filing-select';
 
 const newBookValue = 'new';
 
-type BookAssignmentProps = {
+type BookPickerProps = {
   readonly books: ReadonlyArray<Book>;
   readonly selection: BookSelectionData;
   readonly disabled: boolean;
@@ -16,27 +16,23 @@ type BookAssignmentProps = {
 // The book is chosen once per page. Vocabulary pages rarely print the book's
 // title, so it is preselected from the last import rather than read from the
 // photo, and a new book only needs its name.
-export const BookAssignment = ({
+export const BookPicker = ({
   books,
   selection,
   disabled,
   onChange,
-}: BookAssignmentProps) => {
+}: BookPickerProps) => {
   const selectId = useId();
   const nameId = useId();
+  const hintId = useId();
   return (
-    <fieldset className="flex flex-col gap-3 border border-border bg-card p-3">
-      <legend className="px-1 font-display text-xl">Buch</legend>
-      <p className="text-muted-foreground text-sm">
-        {books.length === 0
-          ? 'Aus welchem Buch stammt diese Seite? Weitere Bücher kannst du später hinzufügen.'
-          : 'Gilt für die ganze Seite. Die Einheiten unten gehören zu diesem Buch.'}
-      </p>
+    <div className="flex min-w-0 flex-col gap-1">
       {books.length === 0 ? null : (
-        <label className="flex flex-col gap-1 text-sm" htmlFor={selectId}>
-          Buch dieser Seite
-          <select
-            className={fieldCompactClass}
+        <>
+          <label className="eyebrow" htmlFor={selectId}>
+            Buch
+          </label>
+          <FilingSelect
             disabled={disabled}
             id={selectId}
             onChange={(event) =>
@@ -56,14 +52,22 @@ export const BookAssignment = ({
               </option>
             ))}
             <option value={newBookValue}>Neues Buch …</option>
-          </select>
-        </label>
+          </FilingSelect>
+        </>
       )}
       {selection.kind === 'new' ? (
-        <label className="flex flex-col gap-1 text-sm" htmlFor={nameId}>
-          Name des Buchs
-          <input
-            className={fieldCompactClass}
+        <div
+          className={
+            books.length === 0
+              ? 'flex flex-col gap-1'
+              : 'mt-2 flex flex-col gap-1'
+          }
+        >
+          <label className="eyebrow" htmlFor={nameId}>
+            Name des Buchs
+          </label>
+          <FilingInput
+            aria-describedby={books.length === 0 ? hintId : undefined}
             disabled={disabled}
             id={nameId}
             maxLength={maximumBookNameLength}
@@ -74,8 +78,14 @@ export const BookAssignment = ({
             required={true}
             value={selection.name}
           />
-        </label>
+          {books.length === 0 ? (
+            <p className="text-muted-foreground text-sm" id={hintId}>
+              Aus welchem Buch stammt diese Seite? Weitere Bücher kannst du
+              später hinzufügen.
+            </p>
+          ) : null}
+        </div>
       ) : null}
-    </fieldset>
+    </div>
   );
 };

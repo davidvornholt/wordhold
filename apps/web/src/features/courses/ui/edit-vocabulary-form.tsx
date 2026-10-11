@@ -152,7 +152,6 @@ export const EditVocabularyForm = ({
         }
         reviewStep="Speichern"
         translate={translateExample}
-        variant="form"
       />
       <RelatedWordFields
         disabled={busy}

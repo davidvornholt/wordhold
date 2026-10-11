@@ -11,9 +11,14 @@ test('VerifyForm flags stored duplicates and skips them by default', async ({
   page,
 }) => {
   await page.goto('/?state=verification-duplicates');
-  await expect(page.getByText('Schon in Green Line 3 · Unit 2')).toBeVisible();
-  await expect(page.getByText('Schon in Green Line 2 · Unit 2')).toBeVisible();
-  const journeyRow = page.locator('form > ul > li').first();
+  await expect(page.getByText('Schon in Green Line 3 · Unit 2.')).toBeVisible();
+  await expect(page.getByText('Schon in Green Line 2 · Unit 2.')).toBeVisible();
+  await expect(
+    page.getByRole('button', {
+      name: '2 schon vorhanden – zum nächsten springen',
+    }),
+  ).toBeVisible();
+  const journeyRow = page.locator('form li[data-row-id]').first();
   await expect(
     journeyRow.getByText('Wird nicht erneut importiert'),
   ).toBeVisible();
@@ -44,7 +49,7 @@ test('VerifyForm imports a variant only after the exception is confirmed', async
   page,
 }) => {
   await page.goto('/?state=verification-duplicates');
-  const luggageRow = page.locator('form > ul > li').nth(1);
+  const luggageRow = page.locator('form li[data-row-id]').nth(1);
   await luggageRow.getByRole('checkbox', { name: exceptionCheckbox }).check();
   await expect(
     page.getByRole('button', { name: '11 Einträge importieren' }),
@@ -59,7 +64,7 @@ test('VerifyForm turns an exact duplicate into an exception when the example cha
   page,
 }) => {
   await page.goto('/?state=verification-duplicates');
-  const journeyRow = page.locator('form > ul > li').first();
+  const journeyRow = page.locator('form li[data-row-id]').first();
   await expect(
     journeyRow.getByRole('checkbox', { name: exceptionCheckbox }),
   ).toHaveCount(0);
@@ -76,7 +81,7 @@ test('VerifyForm voids a confirmed exception when the text is edited again', asy
   page,
 }) => {
   await page.goto('/?state=verification-duplicates');
-  const luggageRow = page.locator('form > ul > li').nth(1);
+  const luggageRow = page.locator('form li[data-row-id]').nth(1);
   await luggageRow.getByRole('checkbox', { name: exceptionCheckbox }).check();
   await luggageRow.getByLabel('Englisch').fill('luggage!');
   await expect(
@@ -89,7 +94,7 @@ test('VerifyForm voids a confirmed exception when the text is edited again', asy
 
 test('VerifyForm flags a word the page lists twice', async ({ page }) => {
   await page.goto('/?state=verification');
-  const lastRow = page.locator('form > ul > li').last();
+  const lastRow = page.locator('form li[data-row-id]').last();
   await lastRow.getByLabel('Englisch').fill('journey');
   await lastRow
     .getByLabel('Beispielsatz', { exact: true })

@@ -12,17 +12,11 @@ export const BatchReviewProgress = ({
 }: BatchReviewProgressProps) => {
   const headingId = useId();
   return (
-    <section
-      aria-labelledby={headingId}
-      className="flex flex-col gap-3 border border-border bg-card p-4"
-    >
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <div>
-          <p className="eyebrow">Stapelprüfung</p>
-          <h2 className="font-display text-xl" id={headingId}>
-            Seite {position} von {total}
-          </h2>
-        </div>
+    <section aria-labelledby={headingId} className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+        <h2 className="font-display text-xl" id={headingId}>
+          Seite {position} von {total}
+        </h2>
         <span className="text-muted-foreground text-sm">
           {position - 1} von {total} geprüft
         </span>
@@ -32,10 +26,6 @@ export const BatchReviewProgress = ({
         total={total}
         value={position - 1}
       />
-      <p className="text-muted-foreground text-sm">
-        Prüfe die Seiten in ihrer Reihenfolge. Nach dem Import öffnet Wordhold
-        die nächste Seite.
-      </p>
     </section>
   );
 };
