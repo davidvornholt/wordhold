@@ -1,6 +1,7 @@
-import { useRouter } from '@tanstack/react-router';
+import { useMatchRoute, useRouter } from '@tanstack/react-router';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import type { ReactNode } from 'react';
+import { prepareVocabularyExamples } from '../../../features/courses/services/server-fns';
 import type { LearnSelectionPass } from '../../../features/learning/schemas/learning-models';
 import { introduceCard } from '../../../features/learning/services/server-fns';
 import { LearnPass } from '../../../features/learning/ui/learn-pass';
@@ -16,8 +17,9 @@ import { countNoun } from '../../../shared/format/count';
 import { itemsInNextSection } from '../../../shared/session/section-policy';
 import type { VocabularySelectionData } from '../../../shared/session/vocabulary-selection';
 import { ActionLink } from '../../../shared/ui/action-link';
-import { Button } from '../../../shared/ui/button';
+import type { ActionVariant } from '../../../shared/ui/action-styles';
 import { cardClass } from '../../../shared/ui/surface-styles';
+import { ContinueLearningButton } from './-learn-completion-controls';
 
 type StudyLearningProps = {
   readonly courseId: string;
@@ -38,6 +40,48 @@ export const selectionSearch = (
   mode,
   unit: 'unitId' in selection ? selection.unitId : undefined,
 });
+
+type StudyLearnLinkProps = {
+  readonly courseId: string;
+  readonly search: ReturnType<typeof selectionSearch>;
+  readonly variant?: ActionVariant;
+  readonly className?: string;
+  readonly onClick?: () => void;
+  readonly children: ReactNode;
+};
+
+// Like PlaceLearnLink, it says so while its own learning pass is loading.
+const StudyLearnLink = ({
+  courseId,
+  search,
+  variant,
+  className,
+  onClick,
+  children,
+}: StudyLearnLinkProps) => {
+  const matchRoute = useMatchRoute();
+  const preparing =
+    matchRoute({
+      to: '/courses/$courseId/study',
+      params: { courseId },
+      search,
+      pending: true,
+    }) !== false;
+  return (
+    <ActionLink
+      aria-busy={preparing}
+      className={className}
+      onClick={onClick}
+      params={{ courseId }}
+      search={search}
+      to="/courses/$courseId/study"
+      variant={variant}
+    >
+      {/* biome-ignore lint/suspicious/noLeakedRender: children is the link's own label, shown whenever it is not loading; nothing is rendered by accident. */}
+      {preparing ? 'Wird vorbereitet …' : children}
+    </ActionLink>
+  );
+};
 
 export const StudyLearning = ({
   courseId,
@@ -83,16 +127,15 @@ export const StudyLearning = ({
             return null;
           }
           return (
-            <ActionLink
+            <StudyLearnLink
               className="w-fit"
+              courseId={courseId}
               onClick={rememberDirection}
-              params={{ courseId }}
               search={selectionSearch(selection, 'learn', option.value)}
-              to="/courses/$courseId/study"
             >
               {countNoun(option.cards, nouns.singular, nouns.plural)}{' '}
               kennenlernen
-            </ActionLink>
+            </StudyLearnLink>
           );
         }}
       />
@@ -123,9 +166,8 @@ export const StudyLearning = ({
               Jetzt üben · {directionLabel(direction, subject)}
             </ActionLink>
             {currentRemaining === 0 ? null : (
-              <Button
-                onClick={() => router.invalidate({ sync: true })}
-                variant="outline"
+              <ContinueLearningButton
+                onContinue={() => router.invalidate({ sync: true })}
               >
                 Weitere{' '}
                 {countNoun(
@@ -134,13 +176,12 @@ export const StudyLearning = ({
                   nouns.plural,
                 )}{' '}
                 kennenlernen · {directionLabel(direction, subject)}
-              </Button>
+              </ContinueLearningButton>
             )}
             {nextDirection === undefined ? null : (
-              <ActionLink
-                params={{ courseId }}
+              <StudyLearnLink
+                courseId={courseId}
                 search={selectionSearch(selection, 'learn', nextDirection)}
-                to="/courses/$courseId/study"
                 variant="outline"
               >
                 {countNoun(
@@ -149,7 +190,7 @@ export const StudyLearning = ({
                   nouns.plural,
                 )}{' '}
                 kennenlernen · {directionLabel(nextDirection, subject)}
-              </ActionLink>
+              </StudyLearnLink>
             )}
           </div>
         }
@@ -161,6 +202,7 @@ export const StudyLearning = ({
             data: { cardId: item.cardId, courseId },
           });
         }}
+        prepareExamples={prepareVocabularyExamples}
         subject={subject}
       />
     );

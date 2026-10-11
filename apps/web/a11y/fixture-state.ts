@@ -42,6 +42,7 @@ export const fixtureStates = [
   'word-relations',
   'learn',
   'learn-audio',
+  'learn-deferred',
   'learn-start',
   'learn-native',
   'learn-retry',

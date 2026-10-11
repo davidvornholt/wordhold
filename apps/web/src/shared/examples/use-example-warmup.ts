@@ -3,7 +3,7 @@ import type {
   PreparedEntryExample,
   PreparedExampleSentence,
   PrepareExamples,
-} from '../../../shared/examples/example-model';
+} from './example-model';
 
 type WarmupItem = {
   readonly entryId: string;
@@ -24,10 +24,11 @@ const prepareEntry = (
     .catch(() => null);
 
 // Example sentences and their audio can take seconds to produce the first
-// time. The sitting starts without waiting for them and prepares the missing
-// ones one entry at a time in queue order, so the card being asked is always
-// the next to be ready. A card judged before its example arrived waits only
-// for its own entry, joining the request already in flight when there is one.
+// time. A practice sitting or learning pass starts without waiting for them
+// and prepares the missing ones one entry at a time in queue order, so the
+// card on screen is always the next to be ready. A card judged before its
+// example arrived waits only for its own entry, joining the request already
+// in flight when there is one.
 export const useExampleWarmup = <T extends WarmupItem>(
   items: ReadonlyArray<T>,
   prepareExamples: PrepareExamples,
