@@ -54,7 +54,7 @@ const RelationField = ({
   } else if (draft.suggested[kind]) {
     note =
       text.trim() === ''
-        ? 'Kein passendes Wort vorgeschlagen.'
+        ? 'Nichts vorgeschlagen.'
         : 'Vorschlag – bitte prüfen.';
   }
   return (
@@ -300,10 +300,11 @@ export const WordRelationReview = ({
   return (
     <div className="flex flex-col gap-5">
       <p className="text-muted-foreground text-sm">
-        Trage zu jedem Wort Synonyme und Gegenteile auf{' '}
-        {germanLabels[targetLanguage]} ein, mit Komma getrennt. Was auf der
-        fotografierten Seite stand, ist schon eingetragen. Vorschläge werden
-        erst gespeichert, wenn du speicherst.
+        Trage Synonyme und Gegenteile auf {germanLabels[targetLanguage]} ein,
+        mit Komma getrennt. Tests fragen nur bei manchen Wörtern danach, also
+        bleiben bei vielen Wörtern beide Felder leer. Was auf der fotografierten
+        Seite stand, ist schon eingetragen. Vorschläge werden erst gespeichert,
+        wenn du speicherst.
       </p>
       {progress === null && open.length === 0 && failed === 0 ? null : (
         <div className="flex flex-wrap items-center gap-3 text-sm">
@@ -313,8 +314,8 @@ export const WordRelationReview = ({
           {progress !== null || open.length === 0 ? null : (
             <>
               <span className="text-muted-foreground">
-                Bei {countNoun(open.length, 'Wort', 'Wörtern')} fehlen Synonyme
-                oder Gegenteile.
+                {countNoun(open.length, 'Wort', 'Wörter')}{' '}
+                {open.length === 1 ? 'ist' : 'sind'} noch nicht geprüft.
               </span>
               <Button
                 disabled={saving}
@@ -325,7 +326,7 @@ export const WordRelationReview = ({
                 }}
                 variant="outline"
               >
-                Fehlende vorschlagen
+                Vorschläge erstellen
               </Button>
             </>
           )}

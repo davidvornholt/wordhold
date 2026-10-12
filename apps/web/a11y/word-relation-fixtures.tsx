@@ -19,7 +19,8 @@ const relationWord = (
 });
 
 // Nothing settled for the first word; the page printed a synonym for the
-// second; the third is settled with none.
+// second; the third is settled with none; the fourth is open, but a test
+// would not ask for its synonyms or opposites.
 const initialWords = [
   relationWord(1, 'hostile', 'feindselig', { synonyms: null, antonyms: null }),
   relationWord(2, 'brave', 'mutig', {
@@ -27,6 +28,7 @@ const initialWords = [
     antonyms: null,
   }),
   relationWord(3, 'holiday', 'die Ferien', { synonyms: [], antonyms: [] }),
+  relationWord(4, 'table', 'der Tisch', { synonyms: null, antonyms: null }),
 ];
 
 const suggestions: Readonly<
@@ -34,6 +36,7 @@ const suggestions: Readonly<
 > = {
   hostile: { synonyms: ['unfriendly', 'aggressive'], antonyms: ['friendly'] },
   brave: { synonyms: ['bold'], antonyms: ['cowardly'] },
+  table: { synonyms: [], antonyms: [] },
 };
 
 export const WordRelationFixture = () => {
