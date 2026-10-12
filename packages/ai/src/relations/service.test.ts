@@ -55,6 +55,12 @@ describe('relationPrompt', () => {
       ]),
     );
   });
+
+  it('leaves most words without suggestions', () => {
+    expect(relationPrompt(request)).toContain(
+      'Leave both lists empty for most items',
+    );
+  });
 });
 
 describe('RelationSuggestions', () => {

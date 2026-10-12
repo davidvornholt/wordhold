@@ -9,12 +9,12 @@ test('suggested synonyms and antonyms fill open lists and are saved after review
 }) => {
   await page.goto('/?state=word-relations');
   await expect(
-    page.getByText('Bei 2 Wörtern fehlen Synonyme oder Gegenteile.'),
+    page.getByText('3 Wörter sind noch nicht geprüft.'),
   ).toBeVisible();
   const save = page.getByRole('button', { name: 'Speichern' });
   await expect(save).toBeDisabled();
 
-  await page.getByRole('button', { name: 'Fehlende vorschlagen' }).click();
+  await page.getByRole('button', { name: 'Vorschläge erstellen' }).click();
   const hostileSynonyms = page.getByLabel('Synonyme zu hostile');
   await expect(hostileSynonyms).toHaveValue('unfriendly, aggressive');
   await expect(hostileSynonyms).toHaveAccessibleDescription(
@@ -25,7 +25,13 @@ test('suggested synonyms and antonyms fill open lists and are saved after review
   await expect(page.getByLabel('Synonyme zu brave')).toHaveValue('courageous');
   await expect(page.getByLabel('Gegenteile zu brave')).toHaveValue('cowardly');
   await expect(page.getByLabel('Synonyme zu holiday')).toHaveValue('');
-  await expect(page.getByText('2 Wörter geändert')).toBeVisible();
+  // Most words get no suggestion; reviewing that settles their lists too.
+  const tableSynonyms = page.getByLabel('Synonyme zu table');
+  await expect(tableSynonyms).toHaveValue('');
+  await expect(tableSynonyms).toHaveAccessibleDescription(
+    'Nichts vorgeschlagen.',
+  );
+  await expect(page.getByText('3 Wörter geändert')).toBeVisible();
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
 
   const hostileAntonyms = page.getByLabel('Gegenteile zu hostile');
@@ -46,7 +52,7 @@ test('suggested synonyms and antonyms fill open lists and are saved after review
     'Vorschlag – bitte prüfen.',
   );
   await expect(
-    page.getByRole('button', { name: 'Fehlende vorschlagen' }),
+    page.getByRole('button', { name: 'Vorschläge erstellen' }),
   ).toHaveCount(0);
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
 });
