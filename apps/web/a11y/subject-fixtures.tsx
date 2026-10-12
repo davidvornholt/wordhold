@@ -3,6 +3,7 @@ import type { VocabularyEntry } from '../src/features/courses/schemas/course-uni
 import { EditTermForm } from '../src/features/courses/ui/edit-term-form';
 import type { CourseEntryActions } from '../src/features/courses/ui/entry-actions';
 import { NewTermForm } from '../src/features/courses/ui/new-term-form';
+import type { StudyAction } from '../src/features/courses/ui/study-action';
 import { SubjectOverview } from '../src/features/courses/ui/subject-overview';
 import { SubjectSettings } from '../src/features/courses/ui/subject-settings';
 import type { TermDraft } from '../src/features/courses/ui/term-definition-fields';
@@ -11,6 +12,7 @@ import { Button } from '../src/shared/ui/button';
 import { PageLayout } from '../src/shared/ui/page-layout';
 import { termsSubject } from './course-fixture-data';
 import { fixtureBackControl, fixtureControl } from './fixture-controls';
+import { changeLearning } from './fixture-learning';
 import { navigateToFixture } from './fixture-state';
 import {
   fixtureDefinition,
@@ -67,7 +69,22 @@ const useFixtureTerms = (initial: ReadonlyArray<VocabularyEntry>) => {
   };
   const removeEntry = (entryId: string) =>
     setEntries((current) => current.filter((entry) => entry.id !== entryId));
-  return { entries, createEntry, keepKeyPoints, updateEntry, removeEntry };
+  const changeEntryLearning = (
+    cardIds: ReadonlyArray<string>,
+    change: 'skip' | 'return',
+  ) => {
+    const result = changeLearning(entries, cardIds, change);
+    setEntries(result.entries);
+    return Promise.resolve(result.changed);
+  };
+  return {
+    entries,
+    createEntry,
+    keepKeyPoints,
+    updateEntry,
+    removeEntry,
+    changeEntryLearning,
+  };
 };
 
 const FixtureTermKeyPoints = ({
@@ -89,16 +106,16 @@ const FixtureTermKeyPoints = ({
   />
 );
 
-const termsStudyAction = (
-  _entryIds: ReadonlyArray<string>,
-  intent: 'learn' | 'practice',
-) => (
+const termsStudyAction = (action: StudyAction) => (
   <Button
     onClick={() =>
-      navigateToFixture(intent === 'learn' ? 'terms-learn' : 'terms-practice')
+      navigateToFixture(
+        action.intent === 'learn' ? 'terms-learn' : 'terms-practice',
+      )
     }
+    variant={action.primary ? 'primary' : 'outline'}
   >
-    Auswahl {intent === 'learn' ? 'kennenlernen' : 'üben'}
+    Auswahl {action.intent === 'learn' ? 'kennenlernen' : 'üben'}
   </Button>
 );
 
@@ -109,8 +126,14 @@ export const SubjectCourseFixture = ({
 }: {
   readonly empty?: boolean;
 }) => {
-  const { entries, createEntry, keepKeyPoints, updateEntry, removeEntry } =
-    useFixtureTerms(empty ? [] : subjectEntries);
+  const {
+    entries,
+    createEntry,
+    keepKeyPoints,
+    updateEntry,
+    removeEntry,
+    changeEntryLearning,
+  } = useFixtureTerms(empty ? [] : subjectEntries);
   // The list refreshes after the dialog has closed, as the page's loader
   // does.
   const entryActions: CourseEntryActions = {
@@ -130,6 +153,8 @@ export const SubjectCourseFixture = ({
       globalThis.setTimeout(() => removeEntry(entry.id));
       return Promise.resolve();
     },
+    skipLearning: (cardIds) => changeEntryLearning(cardIds, 'skip'),
+    returnToLearning: (cardIds) => changeEntryLearning(cardIds, 'return'),
   };
   return (
     <PageLayout

@@ -19,9 +19,10 @@ import type {
 } from '../schemas/session-request';
 
 // Every query below requires `introduced_at`: a card is only asked once the
-// entry behind it has been through the learning pass. Asking about an entry the
-// learner has never seen produces a failure that says nothing about memory,
-// and FSRS would schedule the entry on that failure.
+// entry behind it has been through the learning pass, or the learner skipped
+// it. Asking about an entry the learner has never seen produces a failure that
+// says nothing about memory, and FSRS would schedule the entry on that
+// failure. A hand-picked selection is no exception.
 //
 // They all require the direction to be one the course still practises
 // (`practisedDirections`) as well as the one picked for this sitting. The
@@ -170,6 +171,7 @@ export class PracticeSessionStore extends Context.Service<
           join courses co on co.id = e.course_id
           where e.course_id = ${courseId}
             and ${selectionClause}
+            and c.introduced_at is not null
             and (${includeSwitchedOff}::boolean
               or c.direction = any(${practisedDirections(sql)}))
             and (${only}::answer_direction is null

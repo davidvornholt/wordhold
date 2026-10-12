@@ -13,8 +13,12 @@ test('the vocabulary library exposes per-direction dates and cross-unit selectio
   await open.click();
   const memory = page.getByRole('dialog', { name: 'memory' });
   await expect(memory.getByText('die Erinnerung')).toBeVisible();
-  await expect(memory.getByText('Deutsch → Englisch')).toBeVisible();
-  await expect(memory.getByText('Englisch → Deutsch')).toBeVisible();
+  await expect(
+    memory.getByText('Deutsch → Englisch', { exact: true }),
+  ).toBeVisible();
+  await expect(
+    memory.getByText('Englisch → Deutsch', { exact: true }),
+  ).toBeVisible();
   await expect(memory.getByText('2× nicht gewusst')).toBeVisible();
   await expect(memory.getByText('Noch nicht kennengelernt')).toBeVisible();
   await expect(memory.getByText('That trip is a happy memory.')).toBeVisible();

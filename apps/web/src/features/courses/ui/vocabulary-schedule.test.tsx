@@ -54,6 +54,7 @@ describe('vocabulary schedule', () => {
           enabledDirections={['to_target']}
           entry={entry}
           now={now}
+          renderCardAction={() => null}
           subject={{ kind: 'language', targetLanguage: 'en' }}
         />
       </dl>,

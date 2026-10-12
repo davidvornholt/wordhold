@@ -71,3 +71,52 @@ export const cardStatus = (card: VocabularyCard, now: Date): string => {
     ? formatLearningDate(card.dueAt, now)
     : `Nächste Wiederholung ${formatLearningDateInline(card.dueAt, now)}`;
 };
+
+// What can change about a direction's learning pass: a direction still to be
+// learned can skip it, and one not yet practised can go back to it. Once a
+// direction has been answered, its schedule decides when it comes back.
+export const learningChangeFor = (
+  card: VocabularyCard,
+): 'skip' | 'return' | null => {
+  if (card.introducedAt === null) {
+    return 'skip';
+  }
+  return card.state === 'new' ? 'return' : null;
+};
+
+// The cards of these entries that still have this direction to learn.
+export const openLearningCardIds = (
+  entries: ReadonlyArray<VocabularyEntry>,
+  direction: AnswerDirection,
+): ReadonlyArray<string> =>
+  entries.flatMap((entry) =>
+    entry.cards
+      .filter(
+        (card) => card.direction === direction && card.introducedAt === null,
+      )
+      .map((card) => card.cardId),
+  );
+
+// Whether any of these entries has a direction the course practises left to
+// learn.
+export const hasOpenLearning = (
+  entries: ReadonlyArray<VocabularyEntry>,
+  enabledDirections: ReadonlyArray<AnswerDirection>,
+): boolean =>
+  enabledDirections.some(
+    (direction) => openLearningCardIds(entries, direction).length > 0,
+  );
+
+// Whether any of these entries has a direction the course practises that
+// has been learned or skipped, and so can be practised.
+export const hasLearnedCards = (
+  entries: ReadonlyArray<VocabularyEntry>,
+  enabledDirections: ReadonlyArray<AnswerDirection>,
+): boolean =>
+  entries.some((entry) =>
+    entry.cards.some(
+      (card) =>
+        enabledDirections.includes(card.direction) &&
+        card.introducedAt !== null,
+    ),
+  );

@@ -76,6 +76,7 @@ const bareStates: ReadonlySet<FixtureState> = new Set<FixtureState>([
   'learn-done',
   'learn-section-done',
   'study-start',
+  'study-start-unlearned',
   'practice',
   'practice-start',
   'practice-start-partial',
@@ -349,6 +350,8 @@ const fixtureContent = (state: FixtureState) => {
       return <VocabularyFixture difficult={true} />;
     case 'study-start':
       return <StudyStartFixture />;
+    case 'study-start-unlearned':
+      return <StudyStartFixture unlearned={true} />;
     case 'course-settings-deferred':
       return <DeferredCourseSettingsFixture />;
     case 'practice':

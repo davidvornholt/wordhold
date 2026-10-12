@@ -11,6 +11,7 @@ import type {
 import type { NewVocabularyEntryDraft } from '../src/features/courses/ui/use-new-vocabulary-entry';
 import type { WordSide } from '../src/features/courses/ui/word-pair-fields';
 import { fixtureEntry } from './course-fixture-data';
+import { changeLearning } from './fixture-learning';
 
 const tripExample = 'Wir packten unsere Koffer für die Reise.';
 
@@ -91,5 +92,19 @@ export const useFixtureEntries = (initial: ReadonlyArray<VocabularyEntry>) => {
   };
   const removeEntry = (entryId: string) =>
     setEntries((current) => current.filter((entry) => entry.id !== entryId));
-  return { entries, createEntry, updateEntry, removeEntry };
+  const changeEntryLearning = (
+    cardIds: ReadonlyArray<string>,
+    change: 'skip' | 'return',
+  ) => {
+    const result = changeLearning(entries, cardIds, change);
+    setEntries(result.entries);
+    return Promise.resolve(result.changed);
+  };
+  return {
+    entries,
+    createEntry,
+    updateEntry,
+    removeEntry,
+    changeEntryLearning,
+  };
 };

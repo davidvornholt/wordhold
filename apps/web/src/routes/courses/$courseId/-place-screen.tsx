@@ -202,15 +202,19 @@ export const PlaceWords = ({
         </ActionLink>
       }
       place={place.unitId === null ? 'book' : 'unit'}
-      renderStudyAction={(entryIds, intent) => (
+      renderStudyAction={(action) => (
         <SelectionActions
+          action={action}
           courseId={courseId}
-          intent={intent}
-          search={
-            entryIds.length === entries.length
-              ? placeSearch(selection)
-              : { entries: entryIds.join(',') }
-          }
+          search={{
+            // The place stays the origin of a partial selection, so the
+            // screen it opens leads back to its page.
+            entries:
+              action.entryIds.length === entries.length
+                ? undefined
+                : action.entryIds.join(','),
+            ...placeSearch(selection),
+          }}
           sentences={course.kind === 'language'}
         />
       )}

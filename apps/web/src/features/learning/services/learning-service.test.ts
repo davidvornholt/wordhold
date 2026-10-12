@@ -15,6 +15,8 @@ const storeWith = (store: Partial<LearningStore['Service']>) =>
         loadPass: () => Effect.succeed(undefined),
         loadSelection: () => Effect.succeed({ directions: [], items: [] }),
         introduce: () => Effect.succeed(true),
+        skipLearning: (_courseId, cardIds) => Effect.succeed(cardIds),
+        returnToLearning: (_courseId, cardIds) => Effect.succeed(cardIds),
         ...store,
       }),
     ),
@@ -57,6 +59,29 @@ describe('LearningService', () => {
     expect(introduced).toHaveLength(1);
     expect(introduced[0]?.cardId).toBe(cardId);
     expect(introduced[0]?.at.getTime()).toBe(0);
+  });
+
+  it('stamps skipped cards with the current time', async () => {
+    const skipped: Array<{ cardIds: ReadonlyArray<string>; at: Date }> = [];
+    const changed = await Effect.runPromise(
+      Effect.flatMap(LearningService, (service) =>
+        service.skipLearning(courseId, [cardId]),
+      ).pipe(
+        Effect.provide(
+          storeWith({
+            skipLearning: (_courseId, cardIds, at) =>
+              Effect.sync(() => {
+                skipped.push({ cardIds, at });
+                return cardIds;
+              }),
+          }),
+        ),
+        Effect.provide(TestClock.layer()),
+      ),
+    );
+
+    expect(changed).toEqual([cardId]);
+    expect(skipped).toEqual([{ cardIds: [cardId], at: new Date(0) }]);
   });
 
   it('reports a stale entry instead of accepting a mismatched entry', async () => {

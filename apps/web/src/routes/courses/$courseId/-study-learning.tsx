@@ -1,11 +1,10 @@
-import { useMatchRoute, useRouter } from '@tanstack/react-router';
+import { useMatchRoute, useRouter, useSearch } from '@tanstack/react-router';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import type { ReactNode } from 'react';
 import { prepareVocabularyExamples } from '../../../features/courses/services/server-fns';
 import type { LearnSelectionPass } from '../../../features/learning/schemas/learning-models';
 import { introduceCard } from '../../../features/learning/services/server-fns';
 import { LearnPass } from '../../../features/learning/ui/learn-pass';
-import type { SessionDirection } from '../../../features/practice/schemas/session-request';
 import { directionOptions } from '../../../features/practice/services/session-options';
 import { SessionStart } from '../../../features/practice/ui/session-start';
 import {
@@ -15,50 +14,42 @@ import {
 } from '../../../shared/directions';
 import { countNoun } from '../../../shared/format/count';
 import { itemsInNextSection } from '../../../shared/session/section-policy';
-import type { VocabularySelectionData } from '../../../shared/session/vocabulary-selection';
 import { ActionLink } from '../../../shared/ui/action-link';
 import type { ActionVariant } from '../../../shared/ui/action-styles';
 import { cardClass } from '../../../shared/ui/surface-styles';
 import { ContinueLearningButton } from './-learn-completion-controls';
+import { studySearch } from './-study-link';
 
 type StudyLearningProps = {
   readonly courseId: string;
   readonly direction: AnswerDirection | undefined;
   readonly pass: LearnSelectionPass;
-  readonly selection: VocabularySelectionData;
   readonly subject: CourseSubject;
 };
 
-export const selectionSearch = (
-  selection: VocabularySelectionData,
-  mode: 'learn' | 'practice',
-  direction?: SessionDirection,
-) => ({
-  direction,
-  book: 'bookId' in selection ? selection.bookId : undefined,
-  entries: 'entryIds' in selection ? selection.entryIds.join(',') : undefined,
-  mode,
-  unit: 'unitId' in selection ? selection.unitId : undefined,
-});
-
 type StudyLearnLinkProps = {
   readonly courseId: string;
-  readonly search: ReturnType<typeof selectionSearch>;
+  readonly direction: AnswerDirection;
   readonly variant?: ActionVariant;
   readonly className?: string;
   readonly onClick?: () => void;
   readonly children: ReactNode;
 };
 
-// Like PlaceLearnLink, it says so while its own learning pass is loading.
+// Learns the same selection in a direction, keeping where it came from. Like
+// PlaceLearnLink, it says so while its own learning pass is loading.
 const StudyLearnLink = ({
   courseId,
-  search,
+  direction,
   variant,
   className,
   onClick,
   children,
 }: StudyLearnLinkProps) => {
+  const search = studySearch(
+    'learn',
+    direction,
+  )(useSearch({ from: '/courses/$courseId/study' }));
   const matchRoute = useMatchRoute();
   const preparing =
     matchRoute({
@@ -87,7 +78,6 @@ export const StudyLearning = ({
   courseId,
   direction,
   pass,
-  selection,
   subject,
 }: StudyLearningProps) => {
   const router = useRouter();
@@ -131,7 +121,7 @@ export const StudyLearning = ({
               className="w-fit"
               courseId={courseId}
               onClick={rememberDirection}
-              search={selectionSearch(selection, 'learn', option.value)}
+              direction={option.value}
             >
               {countNoun(option.cards, nouns.singular, nouns.plural)}{' '}
               kennenlernen
@@ -146,7 +136,8 @@ export const StudyLearning = ({
         <p>Diese Auswahl ist bereits kennengelernt.</p>
         <ActionLink
           params={{ courseId }}
-          search={selectionSearch(selection, 'practice')}
+          from="/courses/$courseId/study"
+          search={studySearch('practice')}
           to="/courses/$courseId/study"
         >
           Auswahl üben
@@ -160,7 +151,8 @@ export const StudyLearning = ({
           <div className="flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap">
             <ActionLink
               params={{ courseId }}
-              search={selectionSearch(selection, 'practice', direction)}
+              from="/courses/$courseId/study"
+              search={studySearch('practice', direction)}
               to="/courses/$courseId/study"
             >
               Jetzt üben · {directionLabel(direction, subject)}
@@ -181,7 +173,7 @@ export const StudyLearning = ({
             {nextDirection === undefined ? null : (
               <StudyLearnLink
                 courseId={courseId}
-                search={selectionSearch(selection, 'learn', nextDirection)}
+                direction={nextDirection}
                 variant="outline"
               >
                 {countNoun(

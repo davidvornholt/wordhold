@@ -11,6 +11,7 @@ import { Dialog } from '../../../shared/ui/dialog';
 import type { VocabularyEntry } from '../schemas/course-units';
 import type { VocabularyFilter } from '../schemas/vocabulary-search';
 import type { CourseEntryActions } from './entry-actions';
+import type { StudyAction } from './study-action';
 import { VocabularyLibrary } from './vocabulary-library';
 
 type SubjectOverviewProps = {
@@ -24,10 +25,7 @@ type SubjectOverviewProps = {
   // The form for a term or text, saving into this subject or collection.
   readonly entryForm: ReactNode;
   readonly settingsAction: ReactNode;
-  readonly renderStudyAction: (
-    entryIds: ReadonlyArray<string>,
-    intent: 'learn' | 'practice',
-  ) => ReactNode;
+  readonly renderStudyAction: (action: StudyAction) => ReactNode;
   readonly entryActions: CourseEntryActions;
 };
 

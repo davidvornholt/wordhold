@@ -39,6 +39,15 @@ export class LearningService extends Context.Service<
       undefined,
       LearningDatabaseError | LearningCardNotFoundError
     >;
+    // Each resolves to the cards it changed.
+    readonly skipLearning: (
+      courseId: string,
+      cardIds: ReadonlyArray<string>,
+    ) => Effect.Effect<ReadonlyArray<string>, LearningDatabaseError>;
+    readonly returnToLearning: (
+      courseId: string,
+      cardIds: ReadonlyArray<string>,
+    ) => Effect.Effect<ReadonlyArray<string>, LearningDatabaseError>;
   }
 >()('wordhold/LearningService') {
   static readonly layer = Layer.effect(
@@ -69,7 +78,24 @@ export class LearningService extends Context.Service<
             });
           }
         });
-      return LearningService.of({ getPass, getSelection, introduce });
+      // Skipping stamps the same moment as learning would: the card is then
+      // asked in the next practice, which shows whether it is really known.
+      const skipLearning = (courseId: string, cardIds: ReadonlyArray<string>) =>
+        Effect.gen(function* () {
+          const at = new Date(yield* Clock.currentTimeMillis);
+          return yield* store.skipLearning(courseId, cardIds, at);
+        });
+      const returnToLearning = (
+        courseId: string,
+        cardIds: ReadonlyArray<string>,
+      ) => store.returnToLearning(courseId, cardIds);
+      return LearningService.of({
+        getPass,
+        getSelection,
+        introduce,
+        skipLearning,
+        returnToLearning,
+      });
     }),
   );
 }

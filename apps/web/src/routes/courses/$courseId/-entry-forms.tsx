@@ -38,6 +38,10 @@ import {
 } from '../../../features/courses/ui/text-entry-forms';
 import { VocabularyExample } from '../../../features/courses/ui/vocabulary-example';
 import type { WordPlace } from '../../../features/courses/ui/word-places';
+import {
+  returnToLearning,
+  skipLearning,
+} from '../../../features/learning/services/server-fns';
 import type { CourseSubject } from '../../../shared/directions';
 import { germanLabels } from '../../../shared/languages';
 
@@ -309,7 +313,8 @@ const CourseEntryEditor = ({
 
 // What an entry's dialog offers: its details, correcting it, and deleting
 // it. A deleted entry's list refreshes without being awaited, so the dialog
-// closes and hands focus on while the entry's row is still there.
+// closes and hands focus on while the entry's row is still there. A skipped
+// or reopened learning pass is awaited, so the dialog shows the new state.
 export const useCourseEntryActions = (
   course: EntryCourse,
   entries: ReadonlyArray<VocabularyEntry>,
@@ -332,6 +337,20 @@ export const useCourseEntryActions = (
         data: { courseId: course.id, entryId: entry.id },
       });
       router.invalidate().catch(() => undefined);
+    },
+    skipLearning: async (cardIds) => {
+      const changed = await skipLearning({
+        data: { courseId: course.id, cardIds },
+      });
+      await router.invalidate();
+      return changed;
+    },
+    returnToLearning: async (cardIds) => {
+      const changed = await returnToLearning({
+        data: { courseId: course.id, cardIds },
+      });
+      await router.invalidate();
+      return changed;
     },
   };
 };

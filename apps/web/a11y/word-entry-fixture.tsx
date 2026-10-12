@@ -6,6 +6,7 @@ import type {
 import type { CreatedVocabularyEntry } from '../src/features/courses/services/vocabulary-entry-service';
 import { NewVocabularyForm } from '../src/features/courses/ui/new-vocabulary-form';
 import { PlaceVocabulary } from '../src/features/courses/ui/place-vocabulary';
+import type { StudyAction } from '../src/features/courses/ui/study-action';
 import type { NewVocabularyEntryDraft } from '../src/features/courses/ui/use-new-vocabulary-entry';
 import { VocabularyExample } from '../src/features/courses/ui/vocabulary-example';
 import { Button } from '../src/shared/ui/button';
@@ -63,12 +64,22 @@ export const FixtureVocabularyExample = ({
 
 // Starts learning or practicing the selected words, as the routes do.
 export const FixtureStudyAction = ({
-  intent,
+  action,
 }: {
-  readonly intent: 'learn' | 'practice';
+  readonly action: StudyAction;
 }) => (
   <>
-    {intent === 'practice' ? (
+    <Button
+      onClick={() =>
+        navigateToFixture(
+          action.intent === 'learn' ? 'learn-start' : 'study-start',
+        )
+      }
+      variant={action.primary ? 'primary' : 'outline'}
+    >
+      Auswahl {action.intent === 'learn' ? 'kennenlernen' : 'üben'}
+    </Button>
+    {action.intent === 'practice' ? (
       <Button
         onClick={() => navigateToFixture('sentence-practice')}
         variant="outline"
@@ -76,13 +87,6 @@ export const FixtureStudyAction = ({
         Sätze übersetzen
       </Button>
     ) : null}
-    <Button
-      onClick={() =>
-        navigateToFixture(intent === 'learn' ? 'learn-start' : 'study-start')
-      }
-    >
-      Auswahl {intent === 'learn' ? 'kennenlernen' : 'üben'}
-    </Button>
   </>
 );
 
@@ -115,7 +119,7 @@ export const FixturePlaceVocabulary = ({
       }
       importAction={fixtureControl('Seite fotografieren', 'import', 'primary')}
       place={unit === null ? 'book' : 'unit'}
-      renderStudyAction={(_, intent) => <FixtureStudyAction intent={intent} />}
+      renderStudyAction={(action) => <FixtureStudyAction action={action} />}
       subject={englishSubject}
     />
   );

@@ -1,6 +1,5 @@
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
-import type { ReactNode, RefObject } from 'react';
-import { useMemo, useState } from 'react';
+import { type ReactNode, type RefObject, useMemo, useState } from 'react';
 import { type CourseSubject, courseNouns } from '../../../shared/directions';
 import { Button } from '../../../shared/ui/button';
 import { cardClass } from '../../../shared/ui/surface-styles';
@@ -8,6 +7,7 @@ import { wordLocation } from '../../../shared/vocabulary/book-name';
 import type { VocabularyEntry } from '../schemas/course-units';
 import type { VocabularyFilter } from '../schemas/vocabulary-search';
 import type { CourseEntryActions } from './entry-actions';
+import type { StudyAction } from './study-action';
 import { VocabularyEntryDialog } from './vocabulary-entry-details';
 import { matchesFilter } from './vocabulary-filter-logic';
 import { type PlaceOption, VocabularyFilters } from './vocabulary-filters';
@@ -28,10 +28,7 @@ type VocabularyLibraryProps = {
   // flat list.
   readonly layout: 'by-place' | 'flat';
   readonly subject: CourseSubject;
-  readonly renderStudyAction: (
-    entryIds: ReadonlyArray<string>,
-    intent: 'learn' | 'practice',
-  ) => ReactNode;
+  readonly renderStudyAction: (action: StudyAction) => ReactNode;
   readonly entryActions: CourseEntryActions;
   // Where focus goes when an entry's dialog closes and its row is gone:
   // deleted, or corrected so it no longer matches the search.
@@ -90,20 +87,6 @@ const matchesQuery = (entry: VocabularyEntry, query: string): boolean => {
   );
 };
 
-// Entries with no enabled direction learned yet are learned first; any other
-// selection is practised.
-const intentFor = (
-  selectedEntries: ReadonlyArray<VocabularyEntry>,
-  enabledDirections: ReadonlyArray<AnswerDirection>,
-): 'learn' | 'practice' =>
-  selectedEntries.every((entry) =>
-    entry.cards
-      .filter((card) => enabledDirections.includes(card.direction))
-      .every((card) => card.introducedAt === null),
-  )
-    ? 'learn'
-    : 'practice';
-
 // The entry whose details are open, looked up among all entries, so a
 // filter change behind the dialog cannot take its entry away. Its row may be
 // gone by the time the dialog closes: deleted, or no longer matching. A
@@ -127,6 +110,24 @@ const useEntryDialog = (
   } as const;
 };
 
+// The entries chosen for practice or for skipping their learning pass.
+const useSelection = () => {
+  const [selected, setSelected] = useState<ReadonlyArray<string>>([]);
+  const toggleEntry = (entryId: string) =>
+    setSelected((current) =>
+      current.includes(entryId)
+        ? current.filter((id) => id !== entryId)
+        : [...current, entryId],
+    );
+  const toggleAll = (entryIds: ReadonlyArray<string>, select: boolean) =>
+    setSelected((current) =>
+      select
+        ? [...current, ...entryIds.filter((id) => !current.includes(id))]
+        : current.filter((id) => !entryIds.includes(id)),
+    );
+  return { selected, setSelected, toggleEntry, toggleAll } as const;
+};
+
 export const VocabularyLibrary = ({
   enabledDirections,
   entries,
@@ -147,7 +148,7 @@ export const VocabularyLibrary = ({
       ? initialPlaceId
       : 'all',
   );
-  const [selected, setSelected] = useState<ReadonlyArray<string>>([]);
+  const { selected, setSelected, toggleEntry, toggleAll } = useSelection();
   const now = useMemo(() => new Date(), []);
   const visible = entries.filter(
     (entry) =>
@@ -161,23 +162,15 @@ export const VocabularyLibrary = ({
     layout === 'by-place'
       ? placeSections(visible)
       : [['Alle auswählen', visible]];
-  const toggleEntry = (entryId: string) =>
-    setSelected((current) =>
-      current.includes(entryId)
-        ? current.filter((id) => id !== entryId)
-        : [...current, entryId],
-    );
-  const toggleAll = (entryIds: ReadonlyArray<string>, select: boolean) =>
-    setSelected((current) =>
-      select
-        ? [...current, ...entryIds.filter((id) => !current.includes(id))]
-        : current.filter((id) => !entryIds.includes(id)),
-    );
   const dialog = useEntryDialog(entries, visible);
-  const selectionIntent = intentFor(
-    entries.filter((entry) => selected.includes(entry.id)),
-    enabledDirections,
+  const selectedEntries = entries.filter((entry) =>
+    selected.includes(entry.id),
   );
+  const list = {
+    filter,
+    place:
+      layout === 'by-place' && placeFilter !== 'all' ? placeFilter : undefined,
+  };
 
   return (
     <div className="flex flex-col gap-5">
@@ -233,11 +226,15 @@ export const VocabularyLibrary = ({
           />
         ))
       )}
-      {selected.length === 0 ? null : (
-        <VocabularySelectionBar count={selected.length} nouns={nouns}>
-          {renderStudyAction(selected, selectionIntent)}
-        </VocabularySelectionBar>
-      )}
+      <VocabularySelectionBar
+        actions={entryActions}
+        enabledDirections={enabledDirections}
+        entries={selectedEntries}
+        renderStudyAction={(intent, primary) =>
+          renderStudyAction({ entryIds: selected, intent, primary, list })
+        }
+        subject={subject}
+      />
       <VocabularyEntryDialog
         actions={entryActions}
         enabledDirections={enabledDirections}

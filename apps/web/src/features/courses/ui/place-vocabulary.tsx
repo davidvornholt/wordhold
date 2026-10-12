@@ -6,6 +6,7 @@ import { Dialog } from '../../../shared/ui/dialog';
 import type { VocabularyEntry } from '../schemas/course-units';
 import type { CourseEntryActions } from './entry-actions';
 import { PlaceVocabularyEmpty } from './place-vocabulary-empty';
+import type { StudyAction } from './study-action';
 import { VocabularyLibrary } from './vocabulary-library';
 
 type PlaceVocabularyProps = {
@@ -16,10 +17,7 @@ type PlaceVocabularyProps = {
   readonly importAction: ReactNode;
   // The form for a word, saving into this book or unit.
   readonly entryForm: ReactNode;
-  readonly renderStudyAction: (
-    entryIds: ReadonlyArray<string>,
-    intent: 'learn' | 'practice',
-  ) => ReactNode;
+  readonly renderStudyAction: (action: StudyAction) => ReactNode;
   readonly entryActions: CourseEntryActions;
 };
 

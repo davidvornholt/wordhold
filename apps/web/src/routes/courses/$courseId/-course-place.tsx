@@ -41,17 +41,18 @@ export const findCoursePlace = (
       : selection.unitId === search.unit,
   );
 
-// A book or unit named in the search wins over a hand-picked list of words,
-// given as comma-separated entry IDs.
+// Words picked by hand, given as comma-separated entry IDs, narrow the book
+// or unit named in the search to those words. The place still names where
+// they were picked, so the screen leads back there.
 export const courseSelection = (
   place: CoursePlace | undefined,
   entries: string | undefined,
 ): VocabularySelectionData | null => {
-  if (place !== undefined) {
-    return place.selection;
-  }
   const [first, ...rest] = selectedEntryIds(entries);
-  return first === undefined ? null : { entryIds: [first, ...rest] };
+  if (first !== undefined) {
+    return { entryIds: [first, ...rest] };
+  }
+  return place === undefined ? null : place.selection;
 };
 
 // The search parameters that narrow practice or study to a place. Without a

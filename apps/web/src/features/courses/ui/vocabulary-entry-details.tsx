@@ -6,13 +6,19 @@ import {
   useRef,
   useState,
 } from 'react';
-import { type CourseSubject, isListCourse } from '../../../shared/directions';
+import {
+  type CourseSubject,
+  directionLabel,
+  isListCourse,
+} from '../../../shared/directions';
 import { Button } from '../../../shared/ui/button';
 import { Dialog } from '../../../shared/ui/dialog';
 import type { VocabularyEntry } from '../schemas/course-units';
 import type { CourseEntryActions } from './entry-actions';
 import { EntryDeletion } from './entry-deletion';
+import { EntryLearningAction } from './entry-learning-action';
 import { ScheduleItems } from './vocabulary-schedule';
+import type { VocabularyCard } from './vocabulary-schedule-status';
 
 type VocabularyEntryDetailsProps = {
   readonly entry: VocabularyEntry;
@@ -22,6 +28,8 @@ type VocabularyEntryDetailsProps = {
   // The example sentence of a word, or the key points of a term. A text has
   // none.
   readonly detail: ReactNode;
+  // Skipping a direction's learning pass, or going back to it.
+  readonly renderCardAction: (card: VocabularyCard) => ReactNode;
 };
 
 const nativeLabels = {
@@ -39,6 +47,7 @@ const VocabularyEntryDetails = ({
   now,
   subject,
   detail,
+  renderCardAction,
 }: VocabularyEntryDetailsProps) => (
   <div className="flex flex-col gap-4 text-sm">
     <dl className="grid gap-3">
@@ -58,6 +67,7 @@ const VocabularyEntryDetails = ({
         enabledDirections={enabledDirections}
         entry={entry}
         now={now}
+        renderCardAction={renderCardAction}
         subject={subject}
       />
     </dl>
@@ -67,7 +77,10 @@ const VocabularyEntryDetails = ({
 
 type EntryView = 'details' | 'edit' | 'delete';
 
-type EntryDialogBodyProps = Omit<VocabularyEntryDetailsProps, 'detail'> & {
+type EntryDialogBodyProps = Omit<
+  VocabularyEntryDetailsProps,
+  'detail' | 'renderCardAction'
+> & {
   readonly actions: CourseEntryActions;
   readonly onBusyChange: (busy: boolean) => void;
   readonly onRemoved: () => void;
@@ -151,6 +164,19 @@ const EntryDialogBody = ({
           enabledDirections={enabledDirections}
           entry={entry}
           now={now}
+          renderCardAction={(card) => (
+            <EntryLearningAction
+              actions={actions}
+              card={card}
+              direction={
+                isListCourse(subject.kind)
+                  ? null
+                  : directionLabel(card.direction, subject)
+              }
+              onBusyChange={onBusyChange}
+              onChanged={setNotice}
+            />
+          )}
           subject={subject}
         />
         <div className="flex flex-wrap gap-3 border-border border-t pt-4">

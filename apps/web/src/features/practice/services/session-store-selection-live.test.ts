@@ -11,14 +11,14 @@ import {
   fixtureCourseId,
   fixtureUnitId,
   seedIntroducedCardFixture,
-  unintroducedEntryId,
 } from '../../../shared/testing/introduced-card-fixture';
 import { PracticeSessionStore } from './session-store';
 
-const selectedEntryCount = 3;
+// The unit's third entry has not been learned, so it is never asked.
+const introducedEntryCount = 2;
 
 describe('PracticeSessionStore selected practice', () => {
-  it('loads every selected card, and a switched-off direction only when asked', async () => {
+  it('loads every learned card of the selection, and a switched-off direction only when asked', async () => {
     await Effect.runPromise(
       withMigratedTestDatabase((database) => {
         const databaseLayer = testDatabaseLayer(database.url);
@@ -43,8 +43,6 @@ describe('PracticeSessionStore selected practice', () => {
               `${dueEntryId}:to_target`,
               `${firstReviewEntryId}:to_native`,
               `${firstReviewEntryId}:to_target`,
-              `${unintroducedEntryId}:to_native`,
-              `${unintroducedEntryId}:to_target`,
             ].sort(),
           );
           const target = yield* store.loadSelection({
@@ -54,7 +52,6 @@ describe('PracticeSessionStore selected practice', () => {
             includeSwitchedOff: true,
           });
           expect(target.map(({ direction }) => direction)).toEqual([
-            'to_target',
             'to_target',
             'to_target',
           ]);
@@ -71,7 +68,7 @@ describe('PracticeSessionStore selected practice', () => {
               selection: { unitId: fixtureUnitId },
               includeSwitchedOff: true,
             }),
-          ).toHaveLength(selectedEntryCount);
+          ).toHaveLength(introducedEntryCount);
           expect(
             yield* store.loadSelection({
               courseId: fixtureCourseId,
@@ -87,7 +84,6 @@ describe('PracticeSessionStore selected practice', () => {
             includeSwitchedOff: false,
           });
           expect(planned.map(({ direction }) => direction)).toEqual([
-            'to_native',
             'to_native',
             'to_native',
           ]);

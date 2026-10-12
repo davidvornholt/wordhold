@@ -122,9 +122,7 @@ export const VocabularyFixture = ({
         fallbackFocusRef={introRef}
         initialFilter={difficult ? 'difficult' : 'all'}
         layout="by-place"
-        renderStudyAction={(_, intent) => (
-          <FixtureStudyAction intent={intent} />
-        )}
+        renderStudyAction={(action) => <FixtureStudyAction action={action} />}
         subject={englishSubject}
       />
     </PageLayout>
