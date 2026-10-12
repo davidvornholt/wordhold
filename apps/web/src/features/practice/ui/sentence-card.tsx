@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { useAudioPlayback } from '../../../shared/audio/use-pronunciation-audio';
 import { germanLabels } from '../../../shared/languages';
+import { answerCharacters } from '../../../shared/practice/answer-characters';
 import {
   AnswerField,
   type AnswerFieldElement,
@@ -63,6 +64,9 @@ const SentenceAnswerForm = ({
         aria-describedby={describedBy}
         aria-label="Deine Übersetzung"
         borderClass={toneField[tone]}
+        characters={
+          outcome === null ? answerCharacters('language', targetLanguage) : null
+        }
         disabled={busy || outcome !== null}
         fieldRef={inputRef}
         lang={targetLanguage}

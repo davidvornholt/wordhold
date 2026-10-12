@@ -33,6 +33,7 @@ import {
   PracticeOneCardSummaryFixture,
 } from './practice-fixtures';
 import {
+  FrenchPracticeFixture,
   FutureStudySessionFixture,
   PracticeSessionFixture,
 } from './practice-session-fixtures';
@@ -86,6 +87,7 @@ const bareStates: ReadonlySet<FixtureState> = new Set<FixtureState>([
   'practice-complete-one-card',
   'practice-ungraded-one-card',
   'practice-deferred',
+  'french-practice',
   'sentence-practice',
   'terms-learn',
   'terms-practice',
@@ -165,6 +167,8 @@ const practiceFixture = (state: FixtureState) => {
       return <PracticeStartFixture partial={true} />;
     case 'practice-session':
       return <PracticeSessionFixture />;
+    case 'french-practice':
+      return <FrenchPracticeFixture />;
     case 'study-session':
       return <FutureStudySessionFixture />;
     case 'practice-feedback':
@@ -358,6 +362,7 @@ const fixtureContent = (state: FixtureState) => {
     case 'practice-complete-one-card':
     case 'practice-ungraded-one-card':
     case 'practice-deferred':
+    case 'french-practice':
     case 'sentence-practice':
     case 'synonym-practice':
       return practiceFixture(state);

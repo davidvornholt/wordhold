@@ -2,6 +2,7 @@ import type { ReviewMode } from '@wordhold/db/schema/practice';
 import { useRef, useState } from 'react';
 import type { PracticeSession } from '../src/features/practice/schemas/practice-models';
 import { SessionRunner } from '../src/features/practice/ui/session-runner';
+import type { CourseSubject } from '../src/shared/directions';
 import { FocusLayout } from '../src/shared/ui/focus-layout';
 import { englishSubject } from './course-fixture-data';
 import { DeferredExampleControls } from './deferred-example-controls';
@@ -49,12 +50,14 @@ const audioItems = [
 type PracticeSessionFixtureProps = {
   readonly sessionItems?: ReadonlyArray<FixtureCard>;
   readonly mode?: ReviewMode;
+  readonly subject?: CourseSubject;
   readonly title?: string;
 };
 
 export const PracticeSessionFixture = ({
   sessionItems,
   mode = 'scheduled',
+  subject = englishSubject,
   title = 'English A2 · Üben',
 }: PracticeSessionFixtureProps) => {
   const fixtureSearch = new URLSearchParams(globalThis.location.search);
@@ -115,7 +118,7 @@ export const PracticeSessionFixture = ({
           prepareExamples={prepareExamples}
           session={session}
           submit={(input) => gradeFixtureAnswer(activeItems, input)}
-          subject={englishSubject}
+          subject={subject}
         />
       ) : null}
       {deferredExample ? (
@@ -137,5 +140,13 @@ export const FutureStudySessionFixture = () => (
     mode="drill"
     sessionItems={[items[0]]}
     title="Unit 3: Holidays · Üben"
+  />
+);
+
+export const FrenchPracticeFixture = () => (
+  <PracticeSessionFixture
+    sessionItems={[card(3, 'le garçon', 'der Junge')]}
+    subject={{ kind: 'language', targetLanguage: 'fr' }}
+    title="Français · Üben"
   />
 );
