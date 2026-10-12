@@ -1,61 +1,16 @@
 import { type MouseEvent, type RefObject, useId, useState } from 'react';
-import type { AnswerFieldElement } from './answer-field';
+import type { CharacterSet } from '../practice/answer-characters';
 import { Button } from './button';
 import {
   rememberPreference,
   useRememberedPreference,
 } from './remembered-preference';
 
-type PaletteCharacter = {
-  readonly character: string;
-  readonly name: string;
-};
-
-const digits = (
-  marks: string,
-  position: string,
-): ReadonlyArray<PaletteCharacter> =>
-  [...marks].map((character, digit) => ({
-    character,
-    name: `${position} ${digit}`,
-  }));
-
-// Formulas and units need characters that phone keyboards do not offer.
-const characterGroups: ReadonlyArray<{
-  readonly label: string;
-  readonly characters: ReadonlyArray<PaletteCharacter>;
-}> = [
-  { label: 'Tiefgestellt', characters: digits('₀₁₂₃₄₅₆₇₈₉', 'tiefgestellt') },
-  {
-    label: 'Hochgestellt',
-    characters: [
-      ...digits('⁰¹²³⁴⁵⁶⁷⁸⁹', 'hochgestellt'),
-      { character: '⁺', name: 'hochgestellt plus' },
-      { character: '⁻', name: 'hochgestellt minus' },
-    ],
-  },
-  {
-    label: 'Zeichen',
-    characters: [
-      { character: '→', name: 'Pfeil' },
-      { character: '⇌', name: 'Gleichgewichtspfeil' },
-      { character: '°', name: 'Grad' },
-      { character: '·', name: 'Malpunkt' },
-      { character: '×', name: 'Malkreuz' },
-      { character: '±', name: 'plus minus' },
-      { character: 'Δ', name: 'Delta' },
-      { character: '≈', name: 'ungefähr' },
-      { character: '≤', name: 'kleiner gleich' },
-      { character: '≥', name: 'größer gleich' },
-    ],
-  },
-];
-
-const storageKey = 'wordhold-character-palette';
+type PaletteField = HTMLInputElement | HTMLTextAreaElement;
 
 // Typed at the cursor, as if from the keyboard. React learns of a value set
 // from code only through an input event.
-const insertAtCursor = (field: AnswerFieldElement, text: string) => {
+const insertAtCursor = (field: PaletteField, text: string) => {
   const end = field.value.length;
   field.setRangeText(
     text,
@@ -70,16 +25,26 @@ const insertAtCursor = (field: AnswerFieldElement, text: string) => {
 // keyboard. Keyboard users keep focus on the palette instead.
 const keepFieldFocus = (event: MouseEvent) => event.preventDefault();
 
-// Characters to add to an answer field. It stays open or closed across cards
-// once chosen, since a subject that needs it needs it on every card.
+// Characters to add to an answer field. The toggle sits inside the field's
+// border, so a closed palette takes no room. It stays open or closed across
+// cards once chosen, since a subject that needs it needs it on every card.
+// Rendered in the field's grid, after the field: the toggle shares the
+// field's cell and the characters take the row beneath.
 export const CharacterPalette = ({
+  characters,
   disabled,
   fieldRef,
+  multiline,
 }: {
+  readonly characters: CharacterSet;
   readonly disabled: boolean;
-  readonly fieldRef: RefObject<AnswerFieldElement | null>;
+  readonly fieldRef: RefObject<PaletteField | null>;
+  // Beside one line the toggle is as tall as the field; a field that wraps
+  // keeps it in the corner.
+  readonly multiline: boolean;
 }) => {
   const paletteId = useId();
+  const storageKey = `wordhold-character-palette-${characters.key}`;
   const remembered = useRememberedPreference(storageKey) === 'open';
   const [chosen, setChosen] = useState<boolean | null>(null);
   const open = chosen ?? remembered;
@@ -93,19 +58,25 @@ export const CharacterPalette = ({
     }
   };
   return (
-    <div className="flex flex-col gap-2">
+    <>
       <Button
         aria-controls={paletteId}
         aria-expanded={open}
-        className="w-fit self-start px-1"
+        aria-label="Sonderzeichen"
+        className={`col-start-1 row-start-1 m-px justify-self-end text-base aria-expanded:bg-muted aria-expanded:text-foreground ${multiline ? 'self-start' : 'self-stretch'}`}
         onClick={toggle}
         onMouseDown={keepFieldFocus}
-        variant="quiet-muted"
+        title="Sonderzeichen"
+        variant="icon"
       >
-        Sonderzeichen
+        <span aria-hidden="true">{characters.sample}</span>
       </Button>
-      <div className="flex flex-col gap-2" hidden={!open} id={paletteId}>
-        {characterGroups.map((group) => (
+      <div
+        className="col-start-1 row-start-2 flex flex-col gap-2"
+        hidden={!open}
+        id={paletteId}
+      >
+        {characters.groups.map((group) => (
           <fieldset className="flex flex-wrap gap-1" key={group.label}>
             <legend className="sr-only">{group.label}</legend>
             {group.characters.map(({ character, name }) => (
@@ -124,6 +95,6 @@ export const CharacterPalette = ({
           </fieldset>
         ))}
       </div>
-    </div>
+    </>
   );
 };

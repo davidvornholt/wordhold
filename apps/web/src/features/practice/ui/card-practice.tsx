@@ -6,6 +6,7 @@ import {
 } from '../../../shared/directions';
 import type { PrepareExamples } from '../../../shared/examples/example-model';
 import { germanLabels } from '../../../shared/languages';
+import { answerCharacters } from '../../../shared/practice/answer-characters';
 import {
   answerLanguage,
   foreignPromptLanguage,
@@ -165,6 +166,7 @@ export const CardPractice = ({
       <PracticeAnswerForm
         answer={submission.answer}
         busy={busy}
+        characters={answerCharacters(subject.kind, answerLang)}
         disabled={result !== null}
         inputRef={inputRef}
         kind={subject.kind}

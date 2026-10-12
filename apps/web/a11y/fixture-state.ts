@@ -65,6 +65,7 @@ export const fixtureStates = [
   'practice-complete-one-card',
   'practice-ungraded-one-card',
   'practice-deferred',
+  'french-practice',
   'sentence-practice',
   'synonym-practice',
   'terms-learn',

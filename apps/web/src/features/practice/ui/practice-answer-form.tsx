@@ -1,12 +1,12 @@
 import type { CourseKind } from '@wordhold/db/schema/courses';
 import type { RefObject, SubmitEvent, SubmitEventHandler } from 'react';
 import { isListCourse } from '../../../shared/directions';
+import type { CharacterSet } from '../../../shared/practice/answer-characters';
 import {
   AnswerField,
   type AnswerFieldElement,
 } from '../../../shared/ui/answer-field';
 import { Button } from '../../../shared/ui/button';
-import { CharacterPalette } from '../../../shared/ui/character-palette';
 import type { CardTone } from '../../../shared/ui/word-card';
 import { DictationButton } from './dictation-button';
 import { toneField } from './feedback-tone';
@@ -26,6 +26,7 @@ export type RetypeState = {
 type PracticeAnswerFormProps = {
   readonly answer: string;
   readonly busy: boolean;
+  readonly characters: CharacterSet | null;
   readonly disabled: boolean;
   readonly inputRef: RefObject<AnswerFieldElement | null>;
   readonly kind: CourseKind;
@@ -49,12 +50,16 @@ const answerPlaceholders = {
 
 const RetypeField = ({
   busy,
+  characters,
   hintId,
   inputRef,
   multiline,
   promptId,
   retype,
-}: Pick<PracticeAnswerFormProps, 'busy' | 'inputRef' | 'promptId'> & {
+}: Pick<
+  PracticeAnswerFormProps,
+  'busy' | 'characters' | 'inputRef' | 'promptId'
+> & {
   // Definitions and texts are answered in a field that wraps.
   readonly multiline: boolean;
   readonly hintId: string;
@@ -74,6 +79,7 @@ const RetypeField = ({
       borderClass={
         retype.missedMessage === null ? toneField.neutral : toneField.warning
       }
+      characters={characters}
       disabled={busy}
       fieldRef={inputRef}
       multiline={multiline}
@@ -89,27 +95,22 @@ const RetypeField = ({
   </>
 );
 
-// Help with writing the answer: a subject's formulas need characters the
-// keyboard lacks, and a text can be recited aloud.
+// Help with writing the answer: a text can be recited aloud.
 const AnswerAids = ({
   busy,
   dictation,
-  inputRef,
   kind,
-}: Pick<PracticeAnswerFormProps, 'busy' | 'inputRef' | 'kind'> & {
+}: Pick<PracticeAnswerFormProps, 'busy' | 'kind'> & {
   readonly dictation: Dictation;
-}) => {
-  if (kind === 'terms') {
-    return <CharacterPalette disabled={busy} fieldRef={inputRef} />;
-  }
-  return kind === 'texts' && dictation.supported ? (
+}) =>
+  kind === 'texts' && dictation.supported ? (
     <DictationButton dictation={dictation} disabled={busy} />
   ) : null;
-};
 
 export const PracticeAnswerForm = ({
   answer,
   busy,
+  characters,
   disabled,
   inputRef,
   kind,
@@ -147,6 +148,7 @@ export const PracticeAnswerForm = ({
           aria-describedby={promptId}
           aria-label="Deine Antwort"
           borderClass={toneField[tone]}
+          characters={disabled ? null : characters}
           disabled={busy || disabled}
           fieldRef={inputRef}
           multiline={multiline}
@@ -157,6 +159,7 @@ export const PracticeAnswerForm = ({
       ) : (
         <RetypeField
           busy={busy}
+          characters={characters}
           hintId={`${promptId}-retype-hint`}
           inputRef={inputRef}
           multiline={multiline}
@@ -166,12 +169,7 @@ export const PracticeAnswerForm = ({
       )}
       {disabled ? null : (
         <>
-          <AnswerAids
-            busy={busy}
-            dictation={dictation}
-            inputRef={inputRef}
-            kind={kind}
-          />
+          <AnswerAids busy={busy} dictation={dictation} kind={kind} />
           <Button
             disabled={busy || dictating || answer.trim() === ''}
             type="submit"
