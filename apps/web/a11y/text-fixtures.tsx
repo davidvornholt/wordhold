@@ -1,6 +1,7 @@
 import { useId, useState } from 'react';
 import type { VocabularyEntry } from '../src/features/courses/schemas/course-units';
 import type { CourseEntryActions } from '../src/features/courses/ui/entry-actions';
+import type { StudyAction } from '../src/features/courses/ui/study-action';
 import { SubjectOverview } from '../src/features/courses/ui/subject-overview';
 import { SubjectSettings } from '../src/features/courses/ui/subject-settings';
 import {
@@ -30,6 +31,7 @@ import { fixtureTextLookup } from './bible-fixture-data';
 import { FixtureBibleLibrary } from './bible-fixtures';
 import { textsSubject } from './course-fixture-data';
 import { fixtureBackControl, fixtureControl } from './fixture-controls';
+import { changeLearning } from './fixture-learning';
 import { navigateToFixture } from './fixture-state';
 import {
   collectionEntries,
@@ -217,19 +219,33 @@ const useFixtureTexts = (initial: ReadonlyArray<VocabularyEntry>) => {
   };
   const removeEntry = (entryId: string) =>
     setEntries((current) => current.filter((entry) => entry.id !== entryId));
-  return { entries, createEntry, updateEntry, removeEntry };
+  const changeEntryLearning = (
+    cardIds: ReadonlyArray<string>,
+    change: 'skip' | 'return',
+  ) => {
+    const result = changeLearning(entries, cardIds, change);
+    setEntries(result.entries);
+    return Promise.resolve(result.changed);
+  };
+  return {
+    entries,
+    createEntry,
+    updateEntry,
+    removeEntry,
+    changeEntryLearning,
+  };
 };
 
-const textsStudyAction = (
-  _entryIds: ReadonlyArray<string>,
-  intent: 'learn' | 'practice',
-) => (
+const textsStudyAction = (action: StudyAction) => (
   <Button
     onClick={() =>
-      navigateToFixture(intent === 'learn' ? 'texts-learn' : 'texts-practice')
+      navigateToFixture(
+        action.intent === 'learn' ? 'texts-learn' : 'texts-practice',
+      )
     }
+    variant={action.primary ? 'primary' : 'outline'}
   >
-    Auswahl {intent === 'learn' ? 'kennenlernen' : 'üben'}
+    Auswahl {action.intent === 'learn' ? 'kennenlernen' : 'üben'}
   </Button>
 );
 
@@ -239,9 +255,13 @@ export const TextsCourseFixture = ({
 }: {
   readonly empty?: boolean;
 }) => {
-  const { entries, createEntry, updateEntry, removeEntry } = useFixtureTexts(
-    empty ? [] : collectionEntries,
-  );
+  const {
+    entries,
+    createEntry,
+    updateEntry,
+    removeEntry,
+    changeEntryLearning,
+  } = useFixtureTexts(empty ? [] : collectionEntries);
   const entryActions: CourseEntryActions = {
     renderDetail: () => null,
     renderEditor: (entry, control) => (
@@ -256,6 +276,8 @@ export const TextsCourseFixture = ({
       globalThis.setTimeout(() => removeEntry(entry.id));
       return Promise.resolve();
     },
+    skipLearning: (cardIds) => changeEntryLearning(cardIds, 'skip'),
+    returnToLearning: (cardIds) => changeEntryLearning(cardIds, 'return'),
   };
   return (
     <PageLayout

@@ -42,6 +42,7 @@ import {
   useCourseEntryActions,
   VocabularyEntryForm,
 } from './-entry-forms';
+import { SelectionActions } from './-selection-actions';
 
 type ScreenCourse = EntryCourse & { readonly name: string };
 
@@ -271,14 +272,16 @@ const SubjectScreen = ({
       }
       initialFilter={filter ?? 'all'}
       primaryAction={subjectPrimaryAction(course, entries, stats?.ready ?? 0)}
-      renderStudyAction={(entryIds, intent) => (
-        <ActionLink
-          params={{ courseId: course.id }}
-          search={{ entries: entryIds.join(','), mode: intent }}
-          to="/courses/$courseId/study"
-        >
-          Auswahl {intent === 'learn' ? 'kennenlernen' : 'üben'}
-        </ActionLink>
+      renderStudyAction={(action) => (
+        <SelectionActions
+          action={action}
+          courseId={course.id}
+          search={{
+            entries: action.entryIds.join(','),
+            filter: action.list.filter,
+          }}
+          sentences={false}
+        />
       )}
       settingsAction={<SettingsLink courseId={course.id} />}
       subject={course}

@@ -1,15 +1,13 @@
+import type { StudyAction } from '../../../features/courses/ui/study-action';
 import { ActionLink } from '../../../shared/ui/action-link';
-
-// The search parameters that name the selected words: their whole book or
-// unit, or the entries themselves.
-type SelectionSearch =
-  | { readonly entries: string }
-  | { readonly book: string | undefined; readonly unit: string | undefined };
+import type { StudyRouteSearch } from './-study-link';
 
 type SelectionActionsProps = {
   readonly courseId: string;
-  readonly intent: 'learn' | 'practice';
-  readonly search: SelectionSearch;
+  readonly action: StudyAction;
+  // The selected words and where they were picked: their book's or unit's
+  // page, or the list with its filter and place.
+  readonly search: Omit<StudyRouteSearch, 'direction' | 'mode' | 'from'>;
   // Only a language course's words have example sentences to translate.
   readonly sentences: boolean;
 };
@@ -18,12 +16,20 @@ type SelectionActionsProps = {
 // one of them is met, a round would have nothing to translate.
 export const SelectionActions = ({
   courseId,
-  intent,
+  action,
   search,
   sentences,
 }: SelectionActionsProps) => (
   <>
-    {sentences && intent === 'practice' ? (
+    <ActionLink
+      params={{ courseId }}
+      search={{ ...search, mode: action.intent }}
+      to="/courses/$courseId/study"
+      variant={action.primary ? 'primary' : 'outline'}
+    >
+      Auswahl {action.intent === 'learn' ? 'kennenlernen' : 'üben'}
+    </ActionLink>
+    {sentences && action.intent === 'practice' ? (
       <ActionLink
         params={{ courseId }}
         search={search}
@@ -33,12 +39,5 @@ export const SelectionActions = ({
         Sätze übersetzen
       </ActionLink>
     ) : null}
-    <ActionLink
-      params={{ courseId }}
-      search={{ ...search, mode: intent }}
-      to="/courses/$courseId/study"
-    >
-      Auswahl {intent === 'learn' ? 'kennenlernen' : 'üben'}
-    </ActionLink>
   </>
 );

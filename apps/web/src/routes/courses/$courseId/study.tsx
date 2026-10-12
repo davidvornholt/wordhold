@@ -1,12 +1,16 @@
 import { createFileRoute, useRouterState } from '@tanstack/react-router';
-import { answerDirections } from '@wordhold/db/schema/directions';
+import {
+  type AnswerDirection,
+  answerDirections,
+} from '@wordhold/db/schema/directions';
 import type { ReactNode } from 'react';
+import type { VocabularySearchData } from '../../../features/courses/schemas/vocabulary-search';
 import { prepareVocabularyExamples } from '../../../features/courses/services/server-fns';
-import { parseStudySearch } from '../../../features/practice/schemas/session-request';
 import { submitAnswer } from '../../../features/practice/services/server-fns';
 import { sessionOptions } from '../../../features/practice/services/session-options';
 import { SessionRunner } from '../../../features/practice/ui/session-runner';
 import { SessionStart } from '../../../features/practice/ui/session-start';
+import { UnlearnedNotice } from '../../../features/practice/ui/unlearned-notice';
 import {
   type CourseSubject,
   courseNouns,
@@ -23,7 +27,8 @@ import {
   PlaceBackLink,
   PlacePageLink,
 } from './-course-place';
-import { StudyLearning, selectionSearch } from './-study-learning';
+import { StudyLearning } from './-study-learning';
+import { parseStudyRouteSearch, studySearch } from './-study-link';
 import { loadStudyData } from './-study-loader';
 
 type StudyCourse = CourseSubject & {
@@ -31,20 +36,23 @@ type StudyCourse = CourseSubject & {
   readonly name: string;
 };
 
-type StudyOriginProps = {
+type StudyOrigin = {
   readonly course: StudyCourse;
   readonly place: CoursePlace | undefined;
+  readonly list: VocabularySearchData;
   readonly fromFragile: boolean;
 };
 
-// A free selection is made in a language's word list, or on a subject's or
-// collection's own page, which is its list of entries. The overview's Wackelkandidaten lead back
-// to the overview.
+// A selection is made on a book's or unit's page, in a language's word list,
+// or on a subject's or collection's own page, which is its list of entries.
+// The way back leads to where it was made, with the list's filter and place
+// as they were. The overview's Wackelkandidaten lead back to the overview.
 const StudySelectionControl = ({
   course,
   place,
+  list,
   fromFragile,
-}: StudyOriginProps) => {
+}: StudyOrigin) => {
   if (place !== undefined) {
     return (
       <PlacePageLink
@@ -64,13 +72,18 @@ const StudySelectionControl = ({
     );
   }
   return isListCourse(course.kind) ? (
-    <PlacePageLink courseId={course.id} selection={null} variant="quiet-muted">
+    <ActionLink
+      params={{ courseId: course.id }}
+      search={{ filter: list.filter }}
+      to="/courses/$courseId"
+      variant="quiet-muted"
+    >
       Neue Auswahl treffen
-    </PlacePageLink>
+    </ActionLink>
   ) : (
     <ActionLink
       params={{ courseId: course.id }}
-      search={{ filter: 'all' }}
+      search={{ filter: list.filter ?? 'all', place: list.place }}
       to="/courses/$courseId/vocabulary"
       variant="quiet-muted"
     >
@@ -79,7 +92,12 @@ const StudySelectionControl = ({
   );
 };
 
-const StudyBackControl = ({ course, place, fromFragile }: StudyOriginProps) => {
+const StudyBackControl = ({
+  course,
+  place,
+  list,
+  fromFragile,
+}: StudyOrigin) => {
   if (place !== undefined) {
     return (
       <PlaceBackLink courseId={course.id} selection={place.selection}>
@@ -91,17 +109,102 @@ const StudyBackControl = ({ course, place, fromFragile }: StudyOriginProps) => {
     return <BackLink to="/">Übersicht</BackLink>;
   }
   return isListCourse(course.kind) ? (
-    <PlaceBackLink courseId={course.id} selection={null}>
+    <BackLink
+      params={{ courseId: course.id }}
+      search={{ filter: list.filter }}
+      to="/courses/$courseId"
+    >
       {course.name}
-    </PlaceBackLink>
+    </BackLink>
   ) : (
     <BackLink
       params={{ courseId: course.id }}
-      search={{ filter: 'all' }}
+      search={{ filter: list.filter ?? 'all', place: list.place }}
       to="/courses/$courseId/vocabulary"
     >
       Vokabelliste
     </BackLink>
+  );
+};
+
+// Learning the selection first, without losing where it came from.
+const StudyLearnLink = ({ primary }: { readonly primary: boolean }) => (
+  <ActionLink
+    from="/courses/$courseId/study"
+    search={studySearch('learn')}
+    to="/courses/$courseId/study"
+    variant={primary ? 'primary' : 'outline'}
+  >
+    Auswahl kennenlernen
+  </ActionLink>
+);
+
+type StudyPracticeStartProps = {
+  readonly course: StudyCourse;
+  readonly availableDirections: ReadonlyArray<AnswerDirection>;
+  readonly ready: ReadonlyArray<{ readonly direction: AnswerDirection }>;
+  readonly unlearned: number;
+};
+
+const StudyPracticeStart = ({
+  course,
+  availableDirections,
+  ready,
+  unlearned,
+}: StudyPracticeStartProps) => {
+  const navigating = useRouterState({ select: (state) => state.isLoading });
+  if (ready.length === 0) {
+    return unlearned > 0 ? (
+      <UnlearnedNotice
+        learnAction={<StudyLearnLink primary={true} />}
+        practisable={false}
+        unlearned={unlearned}
+      />
+    ) : (
+      <p className={`${cardClass} text-sm`}>
+        Diese Auswahl enthält keine {courseNouns(course).plural}.
+      </p>
+    );
+  }
+  return (
+    <>
+      <p className="text-muted-foreground text-sm">
+        Richtige Antworten vor ihrem Termin verschieben den Lernplan nicht. Eine
+        falsche Antwort wird dagegen früher erneut eingeplant.
+      </p>
+      {unlearned > 0 ? (
+        <UnlearnedNotice
+          learnAction={<StudyLearnLink primary={false} />}
+          practisable={true}
+          unlearned={unlearned}
+        />
+      ) : null}
+      <SessionStart
+        itemNoun={{ singular: 'Karte', plural: 'Karten' }}
+        options={sessionOptions(availableDirections, course, [
+          ...answerDirections.map((candidate) => ({
+            direction: candidate,
+            ready: ready.filter((item) => item.direction === candidate).length,
+          })),
+          { direction: 'both', ready: ready.length },
+        ])}
+        preferenceKey={`${course.id}:study`}
+        renderStartAction={(option, rememberDirection) => (
+          <ActionLink
+            aria-busy={navigating}
+            className="w-fit"
+            from="/courses/$courseId/study"
+            onClick={rememberDirection}
+            search={studySearch('practice', option.value)}
+            to="/courses/$courseId/study"
+          >
+            {navigating
+              ? 'Wird vorbereitet …'
+              : `${countNoun(option.cards, 'Karte', 'Karten')} starten`}
+          </ActionLink>
+        )}
+      />
+    </>
   );
 };
 
@@ -116,16 +219,28 @@ const StudyScreen = () => {
     preview,
     selection,
     session,
+    unlearned,
   } = Route.useLoaderData();
-  const { from } = Route.useSearch();
-  const fromFragile = from === 'fragile';
+  const search = Route.useSearch();
+  const fromFragile = search.from === 'fragile';
+  const origin = {
+    course,
+    place,
+    list: { filter: search.filter, place: search.place },
+    fromFragile,
+  };
   const nouns = courseNouns(course);
-  const navigating = useRouterState({ select: (state) => state.isLoading });
+  // Entries picked by hand are a selection of their own, even when they
+  // were picked on a book's or unit's page.
   let titleSubject = 'Auswahl';
-  if (place !== undefined) {
-    titleSubject = place.name;
-  } else if (fromFragile) {
+  if (fromFragile) {
     titleSubject = 'Wackelkandidaten';
+  } else if (
+    place !== undefined &&
+    selection !== null &&
+    !('entryIds' in selection)
+  ) {
+    titleSubject = place.name;
   }
   const title = `${titleSubject} · ${mode === 'learn' ? 'Kennenlernen' : 'Üben'}`;
   let content: ReactNode;
@@ -143,59 +258,22 @@ const StudyScreen = () => {
         courseId={course.id}
         direction={direction}
         pass={learningPass}
-        selection={selection}
         subject={course}
       />
     );
   } else if (session === null) {
     content = (
-      <>
-        <p className="text-muted-foreground text-sm">
-          Richtige Antworten vor ihrem Termin verschieben den Lernplan nicht.
-          Eine falsche Antwort wird dagegen früher erneut eingeplant.
-        </p>
-        <SessionStart
-          itemNoun={{ singular: 'Karte', plural: 'Karten' }}
-          options={sessionOptions(availableDirections, course, [
-            ...answerDirections.map((candidate) => ({
-              direction: candidate,
-              ready: preview.items.filter(
-                (item) => item.direction === candidate,
-              ).length,
-            })),
-            { direction: 'both', ready: preview.items.length },
-          ])}
-          preferenceKey={`${course.id}:study`}
-          renderStartAction={(option, rememberDirection) => (
-            <ActionLink
-              aria-busy={navigating}
-              className="w-fit"
-              onClick={rememberDirection}
-              params={{ courseId: course.id }}
-              search={{
-                ...selectionSearch(selection, 'practice', option.value),
-                from,
-              }}
-              to="/courses/$courseId/study"
-            >
-              {navigating
-                ? 'Wird vorbereitet …'
-                : `${countNoun(option.cards, 'Karte', 'Karten')} starten`}
-            </ActionLink>
-          )}
-        />
-      </>
+      <StudyPracticeStart
+        availableDirections={availableDirections}
+        course={course}
+        ready={preview.items}
+        unlearned={unlearned}
+      />
     );
   } else {
     content = (
       <SessionRunner
-        backControl={
-          <StudySelectionControl
-            course={course}
-            fromFragile={fromFragile}
-            place={place}
-          />
-        }
+        backControl={<StudySelectionControl {...origin} />}
         emptyMessage={`Diese Auswahl enthält keine ${nouns.plural}.`}
         key={direction}
         mode="drill"
@@ -208,16 +286,7 @@ const StudyScreen = () => {
   }
 
   return (
-    <FocusLayout
-      exit={
-        <StudyBackControl
-          course={course}
-          fromFragile={fromFragile}
-          place={place}
-        />
-      }
-      title={title}
-    >
+    <FocusLayout exit={<StudyBackControl {...origin} />} title={title}>
       {content}
     </FocusLayout>
   );
@@ -225,7 +294,7 @@ const StudyScreen = () => {
 
 export const Route = createFileRoute('/courses/$courseId/study')({
   staticData: focusShell,
-  validateSearch: parseStudySearch,
+  validateSearch: parseStudyRouteSearch,
   loaderDeps: ({ search }) => search,
   loader: ({ params, deps }) => loadStudyData(params.courseId, deps),
   component: StudyScreen,

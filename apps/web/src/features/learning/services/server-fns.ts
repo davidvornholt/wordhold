@@ -29,6 +29,12 @@ const decodeIntroductionRequest = Schema.decodeUnknownSync(
     cardId: Uuid,
   }),
 );
+const decodeCardsRequest = Schema.decodeUnknownSync(
+  Schema.Struct({
+    courseId: Uuid,
+    cardIds: Schema.Array(Uuid).check(Schema.isMinLength(1)),
+  }),
+);
 const decodeSelectionRequest = Schema.decodeUnknownSync(
   Schema.Struct({
     courseId: Uuid,
@@ -66,6 +72,28 @@ export const introduceCard = createServerFn({ method: 'POST' })
     return learningRuntime.runPromise(
       Effect.flatMap(LearningService, (service) =>
         service.introduce(data.courseId, data.cardId),
+      ),
+    );
+  });
+
+export const skipLearning = createServerFn({ method: 'POST' })
+  .validator(decodeCardsRequest)
+  .handler(async ({ data }) => {
+    await requestMember({ courses: [data.courseId] });
+    return learningRuntime.runPromise(
+      Effect.flatMap(LearningService, (service) =>
+        service.skipLearning(data.courseId, data.cardIds),
+      ),
+    );
+  });
+
+export const returnToLearning = createServerFn({ method: 'POST' })
+  .validator(decodeCardsRequest)
+  .handler(async ({ data }) => {
+    await requestMember({ courses: [data.courseId] });
+    return learningRuntime.runPromise(
+      Effect.flatMap(LearningService, (service) =>
+        service.returnToLearning(data.courseId, data.cardIds),
       ),
     );
   });

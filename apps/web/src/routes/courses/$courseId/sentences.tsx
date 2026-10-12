@@ -1,6 +1,10 @@
 import { createFileRoute, redirect, useRouter } from '@tanstack/react-router';
 import { useState } from 'react';
 import {
+  parseVocabularySearch,
+  type VocabularySearchData,
+} from '../../../features/courses/schemas/vocabulary-search';
+import {
   getCourseOutline,
   prepareVocabularyExamples,
 } from '../../../features/courses/services/server-fns';
@@ -28,15 +32,17 @@ import {
 type SentenceOriginProps = {
   readonly courseId: string;
   readonly place: CoursePlace | undefined;
+  readonly list: VocabularySearchData;
 };
 
-// Hand-picked words have no one book or unit to return to, so a round of
-// them leads to the word list, as a study sitting of picked words does.
-const SentenceBackControl = ({ courseId, place }: SentenceOriginProps) =>
+// A round leads back to where its words were picked: their book's or unit's
+// page, or the word list with its filter and place as they were, as a study
+// sitting does.
+const SentenceBackControl = ({ courseId, place, list }: SentenceOriginProps) =>
   place === undefined ? (
     <BackLink
       params={{ courseId }}
-      search={{ filter: 'all' }}
+      search={{ filter: list.filter ?? 'all', place: list.place }}
       to="/courses/$courseId/vocabulary"
     >
       Vokabelliste
@@ -47,11 +53,15 @@ const SentenceBackControl = ({ courseId, place }: SentenceOriginProps) =>
     </PlaceBackLink>
   );
 
-const SentenceSelectionControl = ({ courseId, place }: SentenceOriginProps) =>
+const SentenceSelectionControl = ({
+  courseId,
+  place,
+  list,
+}: SentenceOriginProps) =>
   place === undefined ? (
     <ActionLink
       params={{ courseId }}
-      search={{ filter: 'all' }}
+      search={{ filter: list.filter ?? 'all', place: list.place }}
       to="/courses/$courseId/vocabulary"
       variant="quiet-muted"
     >
@@ -68,19 +78,23 @@ const SentenceSelectionControl = ({ courseId, place }: SentenceOriginProps) =>
   );
 
 const SentenceScreen = () => {
-  const { course, place, session } = Route.useLoaderData();
+  const { course, picked, place, session } = Route.useLoaderData();
+  const search = Route.useSearch();
+  const origin = {
+    courseId: course.id,
+    place,
+    list: { filter: search.filter, place: search.place },
+  };
   const router = useRouter();
   const [roundGeneration, setRoundGeneration] = useState(0);
 
   return (
     <FocusLayout
-      exit={<SentenceBackControl courseId={course.id} place={place} />}
-      title={`${place?.name ?? 'Auswahl'} · Sätze übersetzen`}
+      exit={<SentenceBackControl {...origin} />}
+      title={`${picked || place === undefined ? 'Auswahl' : place.name} · Sätze übersetzen`}
     >
       <SentenceRunner
-        backControl={
-          <SentenceSelectionControl courseId={course.id} place={place} />
-        }
+        backControl={<SentenceSelectionControl {...origin} />}
         check={checkSentence}
         continueControl={
           <Button
@@ -105,7 +119,11 @@ const SentenceScreen = () => {
 
 export const Route = createFileRoute('/courses/$courseId/sentences')({
   staticData: focusShell,
-  validateSearch: parseSentenceSearch,
+  // The list's filter and place only lead back to it.
+  validateSearch: (input: unknown) => ({
+    ...parseVocabularySearch(input),
+    ...parseSentenceSearch(input),
+  }),
   loaderDeps: ({ search }) => ({
     book: search.book,
     unit: search.unit,
@@ -132,7 +150,9 @@ export const Route = createFileRoute('/courses/$courseId/sentences')({
     const session = await getSentenceSession({
       data: { courseId: course.id, selection },
     });
-    return { course, place, session };
+    // Words picked by hand are a selection of their own, even when they
+    // were picked on a book's or unit's page.
+    return { course, picked: 'entryIds' in selection, place, session };
   },
   component: SentenceScreen,
 });

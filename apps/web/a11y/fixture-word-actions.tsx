@@ -17,8 +17,13 @@ export const useFixtureWords = (
   initialEntries: ReadonlyArray<VocabularyEntry>,
   renderDetail: (entry: VocabularyEntry) => ReactNode,
 ) => {
-  const { entries, createEntry, updateEntry, removeEntry } =
-    useFixtureEntries(initialEntries);
+  const {
+    entries,
+    createEntry,
+    updateEntry,
+    removeEntry,
+    changeEntryLearning,
+  } = useFixtureEntries(initialEntries);
   const entryActions: CourseEntryActions = {
     renderDetail,
     renderEditor: (entry, control) => (
@@ -38,6 +43,8 @@ export const useFixtureWords = (
       globalThis.setTimeout(() => removeEntry(entry.id));
       return Promise.resolve();
     },
+    skipLearning: (cardIds) => changeEntryLearning(cardIds, 'skip'),
+    returnToLearning: (cardIds) => changeEntryLearning(cardIds, 'return'),
   };
   return { entries, createEntry, entryActions };
 };

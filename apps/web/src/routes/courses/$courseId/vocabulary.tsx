@@ -42,11 +42,11 @@ const VocabularyScreen = () => {
         fallbackFocusRef={introRef}
         initialFilter={filter}
         initialPlaceId={place}
-        renderStudyAction={(entryIds, intent) => (
+        renderStudyAction={(action) => (
           <SelectionActions
+            action={action}
             courseId={course.id}
-            intent={intent}
-            search={{ entries: entryIds.join(',') }}
+            search={{ entries: action.entryIds.join(','), ...action.list }}
             sentences={true}
           />
         )}

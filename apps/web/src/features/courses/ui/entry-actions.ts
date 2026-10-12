@@ -10,7 +10,8 @@ export type EntryEditorControl = {
   readonly onCancel: () => void;
 };
 
-// What can be done with an entry from its dialog.
+// What can be done with an entry from its dialog, and with a selection of
+// entries from the list.
 export type CourseEntryActions = {
   // The example sentence of a word, the key points of a term, or nothing
   // for a text.
@@ -22,6 +23,15 @@ export type CourseEntryActions = {
   // Resolves once the entry is deleted. The list refreshes afterwards, so
   // the dialog closes while the entry's row is still there.
   readonly remove: (entry: VocabularyEntry) => Promise<void>;
+  // Moves cards past the learning pass, straight to their first practice, or
+  // returns cards not yet practised to it. Each resolves to the cards it
+  // changed once the list shows the change.
+  readonly skipLearning: (
+    cardIds: ReadonlyArray<string>,
+  ) => Promise<ReadonlyArray<string>>;
+  readonly returnToLearning: (
+    cardIds: ReadonlyArray<string>,
+  ) => Promise<ReadonlyArray<string>>;
 };
 
 // Saving a corrected entry: the form is disabled meanwhile, and the dialog

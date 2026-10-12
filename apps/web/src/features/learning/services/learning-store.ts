@@ -28,6 +28,7 @@ type AnswerRow = {
   readonly text: string;
 };
 type CardMatchRow = { readonly found: boolean };
+type ChangedCardRow = { readonly id: string };
 
 const databaseError = (operation: string, cause: unknown) =>
   new LearningDatabaseError({
@@ -35,6 +36,16 @@ const databaseError = (operation: string, cause: unknown) =>
     cause,
     message: 'Die Vokabeln konnten nicht geladen werden.',
   });
+
+const saveError = (operation: string, cause: unknown) =>
+  new LearningDatabaseError({
+    operation,
+    cause,
+    message: 'Der Lernstand konnte nicht gespeichert werden.',
+  });
+
+// Postgres reads the ids as one array parameter.
+const uuidArray = (ids: ReadonlyArray<string>) => `{${ids.join(',')}}`;
 
 const passFromRows = (
   items: ReadonlyArray<ItemRow>,
@@ -86,6 +97,20 @@ export class LearningStore extends Context.Service<
       cardId: string,
       at: Date,
     ) => Effect.Effect<boolean, LearningDatabaseError>;
+    // Both resolve to the cards they changed. Cards of another course, of a
+    // direction the course no longer practises, or already in the wanted
+    // state are left alone.
+    readonly skipLearning: (
+      courseId: string,
+      cardIds: ReadonlyArray<string>,
+      at: Date,
+    ) => Effect.Effect<ReadonlyArray<string>, LearningDatabaseError>;
+    // Only a card that was never answered goes back: once it has been, its
+    // schedule already brings it back as often as it is missed.
+    readonly returnToLearning: (
+      courseId: string,
+      cardIds: ReadonlyArray<string>,
+    ) => Effect.Effect<ReadonlyArray<string>, LearningDatabaseError>;
   }
 >()('wordhold/LearningStore') {
   static readonly live = Layer.effect(
@@ -207,7 +232,49 @@ export class LearningStore extends Context.Service<
           Effect.map((rows) => rows[0]?.found ?? false),
           Effect.mapError((cause) => databaseError('introduce card', cause)),
         );
-      return { loadPass, loadSelection, introduce } as const;
+      const skipLearning = (
+        courseId: string,
+        cardIds: ReadonlyArray<string>,
+        at: Date,
+      ) =>
+        sql<ChangedCardRow>`
+          update cards c set introduced_at = ${at}
+          from entries e, courses co
+          where c.id = any(${uuidArray(cardIds)}::uuid[])
+            and e.id = c.entry_id and co.id = e.course_id
+            and e.course_id = ${courseId}
+            and c.direction = any(${practisedDirections(sql)})
+            and c.introduced_at is null
+          returning c.id
+        `.pipe(
+          Effect.map((rows) => rows.map((row) => row.id)),
+          Effect.mapError((cause) => saveError('skip learning', cause)),
+        );
+      const returnToLearning = (
+        courseId: string,
+        cardIds: ReadonlyArray<string>,
+      ) =>
+        sql<ChangedCardRow>`
+          update cards c set introduced_at = null
+          from entries e, courses co
+          where c.id = any(${uuidArray(cardIds)}::uuid[])
+            and e.id = c.entry_id and co.id = e.course_id
+            and e.course_id = ${courseId}
+            and c.direction = any(${practisedDirections(sql)})
+            and c.introduced_at is not null
+            and c.state = 'new'
+          returning c.id
+        `.pipe(
+          Effect.map((rows) => rows.map((row) => row.id)),
+          Effect.mapError((cause) => saveError('return to learning', cause)),
+        );
+      return {
+        loadPass,
+        loadSelection,
+        introduce,
+        skipLearning,
+        returnToLearning,
+      } as const;
     }),
   );
 }

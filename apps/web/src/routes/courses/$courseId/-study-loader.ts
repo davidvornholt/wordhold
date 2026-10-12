@@ -31,6 +31,7 @@ const loadLearningMode = async (
     mode: 'learn' as const,
     preview: { items: [] },
     session: null,
+    unlearned: 0,
   };
 };
 
@@ -59,6 +60,14 @@ const loadPracticeMode = async (
       data: { courseId, direction, selection, includeSwitchedOff },
     });
   }
+  // Practice leaves out what has not been learned yet, so the start screen
+  // says how much that is and offers learning it.
+  const unlearned =
+    session === null
+      ? (
+          await getLearnSelection({ data: { courseId, selection } })
+        ).directions.reduce((sum, progress) => sum + progress.unintroduced, 0)
+      : 0;
   return {
     availableDirections,
     direction,
@@ -66,6 +75,7 @@ const loadPracticeMode = async (
     mode: 'practice' as const,
     preview,
     session,
+    unlearned,
   };
 };
 
@@ -90,6 +100,7 @@ export const loadStudyData = async (
       place,
       selection,
       session: null,
+      unlearned: 0,
     };
   }
   const mode =

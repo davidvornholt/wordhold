@@ -1,7 +1,10 @@
+import { scanWcag22AaViolations } from '@davidvornholt/a11y-testing/axe';
 import { expect, test } from '@playwright/test';
+import { assertNoAccessibilityViolations } from './a11y-assertions';
 
 const forwardDirectionPattern = /Deutsch → Englisch/u;
 const cardStartPattern = /Karten? starten/u;
+const studyActionPattern = /^Auswahl /u;
 
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
@@ -80,4 +83,78 @@ test('an explicit selection of new vocabulary enters the learning pass', async (
   await page.getByRole('button', { name: '2 Vokabeln kennenlernen' }).click();
   await expect(page.locator('body')).toHaveAttribute('data-fixture', 'learn');
   await expect(page.getByLabel('Schreib die Antwort')).toBeVisible();
+});
+
+// Practice asks only what has been learned or skipped, so the selection
+// offers learning first while any of it is still open.
+test('a selection offers learning what is open before practising what is learned', async ({
+  page,
+}) => {
+  await page.goto('/?state=vocabulary');
+  const learn = page.getByRole('button', {
+    exact: true,
+    name: 'Auswahl kennenlernen',
+  });
+  const practise = page.getByRole('button', {
+    exact: true,
+    name: 'Auswahl üben',
+  });
+  await page.getByLabel('the referee auswählen').check();
+  await expect(practise).toBeVisible();
+  await expect(learn).toHaveCount(0);
+
+  // memory is still to be learned from English into German.
+  await page.getByLabel('memory auswählen').check();
+  await expect(
+    page.getByRole('button', { name: studyActionPattern }),
+  ).toHaveText(['Auswahl kennenlernen', 'Auswahl üben']);
+  assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
+
+  await page
+    .getByRole('button', { exact: true, name: 'Kennenlernen überspringen' })
+    .click();
+  const dialog = page.getByRole('dialog', {
+    name: 'Kennenlernen überspringen',
+  });
+  await dialog
+    .getByRole('button', {
+      name: '1 Vokabel überspringen · Englisch → Deutsch',
+    })
+    .click();
+  await dialog.getByRole('button', { name: 'Fertig' }).click();
+  await expect(learn).toHaveCount(0);
+  await expect(practise).toBeVisible();
+});
+
+test('a selection with nothing learned yet offers only learning', async ({
+  page,
+}) => {
+  await page.goto('/?state=terms-course');
+  await page.getByLabel('Enzym auswählen').check();
+  await expect(
+    page.getByRole('button', { exact: true, name: 'Auswahl kennenlernen' }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { exact: true, name: 'Auswahl üben' }),
+  ).toHaveCount(0);
+});
+
+test('practice of a partly learned selection says what it leaves out', async ({
+  page,
+}) => {
+  await page.goto('/?state=study-start-unlearned');
+  await expect(
+    page.getByText(
+      '1 Karte dieser Auswahl hast du noch nicht kennengelernt. Abgefragt wird nur, was du schon kennengelernt oder übersprungen hast.',
+    ),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: '← Vokabelliste' }),
+  ).toBeVisible();
+  assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
+  await page.getByRole('button', { name: 'Auswahl kennenlernen' }).click();
+  await expect(page.locator('body')).toHaveAttribute(
+    'data-fixture',
+    'learn-start',
+  );
 });

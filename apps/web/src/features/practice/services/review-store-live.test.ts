@@ -34,153 +34,91 @@ const acceptedVerdict: JudgeVerdictData = {
 };
 
 describe('PracticeReviewStore introduction contract', () => {
-  it('rejects an unintroduced card without changing practice state', async () => {
-    await Effect.runPromise(
-      withMigratedTestDatabase((database) => {
-        const databaseLayer = testDatabaseLayer(database.url);
-        const reviewLayer = PracticeReviewStore.live.pipe(
-          Layer.provide(databaseLayer),
-        );
-        return Effect.gen(function* () {
-          yield* seedIntroducedCardFixture;
-          const sql = yield* Database;
-          const store = yield* PracticeReviewStore;
-          const [identity] = yield* sql<CardIdentity>`
+  // A hand-picked selection is no exception: a card is learned or skipped
+  // before it is asked.
+  it.each(['scheduled', 'drill'] as const)(
+    'rejects an unintroduced card in %s practice without changing practice state',
+    async (mode) => {
+      await Effect.runPromise(
+        withMigratedTestDatabase((database) => {
+          const databaseLayer = testDatabaseLayer(database.url);
+          const reviewLayer = PracticeReviewStore.live.pipe(
+            Layer.provide(databaseLayer),
+          );
+          return Effect.gen(function* () {
+            yield* seedIntroducedCardFixture;
+            const sql = yield* Database;
+            const store = yield* PracticeReviewStore;
+            const [identity] = yield* sql<CardIdentity>`
             select id, entry_id as "entryId", direction
             from cards where introduced_at is null
             order by direction limit 1
           `;
-          if (identity === undefined) {
-            return yield* Effect.die('Missing unintroduced card fixture.');
-          }
+            if (identity === undefined) {
+              return yield* Effect.die('Missing unintroduced card fixture.');
+            }
 
-          const submission = yield* store.findSubmission(
-            identity.id,
-            0,
-            'scheduled',
-          );
-          expect(submission).toBeUndefined();
+            const submission = yield* store.findSubmission(identity.id, 0);
+            expect(submission).toBeUndefined();
 
-          const card: typeof cards.$inferSelect = {
-            ...identity,
-            introducedAt: null,
-            state: 'new',
-            dueAt: null,
-            stability: null,
-            difficulty: null,
-            reps: 0,
-            lapses: 0,
-            scheduledDays: 0,
-            learningSteps: 0,
-            lastReviewedAt: null,
-            revision: 0,
-          };
-          const result = yield* store
-            .commit({
-              card,
-              expectedRevision: 0,
-              rating: ratings.good,
-              reviewedAt: fixtureNow,
-              outcome: { method: 'judge', verdict: acceptedVerdict },
-              answer: 'nouveau',
-              elapsedMs: 1000,
-              mode: 'scheduled',
-              entryId: identity.entryId,
-              direction: identity.direction,
-              normalizedAnswer: 'nouveau',
-            })
-            .pipe(Effect.result);
-          const failure =
-            result._tag === 'Failure' ? result.failure : undefined;
-          expect(failure).toBeInstanceOf(StaleAnswerSubmissionError);
+            const card: typeof cards.$inferSelect = {
+              ...identity,
+              introducedAt: null,
+              state: 'new',
+              dueAt: null,
+              stability: null,
+              difficulty: null,
+              reps: 0,
+              lapses: 0,
+              scheduledDays: 0,
+              learningSteps: 0,
+              lastReviewedAt: null,
+              revision: 0,
+            };
+            const result = yield* store
+              .commit({
+                card,
+                expectedRevision: 0,
+                rating: ratings.good,
+                reviewedAt: fixtureNow,
+                outcome: { method: 'judge', verdict: acceptedVerdict },
+                answer: 'nouveau',
+                elapsedMs: 1000,
+                mode,
+                entryId: identity.entryId,
+                direction: identity.direction,
+                normalizedAnswer: 'nouveau',
+              })
+              .pipe(Effect.result);
+            const failure =
+              result._tag === 'Failure' ? result.failure : undefined;
+            expect(failure).toBeInstanceOf(StaleAnswerSubmissionError);
 
-          const [stored] = yield* sql<{
-            readonly state: string;
-            readonly revision: number;
-            readonly introducedAt: Date | null;
-          }>`
+            const [stored] = yield* sql<{
+              readonly state: string;
+              readonly revision: number;
+              readonly introducedAt: Date | null;
+            }>`
             select state, revision, introduced_at as "introducedAt"
             from cards where id = ${identity.id}
           `;
-          const [counts] = yield* sql<{
-            readonly reviews: number;
-            readonly alternatives: number;
-          }>`
+            const [counts] = yield* sql<{
+              readonly reviews: number;
+              readonly alternatives: number;
+            }>`
             select
               (select count(*)::int from reviews) as reviews,
               (select count(*)::int from accepted_answers) as alternatives
           `;
-          expect(stored).toEqual({
-            state: 'new',
-            revision: 0,
-            introducedAt: null,
-          });
-          expect(counts).toEqual({ reviews: 0, alternatives: 0 });
-        }).pipe(Effect.provide(reviewLayer), Effect.provide(databaseLayer));
-      }),
-    );
-  });
-});
-
-describe('PracticeReviewStore explicit selection', () => {
-  it('introduces an explicitly selected card with its first answer', async () => {
-    await Effect.runPromise(
-      withMigratedTestDatabase((database) => {
-        const databaseLayer = testDatabaseLayer(database.url);
-        const reviewLayer = PracticeReviewStore.live.pipe(
-          Layer.provide(databaseLayer),
-        );
-        return Effect.gen(function* () {
-          yield* seedIntroducedCardFixture;
-          const sql = yield* Database;
-          const store = yield* PracticeReviewStore;
-          const [identity] = yield* sql<CardIdentity>`
-            select id, entry_id as "entryId", direction
-            from cards where introduced_at is null
-            order by direction limit 1
-          `;
-          if (identity === undefined) {
-            return yield* Effect.die('Missing unintroduced card fixture.');
-          }
-
-          const submission = yield* store.findSubmission(
-            identity.id,
-            0,
-            'drill',
-          );
-          if (submission === undefined) {
-            return yield* Effect.die('Expected the selected card revision.');
-          }
-          expect(
-            yield* store.commit({
-              card: submission.card,
-              expectedRevision: 0,
-              rating: ratings.good,
-              reviewedAt: fixtureNow,
-              outcome: { method: 'judge', verdict: acceptedVerdict },
-              answer: 'nouveau',
-              elapsedMs: 1000,
-              mode: 'drill',
-              entryId: identity.entryId,
-              direction: identity.direction,
-              normalizedAnswer: 'nouveau',
-            }),
-          ).toMatchObject({ revision: 1 });
-
-          const [stored] = yield* sql<{
-            readonly introducedAt: Date | null;
-            readonly reviews: number;
-          }>`
-            select c.introduced_at as "introducedAt",
-              count(r.id)::int as reviews
-            from cards c
-            left join reviews r on r.card_id = c.id
-            where c.id = ${identity.id}
-            group by c.id
-          `;
-          expect(stored).toEqual({ introducedAt: fixtureNow, reviews: 1 });
-        }).pipe(Effect.provide(reviewLayer), Effect.provide(databaseLayer));
-      }),
-    );
-  });
+            expect(stored).toEqual({
+              state: 'new',
+              revision: 0,
+              introducedAt: null,
+            });
+            expect(counts).toEqual({ reviews: 0, alternatives: 0 });
+          }).pipe(Effect.provide(reviewLayer), Effect.provide(databaseLayer));
+        }),
+      );
+    },
+  );
 });

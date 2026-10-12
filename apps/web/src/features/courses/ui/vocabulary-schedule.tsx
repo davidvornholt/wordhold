@@ -1,4 +1,5 @@
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
+import type { ReactNode } from 'react';
 import { type CourseSubject, directionLabel } from '../../../shared/directions';
 import type { VocabularyEntry } from '../schemas/course-units';
 import { cardStatus, type VocabularyCard } from './vocabulary-schedule-status';
@@ -28,6 +29,9 @@ type ScheduleItemsProps = {
   readonly entry: VocabularyEntry;
   readonly subject: CourseSubject;
   readonly now: Date;
+  // What can be done with a direction the course practises, as a further
+  // description of it.
+  readonly renderCardAction: (card: VocabularyCard) => ReactNode;
 };
 
 // One item of a description list per direction: when it comes up next, or
@@ -37,6 +41,7 @@ export const ScheduleItems = ({
   entry,
   subject,
   now,
+  renderCardAction,
 }: ScheduleItemsProps) => (
   <>
     {entry.cards.map((card) => (
@@ -52,6 +57,9 @@ export const ScheduleItems = ({
           />
           {card.failures > 0 ? ` · ${card.failures}× nicht gewusst` : ''}
         </dd>
+        {enabledDirections.includes(card.direction)
+          ? renderCardAction(card)
+          : null}
       </div>
     ))}
   </>

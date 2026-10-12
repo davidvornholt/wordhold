@@ -2,7 +2,7 @@ import { Database } from '@wordhold/db/client';
 import type { CourseKind, LanguageCode } from '@wordhold/db/schema/courses';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import type { AnswerSource } from '@wordhold/db/schema/entries';
-import type { cards, ReviewMode } from '@wordhold/db/schema/practice';
+import type { cards } from '@wordhold/db/schema/practice';
 import { Context, Effect, Layer } from 'effect';
 import type { AcceptedAnswer } from '../../../shared/grading/deterministic-match';
 import { ratings } from '../../../shared/grading/rating';
@@ -55,7 +55,6 @@ export class PracticeReviewStore extends Context.Service<
     readonly findSubmission: (
       cardId: string,
       revision: number,
-      mode: ReviewMode,
     ) => Effect.Effect<SubmissionRecord | undefined, PracticeDatabaseError>;
     readonly listAcceptedAnswers: (
       entryId: string,
@@ -79,11 +78,7 @@ export class PracticeReviewStore extends Context.Service<
     PracticeReviewStore,
     Effect.gen(function* () {
       const sql = yield* Database;
-      const findSubmission = (
-        cardId: string,
-        revision: number,
-        mode: ReviewMode,
-      ) =>
+      const findSubmission = (cardId: string, revision: number) =>
         sql<SubmissionRow>`
           select c.id, c.entry_id as "entryId", c.direction,
             c.state, c.due_at as "dueAt", c.stability, c.difficulty,
@@ -98,10 +93,7 @@ export class PracticeReviewStore extends Context.Service<
           join entries e on e.id = c.entry_id
           join courses co on co.id = e.course_id
           where c.id = ${cardId} and c.revision = ${revision}
-            and (
-              c.introduced_at is not null
-              or ${mode}::review_mode = 'drill'::review_mode
-            )
+            and c.introduced_at is not null
         `.pipe(
           Effect.map((rows) => {
             const [row] = rows;
@@ -166,23 +158,15 @@ export class PracticeReviewStore extends Context.Service<
                           lapses = ${next.lapses}, scheduled_days = ${next.scheduledDays},
                           learning_steps = ${next.learningSteps},
                           last_reviewed_at = ${next.lastReviewedAt},
-                          revision = revision + 1,
-                          introduced_at = coalesce(introduced_at, ${input.reviewedAt})
+                          revision = revision + 1
                         where id = ${input.card.id} and revision = ${input.expectedRevision}
-                          and (
-                            introduced_at is not null
-                            or ${input.mode}::review_mode = 'drill'::review_mode
-                          )
+                          and introduced_at is not null
                         returning revision
                       `
                     : sql<{ readonly revision: number }>`
-                        update cards set revision = revision + 1,
-                          introduced_at = coalesce(introduced_at, ${input.reviewedAt})
+                        update cards set revision = revision + 1
                         where id = ${input.card.id} and revision = ${input.expectedRevision}
-                          and (
-                            introduced_at is not null
-                            or ${input.mode}::review_mode = 'drill'::review_mode
-                          )
+                          and introduced_at is not null
                         returning revision
                       `
                   ).pipe(
