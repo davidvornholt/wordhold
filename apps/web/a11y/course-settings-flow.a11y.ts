@@ -66,7 +66,7 @@ test('synonyms and antonyms switch together but never stand alone', async ({
   const relatedWords = page.getByLabel('Synonyme und Gegenteile');
   const status = page.getByRole('status', { name: 'Speicherstatus' });
   await expect(relatedWords).toHaveAccessibleDescription(
-    'Du siehst eine Vokabel auf Englisch und schreibst ein Synonym oder ein Gegenteil dazu. Nur Vokabeln, zu denen du Synonyme oder Gegenteile gespeichert hast, bekommen diese Karten.',
+    'Du siehst eine Vokabel auf Englisch und schreibst ein Synonym oder ein Gegenteil dazu. Nur Vokabeln, zu denen du Synonyme oder Gegenteile gespeichert hast, bekommen diese Karten. Sie werden ohne eigenes Kennenlernen abgefragt, sobald du die Vokabel kennengelernt hast.',
   );
 
   await toNative.uncheck();

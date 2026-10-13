@@ -105,8 +105,9 @@ export class DashboardStore extends Context.Service<
               group by co.id, d.direction
               having d.direction = any(co.directions) or count(c.id) > 0
             `,
-            // Counted per entry for the CTA, but only across enabled card
-            // directions. Enabling a direction later makes its untouched
+            // Counted per entry for the CTA, but only across the translation
+            // directions the course learns; synonyms and antonyms follow
+            // their word. Enabling a direction later makes its untouched
             // entries available for a new learning pass.
             unintroduced: sql<CountRow>`
               select e.course_id as "courseId", count(distinct e.id)::int as count
@@ -115,7 +116,7 @@ export class DashboardStore extends Context.Service<
               where co.owner_id = ${ownerId} and exists (
                 select 1 from cards c
                 where c.entry_id = e.id
-                  and c.direction = any(${practisedDirections(sql)})
+                  and c.direction = any(co.directions)
                   and c.introduced_at is null
               )
               group by e.course_id

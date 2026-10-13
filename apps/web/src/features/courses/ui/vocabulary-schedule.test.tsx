@@ -2,7 +2,13 @@ import { describe, expect, it } from 'bun:test';
 import { renderToStaticMarkup } from 'react-dom/server';
 import type { VocabularyEntry } from '../schemas/course-units';
 import { ScheduleItems } from './vocabulary-schedule';
-import { scheduleSummary } from './vocabulary-schedule-status';
+import {
+  cardStatus,
+  hasOpenLearning,
+  learningChangeFor,
+  scheduleSummary,
+  type VocabularyCard,
+} from './vocabulary-schedule-status';
 
 const entry: VocabularyEntry = {
   id: '00000000-0000-0000-0000-000000000001',
@@ -63,5 +69,37 @@ describe('vocabulary schedule', () => {
     expect(markup).toContain('31.08.2026 um 10:00');
     expect(markup).toContain('Nicht im Lernplan');
     expect(markup).toContain('1× nicht gewusst');
+  });
+
+  it('lets synonyms and antonyms wait for their word instead of learning them', () => {
+    const target: VocabularyCard = {
+      cardId: '00000000-0000-0000-0000-000000000005',
+      direction: 'to_target',
+      state: 'new',
+      dueAt: null,
+      introducedAt: null,
+      failures: 0,
+    };
+    const synonym: VocabularyCard = {
+      ...target,
+      cardId: '00000000-0000-0000-0000-000000000006',
+      direction: 'to_synonym',
+    };
+    const unlearned: VocabularyEntry = {
+      ...entry,
+      synonyms: ['recollection'],
+      introduced: false,
+      cards: [target, synonym],
+    };
+
+    expect(cardStatus(synonym, now)).toBe(
+      'Wird abgefragt, sobald die Vokabel kennengelernt ist',
+    );
+    expect(learningChangeFor(synonym)).toBeNull();
+    expect(learningChangeFor(target)).toBe('skip');
+    expect(hasOpenLearning([unlearned], ['to_synonym'])).toBe(false);
+    expect(hasOpenLearning([unlearned], ['to_target', 'to_synonym'])).toBe(
+      true,
+    );
   });
 });

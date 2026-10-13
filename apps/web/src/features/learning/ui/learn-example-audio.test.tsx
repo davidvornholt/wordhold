@@ -9,7 +9,6 @@ const item: LearnItem = {
   entryId: '00000000-0000-0000-0000-000000000001',
   targetText: 'memory',
   nativeText: 'die Erinnerung',
-  relatedWords: [],
   hasAudio: true,
   example: null,
   textbookAnswers: ['memory'],

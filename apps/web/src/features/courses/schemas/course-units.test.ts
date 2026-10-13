@@ -167,6 +167,18 @@ describe('recommendedAction', () => {
     ).toEqual({ kind: 'learn', direction: 'to_target' });
   });
 
+  it('never recommends learning synonyms or antonyms, which follow their word', () => {
+    expect(
+      recommendedAction({
+        ...unit(mixedEntries, mixedEntries, 0),
+        directions: [
+          progress('to_target', { introduced: mixedEntries }),
+          progress('to_synonym', { unintroduced: mixedUnintroduced }),
+        ],
+      }),
+    ).toBeNull();
+  });
+
   it('recommends nothing while every learned path is resting', () => {
     expect(
       recommendedAction({

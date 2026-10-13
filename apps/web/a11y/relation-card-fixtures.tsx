@@ -1,49 +1,28 @@
-import type { LearnItem } from '../src/features/learning/schemas/learning-models';
-import { LearnPass } from '../src/features/learning/ui/learn-pass';
 import type { SubmitResult } from '../src/features/practice/schemas/practice-models';
 import type { SubmitPayloadData } from '../src/features/practice/schemas/submission-schema';
 import { CardPractice } from '../src/features/practice/ui/card-practice';
-import { directionLabel } from '../src/shared/directions';
 import { withoutExamples } from '../src/shared/examples/example-model';
 import { ratings } from '../src/shared/grading/rating';
 import { CardRail } from '../src/shared/ui/card-rail';
 import { FocusLayout } from '../src/shared/ui/focus-layout';
 import { englishSubject } from './course-fixture-data';
-import { fixtureBackControl, fixtureControl } from './fixture-controls';
+import { fixtureBackControl } from './fixture-controls';
 import { navigateToFixture } from './fixture-state';
 
 const synonyms = ['unfriendly', 'aggressive'];
 
-const learnItem: LearnItem = {
+const practiceItem = {
   cardId: '00000000-0000-0000-0000-000000000061',
-  direction: 'to_synonym',
+  revision: 0,
+  direction: 'to_synonym' as const,
   entryId: '00000000-0000-0000-0000-000000000062',
   targetText: 'hostile',
   nativeText: 'feindselig',
   relatedWords: synonyms,
   hasAudio: false,
-  example: {
-    targetText: 'The dog was hostile to strangers.',
-    nativeText: 'Der Hund war Fremden gegenüber feindselig.',
-    source: 'textbook',
-    hasAudio: false,
-  },
-  textbookAnswers: synonyms,
-  keyPoints: null,
-};
-
-const practiceItem = {
-  cardId: learnItem.cardId,
-  revision: 0,
-  direction: 'to_synonym' as const,
-  entryId: learnItem.entryId,
-  targetText: learnItem.targetText,
-  nativeText: learnItem.nativeText,
-  relatedWords: synonyms,
-  hasAudio: false,
   entryKnown: false,
   example: null,
-  prompt: learnItem.targetText,
+  prompt: 'hostile',
 };
 
 const backControl = fixtureBackControl('Unit 3 – Holidays', 'unit');
@@ -83,23 +62,6 @@ const submitSynonym = ({
     entryKnown: false,
   });
 };
-
-export const SynonymLearnFixture = () => (
-  <FocusLayout exit={backControl} title="Unit 3: Holidays · Kennenlernen">
-    <LearnPass
-      completionControls={fixtureControl(
-        'Jetzt üben · Synonyme',
-        'synonym-practice',
-        'primary',
-      )}
-      directionLabel={directionLabel('to_synonym', englishSubject)}
-      items={[learnItem]}
-      onIntroduce={() => Promise.resolve()}
-      prepareExamples={withoutExamples}
-      subject={englishSubject}
-    />
-  </FocusLayout>
-);
 
 export const SynonymPracticeFixture = () => (
   <FocusLayout exit={backControl} title="English A2 · Üben">

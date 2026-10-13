@@ -6,6 +6,7 @@ import {
   courseNouns,
   directionLabel,
   isListCourse,
+  isRelationDirection,
 } from '../../../shared/directions';
 import { countNoun } from '../../../shared/format/count';
 import { Button } from '../../../shared/ui/button';
@@ -17,7 +18,10 @@ import {
   learningChangeFailure,
   useLearningChange,
 } from './use-learning-change';
-import { openLearningCardIds } from './vocabulary-schedule-status';
+import {
+  learningDirections,
+  openLearningCardIds,
+} from './vocabulary-schedule-status';
 
 const entryGenitives = {
   language: 'der Vokabel',
@@ -104,7 +108,7 @@ const DirectionRow = ({
     label = 'Rückgängig';
   }
 
-  // Only words with synonyms or antonyms have those cards.
+  // Nothing to say about a direction none of these entries has a card in.
   if (total === 0) {
     return null;
   }
@@ -173,6 +177,13 @@ export const SkipLearningDialog = ({
   const [busy, setBusy] = useState(0);
   const [notice, setNotice] = useState('');
   const nouns = courseNouns(subject);
+  const asksRelations = entries.some((entry) =>
+    entry.cards.some(
+      (card) =>
+        isRelationDirection(card.direction) &&
+        enabledDirections.includes(card.direction),
+    ),
+  );
   // Each opening starts over, so undo only ever returns this sitting's skips.
   const close = () => {
     setSkipped({});
@@ -186,8 +197,10 @@ export const SkipLearningDialog = ({
       description={
         <p className="text-muted-foreground">
           Übersprungene {nouns.plural} kommen ohne Kennenlernen direkt in die
-          nächste Übung. Solange eine Richtung noch nicht geübt ist, kannst du
-          sie in den Details {entryGenitives[subject.kind]} wieder kennenlernen.
+          nächste Übung
+          {asksRelations ? ', ihre Synonyme und Gegenteile mit ihnen' : ''}.
+          Solange eine Richtung noch nicht geübt ist, kannst du sie in den
+          Details {entryGenitives[subject.kind]} wieder kennenlernen.
         </p>
       }
       onClose={close}
@@ -196,7 +209,7 @@ export const SkipLearningDialog = ({
       title="Kennenlernen überspringen"
     >
       <div className="flex flex-col gap-4 text-sm">
-        {enabledDirections.map((direction) => (
+        {learningDirections(enabledDirections).map((direction) => (
           <DirectionRow
             actions={actions}
             direction={direction}

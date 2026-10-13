@@ -1,17 +1,17 @@
-import type { AnswerDirection } from '@wordhold/db/schema/directions';
+import type { TranslationDirection } from '@wordhold/db/schema/directions';
 import type { PreparedExampleSentence } from '../../../shared/examples/example-model';
 
 // One direction of a learning pass. Its answer starts as the input placeholder
 // and screen-reader hint; both disappear once the learner types. The accepted
 // answers travel with the item, so matching needs no round trip or grading.
+// Synonyms and antonyms have no learning pass; they are asked once their word
+// is learned.
 export type LearnItem = {
   readonly cardId: string;
-  readonly direction: AnswerDirection;
+  readonly direction: TranslationDirection;
   readonly entryId: string;
   readonly targetText: string;
   readonly nativeText: string;
-  // For a synonym or antonym card, the words it asks for; empty otherwise.
-  readonly relatedWords: ReadonlyArray<string>;
   readonly hasAudio: boolean;
   readonly example: PreparedExampleSentence | null;
   readonly textbookAnswers: ReadonlyArray<string>;
@@ -22,7 +22,7 @@ export type LearnItem = {
 export type LearnSelectionPass = {
   readonly items: ReadonlyArray<LearnItem>;
   readonly directions: ReadonlyArray<{
-    readonly direction: AnswerDirection;
+    readonly direction: TranslationDirection;
     readonly unintroduced: number;
   }>;
 };

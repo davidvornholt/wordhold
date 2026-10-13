@@ -79,6 +79,57 @@ const storedEntries: ReadonlyArray<VocabularyEntry> = [
   },
 ];
 
+// A word of a course that practises synonyms and opposites, not learned yet
+// in either direction, so its synonyms and opposites wait for it.
+const relatedEntry: VocabularyEntry = {
+  id: '00000000-0000-0000-0000-000000000013',
+  bookId: '00000000-0000-0000-0000-000000000031',
+  bookName: 'Green Line 3',
+  unitId: '00000000-0000-0000-0000-000000000003',
+  unitName: 'Unit 3: Holidays',
+  targetText: 'happy',
+  nativeText: 'glücklich',
+  keyPoints: null,
+  synonyms: ['glad', 'cheerful'],
+  antonyms: ['sad'],
+  example: null,
+  introduced: false,
+  cards: [
+    {
+      cardId: '00000000-0000-0000-0000-000000000025',
+      direction: 'to_target',
+      state: 'new',
+      dueAt: null,
+      introducedAt: null,
+      failures: 0,
+    },
+    {
+      cardId: '00000000-0000-0000-0000-000000000026',
+      direction: 'to_native',
+      state: 'new',
+      dueAt: null,
+      introducedAt: null,
+      failures: 0,
+    },
+    {
+      cardId: '00000000-0000-0000-0000-000000000027',
+      direction: 'to_synonym',
+      state: 'new',
+      dueAt: null,
+      introducedAt: null,
+      failures: 0,
+    },
+    {
+      cardId: '00000000-0000-0000-0000-000000000028',
+      direction: 'to_antonym',
+      state: 'new',
+      dueAt: null,
+      introducedAt: null,
+      failures: 0,
+    },
+  ],
+};
+
 const FixtureExample = ({ entry }: { readonly entry: VocabularyEntry }) => (
   <VocabularyExample
     entry={entry}
@@ -95,12 +146,16 @@ const FixtureExample = ({ entry }: { readonly entry: VocabularyEntry }) => (
 
 export const VocabularyFixture = ({
   difficult = false,
+  related = false,
 }: {
   readonly difficult?: boolean;
+  // The course practises synonyms and opposites too.
+  readonly related?: boolean;
 }) => {
-  const { entries, entryActions } = useFixtureWords(storedEntries, (entry) => (
-    <FixtureExample entry={entry} />
-  ));
+  const { entries, entryActions } = useFixtureWords(
+    related ? [...storedEntries, relatedEntry] : storedEntries,
+    (entry) => <FixtureExample entry={entry} />,
+  );
   const introRef = useRef<HTMLParagraphElement>(null);
   return (
     <PageLayout
@@ -116,7 +171,11 @@ export const VocabularyFixture = ({
         Einheiten.
       </p>
       <VocabularyLibrary
-        enabledDirections={['to_target', 'to_native']}
+        enabledDirections={
+          related
+            ? ['to_target', 'to_native', 'to_synonym', 'to_antonym']
+            : ['to_target', 'to_native']
+        }
         entries={entries}
         entryActions={entryActions}
         fallbackFocusRef={introRef}
