@@ -4,6 +4,7 @@ import type {
   VocabularyEntry,
   WordProgress,
 } from '../../../features/courses/schemas/course-units';
+import type { VocabularyFilter } from '../../../features/courses/schemas/vocabulary-search';
 import { DirectionPlan } from '../../../features/courses/ui/direction-plan';
 import { PlaceVocabulary } from '../../../features/courses/ui/place-vocabulary';
 import type { WordPlace } from '../../../features/courses/ui/word-places';
@@ -167,6 +168,7 @@ export const PlaceWordRelations = ({
 };
 
 type PlaceWordsProps = {
+  readonly initialFilter: VocabularyFilter;
   readonly course: EntryCourse;
   readonly place: WordPlace;
   readonly enabledDirections: ReadonlyArray<AnswerDirection>;
@@ -176,6 +178,7 @@ type PlaceWordsProps = {
 
 export const PlaceWords = ({
   course,
+  initialFilter,
   place,
   enabledDirections,
   entries,
@@ -201,12 +204,14 @@ export const PlaceWords = ({
           Seite fotografieren
         </ActionLink>
       }
+      initialFilter={initialFilter}
       place={place.unitId === null ? 'book' : 'unit'}
       renderStudyAction={(action) => (
         <SelectionActions
           action={action}
           courseId={courseId}
           search={{
+            filter: action.list.filter,
             // The place stays the origin of a partial selection, so the
             // screen it opens leads back to its page.
             entries:

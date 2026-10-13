@@ -48,7 +48,11 @@ const SentenceBackControl = ({ courseId, place, list }: SentenceOriginProps) =>
       Vokabelliste
     </BackLink>
   ) : (
-    <PlaceBackLink courseId={courseId} selection={place.selection}>
+    <PlaceBackLink
+      courseId={courseId}
+      filter={list.filter}
+      selection={place.selection}
+    >
       {place.name}
     </PlaceBackLink>
   );
@@ -70,6 +74,7 @@ const SentenceSelectionControl = ({
   ) : (
     <PlacePageLink
       courseId={courseId}
+      filter={list.filter}
       selection={place.selection}
       variant="quiet-muted"
     >

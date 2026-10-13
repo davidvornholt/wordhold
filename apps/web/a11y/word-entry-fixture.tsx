@@ -118,6 +118,7 @@ export const FixturePlaceVocabulary = ({
         />
       }
       importAction={fixtureControl('Seite fotografieren', 'import', 'primary')}
+      initialFilter="all"
       place={unit === null ? 'book' : 'unit'}
       renderStudyAction={(action) => <FixtureStudyAction action={action} />}
       subject={englishSubject}

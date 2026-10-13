@@ -1,4 +1,5 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
+import { parseSubjectSearch } from '../../../../../features/courses/schemas/vocabulary-search';
 import {
   getCourseDirections,
   getCourseOutline,
@@ -20,6 +21,7 @@ import {
 // One screen per unit: progress, the unit's actions, and its vocabulary as a
 // selectable list — no separate filtered Vokabelliste to jump to.
 const UnitScreen = () => {
+  const { filter } = Route.useSearch();
   const { book, course, courseEntries, directions, unit, unitEntries } =
     Route.useLoaderData();
   const backControl =
@@ -79,6 +81,7 @@ const UnitScreen = () => {
         courseEntries={courseEntries}
         enabledDirections={directions}
         entries={unitEntries}
+        initialFilter={filter ?? 'all'}
         place={place}
       />
     </PageLayout>
@@ -86,6 +89,7 @@ const UnitScreen = () => {
 };
 
 export const Route = createFileRoute('/courses/$courseId/units/$unitId/')({
+  validateSearch: parseSubjectSearch,
   // The unit comes from the course's own list, which is what confirms it
   // belongs to this course before its entries are read.
   loader: async ({ params }) => {

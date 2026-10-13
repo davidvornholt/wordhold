@@ -57,6 +57,7 @@ const StudySelectionControl = ({
     return (
       <PlacePageLink
         courseId={course.id}
+        filter={list.filter}
         selection={place.selection}
         variant="quiet-muted"
       >
@@ -100,7 +101,11 @@ const StudyBackControl = ({
 }: StudyOrigin) => {
   if (place !== undefined) {
     return (
-      <PlaceBackLink courseId={course.id} selection={place.selection}>
+      <PlaceBackLink
+        courseId={course.id}
+        filter={list.filter}
+        selection={place.selection}
+      >
         {place.name}
       </PlaceBackLink>
     );
