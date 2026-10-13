@@ -44,6 +44,46 @@ const saveError = (operation: string, cause: unknown) =>
 // Postgres reads the ids as one array parameter.
 const uuidArray = (ids: ReadonlyArray<string>) => `{${ids.join(',')}}`;
 
+// Lock words before cards, as related-word edits do. Separate statements
+// let synchronization read a fresh snapshot after a competing commit.
+const lockEntries = (
+  sql: Database,
+  courseId: string,
+  cardIds: ReadonlyArray<string>,
+) =>
+  sql`
+    select e.id from entries e
+    where e.course_id = ${courseId} and exists (
+      select 1 from cards c
+      join courses co on co.id = e.course_id
+      where c.entry_id = e.id
+        and c.id = any(${uuidArray(cardIds)}::uuid[])
+        and c.direction = any(co.directions)
+    )
+    order by e.id
+    for no key update of e
+  `;
+
+// The changed cards' words then ask or hold back their synonyms and
+// antonyms in the same transaction.
+const changeLearning = <E>(
+  sql: Database,
+  courseId: string,
+  cardIds: ReadonlyArray<string>,
+  changed: Effect.Effect<ReadonlyArray<ChangedCardRow>, E>,
+) =>
+  sql.withTransaction(
+    Effect.gen(function* () {
+      yield* lockEntries(sql, courseId, cardIds);
+      const rows = yield* changed;
+      yield* syncRelationIntroduction(
+        sql,
+        rows.map((row) => row.entryId),
+      );
+      return rows.map((row) => row.id);
+    }),
+  );
+
 const passFromRows = (
   items: ReadonlyArray<ItemRow>,
   answers: ReadonlyArray<AnswerRow>,
@@ -213,6 +253,7 @@ export class LearningStore extends Context.Service<
         sql
           .withTransaction(
             Effect.gen(function* () {
+              yield* lockEntries(sql, courseId, [cardId]);
               const matched = yield* sql<MatchedCardRow>`
                 with matching_card as (
                   select c.id, c.entry_id
@@ -237,27 +278,16 @@ export class LearningStore extends Context.Service<
           .pipe(
             Effect.mapError((cause) => databaseError('introduce card', cause)),
           );
-      // The changed cards' words then ask or hold back their synonyms and
-      // antonyms in the same transaction.
-      const changeLearning = <E>(
-        changed: Effect.Effect<ReadonlyArray<ChangedCardRow>, E>,
-      ) =>
-        sql.withTransaction(
-          Effect.gen(function* () {
-            const rows = yield* changed;
-            yield* syncRelationIntroduction(
-              sql,
-              rows.map((row) => row.entryId),
-            );
-            return rows.map((row) => row.id);
-          }),
-        );
       const skipLearning = (
         courseId: string,
         cardIds: ReadonlyArray<string>,
         at: Date,
       ) =>
-        changeLearning(sql<ChangedCardRow>`
+        changeLearning(
+          sql,
+          courseId,
+          cardIds,
+          sql<ChangedCardRow>`
           update cards c set introduced_at = ${at}
           from entries e, courses co
           where c.id = any(${uuidArray(cardIds)}::uuid[])
@@ -266,12 +296,17 @@ export class LearningStore extends Context.Service<
             and c.direction = any(co.directions)
             and c.introduced_at is null
           returning c.id, c.entry_id as "entryId"
-        `).pipe(Effect.mapError((cause) => saveError('skip learning', cause)));
+        `,
+        ).pipe(Effect.mapError((cause) => saveError('skip learning', cause)));
       const returnToLearning = (
         courseId: string,
         cardIds: ReadonlyArray<string>,
       ) =>
-        changeLearning(sql<ChangedCardRow>`
+        changeLearning(
+          sql,
+          courseId,
+          cardIds,
+          sql<ChangedCardRow>`
           update cards c set introduced_at = null
           from entries e, courses co
           where c.id = any(${uuidArray(cardIds)}::uuid[])
@@ -281,7 +316,8 @@ export class LearningStore extends Context.Service<
             and c.introduced_at is not null
             and c.state = 'new'
           returning c.id, c.entry_id as "entryId"
-        `).pipe(
+        `,
+        ).pipe(
           Effect.mapError((cause) => saveError('return to learning', cause)),
         );
       return {

@@ -96,6 +96,18 @@ export const writeRelatedWords = (
   writes: ReadonlyArray<RelatedWordsWrite>,
 ) =>
   Effect.gen(function* () {
+    // Learning changes take the same entry locks before touching cards.
+    // Lock the whole batch in id order before UPDATE chooses its own order.
+    yield* sql`
+      select e.id from entries e
+      where exists (
+        select 1 from jsonb_to_recordset(${JSON.stringify(writes)}::jsonb)
+          as r("courseId" uuid, "entryId" uuid)
+        where e.id = r."entryId" and e.course_id = r."courseId"
+      )
+      order by e.id
+      for no key update of e
+    `;
     const written = yield* sql<WrittenRow>`
       update entries e
       set synonyms = case when r.synonyms is null then null
