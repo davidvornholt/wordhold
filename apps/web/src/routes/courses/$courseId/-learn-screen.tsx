@@ -85,7 +85,12 @@ const LearnDoneControls = ({
 }: LearnDoneControlsProps) => {
   if (selection === null) {
     return (
-      <PlacePageLink courseId={courseId} selection={null} variant="primary">
+      <PlacePageLink
+        courseId={courseId}
+        filter={undefined}
+        selection={null}
+        variant="primary"
+      >
         Zurück zu {name}
       </PlacePageLink>
     );
@@ -208,7 +213,11 @@ export const LearnScreen = ({
   return (
     <FocusLayout
       exit={
-        <PlaceBackLink courseId={course.id} selection={selection}>
+        <PlaceBackLink
+          courseId={course.id}
+          filter={undefined}
+          selection={selection}
+        >
           {pass.name}
         </PlaceBackLink>
       }

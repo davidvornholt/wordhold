@@ -20,7 +20,11 @@ const RelationScreen = () => {
   return (
     <PageLayout
       backControl={
-        <PlaceBackLink courseId={course.id} selection={place.selection}>
+        <PlaceBackLink
+          courseId={course.id}
+          filter={undefined}
+          selection={place.selection}
+        >
           {place.name}
         </PlaceBackLink>
       }

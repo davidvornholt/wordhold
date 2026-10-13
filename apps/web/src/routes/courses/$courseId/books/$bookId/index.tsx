@@ -9,6 +9,7 @@ import type {
   CourseOutline,
   CourseUnit,
 } from '../../../../../features/courses/schemas/course-units';
+import { parseSubjectSearch } from '../../../../../features/courses/schemas/vocabulary-search';
 import {
   createCourseUnit,
   getCourseDirections,
@@ -86,6 +87,7 @@ const unitsOf = (
 // its own shows only the units. Editing renames the book and arranges or adds
 // its units.
 const BookScreen = () => {
+  const { filter } = Route.useSearch();
   const { book, books, course, courseEntries, directions, entries, units } =
     Route.useLoaderData();
   const router = useRouter();
@@ -165,6 +167,7 @@ const BookScreen = () => {
             courseEntries={courseEntries}
             enabledDirections={directions}
             entries={entries}
+            initialFilter={filter ?? 'all'}
             place={wordPlace}
           />
         ) : null}
@@ -181,6 +184,7 @@ const BookScreen = () => {
 };
 
 export const Route = createFileRoute('/courses/$courseId/books/$bookId/')({
+  validateSearch: parseSubjectSearch,
   // The book comes from the course's own list, which is what confirms it
   // belongs to this course before its entries are read.
   loader: async ({ params }) => {

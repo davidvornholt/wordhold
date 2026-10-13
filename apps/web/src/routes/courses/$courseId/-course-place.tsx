@@ -6,6 +6,7 @@ import {
   unitsByBook,
   type WordProgress,
 } from '../../../features/courses/schemas/course-units';
+import type { VocabularyFilter } from '../../../features/courses/schemas/vocabulary-search';
 import { selectedEntryIds } from '../../../features/practice/schemas/session-request';
 import type {
   PlaceSelectionData,
@@ -73,14 +74,23 @@ type PlaceLinkProps = {
   readonly children: ReactNode;
 };
 
+type PlaceReturnLinkProps = PlaceLinkProps & {
+  readonly filter: VocabularyFilter | undefined;
+};
+
 export const PlaceBackLink = ({
   courseId,
+  filter,
   selection,
   children,
-}: PlaceLinkProps) => {
+}: PlaceReturnLinkProps) => {
   if (selection === null) {
     return (
-      <BackLink params={{ courseId }} to="/courses/$courseId">
+      <BackLink
+        params={{ courseId }}
+        search={{ filter }}
+        to="/courses/$courseId"
+      >
         {children}
       </BackLink>
     );
@@ -88,6 +98,7 @@ export const PlaceBackLink = ({
   return 'bookId' in selection ? (
     <BackLink
       params={{ courseId, bookId: selection.bookId }}
+      search={{ filter }}
       to="/courses/$courseId/books/$bookId"
     >
       {children}
@@ -95,6 +106,7 @@ export const PlaceBackLink = ({
   ) : (
     <BackLink
       params={{ courseId, unitId: selection.unitId }}
+      search={{ filter }}
       to="/courses/$courseId/units/$unitId"
     >
       {children}
@@ -104,14 +116,16 @@ export const PlaceBackLink = ({
 
 export const PlacePageLink = ({
   courseId,
+  filter,
   selection,
   variant,
   children,
-}: PlaceLinkProps & { readonly variant: ActionVariant }) => {
+}: PlaceReturnLinkProps & { readonly variant: ActionVariant }) => {
   if (selection === null) {
     return (
       <ActionLink
         params={{ courseId }}
+        search={{ filter }}
         to="/courses/$courseId"
         variant={variant}
       >
@@ -122,6 +136,7 @@ export const PlacePageLink = ({
   return 'bookId' in selection ? (
     <ActionLink
       params={{ courseId, bookId: selection.bookId }}
+      search={{ filter }}
       to="/courses/$courseId/books/$bookId"
       variant={variant}
     >
@@ -130,6 +145,7 @@ export const PlacePageLink = ({
   ) : (
     <ActionLink
       params={{ courseId, unitId: selection.unitId }}
+      search={{ filter }}
       to="/courses/$courseId/units/$unitId"
       variant={variant}
     >

@@ -4,6 +4,7 @@ import type { CourseSubject } from '../../../shared/directions';
 import { Button } from '../../../shared/ui/button';
 import { Dialog } from '../../../shared/ui/dialog';
 import type { VocabularyEntry } from '../schemas/course-units';
+import type { VocabularyFilter } from '../schemas/vocabulary-search';
 import type { CourseEntryActions } from './entry-actions';
 import { PlaceVocabularyEmpty } from './place-vocabulary-empty';
 import type { StudyAction } from './study-action';
@@ -11,6 +12,7 @@ import { VocabularyLibrary } from './vocabulary-library';
 
 type PlaceVocabularyProps = {
   readonly place: 'book' | 'unit';
+  readonly initialFilter: VocabularyFilter;
   readonly entries: ReadonlyArray<VocabularyEntry>;
   readonly enabledDirections: ReadonlyArray<AnswerDirection>;
   readonly subject: CourseSubject;
@@ -28,6 +30,7 @@ type PlaceVocabularyProps = {
 // to photographing.
 export const PlaceVocabulary = ({
   place,
+  initialFilter,
   entries,
   enabledDirections,
   subject,
@@ -67,7 +70,7 @@ export const PlaceVocabulary = ({
         entries={entries}
         entryActions={entryActions}
         fallbackFocusRef={headingRef}
-        initialFilter="all"
+        initialFilter={initialFilter}
         layout="flat"
         renderStudyAction={renderStudyAction}
         subject={subject}

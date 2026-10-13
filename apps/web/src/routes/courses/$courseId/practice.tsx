@@ -49,7 +49,11 @@ const PracticeScreen = () => {
     place === undefined ? (
       <BackLink to="/">Übersicht</BackLink>
     ) : (
-      <PlaceBackLink courseId={course.id} selection={place.selection}>
+      <PlaceBackLink
+        courseId={course.id}
+        filter={undefined}
+        selection={place.selection}
+      >
         {place.name}
       </PlaceBackLink>
     );
@@ -61,6 +65,7 @@ const PracticeScreen = () => {
     ) : (
       <PlacePageLink
         courseId={course.id}
+        filter={undefined}
         selection={place.selection}
         variant="quiet-muted"
       >
