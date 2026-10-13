@@ -9,17 +9,27 @@ const toneBorder: Record<CardTone, string> = {
   warning: 'border-warning-foreground',
 };
 
-const wordSize = {
-  word: 'text-4xl sm:text-5xl',
-  // A sentence to translate runs to several words, so it is set smaller.
-  sentence: 'text-2xl sm:text-3xl',
-} as const;
+// A sentence to translate runs to several words, so it is set smaller.
+const sentenceSize = 'text-2xl sm:text-3xl';
+
+// A word shrinks from 36px until its longest word fits on one line of the
+// card, so compounds like "Generationenkonflikt" do not break mid-word. Real
+// words average at most about 0.58em per Spectral letter. A word too long to
+// fit at 24px hyphenates instead.
+const lineBreakOpportunities = /[\s-]+/u;
+
+const wordFontSize = (word: string) => {
+  const letters = Math.max(
+    ...word.split(lineBreakOpportunities).map((part) => [...part].length),
+  );
+  return `clamp(1.5rem, 100cqi / ${letters} / 0.58, 2.25rem)`;
+};
 
 type WordCardProps = {
   // What to do with the word: "Übersetze auf Englisch".
   readonly eyebrow: ReactNode;
   readonly word: string;
-  readonly size?: keyof typeof wordSize;
+  readonly size?: 'word' | 'sentence';
   readonly wordId: string;
   readonly wordLang: string | undefined;
   readonly tone: CardTone;
@@ -55,13 +65,15 @@ export const WordCard = ({
       />
     ))}
     <div
-      className={`relative flex animate-rise flex-col gap-5 border bg-card px-6 py-8 transition-colors sm:px-10 sm:py-12 ${toneBorder[tone]}`}
+      className={`@container relative flex animate-rise flex-col gap-5 border bg-card px-6 py-8 transition-colors sm:px-10 sm:py-12 ${toneBorder[tone]}`}
     >
       <p className="eyebrow">{eyebrow}</p>
       <h2
-        className={`wrap-break-word hyphens-auto text-balance font-display leading-tight ${wordSize[size]}`}
+        className={`wrap-break-word hyphens-auto text-balance font-display leading-tight ${size === 'sentence' ? sentenceSize : ''}`}
         id={wordId}
         lang={wordLang}
+        // biome-ignore lint/nursery/noInlineStyles: The size follows the length of the word, which is data.
+        style={size === 'word' ? { fontSize: wordFontSize(word) } : undefined}
       >
         {word}
       </h2>
