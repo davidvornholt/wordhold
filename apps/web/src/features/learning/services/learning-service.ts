@@ -39,7 +39,8 @@ export class LearningService extends Context.Service<
       undefined,
       LearningDatabaseError | LearningCardNotFoundError
     >;
-    // Each resolves to the cards it changed.
+    // Each resolves to the given cards it changed, without the synonym and
+    // antonym cards that follow their word.
     readonly skipLearning: (
       courseId: string,
       cardIds: ReadonlyArray<string>,

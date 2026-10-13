@@ -34,7 +34,6 @@ const learnItem: LearnItem = {
   entryId: '00000000-0000-0000-0000-000000000052',
   targetText: term,
   nativeText: definition,
-  relatedWords: [],
   hasAudio: false,
   example: null,
   textbookAnswers: [],

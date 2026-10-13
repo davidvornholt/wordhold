@@ -8,7 +8,9 @@ import { Effect } from 'effect';
 import {
   dueEntryId,
   fixtureCourseId,
+  fixtureNow,
   seedIntroducedCardFixture,
+  unintroducedEntryId,
 } from '../testing/introduced-card-fixture';
 import { writeRelatedWords } from './related-words-store';
 
@@ -110,6 +112,37 @@ describe('writeRelatedWords', () => {
         // An emptied or unsettled list takes its card and every answer.
         yield* write([], null);
         expect(yield* relationState).toEqual({ cards: [], answers: [] });
+      }),
+    );
+  });
+
+  it('asks a new card of a learned word right away', async () => {
+    await runTest(
+      Effect.gen(function* () {
+        yield* seedIntroducedCardFixture;
+        const sql = yield* Database;
+        yield* writeRelatedWords(
+          sql,
+          [dueEntryId, unintroducedEntryId].map((entryId) => ({
+            courseId: fixtureCourseId,
+            entryId,
+            synonyms: ['souvenir'],
+            antonyms: null,
+          })),
+        );
+        const cards = yield* sql<{
+          readonly entryId: string;
+          readonly introducedAt: Date | null;
+        }>`
+          select entry_id as "entryId", introduced_at as "introducedAt"
+          from cards
+          where direction = 'to_synonym'
+          order by entry_id
+        `;
+        expect(cards).toEqual([
+          { entryId: unintroducedEntryId, introducedAt: null },
+          { entryId: dueEntryId, introducedAt: fixtureNow },
+        ]);
       }),
     );
   });

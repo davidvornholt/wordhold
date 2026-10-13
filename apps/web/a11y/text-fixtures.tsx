@@ -51,7 +51,6 @@ const learnItem: LearnItem = {
   entryId: '00000000-0000-0000-0000-000000000072',
   targetText: verseTitle,
   nativeText: verse,
-  relatedWords: [],
   hasAudio: false,
   example: null,
   textbookAnswers: [],

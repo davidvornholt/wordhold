@@ -22,6 +22,8 @@ The learning-pass migration adds nullable `cards.introduced_at`. After applying 
 
 The import-session migration also repairs batches created before the expected page count was persisted. `db:migrate` runs that idempotent repair after Drizzle migrations, so existing pages in one session receive their observed session count before the ordered review checks use it.
 
+Synonym and antonym cards have no learning pass of their own; the app asks them once their word is learned or skipped in a translation direction. `db:migrate` brings older cards in line with that rule after Drizzle migrations: a relation card of a learned word takes the time the word was first met, and an unanswered relation card of a word not yet learned goes back to waiting. The step is idempotent and runs on every migration.
+
 The accounts rollout has the same two phases. Phase one adds a nullable `courses.owner_id`. The app gives every course without an owner to the administrator, the GitHub account in `GITHUB_ALLOWED_USER_ID`, on every signed-in request, so existing courses move to the administrator with the first request after the deploy.
 
 Before deploying phase two, run `SELECT count(*) FROM courses WHERE owner_id IS NULL;` in every deployed database and record that it returns exactly `0`. The generated phase-two migration makes `courses.owner_id` required.

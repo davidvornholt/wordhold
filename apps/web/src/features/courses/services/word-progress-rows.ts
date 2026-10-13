@@ -74,7 +74,8 @@ const directionColumns = (
 
 // The progress columns of a query that groups entries `e` with their `cards`
 // by book or unit, joined to the course `co`. An entry remains unintroduced
-// while one of the course's practised directions has not been introduced. A
+// while one of the course's translation directions has not been introduced;
+// its synonyms and antonyms follow it rather than being learned. A
 // switched-off direction stays out of the learner's way until it is switched
 // on again.
 export const wordProgressColumns = (sql: Database, now: Date) => sql`
@@ -90,7 +91,7 @@ export const wordProgressColumns = (sql: Database, now: Date) => sql`
     where exists (
       select 1 from cards pending
       where pending.entry_id = e.id
-        and pending.direction = any(${practisedDirections(sql)})
+        and pending.direction = any(co.directions)
         and pending.introduced_at is null
     )
   )::int as unintroduced,

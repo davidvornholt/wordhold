@@ -130,6 +130,50 @@ test('a selection skips its learning pass per direction and can undo it', async 
   ).toBeVisible();
 });
 
+test('synonyms and opposites have no learning pass and follow their word', async ({
+  page,
+}) => {
+  const waiting = 'Wird abgefragt, sobald die Vokabel kennengelernt ist';
+  await page.goto('/?state=vocabulary-related');
+  await page.getByRole('button', { exact: true, name: 'happy' }).click();
+  const happy = page.getByRole('dialog', { name: 'happy' });
+  // Only the translations have a learning pass to skip.
+  await expect(happy.getByRole('button', { name: skipAction })).toHaveCount(2);
+  await expect(happy.getByText(waiting)).toHaveCount(2);
+  await happy
+    .getByRole('button', {
+      name: 'Kennenlernen überspringen · Englisch → Deutsch',
+    })
+    .click();
+  const reopen = happy.getByRole('button', {
+    name: 'Wieder kennenlernen · Englisch → Deutsch',
+  });
+  await expect(reopen).toBeFocused();
+  // The skipped direction brings its synonyms and opposites into practice.
+  await expect(happy.getByText(waiting)).toHaveCount(0);
+  await expect(happy.getByText('Bereit für die erste Übung')).toHaveCount(3);
+  assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
+  await reopen.click();
+  await expect(happy.getByText(waiting)).toHaveCount(2);
+  await page.keyboard.press('Escape');
+  await expect(happy).toBeHidden();
+
+  await page.getByLabel('memory auswählen').check();
+  await page.getByLabel('happy auswählen').check();
+  await page
+    .getByRole('button', { exact: true, name: 'Kennenlernen überspringen' })
+    .click();
+  const dialog = page.getByRole('dialog', {
+    name: 'Kennenlernen überspringen',
+  });
+  await expect(dialog).toContainText(
+    'nächste Übung, ihre Synonyme und Gegenteile mit ihnen.',
+  );
+  await expect(dialog.getByRole('region')).toHaveCount(2);
+  await expect(dialog.getByRole('region', { name: 'Synonyme' })).toHaveCount(0);
+  assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
+});
+
 test('a term has one learning pass to skip, without naming a direction', async ({
   page,
 }) => {

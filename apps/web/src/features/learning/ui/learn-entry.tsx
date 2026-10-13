@@ -3,7 +3,6 @@ import {
   type CourseSubject,
   directionLabel,
   isListCourse,
-  isRelationDirection,
 } from '../../../shared/directions';
 import {
   copyDifference,
@@ -23,7 +22,6 @@ import {
 } from '../../../shared/ui/answer-field';
 import { Button } from '../../../shared/ui/button';
 import { KeyPointList } from '../../../shared/ui/key-point-list';
-import { RelationQuestion } from '../../../shared/ui/relation-question';
 import { WordCard } from '../../../shared/ui/word-card';
 import type { LearnItem } from '../schemas/learning-models';
 import { copiesLearnText, matchesLearnItem } from '../services/learn-check';
@@ -43,8 +41,7 @@ type LearnEntryProps = {
 
 // A definition is shown to be copied, with what it must state once known. A
 // text is shown to be copied. Both keep their own line breaks. A word has its
-// example sentence and audio instead, and its synonyms and antonyms the German
-// meaning they are asked in.
+// example sentence and audio instead.
 const LearnCardBody = ({
   item,
   examplePending,
@@ -79,16 +76,11 @@ const LearnCardBody = ({
       )}
     </>
   ) : (
-    <>
-      {isRelationDirection(item.direction) ? (
-        <p className="text-muted-foreground">Bedeutung: {item.nativeText}</p>
-      ) : null}
-      <LearnExampleAudio
-        item={item}
-        pending={examplePending}
-        targetLanguage={subject.targetLanguage}
-      />
-    </>
+    <LearnExampleAudio
+      item={item}
+      pending={examplePending}
+      targetLanguage={subject.targetLanguage}
+    />
   );
 };
 
@@ -145,9 +137,7 @@ const missMessage = (
     case 'terms':
       return copyDifferenceMessage(copyDifference(answer, typed));
     case 'language':
-      return isRelationDirection(item.direction)
-        ? 'Noch nicht ganz. Schreib eines der Wörter genau so ab.'
-        : 'Noch nicht ganz. Schreib die Vokabel genau so ab.';
+      return 'Noch nicht ganz. Schreib die Vokabel genau so ab.';
     default:
       return subject.kind satisfies never;
   }
@@ -226,16 +216,7 @@ export const LearnEntry = ({
     <>
       <WordCard
         deck={deck}
-        eyebrow={
-          isRelationDirection(item.direction) ? (
-            <RelationQuestion
-              direction={item.direction}
-              language={subject.targetLanguage}
-            />
-          ) : (
-            directionLabel(item.direction, subject)
-          )
-        }
+        eyebrow={directionLabel(item.direction, subject)}
         tone={missedMessage === null ? 'neutral' : 'warning'}
         word={prompt}
         wordId={promptId}

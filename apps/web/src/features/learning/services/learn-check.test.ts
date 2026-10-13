@@ -8,7 +8,6 @@ const item: LearnItem = {
   entryId: '00000000-0000-0000-0000-000000000001',
   targetText: 'to look (at)',
   nativeText: 'ansehen',
-  relatedWords: [],
   hasAudio: false,
   example: null,
   textbookAnswers: ['to look (at)'],

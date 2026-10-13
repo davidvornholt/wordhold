@@ -4,6 +4,7 @@ import {
   formatLearningDate,
   formatLearningDateInline,
 } from '../../../shared/dates/learning-date';
+import { isRelationDirection } from '../../../shared/directions';
 import type { VocabularyEntry } from '../schemas/course-units';
 
 export type VocabularyCard = VocabularyEntry['cards'][number];
@@ -59,7 +60,9 @@ export const scheduleSummary = (
 // One direction's schedule: when it comes up next, or why it does not.
 export const cardStatus = (card: VocabularyCard, now: Date): string => {
   if (card.introducedAt === null) {
-    return 'Noch nicht kennengelernt';
+    return isRelationDirection(card.direction)
+      ? 'Wird abgefragt, sobald die Vokabel kennengelernt ist'
+      : 'Noch nicht kennengelernt';
   }
   if (card.state === 'new') {
     return 'Bereit für die erste Übung';
@@ -75,14 +78,25 @@ export const cardStatus = (card: VocabularyCard, now: Date): string => {
 // What can change about a direction's learning pass: a direction still to be
 // learned can skip it, and one not yet practised can go back to it. Once a
 // direction has been answered, its schedule decides when it comes back.
+// Synonyms and antonyms have no learning pass; they follow their word.
 export const learningChangeFor = (
   card: VocabularyCard,
 ): 'skip' | 'return' | null => {
+  if (isRelationDirection(card.direction)) {
+    return null;
+  }
   if (card.introducedAt === null) {
     return 'skip';
   }
   return card.state === 'new' ? 'return' : null;
 };
+
+// The directions with a learning pass: each one the course practises except
+// synonyms and antonyms, which are asked once their word is learned.
+export const learningDirections = (
+  enabledDirections: ReadonlyArray<AnswerDirection>,
+): ReadonlyArray<AnswerDirection> =>
+  enabledDirections.filter((direction) => !isRelationDirection(direction));
 
 // The cards of these entries that still have this direction to learn.
 export const openLearningCardIds = (
@@ -103,7 +117,7 @@ export const hasOpenLearning = (
   entries: ReadonlyArray<VocabularyEntry>,
   enabledDirections: ReadonlyArray<AnswerDirection>,
 ): boolean =>
-  enabledDirections.some(
+  learningDirections(enabledDirections).some(
     (direction) => openLearningCardIds(entries, direction).length > 0,
   );
 

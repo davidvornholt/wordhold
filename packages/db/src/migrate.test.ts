@@ -253,6 +253,60 @@ it("files entries without a book into their unit's book", async () => {
   ]);
 });
 
+it('asks synonyms and antonyms once their word is learned', async () => {
+  const cards = await Effect.runPromise(
+    withTestDatabase((database) =>
+      Effect.gen(function* () {
+        yield* migrateDatabase(database.url);
+        const sql = yield* Database;
+        yield* sql`
+          insert into courses (id, name, target_language)
+          values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'Englisch', 'en')
+        `;
+        yield* sql`
+          insert into entries (id, course_id, target_text, native_text)
+          values
+            ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'happy', 'glücklich'),
+            ('cccccccc-cccc-4ccc-8ccc-cccccccccccc', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'hostile', 'feindselig')
+        `;
+        // `happy` is learned in both directions; its synonym card waited for
+        // a learning pass of its own. `hostile` is not learned, but its
+        // relation cards went through that pass, and one has been answered.
+        yield* sql`
+          insert into cards (entry_id, direction, introduced_at, state)
+          values
+            ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'to_target', '2026-01-02T00:00:00Z', 'review'),
+            ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'to_native', '2026-01-01T00:00:00Z', 'new'),
+            ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'to_synonym', null, 'new'),
+            ('cccccccc-cccc-4ccc-8ccc-cccccccccccc', 'to_target', null, 'new'),
+            ('cccccccc-cccc-4ccc-8ccc-cccccccccccc', 'to_synonym', '2026-01-03T00:00:00Z', 'new'),
+            ('cccccccc-cccc-4ccc-8ccc-cccccccccccc', 'to_antonym', '2026-01-04T00:00:00Z', 'review')
+        `;
+        yield* migrateDatabase(database.url);
+        yield* migrateDatabase(database.url);
+        return yield* sql<{
+          readonly word: string;
+          readonly direction: string;
+          readonly introducedAt: string | null;
+        }>`
+          select entry.target_text as word, card.direction,
+            to_char(card.introduced_at at time zone 'UTC', 'YYYY-MM-DD') as "introducedAt"
+          from cards as card
+          join entries as entry on entry.id = card.entry_id
+          where card.direction in ('to_synonym', 'to_antonym')
+          order by entry.target_text, card.direction
+        `;
+      }).pipe(Effect.provide(testDatabaseLayer(database.url))),
+    ),
+  );
+
+  expect(cards).toEqual([
+    { word: 'happy', direction: 'to_synonym', introducedAt: '2026-01-01' },
+    { word: 'hostile', direction: 'to_synonym', introducedAt: null },
+    { word: 'hostile', direction: 'to_antonym', introducedAt: '2026-01-04' },
+  ]);
+});
+
 it('reports a malformed database URL as a typed migration error', async () => {
   const error = await getMigrationError('not a database URL');
 

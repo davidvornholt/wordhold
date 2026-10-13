@@ -118,7 +118,7 @@ export const DirectionSettings = ({
         ))}
         <DirectionSwitch
           checked={directions.includes('to_synonym')}
-          description={`Du siehst eine Vokabel auf ${germanLabels[subject.targetLanguage]} und schreibst ein Synonym oder ein Gegenteil dazu. Nur Vokabeln, zu denen du Synonyme oder Gegenteile gespeichert hast, bekommen diese Karten.`}
+          description={`Du siehst eine Vokabel auf ${germanLabels[subject.targetLanguage]} und schreibst ein Synonym oder ein Gegenteil dazu. Nur Vokabeln, zu denen du Synonyme oder Gegenteile gespeichert hast, bekommen diese Karten. Sie werden ohne eigenes Kennenlernen abgefragt, sobald du die Vokabel kennengelernt hast.`}
           label="Synonyme und Gegenteile"
           onChange={(trigger) => toggle(relationDirections, trigger)}
         />

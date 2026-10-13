@@ -4,6 +4,7 @@ import {
   type CourseSubject,
   directionDescription,
   directionLabel,
+  isRelationDirection,
 } from '../../../shared/directions';
 import { countNoun } from '../../../shared/format/count';
 import type { ActionVariant } from '../../../shared/ui/action-styles';
@@ -56,6 +57,20 @@ const practiceStatus = (progress: DirectionProgress): string | null => {
     : 'Üben: für jetzt geschafft';
 };
 
+// A translation direction counts what has been learned. Synonyms and
+// antonyms are not learned on their own, so theirs counts what their learned
+// words have brought into the plan.
+const meterTexts = (progress: DirectionProgress, label: string) =>
+  isRelationDirection(progress.direction)
+    ? {
+        accessibleName: `${label}: Anteil im Lernplan`,
+        description: `${progress.introduced} von ${progress.total} im Lernplan`,
+      }
+    : {
+        accessibleName: `${label}: Kennenlernfortschritt`,
+        description: `${progress.introduced} von ${progress.total} kennengelernt`,
+      };
+
 export const DirectionPlan = ({
   progress: words,
   subject,
@@ -88,6 +103,11 @@ export const DirectionPlan = ({
           </h2>
           <p className="text-muted-foreground text-sm">
             Jede Richtung wird einzeln kennengelernt und geübt.
+            {words.directions.some((progress) =>
+              isRelationDirection(progress.direction),
+            )
+              ? ' Synonyme und Gegenteile werden ohne eigenes Kennenlernen abgefragt, sobald ihre Vokabel kennengelernt ist.'
+              : ''}
           </p>
         </div>
         <ul className={cardListClass}>
@@ -98,8 +118,12 @@ export const DirectionPlan = ({
               'learn',
               progress,
             );
-            const hasInlineAction = progress.unintroduced > 0 && !learnIsNext;
+            const hasInlineAction =
+              !isRelationDirection(progress.direction) &&
+              progress.unintroduced > 0 &&
+              !learnIsNext;
             const status = practiceStatus(progress);
+            const meter = meterTexts(progress, label);
             return (
               <li
                 className={
@@ -115,8 +139,8 @@ export const DirectionPlan = ({
                     </p>
                   </div>
                   <ProgressMeter
-                    accessibleName={`${label}: Kennenlernfortschritt`}
-                    description={`${progress.introduced} von ${progress.total} kennengelernt`}
+                    accessibleName={meter.accessibleName}
+                    description={meter.description}
                     total={progress.total}
                     value={progress.introduced}
                   />

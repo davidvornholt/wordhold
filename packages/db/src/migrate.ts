@@ -107,6 +107,48 @@ const fileEntriesIntoBooks = (database: ReturnType<typeof makeDrizzle>) =>
     catch: migrationError,
   });
 
+// Synonym and antonym cards have no learning pass of their own: the app asks
+// them once their word is learned or skipped in a translation direction, and
+// holds back the unanswered ones while it is not. Cards from before that rule
+// are brought in line with it here. Safe to rerun: it only touches cards out
+// of step with their word.
+const alignRelationCardsWithTheirWords = (
+  database: ReturnType<typeof makeDrizzle>,
+) =>
+  Effect.tryPromise({
+    try: () =>
+      database.transaction(async (transaction) => {
+        await transaction.execute(sql`
+          update cards as relation
+          set introduced_at = met.introduced_at
+          from (
+            select entry_id, min(introduced_at) as introduced_at
+            from cards
+            where direction in ('to_target', 'to_native')
+              and introduced_at is not null
+            group by entry_id
+          ) as met
+          where relation.entry_id = met.entry_id
+            and relation.direction in ('to_synonym', 'to_antonym')
+            and relation.introduced_at is null
+        `);
+        await transaction.execute(sql`
+          update cards as relation
+          set introduced_at = null
+          where relation.direction in ('to_synonym', 'to_antonym')
+            and relation.introduced_at is not null
+            and relation.state = 'new'
+            and not exists (
+              select 1 from cards as translation
+              where translation.entry_id = relation.entry_id
+                and translation.direction in ('to_target', 'to_native')
+                and translation.introduced_at is not null
+            )
+        `);
+      }),
+    catch: migrationError,
+  });
+
 export const migrateDatabase = (url: string) =>
   Effect.acquireUseRelease(
     Effect.try({
@@ -125,6 +167,7 @@ export const migrateDatabase = (url: string) =>
         Effect.flatMap(() => validateImportPositionConstraint(database)),
         Effect.flatMap(() => fileUnitsIntoBooks(database)),
         Effect.flatMap(() => fileEntriesIntoBooks(database)),
+        Effect.flatMap(() => alignRelationCardsWithTheirWords(database)),
       ),
     (database) => Effect.promise(() => database.$client.end()),
   );

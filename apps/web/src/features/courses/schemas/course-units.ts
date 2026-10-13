@@ -1,5 +1,6 @@
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import type { CardState } from '@wordhold/db/schema/practice';
+import { isRelationDirection } from '../../../shared/directions';
 import type { ExampleSentence } from '../../../shared/examples/example-model';
 
 // How far the learner has come with one set of words: a unit's, or the words
@@ -87,10 +88,15 @@ export type VocabularyEntry = {
 
 export type VocabularyExample = ExampleSentence;
 
+// The directions with words left to learn. Synonyms and antonyms have no
+// learning pass; they are asked once their word is learned.
 export const openLearningDirections = (
   progress: WordProgress,
 ): ReadonlyArray<DirectionProgress> =>
-  progress.directions.filter((direction) => direction.unintroduced > 0);
+  progress.directions.filter(
+    (direction) =>
+      !isRelationDirection(direction.direction) && direction.unintroduced > 0,
+  );
 
 export const recommendedAction = (
   progress: WordProgress,

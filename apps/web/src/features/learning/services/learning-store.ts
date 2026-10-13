@@ -1,10 +1,7 @@
 import { Database } from '@wordhold/db/client';
-import { answerDirections } from '@wordhold/db/schema/directions';
+import { translationDirections } from '@wordhold/db/schema/directions';
 import { Context, Effect, Layer } from 'effect';
-import {
-  cardRelatedWords,
-  practisedDirections,
-} from '../../../shared/practice/practised-directions';
+import { syncRelationIntroduction } from '../../../shared/practice/relation-introduction';
 import { sessionSectionSize } from '../../../shared/session/section-policy';
 import {
   type PlaceSelectionData,
@@ -27,8 +24,8 @@ type AnswerRow = {
   readonly direction: LearnItem['direction'];
   readonly text: string;
 };
-type CardMatchRow = { readonly found: boolean };
-type ChangedCardRow = { readonly id: string };
+type MatchedCardRow = { readonly entryId: string };
+type ChangedCardRow = { readonly id: string; readonly entryId: string };
 
 const databaseError = (operation: string, cause: unknown) =>
   new LearningDatabaseError({
@@ -56,7 +53,7 @@ const passFromRows = (
     (answer) => `${answer.entryId}:${answer.direction}`,
   );
   return {
-    directions: answerDirections.flatMap((direction) => {
+    directions: translationDirections.flatMap((direction) => {
       const first = items.find((item) => item.direction === direction);
       return first === undefined
         ? []
@@ -68,7 +65,6 @@ const passFromRows = (
       entryId: item.entryId,
       targetText: item.targetText,
       nativeText: item.nativeText,
-      relatedWords: item.relatedWords,
       hasAudio: item.hasAudio,
       example: null,
       keyPoints: item.keyPoints,
@@ -92,14 +88,17 @@ export class LearningStore extends Context.Service<
       courseId: string,
       selection: VocabularySelectionData,
     ) => Effect.Effect<LearnSelectionPass, LearningDatabaseError>;
+    // Only the course's translation directions are learned. A word's
+    // synonym and antonym cards follow it: learning or skipping the word lets
+    // them be asked, and returning it holds back those not yet answered.
     readonly introduce: (
       courseId: string,
       cardId: string,
       at: Date,
     ) => Effect.Effect<boolean, LearningDatabaseError>;
     // Both resolve to the cards they changed. Cards of another course, of a
-    // direction the course no longer practises, or already in the wanted
-    // state are left alone.
+    // direction the course does not learn, or already in the wanted state
+    // are left alone.
     readonly skipLearning: (
       courseId: string,
       cardIds: ReadonlyArray<string>,
@@ -127,15 +126,13 @@ export class LearningStore extends Context.Service<
           {
             items: sql<ItemRow>`
               select "cardId", direction, "entryId", "targetText",
-                "nativeText", "relatedWords", "keyPoints", "hasAudio",
-                "directionTotal"
+                "nativeText", "keyPoints", "hasAudio", "directionTotal"
               from (
                 select c.id as "cardId", c.direction,
                   e.id as "entryId",
                   e.target_text as "targetText",
                   e.native_text as "nativeText",
                   e.key_points as "keyPoints",
-                  ${cardRelatedWords(sql)} as "relatedWords",
                   exists(
                     select 1 from entry_audio a where a.entry_id = e.id
                   ) as "hasAudio",
@@ -149,7 +146,7 @@ export class LearningStore extends Context.Service<
                 join courses co on co.id = e.course_id
                 join cards c on c.entry_id = e.id
                 where e.course_id = ${courseId} and ${selected}
-                  and c.direction = any(${practisedDirections(sql)})
+                  and c.direction = any(co.directions)
                   and c.introduced_at is null
               ) section
               where "sectionPosition" <= ${sessionSectionSize}
@@ -213,59 +210,78 @@ export class LearningStore extends Context.Service<
           ),
         );
       const introduce = (courseId: string, cardId: string, at: Date) =>
-        sql<CardMatchRow>`
-          with matching_card as (
-            select c.id
-            from cards c
-            join entries e on e.id = c.entry_id
-            join courses co on co.id = e.course_id
-            where c.id = ${cardId} and e.course_id = ${courseId}
-              and c.direction = any(${practisedDirections(sql)})
-          ), updated as (
-            update cards set introduced_at = ${at}
-            where id in (select id from matching_card)
-              and introduced_at is null
-            returning id
+        sql
+          .withTransaction(
+            Effect.gen(function* () {
+              const matched = yield* sql<MatchedCardRow>`
+                with matching_card as (
+                  select c.id, c.entry_id
+                  from cards c
+                  join entries e on e.id = c.entry_id
+                  join courses co on co.id = e.course_id
+                  where c.id = ${cardId} and e.course_id = ${courseId}
+                    and c.direction = any(co.directions)
+                ), updated as (
+                  update cards set introduced_at = ${at}
+                  where id in (select id from matching_card)
+                    and introduced_at is null
+                  returning id
+                )
+                select entry_id as "entryId" from matching_card
+              `;
+              const entryIds = matched.map((row) => row.entryId);
+              yield* syncRelationIntroduction(sql, entryIds);
+              return entryIds.length > 0;
+            }),
           )
-          select exists(select 1 from matching_card) as found
-        `.pipe(
-          Effect.map((rows) => rows[0]?.found ?? false),
-          Effect.mapError((cause) => databaseError('introduce card', cause)),
+          .pipe(
+            Effect.mapError((cause) => databaseError('introduce card', cause)),
+          );
+      // The changed cards' words then ask or hold back their synonyms and
+      // antonyms in the same transaction.
+      const changeLearning = <E>(
+        changed: Effect.Effect<ReadonlyArray<ChangedCardRow>, E>,
+      ) =>
+        sql.withTransaction(
+          Effect.gen(function* () {
+            const rows = yield* changed;
+            yield* syncRelationIntroduction(
+              sql,
+              rows.map((row) => row.entryId),
+            );
+            return rows.map((row) => row.id);
+          }),
         );
       const skipLearning = (
         courseId: string,
         cardIds: ReadonlyArray<string>,
         at: Date,
       ) =>
-        sql<ChangedCardRow>`
+        changeLearning(sql<ChangedCardRow>`
           update cards c set introduced_at = ${at}
           from entries e, courses co
           where c.id = any(${uuidArray(cardIds)}::uuid[])
             and e.id = c.entry_id and co.id = e.course_id
             and e.course_id = ${courseId}
-            and c.direction = any(${practisedDirections(sql)})
+            and c.direction = any(co.directions)
             and c.introduced_at is null
-          returning c.id
-        `.pipe(
-          Effect.map((rows) => rows.map((row) => row.id)),
-          Effect.mapError((cause) => saveError('skip learning', cause)),
-        );
+          returning c.id, c.entry_id as "entryId"
+        `).pipe(Effect.mapError((cause) => saveError('skip learning', cause)));
       const returnToLearning = (
         courseId: string,
         cardIds: ReadonlyArray<string>,
       ) =>
-        sql<ChangedCardRow>`
+        changeLearning(sql<ChangedCardRow>`
           update cards c set introduced_at = null
           from entries e, courses co
           where c.id = any(${uuidArray(cardIds)}::uuid[])
             and e.id = c.entry_id and co.id = e.course_id
             and e.course_id = ${courseId}
-            and c.direction = any(${practisedDirections(sql)})
+            and c.direction = any(co.directions)
             and c.introduced_at is not null
             and c.state = 'new'
-          returning c.id
-        `.pipe(
-          Effect.map((rows) => rows.map((row) => row.id)),
+          returning c.id, c.entry_id as "entryId"
+        `).pipe(
           Effect.mapError((cause) => saveError('return to learning', cause)),
         );
       return {

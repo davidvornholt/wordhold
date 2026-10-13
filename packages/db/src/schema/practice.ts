@@ -31,7 +31,8 @@ export const cards = pgTable(
     // then. Deliberately not folded into `state`: `state` says where the card
     // stands in the FSRS state machine, this says whether the person has ever
     // seen the entry at all. A card that has not been introduced is never
-    // scheduled, never counted, and never asked.
+    // scheduled, never counted, and never asked. A synonym or antonym card
+    // has no learning pass: it takes the time its word was first met.
     introducedAt: timestamp('introduced_at', { withTimezone: true }),
     state: cardStateEnum('state').notNull().default('new'),
     dueAt: timestamp('due_at', { withTimezone: true }),

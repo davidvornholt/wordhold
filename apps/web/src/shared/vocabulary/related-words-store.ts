@@ -1,6 +1,7 @@
 import type { Database } from '@wordhold/db/client';
 import { Effect } from 'effect';
 import { normalizeAnswer } from '../grading/normalize';
+import { syncRelationIntroduction } from '../practice/relation-introduction';
 import type { RelatedWordListsData } from './related-words';
 
 export type RelatedWordsWrite = RelatedWordListsData & {
@@ -35,7 +36,8 @@ const relationAnswers = (writes: ReadonlyArray<RelatedWordsWrite>) =>
 // A word has a synonym card while it has synonyms, and an antonym card while
 // it has antonyms. An emptied list takes its card, with the card's schedule
 // and the alternatives the judge accepted for it; a changed list keeps the
-// card and replaces its textbook answers.
+// card and replaces its textbook answers. A new card of a word already
+// learned is asked right away.
 const syncRelationCards = (
   sql: Database,
   writes: ReadonlyArray<RelatedWordsWrite>,
@@ -79,6 +81,10 @@ const syncRelationCards = (
       where e.id = any(${ids}::uuid[]) and cardinality(d.words) > 0
       on conflict do nothing
     `;
+    yield* syncRelationIntroduction(
+      sql,
+      writes.map((write) => write.entryId),
+    );
   });
 
 // Sets both lists of each word, a null list as null, along with the cards and

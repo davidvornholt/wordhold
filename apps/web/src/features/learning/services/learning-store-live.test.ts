@@ -95,8 +95,8 @@ describe('Learning selection store live', () => {
   });
 });
 
-describe('Learning pass of synonyms and antonyms', () => {
-  it('introduces a new synonym card with its words, and leaves it out once switched off', async () => {
+describe('Synonyms and antonyms in the learning pass', () => {
+  it('leaves them out of the pass and asks them once their word is learned', async () => {
     await Effect.runPromise(
       withMigratedTestDatabase((database) => {
         const databaseLayer = testDatabaseLayer(database.url);
@@ -118,25 +118,41 @@ describe('Learning pass of synonyms and antonyms', () => {
           const pass = yield* service.getPass(courseA, { unitId: unitA });
           expect(pass.directions).toEqual([
             { direction: 'to_target', unintroduced: 1 },
-            { direction: 'to_synonym', unintroduced: 1 },
           ]);
-          expect(
-            pass.items.find((item) => item.direction === 'to_synonym'),
-          ).toMatchObject({
-            targetText: 'to look (at)',
-            relatedWords: ['to watch', 'to view'],
-            textbookAnswers: ['to watch', 'to view'],
-          });
-
-          yield* sql`
-            update courses set practises_related_words = false
-            where id = ${courseA}
+          expect(pass.items.map((item) => item.cardId)).toEqual([targetCard]);
+          const [synonymCard] = yield* sql<{ readonly id: string }>`
+            select id from cards
+            where entry_id = ${entryA} and direction = 'to_synonym'
           `;
-          const switchedOff = yield* service.getPass(courseA, {
-            unitId: unitA,
-          });
-          expect(switchedOff.directions).toEqual([
-            { direction: 'to_target', unintroduced: 1 },
+          const onItsOwn = yield* service
+            .introduce(courseA, synonymCard?.id ?? '')
+            .pipe(Effect.flip);
+          expect(onItsOwn._tag).toBe('LearningCardNotFoundError');
+
+          yield* service.introduce(courseA, targetCard);
+          // A list added to a learned word is asked right away.
+          yield* writeRelatedWords(sql, [
+            {
+              courseId: courseA,
+              entryId: entryA,
+              synonyms: ['to watch', 'to view'],
+              antonyms: ['to ignore'],
+            },
+          ]);
+          const cards = yield* sql<{
+            readonly direction: string;
+            readonly introducedAt: Date | null;
+          }>`
+            select direction, introduced_at as "introducedAt" from cards
+            where entry_id = ${entryA} order by direction
+          `;
+          const learnedAt = cards.at(0)?.introducedAt;
+          expect(learnedAt).toBeInstanceOf(Date);
+          expect(cards).toEqual([
+            { direction: 'to_target', introducedAt: learnedAt ?? null },
+            { direction: 'to_native', introducedAt: null },
+            { direction: 'to_synonym', introducedAt: learnedAt ?? null },
+            { direction: 'to_antonym', introducedAt: learnedAt ?? null },
           ]);
         }).pipe(Effect.provide(serviceLayer), Effect.provide(databaseLayer));
       }),

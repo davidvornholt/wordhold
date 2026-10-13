@@ -2,6 +2,7 @@ import type { LanguageCode } from '@wordhold/db/schema/courses';
 import type {
   AnswerDirection,
   RelationDirection,
+  TranslationDirection,
 } from '@wordhold/db/schema/directions';
 
 // The texts a card is asked and answered with. Practice, the learning pass
@@ -14,6 +15,15 @@ export type CardTexts = {
   readonly relatedWords: ReadonlyArray<string>;
 };
 
+// A translation card's texts, as the learning pass carries them: it never
+// asks for related words.
+export type TranslationCardTexts = Omit<
+  CardTexts,
+  'direction' | 'relatedWords'
+> & {
+  readonly direction: TranslationDirection;
+};
+
 // The German text when the card asks for the foreign one, and the foreign
 // word otherwise, also when the card asks for its synonyms or antonyms.
 export const cardPrompt = (
@@ -23,7 +33,7 @@ export const cardPrompt = (
 
 // What the card intends. A synonym or antonym card intends its whole list,
 // though any one of those words is a right answer.
-export const cardAnswer = (card: CardTexts): string => {
+export const cardAnswer = (card: CardTexts | TranslationCardTexts): string => {
   switch (card.direction) {
     case 'to_target':
       return card.targetText;
@@ -33,7 +43,7 @@ export const cardAnswer = (card: CardTexts): string => {
     case 'to_antonym':
       return card.relatedWords.join(', ');
     default:
-      return card.direction satisfies never;
+      return card satisfies never;
   }
 };
 

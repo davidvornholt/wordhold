@@ -37,10 +37,7 @@ import {
   FutureStudySessionFixture,
   PracticeSessionFixture,
 } from './practice-session-fixtures';
-import {
-  SynonymLearnFixture,
-  SynonymPracticeFixture,
-} from './relation-card-fixtures';
+import { SynonymPracticeFixture } from './relation-card-fixtures';
 import { rootFixture } from './root-fixtures';
 import { SentencePracticeFixture } from './sentence-fixtures';
 import { StudyStartFixture } from './study-fixtures';
@@ -151,8 +148,6 @@ const learningFixture = (state: FixtureState) => {
       return <LearnDoneFixture />;
     case 'learn-section-done':
       return <LearnSectionDoneFixture />;
-    case 'synonym-learn':
-      return <SynonymLearnFixture />;
     default:
       return null;
   }
@@ -274,6 +269,13 @@ const dashboardFixture = (state: FixtureState) => (
   />
 );
 
+const vocabularyFixture = (state: FixtureState) => (
+  <VocabularyFixture
+    difficult={state === 'vocabulary-difficult'}
+    related={state === 'vocabulary-related'}
+  />
+);
+
 const fixtureContent = (state: FixtureState) => {
   switch (state) {
     case 'signed-out':
@@ -340,14 +342,13 @@ const fixtureContent = (state: FixtureState) => {
     case 'learn-retry':
     case 'learn-done':
     case 'learn-section-done':
-    case 'synonym-learn':
       return learningFixture(state);
     case 'course-settings':
       return <CourseSettingsFixture />;
     case 'vocabulary':
-      return <VocabularyFixture />;
     case 'vocabulary-difficult':
-      return <VocabularyFixture difficult={true} />;
+    case 'vocabulary-related':
+      return vocabularyFixture(state);
     case 'study-start':
       return <StudyStartFixture />;
     case 'study-start-unlearned':
