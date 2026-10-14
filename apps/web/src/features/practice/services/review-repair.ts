@@ -115,16 +115,29 @@ const planTranslationRepair = (card: EntryCard) =>
     // Identical old answers share this temporary cache. Planning does not write
     // judge_cache or teach accepted_answers before an operator applies the plan.
     const assessments = new Map<string, GradeOutcome>();
-    for (const review of reviews.filter(needsReassessment)) {
-      let outcome = assessments.get(review.answerText);
-      if (outcome === undefined) {
-        outcome = yield* reassess(
-          { ...input, givenAnswer: review.answerText },
-          accepted,
-        );
-        assessments.set(review.answerText, outcome);
-      }
-      const rating = deriveRating(outcome, review.elapsedMs);
+    const assess = (answerText: string) => {
+      const known = assessments.get(answerText);
+      return known === undefined
+        ? reassess({ ...input, givenAnswer: answerText }, accepted).pipe(
+            Effect.tap((outcome) =>
+              Effect.sync(() => assessments.set(answerText, outcome)),
+            ),
+          )
+        : Effect.succeed(known);
+    };
+    const pending = reviews.flatMap((review, index) =>
+      needsReassessment(review) ? [{ review, index }] : [],
+    );
+    for (const { review, index } of pending) {
+      const outcome = yield* assess(review.answerText);
+      // Rated against the card as it stood before this answer, including the
+      // corrections found so far, exactly as live practice would have.
+      const before = replayCorrectedReviews(
+        card,
+        reviews.slice(0, index),
+        corrections,
+      );
+      const rating = deriveRating(outcome, review.elapsedMs, before.state);
       // This repair can restore demonstrated knowledge, never downgrade it.
       // Partial/contradictory approvals remain untouched for human inspection.
       if (rating >= ratings.good && rating > review.rating) {

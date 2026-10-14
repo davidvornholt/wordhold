@@ -75,7 +75,8 @@ it('plans without writes, refuses concurrent changes, and preserves original gra
           readonly rating: number;
           readonly grading: unknown;
         }>`select rating, grading from reviews where card_id = ${card.id}`;
-        expect(repaired?.rating).toBe(ratings.easy);
+        // The repaired answer was the card's first, so speed does not make it easy.
+        expect(repaired?.rating).toBe(ratings.good);
         expect(repaired?.grading).toMatchObject({
           method: 'exact',
           repair: {

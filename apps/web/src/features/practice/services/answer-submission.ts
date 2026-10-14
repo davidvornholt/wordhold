@@ -107,6 +107,7 @@ const commitOutcome = ({
     const rating = deriveRating(
       outcome,
       row.courseKind === 'language' ? elapsedMs : null,
+      row.card.state,
     );
     const reviewedAt = new Date(yield* Clock.currentTimeMillis);
     const persisted = yield* reviews.commit({

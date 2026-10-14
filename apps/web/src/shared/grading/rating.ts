@@ -3,6 +3,7 @@ import {
   isDefinitionCorrect,
 } from '@wordhold/ai/definition/schema';
 import type { JudgeVerdictData } from '@wordhold/ai/judge/schema';
+import type { CardState } from '@wordhold/db/schema/practice';
 import {
   allowedMistakes,
   compareRecitation,
@@ -106,9 +107,14 @@ const recitationRating = (outcome: RecitationOutcome): DerivedRating => {
   return isCorrect(outcome) ? ratings.hard : ratings.again;
 };
 
+// `state` is the card's state before this answer. Only a card that has come
+// back after days can be rated easy. Minutes after a word was first seen, a
+// quick answer shows short-term memory, and easy would skip FSRS's learning
+// steps and schedule the card more than a week out.
 export const deriveRating = (
   outcome: GradeOutcome,
   elapsedMs: number | null,
+  state: CardState,
 ): DerivedRating => {
   if (outcome.method === 'skip') {
     return ratings.again;
@@ -117,7 +123,7 @@ export const deriveRating = (
     return ratings.hard;
   }
   if (outcome.method === 'exact') {
-    return elapsedMs !== null && elapsedMs < fastAnswerMs
+    return state === 'review' && elapsedMs !== null && elapsedMs < fastAnswerMs
       ? ratings.easy
       : ratings.good;
   }

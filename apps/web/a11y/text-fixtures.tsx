@@ -91,7 +91,7 @@ const recitedResult = (
     correct,
     stored: true,
     revision,
-    rating: deriveRating(outcome, null),
+    rating: deriveRating(outcome, null, 'new'),
     expectedAnswer: verse,
     explanation: null,
     acceptedAsAlternative: false,

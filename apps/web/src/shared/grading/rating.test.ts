@@ -34,28 +34,42 @@ const definitionVerdict = (
 
 describe('deriveRating', () => {
   it('rates a fast exact match Easy', () => {
-    expect(deriveRating({ method: 'exact' }, fastMs)).toBe(ratings.easy);
+    expect(deriveRating({ method: 'exact' }, fastMs, 'review')).toBe(
+      ratings.easy,
+    );
+  });
+
+  it('rates a fast exact match Good until the card has come back after days', () => {
+    for (const state of ['new', 'learning', 'relearning'] as const) {
+      expect(deriveRating({ method: 'exact' }, fastMs, state)).toBe(
+        ratings.good,
+      );
+    }
   });
 
   it('rates a slow exact match Good', () => {
-    expect(deriveRating({ method: 'exact' }, slowMs)).toBe(ratings.good);
+    expect(deriveRating({ method: 'exact' }, slowMs, 'review')).toBe(
+      ratings.good,
+    );
   });
 
   it('rates an exact match without timing Good', () => {
-    expect(deriveRating({ method: 'exact' }, null)).toBe(ratings.good);
+    expect(deriveRating({ method: 'exact' }, null, 'review')).toBe(
+      ratings.good,
+    );
   });
 
   it('rates a flawless judge acceptance Good', () => {
     expect(
-      deriveRating({ method: 'judge', verdict: verdict({}) }, fastMs),
+      deriveRating({ method: 'judge', verdict: verdict({}) }, fastMs, 'review'),
     ).toBe(ratings.good);
   });
 
   it('rates a flawed but accepted answer Hard', () => {
     const flawed = verdict({ spelling: { ok: false, note: 'Tippfehler' } });
-    expect(deriveRating({ method: 'judge', verdict: flawed }, fastMs)).toBe(
-      ratings.hard,
-    );
+    expect(
+      deriveRating({ method: 'judge', verdict: flawed }, fastMs, 'review'),
+    ).toBe(ratings.hard);
   });
 
   it('rates a rejected answer Again', () => {
@@ -63,14 +77,18 @@ describe('deriveRating', () => {
       correct: false,
       meaning: { ok: false, note: null },
     });
-    expect(deriveRating({ method: 'judge', verdict: wrong }, fastMs)).toBe(
-      ratings.again,
-    );
+    expect(
+      deriveRating({ method: 'judge', verdict: wrong }, fastMs, 'review'),
+    ).toBe(ratings.again);
   });
 
   it('rates a skipped card Again regardless of timing', () => {
-    expect(deriveRating({ method: 'skip' }, fastMs)).toBe(ratings.again);
-    expect(deriveRating({ method: 'skip' }, null)).toBe(ratings.again);
+    expect(deriveRating({ method: 'skip' }, fastMs, 'review')).toBe(
+      ratings.again,
+    );
+    expect(deriveRating({ method: 'skip' }, null, 'review')).toBe(
+      ratings.again,
+    );
   });
 
   it('rates a definition that covers every key point Good, however fast', () => {
@@ -82,6 +100,7 @@ describe('deriveRating', () => {
           verdict: definitionVerdict([true, true]),
         },
         fastMs,
+        'review',
       ),
     ).toBe(ratings.good);
   });
@@ -95,6 +114,7 @@ describe('deriveRating', () => {
           verdict: definitionVerdict([false, true]),
         },
         slowMs,
+        'review',
       ),
     ).toBe(ratings.again);
   });
@@ -108,6 +128,7 @@ describe('deriveRating', () => {
           verdict: definitionVerdict([true, true], false),
         },
         slowMs,
+        'review',
       ),
     ).toBe(ratings.again);
   });
@@ -121,7 +142,11 @@ describe('deriveRating', () => {
       }),
     } as const;
     expect(
-      deriveRating({ method: 'learner-correction', assessed }, fastMs),
+      deriveRating(
+        { method: 'learner-correction', assessed },
+        fastMs,
+        'review',
+      ),
     ).toBe(ratings.hard);
   });
 });
@@ -188,7 +213,7 @@ describe('recitation rating', () => {
       typos: 1,
       soundAlikes: 0,
     });
-    expect(deriveRating(outcome, fastMs)).toBe(ratings.good);
+    expect(deriveRating(outcome, fastMs, 'review')).toBe(ratings.good);
   });
 
   it('rates a mistake per ten words Hard and counts it as correct', () => {
@@ -196,7 +221,7 @@ describe('recitation rating', () => {
       dictated: false,
     });
     expect(isCorrect(outcome)).toBe(true);
-    expect(deriveRating(outcome, slowMs)).toBe(ratings.hard);
+    expect(deriveRating(outcome, slowMs, 'review')).toBe(ratings.hard);
   });
 
   it('rates a dictated text with words that sound right Good', () => {
@@ -210,7 +235,7 @@ describe('recitation rating', () => {
       mistakes: 0,
       soundAlikes: 1,
     });
-    expect(deriveRating(outcome, slowMs)).toBe(ratings.good);
+    expect(deriveRating(outcome, slowMs, 'review')).toBe(ratings.good);
   });
 
   it('rates more mistakes Again', () => {
@@ -220,6 +245,6 @@ describe('recitation rating', () => {
       { dictated: false },
     );
     expect(isCorrect(outcome)).toBe(false);
-    expect(deriveRating(outcome, slowMs)).toBe(ratings.again);
+    expect(deriveRating(outcome, slowMs, 'review')).toBe(ratings.again);
   });
 });
