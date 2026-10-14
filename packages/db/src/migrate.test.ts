@@ -46,6 +46,8 @@ const spellingPitfallsMigrationHash =
   '3613112c0e158900f77c3c3f2774b39b6d81d5da778a466d60624407e8b705c2';
 const judgeTargetSynonymsMigrationHash =
   'ddfd5ae1a665a1d614abfe7dcb41bdf704e4fa0bb992ab6e1fa5941c7eabd087';
+const entryGrammarNotesMigrationHash =
+  'b3789a95748a51ad097bb38ad1ef059ab0461ddcc0fcf0d37c6610686c2381a0';
 const fullMigrationTestTimeoutMs = 15_000;
 
 const getMigrationError = (url: string) =>
@@ -79,6 +81,7 @@ it(
           yield* sql`alter table entries drop column key_points`;
           yield* sql`alter table entries drop column synonyms, drop column antonyms`;
           yield* sql`alter table entries drop column spelling_pitfalls`;
+          yield* sql`alter table entries add column grammar jsonb, add column notes text`;
           yield* sql`
           alter table courses
             drop constraint courses_directions_translations,
@@ -137,7 +140,8 @@ it(
             ${relatedWordsMigrationHash},
             ${relationCardsMigrationHash},
             ${spellingPitfallsMigrationHash},
-            ${judgeTargetSynonymsMigrationHash}
+            ${judgeTargetSynonymsMigrationHash},
+            ${entryGrammarNotesMigrationHash}
           )
         `;
           yield* migrateDatabase(database.url);
@@ -233,12 +237,11 @@ it("files entries without a book into their unit's book", async () => {
             ('dddddddd-dddd-4ddd-8ddd-dddddddddddd', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'U1', 0),
             ('eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', 'U1', 0)
         `;
-        // The previous image still names grammar during rollout and rollback.
         yield* sql`
-          insert into entries (course_id, unit_id, target_text, native_text, grammar, notes)
+          insert into entries (course_id, unit_id, target_text, native_text)
           values
-            ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'dddddddd-dddd-4ddd-8ddd-dddddddddddd', 'el libro', 'das Buch', null, null),
-            ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee', 'la casa', 'das Haus', null, null)
+            ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'dddddddd-dddd-4ddd-8ddd-dddddddddddd', 'el libro', 'das Buch'),
+            ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee', 'la casa', 'das Haus')
         `;
         yield* migrateDatabase(database.url);
         yield* migrateDatabase(database.url);
@@ -339,9 +342,13 @@ it('drops the synonyms the judge accepted into the target language', async () =>
             ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'to_target', 'teen', 'teen', 'manual'),
             ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'to_native', 'der Teenager', 'der teenager', 'judge')
         `;
+        yield* sql`alter table entries add column grammar jsonb, add column notes text`;
         yield* sql`
           delete from drizzle.__drizzle_migrations
-          where hash = ${judgeTargetSynonymsMigrationHash}
+          where hash in (
+            ${judgeTargetSynonymsMigrationHash},
+            ${entryGrammarNotesMigrationHash}
+          )
         `;
         yield* migrateDatabase(database.url);
         return yield* sql<{
