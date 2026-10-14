@@ -28,7 +28,7 @@
         "@wordhold/ui": "workspace:*",
         "better-auth": "^1.7.6",
         "drizzle-orm": "^0.45.3",
-        "effect": "^4.0.1",
+        "effect": "^4.0.3",
         "image-dimensions": "^2.6.0",
         "lucide-react": "^1.55.0",
         "react": "^19.3.0",
@@ -75,7 +75,7 @@
         "@aws-sdk/client-polly": "^3.1146.0",
         "@aws-sdk/client-transcribe-streaming": "^3.1140.0",
         "ai": "^7.0.127",
-        "effect": "^4.0.1",
+        "effect": "^4.0.3",
       },
       "devDependencies": {
         "@davidvornholt/typescript-config": "workspace:*",
@@ -87,9 +87,9 @@
       "name": "@wordhold/db",
       "version": "0.0.0",
       "dependencies": {
-        "@effect/sql-pg": "^4.0.1",
+        "@effect/sql-pg": "^4.0.3",
         "drizzle-orm": "^0.45.3",
-        "effect": "^4.0.1",
+        "effect": "^4.0.3",
         "postgres": "^3.4.9",
       },
       "devDependencies": {
@@ -266,7 +266,7 @@
 
     "@drizzle-team/brocli": ["@drizzle-team/brocli@0.10.2", "", {}, "sha512-z33Il7l5dKjUgGULTqBsQBQwckHh5AbIuxhdsIxDDiZAzBOrZO6q9ogcWC65kU382AfynTfgNumVcNIjuIua6w=="],
 
-    "@effect/sql-pg": ["@effect/sql-pg@4.0.1", "", { "peerDependencies": { "effect": "^4.0.1" } }, "sha512-X5aqOxHNWqVXL+vyTQZLYDip65lm5rrZHuNkWyyr672iup1tjYAs5Dn9tHR5h1t0blpJ57j8Ng5G5AUQ8teIqA=="],
+    "@effect/sql-pg": ["@effect/sql-pg@4.0.3", "", { "peerDependencies": { "effect": "^4.0.3" } }, "sha512-pHrR3FGUIoqwkn/0X1yB5Gr1HkPMwzDt/9+cFv2e3eLlpVJwkgYUDeL+IRaO9fXTrKGwQw+y3948lv3x1nLOaQ=="],
 
     "@esbuild-kit/core-utils": ["@esbuild-kit/core-utils@3.3.2", "", { "dependencies": { "esbuild": "~0.18.20", "source-map-support": "^0.5.21" } }, "sha512-sPRAnw9CdSsRmEtnsl2WXWdyquogVpB3yZ3dgwJfe8zrOzTsV7cJvmwrKVa+0ma5BoiGJ+BoqkMvawbayKUsqQ=="],
 
@@ -648,7 +648,7 @@
 
     "ecdsa-sig-formatter": ["ecdsa-sig-formatter@1.0.11", "", { "dependencies": { "safe-buffer": "^5.0.1" } }, "sha512-nagl3RYrbNv6kQkeJIpt6NJZy8twLB/2vtz6yN9Z4vRKHN4/QZJIEbqohALSgwKdnksuY3k5Addp5lg8sVoVcQ=="],
 
-    "effect": ["effect@4.0.1", "", {}, "sha512-b1VlQG9g8fwxE5QnIZuPoOP/0MsqHJSRKxUijjoM80E5q95FXrX5yWtY5XI8G+GJsBQAVSDbLS458z9a++uVvw=="],
+    "effect": ["effect@4.0.3", "", {}, "sha512-LoWn/Uwwx0JjHSDmBAAahx8sB+klzM6vsZovnbYowBNw6B4QScJLRLBByO61plvNiycx7HPN8FnsWUCu0eXW5w=="],
 
     "electron-to-chromium": ["electron-to-chromium@1.5.439", "", {}, "sha512-qu6QIPXhsb+CRcAiTMNjR4A1y/7tCYKkKjr5CZXRVih6qkDf79peZ2BpEU3qoDBNCRrcy3Mra3X9nG5oruuA7Q=="],
 

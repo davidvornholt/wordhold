@@ -29,7 +29,7 @@
     "@wordhold/ui": "workspace:*",
     "better-auth": "^1.7.6",
     "drizzle-orm": "^0.45.3",
-    "effect": "^4.0.1",
+    "effect": "^4.0.3",
     "image-dimensions": "^2.6.0",
     "lucide-react": "^1.55.0",
     "react": "^19.3.0",
