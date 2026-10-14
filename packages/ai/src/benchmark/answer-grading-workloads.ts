@@ -240,7 +240,18 @@ export const answerGradingWorkloads: ReadonlyArray<Workload> = [
       expectedAnswers: ['la biblioteca'],
       givenAnswer: 'la bibloteca',
     },
-    { correct: null, faults: ['spelling'] },
+    { correct: false, faults: ['spelling'] },
+  ),
+  judgeWorkload(
+    'judge-missing-accent',
+    {
+      direction: 'to_target',
+      targetLanguage: 'Spanish',
+      prompt: 'der Bleistift',
+      expectedAnswers: ['el lápiz'],
+      givenAnswer: 'el lapiz',
+    },
+    { correct: false, faults: ['spelling'] },
   ),
   judgeWorkload(
     'judge-unlisted-synonym',

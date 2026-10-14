@@ -13,6 +13,10 @@ type RelationJudgeInput = Extract<
 const asksRelation = (input: JudgeInput): input is RelationJudgeInput =>
   input.direction === 'to_synonym' || input.direction === 'to_antonym';
 
+// Every direction but into German asks for an answer in the target language.
+const answersInTarget = (input: JudgeInput): boolean =>
+  input.direction !== 'to_native';
+
 const relationTerms = (direction: RelationJudgeInput['direction']) =>
   direction === 'to_synonym'
     ? {
@@ -30,6 +34,14 @@ const targetLanguageRules = [
   'The learner drills the textbook wording for a vocabulary test, so accept only an expected answer. A synonym, paraphrase or regional variant is incorrect even when its meaning fits: pass meaning, fail intendedConstruction and name the expected answer in the explanation.',
   'Notation is not wording: accept expanded gender forms, optional infinitive to, sb./sth. written out or left out, an adapted possessive or reflexive pronoun, omitted gender or conjugation annotations, and harmless explanatory notes, but not a second word offered as an alternative.',
 ] as const;
+
+const capitalizationRule =
+  "Capitalization counts: a word capitalized against its language's rules, such as a lower-case German noun or English I, fails spelling and makes the answer incorrect.";
+
+// A vocabulary test marks every misspelling in the target language wrong, so
+// a near miss must not pass as known.
+const targetSpellingRule =
+  "Spelling counts: any misspelling, a missing, extra or wrong accent, or capitalization against the language's rules, such as a lower-case English I, fails spelling and makes the answer incorrect.";
 
 // Into German, any valid translation shows the word is understood.
 const nativeLanguageRules = [
@@ -75,12 +87,22 @@ const taskData = (input: JudgeInput) =>
 export const judgePrompt = (input: JudgeInput): string =>
   [
     ...(asksRelation(input) ? relationTask(input) : translationTask(input)),
-    "Capitalization counts: a word capitalized against its language's rules, such as a lower-case German noun or English I, fails spelling and makes the answer incorrect.",
+    answersInTarget(input) ? targetSpellingRule : capitalizationRule,
     'Set correct=true for an acceptable answer; acceptAsAlternative=true only when every dimension passes. Use null notes for passing dimensions.',
     'Write the explanation in German, quoting words with single quotes. Explain a rejection or qualification in at most two short sentences.',
     'When an acceptable answer differs from the expected answers in a way a learner should know, such as usage, register or region, explain the difference in one short sentence. Otherwise use a null explanation, never a bare confirmation.',
     JSON.stringify(taskData(input)),
   ].join('\n');
+
+// The model can still call a misspelled answer correct while failing its
+// spelling, so the rule is enforced on the verdict as well.
+export const enforceTargetSpelling = (
+  input: JudgeInput,
+  verdict: JudgeVerdictData,
+): JudgeVerdictData =>
+  answersInTarget(input) && !verdict.spelling.ok
+    ? { ...verdict, correct: false, acceptAsAlternative: false }
+    : verdict;
 
 export class Judge extends Context.Service<
   Judge,
@@ -106,7 +128,7 @@ export class Judge extends Context.Service<
           schema: JudgeVerdict,
           prompt: judgePrompt(input),
           failure: (cause) => new JudgeError({ cause }),
-        });
+        }).pipe(Effect.map((verdict) => enforceTargetSpelling(input, verdict)));
       return Judge.of({ judge, modelId });
     }),
   );
