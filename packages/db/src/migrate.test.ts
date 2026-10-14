@@ -14,50 +14,36 @@ import {
   placeholderBookName,
 } from './migrate';
 
-// Replay the final migrations from their pre-DDL state.
+// The first migrations each replay test applies again.
 const importPositionConstraintMigrationHash =
   '18226dcef2d9e932168f3daed465b85680de2d9367e67ab5d0551bc6104954db';
-const reviewOrderMigrationHash =
-  '3b01f431635ab6d65034133670f39894f3ea9b7710520a3659c4f0e426a092d2';
-const reviewPositionMigrationHash =
-  '667da7736b64b0656bc94e13aa92a626ee11d920ef4a49b55660274959306df1';
-const exampleAudioMigrationHash =
-  'aface4b435b2dafbc5c9edefed79481429abecc375d5cd26d416759672671b24';
-const booksMigrationHash =
-  '6cc265987ae1824f43fac61dc5cf25089f1d948265afab509f63a33169ff0538';
-const accountIdentityMigrationHash =
-  '2d232a381883d666ddcdff21161b303eb8c2e0b4bc4576085c55ee0977914ae8';
-const unitBookIndexMigrationHash =
-  'cb42bc24512d3f6a940f361c3af4bf685acbc113f3bf980841b93260c11cf941';
-const entryBookMigrationHash =
-  '872071c0a1725aa0d740405e071d8905bcbe7ecfe394a84ac3eda36698bb00e6';
-const courseKindMigrationHash =
-  'b26fe74cf27edc2b2519861de4384dc66e43010d89be9fd629d03935959863af';
-const accountsMigrationHash =
-  '11807e707f9b69fa911f86330be224490e390025efec6354bf5888a82841d1c6';
-const textsKindMigrationHash =
-  'aa594d379bfe20233c70c96f1aeacb742b377fec7169f18cc9d7a7a4d0fb42c4';
-const biblesMigrationHash =
-  '3bdb05eb80984f57fc406e8b7ef18bf8c552b83ba38252a978b75d7afd11ca2f';
-const transcriptionUsageMigrationHash =
-  'b01829ba1894314d9860d5ba5cfb9c019b77f3beaeed39493692d313aba79e37';
-const relatedWordsMigrationHash =
-  '4549fe65b6fcf021610e4fddb0bfd22b3fb65783a8d2c576e2786ec65750d456';
-const relationCardsMigrationHash =
-  '8335a14fcdd2b947452db288da06c3349f01678de25f34d6f8d6e1680bc37091';
-const spellingPitfallsMigrationHash =
-  '3613112c0e158900f77c3c3f2774b39b6d81d5da778a466d60624407e8b705c2';
 const judgeTargetSynonymsMigrationHash =
   'ddfd5ae1a665a1d614abfe7dcb41bdf704e4fa0bb992ab6e1fa5941c7eabd087';
-const entryGrammarNotesMigrationHash =
-  'b3789a95748a51ad097bb38ad1ef059ab0461ddcc0fcf0d37c6610686c2381a0';
-const migrationCount = readMigrationFiles({ migrationsFolder }).length;
+const staleJudgeVerdictsMigrationHash =
+  '89ccf77f492e3d2462345a798f8702b471b92ef8ce2eb282389a8d0696b0ee85';
+const migrations = readMigrationFiles({ migrationsFolder });
+const migrationCount = migrations.length;
 // These tests run the migrations themselves, which takes several seconds on
 // a cold hosted runner. Every other test clones the migrated template.
 const migrationReplayTimeoutMs = 15_000;
 
 const getMigrationError = (url: string) =>
   Effect.runPromise(migrateDatabase(url).pipe(Effect.flip));
+
+// The migrator applies only migrations newer than the newest recorded one,
+// so a replay unrecords the given migration and every later one.
+const unrecordMigrationsFrom = (hash: string) =>
+  Effect.gen(function* () {
+    const first = migrations.find((migration) => migration.hash === hash);
+    if (first === undefined) {
+      return yield* Effect.die(new Error(`No migration has hash ${hash}.`));
+    }
+    const sql = yield* Database;
+    yield* sql`
+      delete from drizzle.__drizzle_migrations
+      where created_at >= ${first.folderMillis}
+    `;
+  });
 
 const countAppliedMigrations = Effect.gen(function* () {
   const sql = yield* Database;
@@ -151,29 +137,7 @@ it(
           yield* sql`drop table books`;
           yield* sql`create unique index units_course_name on units (course_id, name)`;
           yield* sql`create unique index units_course_position on units (course_id, position)`;
-          yield* sql`
-          delete from drizzle.__drizzle_migrations
-          where hash in (
-            ${importPositionConstraintMigrationHash},
-            ${reviewOrderMigrationHash},
-            ${reviewPositionMigrationHash},
-            ${exampleAudioMigrationHash},
-            ${booksMigrationHash},
-            ${accountIdentityMigrationHash},
-            ${unitBookIndexMigrationHash},
-            ${entryBookMigrationHash},
-            ${courseKindMigrationHash},
-            ${accountsMigrationHash},
-            ${textsKindMigrationHash},
-            ${biblesMigrationHash},
-            ${transcriptionUsageMigrationHash},
-            ${relatedWordsMigrationHash},
-            ${relationCardsMigrationHash},
-            ${spellingPitfallsMigrationHash},
-            ${judgeTargetSynonymsMigrationHash},
-            ${entryGrammarNotesMigrationHash}
-          )
-        `;
+          yield* unrecordMigrationsFrom(importPositionConstraintMigrationHash);
           yield* migrateDatabase(database.url);
           const pages = yield* sql<{ readonly expected: number }>`
           select import_expected_count as expected
@@ -366,13 +330,7 @@ it('drops the synonyms the judge accepted into the target language', async () =>
             ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'to_native', 'der Teenager', 'der teenager', 'judge')
         `;
         yield* sql`alter table entries add column grammar jsonb, add column notes text`;
-        yield* sql`
-          delete from drizzle.__drizzle_migrations
-          where hash in (
-            ${judgeTargetSynonymsMigrationHash},
-            ${entryGrammarNotesMigrationHash}
-          )
-        `;
+        yield* unrecordMigrationsFrom(judgeTargetSynonymsMigrationHash);
         yield* migrateDatabase(database.url);
         return yield* sql<{
           readonly direction: string;
@@ -390,6 +348,39 @@ it('drops the synonyms the judge accepted into the target language', async () =>
     { direction: 'to_native', text: 'der Teenager', source: 'judge' },
     { direction: 'to_target', text: 'teen', source: 'manual' },
   ]);
+});
+
+it('drops the judge verdicts stored without otherWording', async () => {
+  const answers = await Effect.runPromise(
+    withMigratedTestDatabase((database) =>
+      Effect.gen(function* () {
+        const sql = yield* Database;
+        yield* sql`
+          insert into courses (id, name, target_language)
+          values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'Spanisch', 'es')
+        `;
+        yield* sql`
+          insert into entries (id, course_id, target_text, native_text)
+          values ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'enfocarse', 'sich konzentrieren')
+        `;
+        // A definition verdict has no `correct` field and stays.
+        yield* sql`
+          insert into judge_cache (entry_id, direction, normalized_answer, verdict, model)
+          values
+            ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'to_target', 'stale', '{"correct":false}', 'judge'),
+            ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'to_target', 'current', '{"correct":false,"otherWording":true}', 'judge'),
+            ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'to_native', 'definition', '{"keyPoints":[],"accuracy":{"ok":true,"note":null},"explanation":null}', 'definition')
+        `;
+        yield* unrecordMigrationsFrom(staleJudgeVerdictsMigrationHash);
+        yield* migrateDatabase(database.url);
+        return yield* sql<{ readonly answer: string }>`
+          select normalized_answer as answer from judge_cache order by normalized_answer
+        `;
+      }).pipe(Effect.provide(testDatabaseLayer(database.url))),
+    ),
+  );
+
+  expect(answers).toEqual([{ answer: 'current' }, { answer: 'definition' }]);
 });
 
 it('reports a malformed database URL as a typed migration error', async () => {

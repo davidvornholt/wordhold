@@ -36,7 +36,7 @@ const otherWordingUnused = 'Set otherWording=false.';
 // in the target language must be that word. A complete one still shows the
 // task was understood, so it is marked for another try.
 const targetLanguageRules = [
-  'The learner drills the textbook wording for a vocabulary test, so accept only an expected answer. A synonym, paraphrase or regional variant is incorrect even when its meaning fits: pass meaning, fail intendedConstruction and name the expected answer in the explanation. Set otherWording=true only when it translates the whole task, grammatical and correctly spelled.',
+  'The learner drills the textbook wording for a test, so accept only an expected answer. A synonym, paraphrase or regional variant is incorrect even when its meaning fits: pass meaning, fail intendedConstruction, name the expected answer in the explanation, and set otherWording=true if it is complete.',
   'Notation is not wording: accept expanded gender forms, optional infinitive to, sb./sth. written out or left out, an adapted possessive or reflexive pronoun, omitted gender or conjugation annotations, and harmless explanatory notes, but not a second word offered as an alternative.',
 ] as const;
 

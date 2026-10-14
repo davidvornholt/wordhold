@@ -3,7 +3,7 @@ import { Schema } from 'effect';
 import { isAcceptedAlternative, isOtherWording, JudgeVerdict } from './schema';
 import { enforceTargetSpelling, judgePrompt } from './service';
 
-const representativePromptCharacterBudget = 1600;
+const representativePromptCharacterBudget = 1500;
 
 describe('judgePrompt', () => {
   it('names the answer language from the direction', () => {
@@ -131,8 +131,7 @@ describe('judgePrompt for an answer in other wording', () => {
     expectedAnswers: ['enfocarse en algo'],
     givenAnswer: 'concentrarse en algo',
   } as const;
-  const rule =
-    'Set otherWording=true only when it translates the whole task, grammatical and correctly spelled.';
+  const rule = 'set otherWording=true if it is complete';
 
   it('marks a complete translation into the target language', () => {
     expect(judgePrompt({ ...base, direction: 'to_target' })).toContain(rule);
