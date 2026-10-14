@@ -35,9 +35,14 @@ const allDimensionsPass = (verdict: {
 //
 // `explanation` is null when there is nothing to add to the verdict, so the
 // feedback does not repeat "Richtig" under its own heading.
+//
+// `otherWording` marks an answer into the target language that translates the
+// whole task correctly, but not in the textbook's words. It is rejected all
+// the same; `isOtherWording` decides whether the learner may try again.
 export const JudgeVerdict = Schema.Struct({
   correct: Schema.Boolean,
   acceptAsAlternative: Schema.Boolean,
+  otherWording: Schema.Boolean,
   meaning: Dimension,
   grammar: Dimension,
   idiomaticity: Dimension,
@@ -49,6 +54,15 @@ export type JudgeVerdictData = typeof JudgeVerdict.Type;
 
 export const isAcceptedAlternative = (verdict: JudgeVerdictData): boolean =>
   verdict.acceptAsAlternative && verdict.correct && allDimensionsPass(verdict);
+
+// Only a rejected answer whose meaning, grammar and spelling all hold is
+// another wording; a model that faults one of them has found a real mistake.
+export const isOtherWording = (verdict: JudgeVerdictData): boolean =>
+  verdict.otherWording &&
+  !verdict.correct &&
+  verdict.meaning.ok &&
+  verdict.grammar.ok &&
+  verdict.spelling.ok;
 
 type JudgeAnswer = {
   readonly targetLanguage: string;

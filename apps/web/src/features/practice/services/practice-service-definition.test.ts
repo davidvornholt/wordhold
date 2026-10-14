@@ -71,6 +71,7 @@ const reviewStore = (
   { storedFirst }: SubmitOptions,
 ): PracticeReviewStore['Service'] => ({
   findSubmission: () => Effect.succeed(submission),
+  listCourseEntries: () => Effect.die('course entries must not be listed'),
   saveKeyPoints: (_entryId, _definition, points) =>
     Effect.sync(() => {
       recorded.saved.push(points);
@@ -104,14 +105,16 @@ const submitDefinition = (
       wrongAnswerResolution: 'defer',
       mode: 'scheduled',
     },
-    testGrader({
-      keyPoints: () => Effect.succeed(keyPoints),
-      judge: (input) =>
-        Effect.sync(() => {
-          recorded.judged.push(input);
-          return verdict(covered);
-        }),
-    }),
+    {
+      grader: testGrader({
+        keyPoints: () => Effect.succeed(keyPoints),
+        judge: (input) =>
+          Effect.sync(() => {
+            recorded.judged.push(input);
+            return verdict(covered);
+          }),
+      }),
+    },
   );
   return { result, recorded };
 };

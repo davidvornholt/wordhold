@@ -14,6 +14,7 @@ import { JudgeCacheStore } from './judge-cache-store';
 const verdict: JudgeVerdictData = {
   correct: false,
   acceptAsAlternative: false,
+  otherWording: false,
   meaning: { ok: true, note: null },
   grammar: { ok: true, note: null },
   idiomaticity: { ok: true, note: null },

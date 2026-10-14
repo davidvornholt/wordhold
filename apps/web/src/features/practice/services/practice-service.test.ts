@@ -22,6 +22,8 @@ describe('PracticeService', () => {
     const result = await runSubmit(
       {
         findSubmission: () => Effect.fail(failure),
+        listCourseEntries: () =>
+          Effect.die('course entries must not be listed'),
         saveKeyPoints: (_entryId, _definition, points) =>
           Effect.succeed(points),
         listAcceptedAnswers: () => Effect.succeed([]),
@@ -39,6 +41,8 @@ describe('PracticeService', () => {
     const result = await runSubmit(
       {
         findSubmission: () => Effect.succeed(testSubmission),
+        listCourseEntries: () =>
+          Effect.die('course entries must not be listed'),
         saveKeyPoints: (_entryId, _definition, points) =>
           Effect.succeed(points),
         listAcceptedAnswers: () =>
@@ -68,6 +72,8 @@ describe('PracticeService', () => {
     const result = await runSubmit(
       {
         findSubmission: () => Effect.succeed(testSubmission),
+        listCourseEntries: () =>
+          Effect.die('course entries must not be listed'),
         saveKeyPoints: (_entryId, _definition, points) =>
           Effect.succeed(points),
         listAcceptedAnswers: () =>
@@ -105,6 +111,8 @@ describe('PracticeService', () => {
     const result = await runSubmit(
       {
         findSubmission: () => Effect.succeed(testSubmission),
+        listCourseEntries: () =>
+          Effect.die('course entries must not be listed'),
         saveKeyPoints: (_entryId, _definition, points) =>
           Effect.succeed(points),
         listAcceptedAnswers: () =>

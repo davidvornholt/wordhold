@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'bun:test';
 import { Schema } from 'effect';
-import { isAcceptedAlternative, JudgeVerdict } from './schema';
+import { isAcceptedAlternative, isOtherWording, JudgeVerdict } from './schema';
 import { enforceTargetSpelling, judgePrompt } from './service';
 
-const representativePromptCharacterBudget = 1500;
+const representativePromptCharacterBudget = 1600;
 
 describe('judgePrompt', () => {
   it('names the answer language from the direction', () => {
@@ -122,10 +122,43 @@ describe('judgePrompt', () => {
   });
 });
 
+// Another wording that translates the whole task lets the learner try again;
+// a partial one is an ordinary miss.
+describe('judgePrompt for an answer in other wording', () => {
+  const base = {
+    targetLanguage: 'Spanish',
+    prompt: 'sich auf etw. konzentrieren',
+    expectedAnswers: ['enfocarse en algo'],
+    givenAnswer: 'concentrarse en algo',
+  } as const;
+  const rule =
+    'Set otherWording=true only when it translates the whole task, grammatical and correctly spelled.';
+
+  it('marks a complete translation into the target language', () => {
+    expect(judgePrompt({ ...base, direction: 'to_target' })).toContain(rule);
+  });
+
+  it.each([
+    ['into German', judgePrompt({ ...base, direction: 'to_native' })],
+    [
+      'for a synonym',
+      judgePrompt({ ...base, direction: 'to_synonym', meaning: 'Fokus' }),
+    ],
+    [
+      'for an antonym',
+      judgePrompt({ ...base, direction: 'to_antonym', meaning: 'Fokus' }),
+    ],
+  ])('never marks one %s', (_direction, prompt) => {
+    expect(prompt).not.toContain(rule);
+    expect(prompt).toContain('Set otherWording=false.');
+  });
+});
+
 describe('JudgeVerdict schema', () => {
   const completeVerdict = {
     correct: true,
     acceptAsAlternative: true,
+    otherWording: false,
     meaning: { ok: true, note: null },
     grammar: { ok: true, note: null },
     idiomaticity: { ok: true, note: null },
@@ -138,6 +171,7 @@ describe('JudgeVerdict schema', () => {
     const verdict = Schema.decodeUnknownSync(JudgeVerdict)({
       correct: false,
       acceptAsAlternative: false,
+      otherWording: true,
       meaning: { ok: true, note: null },
       grammar: { ok: true, note: null },
       idiomaticity: { ok: false, note: 'ungebräuchlich' },
@@ -146,7 +180,18 @@ describe('JudgeVerdict schema', () => {
       explanation: 'Fast! „le souvenir“ ist hier das gesuchte Wort.',
     });
     expect(verdict.correct).toBe(false);
+    expect(verdict.otherWording).toBe(true);
     expect(verdict.idiomaticity.note).toBe('ungebräuchlich');
+  });
+
+  // A verdict cached before the field existed is never read as a rejection
+  // the learner may not retry.
+  it('refuses a verdict without otherWording', () => {
+    const { otherWording: _omitted, ...withoutOtherWording } = completeVerdict;
+
+    expect(() =>
+      Schema.decodeUnknownSync(JudgeVerdict)(withoutOtherWording),
+    ).toThrow();
   });
 
   it('accepts a fully correct alternative', () => {
@@ -180,6 +225,36 @@ describe('JudgeVerdict schema', () => {
   });
 });
 
+describe('isOtherWording', () => {
+  const otherWording = {
+    correct: false,
+    acceptAsAlternative: false,
+    otherWording: true,
+    meaning: { ok: true, note: null },
+    grammar: { ok: true, note: null },
+    idiomaticity: { ok: true, note: null },
+    spelling: { ok: true, note: null },
+    intendedConstruction: { ok: false, note: 'anderes Wort' },
+    explanation: "Gesucht ist 'enfocarse en algo'.",
+  } as const;
+
+  it('lets a rejected, faultless translation in other wording be retried', () => {
+    expect(isOtherWording(otherWording)).toBe(true);
+  });
+
+  // The model's flag alone is not enough: an accepted answer needs no retry,
+  // and a fault in meaning, grammar or spelling is a mistake to learn from.
+  it.each([
+    { ...otherWording, otherWording: false },
+    { ...otherWording, correct: true },
+    { ...otherWording, meaning: { ok: false, note: 'unvollständig' } },
+    { ...otherWording, grammar: { ok: false, note: 'falsche Präposition' } },
+    { ...otherWording, spelling: { ok: false, note: 'Tippfehler' } },
+  ])('treats a faulted or accepted answer as no other wording', (verdict) => {
+    expect(isOtherWording(verdict)).toBe(false);
+  });
+});
+
 describe('spelling in the target language', () => {
   // A vocabulary test marks a near miss like 'adolesent' wrong, so it must not
   // pass as known. Into German, a typo says nothing about the word.
@@ -204,6 +279,7 @@ describe('spelling in the target language', () => {
   const misspelled = {
     correct: true,
     acceptAsAlternative: false,
+    otherWording: true,
     meaning: { ok: true, note: null },
     grammar: { ok: true, note: null },
     idiomaticity: { ok: true, note: null },
@@ -224,6 +300,7 @@ describe('spelling in the target language', () => {
     );
 
     expect(verdict.correct).toBe(false);
+    expect(verdict.otherWording).toBe(false);
     expect(verdict.explanation).toBe(misspelled.explanation);
   });
 

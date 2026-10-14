@@ -9,6 +9,7 @@ const slowMs = 12_000;
 const verdict = (overrides: Partial<JudgeVerdictData>): JudgeVerdictData => ({
   correct: true,
   acceptAsAlternative: false,
+  otherWording: false,
   meaning: { ok: true, note: null },
   grammar: { ok: true, note: null },
   idiomaticity: { ok: true, note: null },

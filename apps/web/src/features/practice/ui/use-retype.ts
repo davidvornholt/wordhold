@@ -9,13 +9,13 @@ import {
   copyMistakeMessage,
   isVerbatimCopy,
 } from '../../../shared/grading/recitation';
-import type { SubmitResult } from '../schemas/practice-models';
+import type { FeedbackResult } from '../schemas/practice-models';
 import type { RetypeState } from './practice-answer-form';
 
 // A wrong or skipped card is not left until its answer has been written out
 // once, as in the learning pass: the expected answer stands in the field as
 // the template and disappears as soon as the learner types.
-export const needsRetype = (result: SubmitResult | null): boolean =>
+export const needsRetype = (result: FeedbackResult | null): boolean =>
   result?.graded === true && !result.correct;
 
 // The template is the card's textbook answer, so the copy passes whenever
@@ -74,7 +74,7 @@ const missedCopy = (
 };
 
 export const useRetype = (
-  result: SubmitResult | null,
+  result: FeedbackResult | null,
   templateLanguage: string,
   kind: CourseKind,
   // For a synonym or antonym card, its words, any one of which passes.

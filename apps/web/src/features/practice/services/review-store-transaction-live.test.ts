@@ -18,6 +18,7 @@ import { PracticeReviewStore } from './review-store';
 const acceptedVerdict: JudgeVerdictData = {
   correct: true,
   acceptAsAlternative: true,
+  otherWording: false,
   meaning: { ok: true, note: null },
   grammar: { ok: true, note: null },
   idiomaticity: { ok: true, note: null },

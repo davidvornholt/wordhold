@@ -64,10 +64,28 @@ export type KeyPointFinding = {
   readonly note: string | null;
 };
 
+// Another entry of the course: its target-language text as the book writes
+// it, and where the book teaches it, which is its unit or, for a word without
+// a unit, its book.
+export type CourseEntryPlace = {
+  readonly text: string;
+  readonly place: string;
+};
+
+// A correct translation in other words than the textbook's. It is neither
+// graded nor stored, and it carries no solution: the card stays open and the
+// learner looks for the textbook's word. `courseEntry` names the entry of the
+// course the answer spells out, if any.
+export type OtherWordingResult = {
+  readonly otherWording: true;
+  readonly courseEntry: CourseEntryPlace | null;
+};
+
 // `expectedAnswer` is the card's textbook answer: the solution the entry
 // intends, never an alternative the judge accepted along the way. For a
 // synonym or antonym card it is the whole stored list.
 export type SubmitResult =
+  | OtherWordingResult
   | {
       readonly graded: false;
       readonly expectedAnswer: string;
@@ -99,8 +117,12 @@ export type SubmitResult =
       readonly entryKnown: boolean;
     };
 
+// Every result the card answers with feedback: all but another wording,
+// which leaves the card open.
+export type FeedbackResult = Exclude<SubmitResult, OtherWordingResult>;
+
 export type ResolvedSubmitResult = Exclude<
-  SubmitResult,
+  FeedbackResult,
   { readonly graded: true; readonly stored: false }
 >;
 

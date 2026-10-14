@@ -14,6 +14,7 @@ import { PracticeJudge } from './practice-judge';
 const verdict: JudgeVerdictData = {
   correct: false,
   acceptAsAlternative: false,
+  otherWording: false,
   meaning: { ok: false, note: null },
   grammar: { ok: true, note: null },
   idiomaticity: { ok: true, note: null },

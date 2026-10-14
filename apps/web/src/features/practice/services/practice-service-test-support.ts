@@ -84,17 +84,22 @@ const sessionStore = Layer.succeed(PracticeSessionStore, {
   loadSelection: () => Effect.succeed([]),
 });
 
-const cacheStore = Layer.succeed(JudgeCacheStore, {
+const emptyCache: JudgeCacheStore['Service'] = {
   read: () => Effect.succeed(undefined),
   write: () => Effect.void,
   withCriticalSection: (_key, effect) => effect,
-});
+};
+
+type SubmitDependencies = {
+  readonly grader?: DefinitionGrader['Service'];
+  readonly cache?: JudgeCacheStore['Service'];
+};
 
 export const runSubmitPayload = (
   reviewStore: PracticeReviewStore['Service'],
   judge: PracticeJudge['Service'],
   payload: SubmitPayloadData,
-  grader = testGrader(),
+  { grader = testGrader(), cache = emptyCache }: SubmitDependencies = {},
 ) =>
   Effect.runPromise(
     Effect.flatMap(PracticeService, (service) => service.submit(payload)).pipe(
@@ -103,7 +108,7 @@ export const runSubmitPayload = (
           Layer.provide(
             Layer.mergeAll(
               sessionStore,
-              cacheStore,
+              Layer.succeed(JudgeCacheStore, cache),
               Layer.succeed(PracticeReviewStore, reviewStore),
               Layer.succeed(PracticeJudge, judge),
               Layer.succeed(DefinitionGrader, grader),

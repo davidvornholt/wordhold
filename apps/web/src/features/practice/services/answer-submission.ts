@@ -28,6 +28,7 @@ import {
 } from './answer-assessment';
 import type { DefinitionGrader } from './definition-grader';
 import type { JudgeCacheStore } from './judge-cache-store';
+import { allowsAnotherTry, otherWordingResult } from './other-wording';
 import type { PracticeJudge } from './practice-judge';
 import type { PracticeReviewStore } from './review-store';
 
@@ -213,6 +214,9 @@ export const resolveAnswerSubmission = (
         message:
           'Der KI-Prüfer ist gerade nicht erreichbar; die Antwort wurde nicht gewertet.',
       };
+    }
+    if (allowsAnotherTry(row, data, assessment)) {
+      return yield* otherWordingResult(reviews, row, data.answer);
     }
     const pending = pendingRejectedResult(assessment, data, expectedAnswer);
     if (pending !== null) {

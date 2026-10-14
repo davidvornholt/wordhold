@@ -14,6 +14,7 @@ import {
   type StaleAnswerSubmissionError,
 } from '../errors/practice-errors';
 import type {
+  CourseEntryPlace,
   PersistedReview,
   PersistReviewInput,
   SubmissionRecord,
@@ -49,6 +50,19 @@ const loadEntryKnown = (sql: Database, entryId: string) =>
     Effect.mapError((cause) => databaseError('commit graded answer', cause)),
   );
 
+const listCourseEntries = (sql: Database, entryId: string) =>
+  sql<CourseEntryPlace>`
+    select e.target_text as text, coalesce(u.name, b.name) as place
+    from entries asked
+    join entries e on e.course_id = asked.course_id and e.id <> asked.id
+    join books b on b.id = e.book_id
+    left join units u on u.id = e.unit_id
+    where asked.id = ${entryId}
+    order by b.position, u.position nulls last, e.created_at, e.id
+  `.pipe(
+    Effect.mapError((cause) => databaseError('list course entries', cause)),
+  );
+
 export class PracticeReviewStore extends Context.Service<
   PracticeReviewStore,
   {
@@ -60,6 +74,11 @@ export class PracticeReviewStore extends Context.Service<
       entryId: string,
       direction: AnswerDirection,
     ) => Effect.Effect<ReadonlyArray<AcceptedAnswer>, PracticeDatabaseError>;
+    // The other entries of the entry's course, in the order the books teach
+    // them.
+    readonly listCourseEntries: (
+      entryId: string,
+    ) => Effect.Effect<ReadonlyArray<CourseEntryPlace>, PracticeDatabaseError>;
     // Stores key points derived during grading; see saveDerivedKeyPoints.
     readonly saveKeyPoints: (
       entryId: string,
@@ -226,6 +245,7 @@ export class PracticeReviewStore extends Context.Service<
       return {
         findSubmission,
         listAcceptedAnswers,
+        listCourseEntries: (entryId: string) => listCourseEntries(sql, entryId),
         saveKeyPoints,
         commit,
       } as const;

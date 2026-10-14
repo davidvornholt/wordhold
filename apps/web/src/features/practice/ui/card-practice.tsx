@@ -22,8 +22,8 @@ import type {
   SubmitResult,
 } from '../schemas/practice-models';
 import type { SubmitPayloadData } from '../schemas/submission-schema';
+import { CardFeedback } from './card-feedback';
 import { FeedbackActions } from './feedback-actions';
-import { FeedbackPanel } from './feedback-panel';
 import { feedbackTone } from './feedback-tone';
 import { PracticeAnswerForm } from './practice-answer-form';
 import { SubmissionNotice } from './submission-notice';
@@ -146,24 +146,23 @@ export const CardPractice = ({
         wordId={promptId}
         wordLang={foreignPromptLanguage(item.direction, targetLanguage)}
       >
-        {result === null ? null : (
-          <FeedbackPanel
-            answerLanguage={answerLang}
-            busy={busy || resolution !== null}
-            dictated={submission.submittedDictated}
-            example={example}
-            id={feedbackDescriptionId}
-            kind={subject.kind}
-            playSentence={audio.playSentence}
-            playWord={audio.playWord}
-            repeated={repeated}
-            result={result}
-            skipped={submission.skipped}
-            spellingPitfalls={shownPitfalls(item)}
-            submittedAnswer={submission.submittedAnswer ?? ''}
-            targetLanguage={targetLanguage}
-          />
-        )}
+        <CardFeedback
+          answerLanguage={answerLang}
+          busy={busy || resolution !== null}
+          dictated={submission.submittedDictated}
+          example={example}
+          id={feedbackDescriptionId}
+          kind={subject.kind}
+          otherWording={submission.otherWording}
+          playSentence={audio.playSentence}
+          playWord={audio.playWord}
+          repeated={repeated}
+          result={result}
+          skipped={submission.skipped}
+          spellingPitfalls={shownPitfalls(item)}
+          submittedAnswer={submission.submittedAnswer ?? ''}
+          targetLanguage={targetLanguage}
+        />
       </WordCard>
       <PracticeAnswerForm
         answer={submission.answer}
