@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { Schema } from 'effect';
 import { isAcceptedAlternative, JudgeVerdict } from './schema';
-import { judgePrompt } from './service';
+import { enforceTargetSpelling, judgePrompt } from './service';
 
 const representativePromptCharacterBudget = 1500;
 
@@ -21,7 +21,9 @@ describe('judgePrompt', () => {
     );
   });
 
-  it('keeps the instruction compact while distinguishing task requirements from notation', () => {
+  // A vocabulary test marks a synonym of the textbook word wrong, so only
+  // notation may differ from it.
+  it('accepts only the textbook wording into the target language', () => {
     const prompt = judgePrompt({
       direction: 'to_target',
       targetLanguage: 'Spanish',
@@ -30,9 +32,27 @@ describe('judgePrompt', () => {
       givenAnswer: 'el abogado / la abogada',
     });
     expect(prompt.length).toBeLessThan(representativePromptCharacterBudget);
-    expect(prompt).toContain('do not impose hidden meanings');
+    expect(prompt).toContain('accept only an expected answer');
+    expect(prompt).toContain(
+      'A synonym, paraphrase or regional variant is incorrect',
+    );
     expect(prompt).toContain('expanded gender forms');
+    expect(prompt).not.toContain('including synonyms');
+  });
+
+  it('accepts any valid translation into German', () => {
+    const prompt = judgePrompt({
+      direction: 'to_native',
+      targetLanguage: 'Spanish',
+      prompt: 'el ordenador',
+      expectedAnswers: ['der Computer'],
+      givenAnswer: 'der Rechner',
+    });
+    expect(prompt.length).toBeLessThan(representativePromptCharacterBudget);
+    expect(prompt).toContain('including synonyms and natural paraphrases');
+    expect(prompt).toContain('do not impose hidden meanings');
     expect(prompt).toContain('explicit in the shown task');
+    expect(prompt).not.toContain('accept only an expected answer');
   });
 
   it('fails an answer capitalized against its language', () => {
@@ -89,11 +109,11 @@ describe('judgePrompt', () => {
   // accepted answer must teach something about the difference.
   it('asks for a difference worth knowing instead of a bare confirmation', () => {
     const prompt = judgePrompt({
-      direction: 'to_target',
+      direction: 'to_native',
       targetLanguage: 'Spanish',
-      prompt: 'hier: das Schuljahr',
-      expectedAnswers: ['el curso'],
-      givenAnswer: 'el año escolar',
+      prompt: 'el curso',
+      expectedAnswers: ['das Schuljahr'],
+      givenAnswer: 'der Jahrgang',
     });
     expect(prompt).toContain('Write the explanation in German');
     expect(prompt).toContain('such as usage, register or region');
@@ -157,5 +177,62 @@ describe('JudgeVerdict schema', () => {
 
     expect(verdict.explanation).toBe('Passt.');
     expect(isAcceptedAlternative(verdict)).toBe(false);
+  });
+});
+
+describe('spelling in the target language', () => {
+  // A vocabulary test marks a near miss like 'adolesent' wrong, so it must not
+  // pass as known. Into German, a typo says nothing about the word.
+  it('asks to fail any misspelling in the target language', () => {
+    const base = {
+      targetLanguage: 'Spanish',
+      prompt: 'der Bleistift',
+      expectedAnswers: ['el lápiz'],
+      givenAnswer: 'el lapiz',
+    } as const;
+    const rule = 'any misspelling, a missing, extra or wrong accent';
+
+    expect(judgePrompt({ ...base, direction: 'to_target' })).toContain(rule);
+    expect(
+      judgePrompt({ ...base, direction: 'to_synonym', meaning: 'Stift' }),
+    ).toContain(rule);
+    expect(judgePrompt({ ...base, direction: 'to_native' })).not.toContain(
+      rule,
+    );
+  });
+
+  const misspelled = {
+    correct: true,
+    acceptAsAlternative: false,
+    meaning: { ok: true, note: null },
+    grammar: { ok: true, note: null },
+    idiomaticity: { ok: true, note: null },
+    spelling: { ok: false, note: 'Tippfehler' },
+    intendedConstruction: { ok: true, note: null },
+    explanation: "Richtig wäre 'adolescent'.",
+  } as const;
+  const base = {
+    targetLanguage: 'English',
+    expectedAnswers: ['adolescent'],
+    givenAnswer: 'adolesent',
+  } as const;
+
+  it('overrules a verdict that calls a misspelled answer correct', () => {
+    const verdict = enforceTargetSpelling(
+      { ...base, direction: 'to_target', prompt: 'der/die Jugendliche' },
+      misspelled,
+    );
+
+    expect(verdict.correct).toBe(false);
+    expect(verdict.explanation).toBe(misspelled.explanation);
+  });
+
+  it('keeps a misspelled German answer correct', () => {
+    expect(
+      enforceTargetSpelling(
+        { ...base, direction: 'to_native', prompt: 'adolescent' },
+        misspelled,
+      ),
+    ).toBe(misspelled);
   });
 });

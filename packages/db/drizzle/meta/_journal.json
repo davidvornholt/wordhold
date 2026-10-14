@@ -218,6 +218,13 @@
       "when": 1791969995291,
       "tag": "0030_remarkable_speedball",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1791987006559,
+      "tag": "0031_drop_judge_target_synonyms",
+      "breakpoints": true
     }
   ]
 }
