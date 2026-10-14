@@ -46,10 +46,13 @@ export const adolescentPracticeItem: PracticeItem = {
 
 export const prepareAdolescentPitfalls: PreparePitfalls = ({ data }) =>
   Promise.resolve(
-    data.map((id) => ({
-      entryId: id,
-      pitfalls: id === adolescentEntryId ? [adolescentPitfall] : [],
-    })),
+    data
+      .filter((id) => id === adolescentEntryId)
+      .map((id) => ({
+        entryId: id,
+        targetText: 'adolescent',
+        pitfalls: [adolescentPitfall],
+      })),
   );
 
 export const pitfallsRequested = (): boolean =>

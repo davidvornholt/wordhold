@@ -69,7 +69,13 @@ export class SpellingPitfallService extends Context.Service<
               .pipe(
                 Effect.map((saved) =>
                   saved
-                    ? [{ entryId: word.entryId, pitfalls: wordPitfalls }]
+                    ? [
+                        {
+                          entryId: word.entryId,
+                          targetText: word.targetText,
+                          pitfalls: wordPitfalls,
+                        },
+                      ]
                     : [],
                 ),
               );
@@ -85,7 +91,13 @@ export class SpellingPitfallService extends Context.Service<
           const known = words.flatMap((word) =>
             word.pitfalls === null
               ? []
-              : [{ entryId: word.entryId, pitfalls: word.pitfalls }],
+              : [
+                  {
+                    entryId: word.entryId,
+                    targetText: word.targetText,
+                    pitfalls: word.pitfalls,
+                  },
+                ],
           );
           const derived = yield* Effect.forEach(
             batches(words.filter((word) => word.pitfalls === null)),

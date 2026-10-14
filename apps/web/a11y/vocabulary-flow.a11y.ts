@@ -125,3 +125,16 @@ test('a missing vocabulary example can be generated from its details', async ({
   ).toBeVisible();
   await expect(referee.getByText('Mit KI erzeugt')).toBeVisible();
 });
+
+test('pitfalls returned for a different spelling never attach to the stale list word', async ({
+  page,
+}) => {
+  await page.goto('/?state=vocabulary-pitfalls&pitfallResponse=respelled');
+  await expect(
+    page.getByText('Für diese Auswahl wurden keine Vokabeln gefunden.'),
+  ).toBeVisible();
+  await expect(page.getByText('Die Endung ist ence.')).toBeHidden();
+  await expect(
+    page.getByRole('button', { exact: true, name: 'adolescent' }),
+  ).toBeHidden();
+});

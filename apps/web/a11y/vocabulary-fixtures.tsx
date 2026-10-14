@@ -3,6 +3,7 @@ import type { VocabularyEntry } from '../src/features/courses/schemas/course-uni
 import type { VocabularyFilter } from '../src/features/courses/schemas/vocabulary-search';
 import { VocabularyExample } from '../src/features/courses/ui/vocabulary-example';
 import { VocabularyLibrary } from '../src/features/courses/ui/vocabulary-library';
+import type { PreparePitfalls } from '../src/shared/pitfalls/pitfall-model';
 import { PageLayout } from '../src/shared/ui/page-layout';
 import { englishSubject } from './course-fixture-data';
 import { fixtureBackControl } from './fixture-controls';
@@ -214,6 +215,23 @@ const fixtureEntries = (
     : [adolescentEntry, ...storedEntries];
 };
 
+// Another tab changed the word before the server read its spelling.
+const prepareRespelledPitfalls: PreparePitfalls = ({ data }) =>
+  Promise.resolve(
+    data
+      .filter((id) => id === adolescentEntryId)
+      .map((entryId) => ({
+        entryId,
+        targetText: 'adolescence',
+        pitfalls: [
+          {
+            segments: [{ text: 'adolescence', tricky: true }],
+            note: 'Die Endung ist ence.',
+          },
+        ],
+      })),
+  );
+
 export const VocabularyFixture = ({
   state,
 }: {
@@ -245,7 +263,13 @@ export const VocabularyFixture = ({
             : ['to_target', 'to_native']
         }
         entries={entries}
-        entryActions={entryActions}
+        entryActions={
+          new URLSearchParams(globalThis.location.search).get(
+            'pitfallResponse',
+          ) === 'respelled'
+            ? { ...entryActions, preparePitfalls: prepareRespelledPitfalls }
+            : entryActions
+        }
         fallbackFocusRef={introRef}
         initialFilter={fixtureFilters[state] ?? 'all'}
         layout="by-place"

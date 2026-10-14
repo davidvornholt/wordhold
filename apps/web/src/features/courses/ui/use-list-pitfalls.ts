@@ -66,10 +66,11 @@ export const useListPitfalls = (
           }
           setFound((current) => {
             const updated = new Map(current);
-            for (const { entryId, pitfalls } of prepared) {
+            for (const { entryId, targetText, pitfalls } of prepared) {
               const word = batch.find((candidate) => candidate.id === entryId);
               if (word !== undefined) {
-                updated.set(spellingKey(word), pitfalls);
+                // The server may have read a newer spelling than the queued word.
+                updated.set(spellingKey({ id: entryId, targetText }), pitfalls);
               }
             }
             return updated;
