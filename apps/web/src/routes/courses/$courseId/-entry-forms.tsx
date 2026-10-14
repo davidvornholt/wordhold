@@ -11,6 +11,7 @@ import {
   translateVocabularyDraftExample,
   updateVocabularyEntry,
 } from '../../../features/courses/services/server-fns';
+import { prepareSpellingPitfalls } from '../../../features/courses/services/spelling-pitfall-server-fns';
 import {
   createTermEntry,
   deriveTermKeyPoints,
@@ -352,5 +353,6 @@ export const useCourseEntryActions = (
       await router.invalidate();
       return changed;
     },
+    preparePitfalls: prepareSpellingPitfalls,
   };
 };

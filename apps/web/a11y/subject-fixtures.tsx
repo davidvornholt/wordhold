@@ -8,6 +8,7 @@ import { SubjectOverview } from '../src/features/courses/ui/subject-overview';
 import { SubjectSettings } from '../src/features/courses/ui/subject-settings';
 import type { TermDraft } from '../src/features/courses/ui/term-definition-fields';
 import { TermKeyPoints } from '../src/features/courses/ui/term-key-points';
+import { withoutPitfalls } from '../src/shared/pitfalls/pitfall-model';
 import { Button } from '../src/shared/ui/button';
 import { PageLayout } from '../src/shared/ui/page-layout';
 import { termsSubject } from './course-fixture-data';
@@ -155,6 +156,7 @@ export const SubjectCourseFixture = ({
     },
     skipLearning: (cardIds) => changeEntryLearning(cardIds, 'skip'),
     returnToLearning: (cardIds) => changeEntryLearning(cardIds, 'return'),
+    preparePitfalls: withoutPitfalls,
   };
   return (
     <PageLayout

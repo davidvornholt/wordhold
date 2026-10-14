@@ -90,9 +90,17 @@ describe('SpellingPitfallService.prepare', () => {
       },
     );
     expect(await result).toEqual([
-      { entryId: tableId, pitfalls: [] },
-      { entryId: adolescentId, pitfalls: [pitfall('adolescent')] },
-      { entryId: tambienId, pitfalls: [pitfall('también')] },
+      { entryId: tableId, targetText: 'the table', pitfalls: [] },
+      {
+        entryId: adolescentId,
+        targetText: 'adolescent',
+        pitfalls: [pitfall('adolescent')],
+      },
+      {
+        entryId: tambienId,
+        targetText: 'también',
+        pitfalls: [pitfall('también')],
+      },
     ]);
     expect(
       requests.map((request) => [
@@ -123,6 +131,8 @@ describe('SpellingPitfallService.prepare', () => {
             )
           : Effect.succeed(request.words.map(() => [])),
     );
-    expect(await result).toEqual([{ entryId: adolescentId, pitfalls: [] }]);
+    expect(await result).toEqual([
+      { entryId: adolescentId, targetText: 'adolescent', pitfalls: [] },
+    ]);
   });
 });

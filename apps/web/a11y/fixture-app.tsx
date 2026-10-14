@@ -269,13 +269,6 @@ const dashboardFixture = (state: FixtureState) => (
   />
 );
 
-const vocabularyFixture = (state: FixtureState) => (
-  <VocabularyFixture
-    difficult={state === 'vocabulary-difficult'}
-    related={state === 'vocabulary-related'}
-  />
-);
-
 const fixtureContent = (state: FixtureState) => {
   switch (state) {
     case 'signed-out':
@@ -347,8 +340,9 @@ const fixtureContent = (state: FixtureState) => {
       return <CourseSettingsFixture />;
     case 'vocabulary':
     case 'vocabulary-difficult':
+    case 'vocabulary-pitfalls':
     case 'vocabulary-related':
-      return vocabularyFixture(state);
+      return <VocabularyFixture state={state} />;
     case 'study-start':
       return <StudyStartFixture />;
     case 'study-start-unlearned':

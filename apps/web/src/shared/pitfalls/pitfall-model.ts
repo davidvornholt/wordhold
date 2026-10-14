@@ -3,6 +3,7 @@ import type { AnswerDirection } from '@wordhold/db/schema/directions';
 
 export type PreparedEntryPitfalls = {
   readonly entryId: string;
+  readonly targetText: string;
   readonly pitfalls: ReadonlyArray<SpellingPitfall>;
 };
 

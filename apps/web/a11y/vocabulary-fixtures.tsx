@@ -1,11 +1,15 @@
 import { useRef } from 'react';
 import type { VocabularyEntry } from '../src/features/courses/schemas/course-units';
+import type { VocabularyFilter } from '../src/features/courses/schemas/vocabulary-search';
 import { VocabularyExample } from '../src/features/courses/ui/vocabulary-example';
 import { VocabularyLibrary } from '../src/features/courses/ui/vocabulary-library';
+import type { PreparePitfalls } from '../src/shared/pitfalls/pitfall-model';
 import { PageLayout } from '../src/shared/ui/page-layout';
 import { englishSubject } from './course-fixture-data';
 import { fixtureBackControl } from './fixture-controls';
+import type { FixtureState } from './fixture-state';
 import { useFixtureWords } from './fixture-word-actions';
+import { adolescentEntryId } from './pitfall-fixture-data';
 import { FixtureStudyAction } from './word-entry-fixture';
 
 const storedEntries: ReadonlyArray<VocabularyEntry> = [
@@ -18,6 +22,7 @@ const storedEntries: ReadonlyArray<VocabularyEntry> = [
     targetText: 'memory',
     nativeText: 'die Erinnerung',
     keyPoints: null,
+    spellingPitfalls: [],
     synonyms: null,
     antonyms: null,
     example: {
@@ -34,6 +39,7 @@ const storedEntries: ReadonlyArray<VocabularyEntry> = [
         dueAt: new Date('2026-08-28T10:00:00Z'),
         introducedAt: new Date('2026-08-20T10:00:00Z'),
         failures: 2,
+        hardAnswers: 0,
       },
       {
         cardId: '00000000-0000-0000-0000-000000000022',
@@ -42,6 +48,7 @@ const storedEntries: ReadonlyArray<VocabularyEntry> = [
         dueAt: null,
         introducedAt: null,
         failures: 0,
+        hardAnswers: 0,
       },
     ],
   },
@@ -54,6 +61,7 @@ const storedEntries: ReadonlyArray<VocabularyEntry> = [
     targetText: 'the referee',
     nativeText: 'der Schiedsrichter',
     keyPoints: null,
+    spellingPitfalls: null,
     synonyms: null,
     antonyms: null,
     example: null,
@@ -66,6 +74,7 @@ const storedEntries: ReadonlyArray<VocabularyEntry> = [
         dueAt: null,
         introducedAt: new Date('2026-08-29T08:00:00Z'),
         failures: 0,
+        hardAnswers: 0,
       },
       {
         cardId: '00000000-0000-0000-0000-000000000024',
@@ -74,6 +83,7 @@ const storedEntries: ReadonlyArray<VocabularyEntry> = [
         dueAt: null,
         introducedAt: new Date('2026-08-29T08:00:00Z'),
         failures: 0,
+        hardAnswers: 0,
       },
     ],
   },
@@ -90,6 +100,7 @@ const relatedEntry: VocabularyEntry = {
   targetText: 'happy',
   nativeText: 'glücklich',
   keyPoints: null,
+  spellingPitfalls: null,
   synonyms: ['glad', 'cheerful'],
   antonyms: ['sad'],
   example: null,
@@ -102,6 +113,7 @@ const relatedEntry: VocabularyEntry = {
       dueAt: null,
       introducedAt: null,
       failures: 0,
+      hardAnswers: 0,
     },
     {
       cardId: '00000000-0000-0000-0000-000000000026',
@@ -110,6 +122,7 @@ const relatedEntry: VocabularyEntry = {
       dueAt: null,
       introducedAt: null,
       failures: 0,
+      hardAnswers: 0,
     },
     {
       cardId: '00000000-0000-0000-0000-000000000027',
@@ -118,6 +131,7 @@ const relatedEntry: VocabularyEntry = {
       dueAt: null,
       introducedAt: null,
       failures: 0,
+      hardAnswers: 0,
     },
     {
       cardId: '00000000-0000-0000-0000-000000000028',
@@ -126,6 +140,46 @@ const relatedEntry: VocabularyEntry = {
       dueAt: null,
       introducedAt: null,
       failures: 0,
+      hardAnswers: 0,
+    },
+  ],
+};
+
+// Right only just once, and often misspelled, though its pitfall is still to
+// be found. Listed before memory, which was not known twice, so sorting by
+// difficulty shows.
+const adolescentEntry: VocabularyEntry = {
+  id: adolescentEntryId,
+  bookId: '00000000-0000-0000-0000-000000000031',
+  bookName: 'Green Line 3',
+  unitId: '00000000-0000-0000-0000-000000000003',
+  unitName: 'Unit 3: Holidays',
+  targetText: 'adolescent',
+  nativeText: 'der/die Jugendliche',
+  keyPoints: null,
+  spellingPitfalls: null,
+  synonyms: null,
+  antonyms: null,
+  example: null,
+  introduced: true,
+  cards: [
+    {
+      cardId: '00000000-0000-0000-0000-000000000029',
+      direction: 'to_target',
+      state: 'review',
+      dueAt: new Date('2026-09-04T10:00:00Z'),
+      introducedAt: new Date('2026-08-20T10:00:00Z'),
+      failures: 0,
+      hardAnswers: 1,
+    },
+    {
+      cardId: '00000000-0000-0000-0000-000000000030',
+      direction: 'to_native',
+      state: 'review',
+      dueAt: new Date('2026-09-10T10:00:00Z'),
+      introducedAt: new Date('2026-08-20T10:00:00Z'),
+      failures: 0,
+      hardAnswers: 0,
     },
   ],
 };
@@ -144,16 +198,48 @@ const FixtureExample = ({ entry }: { readonly entry: VocabularyEntry }) => (
   />
 );
 
+const fixtureFilters: Partial<Record<FixtureState, VocabularyFilter>> = {
+  'vocabulary-difficult': 'difficult',
+  'vocabulary-pitfalls': 'pitfalls',
+};
+
+// The course practises synonyms and opposites too with vocabulary-related.
+const fixtureEntries = (
+  state: FixtureState,
+): ReadonlyArray<VocabularyEntry> => {
+  if (state === 'vocabulary-related') {
+    return [...storedEntries, relatedEntry];
+  }
+  return state === 'vocabulary'
+    ? storedEntries
+    : [adolescentEntry, ...storedEntries];
+};
+
+// Another tab changed the word before the server read its spelling.
+const prepareRespelledPitfalls: PreparePitfalls = ({ data }) =>
+  Promise.resolve(
+    data
+      .filter((id) => id === adolescentEntryId)
+      .map((entryId) => ({
+        entryId,
+        targetText: 'adolescence',
+        pitfalls: [
+          {
+            segments: [{ text: 'adolescence', tricky: true }],
+            note: 'Die Endung ist ence.',
+          },
+        ],
+      })),
+  );
+
 export const VocabularyFixture = ({
-  difficult = false,
-  related = false,
+  state,
 }: {
-  readonly difficult?: boolean;
-  // The course practises synonyms and opposites too.
-  readonly related?: boolean;
+  readonly state: FixtureState;
 }) => {
+  const related = state === 'vocabulary-related';
   const { entries, entryActions } = useFixtureWords(
-    related ? [...storedEntries, relatedEntry] : storedEntries,
+    fixtureEntries(state),
     (entry) => <FixtureExample entry={entry} />,
   );
   const introRef = useRef<HTMLParagraphElement>(null);
@@ -177,9 +263,15 @@ export const VocabularyFixture = ({
             : ['to_target', 'to_native']
         }
         entries={entries}
-        entryActions={entryActions}
+        entryActions={
+          new URLSearchParams(globalThis.location.search).get(
+            'pitfallResponse',
+          ) === 'respelled'
+            ? { ...entryActions, preparePitfalls: prepareRespelledPitfalls }
+            : entryActions
+        }
         fallbackFocusRef={introRef}
-        initialFilter={difficult ? 'difficult' : 'all'}
+        initialFilter={fixtureFilters[state] ?? 'all'}
         layout="by-place"
         renderStudyAction={(action) => <FixtureStudyAction action={action} />}
         subject={englishSubject}

@@ -4,7 +4,7 @@ import type { PracticeItem } from '../src/features/practice/schemas/practice-mod
 import type { PreparePitfalls } from '../src/shared/pitfalls/pitfall-model';
 
 // A word with one spot learners often misspell, shown with pitfalls=true.
-const entryId = '00000000-0000-0000-0000-000000000071';
+export const adolescentEntryId = '00000000-0000-0000-0000-000000000071';
 
 export const adolescentPitfall: SpellingPitfall = {
   segments: [
@@ -19,7 +19,7 @@ export const adolescentPitfall: SpellingPitfall = {
 export const adolescentLearnItem: LearnItem = {
   cardId: '00000000-0000-0000-0000-000000000072',
   direction: 'to_target',
-  entryId,
+  entryId: adolescentEntryId,
   targetText: 'adolescent',
   nativeText: 'der/die Jugendliche',
   hasAudio: false,
@@ -33,7 +33,7 @@ export const adolescentPracticeItem: PracticeItem = {
   cardId: adolescentLearnItem.cardId,
   revision: 0,
   direction: 'to_target',
-  entryId,
+  entryId: adolescentEntryId,
   targetText: 'adolescent',
   nativeText: 'der/die Jugendliche',
   relatedWords: [],
@@ -46,10 +46,13 @@ export const adolescentPracticeItem: PracticeItem = {
 
 export const prepareAdolescentPitfalls: PreparePitfalls = ({ data }) =>
   Promise.resolve(
-    data.map((id) => ({
-      entryId: id,
-      pitfalls: id === entryId ? [adolescentPitfall] : [],
-    })),
+    data
+      .filter((id) => id === adolescentEntryId)
+      .map((id) => ({
+        entryId: id,
+        targetText: 'adolescent',
+        pitfalls: [adolescentPitfall],
+      })),
   );
 
 export const pitfallsRequested = (): boolean =>

@@ -3,6 +3,7 @@ import type { VocabularyEntry } from '../src/features/courses/schemas/course-uni
 import { EditVocabularyForm } from '../src/features/courses/ui/edit-vocabulary-form';
 import type { CourseEntryActions } from '../src/features/courses/ui/entry-actions';
 import { targetLabel } from './course-fixture-data';
+import { prepareAdolescentPitfalls } from './pitfall-fixture-data';
 import {
   fixtureDraftExample,
   fixtureExampleTranslation,
@@ -45,6 +46,7 @@ export const useFixtureWords = (
     },
     skipLearning: (cardIds) => changeEntryLearning(cardIds, 'skip'),
     returnToLearning: (cardIds) => changeEntryLearning(cardIds, 'return'),
+    preparePitfalls: prepareAdolescentPitfalls,
   };
   return { entries, createEntry, entryActions };
 };

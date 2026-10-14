@@ -2,7 +2,11 @@ import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import type { ReactNode } from 'react';
 import { type CourseSubject, directionLabel } from '../../../shared/directions';
 import type { VocabularyEntry } from '../schemas/course-units';
-import { cardStatus, type VocabularyCard } from './vocabulary-schedule-status';
+import {
+  answerSuffix,
+  cardStatus,
+  type VocabularyCard,
+} from './vocabulary-schedule-status';
 
 const CardSchedule = ({
   card,
@@ -35,7 +39,7 @@ type ScheduleItemsProps = {
 };
 
 // One item of a description list per direction: when it comes up next, or
-// why it does not, and how often it was not known.
+// why it does not, and how often it was not known or right only just.
 export const ScheduleItems = ({
   enabledDirections,
   entry,
@@ -55,7 +59,7 @@ export const ScheduleItems = ({
             enabled={enabledDirections.includes(card.direction)}
             now={now}
           />
-          {card.failures > 0 ? ` · ${card.failures}× nicht gewusst` : ''}
+          {answerSuffix(card)}
         </dd>
         {enabledDirections.includes(card.direction)
           ? renderCardAction(card)

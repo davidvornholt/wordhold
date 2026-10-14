@@ -4,6 +4,8 @@ import { assertNoAccessibilityViolations } from './a11y-assertions';
 
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
+const difficultWords = /^(?:adolescent|memory)$/u;
+
 test('the vocabulary library exposes per-direction dates and cross-unit selection', async ({
   page,
 }) => {
@@ -55,14 +57,52 @@ test('selected words already met can be practised in their example sentences', a
   );
 });
 
-test('difficult vocabulary can be selected as one practice set', async ({
+test('difficult vocabulary lists the most often missed first and can be selected as one practice set', async ({
   page,
 }) => {
   await page.goto('/?state=vocabulary-difficult');
+  const words = page.getByRole('button', { name: difficultWords });
+  await expect(words).toHaveText(['memory', 'adolescent']);
+  await expect(page.getByText('· 2× nicht gewusst')).toBeVisible();
+  await expect(page.getByText('· 1× fast richtig')).toBeVisible();
+  await expect(
+    page.getByRole('button', { exact: true, name: 'the referee' }),
+  ).toBeHidden();
   await page
     .getByRole('button', { name: 'Schwierige Vokabeln auswählen' })
     .click();
+  await expect(page.getByText('2 Vokabeln ausgewählt')).toBeVisible();
+});
+
+test('vocabulary with spelling pitfalls is listed with them, found for words that had none', async ({
+  page,
+}) => {
+  await page.goto('/?state=vocabulary-pitfalls');
+  await expect(
+    page.getByText('Das c hört man nicht, wie in adolescence.'),
+  ).toBeVisible();
+  await expect(page.getByText('Stolperstellen werden gesucht')).toBeHidden();
+  await expect(
+    page.getByRole('button', { exact: true, name: 'memory' }),
+  ).toBeHidden();
+  await expect(
+    page.getByRole('button', { exact: true, name: 'the referee' }),
+  ).toBeHidden();
+  assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
+
+  await page.getByRole('button', { exact: true, name: 'adolescent' }).click();
+  const adolescent = page.getByRole('dialog', { name: 'adolescent' });
+  await expect(
+    adolescent.getByText('Das c hört man nicht, wie in adolescence.'),
+  ).toBeVisible();
+  await page.keyboard.press('Escape');
+
+  await page
+    .getByRole('button', { name: 'Vokabeln mit Stolperstellen auswählen' })
+    .click();
   await expect(page.getByText('1 Vokabel ausgewählt')).toBeVisible();
+  await page.getByLabel('Anzeigen').selectOption('Alle');
+  await expect(page.getByText('Stolperstelle', { exact: true })).toBeHidden();
 });
 
 test('a missing vocabulary example can be generated from its details', async ({
@@ -84,4 +124,17 @@ test('a missing vocabulary example can be generated from its details', async ({
     referee.getByText('Der Schiedsrichter unterbrach das Spiel.'),
   ).toBeVisible();
   await expect(referee.getByText('Mit KI erzeugt')).toBeVisible();
+});
+
+test('pitfalls returned for a different spelling never attach to the stale list word', async ({
+  page,
+}) => {
+  await page.goto('/?state=vocabulary-pitfalls&pitfallResponse=respelled');
+  await expect(
+    page.getByText('Für diese Auswahl wurden keine Vokabeln gefunden.'),
+  ).toBeVisible();
+  await expect(page.getByText('Die Endung ist ence.')).toBeHidden();
+  await expect(
+    page.getByRole('button', { exact: true, name: 'adolescent' }),
+  ).toBeHidden();
 });

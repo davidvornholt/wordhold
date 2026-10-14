@@ -1,4 +1,5 @@
 import { type ReactNode, useEffect, useRef, useState } from 'react';
+import type { PreparePitfalls } from '../../../shared/pitfalls/pitfall-model';
 import type { VocabularyEntry } from '../schemas/course-units';
 
 // What an entry's dialog hands the form that corrects the entry.
@@ -32,6 +33,8 @@ export type CourseEntryActions = {
   readonly returnToLearning: (
     cardIds: ReadonlyArray<string>,
   ) => Promise<ReadonlyArray<string>>;
+  // Finds and stores the spelling pitfalls of words that have none yet.
+  readonly preparePitfalls: PreparePitfalls;
 };
 
 // Saving a corrected entry: the form is disabled meanwhile, and the dialog

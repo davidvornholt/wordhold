@@ -19,6 +19,35 @@ const dueSummary = (due: number, active: number): string => {
   return active === 2 ? 'Beide Richtungen fällig' : 'Alle Richtungen fällig';
 };
 
+type AnswerTally = {
+  readonly failures: number;
+  readonly hardAnswers: number;
+};
+
+// How often an entry was not known, and how often right only just, in the
+// directions the course practises.
+export const answerTally = (
+  entry: VocabularyEntry,
+  enabledDirections: ReadonlyArray<AnswerDirection>,
+): AnswerTally =>
+  entry.cards
+    .filter((card) => enabledDirections.includes(card.direction))
+    .reduce(
+      (tally, card) => ({
+        failures: tally.failures + card.failures,
+        hardAnswers: tally.hardAnswers + card.hardAnswers,
+      }),
+      { failures: 0, hardAnswers: 0 },
+    );
+
+// "2× nicht gewusst · 1× fast richtig", appended to a schedule line; empty
+// for an entry always known.
+export const answerSuffix = ({ failures, hardAnswers }: AnswerTally): string =>
+  [
+    failures > 0 ? ` · ${failures}× nicht gewusst` : '',
+    hardAnswers > 0 ? ` · ${hardAnswers}× fast richtig` : '',
+  ].join('');
+
 // One line for an entry's row: whether it is still to be learned, and when
 // its enabled directions come up next.
 export const scheduleSummary = (

@@ -21,6 +21,7 @@ type VocabularyUnitSectionProps = {
   readonly now: Date;
   readonly subject: CourseSubject;
   readonly selected: ReadonlyArray<string>;
+  readonly showPitfalls: boolean;
   readonly onToggleEntry: (entryId: string) => void;
   readonly onOpenEntry: (entryId: string) => void;
   readonly onToggleAll: (
@@ -37,6 +38,7 @@ export const VocabularyUnitSection = ({
   now,
   subject,
   selected,
+  showPitfalls,
   onToggleEntry,
   onOpenEntry,
   onToggleAll,
@@ -76,6 +78,7 @@ export const VocabularyUnitSection = ({
             onOpen={() => onOpenEntry(entry.id)}
             onToggle={() => onToggleEntry(entry.id)}
             selected={selected.includes(entry.id)}
+            showPitfalls={showPitfalls}
             subject={subject}
           />
         ))}

@@ -1,3 +1,4 @@
+import type { SpellingPitfall } from '@wordhold/ai/pitfalls/schema';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import type { ExampleSource } from '@wordhold/db/schema/entries';
 import type { CardState } from '@wordhold/db/schema/practice';
@@ -14,6 +15,7 @@ export type VocabularyRow = {
   readonly keyPoints: ReadonlyArray<string> | null;
   readonly synonyms: ReadonlyArray<string> | null;
   readonly antonyms: ReadonlyArray<string> | null;
+  readonly spellingPitfalls: ReadonlyArray<SpellingPitfall> | null;
   readonly exampleTargetText: string | null;
   readonly exampleNativeText: string | null;
   readonly exampleSource: ExampleSource | null;
@@ -23,6 +25,7 @@ export type VocabularyRow = {
   readonly dueAt: Date | null;
   readonly introducedAt: Date | null;
   readonly failures: number;
+  readonly hardAnswers: number;
 };
 
 export const groupVocabularyRows = (
@@ -37,6 +40,7 @@ export const groupVocabularyRows = (
       dueAt: row.dueAt,
       introducedAt: row.introducedAt,
       failures: row.failures,
+      hardAnswers: row.hardAnswers,
     };
     const entry = entries.get(row.id);
     if (entry === undefined) {
@@ -51,6 +55,7 @@ export const groupVocabularyRows = (
         keyPoints: row.keyPoints,
         synonyms: row.synonyms,
         antonyms: row.antonyms,
+        spellingPitfalls: row.spellingPitfalls,
         example:
           row.exampleTargetText === null || row.exampleSource === null
             ? null

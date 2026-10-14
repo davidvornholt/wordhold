@@ -1,7 +1,13 @@
 import { Option, Schema } from 'effect';
 import { Uuid } from '../../../shared/validate/uuid';
 
-const Filter = Schema.Literals(['all', 'due', 'first-reviews', 'difficult']);
+const Filter = Schema.Literals([
+  'all',
+  'due',
+  'first-reviews',
+  'difficult',
+  'pitfalls',
+]);
 
 const VocabularySearch = Schema.Struct({
   filter: Schema.optional(Filter),

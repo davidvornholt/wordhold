@@ -282,6 +282,7 @@ export const TextsCourseFixture = ({
     },
     skipLearning: (cardIds) => changeEntryLearning(cardIds, 'skip'),
     returnToLearning: (cardIds) => changeEntryLearning(cardIds, 'return'),
+    preparePitfalls: withoutPitfalls,
   };
   return (
     <PageLayout
