@@ -8,6 +8,7 @@ import { FeedbackPanel } from '../src/features/practice/ui/feedback-panel';
 import { directionLabel } from '../src/shared/directions';
 import { withoutExamples } from '../src/shared/examples/example-model';
 import { ratings } from '../src/shared/grading/rating';
+import { withoutPitfalls } from '../src/shared/pitfalls/pitfall-model';
 import { CardRail } from '../src/shared/ui/card-rail';
 import { FocusLayout } from '../src/shared/ui/focus-layout';
 import { WordCard } from '../src/shared/ui/word-card';
@@ -38,6 +39,7 @@ const learnItem: LearnItem = {
   example: null,
   textbookAnswers: [],
   keyPoints,
+  spellingPitfalls: null,
 };
 
 const practiceItem = {
@@ -52,6 +54,7 @@ const practiceItem = {
   entryKnown: false,
   example: null,
   prompt: term,
+  spellingPitfalls: null,
 };
 
 const missedPoint: SubmitResult = {
@@ -114,6 +117,7 @@ export const TermsLearnFixture = () => (
       items={[learnItem]}
       onIntroduce={() => Promise.resolve()}
       prepareExamples={withoutExamples}
+      preparePitfalls={withoutPitfalls}
       subject={termsSubject}
     />
   </FocusLayout>
@@ -167,6 +171,7 @@ export const TermsFeedbackFixture = () => {
           repeated={false}
           result={missedPoint}
           skipped={false}
+          spellingPitfalls={null}
           submittedAnswer={submittedAnswer}
           targetLanguage="de"
         />

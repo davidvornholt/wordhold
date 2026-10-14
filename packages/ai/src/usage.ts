@@ -14,6 +14,7 @@ export const aiOperations = [
   'example-translation',
   'word-translation',
   'word-relations',
+  'spelling-pitfalls',
   'speech',
   'transcription',
 ] as const;

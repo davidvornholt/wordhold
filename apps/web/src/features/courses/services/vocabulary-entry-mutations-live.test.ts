@@ -235,6 +235,41 @@ describe('VocabularyEntryStore corrections', () => {
   });
 });
 
+describe('VocabularyEntryStore spelling pitfalls', () => {
+  it('forgets the spelling pitfalls of a respelled word only', async () => {
+    const stored = await runStoreTest(
+      Effect.gen(function* () {
+        yield* seedCourses;
+        const sql = yield* Database;
+        const store = yield* VocabularyEntryStore;
+        const entryId = yield* practisedWord('la mémoire', 'die Erinnerung');
+        yield* sql`update entries set spelling_pitfalls = '[]'::jsonb where id = ${entryId}`;
+        const pitfalls = Effect.map(
+          sql<{ readonly pitfalls: unknown }>`
+            select spelling_pitfalls as pitfalls from entries
+            where id = ${entryId}
+          `,
+          (rows) => rows[0]?.pitfalls,
+        );
+        const edit = { courseId, entryId, example, synonyms: [], antonyms: [] };
+        yield* store.update({
+          ...edit,
+          targetText: 'la mémoire',
+          nativeText: 'das Gedächtnis',
+        });
+        const afterMeaning = yield* pitfalls;
+        yield* store.update({
+          ...edit,
+          targetText: 'le souvenir',
+          nativeText: 'das Gedächtnis',
+        });
+        return [afterMeaning, yield* pitfalls];
+      }),
+    );
+    expect(stored).toEqual([[], null]);
+  });
+});
+
 describe('VocabularyEntryStore refused corrections', () => {
   it('refuses an exact repeat of another word and a word of another course', async () => {
     await runStoreTest(

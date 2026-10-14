@@ -1,3 +1,4 @@
+import type { SpellingPitfall } from '@wordhold/ai/pitfalls/schema';
 import type { CourseKind, LanguageCode } from '@wordhold/db/schema/courses';
 import { formatLearningDateInline } from '../../../shared/dates/learning-date';
 import type { PreparedExampleSentence } from '../../../shared/examples/example-model';
@@ -7,6 +8,7 @@ import {
   type Recitation,
 } from '../../../shared/grading/recitation';
 import { KeyPointList } from '../../../shared/ui/key-point-list';
+import { SpellingPitfallNote } from '../../../shared/ui/spelling-pitfall-note';
 import type { SubmitResult } from '../schemas/practice-models';
 import { feedbackTone, toneDivider, toneText } from './feedback-tone';
 import { PracticeFeedbackExample } from './practice-feedback-example';
@@ -25,6 +27,10 @@ type FeedbackPanelProps = {
   readonly playWord: (() => Promise<void>) | null;
   readonly repeated: boolean;
   readonly skipped: boolean;
+  // Where the word is most often misspelled, for a word written in the
+  // course's language. Shown beside the answer whatever the outcome, since a
+  // word spelled right once can still be misspelled in a test.
+  readonly spellingPitfalls: ReadonlyArray<SpellingPitfall> | null;
   readonly targetLanguage: LanguageCode;
   // The language of the expected answer, for hyphenation and speech.
   readonly answerLanguage: LanguageCode;
@@ -212,6 +218,7 @@ export const FeedbackPanel = ({
   playWord,
   repeated,
   skipped,
+  spellingPitfalls,
   targetLanguage,
   answerLanguage,
   kind,
@@ -249,6 +256,10 @@ export const FeedbackPanel = ({
           recitation={recitation}
         />
       )}
+      <SpellingPitfallNote
+        language={answerLanguage}
+        pitfalls={spellingPitfalls}
+      />
       {result.graded ? <JudgeNotes result={result} /> : null}
       {result.graded && example !== null ? (
         <PracticeFeedbackExample

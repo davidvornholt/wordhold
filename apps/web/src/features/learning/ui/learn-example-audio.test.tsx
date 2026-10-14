@@ -13,6 +13,7 @@ const item: LearnItem = {
   example: null,
   textbookAnswers: ['memory'],
   keyPoints: null,
+  spellingPitfalls: null,
 };
 
 const example = {

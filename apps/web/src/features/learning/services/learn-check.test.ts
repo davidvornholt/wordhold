@@ -12,6 +12,7 @@ const item: LearnItem = {
   example: null,
   textbookAnswers: ['to look (at)'],
   keyPoints: null,
+  spellingPitfalls: null,
 };
 
 describe('matchesLearnItem', () => {

@@ -18,6 +18,7 @@ const session = (
     entryKnown: true,
     example: null,
     prompt: 'Erinnerung',
+    spellingPitfalls: null,
   })),
   available: { due, firstReviews, ready: due + firstReviews, nextDueAt: null },
 });

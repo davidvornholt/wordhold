@@ -6,6 +6,7 @@ import {
 } from '../../../shared/directions';
 import type { PrepareExamples } from '../../../shared/examples/example-model';
 import { germanLabels } from '../../../shared/languages';
+import { shownPitfalls } from '../../../shared/pitfalls/pitfall-model';
 import { answerCharacters } from '../../../shared/practice/answer-characters';
 import {
   answerLanguage,
@@ -158,6 +159,7 @@ export const CardPractice = ({
             repeated={repeated}
             result={result}
             skipped={submission.skipped}
+            spellingPitfalls={shownPitfalls(item)}
             submittedAnswer={submission.submittedAnswer ?? ''}
             targetLanguage={targetLanguage}
           />

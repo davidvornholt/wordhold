@@ -8,6 +8,7 @@ import {
 import { CardPractice } from '../src/features/practice/ui/card-practice';
 import { FeedbackPanel } from '../src/features/practice/ui/feedback-panel';
 import { SessionSummary } from '../src/features/practice/ui/session-summary';
+import { withoutExamples } from '../src/shared/examples/example-model';
 import { Button } from '../src/shared/ui/button';
 import { CardRail } from '../src/shared/ui/card-rail';
 import { FocusLayout } from '../src/shared/ui/focus-layout';
@@ -15,6 +16,10 @@ import { WordCard } from '../src/shared/ui/word-card';
 import { englishSubject } from './course-fixture-data';
 import { fixtureBackControl, fixtureControl } from './fixture-controls';
 import { navigateToFixture } from './fixture-state';
+import {
+  adolescentPracticeItem,
+  pitfallsRequested,
+} from './pitfall-fixture-data';
 
 const justDueAt = new Date();
 
@@ -35,6 +40,7 @@ const item = {
     hasAudio: true,
   },
   prompt: 'Erinnerung',
+  spellingPitfalls: null,
 };
 
 const result: SubmitResult = {
@@ -52,31 +58,39 @@ const backControl = fixtureBackControl('Übersicht', 'dashboard');
 const prepareExamples = ({ data }: { readonly data: Array<string> }) =>
   Promise.resolve(data.map((entryId) => ({ entryId, example: item.example })));
 
-export const PracticeFixture = () => (
-  <FocusLayout exit={backControl} title="English A2 · Üben">
-    <CardRail
-      activeIndex={0}
-      activeOutcome={null}
-      description="0 von 1 Karte bearbeitet"
-      label="Abschnitt 1"
-      ticks={[null]}
-    />
-    <CardPractice
-      deck={0}
-      item={item}
-      mode="scheduled"
-      onJudged={() => undefined}
-      onNext={() => undefined}
-      prepareExamples={prepareExamples}
-      repeated={true}
-      submit={() => {
-        navigateToFixture('practice-feedback');
-        return Promise.resolve(result);
-      }}
-      subject={englishSubject}
-    />
-  </FocusLayout>
-);
+// With pitfalls=true, the card asks a word with a spelling pitfall and stays
+// to show the feedback of a right answer.
+export const PracticeFixture = () => {
+  const withPitfall = pitfallsRequested();
+  return (
+    <FocusLayout exit={backControl} title="English A2 · Üben">
+      <CardRail
+        activeIndex={0}
+        activeOutcome={null}
+        description="0 von 1 Karte bearbeitet"
+        label="Abschnitt 1"
+        ticks={[null]}
+      />
+      <CardPractice
+        deck={0}
+        item={withPitfall ? adolescentPracticeItem : item}
+        mode="scheduled"
+        onJudged={() => undefined}
+        onNext={() => undefined}
+        prepareExamples={withPitfall ? withoutExamples : prepareExamples}
+        repeated={!withPitfall}
+        submit={() => {
+          if (withPitfall) {
+            return Promise.resolve(adolescentResult);
+          }
+          navigateToFixture('practice-feedback');
+          return Promise.resolve(result);
+        }}
+        subject={englishSubject}
+      />
+    </FocusLayout>
+  );
+};
 
 // Tomorrow morning, so the schedule note reads the same on every render.
 const nextReviewHour = 9;
@@ -96,6 +110,20 @@ const alternativeResult: SubmitResult = {
   explanation:
     "'recollection' klingt gehobener; im Alltag sagt man meist 'memory'.",
   acceptedAsAlternative: true,
+  keyPoints: null,
+  schedule: { advanced: true, state: 'review', dueAt: nextReviewAt },
+  entryKnown: false,
+};
+
+const adolescentResult: SubmitResult = {
+  graded: true,
+  correct: true,
+  stored: true,
+  revision: 1,
+  rating: 3,
+  expectedAnswer: 'adolescent',
+  explanation: null,
+  acceptedAsAlternative: false,
   keyPoints: null,
   schedule: { advanced: true, state: 'review', dueAt: nextReviewAt },
   entryKnown: false,
@@ -132,6 +160,7 @@ export const PracticeFeedbackFixture = ({
           repeated={false}
           result={alternative ? alternativeResult : result}
           skipped={false}
+          spellingPitfalls={null}
           submittedAnswer={alternative ? 'recollection' : 'wrong'}
           targetLanguage="en"
         />

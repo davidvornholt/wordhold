@@ -9,6 +9,7 @@ import {
   copyDifferenceMessage,
 } from '../../../shared/grading/copy-difference';
 import { copyMistakeMessage } from '../../../shared/grading/recitation';
+import { shownPitfalls } from '../../../shared/pitfalls/pitfall-model';
 import { answerCharacters } from '../../../shared/practice/answer-characters';
 import {
   answerLanguage,
@@ -22,6 +23,7 @@ import {
 } from '../../../shared/ui/answer-field';
 import { Button } from '../../../shared/ui/button';
 import { KeyPointList } from '../../../shared/ui/key-point-list';
+import { SpellingPitfallNote } from '../../../shared/ui/spelling-pitfall-note';
 import { WordCard } from '../../../shared/ui/word-card';
 import type { LearnItem } from '../schemas/learning-models';
 import { copiesLearnText, matchesLearnItem } from '../services/learn-check';
@@ -41,17 +43,20 @@ type LearnEntryProps = {
 
 // A definition is shown to be copied, with what it must state once known. A
 // text is shown to be copied. Both keep their own line breaks. A word has its
-// example sentence and audio instead.
+// example sentence and audio instead, and where it is most often misspelled
+// while its answer is shown.
 const LearnCardBody = ({
   item,
   examplePending,
   subject,
   definitionId,
+  answerShown,
 }: {
   readonly item: LearnItem;
   readonly examplePending: boolean;
   readonly subject: CourseSubject;
   readonly definitionId: string;
+  readonly answerShown: boolean;
 }) => {
   if (subject.kind === 'texts') {
     return (
@@ -76,11 +81,18 @@ const LearnCardBody = ({
       )}
     </>
   ) : (
-    <LearnExampleAudio
-      item={item}
-      pending={examplePending}
-      targetLanguage={subject.targetLanguage}
-    />
+    <>
+      <SpellingPitfallNote
+        hidden={!answerShown}
+        language={subject.targetLanguage}
+        pitfalls={shownPitfalls(item)}
+      />
+      <LearnExampleAudio
+        item={item}
+        pending={examplePending}
+        targetLanguage={subject.targetLanguage}
+      />
+    </>
   );
 };
 
@@ -223,6 +235,7 @@ export const LearnEntry = ({
         wordLang={foreignPromptLanguage(item.direction, subject.targetLanguage)}
       >
         <LearnCardBody
+          answerShown={hintVisible}
           definitionId={answerHintId}
           examplePending={examplePending}
           item={item}

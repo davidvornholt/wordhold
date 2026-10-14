@@ -6,6 +6,7 @@ import {
 import type { ReactNode } from 'react';
 import type { VocabularySearchData } from '../../../features/courses/schemas/vocabulary-search';
 import { prepareVocabularyExamples } from '../../../features/courses/services/server-fns';
+import { prepareSpellingPitfalls } from '../../../features/courses/services/spelling-pitfall-server-fns';
 import { submitAnswer } from '../../../features/practice/services/server-fns';
 import { sessionOptions } from '../../../features/practice/services/session-options';
 import { SessionRunner } from '../../../features/practice/ui/session-runner';
@@ -283,6 +284,7 @@ const StudyScreen = () => {
         key={direction}
         mode="drill"
         prepareExamples={prepareVocabularyExamples}
+        preparePitfalls={prepareSpellingPitfalls}
         session={session}
         subject={course}
         submit={submitAnswer}

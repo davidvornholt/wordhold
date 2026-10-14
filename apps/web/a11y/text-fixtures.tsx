@@ -22,6 +22,7 @@ import {
   gradeRecitation,
   isCorrect,
 } from '../src/shared/grading/rating';
+import { withoutPitfalls } from '../src/shared/pitfalls/pitfall-model';
 import { Button } from '../src/shared/ui/button';
 import { CardRail } from '../src/shared/ui/card-rail';
 import { FocusLayout } from '../src/shared/ui/focus-layout';
@@ -55,6 +56,7 @@ const learnItem: LearnItem = {
   example: null,
   textbookAnswers: [],
   keyPoints: null,
+  spellingPitfalls: null,
 };
 
 const practiceItem = {
@@ -69,6 +71,7 @@ const practiceItem = {
   entryKnown: false,
   example: null,
   prompt: verseTitle,
+  spellingPitfalls: null,
 };
 
 // A known text comes back tomorrow morning; a missed one is due again now.
@@ -126,6 +129,7 @@ export const TextsLearnFixture = () => (
       items={[learnItem]}
       onIntroduce={() => Promise.resolve()}
       prepareExamples={withoutExamples}
+      preparePitfalls={withoutPitfalls}
       subject={textsSubject}
     />
   </FocusLayout>
@@ -179,6 +183,7 @@ export const TextsFeedbackFixture = () => {
           repeated={false}
           result={recitedResult(nearlyRecited, false, 1)}
           skipped={false}
+          spellingPitfalls={null}
           submittedAnswer={nearlyRecited}
           targetLanguage="de"
         />

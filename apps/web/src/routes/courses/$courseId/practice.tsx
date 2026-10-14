@@ -9,6 +9,7 @@ import {
   getCourseOutline,
   prepareVocabularyExamples,
 } from '../../../features/courses/services/server-fns';
+import { prepareSpellingPitfalls } from '../../../features/courses/services/spelling-pitfall-server-fns';
 import { getDashboard } from '../../../features/dashboard/services/server-fns';
 import { getCourse } from '../../../features/import/server-fns';
 import { remainingReadyCount } from '../../../features/practice/schemas/practice-models';
@@ -125,6 +126,7 @@ const PracticeScreen = () => {
             .join('|')}`}
           mode="scheduled"
           prepareExamples={prepareVocabularyExamples}
+          preparePitfalls={prepareSpellingPitfalls}
           session={session}
           subject={course}
           submit={submitAnswer}

@@ -9,6 +9,11 @@ import {
   withoutExamples,
 } from '../../../shared/examples/example-model';
 import { useExampleWarmup } from '../../../shared/examples/use-example-warmup';
+import {
+  type PreparePitfalls,
+  withoutPitfalls,
+} from '../../../shared/pitfalls/pitfall-model';
+import { usePitfallWarmup } from '../../../shared/pitfalls/use-pitfall-warmup';
 import { CardRail } from '../../../shared/ui/card-rail';
 import type { LearnItem } from '../schemas/learning-models';
 import { LearnDone } from './learn-done';
@@ -19,6 +24,7 @@ type LearnPassProps = {
   readonly subject: CourseSubject;
   readonly onIntroduce: (item: LearnItem) => Promise<void>;
   readonly prepareExamples: PrepareExamples;
+  readonly preparePitfalls: PreparePitfalls;
   readonly directionLabel: string;
   readonly completionControls: ReactNode;
 };
@@ -26,26 +32,36 @@ type LearnPassProps = {
 // One bounded section in one direction. Each entry is recorded as met the
 // moment it has been written correctly, so leaving halfway keeps what was
 // learned and the next section resumes with the rest. The pass shows at once;
-// example sentences are prepared in pass order while it runs, the current
-// card first.
+// example sentences and spelling pitfalls are prepared in pass order while it
+// runs, the current card first.
 export const LearnPass = ({
   items,
   subject,
   onIntroduce,
   prepareExamples,
+  preparePitfalls,
   directionLabel,
   completionControls,
 }: LearnPassProps) => {
   const [index, setIndex] = useState(0);
-  // A definition or text has no example sentence to show.
+  // A definition or text has no example sentence or spelling pitfalls.
+  const listCourse = isListCourse(subject.kind);
   const warmup = useExampleWarmup(
     items,
-    isListCourse(subject.kind) ? withoutExamples : prepareExamples,
+    listCourse ? withoutExamples : prepareExamples,
   );
-  const item = warmup.items.at(index);
+  const pitfallsOf = usePitfallWarmup(
+    items,
+    listCourse ? withoutPitfalls : preparePitfalls,
+  );
+  const shown = warmup.items.at(index);
+  const item =
+    shown === undefined
+      ? undefined
+      : { ...shown, spellingPitfalls: pitfallsOf(shown) };
   const nouns = courseNouns(subject);
   // A subject or collection has one direction, so naming it adds nothing.
-  const shownDirection = isListCourse(subject.kind) ? null : directionLabel;
+  const shownDirection = listCourse ? null : directionLabel;
   return (
     <>
       {items.length === 0 ? null : (
