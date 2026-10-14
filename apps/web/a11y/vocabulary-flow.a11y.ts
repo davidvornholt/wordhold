@@ -4,6 +4,8 @@ import { assertNoAccessibilityViolations } from './a11y-assertions';
 
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
+const difficultWords = /^(?:adolescent|memory)$/u;
+
 test('the vocabulary library exposes per-direction dates and cross-unit selection', async ({
   page,
 }) => {
@@ -59,10 +61,7 @@ test('difficult vocabulary lists the most often missed first and can be selected
   page,
 }) => {
   await page.goto('/?state=vocabulary-difficult');
-  const words = page.getByRole('button', {
-    exact: true,
-    name: /^(adolescent|memory)$/,
-  });
+  const words = page.getByRole('button', { name: difficultWords });
   await expect(words).toHaveText(['memory', 'adolescent']);
   await expect(page.getByText('· 2× nicht gewusst')).toBeVisible();
   await expect(page.getByText('· 1× fast richtig')).toBeVisible();
