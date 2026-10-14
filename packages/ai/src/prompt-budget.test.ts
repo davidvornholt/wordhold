@@ -2,6 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import { definitionJudgePrompt } from './definition/judge';
 import { definitionPrompt, keyPointPrompt } from './definition/writer';
 import { extractionPrompt } from './extraction/service';
+import { pitfallPrompt } from './pitfalls/service';
 import { relationPrompt } from './relations/service';
 import { sentenceJudgePrompt } from './sentence/judge';
 import {
@@ -19,6 +20,7 @@ const definitionJudgeInstructionBudget = 800;
 const definitionInstructionBudget = 400;
 const sentenceJudgeInstructionBudget = 900;
 const relationInstructionBudget = 450;
+const pitfallInstructionBudget = 900;
 
 describe('prompt instruction budgets', () => {
   it('keeps page extraction instructions compact', () => {
@@ -78,5 +80,11 @@ describe('prompt instruction budgets', () => {
     expect(
       relationPrompt({ targetLanguage: '', words: [] }).length,
     ).toBeLessThanOrEqual(relationInstructionBudget);
+  });
+
+  it('keeps spelling pitfall instructions compact', () => {
+    expect(
+      pitfallPrompt({ targetLanguage: '', words: [] }).length,
+    ).toBeLessThanOrEqual(pitfallInstructionBudget);
   });
 });

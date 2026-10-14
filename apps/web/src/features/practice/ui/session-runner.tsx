@@ -7,6 +7,11 @@ import {
 } from '../../../shared/examples/example-model';
 import { useExampleWarmup } from '../../../shared/examples/use-example-warmup';
 import { countNoun } from '../../../shared/format/count';
+import {
+  type PreparePitfalls,
+  withoutPitfalls,
+} from '../../../shared/pitfalls/pitfall-model';
+import { usePitfallWarmup } from '../../../shared/pitfalls/use-pitfall-warmup';
 import type { RailOutcome } from '../../../shared/session/rail-outcome';
 import { CardRail } from '../../../shared/ui/card-rail';
 import {
@@ -33,6 +38,7 @@ type SessionRunnerProps = {
   readonly backControl: ReactNode;
   readonly continueControl?: ReactNode;
   readonly prepareExamples: PrepareExamples;
+  readonly preparePitfalls: PreparePitfalls;
   readonly submit: (input: {
     readonly data: SubmitPayloadData;
   }) => Promise<SubmitResult>;
@@ -60,14 +66,20 @@ export const SessionRunner = ({
   backControl,
   continueControl,
   prepareExamples,
+  preparePitfalls,
   submit,
 }: SessionRunnerProps) => {
   const [queue, setQueue] = useState(() => createSessionQueue(session.items));
   const [judged, setJudged] = useState<RailOutcome | null>(null);
-  // A definition or text has no example sentence to show.
+  // A definition or text has no example sentence or spelling pitfalls.
+  const listCourse = isListCourse(subject.kind);
   const warmup = useExampleWarmup(
     session.items,
-    isListCourse(subject.kind) ? withoutExamples : prepareExamples,
+    listCourse ? withoutExamples : prepareExamples,
+  );
+  const pitfallsOf = usePitfallWarmup(
+    session.items,
+    listCourse ? withoutPitfalls : preparePitfalls,
   );
   const head = queue.pending.at(0);
   const card =
@@ -80,6 +92,7 @@ export const SessionRunner = ({
             warmup.items.find((item) => item.entryId === head.entryId)
               ?.example ??
             null,
+          spellingPitfalls: pitfallsOf(head),
         };
   const remainingReady = remainingReadyCount(session);
   let content: ReactNode;

@@ -8,6 +8,7 @@ import {
 } from './definition/schema';
 import { ExtractedPage } from './extraction/schema';
 import { JudgeVerdict } from './judge/schema';
+import { PitfallSuggestions } from './pitfalls/schema';
 import { RelationSuggestions } from './relations/schema';
 import { SentenceVerdict } from './sentence/judge-schema';
 import { SentenceBatch } from './sentence/service';
@@ -21,6 +22,7 @@ const outputSchemas = [
   ['ExtractedPage', () => providerJsonSchema(ExtractedPage)],
   ['KeyPointList', () => providerJsonSchema(KeyPointList)],
   ['JudgeVerdict', () => providerJsonSchema(JudgeVerdict)],
+  ['PitfallSuggestions', () => providerJsonSchema(PitfallSuggestions)],
   ['RelationSuggestions', () => providerJsonSchema(RelationSuggestions)],
   ['SentenceBatch', () => providerJsonSchema(SentenceBatch)],
   ['SentenceVerdict', () => providerJsonSchema(SentenceVerdict)],
@@ -74,6 +76,7 @@ describe('providerJsonSchema', () => {
   for (const [name, convert] of [
     ['DefinitionVerdict', () => providerJsonSchema(DefinitionVerdict)],
     ['JudgeVerdict', () => providerJsonSchema(JudgeVerdict)],
+    ['PitfallSuggestions', () => providerJsonSchema(PitfallSuggestions)],
     ['RelationSuggestions', () => providerJsonSchema(RelationSuggestions)],
     ['SentenceBatch', () => providerJsonSchema(SentenceBatch)],
     ['SentenceVerdict', () => providerJsonSchema(SentenceVerdict)],

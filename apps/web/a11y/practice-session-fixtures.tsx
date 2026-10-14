@@ -3,6 +3,7 @@ import { useRef, useState } from 'react';
 import type { PracticeSession } from '../src/features/practice/schemas/practice-models';
 import { SessionRunner } from '../src/features/practice/ui/session-runner';
 import type { CourseSubject } from '../src/shared/directions';
+import { withoutPitfalls } from '../src/shared/pitfalls/pitfall-model';
 import { FocusLayout } from '../src/shared/ui/focus-layout';
 import { englishSubject } from './course-fixture-data';
 import { DeferredExampleControls } from './deferred-example-controls';
@@ -27,6 +28,7 @@ const card = (index: number, target: string, native: string): FixtureCard => ({
   entryKnown: false,
   example: null,
   prompt: native,
+  spellingPitfalls: null,
 });
 
 const items = [
@@ -116,6 +118,7 @@ export const PracticeSessionFixture = ({
           emptyMessage="Für jetzt geschafft"
           mode={mode}
           prepareExamples={prepareExamples}
+          preparePitfalls={withoutPitfalls}
           session={session}
           submit={(input) => gradeFixtureAnswer(activeItems, input)}
           subject={subject}

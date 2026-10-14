@@ -42,6 +42,8 @@ const relatedWordsMigrationHash =
   '4549fe65b6fcf021610e4fddb0bfd22b3fb65783a8d2c576e2786ec65750d456';
 const relationCardsMigrationHash =
   '8335a14fcdd2b947452db288da06c3349f01678de25f34d6f8d6e1680bc37091';
+const spellingPitfallsMigrationHash =
+  '3613112c0e158900f77c3c3f2774b39b6d81d5da778a466d60624407e8b705c2';
 const fullMigrationTestTimeoutMs = 15_000;
 
 const getMigrationError = (url: string) =>
@@ -74,6 +76,7 @@ it(
           yield* sql`drop type course_kind`;
           yield* sql`alter table entries drop column key_points`;
           yield* sql`alter table entries drop column synonyms, drop column antonyms`;
+          yield* sql`alter table entries drop column spelling_pitfalls`;
           yield* sql`
           alter table courses
             drop constraint courses_directions_translations,
@@ -130,7 +133,8 @@ it(
             ${biblesMigrationHash},
             ${transcriptionUsageMigrationHash},
             ${relatedWordsMigrationHash},
-            ${relationCardsMigrationHash}
+            ${relationCardsMigrationHash},
+            ${spellingPitfallsMigrationHash}
           )
         `;
           yield* migrateDatabase(database.url);

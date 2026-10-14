@@ -23,6 +23,7 @@ const practiceItem = {
   entryKnown: false,
   example: null,
   prompt: 'hostile',
+  spellingPitfalls: null,
 };
 
 const backControl = fixtureBackControl('Unit 3 – Holidays', 'unit');

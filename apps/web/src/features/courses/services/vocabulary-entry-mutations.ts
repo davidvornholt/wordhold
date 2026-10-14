@@ -162,6 +162,10 @@ export const makeVocabularyEntryMutations = (sql: Database) => {
       if (!wordChanged) {
         return [];
       }
+      // The pitfalls belong to the old spelling; the next pass finds new ones.
+      yield* sql`
+        update entries set spelling_pitfalls = null where id = ${input.entryId}
+      `;
       const audio = yield* sql<PathRow>`
         delete from entry_audio where entry_id = ${input.entryId}
         returning path

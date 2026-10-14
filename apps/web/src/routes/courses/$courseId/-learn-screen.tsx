@@ -1,6 +1,7 @@
 import { redirect, useRouter } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { prepareVocabularyExamples } from '../../../features/courses/services/server-fns';
+import { prepareSpellingPitfalls } from '../../../features/courses/services/spelling-pitfall-server-fns';
 import { getCourse } from '../../../features/import/server-fns';
 import {
   getLearnPass,
@@ -205,6 +206,7 @@ export const LearnScreen = ({
           });
         }}
         prepareExamples={prepareVocabularyExamples}
+        preparePitfalls={prepareSpellingPitfalls}
         subject={course}
       />
     );

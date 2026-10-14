@@ -52,6 +52,11 @@ export const entries = pgTable(
     // a language course.
     synonyms: text('synonyms').array(),
     antonyms: text('antonyms').array(),
+    // For a word: where learners most often misspell it, as the AI package's
+    // spelling pitfalls. Null until derived, empty once derived for a word
+    // without one, and null again when the word is respelled. Always null
+    // outside a language course.
+    spellingPitfalls: jsonb('spelling_pitfalls'),
     notes: text('notes'),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()

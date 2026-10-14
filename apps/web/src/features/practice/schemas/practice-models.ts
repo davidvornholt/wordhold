@@ -1,5 +1,6 @@
 import type { DefinitionVerdictData } from '@wordhold/ai/definition/schema';
 import type { JudgeVerdictData } from '@wordhold/ai/judge/schema';
+import type { SpellingPitfall } from '@wordhold/ai/pitfalls/schema';
 import type { CourseKind, LanguageCode } from '@wordhold/db/schema/courses';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import type { cards, ReviewMode } from '@wordhold/db/schema/practice';
@@ -18,6 +19,9 @@ export type PracticeItem = {
   readonly nativeText: string;
   // For a synonym or antonym card, the words it asks for; empty otherwise.
   readonly relatedWords: ReadonlyArray<string>;
+  // Where the word is most often misspelled, once derived. Always null
+  // outside a language course.
+  readonly spellingPitfalls: ReadonlyArray<SpellingPitfall> | null;
   readonly hasAudio: boolean;
   // Whether the entry already counted as "sicher" when the sitting loaded, so
   // the summary can count the entries the sitting made sicher.

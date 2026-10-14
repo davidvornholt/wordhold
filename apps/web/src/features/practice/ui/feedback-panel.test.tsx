@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import type { SpellingPitfall } from '@wordhold/ai/pitfalls/schema';
 import { renderToStaticMarkup } from 'react-dom/server';
 import type { SubmitResult } from '../schemas/practice-models';
 import { FeedbackPanel } from './feedback-panel';
@@ -26,7 +27,13 @@ const feedbackId = 'feedback';
 const render = (
   submittedAnswer: string,
   overrides: Partial<SubmitResult> = {},
-  skipped = false,
+  {
+    skipped = false,
+    spellingPitfalls = null,
+  }: {
+    readonly skipped?: boolean;
+    readonly spellingPitfalls?: ReadonlyArray<SpellingPitfall> | null;
+  } = {},
 ) =>
   renderToStaticMarkup(
     <FeedbackPanel
@@ -41,6 +48,7 @@ const render = (
       repeated={false}
       result={{ ...result, ...overrides } as SubmitResult}
       skipped={skipped}
+      spellingPitfalls={spellingPitfalls}
       submittedAnswer={submittedAnswer}
       targetLanguage="en"
     />,
@@ -58,6 +66,14 @@ const skippedResult: Partial<SubmitResult> = {
     state: 'relearning',
     dueAt: new Date('2026-08-30T12:10:00Z'),
   },
+};
+
+const pitfall: SpellingPitfall = {
+  segments: [
+    { text: 'wait', tricky: false },
+    { text: 'er', tricky: true },
+  ],
+  note: 'Am Ende -er, wie bei teacher.',
 };
 
 const pendingWrongResult: SubmitResult = {
@@ -98,7 +114,7 @@ describe('answer feedback', () => {
   });
 
   it('reveals the solution of a skipped card without judging an attempt', () => {
-    const markup = render('', skippedResult, true);
+    const markup = render('', skippedResult, { skipped: true });
     expect(markup).toContain('Nicht gewusst');
     expect(markup).toContain('Erwartet:');
     expect(markup).not.toContain('Als richtig werten');
@@ -109,5 +125,19 @@ describe('answer feedback', () => {
       'nicht als weitere Lösung',
     );
     expect(render('server')).not.toContain('nicht als weitere Lösung');
+  });
+
+  it('shows where the word is misspelled after a right answer too', () => {
+    const markup = render('waiter', {}, { spellingPitfalls: [pitfall] });
+    expect(markup).toContain('Stolperstelle');
+    expect(markup).toContain('>er</mark>');
+    expect(markup).toContain('Am Ende -er, wie bei teacher.');
+  });
+
+  it('leaves out the spelling pitfalls of a word without any', () => {
+    expect(render('waiter', {}, { spellingPitfalls: [] })).not.toContain(
+      'Stolperstelle',
+    );
+    expect(render('waiter')).not.toContain('Stolperstelle');
   });
 });

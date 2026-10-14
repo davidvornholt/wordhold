@@ -1,3 +1,4 @@
+import type { SpellingPitfall } from '@wordhold/ai/pitfalls/schema';
 import type { TranslationDirection } from '@wordhold/db/schema/directions';
 import type { PreparedExampleSentence } from '../../../shared/examples/example-model';
 
@@ -17,6 +18,9 @@ export type LearnItem = {
   readonly textbookAnswers: ReadonlyArray<string>;
   // What a definition must state, once derived. Always null for vocabulary.
   readonly keyPoints: ReadonlyArray<string> | null;
+  // Where a word is most often misspelled, once derived. Always null outside
+  // a language course.
+  readonly spellingPitfalls: ReadonlyArray<SpellingPitfall> | null;
 };
 
 export type LearnSelectionPass = {

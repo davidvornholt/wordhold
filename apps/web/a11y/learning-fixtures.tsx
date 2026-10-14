@@ -10,6 +10,7 @@ import {
   withoutExamples,
 } from '../src/shared/examples/example-model';
 import { countNoun } from '../src/shared/format/count';
+import { withoutPitfalls } from '../src/shared/pitfalls/pitfall-model';
 import { sessionSectionSize } from '../src/shared/session/section-policy';
 import { Button } from '../src/shared/ui/button';
 import { FocusLayout } from '../src/shared/ui/focus-layout';
@@ -21,6 +22,11 @@ import {
 } from './deferred-examples';
 import { fixtureBackControl, fixtureControl } from './fixture-controls';
 import { navigateToFixture } from './fixture-state';
+import {
+  adolescentLearnItem,
+  pitfallsRequested,
+  prepareAdolescentPitfalls,
+} from './pitfall-fixture-data';
 
 const items: ReadonlyArray<LearnItem> = [
   {
@@ -38,6 +44,7 @@ const items: ReadonlyArray<LearnItem> = [
     },
     textbookAnswers: ['memory'],
     keyPoints: null,
+    spellingPitfalls: null,
   },
   {
     cardId: '00000000-0000-0000-0000-000000000012',
@@ -54,6 +61,7 @@ const items: ReadonlyArray<LearnItem> = [
     },
     textbookAnswers: ['holiday'],
     keyPoints: null,
+    spellingPitfalls: null,
   },
   {
     cardId: '00000000-0000-0000-0000-000000000013',
@@ -70,6 +78,7 @@ const items: ReadonlyArray<LearnItem> = [
     },
     textbookAnswers: ['to look (at)'],
     keyPoints: null,
+    spellingPitfalls: null,
   },
 ];
 
@@ -107,6 +116,24 @@ export const LearnFixture = ({
   const [activeDirection, setActiveDirection] = useState(direction);
   const [introduced, setIntroduced] = useState<ReadonlyArray<string>>([]);
   const [attempts, setAttempts] = useState(0);
+  // With pitfalls=true, a word whose pitfall is prepared once the pass opens.
+  const withPitfall = pitfallsRequested();
+  const passItems = withPitfall
+    ? [adolescentLearnItem]
+    : items
+        .filter((item) => item.direction === activeDirection)
+        .map((item, index) =>
+          index === 0 && withAudio
+            ? {
+                ...item,
+                hasAudio: true,
+                example:
+                  item.example === null
+                    ? null
+                    : { ...item.example, hasAudio: true },
+              }
+            : item,
+        );
   return (
     <FocusLayout exit={backControl} title="Unit 3: Holidays · Kennenlernen">
       <LearnPass
@@ -119,20 +146,7 @@ export const LearnFixture = ({
             ? 'Deutsch → Englisch'
             : 'Englisch → Deutsch'
         }
-        items={items
-          .filter((item) => item.direction === activeDirection)
-          .map((item, index) =>
-            index === 0 && withAudio
-              ? {
-                  ...item,
-                  hasAudio: true,
-                  example:
-                    item.example === null
-                      ? null
-                      : { ...item.example, hasAudio: true },
-                }
-              : item,
-          )}
+        items={passItems}
         key={activeDirection}
         onIntroduce={(item) => {
           const attempt = attempts + 1;
@@ -144,6 +158,9 @@ export const LearnFixture = ({
           return Promise.resolve();
         }}
         prepareExamples={withoutExamples}
+        preparePitfalls={
+          withPitfall ? prepareAdolescentPitfalls : withoutPitfalls
+        }
         subject={englishSubject}
       />
       <output aria-label="Introduced directions" className="sr-only">
@@ -197,6 +214,7 @@ export const LearnDeferredFixture = () => {
           items={deferredItems}
           onIntroduce={() => Promise.resolve()}
           prepareExamples={prepareExamples}
+          preparePitfalls={withoutPitfalls}
           subject={englishSubject}
         />
       ) : null}

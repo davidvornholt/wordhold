@@ -88,6 +88,7 @@ export class PracticeSessionStore extends Context.Service<
                 e.id as "entryId", ${entryIsKnown(sql)} as "entryKnown",
                 e.target_text as "targetText", e.native_text as "nativeText",
                 ${cardRelatedWords(sql)} as "relatedWords",
+                e.spelling_pitfalls as "spellingPitfalls",
                 exists(select 1 from entry_audio a where a.entry_id = e.id) as "hasAudio"
               from cards c
               join entries e on e.id = c.entry_id
@@ -165,6 +166,7 @@ export class PracticeSessionStore extends Context.Service<
             e.id as "entryId", ${entryIsKnown(sql)} as "entryKnown",
             e.target_text as "targetText", e.native_text as "nativeText",
             ${cardRelatedWords(sql)} as "relatedWords",
+            e.spelling_pitfalls as "spellingPitfalls",
             exists(select 1 from entry_audio a where a.entry_id = e.id) as "hasAudio"
           from cards c
           join entries e on e.id = c.entry_id

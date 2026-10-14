@@ -26,6 +26,7 @@ const item = (index: number): PracticeItem => ({
   entryKnown: false,
   example: null,
   prompt: `Wort-${index}`,
+  spellingPitfalls: null,
 });
 
 const items = (count: number) =>

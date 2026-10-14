@@ -2,6 +2,7 @@ import { useMatchRoute, useRouter, useSearch } from '@tanstack/react-router';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import type { ReactNode } from 'react';
 import { prepareVocabularyExamples } from '../../../features/courses/services/server-fns';
+import { prepareSpellingPitfalls } from '../../../features/courses/services/spelling-pitfall-server-fns';
 import type { LearnSelectionPass } from '../../../features/learning/schemas/learning-models';
 import { introduceCard } from '../../../features/learning/services/server-fns';
 import { LearnPass } from '../../../features/learning/ui/learn-pass';
@@ -195,6 +196,7 @@ export const StudyLearning = ({
           });
         }}
         prepareExamples={prepareVocabularyExamples}
+        preparePitfalls={prepareSpellingPitfalls}
         subject={subject}
       />
     );
