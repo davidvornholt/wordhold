@@ -20,7 +20,10 @@ const definitionJudgeInstructionBudget = 800;
 const definitionInstructionBudget = 400;
 const sentenceJudgeInstructionBudget = 900;
 const relationInstructionBudget = 450;
-const pitfallInstructionBudget = 900;
+// The pitfall prompt has to say what a learner already spells right, or
+// nearly every item gets a needless hint; a 900-character version gave
+// several times as many hints on ordinary words in evaluation.
+const pitfallInstructionBudget = 1400;
 
 describe('prompt instruction budgets', () => {
   it('keeps page extraction instructions compact', () => {

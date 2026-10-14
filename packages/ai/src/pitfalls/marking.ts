@@ -4,14 +4,15 @@ import type {
   SpellingSegment,
 } from './schema';
 
-// The model names the letters to learn and a typical misspelling. Only the
-// letters the misspelling actually gets wrong are marked: the model cannot
+// The model names the letters to learn and a typical misspelling. A named
+// group is marked only where the misspelling gets it wrong: the model cannot
 // count letters reliably, and a mark it cannot back with a mistake points
 // the learner to the wrong place.
 const escapedPattern = /[.*+?^${}()|[\]\\]/gu;
-// The rest of the word the marks stand in, up to the surrounding spaces.
-const wordTail = /\S*$/u;
-const wordHead = /\s|$/u;
+// Letter pairs such as ou, ch or ss are learned as one unit. A longer group
+// is mostly a pair with its neighbours or a whole word, so only the letters
+// of it that the misspelling gets wrong are marked.
+const maximumUnitLength = 2;
 
 const wordPattern = (word: string, flags: string) =>
   new RegExp(
@@ -97,13 +98,63 @@ const changedPositions = (
   });
 };
 
-// The positions of the named letters that the misspelling gets wrong.
+const letterRuns = /[\p{L}\p{M}]+/gu;
+
+// How many letters the misspelling changes in a part of the word.
+const difference = (part: string, misspelling: string) => {
+  const { missing, added } = align(part, misspelling);
+  return [...added.values()].reduce(
+    (count, letters) => count + letters.length,
+    missing.length,
+  );
+};
+
+// Where in `word` the misspelling lies. The model sometimes names a whole
+// phrase as the word but misspells one word of it, and lining the phrase up
+// with that one word would mark letters of the others. Of the runs of as
+// many words as the misspelling has, it lies in the one it differs from
+// least.
+const misspelledSpan = (
+  word: string,
+  misspelling: string,
+): readonly [number, number] => {
+  const spans = [...word.matchAll(letterRuns)].map(
+    (run) => [run.index, run.index + run[0].length] as const,
+  );
+  const count = misspelling.match(letterRuns)?.length ?? 0;
+  if (count === 0 || count >= spans.length) {
+    return [0, word.length];
+  }
+  let best: readonly [number, number] = [0, word.length];
+  let fewest = Number.POSITIVE_INFINITY;
+  for (const [index, [start]] of spans
+    .slice(0, spans.length - count + 1)
+    .entries()) {
+    const end = spans[index + count - 1]?.[1] ?? start;
+    const changes = difference(word.slice(start, end), misspelling);
+    if (changes < fewest) {
+      best = [start, end];
+      fewest = changes;
+    }
+  }
+  return best;
+};
+
+// The positions in `word` to mark: each named unit the misspelling gets
+// wrong, whole, and the wrong letters of a longer named group. A named group
+// the misspelling leaves alone stays unmarked.
 const markedPositions = ({
   word,
   letters,
   misspelling,
 }: PitfallSuggestion): ReadonlySet<number> => {
-  const named = new Set<number>();
+  const [start, end] = misspelledSpan(word, misspelling);
+  const changed = new Set(
+    changedPositions(word.slice(start, end), misspelling).map(
+      (position) => start + position,
+    ),
+  );
+  const marked = new Set<number>();
   // An empty group would match everywhere and never advance.
   for (const group of letters.filter((letter) => letter !== '')) {
     for (
@@ -111,16 +162,15 @@ const markedPositions = ({
       at !== -1;
       at = word.indexOf(group, at + 1)
     ) {
-      for (let position = at; position < at + group.length; position += 1) {
-        named.add(position);
+      const positions = positionsBetween(at, at + group.length);
+      const wrong = positions.filter((position) => changed.has(position));
+      const unit = wrong.length > 0 && group.length <= maximumUnitLength;
+      for (const position of unit ? positions : wrong) {
+        marked.add(position);
       }
     }
   }
-  return new Set(
-    changedPositions(word, misspelling).filter((position) =>
-      named.has(position),
-    ),
-  );
+  return marked;
 };
 
 // Consecutive positions as ranges. A doubled letter is marked whole, since
@@ -155,39 +205,86 @@ const markedRanges = (
   });
 };
 
-// Only the marked word of a phrase is shown.
+// A note places the letters by their neighbours, as in "nach dem t" or "vor
+// dem qu", and the model often names the wrong neighbour.
+const neighbourClaim =
+  /(?<!\p{L})(?<side>nach|vor) dem (?<named>\p{L}{1,3})(?![\p{L}-])/giu;
+
+// Letters without accents or case, one for each letter of `text`.
+const baseLetters = (text: string) =>
+  text
+    .split('')
+    .map((letter) =>
+      letter.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase(),
+    )
+    .join('');
+
+// Whether every neighbour the note names borders a mark or is its first or
+// last letters, as in "nach dem t steht kein h" for a marked t. A name the
+// word does not contain, such as "dem Ton", is not about its letters.
+const neighboursHold = (
+  word: string,
+  ranges: ReadonlyArray<readonly [number, number]>,
+  note: string,
+): boolean => {
+  const letters = baseLetters(word);
+  if (letters.length !== word.length) {
+    return true;
+  }
+  return [...note.matchAll(neighbourClaim)].every(({ groups = {} }) => {
+    const { side = '', named = '' } = groups;
+    const neighbour = baseLetters(named);
+    if (!letters.includes(neighbour)) {
+      return true;
+    }
+    return ranges.some(([start, end]) =>
+      positionsBetween(start, end + 1).some((boundary) =>
+        side.toLowerCase() === 'nach'
+          ? boundary >= neighbour.length &&
+            letters.slice(boundary - neighbour.length, boundary) === neighbour
+          : letters.startsWith(neighbour, boundary),
+      ),
+    );
+  });
+};
+
+// The whole item, with the marks in the first place it has the word. The
+// model sometimes lowercases a word the item capitalizes, as in Dirección.
 const spellingSegments = (
+  targetText: string,
   suggestion: PitfallSuggestion,
 ): ReadonlyArray<SpellingSegment> | undefined => {
-  const { word } = suggestion;
-  const ranges = markedRanges(word, markedPositions(suggestion));
-  const first = ranges.at(0);
-  const last = ranges.at(-1);
-  if (first === undefined || last === undefined) {
+  const found = wordPattern(suggestion.word, 'iu').exec(targetText);
+  const ranges = markedRanges(suggestion.word, markedPositions(suggestion));
+  if (
+    found === null ||
+    ranges.length === 0 ||
+    !neighboursHold(suggestion.word, ranges, suggestion.note)
+  ) {
     return undefined;
   }
-  const [markStart] = first;
-  const [, markEnd] = last;
-  let plainFrom = word.slice(0, markStart).search(wordTail);
   const segments: Array<SpellingSegment> = [];
+  let plainFrom = 0;
   for (const [start, end] of ranges) {
+    const markFrom = found.index + start;
+    const markTo = found.index + end;
     segments.push(
-      { text: word.slice(plainFrom, start), tricky: false },
-      { text: word.slice(start, end), tricky: true },
+      { text: targetText.slice(plainFrom, markFrom), tricky: false },
+      { text: targetText.slice(markFrom, markTo), tricky: true },
     );
-    plainFrom = end;
+    plainFrom = markTo;
   }
-  segments.push({
-    text: word.slice(markEnd, markEnd + word.slice(markEnd).search(wordHead)),
-    tricky: false,
-  });
+  segments.push({ text: targetText.slice(plainFrom), tricky: false });
   return segments.filter((segment) => segment.text !== '');
 };
 
-// A pitfall with an empty field, in a word the item does not contain, one
-// the misspelling does not back, or a note that repeats the wrong form is
-// dropped: the item is still usable without it, and the learner should never
-// read the wrong form.
+// A note ends like a sentence, not with an ellipsis or mid-sentence.
+const completeNote = /(?<![.…])[.!?]$/u;
+
+// A pitfall with an empty field, in a word the item does not contain, or one
+// the misspelling does not back is dropped, and so is a note that repeats the
+// wrong form or is cut off: the item is still usable without it, and the
+// learner should never read the wrong form or half a rule.
 export const readPitfalls = (
   targetText: string,
   suggestions: ReadonlyArray<PitfallSuggestion>,
@@ -196,13 +293,12 @@ export const readPitfalls = (
     if (
       suggestion.word === '' ||
       suggestion.misspelling === '' ||
-      suggestion.note === '' ||
       suggestion.word === suggestion.misspelling ||
-      !wordPattern(suggestion.word, 'u').test(targetText) ||
+      !completeNote.test(suggestion.note) ||
       wordPattern(suggestion.misspelling, 'iu').test(suggestion.note)
     ) {
       return [];
     }
-    const segments = spellingSegments(suggestion);
+    const segments = spellingSegments(targetText, suggestion);
     return segments === undefined ? [] : [{ segments, note: suggestion.note }];
   });

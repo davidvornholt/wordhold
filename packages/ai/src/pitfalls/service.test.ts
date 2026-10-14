@@ -16,7 +16,7 @@ const request: PitfallRequest = {
 
 const adolescentPitfall = {
   word: 'adolescent',
-  letters: ['sc'],
+  letters: ['c'],
   misspelling: 'adolesent',
   note: 'Das c hört man nicht, wie in adolescence.',
 };
@@ -52,7 +52,9 @@ describe('pitfallPrompt', () => {
   });
 
   it('leaves most words without pitfalls', () => {
-    expect(pitfallPrompt(request)).toContain('most items have none');
+    expect(pitfallPrompt(request)).toContain(
+      'Most items need none; when in doubt, give none.',
+    );
   });
 });
 
