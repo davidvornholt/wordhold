@@ -89,7 +89,7 @@ export const answerGradingWorkloads: ReadonlyArray<Workload> = [
     { correct: false, faults: [] },
   ),
   judgeWorkload(
-    'judge-unstated-context',
+    'judge-synonym-to-target',
     {
       direction: 'to_target',
       targetLanguage: 'English',
@@ -97,7 +97,7 @@ export const answerGradingWorkloads: ReadonlyArray<Workload> = [
       expectedAnswers: ['to dub'],
       givenAnswer: 'to synchronize',
     },
-    accepted,
+    { correct: false, faults: ['intendedConstruction'] },
   ),
   judgeWorkload(
     'judge-regional-variant',
@@ -108,7 +108,7 @@ export const answerGradingWorkloads: ReadonlyArray<Workload> = [
       expectedAnswers: ['el piso'],
       givenAnswer: 'el apartamento',
     },
-    accepted,
+    { correct: false, faults: ['intendedConstruction'] },
   ),
   judgeWorkload(
     'judge-american-english',
@@ -119,7 +119,51 @@ export const answerGradingWorkloads: ReadonlyArray<Workload> = [
       expectedAnswers: ['mobile phone'],
       givenAnswer: 'cell phone',
     },
+    { correct: false, faults: ['intendedConstruction'] },
+  ),
+  judgeWorkload(
+    'judge-written-out-notation',
+    {
+      direction: 'to_target',
+      targetLanguage: 'English',
+      prompt: 'etw. von jdm./etw. erwarten',
+      expectedAnswers: ['(to) expect sth. from sb./sth.'],
+      givenAnswer: 'to expect sth from sb',
+    },
     accepted,
+  ),
+  judgeWorkload(
+    'judge-adapted-pronoun',
+    {
+      direction: 'to_target',
+      targetLanguage: 'English',
+      prompt: 'sich durchsetzen, sich behaupten',
+      expectedAnswers: ['(to) assert yourself'],
+      givenAnswer: 'to assert oneself',
+    },
+    accepted,
+  ),
+  judgeWorkload(
+    'judge-other-construction',
+    {
+      direction: 'to_target',
+      targetLanguage: 'English',
+      prompt: 'jdn. unter Druck setzen',
+      expectedAnswers: ['(to) put pressure on sb.'],
+      givenAnswer: 'to put sb under pressure',
+    },
+    { correct: false, faults: ['intendedConstruction'] },
+  ),
+  judgeWorkload(
+    'judge-hedged-alternatives',
+    {
+      direction: 'to_target',
+      targetLanguage: 'English',
+      prompt: 'unsicher; verunsichert',
+      expectedAnswers: ['insecure'],
+      givenAnswer: 'unsure/insecure',
+    },
+    { correct: false, faults: [] },
   ),
   judgeWorkload(
     'judge-synonym-to-german',

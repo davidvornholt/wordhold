@@ -44,6 +44,8 @@ const relationCardsMigrationHash =
   '8335a14fcdd2b947452db288da06c3349f01678de25f34d6f8d6e1680bc37091';
 const spellingPitfallsMigrationHash =
   '3613112c0e158900f77c3c3f2774b39b6d81d5da778a466d60624407e8b705c2';
+const judgeTargetSynonymsMigrationHash =
+  'ddfd5ae1a665a1d614abfe7dcb41bdf704e4fa0bb992ab6e1fa5941c7eabd087';
 const fullMigrationTestTimeoutMs = 15_000;
 
 const getMigrationError = (url: string) =>
@@ -134,7 +136,8 @@ it(
             ${transcriptionUsageMigrationHash},
             ${relatedWordsMigrationHash},
             ${relationCardsMigrationHash},
-            ${spellingPitfallsMigrationHash}
+            ${spellingPitfallsMigrationHash},
+            ${judgeTargetSynonymsMigrationHash}
           )
         `;
           yield* migrateDatabase(database.url);
@@ -308,6 +311,53 @@ it('asks synonyms and antonyms once their word is learned', async () => {
     { word: 'happy', direction: 'to_synonym', introducedAt: '2026-01-01' },
     { word: 'hostile', direction: 'to_synonym', introducedAt: null },
     { word: 'hostile', direction: 'to_antonym', introducedAt: '2026-01-04' },
+  ]);
+});
+
+it('drops the synonyms the judge accepted into the target language', async () => {
+  const answers = await Effect.runPromise(
+    withTestDatabase((database) =>
+      Effect.gen(function* () {
+        yield* migrateDatabase(database.url);
+        const sql = yield* Database;
+        yield* sql`
+          insert into courses (id, name, target_language)
+          values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'Englisch', 'en')
+        `;
+        yield* sql`
+          insert into entries (id, course_id, target_text, native_text)
+          values ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'adolescent', 'der/die Jugendliche')
+        `;
+        // Only `teenager` was accepted by the judge in place of the textbook
+        // word. A translation into German may still be a synonym.
+        yield* sql`
+          insert into accepted_answers (entry_id, direction, text, normalized, source)
+          values
+            ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'to_target', 'adolescent', 'adolescent', 'textbook'),
+            ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'to_target', 'teenager', 'teenager', 'judge'),
+            ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'to_target', 'teen', 'teen', 'manual'),
+            ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'to_native', 'der Teenager', 'der teenager', 'judge')
+        `;
+        yield* sql`
+          delete from drizzle.__drizzle_migrations
+          where hash = ${judgeTargetSynonymsMigrationHash}
+        `;
+        yield* migrateDatabase(database.url);
+        return yield* sql<{
+          readonly direction: string;
+          readonly text: string;
+          readonly source: string;
+        }>`
+          select direction, text, source from accepted_answers order by text
+        `;
+      }).pipe(Effect.provide(testDatabaseLayer(database.url))),
+    ),
+  );
+
+  expect(answers).toEqual([
+    { direction: 'to_target', text: 'adolescent', source: 'textbook' },
+    { direction: 'to_native', text: 'der Teenager', source: 'judge' },
+    { direction: 'to_target', text: 'teen', source: 'manual' },
   ]);
 });
 

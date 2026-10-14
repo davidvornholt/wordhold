@@ -21,7 +21,9 @@ describe('judgePrompt', () => {
     );
   });
 
-  it('keeps the instruction compact while distinguishing task requirements from notation', () => {
+  // A vocabulary test marks a synonym of the textbook word wrong, so only
+  // notation may differ from it.
+  it('accepts only the textbook wording into the target language', () => {
     const prompt = judgePrompt({
       direction: 'to_target',
       targetLanguage: 'Spanish',
@@ -30,9 +32,27 @@ describe('judgePrompt', () => {
       givenAnswer: 'el abogado / la abogada',
     });
     expect(prompt.length).toBeLessThan(representativePromptCharacterBudget);
-    expect(prompt).toContain('do not impose hidden meanings');
+    expect(prompt).toContain('accept only an expected answer');
+    expect(prompt).toContain(
+      'A synonym, paraphrase or regional variant is incorrect',
+    );
     expect(prompt).toContain('expanded gender forms');
+    expect(prompt).not.toContain('including synonyms');
+  });
+
+  it('accepts any valid translation into German', () => {
+    const prompt = judgePrompt({
+      direction: 'to_native',
+      targetLanguage: 'Spanish',
+      prompt: 'el ordenador',
+      expectedAnswers: ['der Computer'],
+      givenAnswer: 'der Rechner',
+    });
+    expect(prompt.length).toBeLessThan(representativePromptCharacterBudget);
+    expect(prompt).toContain('including synonyms and natural paraphrases');
+    expect(prompt).toContain('do not impose hidden meanings');
     expect(prompt).toContain('explicit in the shown task');
+    expect(prompt).not.toContain('accept only an expected answer');
   });
 
   it('fails an answer capitalized against its language', () => {
@@ -89,11 +109,11 @@ describe('judgePrompt', () => {
   // accepted answer must teach something about the difference.
   it('asks for a difference worth knowing instead of a bare confirmation', () => {
     const prompt = judgePrompt({
-      direction: 'to_target',
+      direction: 'to_native',
       targetLanguage: 'Spanish',
-      prompt: 'hier: das Schuljahr',
-      expectedAnswers: ['el curso'],
-      givenAnswer: 'el año escolar',
+      prompt: 'el curso',
+      expectedAnswers: ['das Schuljahr'],
+      givenAnswer: 'der Jahrgang',
     });
     expect(prompt).toContain('Write the explanation in German');
     expect(prompt).toContain('such as usage, register or region');
