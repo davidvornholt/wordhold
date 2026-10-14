@@ -46,6 +46,7 @@ const unit5 = 'U5 Y después del instituto, ¿qué? / ¡Acércate!';
 const courseEntries: ReadonlyArray<CourseEntryPlace> = [
   { text: 'prestar atención (a algo)', place: 'U3 Mi barrio' },
   { text: 'concentrarse (en algo)', place: unit5 },
+  { text: 'cell phone / mobile phone', place: 'U2 Communication' },
 ];
 
 type Calls = { commits: number; lookups: number; judged: number };
@@ -64,7 +65,7 @@ const reviewStore = (
     }),
   saveKeyPoints: (_entryId, _definition, points) => Effect.succeed(points),
   listAcceptedAnswers: () =>
-    Effect.succeed([{ text: 'enfocarse en algo', source: 'textbook' }]),
+    Effect.succeed([{ text: row.entry.targetText, source: 'textbook' }]),
   commit: () =>
     Effect.sync(() => {
       calls.commits += 1;
@@ -153,9 +154,28 @@ describe('PracticeService answer in other wording', () => {
     // Nothing about the book's word: no expected answer, no explanation.
     expect(result).toEqual({
       otherWording: true,
-      courseEntry: { text: 'concentrarse (en algo)', place: unit5 },
+      courseEntry: { text: 'concentrarse en algo', place: unit5 },
     });
     expect(calls).toEqual({ commits: 0, lookups: 1, judged: 1 });
+  });
+
+  it('does not reveal the solution through another course entry', async () => {
+    const result = await submitWith(answer('cell phone'), {
+      row: {
+        ...testSubmission,
+        entry: {
+          ...testSubmission.entry,
+          targetText: 'mobile phone',
+          nativeText: 'Handy',
+        },
+        targetLanguage: 'en',
+      },
+      verdict: { ...otherWording, explanation: "Gesucht ist 'mobile phone'." },
+    });
+    expect(result).toEqual({
+      otherWording: true,
+      courseEntry: { text: 'cell phone', place: 'U2 Communication' },
+    });
   });
 
   it('names no entry for a wording the course does not teach', async () => {

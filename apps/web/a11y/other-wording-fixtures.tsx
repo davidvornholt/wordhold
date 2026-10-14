@@ -35,7 +35,7 @@ const practiceItem = {
   spellingPitfalls: null,
 };
 
-// The other words of the course, as the server lists them for the notice.
+// The other words of the course, as the server looks them up.
 const courseEntries: ReadonlyArray<CourseEntryPlace> = [
   {
     text: 'concentrarse (en algo)',
@@ -80,10 +80,10 @@ const submitTranslation = ({
     return Promise.resolve(storedResult(true, data.revision));
   }
   if (otherWordings.some((wording) => matches(answer, wording))) {
+    const matched = courseEntries.find((entry) => matches(answer, entry.text));
     return Promise.resolve({
       otherWording: true,
-      courseEntry:
-        courseEntries.find((entry) => matches(answer, entry.text)) ?? null,
+      courseEntry: matched ? { text: answer, place: matched.place } : null,
     });
   }
   return Promise.resolve({

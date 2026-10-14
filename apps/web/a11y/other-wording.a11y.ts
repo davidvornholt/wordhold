@@ -45,10 +45,10 @@ test('a translation in other words leaves the card open for another try', async 
     'Auch richtig, aber hier ist ein anderes Wort gesucht.',
   );
   await expect(notice).toContainText(
-    '‚concentrarse (en algo)‘ steht in U5 Y después del instituto, ¿qué? / ¡Acércate!',
+    '‚concentrarse en algo‘ steht in U5 Y después del instituto, ¿qué? / ¡Acércate!',
   );
   await expect(
-    notice.getByText('concentrarse (en algo)', { exact: true }),
+    notice.getByText('concentrarse en algo', { exact: true }).first(),
   ).toHaveAttribute('lang', 'es');
   await expect(notice).toContainText('Deine Antwort: concentrarse en algo');
   await expect(answer).toHaveValue('');

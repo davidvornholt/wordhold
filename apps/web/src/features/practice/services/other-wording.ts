@@ -42,10 +42,11 @@ export const otherWordingResult = (
   answer: string,
 ) =>
   reviews.listCourseEntries(row.entry.id).pipe(
-    Effect.map(
-      (entries): OtherWordingResult => ({
+    Effect.map((entries): OtherWordingResult => {
+      const matched = findCourseEntry(answer, entries);
+      return {
         otherWording: true,
-        courseEntry: findCourseEntry(answer, entries),
-      }),
-    ),
+        courseEntry: matched ? { text: answer, place: matched.place } : null,
+      };
+    }),
   );
