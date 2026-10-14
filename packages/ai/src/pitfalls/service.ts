@@ -55,6 +55,9 @@ export class SpellingPitfalls extends Context.Service<
           operation: 'spelling-pitfalls',
           schema: PitfallSuggestions,
           prompt: pitfallPrompt(request),
+          // At medium effort, about half of the hints in evaluation were
+          // needless, most of them on regular Spanish spellings.
+          effort: 'high',
           failure,
           validate: (suggestions) =>
             suggestions.words.length === request.words.length
