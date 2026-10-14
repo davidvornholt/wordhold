@@ -3,8 +3,6 @@ import {
   maximumEntriesPerPage,
   maximumEntryTextLength,
   maximumExampleLength,
-  maximumGrammarFieldLength,
-  maximumIrregularForms,
   maximumUnitNameLength,
 } from '@wordhold/ai/extraction/schema';
 import { maximumBookNameLength } from '../../../shared/vocabulary/book-name';
@@ -41,32 +39,6 @@ describe('decodeImportPayload limits', () => {
           example: {
             targetText: over(maximumExampleLength),
             source: 'textbook',
-          },
-        },
-      ],
-    },
-    {
-      pageId,
-      book,
-      entries: [
-        {
-          ...validEntry,
-          grammar: { _tag: 'other', note: over(maximumGrammarFieldLength) },
-        },
-      ],
-    },
-    {
-      pageId,
-      book,
-      entries: [
-        {
-          ...validEntry,
-          grammar: {
-            _tag: 'verb',
-            irregularForms: Array.from(
-              { length: maximumIrregularForms + 1 },
-              () => 'form',
-            ),
           },
         },
       ],

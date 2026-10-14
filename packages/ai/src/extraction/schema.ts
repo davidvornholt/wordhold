@@ -5,44 +5,7 @@ export const maximumEntryTextLength = 500;
 export const maximumExampleLength = 1000;
 export const maximumUnitNameLength = 80;
 export const maximumPageNumber = 9999;
-export const maximumGrammarFieldLength = 200;
-export const maximumIrregularForms = 20;
 export const maximumRelatedWords = 8;
-
-const GrammarText = Schema.String.check(
-  Schema.isMaxLength(maximumGrammarFieldLength),
-);
-
-// Flexible part-of-speech grammar, discriminated on `kind`. Stored as JSONB
-// on entries; every language uses the subset of fields that applies.
-const NounGrammar = Schema.TaggedStruct('noun', {
-  gender: Schema.optional(Schema.Literals(['masculine', 'feminine', 'neuter'])),
-  plural: Schema.optional(GrammarText),
-});
-
-const VerbGrammar = Schema.TaggedStruct('verb', {
-  irregularForms: Schema.optional(
-    Schema.Array(GrammarText).check(Schema.isMaxLength(maximumIrregularForms)),
-  ),
-  note: Schema.optional(GrammarText),
-});
-
-const AdjectiveGrammar = Schema.TaggedStruct('adjective', {
-  comparative: Schema.optional(GrammarText),
-  superlative: Schema.optional(GrammarText),
-});
-
-const OtherGrammar = Schema.TaggedStruct('other', {
-  note: Schema.optional(GrammarText),
-});
-
-export const Grammar = Schema.Union([
-  NounGrammar,
-  VerbGrammar,
-  AdjectiveGrammar,
-  OtherGrammar,
-]);
-export type GrammarInfo = typeof Grammar.Type;
 
 const RelatedWords = Schema.Array(
   Schema.String.check(Schema.isMaxLength(maximumEntryTextLength)),
@@ -51,7 +14,6 @@ const RelatedWords = Schema.Array(
 export const ExtractedEntry = Schema.Struct({
   targetText: Schema.String.check(Schema.isMaxLength(maximumEntryTextLength)),
   nativeText: Schema.String.check(Schema.isMaxLength(maximumEntryTextLength)),
-  grammar: Schema.optional(Grammar),
   example: Schema.optional(
     Schema.String.check(Schema.isMaxLength(maximumExampleLength)),
   ),

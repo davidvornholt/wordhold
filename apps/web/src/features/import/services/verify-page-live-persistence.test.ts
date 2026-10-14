@@ -33,8 +33,6 @@ const seedCourse = Effect.gen(function* () {
   `;
 });
 
-// Grammar is the one JSON value an entry stores, and the client binds only
-// scalars, so it has to reach the column as JSON text.
 const importDetailedWord = Effect.gen(function* () {
   yield* seedCourse;
   const sql = yield* Database;
@@ -46,7 +44,6 @@ const importDetailedWord = Effect.gen(function* () {
       entries: [
         {
           ...entry('Unit 3', 'prendre'),
-          grammar: { _tag: 'verb', irregularForms: ['pris'] },
           example: {
             targetText: 'Je prends le bus.',
             nativeText: 'Ich nehme den Bus.',
@@ -59,11 +56,10 @@ const importDetailedWord = Effect.gen(function* () {
     courseId,
   );
   const [stored] = yield* sql<{
-    readonly grammar: unknown;
     readonly synonyms: ReadonlyArray<string> | null;
     readonly example: string | null;
   }>`
-    select e.grammar, e.synonyms, x.target_text as example
+    select e.synonyms, x.target_text as example
     from entries e
     left join entry_examples x on x.entry_id = e.id
   `;
@@ -133,7 +129,7 @@ describe('verifyPageLive persistence', () => {
     );
   });
 
-  it('stores the grammar, example and synonyms read from the page', async () => {
+  it('stores the example and synonyms read from the page', async () => {
     const { stored, directions } = await Effect.runPromise(
       withMigratedTestDatabase((database) =>
         importDetailedWord.pipe(
@@ -142,7 +138,6 @@ describe('verifyPageLive persistence', () => {
       ),
     );
     expect(stored).toEqual({
-      grammar: { _tag: 'verb', irregularForms: ['pris'] },
       synonyms: ['saisir'],
       example: 'Je prends le bus.',
     });

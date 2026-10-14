@@ -17,9 +17,7 @@ import { answerDirectionEnum } from './directions';
 import { pages } from './pages';
 import { units } from './units';
 
-// A structured vocabulary entry, not a flashcard. `grammar` stays a flexible
-// per-language shape (validated by Effect Schema unions in the app) holding
-// only what the textbook page actually shows.
+// A structured vocabulary entry, not a flashcard.
 export const entries = pgTable(
   'entries',
   {
@@ -41,6 +39,8 @@ export const entries = pgTable(
     }),
     targetText: text('target_text').notNull(),
     nativeText: text('native_text').notNull(),
+    // Keep grammar and notes for the previous image during rollout and
+    // rollback. The current app no longer reads or writes them.
     grammar: jsonb('grammar'),
     // For a term: what a typed definition must state to count, derived from
     // `native_text` and editable by the learner. Null until derived, and

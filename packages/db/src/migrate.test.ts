@@ -233,11 +233,12 @@ it("files entries without a book into their unit's book", async () => {
             ('dddddddd-dddd-4ddd-8ddd-dddddddddddd', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'U1', 0),
             ('eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', 'U1', 0)
         `;
+        // The previous image still names grammar during rollout and rollback.
         yield* sql`
-          insert into entries (course_id, unit_id, target_text, native_text)
+          insert into entries (course_id, unit_id, target_text, native_text, grammar, notes)
           values
-            ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'dddddddd-dddd-4ddd-8ddd-dddddddddddd', 'el libro', 'das Buch'),
-            ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee', 'la casa', 'das Haus')
+            ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'dddddddd-dddd-4ddd-8ddd-dddddddddddd', 'el libro', 'das Buch', null, null),
+            ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee', 'la casa', 'das Haus', null, null)
         `;
         yield* migrateDatabase(database.url);
         yield* migrateDatabase(database.url);

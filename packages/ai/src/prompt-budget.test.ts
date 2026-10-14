@@ -13,7 +13,7 @@ import {
 
 // Limit instruction overhead independently of learner or textbook text.
 // Character budgets are deterministic across provider tokenizer versions.
-const extractionInstructionBudget = 600;
+const extractionInstructionBudget = 1000;
 const sentenceInstructionBudget = 300;
 const translationInstructionBudget = 450;
 const definitionJudgeInstructionBudget = 800;

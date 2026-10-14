@@ -32,7 +32,6 @@ export const persistVerifiedEntries = (
         pageId,
         targetText: entry.targetText,
         nativeText: entry.nativeText,
-        grammar: entry.grammar ?? null,
         example: entry.example,
         synonyms: entry.synonyms ?? null,
         antonyms: entry.antonyms ?? null,

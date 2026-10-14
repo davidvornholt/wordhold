@@ -109,7 +109,6 @@ describe('decodeModelOutput', () => {
           {
             targetText: 'the book',
             nativeText: 'das Buch',
-            grammar: null,
             example: null,
             synonyms: null,
             antonyms: null,
@@ -119,7 +118,7 @@ describe('decodeModelOutput', () => {
       }),
     );
     expect(page.unitName).toBeUndefined();
-    expect(page.entries[0]?.grammar).toBeUndefined();
+    expect(page.entries[0]?.example).toBeUndefined();
     expect(page.entries[0]?.synonyms).toBeUndefined();
   });
 

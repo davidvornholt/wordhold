@@ -4,35 +4,19 @@ import {
   type ExtractedEntryData,
   ExtractedPage,
   type ExtractedPageData,
-  type GrammarInfo,
 } from '../extraction/schema';
 import { extractionPrompt } from '../extraction/service';
 import { readModelOutput } from './structured-output';
 import { normalizeText, type Workload } from './workload';
 
-type NounGender = NonNullable<
-  Extract<GrammarInfo, { readonly _tag: 'noun' }>['gender']
->;
-
-// A printed entry. `target` is the headword the extracted target must
-// contain, since printed grammar may be kept with it or moved to `grammar`.
-// `grammar` lists printed forms that must appear somewhere in the entry.
-// `gender` is a printed gender marker, which the entry keeps after the
-// headword or records as the noun's gender.
+// A printed entry. `target` is the bare term the extraction must give:
+// the page prints pronunciation, labels, plurals, irregular forms and
+// conjugation hints beside it, and none of them is part of the term.
 type PrintedEntry = {
   readonly target: string;
   readonly native: string;
   readonly example?: string;
-  readonly grammar?: ReadonlyArray<string>;
-  readonly gender?: { readonly marker: string; readonly value: NounGender };
 };
-
-const recordsGender = (
-  gender: NonNullable<PrintedEntry['gender']>,
-  entry: ExtractedEntryData,
-): boolean =>
-  normalizeText(entry.targetText).endsWith(` ${gender.marker}`) ||
-  (entry.grammar?._tag === 'noun' && entry.grammar.gender === gender.value);
 
 type PrintedPage = {
   readonly file: string;
@@ -53,12 +37,8 @@ const entryFailures = (
   if (normalizeText(entry.nativeText) !== printed.native) {
     failures.push(`${label} translation differs`);
   }
-  const text = JSON.stringify(entry);
-  if (printed.grammar?.some((form) => !text.includes(form))) {
-    failures.push(`${label} grammar missing`);
-  }
-  if (printed.gender !== undefined && !recordsGender(printed.gender, entry)) {
-    failures.push(`${label} gender missing`);
+  if (normalizeText(entry.targetText) !== printed.target) {
+    failures.push(`${label} term not bare`);
   }
   if (printed.example === undefined) {
     return failures;
@@ -83,8 +63,9 @@ const pageFailures = (
   if (output.entries.length !== page.entries.length) {
     failures.push('Incorrect entry count');
   }
-  // Entries are matched by headword so that one missed entry does not fail
-  // every later one; the matched positions must still follow reading order.
+  // Entries are matched by the term they contain so that one missed entry
+  // does not fail every later one; the matched positions must still follow
+  // reading order.
   const positions = page.entries.map((printed, index) => {
     const position = output.entries.findIndex((candidate) =>
       normalizeText(candidate.targetText).includes(printed.target),
@@ -158,13 +139,9 @@ export const simplePage: PrintedPage = {
   pageNumber: 42,
   entries: [
     { target: 'el/la abogado/-a', native: 'der Anwalt / die Anwältin' },
-    { target: 'obtener algo (como tener)', native: 'etwas bekommen' },
+    { target: 'obtener algo', native: 'etwas bekommen' },
     { target: 'determinado/-a', native: 'bestimmt' },
-    {
-      target: 'el programa',
-      native: 'das Programm',
-      gender: { marker: 'm.', value: 'masculine' },
-    },
+    { target: 'el programa', native: 'das Programm' },
     { target: 'la dirección', native: 'die Adresse' },
     { target: 'preguntar', native: 'fragen' },
   ],
@@ -181,7 +158,6 @@ export const densePage: PrintedPage = {
       target: 'to bring',
       native: 'bringen',
       example: 'Can you bring your camera?',
-      grammar: ['brought'],
     },
     { target: 'castle', native: 'die Burg; das Schloss' },
     {
@@ -189,7 +165,7 @@ export const densePage: PrintedPage = {
       native: 'die Küste',
       example: 'We stayed at a hotel on the coast.',
     },
-    { target: 'to feel', native: '(sich) fühlen', grammar: ['felt'] },
+    { target: 'to feel', native: '(sich) fühlen' },
     { target: 'lonely', native: 'einsam' },
     {
       target: 'ferry',
@@ -205,16 +181,12 @@ export const densePage: PrintedPage = {
     { target: 'foggy', native: 'neblig' },
     { target: 'weather forecast', native: 'der Wetterbericht' },
     {
-      target: 'to run out of',
+      target: 'to run out of sth.',
       native: 'etw. aufbrauchen',
       example: "We've run out of milk.",
     },
     { target: 'sheep', native: 'das Schaf' },
-    {
-      target: 'friendly',
-      native: 'freundlich',
-      grammar: ['friendlier', 'friendliest'],
-    },
+    { target: 'friendly', native: 'freundlich' },
     {
       target: 'to wonder',
       native: 'sich fragen',

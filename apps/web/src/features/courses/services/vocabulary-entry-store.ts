@@ -142,7 +142,6 @@ export class VocabularyEntryStore extends Context.Service<
                   pageId: null,
                   targetText: input.targetText,
                   nativeText: input.nativeText,
-                  grammar: null,
                   example: input.example,
                   synonyms: null,
                   antonyms: null,

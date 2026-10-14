@@ -36,7 +36,6 @@ const draftsFromExtraction = (
         nativeText: entry.nativeText,
         example: entry.example ?? '',
         exampleNativeText: entry.exampleTranslation ?? '',
-        ...(entry.grammar === undefined ? {} : { grammar: entry.grammar }),
         synonyms: relatedWordsText(entry.synonyms ?? null),
         antonyms: relatedWordsText(entry.antonyms ?? null),
         confidence: entry.confidence,
