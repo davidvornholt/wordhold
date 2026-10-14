@@ -4,6 +4,7 @@ import { Config, ConfigProvider, Effect } from 'effect';
 import postgres from 'postgres';
 import { migrationsFolder } from '../migrate';
 import {
+  prepareMigratedTestDatabases,
   withMigratedTestDatabase,
   withTestDatabase,
 } from './postgres-test-database';
@@ -85,6 +86,56 @@ it('closes the allocation connection when PostgreSQL rejects database creation',
       select pg_terminate_backend(pid) from pg_stat_activity
       where application_name = ${applicationName}
     `;
+    await admin.end();
+  }
+});
+
+it('scopes template working names to the connected root database', async () => {
+  const rootUrl = await Effect.runPromise(Config.String('DATABASE_URL'));
+  const admin = postgres(rootUrl, { max: 1 });
+  try {
+    await Effect.runPromise(
+      Effect.all(
+        [0, 1].map(() =>
+          withTestDatabase((database) =>
+            Effect.promise(async () => {
+              const [{ oid }] = await admin<[{ readonly oid: string }]>`
+                select oid::text from pg_database where datname = ${database.name}
+              `;
+              const readOnlyUrl = new URL(database.url);
+              readOnlyUrl.searchParams.set(
+                'options',
+                '-c default_transaction_read_only=on',
+              );
+              // Reject the first build statement to observe its working name
+              // without replaying migrations or leaving a template behind.
+              const error = await Effect.runPromise(
+                prepareMigratedTestDatabases.pipe(
+                  Effect.provide(
+                    ConfigProvider.layer(
+                      ConfigProvider.fromUnknown({
+                        // biome-ignore lint/style/useNamingConvention: Environment variable name.
+                        DATABASE_URL: readOnlyUrl.toString(),
+                      }),
+                    ),
+                  ),
+                  Effect.flip,
+                ),
+              );
+              expect(error.message).toBe(
+                'Could not remove an abandoned test template build.',
+              );
+              expect(error.cause).toMatchObject({
+                code: '25006',
+                query: expect.stringContaining(`_${oid}_building"`),
+              });
+            }),
+          ),
+        ),
+        { concurrency: 'unbounded' },
+      ),
+    );
+  } finally {
     await admin.end();
   }
 });

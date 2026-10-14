@@ -115,12 +115,18 @@ const buildTemplate = (admin: Admin, rootUrl: string, template: string) => {
   });
 };
 
-// Test processes share one template per migration set on a server. The
-// session advisory lock serializes builders across processes and is released
-// by PostgreSQL if the holder dies.
+// Advisory locks belong to the connected database, while database names are
+// cluster-wide. Include that database OID so different roots cannot replace
+// each other's active builds. PostgreSQL releases the lock if its holder dies.
 const ensureMigratedTemplate = (admin: Admin, rootUrl: string) =>
   Effect.gen(function* () {
-    const template = yield* migratedTemplateName;
+    const [{ oid }] = yield* attempt(
+      'Could not identify the test root database.',
+      () => admin<[{ readonly oid: string }]>`
+        select oid::text from pg_database where datname = current_database()
+      `,
+    );
+    const template = `${yield* migratedTemplateName}_${oid}`;
     if (yield* templateExists(admin, template)) {
       return template;
     }
