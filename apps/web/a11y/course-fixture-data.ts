@@ -204,6 +204,7 @@ export const fixtureEntry = (
   keyPoints: null,
   synonyms: null,
   antonyms: null,
+  spellingPitfalls: null,
   example: null,
   introduced,
   cards: [
@@ -214,6 +215,7 @@ export const fixtureEntry = (
       dueAt: introduced ? new Date('2026-08-28T10:00:00Z') : null,
       introducedAt: introduced ? new Date('2026-08-20T10:00:00Z') : null,
       failures: 0,
+      hardAnswers: 0,
     },
   ],
 });

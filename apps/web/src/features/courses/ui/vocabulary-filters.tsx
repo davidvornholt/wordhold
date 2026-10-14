@@ -16,6 +16,8 @@ type VocabularyFiltersProps = {
   readonly query: string;
   readonly filter: VocabularyFilter;
   readonly nouns: CourseNouns;
+  // Whether the course's words can be listed by their spelling pitfalls.
+  readonly pitfalls: boolean;
   readonly onQueryChange: (value: string) => void;
   readonly onFilterChange: (value: VocabularyFilter) => void;
   // A book's or unit's own vocabulary view has nothing to switch, so it omits
@@ -27,6 +29,7 @@ export const VocabularyFilters = ({
   query,
   filter,
   nouns,
+  pitfalls,
   onQueryChange,
   onFilterChange,
   placeSelect,
@@ -58,6 +61,7 @@ export const VocabularyFilters = ({
         <option value="due">Jetzt fällig</option>
         <option value="first-reviews">Erste Abfrage</option>
         <option value="difficult">Schwierig</option>
+        {pitfalls ? <option value="pitfalls">Mit Stolperstellen</option> : null}
       </select>
     </label>
     {placeSelect === undefined ? null : (

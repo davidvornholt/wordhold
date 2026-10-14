@@ -1,9 +1,14 @@
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import { type CourseSubject, isListCourse } from '../../../shared/directions';
 import { Checkbox } from '../../../shared/ui/selection-controls';
+import { SpellingPitfallNote } from '../../../shared/ui/spelling-pitfall-note';
 import type { VocabularyEntry } from '../schemas/course-units';
 import { listItemNameClass } from './list-item-name-styles';
-import { scheduleSummary } from './vocabulary-schedule-status';
+import {
+  answerSuffix,
+  answerTally,
+  scheduleSummary,
+} from './vocabulary-schedule-status';
 
 type VocabularyEntryRowProps = {
   readonly entry: VocabularyEntry;
@@ -11,6 +16,8 @@ type VocabularyEntryRowProps = {
   readonly now: Date;
   readonly subject: CourseSubject;
   readonly selected: boolean;
+  // Lists a word's pitfall under it, to go through before a test.
+  readonly showPitfalls: boolean;
   readonly onToggle: () => void;
   // Opens the entry's details over the list.
   readonly onOpen: () => void;
@@ -26,6 +33,7 @@ export const VocabularyEntryRow = ({
   now,
   subject,
   selected,
+  showPitfalls,
   onToggle,
   onOpen,
 }: VocabularyEntryRowProps) => {
@@ -70,7 +78,16 @@ export const VocabularyEntryRow = ({
         )}
         <p className="text-muted-foreground text-sm">
           {scheduleSummary(entry, enabledDirections, now)}
+          {answerSuffix(answerTally(entry, enabledDirections))}
         </p>
+        {showPitfalls ? (
+          <div className="mt-2">
+            <SpellingPitfallNote
+              language={subject.targetLanguage}
+              pitfalls={entry.spellingPitfalls}
+            />
+          </div>
+        ) : null}
       </div>
     </li>
   );

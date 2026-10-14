@@ -40,6 +40,7 @@ export const termEntry = (
   keyPoints,
   synonyms: null,
   antonyms: null,
+  spellingPitfalls: null,
   example: null,
   introduced,
   cards: [
@@ -50,6 +51,7 @@ export const termEntry = (
       dueAt: introduced ? new Date('2026-09-03T08:00:00Z') : null,
       introducedAt: introduced ? new Date('2026-08-30T18:00:00Z') : null,
       failures,
+      hardAnswers: 0,
     },
   ],
 });

@@ -4,6 +4,7 @@ import type { VocabularyEntry } from '../../../features/courses/schemas/course-u
 import type { VocabularyFilter } from '../../../features/courses/schemas/vocabulary-search';
 import { parseSubjectSearch } from '../../../features/courses/schemas/vocabulary-search';
 import { PlaceVocabulary } from '../../../features/courses/ui/place-vocabulary';
+import { withoutPitfalls } from '../../../shared/pitfalls/pitfall-model';
 import type { PlaceSelectionData } from '../../../shared/session/vocabulary-selection';
 import { PlaceBackLink, PlacePageLink } from './-course-place';
 
@@ -18,6 +19,7 @@ const entry: VocabularyEntry = {
   keyPoints: null,
   synonyms: null,
   antonyms: null,
+  spellingPitfalls: null,
   example: null,
   introduced: true,
   cards: [],
@@ -57,6 +59,7 @@ it.each(
             remove: () => Promise.resolve(),
             skipLearning: () => Promise.resolve([]),
             returnToLearning: () => Promise.resolve([]),
+            preparePitfalls: withoutPitfalls,
           }}
           entryForm={null}
           importAction={null}

@@ -2,15 +2,18 @@ import { describe, expect, it } from 'bun:test';
 import { Database } from '@wordhold/db/client';
 import { Effect } from 'effect';
 import {
+  dueEntryId,
   fixtureAddedAt,
   fixtureBookId,
   fixtureCourseId,
   fixtureNow,
   fixtureUnitId,
   seedIntroducedCardFixture,
+  unintroducedEntryId,
 } from '../../../shared/testing/introduced-card-fixture';
 import { seedDueSynonymCard } from '../../../shared/testing/relation-card-fixture';
 import { CourseDatabaseError } from '../errors/courses-errors';
+import type { VocabularyEntry } from '../schemas/course-units';
 import { CourseStore } from './course-store';
 import {
   directionsAfterNativeRemoved,
@@ -20,6 +23,13 @@ import {
   missingCourseId,
   runCourseStoreTest,
 } from './course-store-content-test-fixtures';
+
+// An entry's cards and pitfalls are checked on their own, with its answers.
+const withoutCardsOrPitfalls = ({
+  cards: _cards,
+  spellingPitfalls: _pitfalls,
+  ...entry
+}: VocabularyEntry) => entry;
 
 describe('CourseStore PostgreSQL course contents', () => {
   it('lists empty and populated units in deterministic course order', async () => {
@@ -163,7 +173,7 @@ describe('CourseStore PostgreSQL entry contents', () => {
         `;
 
         const listed = yield* store.listVocabulary(fixtureCourseId);
-        expect(listed.map(({ cards: _cards, ...entry }) => entry)).toEqual([
+        expect(listed.map(withoutCardsOrPitfalls)).toEqual([
           {
             id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
             targetText: 'livre',
@@ -240,6 +250,7 @@ describe('CourseStore PostgreSQL entry contents', () => {
           keyPoints: null,
           synonyms: null,
           antonyms: null,
+          spellingPitfalls: null,
           example: null,
           introduced: true,
           bookId: fixtureBookId,
@@ -263,6 +274,56 @@ describe('CourseStore PostgreSQL entry contents', () => {
           lastAddedAt: fixtureAddedAt,
           directions: directionsAfterNativeRemoved,
         });
+      }),
+    );
+  });
+});
+
+describe('CourseStore PostgreSQL answer tallies', () => {
+  it("counts each card's answers not known and right only just, beside its word's pitfalls", async () => {
+    const pitfall = {
+      segments: [
+        { text: 'neu', tricky: false },
+        { text: 'f', tricky: true },
+      ],
+      note: 'Das f wird gesprochen.',
+    };
+    await runCourseStoreTest(
+      Effect.gen(function* () {
+        yield* seedIntroducedCardFixture;
+        const sql = yield* Database;
+        const store = yield* CourseStore;
+        yield* sql`
+          insert into reviews (card_id, rating, answer_text)
+          select id, rating, 'neuf'
+          from cards, unnest(array[1, 1, 2, 3, 4]) as rating
+          where entry_id = ${unintroducedEntryId} and direction = 'to_target'
+        `;
+        yield* sql`
+          update entries set spelling_pitfalls = ${JSON.stringify([pitfall])}::jsonb
+          where id = ${unintroducedEntryId}
+        `;
+
+        const listed = yield* store.listVocabulary(fixtureCourseId);
+        const neuf = listed.find((entry) => entry.id === unintroducedEntryId);
+        expect(neuf?.spellingPitfalls).toEqual([pitfall]);
+        expect(neuf?.cards).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              direction: 'to_target',
+              failures: 2,
+              hardAnswers: 1,
+            }),
+            expect.objectContaining({
+              direction: 'to_native',
+              failures: 0,
+              hardAnswers: 0,
+            }),
+          ]),
+        );
+        expect(
+          listed.find((entry) => entry.id === dueEntryId)?.spellingPitfalls,
+        ).toBeNull();
       }),
     );
   });

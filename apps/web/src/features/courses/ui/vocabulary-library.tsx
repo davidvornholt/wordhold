@@ -1,6 +1,12 @@
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import { type ReactNode, type RefObject, useMemo, useState } from 'react';
-import { type CourseSubject, courseNouns } from '../../../shared/directions';
+import {
+  type CourseNouns,
+  type CourseSubject,
+  courseNouns,
+  isListCourse,
+} from '../../../shared/directions';
+import type { PreparePitfalls } from '../../../shared/pitfalls/pitfall-model';
 import { Button } from '../../../shared/ui/button';
 import { cardClass } from '../../../shared/ui/surface-styles';
 import { wordLocation } from '../../../shared/vocabulary/book-name';
@@ -8,8 +14,13 @@ import type { VocabularyEntry } from '../schemas/course-units';
 import type { VocabularyFilter } from '../schemas/vocabulary-search';
 import type { CourseEntryActions } from './entry-actions';
 import type { StudyAction } from './study-action';
+import { useListPitfalls } from './use-list-pitfalls';
 import { VocabularyEntryDialog } from './vocabulary-entry-details';
-import { matchesFilter } from './vocabulary-filter-logic';
+import {
+  byDifficulty,
+  matchesFilter,
+  showsPitfalls,
+} from './vocabulary-filter-logic';
 import { type PlaceOption, VocabularyFilters } from './vocabulary-filters';
 import { VocabularySelectionBar } from './vocabulary-selection-bar';
 import { VocabularyUnitSection } from './vocabulary-unit-section';
@@ -75,6 +86,13 @@ const placeOptions = (
   ).entries(),
 ];
 
+const selectLabels: Partial<
+  Record<VocabularyFilter, (plural: string) => string>
+> = {
+  difficult: (plural) => `Schwierige ${plural} auswählen`,
+  pitfalls: (plural) => `${plural} mit Stolperstellen auswählen`,
+};
+
 const isInPlace = (entry: VocabularyEntry, placeId: string): boolean =>
   entry.bookId === placeId || entry.unitId === placeId;
 
@@ -86,6 +104,19 @@ const matchesQuery = (entry: VocabularyEntry, query: string): boolean => {
     entry.nativeText.toLocaleLowerCase('de-DE').includes(needle)
   );
 };
+
+// The search and, for a list by place, the book or unit chosen.
+type ListScope = {
+  readonly query: string;
+  readonly layout: VocabularyLibraryProps['layout'];
+  readonly placeFilter: string;
+};
+
+const isListed = (entry: VocabularyEntry, scope: ListScope): boolean =>
+  matchesQuery(entry, scope.query) &&
+  (scope.layout === 'flat' ||
+    scope.placeFilter === 'all' ||
+    isInPlace(entry, scope.placeFilter));
 
 // The entry whose details are open, looked up among all entries, so a
 // filter change behind the dialog cannot take its entry away. Its row may be
@@ -128,6 +159,76 @@ const useSelection = () => {
   return { selected, setSelected, toggleEntry, toggleAll } as const;
 };
 
+// The entries the list shows under its search, place and filter, and the
+// same in sections. Listing words by their pitfalls finds them for the
+// listed words that have none stored yet. Listing difficult words puts the
+// most often missed first in each section.
+const useListedEntries = ({
+  entries,
+  enabledDirections,
+  filter,
+  layout,
+  placeFilter,
+  query,
+  preparePitfalls,
+}: ListScope & {
+  readonly entries: ReadonlyArray<VocabularyEntry>;
+  readonly enabledDirections: ReadonlyArray<AnswerDirection>;
+  readonly filter: VocabularyFilter;
+  readonly preparePitfalls: PreparePitfalls;
+}) => {
+  const now = useMemo(() => new Date(), []);
+  const unsearched = useMemo(
+    () =>
+      filter === 'pitfalls'
+        ? entries.filter(
+            (entry) =>
+              entry.spellingPitfalls === null &&
+              isListed(entry, { query, layout, placeFilter }),
+          )
+        : [],
+    [entries, filter, layout, placeFilter, query],
+  );
+  const { withPitfalls, searching } = useListPitfalls(
+    unsearched,
+    preparePitfalls,
+  );
+  const shown = entries.map(withPitfalls);
+  const visible = shown.filter(
+    (entry) =>
+      isListed(entry, { query, layout, placeFilter }) &&
+      matchesFilter(entry, enabledDirections, filter, now),
+  );
+  const ordered = (sectionEntries: ReadonlyArray<VocabularyEntry>) =>
+    filter === 'difficult'
+      ? sectionEntries.toSorted(byDifficulty(enabledDirections))
+      : sectionEntries;
+  const sections: ReadonlyArray<VocabularySection> = (
+    layout === 'by-place'
+      ? placeSections(visible)
+      : [['Alle auswählen', visible] as const]
+  ).map(([label, sectionEntries]) => [label, ordered(sectionEntries)]);
+  return { now, shown, visible, sections, searching } as const;
+};
+
+// How many listed words still have their pitfalls looked for. Empty once
+// all are found, so the region is in place before the search starts.
+const PitfallSearchStatus = ({
+  nouns,
+  searching,
+}: {
+  readonly nouns: CourseNouns;
+  readonly searching: number;
+}) => (
+  <p className="text-muted-foreground text-sm empty:hidden" role="status">
+    {searching > 0
+      ? `Stolperstellen werden gesucht: noch ${searching} ${
+          searching === 1 ? nouns.singular : nouns.plural
+        }`
+      : ''}
+  </p>
+);
+
 export const VocabularyLibrary = ({
   enabledDirections,
   entries,
@@ -140,8 +241,13 @@ export const VocabularyLibrary = ({
   fallbackFocusRef,
 }: VocabularyLibraryProps) => {
   const nouns = courseNouns(subject);
+  const pitfalls =
+    !isListCourse(subject.kind) && showsPitfalls(enabledDirections);
   const [query, setQuery] = useState('');
-  const [filter, setFilter] = useState<VocabularyFilter>(initialFilter);
+  // A link may ask for pitfalls where no word is spelled by the learner.
+  const [filter, setFilter] = useState<VocabularyFilter>(
+    initialFilter === 'pitfalls' && !pitfalls ? 'all' : initialFilter,
+  );
   const [placeFilter, setPlaceFilter] = useState(
     initialPlaceId !== undefined &&
       entries.some((entry) => isInPlace(entry, initialPlaceId))
@@ -149,23 +255,18 @@ export const VocabularyLibrary = ({
       : 'all',
   );
   const { selected, setSelected, toggleEntry, toggleAll } = useSelection();
-  const now = useMemo(() => new Date(), []);
-  const visible = entries.filter(
-    (entry) =>
-      matchesQuery(entry, query) &&
-      (layout === 'flat' ||
-        placeFilter === 'all' ||
-        isInPlace(entry, placeFilter)) &&
-      matchesFilter(entry, enabledDirections, filter, now),
-  );
-  const sections: ReadonlyArray<VocabularySection> =
-    layout === 'by-place'
-      ? placeSections(visible)
-      : [['Alle auswählen', visible]];
-  const dialog = useEntryDialog(entries, visible);
-  const selectedEntries = entries.filter((entry) =>
-    selected.includes(entry.id),
-  );
+  const { now, shown, visible, sections, searching } = useListedEntries({
+    entries,
+    enabledDirections,
+    filter,
+    layout,
+    placeFilter,
+    query,
+    preparePitfalls: entryActions.preparePitfalls,
+  });
+  const dialog = useEntryDialog(shown, visible);
+  const selectedEntries = shown.filter((entry) => selected.includes(entry.id));
+  const selectLabel = selectLabels[filter]?.(nouns.plural);
   const list = {
     filter,
     place:
@@ -179,6 +280,7 @@ export const VocabularyLibrary = ({
         nouns={nouns}
         onFilterChange={setFilter}
         onQueryChange={setQuery}
+        pitfalls={pitfalls}
         query={query}
         placeSelect={
           layout === 'by-place'
@@ -190,7 +292,8 @@ export const VocabularyLibrary = ({
             : undefined
         }
       />
-      {filter === 'difficult' && visible.some((entry) => entry.introduced) ? (
+      {selectLabel !== undefined &&
+      visible.some((entry) => entry.introduced) ? (
         <Button
           className="w-fit"
           onClick={() =>
@@ -202,10 +305,11 @@ export const VocabularyLibrary = ({
           }
           variant="outline"
         >
-          Schwierige {nouns.plural} auswählen
+          {selectLabel}
         </Button>
       ) : null}
-      {visible.length === 0 ? (
+      <PitfallSearchStatus nouns={nouns} searching={searching} />
+      {visible.length === 0 && searching === 0 ? (
         <p className={`${cardClass} text-sm`}>
           Für diese Auswahl wurden keine {nouns.plural} gefunden.
         </p>
@@ -222,6 +326,7 @@ export const VocabularyLibrary = ({
             onToggleAll={toggleAll}
             onToggleEntry={toggleEntry}
             selected={selected}
+            showPitfalls={filter === 'pitfalls'}
             subject={subject}
           />
         ))

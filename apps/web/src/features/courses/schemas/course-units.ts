@@ -1,3 +1,4 @@
+import type { SpellingPitfall } from '@wordhold/ai/pitfalls/schema';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import type { CardState } from '@wordhold/db/schema/practice';
 import { isRelationDirection } from '../../../shared/directions';
@@ -62,7 +63,10 @@ export type VocabularyCard = {
   readonly state: CardState;
   readonly dueAt: Date | null;
   readonly introducedAt: Date | null;
+  // Answers rated Again: not known.
   readonly failures: number;
+  // Answers rated Hard: right, but only just.
+  readonly hardAnswers: number;
 };
 
 export type VocabularyEntry = {
@@ -81,6 +85,9 @@ export type VocabularyEntry = {
   // term or text.
   readonly synonyms: ReadonlyArray<string> | null;
   readonly antonyms: ReadonlyArray<string> | null;
+  // For a word: where it is most often misspelled. Null until found, and
+  // always null for a term or text.
+  readonly spellingPitfalls: ReadonlyArray<SpellingPitfall> | null;
   readonly example: VocabularyExample | null;
   readonly introduced: boolean;
   readonly cards: ReadonlyArray<VocabularyCard>;

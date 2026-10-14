@@ -13,10 +13,12 @@ import {
 } from '../../../shared/directions';
 import { Button } from '../../../shared/ui/button';
 import { Dialog } from '../../../shared/ui/dialog';
+import { SpellingPitfallNote } from '../../../shared/ui/spelling-pitfall-note';
 import type { VocabularyEntry } from '../schemas/course-units';
 import type { CourseEntryActions } from './entry-actions';
 import { EntryDeletion } from './entry-deletion';
 import { EntryLearningAction } from './entry-learning-action';
+import { showsPitfalls } from './vocabulary-filter-logic';
 import { ScheduleItems } from './vocabulary-schedule';
 import type { VocabularyCard } from './vocabulary-schedule-status';
 
@@ -38,9 +40,9 @@ const nativeLabels = {
   texts: 'Text',
 } as const satisfies Record<CourseSubject['kind'], string>;
 
-// What an entry's row leaves out: each direction's schedule and the example
-// sentence or key points, which can be changed here. A definition or text
-// keeps its line breaks.
+// What an entry's row leaves out: each direction's schedule, where a word is
+// often misspelled, and the example sentence or key points, which can be
+// changed here. A definition or text keeps its line breaks.
 const VocabularyEntryDetails = ({
   entry,
   enabledDirections,
@@ -71,6 +73,12 @@ const VocabularyEntryDetails = ({
         subject={subject}
       />
     </dl>
+    {!isListCourse(subject.kind) && showsPitfalls(enabledDirections) ? (
+      <SpellingPitfallNote
+        language={subject.targetLanguage}
+        pitfalls={entry.spellingPitfalls}
+      />
+    ) : null}
     {detail}
   </div>
 );

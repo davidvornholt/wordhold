@@ -51,6 +51,7 @@ export const fixtureStates = [
   'course-settings',
   'vocabulary',
   'vocabulary-difficult',
+  'vocabulary-pitfalls',
   'vocabulary-related',
   'study-start',
   'study-start-unlearned',

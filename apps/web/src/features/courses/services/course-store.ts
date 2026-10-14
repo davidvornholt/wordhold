@@ -204,17 +204,23 @@ export class CourseStore extends Context.Service<
             e.unit_id as "unitId", u.name as "unitName",
             e.target_text as "targetText", e.native_text as "nativeText",
             e.key_points as "keyPoints", e.synonyms, e.antonyms,
+            e.spelling_pitfalls as "spellingPitfalls",
             example.target_text as "exampleTargetText",
             example.native_text as "exampleNativeText",
             example.source as "exampleSource",
             c.id as "cardId", c.direction, c.state,
             c.due_at as "dueAt", c.introduced_at as "introducedAt",
-            (select count(*)::int from reviews r
-              where r.card_id = c.id and r.rating = 1) as failures
+            answers.failures, answers."hardAnswers"
           from entries e
           join books b on b.id = e.book_id
           left join units u on u.id = e.unit_id
           join cards c on c.entry_id = e.id
+          cross join lateral (
+            select count(*) filter (where r.rating = 1)::int as failures,
+              count(*) filter (where r.rating = 2)::int as "hardAnswers"
+            from reviews r
+            where r.card_id = c.id
+          ) answers
           left join lateral (
             select target_text, native_text, source
             from entry_examples

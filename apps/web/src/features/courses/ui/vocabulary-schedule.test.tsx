@@ -3,6 +3,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import type { VocabularyEntry } from '../schemas/course-units';
 import { ScheduleItems } from './vocabulary-schedule';
 import {
+  answerSuffix,
+  answerTally,
   cardStatus,
   hasOpenLearning,
   learningChangeFor,
@@ -21,6 +23,7 @@ const entry: VocabularyEntry = {
   keyPoints: null,
   synonyms: null,
   antonyms: null,
+  spellingPitfalls: null,
   example: null,
   introduced: true,
   cards: [
@@ -31,6 +34,7 @@ const entry: VocabularyEntry = {
       dueAt: new Date('2026-08-31T10:00:00Z'),
       introducedAt: new Date('2026-08-20T10:00:00Z'),
       failures: 0,
+      hardAnswers: 2,
     },
     {
       cardId: '00000000-0000-0000-0000-000000000004',
@@ -39,6 +43,7 @@ const entry: VocabularyEntry = {
       dueAt: new Date('2026-08-28T10:00:00Z'),
       introducedAt: new Date('2026-08-20T10:00:00Z'),
       failures: 1,
+      hardAnswers: 0,
     },
   ],
 };
@@ -68,7 +73,19 @@ describe('vocabulary schedule', () => {
 
     expect(markup).toContain('31.08.2026 um 10:00');
     expect(markup).toContain('Nicht im Lernplan');
+    expect(markup).toContain('2× fast richtig');
     expect(markup).toContain('1× nicht gewusst');
+  });
+
+  it('tallies answers not known and right only just in the planned directions', () => {
+    const tally = answerTally(entry, ['to_target']);
+
+    expect(tally).toEqual({ failures: 0, hardAnswers: 2 });
+    expect(answerSuffix(tally)).toBe(' · 2× fast richtig');
+    expect(answerSuffix(answerTally(entry, ['to_target', 'to_native']))).toBe(
+      ' · 1× nicht gewusst · 2× fast richtig',
+    );
+    expect(answerSuffix(answerTally(entry, []))).toBe('');
   });
 
   it('lets synonyms and antonyms wait for their word instead of learning them', () => {
@@ -79,6 +96,7 @@ describe('vocabulary schedule', () => {
       dueAt: null,
       introducedAt: null,
       failures: 0,
+      hardAnswers: 0,
     };
     const synonym: VocabularyCard = {
       ...target,
