@@ -19,6 +19,7 @@
     "./schema/entries": "./src/schema/entries.ts",
     "./schema/practice": "./src/schema/practice.ts",
     "./testing/postgres-test-database": "./src/testing/postgres-test-database.ts",
+    "./testing/postgres-test-preload": "./src/testing/postgres-test-preload.ts",
     "./migrate": "./src/migrate.ts"
   },
   "scripts": {

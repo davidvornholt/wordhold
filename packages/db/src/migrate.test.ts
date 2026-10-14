@@ -2,12 +2,15 @@ import { expect, it } from 'bun:test';
 import { Database } from '@wordhold/db/client';
 import {
   testDatabaseLayer,
+  withMigratedTestDatabase,
   withTestDatabase,
 } from '@wordhold/db/testing/postgres-test-database';
+import { readMigrationFiles } from 'drizzle-orm/migrator';
 import { Effect } from 'effect';
 import {
   DatabaseMigrationError,
   migrateDatabase,
+  migrationsFolder,
   placeholderBookName,
 } from './migrate';
 
@@ -48,18 +51,45 @@ const judgeTargetSynonymsMigrationHash =
   'ddfd5ae1a665a1d614abfe7dcb41bdf704e4fa0bb992ab6e1fa5941c7eabd087';
 const entryGrammarNotesMigrationHash =
   'b3789a95748a51ad097bb38ad1ef059ab0461ddcc0fcf0d37c6610686c2381a0';
-const fullMigrationTestTimeoutMs = 15_000;
+const migrationCount = readMigrationFiles({ migrationsFolder }).length;
+// These tests run the migrations themselves, which takes several seconds on
+// a cold hosted runner. Every other test clones the migrated template.
+const migrationReplayTimeoutMs = 15_000;
 
 const getMigrationError = (url: string) =>
   Effect.runPromise(migrateDatabase(url).pipe(Effect.flip));
 
+const countAppliedMigrations = Effect.gen(function* () {
+  const sql = yield* Database;
+  const rows = yield* sql<{ readonly count: number }>`
+    select count(*)::int as count from drizzle.__drizzle_migrations
+  `;
+  return rows[0]?.count ?? 0;
+});
+
 it(
-  'applies every migration and is safe to rerun',
+  'applies every migration to an empty database',
   async () => {
-    const migrationCount = await Effect.runPromise(
+    const applied = await Effect.runPromise(
       withTestDatabase((database) =>
         Effect.gen(function* () {
           yield* migrateDatabase(database.url);
+          return yield* countAppliedMigrations;
+        }).pipe(Effect.provide(testDatabaseLayer(database.url))),
+      ),
+    );
+
+    expect(applied).toBe(migrationCount);
+  },
+  migrationReplayTimeoutMs,
+);
+
+it(
+  'replays the final migrations from their pre-DDL state',
+  async () => {
+    const applied = await Effect.runPromise(
+      withMigratedTestDatabase((database) =>
+        Effect.gen(function* () {
           const sql = yield* Database;
           yield* sql`
           insert into courses (id, name, target_language)
@@ -158,24 +188,20 @@ it(
           where conname = 'pages_import_position_within_expected_count'
         `;
           expect(constraints).toEqual([{ validated: true }]);
-          const rows = yield* sql<{ readonly count: number }>`
-          select count(*)::int as count from drizzle.__drizzle_migrations
-        `;
-          return rows[0]?.count ?? 0;
+          return yield* countAppliedMigrations;
         }).pipe(Effect.provide(testDatabaseLayer(database.url))),
       ),
     );
 
-    expect(migrationCount).toBeGreaterThan(0);
+    expect(applied).toBe(migrationCount);
   },
-  fullMigrationTestTimeoutMs,
+  migrationReplayTimeoutMs,
 );
 
 it('files units without a book into one placeholder book per course', async () => {
   const units = await Effect.runPromise(
-    withTestDatabase((database) =>
+    withMigratedTestDatabase((database) =>
       Effect.gen(function* () {
-        yield* migrateDatabase(database.url);
         const sql = yield* Database;
         yield* sql`
           insert into courses (id, name, target_language)
@@ -217,9 +243,8 @@ it('files units without a book into one placeholder book per course', async () =
 
 it("files entries without a book into their unit's book", async () => {
   const entries = await Effect.runPromise(
-    withTestDatabase((database) =>
+    withMigratedTestDatabase((database) =>
       Effect.gen(function* () {
-        yield* migrateDatabase(database.url);
         const sql = yield* Database;
         yield* sql`
           insert into courses (id, name, target_language)
@@ -266,9 +291,8 @@ it("files entries without a book into their unit's book", async () => {
 
 it('asks synonyms and antonyms once their word is learned', async () => {
   const cards = await Effect.runPromise(
-    withTestDatabase((database) =>
+    withMigratedTestDatabase((database) =>
       Effect.gen(function* () {
-        yield* migrateDatabase(database.url);
         const sql = yield* Database;
         yield* sql`
           insert into courses (id, name, target_language)
@@ -320,9 +344,8 @@ it('asks synonyms and antonyms once their word is learned', async () => {
 
 it('drops the synonyms the judge accepted into the target language', async () => {
   const answers = await Effect.runPromise(
-    withTestDatabase((database) =>
+    withMigratedTestDatabase((database) =>
       Effect.gen(function* () {
-        yield* migrateDatabase(database.url);
         const sql = yield* Database;
         yield* sql`
           insert into courses (id, name, target_language)

@@ -1,7 +1,51 @@
 import { expect, it } from 'bun:test';
+import { readMigrationFiles } from 'drizzle-orm/migrator';
 import { Config, ConfigProvider, Effect } from 'effect';
 import postgres from 'postgres';
-import { withTestDatabase } from './postgres-test-database';
+import { migrationsFolder } from '../migrate';
+import {
+  withMigratedTestDatabase,
+  withTestDatabase,
+} from './postgres-test-database';
+
+it('gives each test its own database with every migration applied', async () => {
+  const databases = await Effect.runPromise(
+    Effect.all(
+      ['Englisch', 'Spanisch'].map((courseName) =>
+        withMigratedTestDatabase((database) =>
+          Effect.promise(async () => {
+            const sql = postgres(database.url, { max: 1 });
+            try {
+              await sql`
+                insert into courses (name, target_language)
+                values (${courseName}, 'en')
+              `;
+              const migrations = await sql<Array<{ readonly count: number }>>`
+                select count(*)::int as count from drizzle.__drizzle_migrations
+              `;
+              const courses = await sql<Array<{ readonly name: string }>>`
+                select name from courses
+              `;
+              return {
+                migrations: migrations[0]?.count,
+                courses: courses.map((course) => course.name),
+              };
+            } finally {
+              await sql.end();
+            }
+          }),
+        ),
+      ),
+      { concurrency: 'unbounded' },
+    ),
+  );
+
+  const migrations = readMigrationFiles({ migrationsFolder }).length;
+  expect(databases).toEqual([
+    { migrations, courses: ['Englisch'] },
+    { migrations, courses: ['Spanisch'] },
+  ]);
+});
 
 it('closes the allocation connection when PostgreSQL rejects database creation', async () => {
   const rootUrl = await Effect.runPromise(Config.String('DATABASE_URL'));
