@@ -220,8 +220,9 @@ const baseLetters = (text: string) =>
     .join('');
 
 // Whether every neighbour the note names borders a mark or is its first or
-// last letters, as in "nach dem t steht kein h" for a marked t. A name the
-// word does not contain, such as "dem Ton", is not about its letters.
+// last letters, as in "nach dem t steht kein h" for a marked t. A single
+// letter is always a letter of the word, but a longer name the word does not
+// contain, such as "dem Ton", is not about its letters.
 const neighboursHold = (
   word: string,
   ranges: ReadonlyArray<readonly [number, number]>,
@@ -235,7 +236,7 @@ const neighboursHold = (
     const { side = '', named = '' } = groups;
     const neighbour = baseLetters(named);
     if (!letters.includes(neighbour)) {
-      return true;
+      return neighbour.length > 1;
     }
     return ranges.some(([start, end]) =>
       positionsBetween(start, end + 1).some((boundary) =>

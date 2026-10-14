@@ -175,6 +175,7 @@ describe('readPitfalls dropping', () => {
           note: 'Nach dem l steht sc, obwohl man nur ein s hört.',
         }),
         pitfall({ letters: ['sc'], note: 'Vor dem n steht ein stummes c.' }),
+        pitfall({ letters: ['sc'], note: 'Nach dem r steht sc.' }),
       ],
     },
     {
