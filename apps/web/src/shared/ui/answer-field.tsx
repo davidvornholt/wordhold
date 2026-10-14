@@ -38,11 +38,14 @@ export const AnswerField = ({
   // Room for the palette's toggle, so text never runs beneath it, with the
   // same space before it as the field has on its left.
   const toggleRoom = characters === null ? '' : ' pr-15';
+  // The answer has to come from memory: neither the browser nor the keyboard
+  // may correct it, suggest words, or mark a misspelling before it is sent.
   const shared = {
     ...field,
     autoCapitalize: 'off',
     autoComplete: 'off',
     autoCorrect: 'off',
+    spellCheck: false,
     className: `${answerFieldClass} ${borderClass}${toggleRoom} col-start-1 row-start-1`,
   };
   const attach = (node: AnswerFieldElement | null) => {
