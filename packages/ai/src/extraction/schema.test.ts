@@ -25,13 +25,11 @@ describe('ExtractedPage', () => {
         {
           targetText: 'le souvenir',
           nativeText: 'die Erinnerung',
-          grammar: { _tag: 'noun', gender: 'masculine', plural: 'souvenirs' },
           confidence: 0.98,
         },
         {
           targetText: 'se souvenir de',
           nativeText: 'sich erinnern an',
-          grammar: { _tag: 'verb', irregularForms: ['je me souviens'] },
           example: 'Je me souviens de mes vacances.',
           exampleTranslation: 'Ich erinnere mich an meine Ferien.',
           synonyms: ['se rappeler'],
@@ -46,7 +44,6 @@ describe('ExtractedPage', () => {
       ],
     });
     expect(page.entries).toHaveLength(mixedVocabularyEntryCount);
-    expect(page.entries[0]?.grammar?._tag).toBe('noun');
     expect(page.entries[1]?.exampleTranslation).toBe(
       'Ich erinnere mich an meine Ferien.',
     );

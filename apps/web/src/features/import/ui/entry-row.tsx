@@ -1,4 +1,3 @@
-import type { GrammarInfo } from '@wordhold/ai/extraction/schema';
 import { BetweenHorizontalStartIcon, XIcon } from 'lucide-react';
 import type {
   ExampleDraft,
@@ -14,7 +13,6 @@ import { ledgerGrid } from './ledger-grid';
 import { RowFlags } from './row-flags';
 
 export type DraftEntry = ExampleDraft & {
-  readonly grammar?: GrammarInfo;
   readonly confidence?: number;
   // Comma-separated, as typed or as read from the page.
   readonly synonyms?: string;

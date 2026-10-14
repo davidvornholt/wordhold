@@ -10,17 +10,6 @@ const workload = async (name: string) => {
   return found;
 };
 
-type PrintedEntry = (typeof simplePage.entries)[number];
-
-const printedGrammar = (entry: PrintedEntry) => {
-  if (entry.gender !== undefined) {
-    return { _tag: 'noun', gender: entry.gender.value, plural: null };
-  }
-  return entry.grammar === undefined
-    ? null
-    : { _tag: 'verb', irregularForms: entry.grammar };
-};
-
 // The answer a correct extraction gives, with absent optional fields as null
 // as the canonical JSON schema shown to providers allows.
 const pageAnswer = (
@@ -29,7 +18,6 @@ const pageAnswer = (
     (entry) => ({
       targetText: entry.target,
       nativeText: entry.native,
-      grammar: printedGrammar(entry),
       example: entry.example ?? null,
       exampleTranslation: entry.example === undefined ? null : 'Übersetzung',
       synonyms: null,
@@ -71,42 +59,30 @@ describe('extraction scoring', () => {
     expect(failures).toEqual(['Entry 2 missing', 'Distractor extracted']);
   });
 
-  it('accepts printed grammar kept with the headword', async () => {
-    const answer = pageAnswer(densePage);
-    const failures = (await workload('extraction-photo')).qualityFailures({
-      ...answer,
-      entries: answer.entries.map((entry, index) =>
-        index === 0
-          ? {
-              ...entry,
-              targetText: 'to bring, brought, brought',
-              grammar: null,
-            }
-          : entry,
+  it('fails a term that keeps printed irregular forms or labels', async () => {
+    const withTerm = (
+      page: typeof simplePage,
+      position: number,
+      targetText: string,
+    ) => {
+      const answer = pageAnswer(page);
+      return {
+        ...answer,
+        entries: answer.entries.map((entry, index) =>
+          index === position ? { ...entry, targetText } : entry,
+        ),
+      };
+    };
+    expect(
+      (await workload('extraction-photo')).qualityFailures(
+        withTerm(densePage, 0, 'to bring, brought, brought'),
       ),
-    });
-    expect(failures).toEqual([]);
-  });
-
-  it('accepts a gender marker kept with the headword but not a dropped one', async () => {
-    const answer = pageAnswer(simplePage);
-    const withProgram = (targetText: string) =>
-      answer.entries.map((entry, index) =>
-        index === 3 ? { ...entry, targetText, grammar: null } : entry,
-      );
-    const extraction = await workload('extraction');
+    ).toEqual(['Entry 1 term not bare']);
     expect(
-      extraction.qualityFailures({
-        ...answer,
-        entries: withProgram('el programa m.'),
-      }),
-    ).toEqual([]);
-    expect(
-      extraction.qualityFailures({
-        ...answer,
-        entries: withProgram('el programa'),
-      }),
-    ).toEqual(['Entry 4 gender missing']);
+      (await workload('extraction')).qualityFailures(
+        withTerm(simplePage, 3, 'el programa m.'),
+      ),
+    ).toEqual(['Entry 4 term not bare']);
   });
 });
 

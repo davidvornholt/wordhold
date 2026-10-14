@@ -1,5 +1,4 @@
 import {
-  Grammar,
   maximumEntriesPerPage,
   maximumUnitNameLength,
 } from '@wordhold/ai/extraction/schema';
@@ -53,7 +52,6 @@ export const VerifiedEntry = Schema.Struct({
   unit: UnitSelection,
   targetText: EntryText,
   nativeText: EntryText,
-  grammar: Schema.optional(Grammar),
   example: Schema.optional(NewExample),
   // Only lists the page printed or the learner typed. A word without one
   // keeps it open for a suggestion later.

@@ -46,6 +46,8 @@ const spellingPitfallsMigrationHash =
   '3613112c0e158900f77c3c3f2774b39b6d81d5da778a466d60624407e8b705c2';
 const judgeTargetSynonymsMigrationHash =
   'ddfd5ae1a665a1d614abfe7dcb41bdf704e4fa0bb992ab6e1fa5941c7eabd087';
+const entryGrammarNotesMigrationHash =
+  'b3789a95748a51ad097bb38ad1ef059ab0461ddcc0fcf0d37c6610686c2381a0';
 const fullMigrationTestTimeoutMs = 15_000;
 
 const getMigrationError = (url: string) =>
@@ -79,6 +81,7 @@ it(
           yield* sql`alter table entries drop column key_points`;
           yield* sql`alter table entries drop column synonyms, drop column antonyms`;
           yield* sql`alter table entries drop column spelling_pitfalls`;
+          yield* sql`alter table entries add column grammar jsonb, add column notes text`;
           yield* sql`
           alter table courses
             drop constraint courses_directions_translations,
@@ -137,7 +140,8 @@ it(
             ${relatedWordsMigrationHash},
             ${relationCardsMigrationHash},
             ${spellingPitfallsMigrationHash},
-            ${judgeTargetSynonymsMigrationHash}
+            ${judgeTargetSynonymsMigrationHash},
+            ${entryGrammarNotesMigrationHash}
           )
         `;
           yield* migrateDatabase(database.url);
@@ -338,9 +342,13 @@ it('drops the synonyms the judge accepted into the target language', async () =>
             ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'to_target', 'teen', 'teen', 'manual'),
             ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'to_native', 'der Teenager', 'der teenager', 'judge')
         `;
+        yield* sql`alter table entries add column grammar jsonb, add column notes text`;
         yield* sql`
           delete from drizzle.__drizzle_migrations
-          where hash = ${judgeTargetSynonymsMigrationHash}
+          where hash in (
+            ${judgeTargetSynonymsMigrationHash},
+            ${entryGrammarNotesMigrationHash}
+          )
         `;
         yield* migrateDatabase(database.url);
         return yield* sql<{

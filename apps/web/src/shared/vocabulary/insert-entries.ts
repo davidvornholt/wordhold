@@ -1,4 +1,3 @@
-import type { GrammarInfo } from '@wordhold/ai/extraction/schema';
 import type { Database } from '@wordhold/db/client';
 import { Effect } from 'effect';
 import { normalizeAnswer } from '../grading/normalize';
@@ -15,7 +14,6 @@ export type NewVocabularyEntry = RelatedWordListsData & {
   readonly pageId: string | null;
   readonly targetText: string;
   readonly nativeText: string;
-  readonly grammar: GrammarInfo | null;
   readonly example: NewExampleData | undefined;
 };
 
@@ -45,10 +43,6 @@ export const insertVocabularyEntries = (
           pageId: entry.pageId,
           targetText: entry.targetText,
           nativeText: entry.nativeText,
-          // The client binds only scalars; Postgres reads the JSON text as the
-          // column's jsonb.
-          grammar:
-            entry.grammar === null ? null : JSON.stringify(entry.grammar),
         })),
       )} returning id, target_text as "targetText"`;
     const examples = entries.flatMap((entry, index) => {

@@ -84,7 +84,6 @@ export const verificationEntries: ReadonlyArray<DraftEntry> = [
     nativeText: 'Reise',
     example: 'The journey takes three hours.',
     exampleNativeText: 'Die Reise dauert drei Stunden.',
-    grammar: { _tag: 'noun', plural: 'journeys' },
     confidence: 0.98,
   },
   {
@@ -92,7 +91,6 @@ export const verificationEntries: ReadonlyArray<DraftEntry> = [
     nativeText: 'Gepäck',
     example: 'Leave your luggage at reception.',
     exampleNativeText: 'Lass dein Gepäck an der Rezeption.',
-    grammar: { _tag: 'noun' },
     confidence: 0.96,
   },
   {
@@ -100,7 +98,6 @@ export const verificationEntries: ReadonlyArray<DraftEntry> = [
     nativeText: 'aufbrechen',
     example: 'We set off before sunrise.',
     exampleNativeText: 'Wir brachen vor Sonnenaufgang auf.',
-    grammar: { _tag: 'verb', irregularForms: ['set off', 'set off'] },
     confidence: 0.91,
   },
   {
@@ -108,7 +105,6 @@ export const verificationEntries: ReadonlyArray<DraftEntry> = [
     nativeText: 'Unterkunft',
     example: '',
     exampleNativeText: '',
-    grammar: { _tag: 'noun' },
     confidence: 0.64,
   },
   {
@@ -144,11 +140,6 @@ export const verificationEntries: ReadonlyArray<DraftEntry> = [
     nativeText: 'malerisch',
     example: 'We took the scenic route along the coast.',
     exampleNativeText: '',
-    grammar: {
-      _tag: 'adjective',
-      comparative: 'more scenic',
-      superlative: 'most scenic',
-    },
     confidence: 0.85,
   },
   {
@@ -156,7 +147,6 @@ export const verificationEntries: ReadonlyArray<DraftEntry> = [
     nativeText: 'Jugendherberge',
     example: 'The youth hostel has a shared kitchen.',
     exampleNativeText: '',
-    grammar: { _tag: 'noun', plural: 'youth hostels' },
     confidence: 0.94,
   },
   {
@@ -164,7 +154,6 @@ export const verificationEntries: ReadonlyArray<DraftEntry> = [
     nativeText: 'im Ausland',
     example: 'She is studying abroad this year.',
     exampleNativeText: '',
-    grammar: { _tag: 'other', note: 'adverb' },
     confidence: 0.9,
   },
   {
@@ -172,7 +161,6 @@ export const verificationEntries: ReadonlyArray<DraftEntry> = [
     nativeText: 'Andenken',
     example: 'I bought a small souvenir at the museum.',
     exampleNativeText: '',
-    grammar: { _tag: 'noun', plural: 'souvenirs' },
     confidence: 0.92,
   },
 ];

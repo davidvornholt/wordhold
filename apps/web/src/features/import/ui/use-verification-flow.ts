@@ -32,7 +32,6 @@ const toPayloadEntry = (
   unit: draft.unit,
   targetText: draft.targetText,
   nativeText: draft.nativeText,
-  ...(draft.grammar === undefined ? {} : { grammar: draft.grammar }),
   ...(draft.example.trim() === ''
     ? {}
     : {

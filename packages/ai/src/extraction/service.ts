@@ -16,7 +16,10 @@ export type PageImage = {
 export const extractionPrompt = (targetLanguage: string): string =>
   [
     `Extract this German school textbook vocabulary page for ${targetLanguage} in reading order.`,
-    'Copy every target entry, German translation, printed grammar and example exactly, including accents.',
+    'Copy every target entry, German translation and example exactly, including accents.',
+    'targetText is the bare term: omit pronunciation, labels like adj., m./f., pl., fam., irregular forms and conjugation hints like (o → ue) or (como tener).',
+    'Keep printed alternatives (le fils / la fille) and constructions like + inf., qc or algo, but give a noun without its plural (el test, los tests → el test).',
+    'nativeText is the translation alone, without conjugation notes or page references.',
     'Translate printed examples faithfully into German as exampleTranslation; invent none.',
     'Copy printed synonyms and opposites into synonyms and antonyms; invent none.',
     'Give entry and overall confidence from 0 to 1; lower it for unclear or cropped print.',

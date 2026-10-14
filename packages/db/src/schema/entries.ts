@@ -17,9 +17,7 @@ import { answerDirectionEnum } from './directions';
 import { pages } from './pages';
 import { units } from './units';
 
-// A structured vocabulary entry, not a flashcard. `grammar` stays a flexible
-// per-language shape (validated by Effect Schema unions in the app) holding
-// only what the textbook page actually shows.
+// A structured vocabulary entry, not a flashcard.
 export const entries = pgTable(
   'entries',
   {
@@ -41,7 +39,6 @@ export const entries = pgTable(
     }),
     targetText: text('target_text').notNull(),
     nativeText: text('native_text').notNull(),
-    grammar: jsonb('grammar'),
     // For a term: what a typed definition must state to count, derived from
     // `native_text` and editable by the learner. Null until derived, and
     // always null in a language course.
@@ -57,7 +54,6 @@ export const entries = pgTable(
     // without one, and null again when the word is respelled. Always null
     // outside a language course.
     spellingPitfalls: jsonb('spelling_pitfalls'),
-    notes: text('notes'),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),

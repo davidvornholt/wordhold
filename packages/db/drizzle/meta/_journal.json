@@ -225,6 +225,13 @@
       "when": 1791987006559,
       "tag": "0031_drop_judge_target_synonyms",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1791992793483,
+      "tag": "0032_drop_entry_grammar_notes",
+      "breakpoints": true
     }
   ]
 }
