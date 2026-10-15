@@ -16,7 +16,7 @@ const request: PitfallRequest = {
 
 const adolescentPitfall = {
   word: 'adolescent',
-  letters: ['sc'],
+  letters: ['c'],
   misspelling: 'adolesent',
   note: 'Das c hört man nicht, wie in adolescence.',
 };
@@ -52,7 +52,9 @@ describe('pitfallPrompt', () => {
   });
 
   it('leaves most words without pitfalls', () => {
-    expect(pitfallPrompt(request)).toContain('most items have none');
+    expect(pitfallPrompt(request)).toContain(
+      'Most items need none; when in doubt, give none.',
+    );
   });
 });
 
@@ -89,7 +91,7 @@ describe('PitfallSuggestions', () => {
 });
 
 describe('SpellingPitfalls', () => {
-  it('returns the marked pitfalls of each word with medium reasoning', async () => {
+  it('returns the marked pitfalls of each word with high reasoning', async () => {
     const { calls, result } = find({
       words: [{ pitfalls: [adolescentPitfall] }, { pitfalls: [] }],
     });
@@ -112,7 +114,7 @@ describe('SpellingPitfalls', () => {
     expect(calls).toHaveLength(1);
     expect(calls[0]?.body).toHaveProperty(
       'additionalModelRequestFields.output_config.effort',
-      'medium',
+      'high',
     );
   });
 

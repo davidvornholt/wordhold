@@ -83,7 +83,7 @@ const LearnCardBody = ({
   ) : (
     <>
       <SpellingPitfallNote
-        hidden={!answerShown}
+        covered={!answerShown}
         language={subject.targetLanguage}
         pitfalls={shownPitfalls(item)}
       />

@@ -8,7 +8,8 @@ import {
 import { Effect, type Schema } from 'effect';
 import {
   productionModelId,
-  sonnetMediumProviderOptions,
+  type ReasoningEffort,
+  sonnetProviderOptions,
 } from './providers/bedrock';
 import { decodeModelOutput, providerJsonSchema } from './structured-output';
 import { UnusableAnswerError } from './unusable-answer-error';
@@ -33,7 +34,8 @@ const unusableDetail = (cause: unknown): string => {
 // schema. Bedrock receives the schema only as an instruction, so the answer
 // text occasionally misses it; an unusable answer is requested once more, and
 // every request is metered. `validate` names why a decoded answer cannot be
-// used, such as a skipped item, and returns undefined to accept it.
+// used, such as a skipped item, and returns undefined to accept it. The model
+// reasons at medium effort unless the operation asks for more.
 export const generateStructured = <A, E>(input: {
   readonly model: LanguageModel;
   readonly operation: AiOperation;
@@ -41,6 +43,7 @@ export const generateStructured = <A, E>(input: {
   readonly prompt: string | Array<ModelMessage>;
   readonly failure: (cause: unknown) => E;
   readonly validate?: (answer: A) => string | undefined;
+  readonly effort?: ReasoningEffort;
 }): Effect.Effect<A, E, AiUsage> => {
   const decode = decodeModelOutput(input.schema);
   const unusable = (message: string, cause: unknown) =>
@@ -62,7 +65,7 @@ export const generateStructured = <A, E>(input: {
                 schema: providerJsonSchema(input.schema),
               }),
               prompt: input.prompt,
-              providerOptions: sonnetMediumProviderOptions,
+              providerOptions: sonnetProviderOptions(input.effort ?? 'medium'),
             });
             report(languageModelUsage(result.totalUsage));
             return result.output;

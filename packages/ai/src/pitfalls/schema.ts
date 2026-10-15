@@ -42,8 +42,8 @@ export type SpellingSegment = {
   readonly tricky: boolean;
 };
 
-// One word of a vocabulary item split into plain and tricky letters, with a
-// German note on why it is written that way. The misspelling itself is never
+// A vocabulary item split into plain and tricky letters, with a German note
+// on why the marked word is written that way. The misspelling itself is never
 // shown, so the learner sees only the correct form.
 export type SpellingPitfall = {
   readonly segments: ReadonlyArray<SpellingSegment>;

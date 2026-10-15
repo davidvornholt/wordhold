@@ -4,11 +4,14 @@ import { Context, Effect, Layer, Redacted } from 'effect';
 import { awsAccessKeyId, awsRegion, awsSecretAccessKey } from '../config';
 
 export const productionModelId = 'global.anthropic.claude-sonnet-5-5';
-export const sonnetMediumProviderOptions = {
-  bedrock: {
-    reasoningConfig: { type: 'adaptive', maxReasoningEffort: 'medium' },
-  },
-} as const;
+// How much the production model may reason before it answers.
+export type ReasoningEffort = 'medium' | 'high';
+export const sonnetProviderOptions = (effort: ReasoningEffort) =>
+  ({
+    bedrock: {
+      reasoningConfig: { type: 'adaptive', maxReasoningEffort: effort },
+    },
+  }) as const;
 
 export class BedrockProvider extends Context.Service<
   BedrockProvider,
