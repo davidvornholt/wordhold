@@ -70,6 +70,7 @@ export const fixtureStates = [
   'french-practice',
   'sentence-practice',
   'synonym-practice',
+  'practice-other-wording',
   'terms-learn',
   'terms-practice',
   'terms-feedback',

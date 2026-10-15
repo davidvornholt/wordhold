@@ -11,7 +11,6 @@ import {
   persistedReview,
   runSubmitPayload,
   testCard,
-  testGrader,
   testJudge,
   testSubmission,
   unavailableJudge,
@@ -40,6 +39,7 @@ const reviewStore = (
   commits: Array<PersistReviewInput>,
 ): PracticeReviewStore['Service'] => ({
   findSubmission: () => Effect.succeed(submission),
+  listCourseEntries: () => Effect.die('course entries must not be listed'),
   saveKeyPoints: () => Effect.die('key points must not be saved'),
   listAcceptedAnswers: () =>
     Effect.succeed([{ text: verse, source: 'manual' }]),
@@ -69,7 +69,6 @@ const submit = (
     reviewStore(submission, commits),
     testJudge(() => unavailableJudge('the judge must not run')),
     payload(answer, dictated),
-    testGrader(),
   );
   return { result, commits };
 };

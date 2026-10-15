@@ -2,9 +2,9 @@ import { type RefObject, useEffect } from 'react';
 import type { PreparedExampleSentence } from '../../../shared/examples/example-model';
 import type { RailOutcome } from '../../../shared/session/rail-outcome';
 import type { AnswerFieldElement } from '../../../shared/ui/answer-field';
-import type { SubmitResult } from '../schemas/practice-models';
+import type { FeedbackResult } from '../schemas/practice-models';
 
-const outcomeOf = (result: SubmitResult): RailOutcome => {
+const outcomeOf = (result: FeedbackResult): RailOutcome => {
   if (!result.graded) {
     return 'ungraded';
   }
@@ -13,7 +13,7 @@ const outcomeOf = (result: SubmitResult): RailOutcome => {
 
 type CardFlowInput = {
   readonly busy: boolean;
-  readonly result: SubmitResult | null;
+  readonly result: FeedbackResult | null;
   readonly example: PreparedExampleSentence | null;
   readonly loadExample: () => Promise<PreparedExampleSentence | null>;
   readonly onJudged: (outcome: RailOutcome) => void;

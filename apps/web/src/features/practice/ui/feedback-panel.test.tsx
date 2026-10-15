@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'bun:test';
 import type { SpellingPitfall } from '@wordhold/ai/pitfalls/schema';
 import { renderToStaticMarkup } from 'react-dom/server';
-import type { SubmitResult } from '../schemas/practice-models';
+import type { FeedbackResult } from '../schemas/practice-models';
 import { FeedbackPanel } from './feedback-panel';
+import {
+  type OtherWordingAttempt,
+  OtherWordingNotice,
+} from './other-wording-notice';
 
-const result: SubmitResult = {
+const result: FeedbackResult = {
   graded: true,
   correct: true,
   stored: true,
@@ -26,7 +30,7 @@ const feedbackId = 'feedback';
 
 const render = (
   submittedAnswer: string,
-  overrides: Partial<SubmitResult> = {},
+  overrides: Partial<FeedbackResult> = {},
   {
     skipped = false,
     spellingPitfalls = null,
@@ -46,7 +50,7 @@ const render = (
       playSentence={null}
       playWord={null}
       repeated={false}
-      result={{ ...result, ...overrides } as SubmitResult}
+      result={{ ...result, ...overrides } as FeedbackResult}
       skipped={skipped}
       spellingPitfalls={spellingPitfalls}
       submittedAnswer={submittedAnswer}
@@ -54,11 +58,11 @@ const render = (
     />,
   );
 
-const heldResult: Partial<SubmitResult> = {
+const heldResult: Partial<FeedbackResult> = {
   schedule: { ...result.schedule, advanced: false },
 };
 
-const skippedResult: Partial<SubmitResult> = {
+const skippedResult: Partial<FeedbackResult> = {
   correct: false,
   rating: 1,
   schedule: {
@@ -76,7 +80,7 @@ const pitfall: SpellingPitfall = {
   note: 'Am Ende -er, wie bei teacher.',
 };
 
-const pendingWrongResult: SubmitResult = {
+const pendingWrongResult: FeedbackResult = {
   graded: true,
   correct: false,
   stored: false,
@@ -139,5 +143,57 @@ describe('answer feedback', () => {
       'Stolperstelle',
     );
     expect(render('waiter')).not.toContain('Stolperstelle');
+  });
+});
+
+const renderNotice = (attempt: Omit<OtherWordingAttempt, 'attempt'>) =>
+  renderToStaticMarkup(
+    <OtherWordingNotice
+      answerLanguage="es"
+      attempt={{ ...attempt, attempt: 1 }}
+    />,
+  );
+
+describe('answer in other wording', () => {
+  const answer = 'concentrarse en algo';
+
+  it('asks for another word from the book without naming it', () => {
+    const markup = renderNotice({ answer, courseEntry: null });
+    expect(markup).toContain(
+      'Auch richtig, aber hier ist ein anderes Wort aus dem Buch gesucht.',
+    );
+    expect(markup).toContain(
+      'Deine Antwort: <span lang="es">concentrarse en algo</span>',
+    );
+    expect(markup).toContain('role="status"');
+    expect(markup).not.toContain('Erwartet');
+    expect(markup).not.toContain('Vertippt');
+    expect(markup).not.toContain('text-destructive');
+    expect(markup).not.toContain('text-primary');
+  });
+
+  it('names where the course teaches the answer', () => {
+    const markup = renderNotice({
+      answer,
+      courseEntry: {
+        text: 'concentrarse (en algo)',
+        place: 'U5 Y después del instituto, ¿qué? / ¡Acércate!',
+      },
+    });
+    expect(markup).toContain(
+      'Auch richtig, aber hier ist ein anderes Wort gesucht.',
+    );
+    expect(markup).toContain(
+      '‚<span lang="es">concentrarse (en algo)</span>‘ steht in U5 Y después del instituto, ¿qué? / ¡Acércate!</p>',
+    );
+  });
+
+  it('ends a unit name that does not end a sentence with a period', () => {
+    expect(
+      renderNotice({
+        answer,
+        courseEntry: { text: 'concentrarse (en algo)', place: 'U5 Mi futuro' },
+      }),
+    ).toContain('steht in U5 Mi futuro.</p>');
   });
 });

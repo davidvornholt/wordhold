@@ -1,5 +1,7 @@
 import { useRef, useState } from 'react';
 import type {
+  CourseEntryPlace,
+  FeedbackResult,
   ResolvedSubmitResult,
   SubmitResult,
 } from '../schemas/practice-models';
@@ -7,6 +9,7 @@ import type {
   SubmitPayloadData,
   WrongAnswerResolution,
 } from '../schemas/submission-schema';
+import type { OtherWordingAttempt } from './other-wording-notice';
 import { failureMessage } from './server-retry';
 import { useServerRetry } from './use-server-retry';
 
@@ -77,25 +80,75 @@ const useAnswerDraft = () => {
 // verdicts are cached.
 const useCardServer = (submit: CardSubmissionInput['submit']) => {
   const [startedAt] = useState(() => performance.now());
-  // The learner was waiting for the server then, not thinking.
-  const failedMsRef = useRef(0);
+  // The learner was waiting for the server then, not thinking: after a failed
+  // answer, or after one in other words that left the card open.
+  const waitedMsRef = useRef(0);
   const { reconnecting, retry } = useServerRetry();
   const send = async (data: SubmitPayloadData) => {
     const sentAt = performance.now();
     try {
       return await retry(() => submit({ data }));
-    } catch (cause) {
-      failedMsRef.current += performance.now() - sentAt;
-      throw cause;
+    } finally {
+      waitedMsRef.current += performance.now() - sentAt;
     }
   };
   const elapsedMs = () =>
-    Math.floor(performance.now() - startedAt - failedMsRef.current);
+    Math.floor(performance.now() - startedAt - waitedMsRef.current);
   return { reconnecting, send, elapsedMs };
 };
 
+// The last answer in other words than the book's. Each one counts as a new
+// try, so the notice shows afresh.
+const useOtherWording = () => {
+  const [attempt, setAttempt] = useState<OtherWordingAttempt | null>(null);
+  const present = (answer: string, courseEntry: CourseEntryPlace | null) =>
+    setAttempt((last) => ({
+      answer,
+      courseEntry,
+      attempt: (last?.attempt ?? 0) + 1,
+    }));
+  return { attempt, present };
+};
+
+// One exchange with the server at a time. A caller takes the lock with
+// `acquire` before it shows anything, since `busy` refuses a second exchange
+// only once React has rendered. A failed exchange is undone and leaves a
+// message for the learner, `offline` being the one for a missing connection.
+const useExchange = () => {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [lock] = useState(createSubmissionLock);
+  const run = async (
+    task: () => Promise<void>,
+    offline: string,
+    undo: () => void = () => undefined,
+  ) => {
+    setBusy(true);
+    setError(null);
+    try {
+      await task();
+    } catch (cause) {
+      undo();
+      setError(failureMessage(cause, offline));
+    } finally {
+      lock.release();
+      setBusy(false);
+    }
+  };
+  return { busy, error, setError, acquire: lock.acquire, run };
+};
+
+// A resolution has to store the answer before the card can move on. It never
+// reopens the card for another try.
+const isStoredResolution = (
+  result: SubmitResult,
+): result is ResolvedSubmitResult =>
+  !('otherWording' in result) && (!result.graded || result.stored);
+
 // All state around one card's answer round trip: the deferred first
-// submission, the optional skip, and the resolution of a rejected answer.
+// submission, the optional skip, and the resolution of a rejected answer. An
+// answer in other words than the book's leaves the card open, so the learner
+// may try again until the card is judged.
 export const useCardSubmission = ({
   cardId,
   revision,
@@ -109,36 +162,36 @@ export const useCardSubmission = ({
     null,
   );
   const [skipped, setSkipped] = useState(false);
-  const [result, setResult] = useState<SubmitResult | null>(null);
-  const [busy, setBusy] = useState(false);
+  const otherWording = useOtherWording();
+  const [result, setResult] = useState<FeedbackResult | null>(null);
   const [resolution, setResolution] = useState<StoredResolution | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [submissionLock] = useState(createSubmissionLock);
+  const exchange = useExchange();
+  const { busy } = exchange;
   const server = useCardServer(submit);
 
-  const submitAndPresent = async (
-    data: SubmitPayloadData,
-    rollback: () => void,
-  ) => {
-    setBusy(true);
-    setError(null);
-    try {
-      const submitted = await server.send(data);
-      setResult(submitted);
-      if (submitted.graded) {
-        await playFeedbackAudio();
-      }
-    } catch (cause) {
-      rollback();
-      setError(failureMessage(cause, submissionError));
-    } finally {
-      submissionLock.release();
-      setBusy(false);
-    }
-  };
+  const submitAndPresent = (data: SubmitPayloadData, undo: () => void) =>
+    exchange.run(
+      async () => {
+        const submitted = await server.send(data);
+        if ('otherWording' in submitted) {
+          // The answer moves into the notice and the field clears for the
+          // next try. Only an answer, never a skip, is found in other words.
+          otherWording.present(data.answer ?? '', submitted.courseEntry);
+          setSubmittedData(null);
+          draft.change('');
+          return;
+        }
+        setResult(submitted);
+        if (submitted.graded) {
+          await playFeedbackAudio();
+        }
+      },
+      submissionError,
+      undo,
+    );
 
   const submitAnswer = async () => {
-    if (busy || result !== null || !submissionLock.acquire()) {
+    if (busy || result !== null || !exchange.acquire()) {
       return;
     }
     const data: DeferredSubmitData = {
@@ -155,7 +208,7 @@ export const useCardSubmission = ({
   };
 
   const skipCard = async () => {
-    if (busy || result !== null || !submissionLock.acquire()) {
+    if (busy || result !== null || !exchange.acquire()) {
       return;
     }
     setSkipped(true);
@@ -180,33 +233,25 @@ export const useCardSubmission = ({
       result === null ||
       !result.graded ||
       result.stored ||
-      !submissionLock.acquire()
+      !exchange.acquire()
     ) {
       return;
     }
-    setBusy(true);
     setResolution(wrongAnswerResolution);
-    setError(null);
-    try {
+    await exchange.run(async () => {
       const submitted = await server.send({
         ...submittedData,
         wrongAnswerResolution,
         assessmentId: result.assessmentId,
       });
-      // A resolution has to store the answer before the card can move on.
-      if (submitted.graded && !submitted.stored) {
-        setError(resolutionError);
-      } else {
+      if (isStoredResolution(submitted)) {
         setResult(submitted);
         onNext(submitted);
+      } else {
+        exchange.setError(resolutionError);
       }
-    } catch (cause) {
-      setError(failureMessage(cause, resolutionError));
-    } finally {
-      submissionLock.release();
-      setBusy(false);
-      setResolution(null);
-    }
+    }, resolutionError);
+    setResolution(null);
   };
 
   return {
@@ -216,10 +261,11 @@ export const useCardSubmission = ({
     submittedAnswer: submittedData?.answer ?? null,
     submittedDictated: submittedData?.dictated ?? false,
     skipped,
+    otherWording: otherWording.attempt,
     result,
     busy,
     resolution,
-    error,
+    error: exchange.error,
     reconnecting: server.reconnecting,
     submitAnswer,
     skipCard,

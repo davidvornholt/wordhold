@@ -50,6 +50,7 @@ const submission: SubmissionRecord = {
 const rejectedTypo = {
   correct: false,
   acceptAsAlternative: false,
+  otherWording: false,
   meaning: { ok: true, note: null },
   grammar: { ok: true, note: null },
   idiomaticity: { ok: true, note: null },
@@ -103,6 +104,7 @@ const runSubmit = async (
     }),
     Layer.succeed(PracticeReviewStore, {
       findSubmission: () => Effect.succeed(submission),
+      listCourseEntries: () => Effect.die('course entries must not be listed'),
       saveKeyPoints: (_entryId, _definition, points) => Effect.succeed(points),
       listAcceptedAnswers: () =>
         Effect.succeed([

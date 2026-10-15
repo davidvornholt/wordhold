@@ -18,6 +18,8 @@ describe('PracticeService skip', () => {
     const result = await runSubmitPayload(
       {
         findSubmission: () => Effect.succeed(testSubmission),
+        listCourseEntries: () =>
+          Effect.die('course entries must not be listed'),
         saveKeyPoints: (_entryId, _definition, points) =>
           Effect.succeed(points),
         listAcceptedAnswers: () =>

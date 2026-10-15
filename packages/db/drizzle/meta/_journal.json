@@ -232,6 +232,13 @@
       "when": 1791994763052,
       "tag": "0032_drop_entry_grammar_notes",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1792004428569,
+      "tag": "0033_drop_stale_judge_verdicts",
+      "breakpoints": true
     }
   ]
 }

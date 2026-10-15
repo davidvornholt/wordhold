@@ -11,7 +11,10 @@ import {
 } from '../src/features/courses/ui/text-entry-forms';
 import type { LearnItem } from '../src/features/learning/schemas/learning-models';
 import { LearnPass } from '../src/features/learning/ui/learn-pass';
-import type { SubmitResult } from '../src/features/practice/schemas/practice-models';
+import type {
+  FeedbackResult,
+  SubmitResult,
+} from '../src/features/practice/schemas/practice-models';
 import type { SubmitPayloadData } from '../src/features/practice/schemas/submission-schema';
 import { CardPractice } from '../src/features/practice/ui/card-practice';
 import { FeedbackPanel } from '../src/features/practice/ui/feedback-panel';
@@ -86,7 +89,7 @@ const recitedResult = (
   answer: string,
   dictated: boolean,
   revision: number,
-): SubmitResult => {
+): FeedbackResult => {
   const outcome = gradeRecitation(verse, answer, { dictated });
   const correct = isCorrect(outcome);
   return {

@@ -18,6 +18,8 @@ describe('PracticeService expected answer', () => {
             ...testSubmission,
             card: { ...testCard, direction: 'to_native' },
           }),
+        listCourseEntries: () =>
+          Effect.die('course entries must not be listed'),
         saveKeyPoints: (_entryId, _definition, points) =>
           Effect.succeed(points),
         listAcceptedAnswers: () =>

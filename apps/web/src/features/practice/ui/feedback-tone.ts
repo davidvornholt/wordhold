@@ -1,10 +1,10 @@
 import type { CardTone } from '../../../shared/ui/word-card';
-import type { SubmitResult } from '../schemas/practice-models';
+import type { FeedbackResult } from '../schemas/practice-models';
 import type { SentenceOutcome } from './use-sentence-check';
 
 // The verdict's color, shared by the card edge, the answer field and the
 // reveal so one answer never shows two tones.
-export const feedbackTone = (result: SubmitResult): CardTone => {
+export const feedbackTone = (result: FeedbackResult): CardTone => {
   if (!result.graded) {
     return 'warning';
   }

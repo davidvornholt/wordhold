@@ -1,4 +1,8 @@
-import { type JudgeInput, JudgeVerdict } from '../judge/schema';
+import {
+  type JudgeInput,
+  JudgeVerdict,
+  type JudgeVerdictData,
+} from '../judge/schema';
 import { judgePrompt } from '../judge/service';
 import { readModelOutput } from './structured-output';
 import { textWorkload, type Workload } from './workload';
@@ -15,12 +19,31 @@ type Dimension = (typeof dimensions)[number];
 
 // `correct` null leaves the verdict to the model where reasonable graders
 // differ. Listed faults must fail, so a rejection for the wrong reason fails.
+// `otherWording` says whether the answer is a complete translation in other
+// words than the textbook's, which the learner may retry.
 type JudgeExpectation = {
   readonly correct: boolean | null;
   readonly faults: ReadonlyArray<Dimension>;
+  readonly otherWording: boolean;
 };
 
-const accepted: JudgeExpectation = { correct: true, faults: [] };
+const accepted: JudgeExpectation = {
+  correct: true,
+  faults: [],
+  otherWording: false,
+};
+
+const otherWordingFailures = (
+  output: JudgeVerdictData,
+  expected: JudgeExpectation,
+): ReadonlyArray<string> => {
+  if (output.otherWording === expected.otherWording) {
+    return [];
+  }
+  return [
+    expected.otherWording ? 'Other wording missed' : 'Wrong other wording',
+  ];
+};
 
 const judgeWorkload = (
   name: string,
@@ -41,6 +64,7 @@ const judgeWorkload = (
       if (expected.correct !== null && output.correct !== expected.correct) {
         failures.push('Incorrect verdict');
       }
+      failures.push(...otherWordingFailures(output, expected));
       if (expected.correct === true) {
         if (!output.acceptAsAlternative) {
           failures.push('Alternative rejected');
@@ -86,7 +110,7 @@ export const answerGradingWorkloads: ReadonlyArray<Workload> = [
       expectedAnswers: ['la abogada'],
       givenAnswer: 'la abogado',
     },
-    { correct: false, faults: [] },
+    { correct: false, faults: [], otherWording: false },
   ),
   judgeWorkload(
     'judge-synonym-to-target',
@@ -97,7 +121,7 @@ export const answerGradingWorkloads: ReadonlyArray<Workload> = [
       expectedAnswers: ['to dub'],
       givenAnswer: 'to synchronize',
     },
-    { correct: false, faults: ['intendedConstruction'] },
+    { correct: false, faults: ['intendedConstruction'], otherWording: true },
   ),
   judgeWorkload(
     'judge-regional-variant',
@@ -108,7 +132,7 @@ export const answerGradingWorkloads: ReadonlyArray<Workload> = [
       expectedAnswers: ['el piso'],
       givenAnswer: 'el apartamento',
     },
-    { correct: false, faults: ['intendedConstruction'] },
+    { correct: false, faults: ['intendedConstruction'], otherWording: true },
   ),
   judgeWorkload(
     'judge-american-english',
@@ -119,7 +143,7 @@ export const answerGradingWorkloads: ReadonlyArray<Workload> = [
       expectedAnswers: ['mobile phone'],
       givenAnswer: 'cell phone',
     },
-    { correct: false, faults: ['intendedConstruction'] },
+    { correct: false, faults: ['intendedConstruction'], otherWording: true },
   ),
   judgeWorkload(
     'judge-written-out-notation',
@@ -152,7 +176,29 @@ export const answerGradingWorkloads: ReadonlyArray<Workload> = [
       expectedAnswers: ['(to) put pressure on sb.'],
       givenAnswer: 'to put sb under pressure',
     },
-    { correct: false, faults: ['intendedConstruction'] },
+    { correct: false, faults: ['intendedConstruction'], otherWording: true },
+  ),
+  judgeWorkload(
+    'judge-other-wording',
+    {
+      direction: 'to_target',
+      targetLanguage: 'Spanish',
+      prompt: 'sich auf etw. konzentrieren',
+      expectedAnswers: ['enfocarse en algo'],
+      givenAnswer: 'concentrarse en algo',
+    },
+    { correct: false, faults: ['intendedConstruction'], otherWording: true },
+  ),
+  judgeWorkload(
+    'judge-incomplete-other-wording',
+    {
+      direction: 'to_target',
+      targetLanguage: 'Spanish',
+      prompt: 'sich auf etw. konzentrieren',
+      expectedAnswers: ['enfocarse en algo'],
+      givenAnswer: 'concentrarse',
+    },
+    { correct: false, faults: [], otherWording: false },
   ),
   judgeWorkload(
     'judge-hedged-alternatives',
@@ -163,7 +209,7 @@ export const answerGradingWorkloads: ReadonlyArray<Workload> = [
       expectedAnswers: ['insecure'],
       givenAnswer: 'unsure/insecure',
     },
-    { correct: false, faults: [] },
+    { correct: false, faults: [], otherWording: false },
   ),
   judgeWorkload(
     'judge-synonym-to-german',
@@ -185,7 +231,7 @@ export const answerGradingWorkloads: ReadonlyArray<Workload> = [
       expectedAnswers: ['current', 'up to date'],
       givenAnswer: 'actual',
     },
-    { correct: false, faults: ['meaning'] },
+    { correct: false, faults: ['meaning'], otherWording: false },
   ),
   judgeWorkload(
     'judge-false-friend-to-german',
@@ -196,7 +242,7 @@ export const answerGradingWorkloads: ReadonlyArray<Workload> = [
       expectedAnswers: ['schwanger'],
       givenAnswer: 'peinlich',
     },
-    { correct: false, faults: ['meaning'] },
+    { correct: false, faults: ['meaning'], otherWording: false },
   ),
   judgeWorkload(
     'judge-opposite-verb',
@@ -207,7 +253,7 @@ export const answerGradingWorkloads: ReadonlyArray<Workload> = [
       expectedAnswers: ['to borrow sth.'],
       givenAnswer: 'to lend',
     },
-    { correct: false, faults: ['meaning'] },
+    { correct: false, faults: ['meaning'], otherWording: false },
   ),
   judgeWorkload(
     'judge-french-gender',
@@ -218,7 +264,7 @@ export const answerGradingWorkloads: ReadonlyArray<Workload> = [
       expectedAnswers: ['la gare'],
       givenAnswer: 'le gare',
     },
-    { correct: false, faults: [] },
+    { correct: false, faults: [], otherWording: false },
   ),
   judgeWorkload(
     'judge-uncountable-plural',
@@ -229,7 +275,7 @@ export const answerGradingWorkloads: ReadonlyArray<Workload> = [
       expectedAnswers: ['homework'],
       givenAnswer: 'homeworks',
     },
-    { correct: false, faults: [] },
+    { correct: false, faults: [], otherWording: false },
   ),
   judgeWorkload(
     'judge-misspelling',
@@ -240,7 +286,7 @@ export const answerGradingWorkloads: ReadonlyArray<Workload> = [
       expectedAnswers: ['la biblioteca'],
       givenAnswer: 'la bibloteca',
     },
-    { correct: false, faults: ['spelling'] },
+    { correct: false, faults: ['spelling'], otherWording: false },
   ),
   judgeWorkload(
     'judge-missing-accent',
@@ -251,7 +297,7 @@ export const answerGradingWorkloads: ReadonlyArray<Workload> = [
       expectedAnswers: ['el lápiz'],
       givenAnswer: 'el lapiz',
     },
-    { correct: false, faults: ['spelling'] },
+    { correct: false, faults: ['spelling'], otherWording: false },
   ),
   judgeWorkload(
     'judge-unlisted-synonym',
@@ -275,7 +321,7 @@ export const answerGradingWorkloads: ReadonlyArray<Workload> = [
       expectedAnswers: ['shore'],
       givenAnswer: 'savings institution',
     },
-    { correct: false, faults: ['meaning'] },
+    { correct: false, faults: ['meaning'], otherWording: false },
   ),
   judgeWorkload(
     'judge-unlisted-antonym',
@@ -299,6 +345,6 @@ export const answerGradingWorkloads: ReadonlyArray<Workload> = [
       expectedAnswers: ['friendly'],
       givenAnswer: 'unfriendly',
     },
-    { correct: false, faults: ['meaning'] },
+    { correct: false, faults: ['meaning'], otherWording: false },
   ),
 ];

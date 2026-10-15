@@ -57,6 +57,7 @@ describe('Bedrock workload transport', () => {
     const verdict: JudgeVerdictData = {
       correct: true,
       acceptAsAlternative: true,
+      otherWording: false,
       meaning: { ok: true, note: null },
       grammar: { ok: true, note: null },
       idiomaticity: { ok: true, note: null },

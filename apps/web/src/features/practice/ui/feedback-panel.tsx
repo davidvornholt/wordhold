@@ -9,7 +9,7 @@ import {
 } from '../../../shared/grading/recitation';
 import { KeyPointList } from '../../../shared/ui/key-point-list';
 import { SpellingPitfallNote } from '../../../shared/ui/spelling-pitfall-note';
-import type { SubmitResult } from '../schemas/practice-models';
+import type { FeedbackResult } from '../schemas/practice-models';
 import { feedbackTone, toneDivider, toneText } from './feedback-tone';
 import { PracticeFeedbackExample } from './practice-feedback-example';
 import { RecitationFeedback } from './recitation-feedback';
@@ -18,7 +18,7 @@ type FeedbackPanelProps = {
   readonly busy: boolean;
   // Links the "Weiter" action to this panel as its description.
   readonly id: string;
-  readonly result: SubmitResult;
+  readonly result: FeedbackResult;
   readonly submittedAnswer: string;
   // Whether speech recognition wrote the answer.
   readonly dictated: boolean;
@@ -39,7 +39,7 @@ type FeedbackPanelProps = {
 
 // A recited text with a few mistakes still counts, but not as right.
 const feedbackHeading = (
-  result: SubmitResult,
+  result: FeedbackResult,
   recitation: Recitation | null,
   repeated: boolean,
   skipped: boolean,
@@ -58,7 +58,7 @@ const feedbackHeading = (
 
 const scheduleLead = (
   result: Extract<
-    SubmitResult,
+    FeedbackResult,
     { readonly graded: true; readonly stored: true }
   >,
   repeated: boolean,
@@ -79,7 +79,7 @@ const ScheduleNote = ({
   repeated,
 }: {
   readonly result: Extract<
-    SubmitResult,
+    FeedbackResult,
     { readonly graded: true; readonly stored: true }
   >;
   readonly repeated: boolean;
@@ -104,7 +104,7 @@ const ScheduleNote = ({
 const JudgeNotes = ({
   result,
 }: {
-  readonly result: Extract<SubmitResult, { readonly graded: true }>;
+  readonly result: Extract<FeedbackResult, { readonly graded: true }>;
 }) => (
   <>
     {result.keyPoints === null ? null : (
@@ -125,7 +125,7 @@ const JudgeNotes = ({
 // names the book's word instead. Every word lives in a book, whether a
 // textbook or a novel, so "Im Buch" fits both.
 const expectedAnswerLabel = (
-  result: SubmitResult,
+  result: FeedbackResult,
   kind: CourseKind,
 ): string => {
   if (kind === 'terms') {
