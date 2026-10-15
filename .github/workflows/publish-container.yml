@@ -45,6 +45,10 @@ jobs:
           POSTGRES_USER: app
           POSTGRES_PASSWORD: app
           POSTGRES_DB: app
+          # The same settings as the Postgres service in standards.yml: the
+          # data is disposable, and without disk syncs each DROP DATABASE in
+          # the test suites takes milliseconds instead of seconds.
+          POSTGRES_INITDB_ARGS: --no-sync --set fsync=off --set synchronous_commit=off --set full_page_writes=off
         ports:
           - 5432:5432
         options: >-

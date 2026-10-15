@@ -11,7 +11,7 @@
     "icons:render": "bun scripts/render-app-icons.ts",
     "provider:verify": "bun scripts/verify-ai-provider.ts",
     "test": "bun test",
-    "test:a11y": "playwright install chromium && playwright test",
+    "test:a11y": "playwright install chromium && a11y-playwright",
     "practice:repair": "bun --env-file=.env.local scripts/repair-practice-reviews.ts",
     "practice:repair:production": "bun .output/maintenance/repair-practice-reviews.js"
   },

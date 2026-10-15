@@ -6,7 +6,7 @@
       "name": "wordhold",
       "devDependencies": {
         "@biomejs/biome": "2.5.15",
-        "@davidvornholt/standards": "0.29.0",
+        "@davidvornholt/standards": "0.30.0",
         "turbo": "^2.11.7",
         "typescript": "7.0.2",
       },
@@ -54,6 +54,9 @@
     "packages/a11y-testing": {
       "name": "@davidvornholt/a11y-testing",
       "version": "0.0.0",
+      "bin": {
+        "a11y-playwright": "./src/a11y-playwright.ts",
+      },
       "dependencies": {
         "@axe-core/playwright": "^4.13.0",
         "@playwright/test": "1.63.0",
@@ -252,7 +255,7 @@
 
     "@davidvornholt/a11y-testing": ["@davidvornholt/a11y-testing@workspace:packages/a11y-testing"],
 
-    "@davidvornholt/standards": ["@davidvornholt/standards@0.29.0", "", { "dependencies": { "yaml": "^2.9.1" }, "bin": { "standards": "src/cli.ts" } }, "sha512-0PhOWIOrk8cL1EXplMhaPeKvLhNuDhYQORPbivAbZ4px/gYbELrdOe2AEq0EGVFt0BdAiGsTjKqIYI9dfQCAkQ=="],
+    "@davidvornholt/standards": ["@davidvornholt/standards@0.30.0", "", { "dependencies": { "yaml": "^2.9.1" }, "bin": { "standards": "src/cli.ts" } }, "sha512-zEoRtEaJ7Y70uexI6QwiVveanW68/itGvSi9IOzxSRigLa6u0FX/5WZPSwFaA1/ZPLJrmBP/0KxYpPq8WDRxdA=="],
 
     "@davidvornholt/typescript-config": ["@davidvornholt/typescript-config@workspace:packages/typescript-config"],
 
