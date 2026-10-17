@@ -42,7 +42,7 @@
     "benchmark:models": "bun src/benchmark/cli.ts"
   },
   "dependencies": {
-    "@ai-sdk/amazon-bedrock": "^5.0.104",
+    "@ai-sdk/amazon-bedrock": "^5.0.115",
     "@ai-sdk/google-vertex": "^5.0.101",
     "@ai-sdk/openai": "^4.0.91",
     "@aws-sdk/client-polly": "^3.1146.0",
