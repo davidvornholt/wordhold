@@ -14,7 +14,11 @@ import {
 import { resolve, sep } from 'node:path';
 import { Context, Effect, Layer } from 'effect';
 import { serverEnv } from '../env/server';
-import { orphanedDataFiles, type StoredDataFile } from './consistency';
+import {
+  orphanedDataFiles,
+  type StoredDataFile,
+  stagedPath,
+} from './consistency';
 import { StorageError } from './storage-error';
 
 const storageFailure = (operation: string, cause: unknown) =>
@@ -157,7 +161,7 @@ export const StorageLive = Layer.succeed(
     write: (relativePath, bytes) =>
       tryStorage('write file', async () => {
         const path = dataPath(relativePath);
-        const staged = `${path}.${randomUUID()}.partial`;
+        const staged = stagedPath(path, randomUUID());
         await mkdir(path.slice(0, path.lastIndexOf('/')), { recursive: true });
         try {
           await writeFile(staged, bytes);

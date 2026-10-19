@@ -57,8 +57,9 @@ export const useTermVerificationFlow = (
       }).catch(async (cause: unknown) => {
         // Another tab may have saved some of these terms in the meantime.
         // Loading the subject's terms again marks them in the review and
-        // keeps the learner's corrections.
-        await router.invalidate();
+        // keeps the learner's corrections. The reload finishes before the
+        // message appears and saving is possible again.
+        await router.invalidate({ sync: true });
         throw cause;
       });
       onSaved(saved);

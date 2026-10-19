@@ -4,6 +4,7 @@ import {
   orphanedDataFiles,
   orphanGracePeriodMs,
   persistFileReference,
+  stagedPath,
 } from './consistency';
 
 const nowMs = 2 * orphanGracePeriodMs;
@@ -11,6 +12,7 @@ const pagePath = 'pages/d9428888-122b-41e1-b85c-61cd3cbb3210.jpg';
 const suffixedPagePath =
   'pages/d9428888-122b-41e1-b85c-61cd3cbb3210-d9428888-122b-41e1-b85c-61cd3cbb3212.webp';
 const audioPath = 'audio/d9428888-122b-41e1-b85c-61cd3cbb3210-amy.mp3';
+const stageId = '5f0c3b7e-8d1a-4c2b-9e6f-0a1b2c3d4e5f';
 
 describe('persistFileReference', () => {
   it('removes a file when its database reference fails', async () => {
@@ -54,5 +56,25 @@ describe('orphanedDataFiles', () => {
       expect.arrayContaining([pagePath, suffixedPagePath]),
     );
     expect(orphaned).toHaveLength(2);
+  });
+
+  it('selects old staged copies that were never renamed into place', () => {
+    const stagedPagePath = stagedPath(pagePath, stageId);
+    const orphaned = orphanedDataFiles(
+      [
+        { relativePath: stagedPagePath, modifiedAtMs: 0 },
+        {
+          relativePath: stagedPath(audioPath, stageId),
+          modifiedAtMs: nowMs,
+        },
+        {
+          relativePath: stagedPath('pages/notes.txt', stageId),
+          modifiedAtMs: 0,
+        },
+      ],
+      new Set([pagePath]),
+      nowMs,
+    );
+    expect(orphaned).toEqual([stagedPagePath]);
   });
 });

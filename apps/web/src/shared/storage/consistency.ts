@@ -18,6 +18,21 @@ const generatedPagePath =
   /^pages\/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}(?:-[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})?\.(?:jpg|png|webp)$/u;
 const generatedAudioPath =
   /^audio\/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}-[a-z0-9_-]+\.mp3$/u;
+const stagedSuffix =
+  /\.[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.partial$/u;
+
+// Where a file is written before it is renamed into place. A staged copy left
+// by a stopped process is removed like any other unreferenced file.
+export const stagedPath = (path: string, stageId: string): string =>
+  `${path}.${stageId}.partial`;
+
+const isGenerated = (relativePath: string): boolean =>
+  generatedPagePath.test(relativePath) || generatedAudioPath.test(relativePath);
+
+const isGeneratedOrStaged = (relativePath: string): boolean =>
+  isGenerated(relativePath) ||
+  (stagedSuffix.test(relativePath) &&
+    isGenerated(relativePath.replace(stagedSuffix, '')));
 
 export const orphanedDataFiles = (
   files: ReadonlyArray<StoredDataFile>,
@@ -27,8 +42,7 @@ export const orphanedDataFiles = (
   files
     .filter(
       (file) =>
-        (generatedPagePath.test(file.relativePath) ||
-          generatedAudioPath.test(file.relativePath)) &&
+        isGeneratedOrStaged(file.relativePath) &&
         !referencedPaths.has(file.relativePath) &&
         nowMs - file.modifiedAtMs >= orphanGracePeriodMs,
     )
