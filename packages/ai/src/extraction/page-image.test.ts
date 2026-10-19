@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { Effect } from 'effect';
-import { fitPageImage } from './page-image';
+import { fitPageImage, turnModelImage, turnStoredPhoto } from './page-image';
 
 const onePixelPng = Uint8Array.fromBase64(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
@@ -58,5 +58,36 @@ describe('fitPageImage', () => {
     );
 
     expect(failure.reason).toBe('unreadableImage');
+  });
+});
+
+describe('turnModelImage', () => {
+  it('turns a fitted image a quarter and keeps its encoding', async () => {
+    const fitted = await Effect.runPromise(
+      fitPageImage(await source(400, 300).jpeg().bytes()),
+    );
+
+    const turned = await Effect.runPromise(turnModelImage(fitted, 270));
+
+    expect(turned.mediaType).toBe('image/jpeg');
+    expect(await dimensions(turned.data)).toEqual({
+      width: 300,
+      height: 400,
+      format: 'jpeg',
+    });
+  });
+});
+
+describe('turnStoredPhoto', () => {
+  it('turns a stored photo in its own format', async () => {
+    const photo = await source(400, 300).png().bytes();
+
+    const turned = await Effect.runPromise(turnStoredPhoto(photo, 90));
+
+    expect(await dimensions(turned)).toEqual({
+      width: 300,
+      height: 400,
+      format: 'png',
+    });
   });
 });

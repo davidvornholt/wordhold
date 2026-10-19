@@ -80,7 +80,10 @@ export const VerificationWorkbench = ({
 }: VerificationWorkbenchProps) => (
   <div className="verification-workbench">
     <div className="verification-image-pane">
-      <VerificationImage src={pageImageSource} />
+      <VerificationImage
+        alt="Fotografierte Vokabelseite"
+        src={pageImageSource}
+      />
     </div>
     <div className="verification-form-pane">
       {batchSession === null ? null : (

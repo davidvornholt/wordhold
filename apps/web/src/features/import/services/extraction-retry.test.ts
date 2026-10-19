@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { Extraction, type ExtractionResult } from '@wordhold/ai/extraction';
 import { ExtractionError } from '@wordhold/ai/extraction/error';
+import { NotesExtraction } from '@wordhold/ai/notes';
 import { untrackedAiUsage } from '@wordhold/ai/testing/usage';
 import { Effect } from 'effect';
 import { Storage } from '../../../shared/storage/server';
@@ -17,6 +18,11 @@ const extraction: ExtractionResult = {
   page: { entries: [], overallConfidence: 1 },
 };
 
+// A language page never reaches the notes reader.
+const noNotes = NotesExtraction.of({
+  extract: () => Effect.die(new Error('A language page was read as notes.')),
+});
+
 const runRetry = (
   repository: ReturnType<typeof makeImportRepository>,
   extract: () => Effect.Effect<ExtractionResult>,
@@ -26,6 +32,7 @@ const runRetry = (
       Effect.provideService(ImportRepository, repository),
       Effect.provideService(Storage, makeStorage()),
       Effect.provideService(Extraction, Extraction.of({ extract })),
+      Effect.provideService(NotesExtraction, noNotes),
       Effect.provide(untrackedAiUsage),
     ),
   );
@@ -66,6 +73,7 @@ describe('retryPendingExtraction', () => {
               },
             }),
           ),
+          Effect.provideService(NotesExtraction, noNotes),
           Effect.provide(untrackedAiUsage),
         ),
       ),
@@ -99,6 +107,7 @@ describe('retryPendingExtraction', () => {
               },
             }),
           ),
+          Effect.provideService(NotesExtraction, noNotes),
           Effect.provide(untrackedAiUsage),
         ),
       ),
@@ -122,6 +131,7 @@ describe('retryPendingExtraction', () => {
             Extraction,
             Extraction.of({ extract: () => Effect.fail(providerError) }),
           ),
+          Effect.provideService(NotesExtraction, noNotes),
           Effect.provide(untrackedAiUsage),
         ),
       ),
@@ -161,6 +171,7 @@ describe('retryPendingExtraction photo', () => {
               },
             }),
           ),
+          Effect.provideService(NotesExtraction, noNotes),
           Effect.provide(untrackedAiUsage),
         ),
       ),
@@ -196,6 +207,7 @@ describe('retryPendingExtraction guards', () => {
               },
             }),
           ),
+          Effect.provideService(NotesExtraction, noNotes),
           Effect.provide(untrackedAiUsage),
         ),
       ),
@@ -220,7 +232,11 @@ describe('retryPendingExtraction guards', () => {
         loadPendingExtraction: () =>
           Effect.succeed(
             pendingPages.has('page')
-              ? { imagePath: 'pages/page.png', language: 'fr' }
+              ? {
+                  imagePath: 'pages/page.png',
+                  kind: 'language',
+                  language: 'fr',
+                }
               : undefined,
           ),
         saveExtractionIfPending: (_pageId, result) => {

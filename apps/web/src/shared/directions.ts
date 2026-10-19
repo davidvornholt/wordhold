@@ -15,8 +15,8 @@ export type CourseSubject = {
 };
 
 // A subject of terms and a collection of texts are each one list of German
-// entries asked in one direction, without books, units, example sentences
-// or photo import. In code both are subjects.
+// entries asked in one direction, without books, units or example sentences.
+// In code both are subjects.
 export const listCourseKinds = [
   'terms',
   'texts',
@@ -25,6 +25,10 @@ export type ListCourseKind = (typeof listCourseKinds)[number];
 
 export const isListCourse = (kind: CourseKind): kind is ListCourseKind =>
   kind !== 'language';
+
+// A language page is read as vocabulary and a subject's notes as terms. A
+// collection's texts are typed.
+export const hasPhotoImport = (kind: CourseKind): boolean => kind !== 'texts';
 
 const nounsByKind = {
   language: {

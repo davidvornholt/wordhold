@@ -6,6 +6,7 @@ import { ImportRepository } from './repository';
 import { storageRepositoryLive } from './storage-repository-live';
 import { unitRepositoryLive } from './unit-repository-live';
 import { verifyPageLive } from './verify-page-live';
+import { verifyTermPageLive } from './verify-term-page-live';
 
 export const ImportRepositoryLive = Layer.effect(
   ImportRepository,
@@ -17,6 +18,8 @@ export const ImportRepositoryLive = Layer.effect(
       ...storageRepositoryLive(sql),
       ...unitRepositoryLive(sql),
       verifyPage: (payload, courseId) => verifyPageLive(sql, payload, courseId),
+      verifyTermPage: (payload, courseId) =>
+        verifyTermPageLive(sql, payload, courseId),
     });
   }),
 );

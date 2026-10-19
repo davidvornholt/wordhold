@@ -3,13 +3,14 @@ import { getCourse } from '../../../features/import/server-fns';
 import { hasStoredUpload } from '../../../features/import/services/upload-queue';
 import { CaptureScreen as CaptureScreenView } from '../../../features/import/ui/capture-screen';
 import { useUploadQueue } from '../../../features/import/ui/use-upload-queue';
-import { isListCourse } from '../../../shared/directions';
+import { hasPhotoImport } from '../../../shared/directions';
 import { ActionLink } from '../../../shared/ui/action-link';
 import { BackLink } from '../../../shared/ui/back-link';
 
 const CaptureScreen = () => {
   const course = Route.useLoaderData();
   const router = useRouter();
+  const notes = course.kind === 'terms';
   const queue = useUploadQueue(course.id);
   const storedPageIds = queue.pages.flatMap((page) =>
     'pageId' in page && page.pageId !== null ? [page.pageId] : [],
@@ -44,9 +45,10 @@ const CaptureScreen = () => {
                 filter: (match) => match.routeId === '/',
               });
             }}
-            to="/"
+            params={{ courseId: course.id }}
+            to={notes ? '/courses/$courseId' : '/'}
           >
-            Übersicht
+            {notes ? course.name : 'Übersicht'}
           </BackLink>
         ) : (
           <p className="text-muted-foreground text-sm" role="status">
@@ -58,6 +60,7 @@ const CaptureScreen = () => {
       batchStarted={queue.processingStarted}
       courseName={course.name}
       error={queue.error}
+      notes={notes}
       onFilesSelected={queue.addFiles}
       onRemove={queue.removePage}
       onRetry={queue.retryPage}
@@ -79,10 +82,10 @@ const CaptureScreen = () => {
 };
 
 export const Route = createFileRoute('/courses/$courseId/import')({
-  // A subject's terms and a collection's texts are typed on its own page.
+  // A collection's texts are typed on its own page.
   loader: async ({ params }) => {
     const course = await getCourse({ data: params.courseId });
-    if (isListCourse(course.kind)) {
+    if (!hasPhotoImport(course.kind)) {
       throw redirect({
         to: '/courses/$courseId',
         params: { courseId: course.id },

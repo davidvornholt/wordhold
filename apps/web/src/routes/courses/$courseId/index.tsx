@@ -26,6 +26,7 @@ import {
   type CourseSubject,
   courseNouns,
   directionLabel,
+  hasPhotoImport,
   isListCourse,
 } from '../../../shared/directions';
 import { countNoun } from '../../../shared/format/count';
@@ -271,6 +272,17 @@ const SubjectScreen = ({
         )
       }
       initialFilter={filter ?? 'all'}
+      photoAction={
+        hasPhotoImport(course.kind) ? (
+          <ActionLink
+            params={{ courseId: course.id }}
+            to="/courses/$courseId/import"
+            variant={entries.length === 0 ? 'outline' : 'quiet'}
+          >
+            Notizen fotografieren
+          </ActionLink>
+        ) : null
+      }
       primaryAction={subjectPrimaryAction(course, entries, stats?.ready ?? 0)}
       renderStudyAction={(action) => (
         <SelectionActions

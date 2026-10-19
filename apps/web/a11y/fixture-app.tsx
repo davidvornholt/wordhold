@@ -31,6 +31,7 @@ import {
   SubjectCourseFixture,
   SubjectSettingsFixture,
 } from './subject-fixtures';
+import { TermReviewFixture } from './term-review-fixtures';
 import {
   TermsFeedbackFixture,
   TermsLearnFixture,
@@ -161,6 +162,8 @@ const listCourseFixture = (state: ListCourseState) => {
       return <SubjectCourseFixture empty={true} />;
     case 'terms-settings':
       return <SubjectSettingsFixture />;
+    case 'terms-review':
+      return <TermReviewFixture />;
     case 'texts-learn':
       return <TextsLearnFixture />;
     case 'texts-practice':

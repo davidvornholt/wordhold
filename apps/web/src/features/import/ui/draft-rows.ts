@@ -44,7 +44,7 @@ export type RowRemoval = {
 const lowConfidence = 0.8;
 
 // The reading was unsure of this row; the learner compares it with the photo.
-export const isUncertain = (entry: DraftEntry): boolean =>
+export const isUncertain = (entry: { readonly confidence?: number }): boolean =>
   entry.confidence !== undefined && entry.confidence < lowConfidence;
 
 const emptyEntry: DraftEntry = {

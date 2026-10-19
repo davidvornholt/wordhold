@@ -80,6 +80,7 @@ export const ImportFixture = ({
           ? 'Das Foto konnte nicht gelesen werden. Wähle eine andere Datei.'
           : null
       }
+      notes={false}
       onFilesSelected={(files) => {
         setPages((current) => [
           ...current,

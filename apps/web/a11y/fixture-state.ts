@@ -77,6 +77,7 @@ export const fixtureStates = [
   'terms-course',
   'terms-course-empty',
   'terms-settings',
+  'terms-review',
   'texts-learn',
   'texts-practice',
   'texts-feedback',

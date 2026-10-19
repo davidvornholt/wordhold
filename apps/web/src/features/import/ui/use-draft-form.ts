@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import type {
   ExampleGenerationSource,
   GeneratedExample,
@@ -34,63 +34,12 @@ import {
   unitsInBook,
 } from './initial-book-selection';
 import { initialUnitSelection } from './initial-unit-selection';
-import { ledgerFieldAttribute } from './ledger-keyboard';
+import { focusAfterRemoval, useLedgerFocus } from './ledger-focus';
 
 type DraftState = {
   readonly rows: ReadonlyArray<IdentifiedDraftRow>;
   // The last removed row, until "Rückgängig" or a change that moves rows.
   readonly removal: RowRemoval | null;
-};
-
-// Where focus goes once the ledger has rendered a change, so keyboard users
-// never lose their place when the control they used disappears.
-type FocusRequest =
-  | {
-      readonly kind: 'term' | 'remove' | 'split' | 'unit';
-      readonly rowId: string;
-    }
-  | { readonly kind: 'add' };
-
-const focusSelector = (request: FocusRequest): string => {
-  switch (request.kind) {
-    case 'term':
-      return `[data-row-id="${request.rowId}"] [${ledgerFieldAttribute}="target"]`;
-    case 'remove':
-      return `[data-row-id="${request.rowId}"] [data-row-remove]`;
-    case 'split':
-      return `[data-row-id="${request.rowId}"] [data-row-split]`;
-    case 'unit':
-      return `[data-section-start="${request.rowId}"] select`;
-    default:
-      return '[data-ledger-add]';
-  }
-};
-
-// Focus requested during an event lands once React has rendered the rows
-// the request names.
-const useLedgerFocus = () => {
-  const formRef = useRef<HTMLFormElement>(null);
-  const [request, setRequest] = useState<FocusRequest | null>(null);
-  useEffect(() => {
-    if (request === null) {
-      return;
-    }
-    setRequest(null);
-    formRef.current
-      ?.querySelector<HTMLElement>(focusSelector(request))
-      ?.focus();
-  }, [request]);
-  return { formRef, requestFocus: setRequest };
-};
-
-const afterRemoval = (
-  rows: ReadonlyArray<IdentifiedDraftRow>,
-  index: number,
-): FocusRequest => {
-  const neighbour = rows[index] ?? rows[index - 1];
-  return neighbour === undefined
-    ? { kind: 'add' }
-    : { kind: 'remove', rowId: neighbour.rowId };
 };
 
 // A page that changes unit midway usually moves on to the book's next unit.
@@ -219,7 +168,7 @@ export const useDraftForm = ({
     removeRow: (index: number) => {
       const result = withoutRow(rows, index);
       setDraft(result);
-      requestFocus(afterRemoval(result.rows, index));
+      requestFocus(focusAfterRemoval(result.rows, index));
     },
     undoRemoval: () => {
       if (removal === null) {

@@ -8,8 +8,10 @@ import { BookPicker } from './book-picker';
 import { type RowRemoval, rowWasAdded, type UnitSection } from './draft-rows';
 import { entryRange } from './entry-range';
 import { EntryRow } from './entry-row';
+import { LedgerColumnHeads } from './ledger-column-heads';
 import { ledgerGrid } from './ledger-grid';
 import { LedgerSectionHead } from './ledger-section-head';
+import { entryRemovalNotice } from './removal-notice';
 import { RemovedRow } from './removed-row';
 import { UnitPicker } from './unit-picker';
 import type { DraftForm } from './use-draft-form';
@@ -80,9 +82,10 @@ export const EntryLedger = ({
     removal === null ? null : (
       <RemovedRow
         disabled={busy}
+        grid={ledgerGrid}
         key="removed"
+        notice={entryRemovalNotice(removal)}
         onUndo={form.undoRemoval}
-        removal={removal}
       />
     );
   const removedRowSection =
@@ -165,13 +168,7 @@ export const EntryLedger = ({
           </div>
         )}
       </div>
-      <div
-        aria-hidden={true}
-        className={`${ledgerGrid} hidden border-primary/40 border-b-4 border-double pb-1.5 sm:grid`}
-      >
-        <span className="eyebrow col-start-2 pl-1">{targetLabel}</span>
-        <span className="eyebrow col-start-3 pl-5">Deutsch</span>
-      </div>
+      <LedgerColumnHeads grid={ledgerGrid} left={targetLabel} right="Deutsch" />
       {rows.length === 0 && removedRow !== null ? <ul>{removedRow}</ul> : null}
       {rows.length === 0 ? (
         <p className="border-border border-b py-4 pl-1 text-muted-foreground text-sm sm:pl-10">

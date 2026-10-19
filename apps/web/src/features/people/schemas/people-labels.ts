@@ -37,6 +37,7 @@ export const codeStatus = (code: NonNullable<Person['code']>): string =>
 
 const operationLabels: Readonly<Record<AiOperation, string>> = {
   'page-extraction': 'Seiten auslesen',
+  'notes-extraction': 'Notizen auslesen',
   'answer-grading': 'Antworten bewerten',
   'definition-grading': 'Definitionen bewerten',
   'definition-key-points': 'Kernpunkte ableiten',

@@ -20,6 +20,7 @@ import {
   decodeExampleRequest,
   decodeTranslationRequest,
 } from './schemas/example-request';
+import { notesReadingFrom } from './schemas/notes-reading';
 import { decodePageRemovalRequest } from './schemas/page-removal';
 import {
   retryPageAudio,
@@ -134,6 +135,8 @@ export const removeImportPage = createServerFn({ method: 'POST' })
     ),
   );
 
+// A language page is filed into the course's books and units; a subject's
+// page adds terms to its one list, which the learner never sees as a book.
 export const getPage = createServerFn()
   .validator(requireString)
   .handler(({ data }) =>
@@ -147,7 +150,19 @@ export const getPage = createServerFn()
               message: 'Seite nicht gefunden.',
             });
           }
+          if (row.course.kind === 'terms') {
+            return {
+              kind: 'terms' as const,
+              page: {
+                ...row.page,
+                extraction: notesReadingFrom(row.page.extraction),
+              },
+              course: row.course,
+              existingTerms: yield* repository.listTerms(row.page.courseId),
+            };
+          }
           return {
+            kind: 'language' as const,
             page: {
               ...row.page,
               extraction: row.page.extraction as ExtractionResult | null,
@@ -172,6 +187,18 @@ export const retryExtraction = createServerFn({ method: 'POST' })
             ...updated,
             extraction: updated.extraction as ExtractionResult | null,
           })),
+        ),
+      ),
+    ),
+  );
+
+export const retryNotesExtraction = createServerFn({ method: 'POST' })
+  .validator(requireString)
+  .handler(({ data }) =>
+    importRuntime.runPromise(
+      asMember({ pages: [data] }, () =>
+        retryPendingExtraction(data).pipe(
+          Effect.map((updated) => notesReadingFrom(updated.extraction)),
         ),
       ),
     ),

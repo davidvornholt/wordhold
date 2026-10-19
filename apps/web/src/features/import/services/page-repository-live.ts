@@ -1,4 +1,3 @@
-import type { ExtractionResult } from '@wordhold/ai/extraction';
 import { ttsAudioProfile } from '@wordhold/ai/tts/speech-text';
 import type { Database } from '@wordhold/db/client';
 import type { CourseKind, LanguageCode } from '@wordhold/db/schema/courses';
@@ -21,6 +20,7 @@ import {
   type ImportSession,
   maximumAudioRecoveryPages,
   type Page,
+  type PageReading,
 } from './repository';
 
 const listPendingImportSessions = (sql: Database, ownerId: string) =>
@@ -230,12 +230,13 @@ export const pageRepositoryLive = (sql: Database) => ({
   loadPendingExtraction: (pageId: string) =>
     sql<{
       imagePath: string;
-      language: 'de' | 'en' | 'es' | 'fr';
-    }>`select pages.image_path as "imagePath", courses.target_language as language from pages inner join courses on pages.course_id = courses.id where pages.id = ${pageId} and pages.status = 'awaiting_verification' limit 1`.pipe(
+      kind: CourseKind;
+      language: LanguageCode;
+    }>`select pages.image_path as "imagePath", courses.kind, courses.target_language as language from pages inner join courses on pages.course_id = courses.id where pages.id = ${pageId} and pages.status = 'awaiting_verification' limit 1`.pipe(
       Effect.map((rows) => rows[0]),
       Effect.mapError((cause) => failure('load pending extraction', cause)),
     ),
-  saveExtractionIfPending: (pageId: string, extraction: ExtractionResult) =>
+  saveExtractionIfPending: (pageId: string, extraction: PageReading) =>
     sql
       .withTransaction(
         Effect.gen(function* () {

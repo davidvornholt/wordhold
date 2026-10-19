@@ -5,11 +5,15 @@ import type { Book, Unit, UnitEntry } from '../services/repository';
 import { EntryLedger } from './entry-ledger';
 import type { DraftEntry } from './entry-row';
 import { handleLedgerKeyDown } from './ledger-keyboard';
+import { entryRemovalNotice } from './removal-notice';
 import { ReviewChecklist } from './review-checklist';
 import { useBulkExamples } from './use-bulk-examples';
 import { useDraftForm } from './use-draft-form';
 import { VerifyActionBar } from './verify-action-bar';
-import type { VerificationEntry } from './verify-form-selection';
+import {
+  skippedSummary,
+  type VerificationEntry,
+} from './verify-form-selection';
 
 type VerifyFormProps = {
   readonly initialEntries: ReadonlyArray<DraftEntry>;
@@ -92,8 +96,15 @@ export const VerifyForm = ({
       />
       <VerifyActionBar
         busy={busy}
-        removal={form.removal}
-        skipped={formState.selection.skipped}
+        busyLabel="Importiere …"
+        removalNotice={
+          form.removal === null ? null : entryRemovalNotice(form.removal)
+        }
+        status={
+          formState.selection.skipped > 0
+            ? skippedSummary(formState.selection.skipped)
+            : null
+        }
         submitLabel={submitLabel(
           formState.completionWithoutImport
             ? 0

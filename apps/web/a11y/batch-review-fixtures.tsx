@@ -30,7 +30,10 @@ export const BatchReviewFixture = ({ position }: BatchReviewFixtureProps) => (
     </div>
     <div className="verification-workbench">
       <div className="verification-image-pane">
-        <VerificationImage src={photographedPage} />
+        <VerificationImage
+          alt="Fotografierte Vokabelseite"
+          src={photographedPage}
+        />
       </div>
       <div className="verification-form-pane">
         <BatchReviewProgress position={position} total={2} />

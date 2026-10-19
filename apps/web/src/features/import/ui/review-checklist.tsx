@@ -9,8 +9,9 @@ import { type RefObject, useId, useRef } from 'react';
 import { countNoun } from '../../../shared/format/count';
 import { Button } from '../../../shared/ui/button';
 import { focusRing } from '../../../shared/ui/field-styles';
-import { type IdentifiedDraftRow, isUncertain } from './draft-rows';
-import { ledgerFieldAttribute } from './ledger-keyboard';
+import { isUncertain } from './draft-rows';
+import { indexesWhere } from './flag-indexes';
+import { type LedgerField, ledgerFieldAttribute } from './ledger-keyboard';
 import type { BulkExamples } from './use-bulk-examples';
 import type { DraftForm } from './use-draft-form';
 
@@ -18,18 +19,21 @@ type FlagJumpProps = {
   readonly icon: LucideIcon;
   readonly label: string;
   readonly formRef: RefObject<HTMLFormElement | null>;
-  readonly rows: ReadonlyArray<IdentifiedDraftRow>;
+  readonly rows: ReadonlyArray<{ readonly rowId: string }>;
   readonly flagged: ReadonlyArray<number>;
+  // The field of a flagged row that needs the learner.
+  readonly field: (index: number) => LedgerField;
 };
 
-// Each press moves to the next flagged row and puts the cursor in its word,
+// Each press moves to the next flagged row and puts the cursor in its field,
 // starting over after the last, so a long page is checked flag by flag.
-const FlagJump = ({
+export const FlagJump = ({
   icon: Icon,
   label,
   formRef,
   rows,
   flagged,
+  field: flaggedField,
 }: FlagJumpProps) => {
   const lastJumpRef = useRef(-1);
   const jump = () => {
@@ -39,7 +43,7 @@ const FlagJump = ({
     const rowId = index === undefined ? undefined : rows[index]?.rowId;
     const field =
       formRef.current?.querySelector<HTMLElement>(
-        `[data-row-id="${rowId}"] [${ledgerFieldAttribute}="target"]`,
+        `[data-row-id="${rowId}"] [${ledgerFieldAttribute}="${index === undefined ? 'target' : flaggedField(index)}"]`,
       ) ?? null;
     if (index === undefined || field === null) {
       return;
@@ -127,12 +131,6 @@ type ReviewChecklistProps = {
   readonly disabled: boolean;
 };
 
-const indexesWhere = <T,>(
-  items: ReadonlyArray<T>,
-  matches: (item: T, index: number) => boolean,
-): ReadonlyArray<number> =>
-  items.flatMap((item, index) => (matches(item, index) ? [index] : []));
-
 // What still needs a look before the import, each with a way to get to it.
 // Nothing is listed for a page that was read cleanly.
 export const ReviewChecklist = ({
@@ -167,6 +165,7 @@ export const ReviewChecklist = ({
           {uncertain.length === 0 ? null : (
             <li>
               <FlagJump
+                field={() => 'target'}
                 flagged={uncertain}
                 formRef={form.formRef}
                 icon={TriangleAlertIcon}
@@ -178,6 +177,7 @@ export const ReviewChecklist = ({
           {duplicates.length === 0 ? null : (
             <li>
               <FlagJump
+                field={() => 'target'}
                 flagged={duplicates}
                 formRef={form.formRef}
                 icon={CopyIcon}
