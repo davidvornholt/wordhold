@@ -31,10 +31,12 @@ type TermVerificationWorkbenchProps = {
   readonly courseId: string;
   readonly verified: boolean;
   readonly reading: NotesReading | null;
+  readonly readingRevision: number;
   readonly existingTerms: ReadonlyArray<string>;
   readonly batchSession: BatchReviewSession | null;
   readonly batchIsLastPage: boolean;
   readonly busy: boolean;
+  readonly retrying: boolean;
   readonly pageImageSource: string;
   readonly onRetryReading: () => void;
   readonly onSubmit: (
@@ -51,10 +53,12 @@ export const TermVerificationWorkbench = ({
   courseId,
   verified,
   reading,
+  readingRevision,
   existingTerms,
   batchSession,
   batchIsLastPage,
   busy,
+  retrying,
   pageImageSource,
   onRetryReading,
   onSubmit,
@@ -81,14 +85,29 @@ export const TermVerificationWorkbench = ({
         </div>
       ) : null}
       {!verified && reading === null ? (
-        <ExtractionRecovery busy={busy} onRetry={onRetryReading} />
+        <ExtractionRecovery
+          disabled={busy}
+          message="Die Notizen wurden noch nicht ausgelesen oder das Auslesen ist fehlgeschlagen."
+          onRetry={onRetryReading}
+          retrying={retrying}
+        />
+      ) : null}
+      {/* A blurred or dark photo can read as empty; reading it again is
+          offered beside typing the terms by hand. */}
+      {!verified && reading?.notes.terms.length === 0 ? (
+        <ExtractionRecovery
+          disabled={busy}
+          message="Auf dem Foto wurden keine Begriffe erkannt. Lies es noch einmal aus oder trage die Begriffe selbst ein."
+          onRetry={onRetryReading}
+          retrying={retrying}
+        />
       ) : null}
       {!verified && reading !== null ? (
         <TermReviewForm
           busy={busy}
           existingTerms={existingTerms}
           initialTerms={draftsFrom(reading)}
-          key={reading.modelId + String(reading.notes.terms.length)}
+          key={readingRevision}
           onSubmit={onSubmit}
           submitLabel={(termCount) =>
             submitLabel(termCount, batchSession, batchIsLastPage)

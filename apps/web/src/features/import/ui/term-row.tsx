@@ -1,5 +1,6 @@
 import { maximumEntryTextLength } from '@wordhold/ai/extraction/schema';
 import { CopyIcon, TriangleAlertIcon, XIcon } from 'lucide-react';
+import { useId } from 'react';
 import { Button } from '../../../shared/ui/button';
 import { ledgerFieldClass } from '../../../shared/ui/field-styles';
 import { isUncertain } from './draft-rows';
@@ -35,14 +36,18 @@ const repeatNote = (
 };
 
 type TermRowFlagsProps = {
+  readonly id: string;
   readonly uncertain: boolean;
   readonly repeat: TermRepeat;
 };
 
 // What the reading could not settle on its own, written under the row it
 // concerns.
-const TermRowFlags = ({ uncertain, repeat }: TermRowFlagsProps) => (
-  <div className="col-[2/-1] flex flex-col gap-2 pb-3 text-sm text-warning-foreground">
+const TermRowFlags = ({ id, uncertain, repeat }: TermRowFlagsProps) => (
+  <div
+    className="col-[2/-1] flex flex-col gap-2 pb-3 text-sm text-warning-foreground"
+    id={id}
+  >
     {uncertain ? (
       <p className="flex items-start gap-2">
         <TriangleAlertIcon
@@ -98,6 +103,14 @@ export const TermLedgerRow = ({
     : 'focus-within:bg-accent/20';
   const termMissing = incomplete && row.term.trim() === '';
   const definitionMissing = incomplete && row.definition.trim() === '';
+  // The notes under the row describe its fields, so a screen reader names
+  // them on entering the field rather than only in reading order.
+  const flagsId = useId();
+  const missingId = useId();
+  const termNotes = [
+    flagged ? flagsId : null,
+    termMissing ? missingId : null,
+  ].filter((id) => id !== null);
 
   return (
     <li
@@ -111,6 +124,9 @@ export const TermLedgerRow = ({
       <div className="col-start-2 row-start-1 flex min-w-0 flex-col pt-1 pb-2 sm:pr-4">
         <input
           {...ledgerField('target')}
+          aria-describedby={
+            termNotes.length === 0 ? undefined : termNotes.join(' ')
+          }
           aria-invalid={termMissing}
           aria-label="Begriff"
           className={`${ledgerFieldClass} font-medium`}
@@ -124,6 +140,7 @@ export const TermLedgerRow = ({
       <div className="col-start-2 row-start-2 flex min-w-0 flex-col pb-2 sm:col-start-3 sm:row-start-1 sm:border-primary/30 sm:border-l sm:pt-1 sm:pl-4">
         <textarea
           {...ledgerField('native')}
+          aria-describedby={definitionMissing ? missingId : undefined}
           aria-invalid={definitionMissing}
           aria-label="Erklärung"
           className={`${ledgerFieldClass} field-sizing-content resize-none`}
@@ -147,11 +164,17 @@ export const TermLedgerRow = ({
           <XIcon aria-hidden={true} className="size-4" />
         </Button>
       </div>
-      {flagged ? <TermRowFlags repeat={repeat} uncertain={uncertain} /> : null}
+      {flagged ? (
+        <TermRowFlags id={flagsId} repeat={repeat} uncertain={uncertain} />
+      ) : null}
       {/* Shown once the learner has left the row, not while they are still
-          filling it in. */}
+          filling it in; a screen reader still reads it as the field's
+          description. */}
       {incomplete ? (
-        <p className="col-[2/-1] pb-3 text-muted-foreground text-sm group-focus-within:hidden">
+        <p
+          className="col-[2/-1] pb-3 text-muted-foreground text-sm group-focus-within:hidden"
+          id={missingId}
+        >
           {termMissing
             ? 'Der Begriff fehlt. Ergänze ihn oder entferne die Zeile.'
             : 'Die Erklärung fehlt. Ergänze sie oder entferne die Zeile.'}

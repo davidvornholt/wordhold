@@ -85,8 +85,10 @@ export const VerificationFixture = ({
           ) : null}
           {!audioRecovery && empty ? (
             <ExtractionRecovery
-              busy={false}
+              disabled={false}
+              message="Die Seite wurde noch nicht ausgelesen oder das Auslesen ist fehlgeschlagen."
               onRetry={() => navigateToFixture('verification')}
+              retrying={false}
             />
           ) : null}
           {audioRecovery || empty ? null : (

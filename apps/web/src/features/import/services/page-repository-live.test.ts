@@ -95,4 +95,40 @@ describe('pageRepositoryLive', () => {
       }),
     );
   });
+
+  it("leaves out a subject's pages, whose terms are not spoken", async () => {
+    await Effect.runPromise(
+      withMigratedTestDatabase((database) => {
+        const databaseLayer = testDatabaseLayer(database.url);
+        return Effect.gen(function* () {
+          const sql = yield* Database;
+          yield* seedOwner(ownerId);
+          yield* sql`
+            insert into courses
+              (id, owner_id, name, kind, target_language, directions)
+            values
+              (${courseId}, ${ownerId}, 'Chemie', 'terms', 'de', '{to_native}')
+          `;
+          yield* sql`
+            insert into pages (id, course_id, image_path, status, verified_at)
+            values (${pageId}, ${courseId}, 'page.png', 'verified', ${verifiedAt})
+          `;
+          yield* sql`
+            insert into units (id, course_id, name, position)
+            values (${unitId}, ${courseId}, 'Begriffe', 0)
+          `;
+          yield* sql`
+            insert into entries
+              (id, course_id, unit_id, page_id, target_text, native_text)
+            values
+              (${entryId}, ${courseId}, ${unitId}, ${pageId}, 'Methan', 'CH₄')
+          `;
+
+          expect(
+            yield* pageRepositoryLive(sql).listAudioRecoveryPages(ownerId),
+          ).toEqual([]);
+        }).pipe(Effect.provide(databaseLayer));
+      }),
+    );
+  });
 });

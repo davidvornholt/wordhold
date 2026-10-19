@@ -70,4 +70,41 @@ describe('AudioGenerationStoreLive', () => {
       }),
     );
   });
+
+  it("lists no audio for a subject's page", async () => {
+    await Effect.runPromise(
+      withMigratedTestDatabase((database) => {
+        const databaseLayer = testDatabaseLayer(database.url);
+        return Effect.gen(function* () {
+          const sql = yield* Database;
+          yield* sql`
+            insert into courses (id, name, kind, target_language, directions)
+            values (${courseId}, 'Chemie', 'terms', 'de', '{to_native}')
+          `;
+          yield* sql`
+            insert into pages (id, course_id, image_path)
+            values (${pageId}, ${courseId}, 'page.png')
+          `;
+          yield* sql`
+            insert into units (id, course_id, name, position)
+            values (${unitId}, ${courseId}, 'Begriffe', 0)
+          `;
+          yield* sql`
+            insert into entries
+              (id, course_id, unit_id, page_id, target_text, native_text)
+            values
+              (${plainEntryId}, ${courseId}, ${unitId}, ${pageId}, 'Methan', 'CH₄')
+          `;
+          const store = yield* AudioGenerationStore;
+
+          expect(yield* store.listMissingForPage(pageId)).toEqual([]);
+        }).pipe(
+          Effect.provide(
+            AudioGenerationStoreLive.pipe(Layer.provide(databaseLayer)),
+          ),
+          Effect.provide(databaseLayer),
+        );
+      }),
+    );
+  });
 });

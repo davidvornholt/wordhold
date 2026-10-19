@@ -1,4 +1,4 @@
-import { useNavigate } from '@tanstack/react-router';
+import { useNavigate, useRouter } from '@tanstack/react-router';
 import { useState } from 'react';
 import { importTermPage } from '../import-fn';
 import {
@@ -28,14 +28,23 @@ export const useTermVerificationFlow = (
   onSaved: (saved: SavedTerms) => void,
 ) => {
   const [reading, setReading] = useState(page.extraction);
+  // Counts the readings shown, so a new one restarts the review and loads
+  // the photo again: a sideways photo is stored upright once it is read.
+  const [readingRevision, setReadingRevision] = useState(0);
+  const [retrying, setRetrying] = useState(false);
   const actions = useActionRunner();
   const navigation = useVerificationNavigation(page.id, search);
   const navigate = useNavigate();
+  const router = useRouter();
 
-  const retryReading = () =>
-    actions.run(async () => {
+  const retryReading = async () => {
+    setRetrying(true);
+    await actions.run(async () => {
       setReading(await retryNotesExtraction({ data: page.id }));
+      setReadingRevision((revision) => revision + 1);
     });
+    setRetrying(false);
+  };
   const submitTerms = (
     terms: ReadonlyArray<{
       readonly term: string;
@@ -45,6 +54,12 @@ export const useTermVerificationFlow = (
     actions.run(async () => {
       const saved = await importTermPage({
         data: { pageId: page.id, terms },
+      }).catch(async (cause: unknown) => {
+        // Another tab may have saved some of these terms in the meantime.
+        // Loading the subject's terms again marks them in the review and
+        // keeps the learner's corrections.
+        await router.invalidate();
+        throw cause;
       });
       onSaved(saved);
       await navigation.refreshOverview();
@@ -72,6 +87,8 @@ export const useTermVerificationFlow = (
     batchIsLastPage: navigation.batchIsLastPage,
     batchSession: navigation.batchSession,
     reading,
+    readingRevision,
+    retrying,
     retryReading,
     submitTerms,
   };

@@ -38,6 +38,15 @@ const repeatedTerms = (
   return [...repeated.values()];
 };
 
+// The review reloads the subject's terms after a refused save, so the
+// repeats are marked by the time the learner reads this.
+const repeatMessage = (repeated: ReadonlyArray<string>): string => {
+  const quoted = repeated.map((term) => `„${term}“`).join(', ');
+  return repeated.length === 1
+    ? `Inzwischen schon im Fach: ${quoted}. Der Begriff ist jetzt markiert und wird übersprungen.`
+    : `Inzwischen schon im Fach: ${quoted}. Die Begriffe sind jetzt markiert und werden übersprungen.`;
+};
+
 export const verifyTermPageLive = (
   sql: Database,
   payload: TermPayloadData,
@@ -54,7 +63,7 @@ export const verifyTermPageLive = (
     if (repeated.length > 0) {
       return yield* new DuplicateEntryError({
         duplicates: repeated,
-        message: `Schon eingetragen: ${repeated.map((term) => `„${term}“`).join(', ')}. Lade die Seite neu, um die markierten Begriffe zu prüfen.`,
+        message: repeatMessage(repeated),
       });
     }
     return yield* Effect.forEach(

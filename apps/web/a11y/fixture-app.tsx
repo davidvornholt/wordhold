@@ -163,7 +163,9 @@ const listCourseFixture = (state: ListCourseState) => {
     case 'terms-settings':
       return <SubjectSettingsFixture />;
     case 'terms-review':
-      return <TermReviewFixture />;
+      return <TermReviewFixture empty={false} />;
+    case 'terms-review-empty':
+      return <TermReviewFixture empty={true} />;
     case 'texts-learn':
       return <TextsLearnFixture />;
     case 'texts-practice':

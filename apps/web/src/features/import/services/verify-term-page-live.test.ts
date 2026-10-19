@@ -172,4 +172,27 @@ describe('verifyTermPageLive', () => {
       }),
     );
   });
+
+  it('lets only one of two pages saved at once add the same new term', async () => {
+    await runWithSubject(
+      Effect.gen(function* () {
+        const results = yield* Effect.all(
+          pageIds.map((pageId) =>
+            saveTerms(pageId, [{ term: 'Propan', definition: 'C₃H₈' }]),
+          ),
+          { concurrency: 'unbounded' },
+        );
+        const failures = results.flatMap((result) =>
+          result._tag === 'Failure' ? [result.failure] : [],
+        );
+        expect(failures).toEqual([expect.any(DuplicateEntryError)]);
+        expect((yield* storedTerms).map((row) => row.term)).toEqual(['Propan']);
+        const statuses = yield* Effect.all(pageIds.map(pageStatus));
+        expect([...statuses].sort()).toEqual([
+          'awaiting_verification',
+          'verified',
+        ]);
+      }),
+    );
+  });
 });

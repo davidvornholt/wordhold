@@ -1,7 +1,7 @@
 import type { NotesReading } from '../src/features/import/services/repository';
 import { TermVerificationWorkbench } from '../src/features/import/ui/term-verification-workbench';
 import { fixtureBackControl } from './fixture-controls';
-import { navigateToFixture } from './fixture-state';
+import { navigateToFixture, saveSubmittedTerms } from './fixture-state';
 import { subjectName } from './subject-fixture-data';
 
 const alkanes = [
@@ -65,7 +65,13 @@ const reading: NotesReading = {
 // The subject already has Methan, so the reading's Methan is skipped.
 const existingTerms = ['Methan', 'Wasserstoff'];
 
-export const TermReviewFixture = () => (
+// An empty reading, as from a blurred photo, offers to read it again.
+const emptyReading: NotesReading = {
+  modelId: 'fixture-model',
+  notes: { textTop: 'up', terms: [] },
+};
+
+export const TermReviewFixture = ({ empty }: { readonly empty: boolean }) => (
   <main className="verification-screen">
     <div className="verification-header">
       {fixtureBackControl('Seitenstapel', 'import-session')}
@@ -80,9 +86,14 @@ export const TermReviewFixture = () => (
       courseId="00000000-0000-0000-0000-000000000006"
       existingTerms={existingTerms}
       onRetryReading={() => undefined}
-      onSubmit={() => navigateToFixture('terms-course')}
+      onSubmit={(terms) => {
+        saveSubmittedTerms(terms);
+        navigateToFixture('terms-course');
+      }}
       pageImageSource={photographedNotes}
-      reading={reading}
+      reading={empty ? emptyReading : reading}
+      readingRevision={0}
+      retrying={false}
       verified={false}
     />
   </main>

@@ -38,7 +38,7 @@ export const TermLedger = ({ form, busy }: TermLedgerProps) => {
       />
       {rows.length === 0 ? (
         <p className="border-border border-b py-4 pl-1 text-muted-foreground text-sm sm:pl-10">
-          Auf dem Foto wurden keine Begriffe gefunden. Füge sie selbst hinzu.
+          Diese Seite hat noch keine Begriffe. Füge sie selbst hinzu.
         </p>
       ) : null}
       {rows.length === 0 && removal === null ? null : (

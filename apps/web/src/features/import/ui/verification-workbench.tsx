@@ -101,7 +101,12 @@ export const VerificationWorkbench = ({
         />
       )}
       {completed === null && extractionKey === null ? (
-        <ExtractionRecovery busy={busy} onRetry={onExtractionRetry} />
+        <ExtractionRecovery
+          disabled={busy}
+          message="Die Seite wurde noch nicht ausgelesen oder das Auslesen ist fehlgeschlagen."
+          onRetry={onExtractionRetry}
+          retrying={busy}
+        />
       ) : null}
       {completed === null && extractionKey !== null ? (
         <VerifyForm

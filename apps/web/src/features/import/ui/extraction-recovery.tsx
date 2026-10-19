@@ -1,21 +1,22 @@
 import { Button } from '../../../shared/ui/button';
 
 type ExtractionRecoveryProps = {
-  readonly busy: boolean;
+  readonly message: string;
+  readonly disabled: boolean;
+  readonly retrying: boolean;
   readonly onRetry: () => void;
 };
 
 export const ExtractionRecovery = ({
-  busy,
+  message,
+  disabled,
+  retrying,
   onRetry,
 }: ExtractionRecoveryProps) => (
-  <div aria-busy={busy} className="flex flex-col items-start gap-3">
-    <p className="text-muted-foreground text-sm">
-      Die Seite wurde noch nicht ausgelesen oder das Auslesen ist
-      fehlgeschlagen.
-    </p>
-    <Button disabled={busy} onClick={onRetry}>
-      {busy ? 'Wird gelesen …' : 'Erneut auslesen'}
+  <div aria-busy={retrying} className="flex flex-col items-start gap-3">
+    <p className="text-muted-foreground text-sm">{message}</p>
+    <Button disabled={disabled} onClick={onRetry}>
+      {retrying ? 'Wird gelesen …' : 'Erneut auslesen'}
     </Button>
   </div>
 );

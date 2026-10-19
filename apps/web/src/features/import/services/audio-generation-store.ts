@@ -57,6 +57,7 @@ export const AudioGenerationStoreLive = Layer.effect(
         ),
       );
     return AudioGenerationStore.of({
+      // A subject's terms are not spoken, so its pages miss no audio.
       listMissingForPage: (pageId) =>
         sql<AudioTarget & { readonly audioProfiles: ReadonlyArray<string> }>`
           select e.id, e.target_text as "targetText",
@@ -68,7 +69,7 @@ export const AudioGenerationStoreLive = Layer.effect(
           from entries e
           join courses c on c.id = e.course_id
           left join entry_audio a on a.entry_id = e.id
-          where e.page_id = ${pageId}
+          where e.page_id = ${pageId} and c.kind = 'language'
           group by e.id, c.target_language
           order by e.created_at, e.id
         `.pipe(

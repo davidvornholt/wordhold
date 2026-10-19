@@ -1,11 +1,15 @@
 import { scanWcag22AaViolations } from '@davidvornholt/a11y-testing/axe';
 import { expect, test } from '@playwright/test';
 import { assertNoAccessibilityViolations } from './a11y-assertions';
+import { savedTermsStorageKey } from './fixture-state';
 
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
 // Playwright's Page type reaches this file only through the test fixtures.
 type Page = Parameters<Parameters<typeof test>[2]>[0]['page'];
+
+const alreadyInSubject = /Schon im Fach\./u;
+const readUncertainly = /Unsicher gelesen\./u;
 
 const termFields = (page: Page) =>
   page.getByRole('textbox', { exact: true, name: 'Begriff' });
@@ -42,12 +46,47 @@ test('photographed notes are checked flag by flag before they are saved', async 
     .click();
   await expect(termFields(page).nth(2)).toBeFocused();
   await expect(termFields(page).nth(2)).toHaveValue('Methan');
+  await expect(termFields(page).nth(2)).toHaveAccessibleDescription(
+    alreadyInSubject,
+  );
+  await expect(misread).toHaveAccessibleDescription(readUncertainly);
 
   await misread.press('Control+Enter');
   await expect(page.locator('body')).toHaveAttribute(
     'data-fixture',
     'terms-course',
   );
+  const saved = await page.evaluate(
+    (key) => JSON.parse(sessionStorage.getItem(key) ?? 'null'),
+    savedTermsStorageKey,
+  );
+  expect(saved.map((term: { readonly term: string }) => term.term)).toEqual([
+    'Alkan',
+    'Homologe Reihe',
+    'Ethan',
+    'Propan',
+    'Butan',
+    'Pentan',
+    'Hexan',
+    'Heptan',
+    'Octan',
+    'Tridecan',
+  ]);
+  expect(saved.at(-1)).toEqual({ term: 'Tridecan', definition: 'C₁₃H₂₈' });
+});
+
+test('notes read as empty can be read again or typed by hand', async ({
+  page,
+}) => {
+  await page.goto('/?state=terms-review-empty');
+  await expect(
+    page.getByText(
+      'Auf dem Foto wurden keine Begriffe erkannt. Lies es noch einmal aus oder trage die Begriffe selbst ein.',
+    ),
+  ).toBeVisible();
+  await expect(submitButton(page, 'Erneut auslesen')).toBeEnabled();
+  await expect(submitButton(page, 'Seite abschließen')).toBeEnabled();
+  assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
 });
 
 test('a removed term returns on undo and a half-filled row holds the save back', async ({
@@ -69,6 +108,9 @@ test('a removed term returns on undo and a half-filled row holds the save back',
   await expect(
     page.getByText('Die Erklärung fehlt. Ergänze sie oder entferne die Zeile.'),
   ).toBeVisible();
+  await expect(definitionFields(page).last()).toHaveAccessibleDescription(
+    'Die Erklärung fehlt. Ergänze sie oder entferne die Zeile.',
+  );
   await expect(
     page.getByText('Ergänze oder entferne die unvollständige Zeile.'),
   ).toBeVisible();

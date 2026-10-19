@@ -77,8 +77,10 @@ export const TermReviewScreen = ({
         existingTerms={existingTerms}
         onRetryReading={flow.retryReading}
         onSubmit={flow.submitTerms}
-        pageImageSource={`/api/pages/${page.id}/image`}
+        pageImageSource={`/api/pages/${page.id}/image?revision=${flow.readingRevision}`}
         reading={flow.reading}
+        readingRevision={flow.readingRevision}
+        retrying={flow.retrying}
         verified={page.status === 'verified'}
       />
     </main>

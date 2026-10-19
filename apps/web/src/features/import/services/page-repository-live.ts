@@ -121,6 +121,8 @@ type AudioRecoveryRow = {
   readonly verifiedAt: Date;
 };
 
+// Only a language course's entries are spoken; a subject's terms have no
+// audio to recover.
 const listAudioRecoveryPages = (sql: Database, ownerId: string) =>
   sql<AudioRecoveryRow>`
     select pages.id,
@@ -138,6 +140,7 @@ const listAudioRecoveryPages = (sql: Database, ownerId: string) =>
     inner join entries on entries.page_id = pages.id
     left join entry_audio on entry_audio.entry_id = entries.id
     where courses.owner_id = ${ownerId}
+      and courses.kind = 'language'
       and pages.status = 'verified'
       and pages.verified_at is not null
     group by pages.id, pages.course_id, courses.id, courses.name,
