@@ -14,6 +14,8 @@ import { usePastedImages } from './use-pasted-images';
 type CaptureScreenProps = {
   readonly backControl: ReactNode;
   readonly courseName: string;
+  // A subject's notes are read as terms, a language's pages as vocabulary.
+  readonly notes: boolean;
   readonly busy: boolean;
   readonly batchStarted: boolean;
   readonly error: string | null;
@@ -39,6 +41,7 @@ const fileSelectionHandler =
 export const CaptureScreen = ({
   backControl,
   courseName,
+  notes,
   busy,
   batchStarted,
   error,
@@ -57,14 +60,28 @@ export const CaptureScreen = ({
   return (
     <PageLayout
       backControl={backControl}
-      title={`${courseName}: Seiten erfassen`}
+      title={
+        notes
+          ? `${courseName}: Notizen fotografieren`
+          : `${courseName}: Seiten erfassen`
+      }
     >
-      <p className="text-muted-foreground text-sm">
-        Fotografiere eine Vokabelseite, wähle bis zu zehn vorhandene Fotos,
-        ziehe sie hierher oder füge ein Bild aus der Zwischenablage ein
-        (Strg+V). Wordhold speichert und liest jede Seite einzeln. Danach prüfst
-        du die erkannten Einträge.
-      </p>
+      {notes ? (
+        <p className="text-muted-foreground text-sm">
+          Fotografiere eine Seite deiner Notizen, wähle bis zu zehn vorhandene
+          Fotos, ziehe sie hierher oder füge ein Bild aus der Zwischenablage ein
+          (Strg+V). Wordhold liest jeden Begriff mit seiner Erklärung, auch von
+          einem quer fotografierten Blatt. Danach prüfst du die erkannten
+          Begriffe.
+        </p>
+      ) : (
+        <p className="text-muted-foreground text-sm">
+          Fotografiere eine Vokabelseite, wähle bis zu zehn vorhandene Fotos,
+          ziehe sie hierher oder füge ein Bild aus der Zwischenablage ein
+          (Strg+V). Wordhold speichert und liest jede Seite einzeln. Danach
+          prüfst du die erkannten Einträge.
+        </p>
+      )}
       <form
         aria-busy={busy}
         className="flex flex-col gap-4"

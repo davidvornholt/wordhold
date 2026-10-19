@@ -1,4 +1,5 @@
 import type { ExtractionResult } from '@wordhold/ai/extraction';
+import type { NotesPageData } from '@wordhold/ai/notes/schema';
 import type { CourseKind, LanguageCode } from '@wordhold/db/schema/courses';
 import { Context, type Effect } from 'effect';
 import type { BookNotFoundError } from '../errors/book-not-found-error';
@@ -8,6 +9,7 @@ import type { ImportInvariantError } from '../errors/import-invariant-error';
 import type { PageAlreadyVerifiedError } from '../errors/page-already-verified-error';
 import type { UnitNotFoundError } from '../errors/unit-not-found-error';
 import type { ImportPayloadData } from '../schemas/import-payload';
+import type { TermPayloadData } from '../schemas/term-payload';
 import type { PageReviewOrder } from './page-review-order';
 
 export type Course = {
@@ -92,8 +94,19 @@ export type AudioRecoveryPage = {
 
 export type PendingExtraction = {
   readonly imagePath: string;
+  readonly kind: CourseKind;
   readonly language: LanguageCode;
 };
+
+// What a subject's photographed notes were read as, kept on the page until
+// the learner has checked it.
+export type NotesReading = {
+  readonly notes: NotesPageData;
+  readonly modelId: string;
+};
+
+// A language course's page is read as vocabulary, a subject's page as terms.
+export type PageReading = ExtractionResult | NotesReading;
 
 export type ImportPageInput = {
   readonly id: string;
@@ -156,6 +169,10 @@ export type ImportRepositoryShape = {
   readonly listUnitEntries: (
     courseId: string,
   ) => Effect.Effect<ReadonlyArray<UnitEntry>, ImportDatabaseError>;
+  // Every term a subject already has, so the review can point out repeats.
+  readonly listTerms: (
+    courseId: string,
+  ) => Effect.Effect<ReadonlyArray<string>, ImportDatabaseError>;
   readonly listPendingImportSessions: (
     ownerId: string,
   ) => Effect.Effect<ReadonlyArray<PendingImportSession>, ImportDatabaseError>;
@@ -179,7 +196,7 @@ export type ImportRepositoryShape = {
   ) => Effect.Effect<PendingExtraction | undefined, ImportDatabaseError>;
   readonly saveExtractionIfPending: (
     pageId: string,
-    extraction: ExtractionResult,
+    extraction: PageReading,
   ) => Effect.Effect<Page | undefined, ImportDatabaseError>;
   readonly insertPage: (
     input: ImportPageInput,
@@ -205,6 +222,14 @@ export type ImportRepositoryShape = {
     | BookNotFoundError
     | UnitNotFoundError
     | DuplicateEntryError
+  >;
+  // Resolves the ids of the terms it saved.
+  readonly verifyTermPage: (
+    payload: TermPayloadData,
+    courseId: string,
+  ) => Effect.Effect<
+    ReadonlyArray<string>,
+    RepositoryFailure | PageAlreadyVerifiedError | DuplicateEntryError
   >;
   readonly referencedPaths: Effect.Effect<
     ReadonlySet<string>,

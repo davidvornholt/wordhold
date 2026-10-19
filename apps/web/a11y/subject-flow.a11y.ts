@@ -53,6 +53,9 @@ test('a new subject is named in a dialog and leads with its first term', async (
   await expect(
     page.getByRole('button', { name: 'Seite fotografieren' }),
   ).toHaveCount(0);
+  await expect(
+    page.getByRole('button', { name: 'Notizen fotografieren' }),
+  ).toBeVisible();
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
 
   await openEntryDialog(page);

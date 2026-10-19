@@ -77,6 +77,8 @@ export const fixtureStates = [
   'terms-course',
   'terms-course-empty',
   'terms-settings',
+  'terms-review',
+  'terms-review-empty',
   'texts-learn',
   'texts-practice',
   'texts-feedback',
@@ -114,4 +116,14 @@ export const audioRecoveryIsComplete = (): boolean =>
 
 export const completeAudioRecovery = (): void => {
   globalThis.sessionStorage.setItem(audioRecoveryStorageKey, 'true');
+};
+
+// The terms the review sent, kept for the browser test to check.
+export const savedTermsStorageKey = 'wordhold-a11y-saved-terms';
+
+export const saveSubmittedTerms = (terms: unknown): void => {
+  globalThis.sessionStorage.setItem(
+    savedTermsStorageKey,
+    JSON.stringify(terms),
+  );
 };

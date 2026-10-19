@@ -12,6 +12,7 @@ import type {
 } from '../schemas/import-payload';
 import { retryAudio, retryExtraction } from '../server-fns';
 import { finishAudioRecovery } from './audio-recovery-navigation';
+import { useActionRunner } from './use-action-runner';
 import { useVerificationNavigation } from './use-verification-navigation';
 import type { VerificationEntry } from './verify-form-selection';
 
@@ -51,23 +52,6 @@ const toPayloadEntry = (
   ...(draft.duplicateException === true ? { duplicateException: true } : {}),
   ...(draft.skipDuplicate === true ? { skipDuplicate: true } : {}),
 });
-
-const useActionRunner = () => {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const run = async (action: () => Promise<void>) => {
-    setBusy(true);
-    setError(null);
-    try {
-      await action();
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
-    } finally {
-      setBusy(false);
-    }
-  };
-  return { busy, error, run };
-};
 
 export const useVerificationFlow = (
   page: VerificationPage,

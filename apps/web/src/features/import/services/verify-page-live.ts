@@ -27,7 +27,7 @@ const databaseFailure = (cause: unknown) =>
     message: 'Database operation failed: verify page.',
   });
 
-const claimPageForReview = (sql: Database, pageId: string) =>
+export const claimPageForReview = (sql: Database, pageId: string) =>
   Effect.gen(function* () {
     const pageRows = yield* sql<{
       importSessionId: string;

@@ -1,11 +1,14 @@
-import type { ExtractionResult } from '@wordhold/ai/extraction';
 import { Effect } from 'effect';
 import { Storage, type StorageShape } from '../../../shared/storage/server';
 import {
   AudioGenerationStore,
   type AudioGenerationStoreShape,
 } from './audio-generation-store';
-import { ImportRepository, type ImportRepositoryShape } from './repository';
+import {
+  ImportRepository,
+  type ImportRepositoryShape,
+  type PageReading,
+} from './repository';
 
 const page = {
   id: 'd9428888-122b-41e1-b85c-61cd3cbb3210',
@@ -75,15 +78,21 @@ export const makeImportRepository = (
     listBooks: () => Effect.succeed([book]),
     listUnits: () => Effect.succeed([unit]),
     listUnitEntries: () => Effect.succeed([]),
+    listTerms: () => Effect.succeed([]),
     loadPendingExtraction: () =>
-      Effect.succeed({ imagePath: page.imagePath, language: 'fr' }),
-    saveExtractionIfPending: (_pageId, extraction: ExtractionResult) =>
+      Effect.succeed({
+        imagePath: page.imagePath,
+        kind: course.kind,
+        language: 'fr',
+      }),
+    saveExtractionIfPending: (_pageId, extraction: PageReading) =>
       Effect.succeed({ ...page, extraction }),
     insertPage: () => Effect.void,
     deletePendingImportSession: () => Effect.succeed([page.imagePath]),
     removePendingImportPage: () =>
       Effect.succeed({ imagePath: page.imagePath }),
     verifyPage: () => Effect.succeed([]),
+    verifyTermPage: () => Effect.succeed([]),
     referencedPaths: Effect.succeed(new Set()),
     ...overrides,
   });

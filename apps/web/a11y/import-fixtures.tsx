@@ -66,7 +66,10 @@ export const VerificationFixture = ({
       </div>
       <div className="verification-workbench">
         <div className="verification-image-pane">
-          <VerificationImage src={photographedPage} />
+          <VerificationImage
+            alt="Fotografierte Vokabelseite"
+            src={photographedPage}
+          />
         </div>
         <div className="verification-form-pane">
           {audioRecovery ? (
@@ -82,8 +85,10 @@ export const VerificationFixture = ({
           ) : null}
           {!audioRecovery && empty ? (
             <ExtractionRecovery
-              busy={false}
+              disabled={false}
+              message="Die Seite wurde noch nicht ausgelesen oder das Auslesen ist fehlgeschlagen."
               onRetry={() => navigateToFixture('verification')}
+              retrying={false}
             />
           ) : null}
           {audioRecovery || empty ? null : (

@@ -1,4 +1,5 @@
 import { Extraction } from '@wordhold/ai/extraction';
+import { NotesExtraction } from '@wordhold/ai/notes';
 import { BedrockProvider } from '@wordhold/ai/providers/bedrock';
 import { Tts } from '@wordhold/ai/tts';
 import { PgLive } from '@wordhold/db/client';
@@ -19,7 +20,9 @@ const databaseServices = Layer.mergeAll(
   UsageLedger.live(PgLive),
 ).pipe(Layer.provideMerge(PgLive));
 
-const extraction = Extraction.layer.pipe(Layer.provide(BedrockProvider.live));
+const extraction = Layer.mergeAll(Extraction.layer, NotesExtraction.layer).pipe(
+  Layer.provide(BedrockProvider.live),
+);
 
 export const importRuntime = ManagedRuntime.make(
   Layer.mergeAll(databaseServices, StorageLive, extraction, Tts.layer),

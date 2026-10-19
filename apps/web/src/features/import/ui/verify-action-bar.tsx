@@ -1,8 +1,5 @@
 import { useSyncExternalStore } from 'react';
 import { Button } from '../../../shared/ui/button';
-import type { RowRemoval } from './draft-rows';
-import { removalNotice } from './removal-notice';
-import { skippedSummary } from './verify-form-selection';
 
 const subscribeToNothing = () => () => undefined;
 
@@ -19,30 +16,33 @@ const useApplePlatform = (): boolean =>
 
 type VerifyActionBarProps = {
   readonly busy: boolean;
+  readonly busyLabel: string;
   readonly submittable: boolean;
   readonly submitLabel: string;
-  readonly skipped: number;
-  readonly removal: RowRemoval | null;
+  // What the submit leaves out or still waits for, if anything.
+  readonly status: string | null;
+  readonly removalNotice: string | null;
 };
 
 // Closes the ledger. Its status line also announces a removal, which the
 // ledger shows in the removed entry's place.
 export const VerifyActionBar = ({
   busy,
+  busyLabel,
   submittable,
   submitLabel,
-  skipped,
-  removal,
+  status,
+  removalNotice,
 }: VerifyActionBarProps) => {
   const apple = useApplePlatform();
-  const label = busy ? 'Importiere …' : submitLabel;
+  const label = busy ? busyLabel : submitLabel;
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
       <p className="text-muted-foreground text-sm" role="status">
-        {removal === null ? null : (
-          <span className="sr-only">{removalNotice(removal)} </span>
+        {removalNotice === null ? null : (
+          <span className="sr-only">{removalNotice} </span>
         )}
-        {skipped > 0 ? skippedSummary(skipped) : null}
+        {status}
       </p>
       <Button
         aria-keyshortcuts="Control+Enter Meta+Enter"

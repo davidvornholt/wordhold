@@ -1,5 +1,6 @@
 import type { Database } from '@wordhold/db/client';
 import { Effect } from 'effect';
+import { selectTerms } from '../../../shared/vocabulary/insert-terms';
 import { ImportDatabaseError } from '../errors/import-database-error';
 import type { Book, Unit } from './repository';
 import { selectUnitEntries } from './unit-entries';
@@ -47,5 +48,9 @@ export const unitRepositoryLive = (sql: Database) => ({
   listUnitEntries: (courseId: string) =>
     selectUnitEntries(sql, courseId).pipe(
       Effect.mapError(listFailure('list unit entries')),
+    ),
+  listTerms: (courseId: string) =>
+    selectTerms(sql, courseId, null).pipe(
+      Effect.mapError(listFailure('list terms')),
     ),
 });

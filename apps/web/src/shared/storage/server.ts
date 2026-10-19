@@ -1,10 +1,12 @@
 // The designated filesystem boundary: the only application module allowed to
 // use Node APIs. Database rows store paths relative to WORDHOLD_DATA_DIR.
+import { randomUUID } from 'node:crypto';
 import type { Dirent } from 'node:fs';
 import {
   mkdir,
   readdir,
   readFile,
+  rename,
   stat,
   unlink,
   writeFile,
@@ -12,7 +14,11 @@ import {
 import { resolve, sep } from 'node:path';
 import { Context, Effect, Layer } from 'effect';
 import { serverEnv } from '../env/server';
-import { orphanedDataFiles, type StoredDataFile } from './consistency';
+import {
+  orphanedDataFiles,
+  type StoredDataFile,
+  stagedPath,
+} from './consistency';
 import { StorageError } from './storage-error';
 
 const storageFailure = (operation: string, cause: unknown) =>
@@ -150,11 +156,20 @@ export class Storage extends Context.Service<Storage, StorageShape>()(
 export const StorageLive = Layer.succeed(
   Storage,
   Storage.of({
+    // A file is written beside its path and renamed into place, so a write
+    // that fails partway leaves any file it would replace whole.
     write: (relativePath, bytes) =>
       tryStorage('write file', async () => {
         const path = dataPath(relativePath);
+        const staged = stagedPath(path, randomUUID());
         await mkdir(path.slice(0, path.lastIndexOf('/')), { recursive: true });
-        await writeFile(path, bytes);
+        try {
+          await writeFile(staged, bytes);
+          await rename(staged, path);
+        } catch (error) {
+          await removeIfPresent(() => unlink(staged));
+          throw error;
+        }
       }),
     writeIfAbsent: writeFileIfAbsent,
     read: (relativePath) =>

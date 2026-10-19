@@ -24,6 +24,8 @@ type SubjectOverviewProps = {
   readonly primaryAction: ReactNode | null;
   // The form for a term or text, saving into this subject or collection.
   readonly entryForm: ReactNode;
+  // A subject's photographed notes are read as terms; a collection has none.
+  readonly photoAction: ReactNode | null;
   readonly settingsAction: ReactNode;
   readonly renderStudyAction: (action: StudyAction) => ReactNode;
   readonly entryActions: CourseEntryActions;
@@ -57,6 +59,7 @@ export const SubjectOverview = ({
   initialFilter,
   primaryAction,
   entryForm,
+  photoAction,
   settingsAction,
   renderStudyAction,
   entryActions,
@@ -92,6 +95,7 @@ export const SubjectOverview = ({
         >
           {nouns.singular} eintragen
         </Button>
+        {photoAction}
         {settingsAction}
       </div>
       <Dialog

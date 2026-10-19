@@ -1,8 +1,10 @@
 import { Database } from '@wordhold/db/client';
 import type { CourseKind } from '@wordhold/db/schema/courses';
 import { Context, Effect, Layer } from 'effect';
-import { normalizeAnswer } from '../../../shared/grading/normalize';
-import { findDuplicate } from '../../../shared/vocabulary/entry-identity';
+import {
+  insertTerm,
+  repeatsTerm,
+} from '../../../shared/vocabulary/insert-terms';
 import { saveDerivedKeyPoints } from '../../../shared/vocabulary/key-points';
 import { CourseDatabaseError } from '../errors/courses-errors';
 import type { UpdateTermEntryData } from '../schemas/entry-changes';
@@ -38,41 +40,6 @@ const databaseError = (operation: string, cause: unknown) =>
     message: 'Der Begriff konnte nicht gespeichert werden.',
   });
 
-// Every entry needs a book, so a subject keeps its terms in the one
-// book it is created with (see createSubject). The learner never sees
-// that book.
-const insertTerm = (sql: Database, input: CreateTermEntryData) =>
-  Effect.gen(function* () {
-    const [entry] = yield* sql<{ readonly id: string }>`
-      insert into entries
-        (course_id, book_id, unit_id, target_text, native_text)
-      select ${input.courseId}, b.id, null, ${input.term},
-        ${input.definition}
-      from books b
-      where b.course_id = ${input.courseId}
-      order by b.position asc
-      limit 1
-      returning id
-    `;
-    if (entry === undefined) {
-      return yield* databaseError(
-        'create term',
-        new Error('The subject has no book to hold its terms.'),
-      );
-    }
-    yield* sql`
-      insert into accepted_answers
-        (entry_id, direction, text, normalized, source)
-      values (${entry.id}, 'to_native', ${input.definition},
-        ${normalizeAnswer(input.definition)}, 'textbook')
-    `;
-    yield* sql`
-      insert into cards (entry_id, direction)
-      values (${entry.id}, 'to_native')
-    `;
-    return entry.id;
-  });
-
 const selectTerm = (sql: Database, courseId: string, entryId: string) =>
   sql<StoredTerm>`
     select e.target_text as term, e.native_text as definition,
@@ -83,31 +50,6 @@ const selectTerm = (sql: Database, courseId: string, entryId: string) =>
       and co.kind = 'terms'
     limit 1
   `.pipe(Effect.map((rows) => rows[0]));
-
-// An exact repeat of a term in the subject is refused. A corrected term
-// is not compared with itself.
-const repeatsTerm = (
-  sql: Database,
-  courseId: string,
-  term: string,
-  correctedEntryId: string | null,
-) =>
-  sql<{ readonly targetText: string }>`
-    select target_text as "targetText" from entries
-    where course_id = ${courseId}
-      and (${correctedEntryId}::uuid is null or id <> ${correctedEntryId}::uuid)
-  `.pipe(
-    Effect.map(
-      (rows) =>
-        findDuplicate(
-          { targetText: term, example: '' },
-          rows.map((row) => ({
-            targetText: row.targetText,
-            examples: [],
-          })),
-        ).verdict === 'exact',
-    ),
-  );
 
 // Runs in a transaction under the same lock as a new term. The card keeps
 // its schedule. Key points describe the definition, so a new definition
@@ -186,9 +128,7 @@ export class TermEntryStore extends Context.Service<
           Effect.mapError((cause) => databaseError('read subject', cause)),
         );
 
-      // The same per-course lock the language entries take. A term is asked
-      // only from term to definition, so it gets that one card and the
-      // definition as its one accepted answer.
+      // The same per-course lock the language entries take.
       const create = (input: CreateTermEntryData) =>
         sql
           .withTransaction(
@@ -204,7 +144,16 @@ export class TermEntryStore extends Context.Service<
               if (yield* repeatsTerm(sql, input.courseId, input.term, null)) {
                 return { kind: 'duplicate' } as const;
               }
-              const entryId = yield* insertTerm(sql, input);
+              const entryId = yield* insertTerm(sql, {
+                ...input,
+                pageId: null,
+              });
+              if (entryId === undefined) {
+                return yield* databaseError(
+                  'create term',
+                  new Error('The subject has no book to hold its terms.'),
+                );
+              }
               return { kind: 'created', entryId } as const;
             }),
           )

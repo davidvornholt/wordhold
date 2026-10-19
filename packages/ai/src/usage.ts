@@ -5,6 +5,7 @@ import type { AiUsageError } from './usage-error';
 // Every paid request the application makes, named after what it is for.
 export const aiOperations = [
   'page-extraction',
+  'notes-extraction',
   'answer-grading',
   'definition-grading',
   'definition-key-points',

@@ -25,6 +25,7 @@ import { VerificationWorkbench } from '../../../features/import/ui/verification-
 import { germanLabels } from '../../../shared/languages';
 import { BackLink } from '../../../shared/ui/back-link';
 import { relatedWordsText } from '../../../shared/vocabulary/related-words';
+import { TermReviewScreen } from './-term-review-screen';
 
 const draftsFromExtraction = (
   extraction: ExtractionResult | null,
@@ -134,19 +135,26 @@ const VerificationPageScreen = ({
 };
 
 const VerifyScreen = () => {
-  const { books, course, page, reviewSearch, units, unitEntries } =
-    Route.useLoaderData();
+  const data = Route.useLoaderData();
   const routeSearch = Route.useSearch();
-  const search = reviewSearch ?? routeSearch ?? {};
-  return (
-    <VerificationPageScreen
-      books={books}
-      course={course}
-      key={page.id}
-      page={page}
+  const search = data.reviewSearch ?? routeSearch ?? {};
+  return data.kind === 'terms' ? (
+    <TermReviewScreen
+      course={data.course}
+      existingTerms={data.existingTerms}
+      key={data.page.id}
+      page={data.page}
       search={search}
-      unitEntries={unitEntries}
-      units={units}
+    />
+  ) : (
+    <VerificationPageScreen
+      books={data.books}
+      course={data.course}
+      key={data.page.id}
+      page={data.page}
+      search={search}
+      unitEntries={data.unitEntries}
+      units={data.units}
     />
   );
 };

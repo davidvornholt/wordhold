@@ -1,4 +1,3 @@
-import type { ExtractionResult } from '@wordhold/ai/extraction';
 import { ttsAudioProfile } from '@wordhold/ai/tts/speech-text';
 import type { Database } from '@wordhold/db/client';
 import type { CourseKind, LanguageCode } from '@wordhold/db/schema/courses';
@@ -21,6 +20,7 @@ import {
   type ImportSession,
   maximumAudioRecoveryPages,
   type Page,
+  type PageReading,
 } from './repository';
 
 const listPendingImportSessions = (sql: Database, ownerId: string) =>
@@ -121,6 +121,8 @@ type AudioRecoveryRow = {
   readonly verifiedAt: Date;
 };
 
+// Only a language course's entries are spoken; a subject's terms have no
+// audio to recover.
 const listAudioRecoveryPages = (sql: Database, ownerId: string) =>
   sql<AudioRecoveryRow>`
     select pages.id,
@@ -138,6 +140,7 @@ const listAudioRecoveryPages = (sql: Database, ownerId: string) =>
     inner join entries on entries.page_id = pages.id
     left join entry_audio on entry_audio.entry_id = entries.id
     where courses.owner_id = ${ownerId}
+      and courses.kind = 'language'
       and pages.status = 'verified'
       and pages.verified_at is not null
     group by pages.id, pages.course_id, courses.id, courses.name,
@@ -230,12 +233,13 @@ export const pageRepositoryLive = (sql: Database) => ({
   loadPendingExtraction: (pageId: string) =>
     sql<{
       imagePath: string;
-      language: 'de' | 'en' | 'es' | 'fr';
-    }>`select pages.image_path as "imagePath", courses.target_language as language from pages inner join courses on pages.course_id = courses.id where pages.id = ${pageId} and pages.status = 'awaiting_verification' limit 1`.pipe(
+      kind: CourseKind;
+      language: LanguageCode;
+    }>`select pages.image_path as "imagePath", courses.kind, courses.target_language as language from pages inner join courses on pages.course_id = courses.id where pages.id = ${pageId} and pages.status = 'awaiting_verification' limit 1`.pipe(
       Effect.map((rows) => rows[0]),
       Effect.mapError((cause) => failure('load pending extraction', cause)),
     ),
-  saveExtractionIfPending: (pageId: string, extraction: ExtractionResult) =>
+  saveExtractionIfPending: (pageId: string, extraction: PageReading) =>
     sql
       .withTransaction(
         Effect.gen(function* () {

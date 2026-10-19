@@ -80,7 +80,10 @@ export const VerificationWorkbench = ({
 }: VerificationWorkbenchProps) => (
   <div className="verification-workbench">
     <div className="verification-image-pane">
-      <VerificationImage src={pageImageSource} />
+      <VerificationImage
+        alt="Fotografierte Vokabelseite"
+        src={pageImageSource}
+      />
     </div>
     <div className="verification-form-pane">
       {batchSession === null ? null : (
@@ -98,7 +101,12 @@ export const VerificationWorkbench = ({
         />
       )}
       {completed === null && extractionKey === null ? (
-        <ExtractionRecovery busy={busy} onRetry={onExtractionRetry} />
+        <ExtractionRecovery
+          disabled={busy}
+          message="Die Seite wurde noch nicht ausgelesen oder das Auslesen ist fehlgeschlagen."
+          onRetry={onExtractionRetry}
+          retrying={busy}
+        />
       ) : null}
       {completed === null && extractionKey !== null ? (
         <VerifyForm

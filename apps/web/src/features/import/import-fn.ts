@@ -5,8 +5,12 @@ import { billedTo } from '../../shared/ai/usage-ledger';
 import { requireOwner } from '../../shared/auth/require-member';
 import { importRuntime } from './runtime';
 import { decodeImportPayload } from './schemas/import-payload';
+import { decodeTermPayload } from './schemas/term-payload';
 import { serializableAudioReport } from './services/audio-generation';
-import { importVerifiedPage } from './services/import-page';
+import {
+  importVerifiedPage,
+  importVerifiedTermPage,
+} from './services/import-page';
 
 export const importPage = createServerFn({ method: 'POST' })
   .validator((input: unknown) => decodeImportPayload(input))
@@ -22,6 +26,17 @@ export const importPage = createServerFn({ method: 'POST' })
           ...result,
           audio: serializableAudioReport(result.audio),
         })),
+      ),
+    ),
+  );
+
+// Saving a subject's terms calls no AI, so nothing is billed.
+export const importTermPage = createServerFn({ method: 'POST' })
+  .validator((input: unknown) => decodeTermPayload(input))
+  .handler(({ data }) =>
+    importRuntime.runPromise(
+      requireOwner(getRequest().headers, { pages: [data.pageId] }).pipe(
+        Effect.flatMap(() => importVerifiedTermPage(data)),
       ),
     ),
   );

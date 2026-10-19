@@ -175,6 +175,11 @@ export const SubjectCourseFixture = ({
           />
         }
         initialFilter="all"
+        photoAction={fixtureControl(
+          'Notizen fotografieren',
+          'terms-review',
+          empty ? 'outline' : 'quiet',
+        )}
         primaryAction={
           empty
             ? null

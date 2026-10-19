@@ -2,6 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import { definitionJudgePrompt } from './definition/judge';
 import { definitionPrompt, keyPointPrompt } from './definition/writer';
 import { extractionPrompt } from './extraction/service';
+import { notesPrompt } from './notes/service';
 import { pitfallPrompt } from './pitfalls/service';
 import { relationPrompt } from './relations/service';
 import { sentenceJudgePrompt } from './sentence/judge';
@@ -14,6 +15,9 @@ import {
 // Limit instruction overhead independently of learner or textbook text.
 // Character budgets are deterministic across provider tokenizer versions.
 const extractionInstructionBudget = 1000;
+// Notes have no printed layout to rely on, so the prompt also says how to
+// handle a turned photo and formulas written by hand.
+const notesInstructionBudget = 1200;
 const sentenceInstructionBudget = 300;
 const translationInstructionBudget = 450;
 const definitionJudgeInstructionBudget = 800;
@@ -30,6 +34,10 @@ describe('prompt instruction budgets', () => {
     expect(extractionPrompt('').length).toBeLessThanOrEqual(
       extractionInstructionBudget,
     );
+  });
+
+  it('keeps notes extraction instructions compact', () => {
+    expect(notesPrompt.length).toBeLessThanOrEqual(notesInstructionBudget);
   });
 
   it('keeps sentence and translation instructions compact', () => {

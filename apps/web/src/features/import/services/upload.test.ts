@@ -120,13 +120,13 @@ describe('storeUploadedPage', () => {
     expect(actions).toEqual([]);
   });
 
-  it('refuses a page for a subject before storing it', async () => {
+  it('refuses a page for a collection of texts before storing it', async () => {
     const actions: Array<string> = [];
     const base = makeImportRepository();
     const repository = makeImportRepository({
       getCourse: (courseId) =>
         Effect.map(base.getCourse(courseId), (course) =>
-          course === undefined ? undefined : { ...course, kind: 'terms' },
+          course === undefined ? undefined : { ...course, kind: 'texts' },
         ),
     });
     const storage = makeStorage({
