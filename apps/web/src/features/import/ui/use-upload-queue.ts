@@ -4,6 +4,7 @@ import { retryExtraction } from '../server-fns';
 import {
   hasStoredUpload,
   type ProcessableQueuedPage,
+  photoLockNote,
   processQueuedPage,
   processQueuedPages,
   type QueuedPage,
@@ -149,7 +150,8 @@ export const useUploadQueue = (courseId: string) => {
   const addFiles = async (files: ReadonlyArray<File>): Promise<void> => {
     if (!hydrated || batchStarted()) {
       setError(
-        'Die Fotoauswahl ist nach dem ersten Verarbeitungsversuch gesperrt. Versuche fehlgeschlagene Seiten erneut oder entferne sie.',
+        photoLockNote(pagesRef.current) ??
+          'Bitte warte, bis alle Fotos verarbeitet sind.',
       );
       return;
     }

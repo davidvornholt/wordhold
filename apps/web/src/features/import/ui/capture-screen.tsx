@@ -5,6 +5,7 @@ import { PageLayout } from '../../../shared/ui/page-layout';
 import {
   hasStoredUpload,
   maximumUploadBatchSize,
+  photoLockNote,
   type QueuedPage,
 } from '../services/upload-queue';
 import { CaptureUploadQueue } from './capture-upload-queue';
@@ -53,6 +54,7 @@ export const CaptureScreen = ({
   reviewAction,
 }: CaptureScreenProps) => {
   const batchLocked = batchStarted || hasStoredUpload(pages);
+  const lockNote = batchLocked ? photoLockNote(pages) : null;
   const acceptsPhotos =
     !(busy || batchLocked) && pages.length < maximumUploadBatchSize;
   usePastedImages(onFilesSelected, acceptsPhotos);
@@ -131,12 +133,11 @@ export const CaptureScreen = ({
             </span>
           </label>
         </fieldset>
-        {batchLocked ? (
+        {lockNote === null ? null : (
           <p className="text-muted-foreground text-sm" role="status">
-            Die Fotoauswahl ist gesperrt. Versuche fehlgeschlagene Seiten erneut
-            oder entferne sie.
+            {lockNote}
           </p>
-        ) : null}
+        )}
         <CaptureUploadQueue
           busy={busy}
           onRemove={onRemove}

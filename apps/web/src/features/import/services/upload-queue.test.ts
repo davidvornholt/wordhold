@@ -6,6 +6,7 @@ import {
   maximumUploadBatchSize,
   nextUploadPosition,
   type ProcessableQueuedPage,
+  photoLockNote,
   processQueuedPage,
   processQueuedPages,
   type QueuedPage,
@@ -184,6 +185,36 @@ describe('hasStoredUpload', () => {
         },
       ]),
     ).toBe(true);
+  });
+});
+
+describe('photoLockNote', () => {
+  const readyPage: QueuedPage = {
+    ...waitingPage,
+    stage: 'ready',
+    pageId: 'stored-page',
+  };
+
+  it('asks for failed pages to be retried only when one failed', () => {
+    expect(
+      photoLockNote([
+        readyPage,
+        { ...waitingPage, stage: 'failed', pageId: null, error: 'Fehler.' },
+      ]),
+    ).toContain('fehlgeschlagene Seiten');
+  });
+
+  it('points to the review once every page is read', () => {
+    expect(photoLockNote([readyPage])).toContain('fertig gelesen');
+  });
+
+  it('adds nothing while pages are still being read', () => {
+    expect(
+      photoLockNote([
+        readyPage,
+        { ...waitingPage, stage: 'extracting', pageId: 'reading-page' },
+      ]),
+    ).toBeNull();
   });
 });
 
