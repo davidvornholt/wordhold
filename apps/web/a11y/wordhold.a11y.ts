@@ -127,6 +127,15 @@ test('capture keeps a batch open while a page upload has failed', async ({
   await expect(
     page.getByRole('button', { name: 'Erneut versuchen' }),
   ).toBeVisible();
+  await expect(page.getByText('Versuche fehlgeschlagene Seiten')).toBeVisible();
+});
+
+test('a fully read batch points to the review, not to failed pages', async ({
+  page,
+}) => {
+  await page.goto('/?state=import-complete');
+  await expect(page.getByText('Der Stapel ist fertig gelesen.')).toBeVisible();
+  await expect(page.getByText('fehlgeschlagene Seiten')).toHaveCount(0);
 });
 
 test('removing a failed page from a started batch lets it be reviewed', async ({

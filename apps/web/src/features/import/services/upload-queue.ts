@@ -38,6 +38,21 @@ export type ProcessableQueuedPage = Extract<
 export const hasStoredUpload = (pages: ReadonlyArray<QueuedPage>): boolean =>
   pages.some((page) => 'pageId' in page && page.pageId !== null);
 
+// Why a started batch takes no more photos, worded for where it stands.
+// While pages are still being read the screen already asks the learner to
+// wait, so there is nothing to add.
+export const photoLockNote = (
+  pages: ReadonlyArray<QueuedPage>,
+): string | null => {
+  if (pages.some((page) => page.stage === 'failed')) {
+    return 'Die Fotoauswahl ist gesperrt. Versuche fehlgeschlagene Seiten erneut oder entferne sie.';
+  }
+  if (pages.length > 0 && pages.every((page) => page.stage === 'ready')) {
+    return 'Der Stapel ist fertig gelesen. Neue Fotos kannst du nach der Prüfung als nächsten Stapel hinzufügen.';
+  }
+  return null;
+};
+
 // Photos are told apart by their bytes, not their names: a pasted screenshot
 // is always called "image.png", and the same file picked twice must not
 // become two pages.
