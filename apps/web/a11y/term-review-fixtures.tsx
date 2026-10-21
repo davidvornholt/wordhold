@@ -25,7 +25,7 @@ const notesMarkup = `
     <g font-family="cursive" fill="#1d2b4f">
       <text x="48" y="80" font-size="34">Alkane</text>
       <text x="48" y="146" font-size="20">Alkan: organische Verbindung mit</text>
-      <text x="48" y="176" font-size="20">der Summenformel CnH2n+2</text>
+      <text x="48" y="176" font-size="20">der Summenformel CₙH₂ₙ₊₂</text>
       <text x="48" y="236" font-size="20">Homologe Reihe: Glieder unterscheiden</text>
       <text x="48" y="266" font-size="20">sich um CH₂</text>
       ${alkanes.map(([name, formula], index) => `<text x="72" y="${326 + index * 30}" font-size="20">${name}</text><text x="300" y="${326 + index * 30}" font-size="20">${formula}</text>`).join('')}
@@ -43,7 +43,7 @@ const reading: NotesReading = {
       {
         term: 'Alkan',
         definition:
-          'Organische Verbindung mit der Summenformel CnH2n+2; n = 1, 2, 3, …',
+          'Organische Verbindung mit der Summenformel CₙH₂ₙ₊₂; n = 1, 2, 3, …',
         confidence: 0.95,
       },
       {
