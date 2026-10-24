@@ -9,6 +9,12 @@ describe('isSameReading', () => {
     expect(isSameReading('x₊', 'x+')).toBe(true);
   });
 
+  it('reads a letter on the line as a lowered index', () => {
+    expect(isSameReading('CₙH₂ₙ₊₂', 'CnH2n+2')).toBe(true);
+    expect(isSameReading('CₙH₂ₙ₊₂', 'CₙH2n+2')).toBe(true);
+    expect(isSameReading('CₙH₂ₙ₊₂', 'CmH2m+2')).toBe(false);
+  });
+
   it('takes a raised or lowered mark as written', () => {
     expect(isSameReading('H₂O', 'H²O')).toBe(false);
     expect(isSameReading('Na⁺', 'Na⁻')).toBe(false);

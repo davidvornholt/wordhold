@@ -104,11 +104,13 @@ const wordWorkload = (
     },
   });
 
-// Every pattern must match one of the key points.
+// Every pattern must match one of the key points; `forbidden` catches a point
+// the definition does not make.
 const keyPointWorkload = (
   name: string,
   definition: { readonly term: string; readonly definition: string },
   facts: ReadonlyArray<RegExp>,
+  forbidden: RegExp | null,
 ): Workload =>
   textWorkload({
     name,
@@ -127,6 +129,9 @@ const keyPointWorkload = (
         .map((pattern) => `No key point for ${pattern.source}`);
       if (output.keyPoints.some((point) => !point.includes(' '))) {
         failures.push('Bare noun as key point');
+      }
+      if (output.keyPoints.some((point) => forbidden?.test(point))) {
+        failures.push('Key point beyond the definition');
       }
       return [...failures, ...quoteFailures(output.keyPoints)];
     },
@@ -234,16 +239,26 @@ export const generationWorkloads: ReadonlyArray<Workload> = [
     { text: 'die Brücke', given: 'native', targetLanguage: 'French' },
     /^le pont$/u,
   ),
-  keyPointWorkload('key-points-catalyst', catalyst, [
-    /Aktivierungsenergie/u,
-    /beschleunig/u,
-    /verbraucht/u,
-  ]),
-  keyPointWorkload('key-points-osmosis', osmosis, [
-    /Diffusion|diffundier/u,
-    /halbdurchlässig/u,
-    /Konzentration/u,
-  ]),
+  keyPointWorkload(
+    'key-points-catalyst',
+    catalyst,
+    [/Aktivierungsenergie/u, /beschleunig/u, /verbraucht/u],
+    null,
+  ),
+  keyPointWorkload(
+    'key-points-osmosis',
+    osmosis,
+    [/Diffusion|diffundier/u, /halbdurchlässig/u, /Konzentration/u],
+    null,
+  ),
+  // A bare formula is one fact, not also the substance's class or its atom
+  // counts.
+  keyPointWorkload(
+    'key-points-formula',
+    { term: 'Pentan', definition: 'C₅H₁₂' },
+    [/C₅H₁₂|C5H12/u],
+    /Alkan|gesättigt|Kohlenwasserstoff|verzweigt|Atom/iu,
+  ),
   definitionSuggestionWorkload(
     'suggestion-photosynthesis',
     { term: 'Photosynthese', subject: 'Biologie' },

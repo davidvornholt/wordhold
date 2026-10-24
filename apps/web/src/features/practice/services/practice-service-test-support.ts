@@ -70,7 +70,7 @@ export const testJudge = (
   judge,
 });
 
-const sessionStore = Layer.succeed(PracticeSessionStore, {
+const emptySessions: PracticeSessionStore['Service'] = {
   loadScheduled: () =>
     Effect.succeed({
       items: [],
@@ -82,7 +82,7 @@ const sessionStore = Layer.succeed(PracticeSessionStore, {
       },
     }),
   loadSelection: () => Effect.succeed([]),
-});
+};
 
 const emptyCache: JudgeCacheStore['Service'] = {
   read: () => Effect.succeed(undefined),
@@ -95,6 +95,56 @@ type SubmitDependencies = {
   readonly cache?: JudgeCacheStore['Service'];
 };
 
+type ServiceDependencies = Required<SubmitDependencies> & {
+  readonly sessions: PracticeSessionStore['Service'];
+  readonly reviewStore: PracticeReviewStore['Service'];
+  readonly judge: PracticeJudge['Service'];
+};
+
+const practiceLayer = ({
+  sessions,
+  reviewStore,
+  judge,
+  grader,
+  cache,
+}: ServiceDependencies) =>
+  PracticeService.layer.pipe(
+    Layer.provide(
+      Layer.mergeAll(
+        Layer.succeed(PracticeSessionStore, sessions),
+        Layer.succeed(JudgeCacheStore, cache),
+        Layer.succeed(PracticeReviewStore, reviewStore),
+        Layer.succeed(PracticeJudge, judge),
+        Layer.succeed(DefinitionGrader, grader),
+      ),
+    ),
+  );
+
+const unusedReviews: PracticeReviewStore['Service'] = {
+  findSubmission: () => Effect.die('submissions must not be read'),
+  listAcceptedAnswers: () => Effect.die('accepted answers must not be read'),
+  listCourseEntries: () => Effect.die('course entries must not be listed'),
+  saveKeyPoints: () => Effect.die('key points must not be saved'),
+  commit: () => Effect.die('reviews must not be committed'),
+};
+
+// Loads a sitting from the given session store; nothing may be graded.
+export const runSessionLoad = <A, E>(
+  sessions: PracticeSessionStore['Service'],
+  load: (service: PracticeService['Service']) => Effect.Effect<A, E>,
+) =>
+  Effect.flatMap(PracticeService, load).pipe(
+    Effect.provide(
+      practiceLayer({
+        sessions,
+        reviewStore: unusedReviews,
+        judge: testJudge(() => unavailableJudge('the judge must not run')),
+        grader: testGrader(),
+        cache: emptyCache,
+      }),
+    ),
+  );
+
 export const runSubmitPayload = (
   reviewStore: PracticeReviewStore['Service'],
   judge: PracticeJudge['Service'],
@@ -104,17 +154,13 @@ export const runSubmitPayload = (
   Effect.runPromise(
     Effect.flatMap(PracticeService, (service) => service.submit(payload)).pipe(
       Effect.provide(
-        PracticeService.layer.pipe(
-          Layer.provide(
-            Layer.mergeAll(
-              sessionStore,
-              Layer.succeed(JudgeCacheStore, cache),
-              Layer.succeed(PracticeReviewStore, reviewStore),
-              Layer.succeed(PracticeJudge, judge),
-              Layer.succeed(DefinitionGrader, grader),
-            ),
-          ),
-        ),
+        practiceLayer({
+          sessions: emptySessions,
+          reviewStore,
+          judge,
+          grader,
+          cache,
+        }),
       ),
       Effect.result,
       Effect.provide(untrackedAiUsage),
