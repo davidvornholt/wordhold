@@ -259,7 +259,7 @@ const Home = () => {
             renderSessionAction={(session, label) =>
               session.isComplete ? (
                 <ActionLink
-                  aria-label={`${label} fortsetzen`}
+                  aria-label={`Stapel fortsetzen: ${label}`}
                   params={{ sessionId: session.id }}
                   to="/imports/$sessionId/review"
                 >
