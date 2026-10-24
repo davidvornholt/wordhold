@@ -23,6 +23,7 @@ const textbookReadings = (text: string): ReadonlyArray<string> => {
 // rule, so an answer that passes review also passes when the word is first
 // learned. A typed answer in textbook notation ("estar ilusionado/a (con
 // algo)") passes when every reading it stands for is an accepted reading.
+// Definitions use isSameDefinition instead.
 export const isDeterministicMatch = (
   submittedAnswer: string,
   accepted: ReadonlyArray<AcceptedAnswer>,
@@ -50,5 +51,20 @@ export const isDeterministicMatch = (
         isSameReading(acceptedReading, reading),
       ),
     )
+  );
+};
+
+// A definition is prose, not textbook notation: its semicolons, slashes and
+// parentheses separate no alternatives and mark nothing optional. Only its
+// whole wording passes without the grader, so an answer that leaves out a
+// clause is graded against the key points. Review grading, the learning pass,
+// and the retype after a mistake all use this rule for terms.
+export const isSameDefinition = (
+  submittedAnswer: string,
+  definitions: ReadonlyArray<string>,
+): boolean => {
+  const normalized = normalizeAnswerForComparison(submittedAnswer);
+  return definitions.some((definition) =>
+    isSameReading(normalizeAnswerForComparison(definition), normalized),
   );
 };

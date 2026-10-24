@@ -1,4 +1,7 @@
-import { isDeterministicMatch } from '../../../shared/grading/deterministic-match';
+import {
+  isDeterministicMatch,
+  isSameDefinition,
+} from '../../../shared/grading/deterministic-match';
 import { isVerbatimCopy } from '../../../shared/grading/recitation';
 import { cardAnswer } from '../../../shared/practice/card-texts';
 import type { LearnItem } from '../schemas/learning-models';
@@ -16,6 +19,14 @@ export const matchesLearnItem = (item: LearnItem, typed: string): boolean =>
       source: 'textbook',
     })),
   );
+
+// A definition is copied whole, as review grading accepts it without the
+// grader.
+export const copiesLearnDefinition = (
+  item: LearnItem,
+  typed: string,
+): boolean =>
+  isSameDefinition(typed, [cardAnswer(item), ...item.textbookAnswers]);
 
 // A text learned by heart is copied from the card. Only its words count, as
 // in practice, but a copy has no excuse for a typo.

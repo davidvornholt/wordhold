@@ -4,7 +4,10 @@ import {
   copyDifference,
   copyDifferenceMessage,
 } from '../../../shared/grading/copy-difference';
-import { isDeterministicMatch } from '../../../shared/grading/deterministic-match';
+import {
+  isDeterministicMatch,
+  isSameDefinition,
+} from '../../../shared/grading/deterministic-match';
 import {
   copyMistakeMessage,
   isVerbatimCopy,
@@ -20,23 +23,31 @@ export const needsRetype = (result: FeedbackResult | null): boolean =>
 
 // The template is the card's textbook answer, so the copy passes whenever
 // review grading would accept it. A synonym or antonym card shows its whole
-// list, and any one of its words passes. A text is compared word for word,
-// without the typos a recitation is forgiven.
+// list, and any one of its words passes. A definition passes only whole. A
+// text is compared word for word, without the typos a recitation is forgiven.
 export const matchesShownAnswer = (
   expectedAnswer: string,
   typed: string,
   kind: CourseKind,
   relatedWords: ReadonlyArray<string>,
-): boolean =>
-  kind === 'texts'
-    ? isVerbatimCopy(expectedAnswer, typed)
-    : isDeterministicMatch(
+): boolean => {
+  switch (kind) {
+    case 'texts':
+      return isVerbatimCopy(expectedAnswer, typed);
+    case 'terms':
+      return isSameDefinition(typed, [expectedAnswer]);
+    case 'language':
+      return isDeterministicMatch(
         typed,
         [expectedAnswer, ...relatedWords].map((text) => ({
           text,
           source: 'textbook',
         })),
       );
+    default:
+      return kind satisfies never;
+  }
+};
 
 // A missed word is typed again from scratch; a missed definition or text
 // keeps the copy and names the first word that differs, since most of it is

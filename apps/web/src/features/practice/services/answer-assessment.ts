@@ -4,6 +4,7 @@ import { Cause, Effect } from 'effect';
 import {
   type AcceptedAnswer,
   isDeterministicMatch,
+  isSameDefinition,
 } from '../../../shared/grading/deterministic-match';
 import {
   type AssessedGradeOutcome,
@@ -141,7 +142,14 @@ export const gradeAnswer = (input: GradeAnswerInput) => {
       assessmentId: null,
     });
   }
-  if (isDeterministicMatch(input.data.answer, input.accepted)) {
+  const matched =
+    input.row.courseKind === 'terms'
+      ? isSameDefinition(
+          input.data.answer,
+          input.accepted.map((answer) => answer.text),
+        )
+      : isDeterministicMatch(input.data.answer, input.accepted);
+  if (matched) {
     return Effect.succeed<AssessedAnswer>({
       outcome: { method: 'exact' },
       assessmentId: null,
