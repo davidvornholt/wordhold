@@ -335,7 +335,7 @@ export const DashboardFixture = ({
         renderSessionAction={(session, label) =>
           session.isComplete ? (
             <button
-              aria-label={`${label} fortsetzen`}
+              aria-label={`Stapel fortsetzen: ${label}`}
               className="bg-primary px-4 py-2 text-primary-foreground text-sm"
               type="button"
             >

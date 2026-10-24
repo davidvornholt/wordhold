@@ -29,12 +29,13 @@ const keyPoints = [
 
 const termSubmission = (
   stored: ReadonlyArray<string> | null,
+  nativeText: string,
 ): SubmissionRecord => ({
   card: { ...testCard, direction: 'to_native' },
   entry: {
     id: testCard.entryId,
     targetText: 'Katalysator',
-    nativeText: definition,
+    nativeText,
     relatedWords: [],
     keyPoints: stored,
   },
@@ -63,6 +64,7 @@ type SubmitOptions = {
   readonly elapsedMs?: number;
   // Key points another answer stored first, which a late save leaves alone.
   readonly storedFirst?: ReadonlyArray<string>;
+  readonly definition?: string;
 };
 
 const reviewStore = (
@@ -77,8 +79,9 @@ const reviewStore = (
       recorded.saved.push(points);
       return storedFirst ?? points;
     }),
+  // A term's definition is stored as its textbook answer (see insertTerm).
   listAcceptedAnswers: () =>
-    Effect.succeed([{ text: definition, source: 'manual' }]),
+    Effect.succeed([{ text: submission.entry.nativeText, source: 'textbook' }]),
   commit: (input) =>
     Effect.sync(() => {
       recorded.commits.push(input);
@@ -94,7 +97,11 @@ const submitDefinition = (
 ) => {
   const recorded: Recorded = { saved: [], commits: [], judged: [] };
   const result = runSubmitPayload(
-    reviewStore(termSubmission(stored), recorded, options),
+    reviewStore(
+      termSubmission(stored, options.definition ?? definition),
+      recorded,
+      options,
+    ),
     testJudge(() => unavailableJudge('translation judge must not run')),
     {
       cardId: testCard.id,
@@ -185,6 +192,24 @@ describe('PracticeService definitions', () => {
       rating: ratings.good,
       outcome: { method: 'definition', keyPoints },
     });
+  });
+
+  it('judges a definition whose clauses were only partly given', async () => {
+    const { result, recorded } = submitDefinition(
+      keyPoints,
+      [true, true, false],
+      'Ein Katalysator ist ein Stoff, der die Aktivierungsenergie senkt',
+      {
+        definition:
+          'Ein Katalysator ist ein Stoff, der die Aktivierungsenergie senkt; er wird dabei nicht verbraucht.',
+      },
+    );
+    expect(await result).toMatchObject({
+      _tag: 'Success',
+      success: { graded: true, correct: false, stored: false },
+    });
+    expect(recorded.judged).toHaveLength(1);
+    expect(recorded.commits).toHaveLength(0);
   });
 
   it('accepts the stored definition without asking the judge, however fast', async () => {

@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'bun:test';
 import type { LearnItem } from '../schemas/learning-models';
-import { copiesLearnText, matchesLearnItem } from './learn-check';
+import {
+  copiesLearnDefinition,
+  copiesLearnText,
+  matchesLearnItem,
+} from './learn-check';
 
 const item: LearnItem = {
   cardId: '00000000-0000-0000-0000-000000000011',
@@ -189,6 +193,31 @@ describe('copiesLearnText', () => {
       copiesLearnText(
         verse,
         'Der HERR ist mein guter Hirte; mir wird nichts mangeln.',
+      ),
+    ).toBe(false);
+  });
+});
+
+describe('copiesLearnDefinition', () => {
+  const definition =
+    'Ein Katalysator senkt die Aktivierungsenergie; er wird dabei nicht verbraucht.';
+  const term: LearnItem = {
+    ...item,
+    direction: 'to_native',
+    targetText: 'Katalysator',
+    nativeText: definition,
+    textbookAnswers: [definition],
+  };
+
+  it('accepts the whole definition', () => {
+    expect(copiesLearnDefinition(term, definition)).toBe(true);
+  });
+
+  it('rejects one clause of it', () => {
+    expect(
+      copiesLearnDefinition(
+        term,
+        'Ein Katalysator senkt die Aktivierungsenergie',
       ),
     ).toBe(false);
   });
