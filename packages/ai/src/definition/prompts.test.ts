@@ -98,6 +98,14 @@ describe('key points', () => {
     expect(prompt).toContain(`"definition":"${catalyst.definition}"`);
   });
 
+  // Every point must be covered, so one the definition does not make fails a
+  // learner who answered exactly what they were taught.
+  it('takes every point from the definition, each fact once', () => {
+    const prompt = keyPointPrompt({ term: 'Pentan', definition: 'C₅H₁₂' });
+    expect(prompt).toContain('Use only the definition, each fact once');
+    expect(prompt).toContain('a formula is one point');
+  });
+
   it('trims the points and rejects an empty, overlong or oversized list', () => {
     expect(decode({ keyPoints: ['  wird nicht verbraucht  '] })).toEqual({
       keyPoints: ['wird nicht verbraucht'],

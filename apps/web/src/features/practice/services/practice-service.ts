@@ -1,6 +1,7 @@
 import type { AiUsage } from '@wordhold/ai/usage';
-import { Clock, Context, Effect, Layer } from 'effect';
+import { Array as Arr, Clock, Context, Effect, Layer, Random } from 'effect';
 import { cardPrompt } from '../../../shared/practice/card-texts';
+import { sessionSectionSize } from '../../../shared/session/section-policy';
 import type {
   AnswerTooLongError,
   PracticeDatabaseError,
@@ -30,6 +31,16 @@ const withPrompt = (
   example: null,
   prompt: cardPrompt(item),
 });
+
+// The session queries choose each section's cards by urgency, and cards that
+// are equally urgent, such as the ones just learned, in the order their
+// entries were added. Asked in that order, a section would repeat the learning
+// pass, and the learner could answer from position instead of from memory.
+// Each section is shuffled; which cards it holds does not change.
+const inAskingOrder = (items: ReadonlyArray<PracticeItem>) =>
+  Effect.forEach(Arr.chunksOf(items, sessionSectionSize), (section) =>
+    Random.shuffle(section),
+  ).pipe(Effect.map((sections) => sections.flat()));
 
 export class PracticeService extends Context.Service<
   PracticeService,
@@ -76,23 +87,23 @@ export class PracticeService extends Context.Service<
             now,
           );
           return {
-            items: items.map(withPrompt),
+            items: yield* inAskingOrder(items.map(withPrompt)),
             available: availability,
           } satisfies PracticeSession;
         });
       const getStudySession = (data: StudyRequestData) =>
-        Effect.map(
-          sessions.loadSelection(data),
-          (items): PracticeSession => ({
-            items: items.map(withPrompt),
+        Effect.gen(function* () {
+          const items = yield* sessions.loadSelection(data);
+          return {
+            items: yield* inAskingOrder(items.map(withPrompt)),
             available: {
               due: 0,
               firstReviews: items.length,
               ready: items.length,
               nextDueAt: null,
             },
-          }),
-        );
+          } satisfies PracticeSession;
+        });
       const submit = (data: SubmitPayloadData) =>
         resolveAnswerSubmission(data, { reviews, cache, judge, grader });
       return PracticeService.of({ getSession, getStudySession, submit });

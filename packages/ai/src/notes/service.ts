@@ -20,7 +20,7 @@ export const notesPrompt = [
   'term is the bare term without a trailing colon. definition is everything written for it, joined into one text.',
   'A list or table that pairs names with a value, such as a substance with its formula, gives one term per row with the value as its definition.',
   'Skip headings, dates and page labels that define nothing.',
-  'Write numeric chemical indices and charges as Unicode subscript and superscript characters (CH₄, SO₄²⁻) when the notes lower or raise them; keep letter indices like n on the line (CnH2n+2).',
+  'Write chemical indices and charges as Unicode subscript and superscript characters (CH₄, SO₄²⁻, CₙH₂ₙ₊₂) when the notes lower or raise them; keep a letter without a subscript character, like y, on the line.',
   'Give each term a confidence from 0 to 1; lower it for unclear handwriting or cut-off text.',
 ].join('\n');
 
