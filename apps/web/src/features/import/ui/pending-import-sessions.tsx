@@ -137,7 +137,7 @@ export const PendingImportSessions = ({
                 <div className="flex flex-wrap items-center gap-3">
                   {renderSessionAction(session, label)}
                   <Button
-                    aria-label={`${label} löschen`}
+                    aria-label={`Stapel löschen: ${label}`}
                     disabled={discardingId !== null}
                     onClick={() => {
                       setError(null);

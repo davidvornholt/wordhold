@@ -2,11 +2,11 @@ import { scanWcag22AaViolations } from '@davidvornholt/a11y-testing/axe';
 import { expect, test } from '@playwright/test';
 import { assertNoAccessibilityViolations } from './a11y-assertions';
 
-const threePageStackAction = /3 Seiten.*fortsetzen/u;
+const threePageStackAction = /^Stapel fortsetzen: .*3 Seiten/u;
 
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
-const deleteName = 'English A2, 3 Seiten, 24.8.2026 löschen';
+const deleteName = 'Stapel löschen: English A2, 3 Seiten, 24.8.2026';
 
 test('pages from one upload appear as one resumable stack', async ({
   page,
@@ -59,7 +59,7 @@ test('discarding one of several open imports focuses their heading', async ({
   ).toBeFocused();
   await expect(
     page.getByRole('button', {
-      name: 'English A2, 2 Seiten, 25.8.2026 löschen',
+      name: 'Stapel löschen: English A2, 2 Seiten, 25.8.2026',
     }),
   ).toBeVisible();
 });

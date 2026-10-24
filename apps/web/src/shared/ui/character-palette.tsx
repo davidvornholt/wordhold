@@ -62,7 +62,7 @@ export const CharacterPalette = ({
       <Button
         aria-controls={paletteId}
         aria-expanded={open}
-        aria-label="Sonderzeichen"
+        aria-label={`${characters.sample} Sonderzeichen`}
         className={`col-start-1 row-start-1 m-px justify-self-end text-base aria-expanded:bg-muted aria-expanded:text-foreground ${multiline ? 'self-start' : 'self-stretch'}`}
         onClick={toggle}
         onMouseDown={keepFieldFocus}
