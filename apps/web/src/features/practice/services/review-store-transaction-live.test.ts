@@ -59,6 +59,10 @@ const makeInput = (
       entryId,
       direction,
       normalizedAnswer: answer,
+      gradedTexts: {
+        targetText: submission.entry.targetText,
+        nativeText: submission.entry.nativeText,
+      },
     } satisfies PersistReviewInput;
   });
 
@@ -76,6 +80,28 @@ const runReviewTest = <A, E>(
       );
     }),
   );
+
+// An edit replaces the entry's texts and drops the alternatives judged
+// against the old ones, so a verdict on the old word must not bring one
+// back.
+const correctEntry = (sql: Database) =>
+  sql`
+    update entries set target_text = 'lièvre', native_text = 'Hase'
+    where id = ${firstReviewEntryId}
+  `.pipe(
+    Effect.andThen(
+      sql`
+        delete from accepted_answers
+        where entry_id = ${firstReviewEntryId} and source = 'judge'
+      `,
+    ),
+  );
+
+const judgeAlternatives = (sql: Database) =>
+  sql<{ readonly text: string }>`
+    select text from accepted_answers
+    where entry_id = ${firstReviewEntryId} and source = 'judge'
+  `;
 
 describe('PracticeReviewStore PostgreSQL transaction', () => {
   it('returns the revision written by PostgreSQL', async () => {
@@ -175,6 +201,81 @@ describe('PracticeReviewStore PostgreSQL transaction', () => {
         expect(cards.at(0)?.revision).toBe(0);
         expect(reviews.at(0)?.count).toBe(0);
         expect(alternatives.at(0)?.count).toBe(0);
+      }),
+    );
+  });
+});
+
+describe('PracticeReviewStore judge alternatives', () => {
+  it('keeps no judge alternative for an entry edited after grading began', async () => {
+    await runReviewTest(
+      Effect.gen(function* () {
+        const store = yield* PracticeReviewStore;
+        const sql = yield* Database;
+        const input = yield* makeInput(
+          firstReviewEntryId,
+          'to_native',
+          'das Buch',
+        );
+        yield* correctEntry(sql);
+
+        const committed = yield* store.commit(input);
+        expect(yield* judgeAlternatives(sql)).toEqual([]);
+        expect(committed).toMatchObject({
+          revision: 1,
+          alternativeStored: false,
+        });
+      }),
+    );
+  });
+
+  it('waits for an open edit of the entry before keeping a judge alternative', async () => {
+    await runReviewTest(
+      Effect.gen(function* () {
+        const store = yield* PracticeReviewStore;
+        const sql = yield* Database;
+        const input = yield* makeInput(
+          firstReviewEntryId,
+          'to_native',
+          'das Buch',
+        );
+        const [, committed] = yield* Effect.all(
+          [
+            sql.withTransaction(
+              correctEntry(sql).pipe(
+                Effect.andThen(Effect.sleep('300 millis')),
+              ),
+            ),
+            Effect.sleep('100 millis').pipe(
+              Effect.andThen(store.commit(input)),
+            ),
+          ],
+          { concurrency: 'unbounded' },
+        );
+
+        expect(yield* judgeAlternatives(sql)).toEqual([]);
+        expect(committed).toMatchObject({
+          revision: 1,
+          alternativeStored: false,
+        });
+      }),
+    );
+  });
+
+  it('keeps a judge alternative while the entry is unchanged', async () => {
+    await runReviewTest(
+      Effect.gen(function* () {
+        const store = yield* PracticeReviewStore;
+        const sql = yield* Database;
+        const input = yield* makeInput(
+          firstReviewEntryId,
+          'to_native',
+          'das Buch',
+        );
+
+        const committed = yield* store.commit(input);
+        expect(yield* judgeAlternatives(sql)).toEqual([{ text: 'das Buch' }]);
+        expect(committed).toMatchObject({ alternativeStored: true });
       }),
     );
   });

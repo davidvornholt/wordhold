@@ -45,6 +45,7 @@ const makeTransactionalStore = () => {
             insertAcceptedAlternative: () =>
               Effect.sync(() => {
                 draft.alternatives += 1;
+                return true;
               }),
             insertReview: () =>
               failReview
@@ -76,7 +77,7 @@ describe('commitGradedAnswer', () => {
     expect(accepted).toHaveLength(1);
     expect(
       accepted.at(0)?._tag === 'Success' ? accepted.at(0)?.success : undefined,
-    ).toEqual({ revision: 1, entryKnown: true });
+    ).toEqual({ revision: 1, entryKnown: true, alternativeStored: true });
     const rejection = results.find((result) => result._tag === 'Failure');
     expect(rejection?._tag).toBe('Failure');
     const failure =
@@ -90,7 +91,11 @@ describe('commitGradedAnswer', () => {
     const committed = await Effect.runPromise(
       commitGradedAnswer(transaction(0), verdict(), false),
     );
-    expect(committed).toEqual({ revision: 1, entryKnown: true });
+    expect(committed).toEqual({
+      revision: 1,
+      entryKnown: true,
+      alternativeStored: true,
+    });
     expect(store).toEqual({ revision: 1, reviews: 1, alternatives: 1 });
   });
 

@@ -79,6 +79,10 @@ export const makeReviewInput = ({
       direction,
       normalizedAnswer: answer,
       mode,
+      gradedTexts: {
+        targetText: submission.entry.targetText,
+        nativeText: submission.entry.nativeText,
+      },
     } satisfies PersistReviewInput;
   });
 

@@ -49,6 +49,7 @@ export const persistedReview = {
     dueAt: new Date('2026-08-01T09:01:00Z'),
   },
   entryKnown: false,
+  alternativeStored: false,
 };
 
 export const unavailableJudge = (cause: string) =>

@@ -1,5 +1,4 @@
 import { maximumEntryTextLength } from '@wordhold/ai/extraction/schema';
-import { isAcceptedAlternative } from '@wordhold/ai/judge/schema';
 import { Clock, Effect } from 'effect';
 import { normalizeAnswer } from '../../../shared/grading/normalize';
 import {
@@ -123,6 +122,10 @@ const commitOutcome = ({
       direction: row.card.direction,
       normalizedAnswer,
       mode: data.mode,
+      gradedTexts: {
+        targetText: row.entry.targetText,
+        nativeText: row.entry.nativeText,
+      },
     });
     const assessed =
       outcome.method === 'learner-correction' ? outcome.assessed : outcome;
@@ -134,8 +137,7 @@ const commitOutcome = ({
       rating,
       expectedAnswer,
       explanation: assessed.method === 'skip' ? null : explanationOf(assessed),
-      acceptedAsAlternative:
-        assessed.method === 'judge' && isAcceptedAlternative(assessed.verdict),
+      acceptedAsAlternative: persisted.alternativeStored,
       keyPoints: assessed.method === 'skip' ? null : keyPointFindings(assessed),
       schedule: persisted.schedule,
       entryKnown: persisted.entryKnown,

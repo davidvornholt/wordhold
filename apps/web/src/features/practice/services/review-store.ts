@@ -50,6 +50,34 @@ const loadEntryKnown = (sql: Database, entryId: string) =>
     Effect.mapError((cause) => databaseError('commit graded answer', cause)),
   );
 
+// An edit of the entry replaces its texts and drops the alternatives judged
+// against the old ones; see replaceTextbookAnswers. The share lock waits for an
+// open edit to commit and then compares its texts, so a verdict on the old word
+// never comes back afterwards. Says whether the alternative is kept.
+const insertJudgeAlternative = (sql: Database, input: PersistReviewInput) =>
+  Effect.gen(function* () {
+    const unchanged = yield* sql`
+      select 1 from entries
+      where id = ${input.entryId}
+        and target_text = ${input.gradedTexts.targetText}
+        and native_text = ${input.gradedTexts.nativeText}
+      for share
+    `;
+    if (unchanged.length === 0) {
+      return false;
+    }
+    yield* sql`
+      insert into accepted_answers
+        (entry_id, direction, text, normalized, source)
+      values (${input.entryId}, ${input.direction}, ${input.answer.trim()},
+        ${input.normalizedAnswer}, 'judge')
+      on conflict do nothing
+    `;
+    return true;
+  }).pipe(
+    Effect.mapError((cause) => databaseError('commit graded answer', cause)),
+  );
+
 const listCourseEntries = (sql: Database, entryId: string) =>
   sql<CourseEntryPlace>`
     select e.target_text as text, coalesce(u.name, b.name) as place
@@ -193,13 +221,7 @@ export class PracticeReviewStore extends Context.Service<
                     Effect.mapError(mapCommitError),
                   ),
                 insertAcceptedAlternative: () =>
-                  sql`
-                    insert into accepted_answers
-                      (entry_id, direction, text, normalized, source)
-                    values (${input.entryId}, ${input.direction}, ${input.answer.trim()},
-                      ${input.normalizedAnswer}, 'judge')
-                    on conflict do nothing
-                  `.pipe(Effect.asVoid, Effect.mapError(mapCommitError)),
+                  insertJudgeAlternative(sql, input),
                 insertReview: () =>
                   sql`
                     insert into reviews
