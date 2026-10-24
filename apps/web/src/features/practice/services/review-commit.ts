@@ -12,8 +12,6 @@ export type ReviewCommitOperations<E> = {
     advanceSchedule: boolean,
   ) => Effect.Effect<number | undefined, E>;
   readonly insertReview: () => Effect.Effect<void, E>;
-  // Stores the judge's alternative if the entry still has the texts it was
-  // judged against, and says whether it did.
   readonly insertAcceptedAlternative: () => Effect.Effect<boolean, E>;
   // Whether the answered card's entry counts as "sicher" once this answer is
   // applied.

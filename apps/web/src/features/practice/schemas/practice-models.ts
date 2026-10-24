@@ -152,8 +152,6 @@ export type PersistReviewInput = {
   readonly direction: AnswerDirection;
   readonly normalizedAnswer: string;
   readonly mode: ReviewMode;
-  // The entry's texts when the answer was graded. A judge alternative is kept
-  // only while the entry still has them.
   readonly gradedTexts: {
     readonly targetText: string;
     readonly nativeText: string;

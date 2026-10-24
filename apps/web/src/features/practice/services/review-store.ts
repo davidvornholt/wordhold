@@ -1,3 +1,4 @@
+import { isAcceptedAlternative } from '@wordhold/ai/judge/schema';
 import { Database } from '@wordhold/db/client';
 import type { CourseKind, LanguageCode } from '@wordhold/db/schema/courses';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
@@ -50,33 +51,39 @@ const loadEntryKnown = (sql: Database, entryId: string) =>
     Effect.mapError((cause) => databaseError('commit graded answer', cause)),
   );
 
-// An edit of the entry replaces its texts and drops the alternatives judged
-// against the old ones; see replaceTextbookAnswers. The share lock waits for an
-// open edit to commit and then compares its texts, so a verdict on the old word
-// never comes back afterwards. Says whether the alternative is kept.
-const insertJudgeAlternative = (sql: Database, input: PersistReviewInput) =>
-  Effect.gen(function* () {
-    const unchanged = yield* sql`
-      select 1 from entries
-      where id = ${input.entryId}
-        and target_text = ${input.gradedTexts.targetText}
-        and native_text = ${input.gradedTexts.nativeText}
-      for share
-    `;
-    if (unchanged.length === 0) {
-      return false;
-    }
-    yield* sql`
-      insert into accepted_answers
-        (entry_id, direction, text, normalized, source)
-      values (${input.entryId}, ${input.direction}, ${input.answer.trim()},
-        ${input.normalizedAnswer}, 'judge')
-      on conflict do nothing
-    `;
-    return true;
-  }).pipe(
-    Effect.mapError((cause) => databaseError('commit graded answer', cause)),
-  );
+// Lock entries before cards, matching edits that also remove judge
+// alternatives, and hold matching texts until insertion.
+const lockGradedEntry = (sql: Database, input: PersistReviewInput) =>
+  input.outcome.method === 'judge' &&
+  isAcceptedAlternative(input.outcome.verdict)
+    ? sql`
+        select 1 from entries
+        where id = ${input.entryId}
+          and target_text = ${input.gradedTexts.targetText}
+          and native_text = ${input.gradedTexts.nativeText}
+        for share
+      `.pipe(Effect.map((rows) => rows.length > 0))
+    : Effect.succeed(false);
+
+const insertJudgeAlternative = (
+  sql: Database,
+  input: PersistReviewInput,
+  unchanged: boolean,
+) =>
+  unchanged
+    ? sql`
+        insert into accepted_answers
+          (entry_id, direction, text, normalized, source)
+        values (${input.entryId}, ${input.direction}, ${input.answer.trim()},
+          ${input.normalizedAnswer}, 'judge')
+        on conflict do nothing
+      `.pipe(
+        Effect.as(true),
+        Effect.mapError((cause) =>
+          databaseError('commit graded answer', cause),
+        ),
+      )
+    : Effect.succeed(false);
 
 const listCourseEntries = (sql: Database, entryId: string) =>
   sql<CourseEntryPlace>`
@@ -195,10 +202,12 @@ export class PracticeReviewStore extends Context.Service<
         ) =>
           sql
             .withTransaction(
-              work({
-                advanceCard: (advanceSchedule) =>
-                  (advanceSchedule
-                    ? sql<{ readonly revision: number }>`
+              Effect.gen(function* () {
+                const unchanged = yield* lockGradedEntry(sql, input);
+                return yield* work({
+                  advanceCard: (advanceSchedule) =>
+                    (advanceSchedule
+                      ? sql<{ readonly revision: number }>`
                         update cards set state = ${next.state}::card_state,
                           due_at = ${next.dueAt}, stability = ${next.stability},
                           difficulty = ${next.difficulty}, reps = ${next.reps},
@@ -210,27 +219,28 @@ export class PracticeReviewStore extends Context.Service<
                           and introduced_at is not null
                         returning revision
                       `
-                    : sql<{ readonly revision: number }>`
+                      : sql<{ readonly revision: number }>`
                         update cards set revision = revision + 1
                         where id = ${input.card.id} and revision = ${input.expectedRevision}
                           and introduced_at is not null
                         returning revision
                       `
-                  ).pipe(
-                    Effect.map((rows) => rows.at(0)?.revision),
-                    Effect.mapError(mapCommitError),
-                  ),
-                insertAcceptedAlternative: () =>
-                  insertJudgeAlternative(sql, input),
-                insertReview: () =>
-                  sql`
+                    ).pipe(
+                      Effect.map((rows) => rows.at(0)?.revision),
+                      Effect.mapError(mapCommitError),
+                    ),
+                  insertAcceptedAlternative: () =>
+                    insertJudgeAlternative(sql, input, unchanged),
+                  insertReview: () =>
+                    sql`
                     insert into reviews
                       (card_id, rating, answer_text, grading, elapsed_ms, mode)
                     values (${input.card.id}, ${input.rating}, ${input.answer},
                       ${JSON.stringify(input.outcome)}::jsonb, ${input.elapsedMs},
                       ${input.mode}::review_mode)
                   `.pipe(Effect.asVoid, Effect.mapError(mapCommitError)),
-                entryKnown: () => loadEntryKnown(sql, input.entryId),
+                  entryKnown: () => loadEntryKnown(sql, input.entryId),
+                });
               }),
             )
             .pipe(
