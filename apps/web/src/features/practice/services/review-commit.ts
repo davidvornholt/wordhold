@@ -12,7 +12,7 @@ export type ReviewCommitOperations<E> = {
     advanceSchedule: boolean,
   ) => Effect.Effect<number | undefined, E>;
   readonly insertReview: () => Effect.Effect<void, E>;
-  readonly insertAcceptedAlternative: () => Effect.Effect<void, E>;
+  readonly insertAcceptedAlternative: () => Effect.Effect<boolean, E>;
   // Whether the answered card's entry counts as "sicher" once this answer is
   // applied.
   readonly entryKnown: () => Effect.Effect<boolean, E>;
@@ -35,11 +35,12 @@ export const commitGradedAnswer = <E>(
           message: 'Diese Karte wurde bereits beantwortet. Lade die Übung neu.',
         });
       }
-      if (verdict !== null && isAcceptedAlternative(verdict)) {
-        yield* operations.insertAcceptedAlternative();
-      }
+      const alternativeStored =
+        verdict !== null && isAcceptedAlternative(verdict)
+          ? yield* operations.insertAcceptedAlternative()
+          : false;
       yield* operations.insertReview();
       const entryKnown = yield* operations.entryKnown();
-      return { revision, entryKnown };
+      return { revision, entryKnown, alternativeStored };
     }),
   );

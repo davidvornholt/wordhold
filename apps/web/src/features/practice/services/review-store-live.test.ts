@@ -89,6 +89,7 @@ describe('PracticeReviewStore introduction contract', () => {
                 entryId: identity.entryId,
                 direction: identity.direction,
                 normalizedAnswer: 'nouveau',
+                gradedTexts: { targetText: 'nouveau', nativeText: 'neu' },
               })
               .pipe(Effect.result);
             const failure =

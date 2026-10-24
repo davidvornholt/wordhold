@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import type { JudgeVerdictData } from '@wordhold/ai/judge/schema';
 import { Database } from '@wordhold/db/client';
+import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import {
   testDatabaseLayer,
   withMigratedTestDatabase,
@@ -9,8 +10,10 @@ import { Effect, Layer } from 'effect';
 import {
   dueEntryId,
   firstReviewEntryId,
+  fixtureCourseId,
   seedIntroducedCardFixture,
 } from '../../../shared/testing/introduced-card-fixture';
+import { writeRelatedWords } from '../../../shared/vocabulary/related-words-store';
 import { StaleAnswerSubmissionError } from '../errors/practice-errors';
 import type { PersistReviewInput } from '../schemas/practice-models';
 import { PracticeReviewStore } from './review-store';
@@ -29,7 +32,7 @@ const acceptedVerdict: JudgeVerdictData = {
 
 const makeInput = (
   entryId: string,
-  direction: 'to_target' | 'to_native',
+  direction: AnswerDirection,
   answer: string,
 ) =>
   Effect.gen(function* () {
@@ -59,6 +62,10 @@ const makeInput = (
       entryId,
       direction,
       normalizedAnswer: answer,
+      gradedTexts: {
+        targetText: submission.entry.targetText,
+        nativeText: submission.entry.nativeText,
+      },
     } satisfies PersistReviewInput;
   });
 
@@ -76,6 +83,25 @@ const runReviewTest = <A, E>(
       );
     }),
   );
+
+const correctEntry = (sql: Database) =>
+  sql`
+    update entries set target_text = 'lièvre', native_text = 'Hase'
+    where id = ${firstReviewEntryId}
+  `.pipe(
+    Effect.andThen(
+      sql`
+        delete from accepted_answers
+        where entry_id = ${firstReviewEntryId} and source = 'judge'
+      `,
+    ),
+  );
+
+const judgeAlternatives = (sql: Database) =>
+  sql<{ readonly text: string }>`
+    select text from accepted_answers
+    where entry_id = ${firstReviewEntryId} and source = 'judge'
+  `;
 
 describe('PracticeReviewStore PostgreSQL transaction', () => {
   it('returns the revision written by PostgreSQL', async () => {
@@ -178,4 +204,145 @@ describe('PracticeReviewStore PostgreSQL transaction', () => {
       }),
     );
   });
+});
+
+describe('PracticeReviewStore judge alternatives', () => {
+  it('keeps no judge alternative for an entry edited after grading began', async () => {
+    await runReviewTest(
+      Effect.gen(function* () {
+        const store = yield* PracticeReviewStore;
+        const sql = yield* Database;
+        const input = yield* makeInput(
+          firstReviewEntryId,
+          'to_native',
+          'das Buch',
+        );
+        yield* correctEntry(sql);
+
+        const committed = yield* store.commit(input);
+        expect(yield* judgeAlternatives(sql)).toEqual([]);
+        expect(committed).toMatchObject({
+          revision: 1,
+          alternativeStored: false,
+        });
+      }),
+    );
+  });
+
+  it('keeps a judge alternative while the entry is unchanged', async () => {
+    await runReviewTest(
+      Effect.gen(function* () {
+        const store = yield* PracticeReviewStore;
+        const sql = yield* Database;
+        const input = yield* makeInput(
+          firstReviewEntryId,
+          'to_native',
+          'das Buch',
+        );
+
+        const committed = yield* store.commit(input);
+        expect(yield* judgeAlternatives(sql)).toEqual([{ text: 'das Buch' }]);
+        expect(committed).toMatchObject({ alternativeStored: true });
+      }),
+    );
+  });
+});
+
+it('persists a review after an open text edit preserves its synonym card', async () => {
+  await runReviewTest(
+    Effect.gen(function* () {
+      const store = yield* PracticeReviewStore;
+      const sql = yield* Database;
+      const relatedWords = [
+        {
+          courseId: fixtureCourseId,
+          entryId: firstReviewEntryId,
+          synonyms: ['bouquin'],
+          antonyms: [],
+        },
+      ];
+      yield* sql.withTransaction(writeRelatedWords(sql, relatedWords));
+      const input = yield* makeInput(firstReviewEntryId, 'to_synonym', 'tome');
+      const entryLocked = Promise.withResolvers<number>();
+      const releaseEdit = Promise.withResolvers<void>();
+      const [committed] = yield* Effect.all(
+        [
+          Effect.gen(function* () {
+            yield* Effect.promise(() => entryLocked.promise);
+            return yield* store.commit(input);
+          }),
+          sql.withTransaction(
+            Effect.gen(function* () {
+              yield* sql`
+                select id from entries where id = ${firstReviewEntryId}
+                for no key update
+              `;
+              const [backend] = yield* sql<{ readonly pid: number }>`
+                select pg_backend_pid() as pid
+              `;
+              entryLocked.resolve(backend?.pid ?? 0);
+              yield* Effect.promise(() => releaseEdit.promise);
+              yield* correctEntry(sql);
+              yield* writeRelatedWords(sql, relatedWords);
+            }),
+          ),
+          Effect.gen(function* () {
+            const pid = yield* Effect.promise(() => entryLocked.promise);
+            let blocked = false;
+            while (!blocked) {
+              const [waiting] = yield* sql<{ readonly blocked: boolean }>`
+                select exists (
+                  select 1 from pg_stat_activity
+                  where datname = current_database()
+                    and ${pid} = any(pg_blocking_pids(pid))
+                ) as blocked
+              `;
+              blocked = waiting?.blocked === true;
+              if (!blocked) {
+                yield* Effect.sleep('10 millis');
+              }
+            }
+            releaseEdit.resolve();
+          }),
+        ],
+        { concurrency: 'unbounded' },
+      ).pipe(Effect.timeout('3 seconds'));
+
+      expect(yield* judgeAlternatives(sql)).toEqual([]);
+      expect(committed).toMatchObject({
+        revision: 1,
+        alternativeStored: false,
+        schedule: { advanced: true },
+      });
+      const [card] = yield* sql<{
+        readonly revision: number;
+        readonly state: string;
+        readonly dueAt: Date | null;
+        readonly reps: number;
+        readonly lastReviewedAt: Date | null;
+      }>`
+        select revision, state, due_at as "dueAt", reps,
+          last_reviewed_at as "lastReviewedAt"
+        from cards where id = ${input.card.id}
+      `;
+      expect(card).toEqual({
+        revision: 1,
+        state: committed.schedule.state,
+        dueAt: committed.schedule.dueAt,
+        reps: 1,
+        lastReviewedAt: input.reviewedAt,
+      });
+      const reviews = yield* sql`
+        select rating, answer_text as answer, grading from reviews
+        where card_id = ${input.card.id}
+      `;
+      expect(reviews).toEqual([
+        {
+          rating: input.rating,
+          answer: input.answer,
+          grading: input.outcome,
+        },
+      ]);
+    }),
+  );
 });

@@ -152,12 +152,17 @@ export type PersistReviewInput = {
   readonly direction: AnswerDirection;
   readonly normalizedAnswer: string;
   readonly mode: ReviewMode;
+  readonly gradedTexts: {
+    readonly targetText: string;
+    readonly nativeText: string;
+  };
 };
 
 export type PersistedReview = {
   readonly revision: number;
   readonly schedule: CardSchedule;
   readonly entryKnown: boolean;
+  readonly alternativeStored: boolean;
 };
 
 // A judge_cache row holds a translation or a definition verdict. The entry's
