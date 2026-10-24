@@ -49,6 +49,28 @@ describe('matchesShownAnswer', () => {
     );
   });
 
+  it('takes a definition as written, not as alternatives', () => {
+    const definition =
+      'Ein Katalysator senkt die Aktivierungsenergie; er wird dabei nicht verbraucht.';
+    expect(matchesShownAnswer(definition, definition, 'terms', [])).toBe(true);
+    expect(
+      matchesShownAnswer(
+        definition,
+        'Ein Katalysator senkt die Aktivierungsenergie',
+        'terms',
+        [],
+      ),
+    ).toBe(false);
+    expect(
+      matchesShownAnswer(
+        'Ein Stoff (meist ein Metall), der die Reaktion beschleunigt.',
+        'Ein Stoff, der die Reaktion beschleunigt.',
+        'terms',
+        [],
+      ),
+    ).toBe(false);
+  });
+
   it('compares a text word for word and forgives no typo', () => {
     const verse = 'Denn so hat Gott die Welt geliebt.';
     expect(

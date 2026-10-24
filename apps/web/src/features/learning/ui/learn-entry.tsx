@@ -26,7 +26,11 @@ import { KeyPointList } from '../../../shared/ui/key-point-list';
 import { SpellingPitfallNote } from '../../../shared/ui/spelling-pitfall-note';
 import { WordCard } from '../../../shared/ui/word-card';
 import type { LearnItem } from '../schemas/learning-models';
-import { copiesLearnText, matchesLearnItem } from '../services/learn-check';
+import {
+  copiesLearnDefinition,
+  copiesLearnText,
+  matchesLearnItem,
+} from '../services/learn-check';
 import { LearnExampleAudio } from './learn-example-audio';
 
 type LearnEntryProps = {
@@ -127,10 +131,18 @@ const matchesCopy = (
   subject: CourseSubject,
   item: LearnItem,
   typed: string,
-): boolean =>
-  subject.kind === 'texts'
-    ? copiesLearnText(item, typed)
-    : matchesLearnItem(item, typed);
+): boolean => {
+  switch (subject.kind) {
+    case 'texts':
+      return copiesLearnText(item, typed);
+    case 'terms':
+      return copiesLearnDefinition(item, typed);
+    case 'language':
+      return matchesLearnItem(item, typed);
+    default:
+      return subject.kind satisfies never;
+  }
+};
 
 // A missed word is typed again from scratch; a missed definition or text
 // keeps the copy and names the first word that differs.
