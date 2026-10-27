@@ -47,7 +47,7 @@
   "dependencies": {
     "@ai-sdk/amazon-bedrock": "^5.0.117",
     "@ai-sdk/google-vertex": "^5.0.101",
-    "@ai-sdk/openai": "^4.0.91",
+    "@ai-sdk/openai": "^4.0.102",
     "@aws-sdk/client-polly": "^3.1146.0",
     "@aws-sdk/client-transcribe-streaming": "^3.1156.0",
     "ai": "^7.0.127",
