@@ -31,9 +31,9 @@
     "db:backfill-introductions": "bun --env-file=.env.local src/migrations/backfill-introductions.ts"
   },
   "dependencies": {
-    "@effect/sql-pg": "^4.0.5",
+    "@effect/sql-pg": "^4.0.6",
     "drizzle-orm": "^0.45.3",
-    "effect": "^4.0.5",
+    "effect": "^4.0.6",
     "postgres": "^3.4.9"
   },
   "devDependencies": {
