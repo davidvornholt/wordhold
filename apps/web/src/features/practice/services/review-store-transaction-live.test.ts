@@ -246,6 +246,33 @@ describe('PracticeReviewStore judge alternatives', () => {
       }),
     );
   });
+
+  it('reports no judge alternative when a stored answer differs only in case', async () => {
+    await runReviewTest(
+      Effect.gen(function* () {
+        const store = yield* PracticeReviewStore;
+        const sql = yield* Database;
+        yield* sql`
+          insert into accepted_answers
+            (entry_id, direction, text, normalized, source)
+          values (${firstReviewEntryId}, 'to_native', 'Das Buch', 'das buch',
+            'manual')
+        `;
+        const input = yield* makeInput(
+          firstReviewEntryId,
+          'to_native',
+          'das Buch',
+        );
+
+        const committed = yield* store.commit({
+          ...input,
+          normalizedAnswer: 'das buch',
+        });
+        expect(yield* judgeAlternatives(sql)).toEqual([]);
+        expect(committed).toMatchObject({ alternativeStored: false });
+      }),
+    );
+  });
 });
 
 it('persists a review after an open text edit preserves its synonym card', async () => {

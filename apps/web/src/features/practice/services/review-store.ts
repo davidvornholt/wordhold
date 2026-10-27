@@ -77,8 +77,11 @@ const insertJudgeAlternative = (
         values (${input.entryId}, ${input.direction}, ${input.answer.trim()},
           ${input.normalizedAnswer}, 'judge')
         on conflict do nothing
+        returning id
       `.pipe(
-        Effect.as(true),
+        // A stored answer that differs only in case already holds the
+        // normalized form, so nothing is inserted.
+        Effect.map((rows) => rows.length > 0),
         Effect.mapError((cause) =>
           databaseError('commit graded answer', cause),
         ),
