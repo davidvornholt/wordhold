@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import type { JudgeVerdictData } from '@wordhold/ai/judge/schema';
-import { Effect, Semaphore } from 'effect';
-import { StaleAnswerSubmissionError } from '../errors/practice-errors';
+import { Effect } from 'effect';
 import { commitGradedAnswer, type RunReviewTransaction } from './review-commit';
 
 type Store = { revision: number; reviews: number; alternatives: number };
@@ -21,100 +20,38 @@ const verdict = (
   ...overrides,
 });
 
-const makeTransactionalStore = () => {
+// Concurrency and rollback run against PostgreSQL in
+// review-store-transaction-live.test.ts.
+const makeStore = () => {
   const store: Store = { revision: 0, reviews: 0, alternatives: 0 };
-  const mutex = Semaphore.makeUnsafe(1);
-  const transaction =
-    (
-      expectedRevision: number,
-      failReview = false,
-    ): RunReviewTransaction<unknown> =>
-    (work) =>
-      mutex.withPermits(1)(
-        Effect.gen(function* () {
-          const draft = { ...store };
-          const result = yield* work({
-            advanceCard: () =>
-              Effect.sync(() => {
-                if (draft.revision !== expectedRevision) {
-                  return;
-                }
-                draft.revision += 1;
-                return draft.revision;
-              }),
-            insertAcceptedAlternative: () =>
-              Effect.sync(() => {
-                draft.alternatives += 1;
-                return true;
-              }),
-            insertReview: () =>
-              failReview
-                ? Effect.fail(new Error('review insert failed'))
-                : Effect.sync(() => {
-                    draft.reviews += 1;
-                  }),
-            entryKnown: () => Effect.succeed(true),
-          });
-          Object.assign(store, draft);
-          return result;
+  const transaction: RunReviewTransaction<never> = (work) =>
+    work({
+      advanceCard: () =>
+        Effect.sync(() => {
+          store.revision += 1;
+          return store.revision;
         }),
-      );
+      insertAcceptedAlternative: () =>
+        Effect.sync(() => {
+          store.alternatives += 1;
+          return true;
+        }),
+      insertReview: () =>
+        Effect.sync(() => {
+          store.reviews += 1;
+        }),
+      entryKnown: () => Effect.succeed(true),
+    });
   return { store, transaction };
 };
 
 describe('commitGradedAnswer', () => {
-  it('accepts one of two concurrent submissions for the same revision', async () => {
-    const { store, transaction } = makeTransactionalStore();
-    const results = await Promise.all([
-      Effect.runPromise(
-        commitGradedAnswer(transaction(0), verdict(), true).pipe(Effect.result),
-      ),
-      Effect.runPromise(
-        commitGradedAnswer(transaction(0), verdict(), true).pipe(Effect.result),
-      ),
-    ]);
-    const accepted = results.filter((result) => result._tag === 'Success');
-    expect(accepted).toHaveLength(1);
-    expect(
-      accepted.at(0)?._tag === 'Success' ? accepted.at(0)?.success : undefined,
-    ).toEqual({ revision: 1, entryKnown: true, alternativeStored: true });
-    const rejection = results.find((result) => result._tag === 'Failure');
-    expect(rejection?._tag).toBe('Failure');
-    const failure =
-      rejection?._tag === 'Failure' ? rejection.failure : undefined;
-    expect(failure).toBeInstanceOf(StaleAnswerSubmissionError);
-    expect(store).toEqual({ revision: 1, reviews: 1, alternatives: 1 });
-  });
-
-  it('claims the revision for a held-back answer', async () => {
-    const { store, transaction } = makeTransactionalStore();
-    const committed = await Effect.runPromise(
-      commitGradedAnswer(transaction(0), verdict(), false),
-    );
-    expect(committed).toEqual({
-      revision: 1,
-      entryKnown: true,
-      alternativeStored: true,
-    });
-    expect(store).toEqual({ revision: 1, reviews: 1, alternatives: 1 });
-  });
-
-  it('rolls back the card and alternative when review insertion fails', async () => {
-    const { store, transaction } = makeTransactionalStore();
-    await expect(
-      Effect.runPromise(
-        commitGradedAnswer(transaction(0, true), verdict(), true),
-      ),
-    ).rejects.toThrow('review insert failed');
-    expect(store).toEqual({ revision: 0, reviews: 0, alternatives: 0 });
-  });
-
   it.each([
     verdict({ correct: false }),
     verdict({ spelling: { ok: false, note: 'Tippfehler' } }),
   ])('rechecks the alternative predicate before persistence', async (value) => {
-    const { store, transaction } = makeTransactionalStore();
-    await Effect.runPromise(commitGradedAnswer(transaction(0), value, true));
+    const { store, transaction } = makeStore();
+    await Effect.runPromise(commitGradedAnswer(transaction, value, true));
     expect(store.alternatives).toBe(0);
     expect(store.reviews).toBe(1);
   });
