@@ -54,6 +54,7 @@ export const scheduleSummary = (
   entry: VocabularyEntry,
   enabledDirections: ReadonlyArray<AnswerDirection>,
   now: Date,
+  timeZone: string,
 ): string => {
   const activeCards = entry.cards.filter((card) =>
     enabledDirections.includes(card.direction),
@@ -77,17 +78,21 @@ export const scheduleSummary = (
   const nextDueAt = earliestDate(practiced.map((card) => card.dueAt));
   if (due.length > 0) {
     if (activeCards.length === 1 && nextDueAt !== null) {
-      return formatLearningDate(nextDueAt, now);
+      return formatLearningDate(nextDueAt, timeZone, now);
     }
     return dueSummary(due.length, activeCards.length);
   }
   return nextDueAt === null
     ? 'Noch kein weiterer Termin'
-    : `Nächste Wiederholung ${formatLearningDateInline(nextDueAt, now)}`;
+    : `Nächste Wiederholung ${formatLearningDateInline(nextDueAt, timeZone, now)}`;
 };
 
 // One direction's schedule: when it comes up next, or why it does not.
-export const cardStatus = (card: VocabularyCard, now: Date): string => {
+export const cardStatus = (
+  card: VocabularyCard,
+  now: Date,
+  timeZone: string,
+): string => {
   if (card.introducedAt === null) {
     return isRelationDirection(card.direction)
       ? 'Wird abgefragt, sobald die Vokabel kennengelernt ist'
@@ -100,8 +105,8 @@ export const cardStatus = (card: VocabularyCard, now: Date): string => {
     return 'Noch kein weiterer Termin';
   }
   return card.dueAt <= now
-    ? formatLearningDate(card.dueAt, now)
-    : `Nächste Wiederholung ${formatLearningDateInline(card.dueAt, now)}`;
+    ? formatLearningDate(card.dueAt, timeZone, now)
+    : `Nächste Wiederholung ${formatLearningDateInline(card.dueAt, timeZone, now)}`;
 };
 
 // What can change about a direction's learning pass: a direction still to be

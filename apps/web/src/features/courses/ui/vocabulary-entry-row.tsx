@@ -1,4 +1,5 @@
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
+import { useOwnerTimeZone } from '../../../shared/dates/owner-time-zone';
 import { type CourseSubject, isListCourse } from '../../../shared/directions';
 import { Checkbox } from '../../../shared/ui/selection-controls';
 import { SpellingPitfallNote } from '../../../shared/ui/spelling-pitfall-note';
@@ -37,6 +38,7 @@ export const VocabularyEntryRow = ({
   onToggle,
   onOpen,
 }: VocabularyEntryRowProps) => {
+  const timeZone = useOwnerTimeZone();
   const name = (
     <button
       aria-haspopup="dialog"
@@ -77,7 +79,7 @@ export const VocabularyEntryRow = ({
           </p>
         )}
         <p className="text-muted-foreground text-sm">
-          {scheduleSummary(entry, enabledDirections, now)}
+          {scheduleSummary(entry, enabledDirections, now, timeZone)}
           {answerSuffix(answerTally(entry, enabledDirections))}
         </p>
         {showPitfalls ? (

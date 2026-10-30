@@ -1,5 +1,6 @@
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import type { ReactNode } from 'react';
+import { useOwnerTimeZone } from '../../../shared/dates/owner-time-zone';
 import { type CourseSubject, directionLabel } from '../../../shared/directions';
 import type { VocabularyEntry } from '../schemas/course-units';
 import {
@@ -17,10 +18,11 @@ const CardSchedule = ({
   readonly enabled: boolean;
   readonly now: Date;
 }) => {
+  const timeZone = useOwnerTimeZone();
   if (!enabled) {
     return 'Nicht im Lernplan';
   }
-  const status = cardStatus(card, now);
+  const status = cardStatus(card, now, timeZone);
   return card.dueAt === null ? (
     status
   ) : (

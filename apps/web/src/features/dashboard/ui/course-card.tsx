@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { formatLearningDateInline } from '../../../shared/dates/learning-date';
+import { useOwnerTimeZone } from '../../../shared/dates/owner-time-zone';
 import {
   type CourseNouns,
   type CourseSubject,
@@ -54,13 +55,14 @@ const readyDetail = (stats: CourseStats): string =>
 const restingDetail = (
   stats: CourseStats,
   nouns: CourseNouns,
+  timeZone: string,
 ): string | null => {
   if (stats.unintroduced > 0) {
     return `Neue ${nouns.plural} verfügbar`;
   }
   return stats.nextDueAt === null
     ? null
-    : `Nächster Termin ${formatLearningDateInline(stats.nextDueAt)}`;
+    : `Nächster Termin ${formatLearningDateInline(stats.nextDueAt, timeZone)}`;
 };
 
 // What the course holds in memory so far: known entries over all entries,
@@ -93,9 +95,11 @@ const KnownMeter = ({
 const CourseProgress = ({
   stats,
   nouns,
+  timeZone,
 }: {
   readonly stats: CourseStats;
   readonly nouns: CourseNouns;
+  readonly timeZone: string;
 }) => (
   <div className="flex flex-col gap-4">
     <div className="flex flex-col gap-1">
@@ -112,7 +116,9 @@ const CourseProgress = ({
         </p>
       )}
       <p className="text-muted-foreground text-sm">
-        {stats.ready > 0 ? readyDetail(stats) : restingDetail(stats, nouns)}
+        {stats.ready > 0
+          ? readyDetail(stats)
+          : restingDetail(stats, nouns, timeZone)}
       </p>
     </div>
     <KnownMeter entries={stats.entries} known={stats.known} />
@@ -131,6 +137,7 @@ export const CourseCard = ({
   startAction,
 }: CourseCardProps) => {
   const nouns = courseNouns(course);
+  const timeZone = useOwnerTimeZone();
   // A subject's or collection's name says what it is; a language course may
   // need its language spelled out.
   const subtitle = isListCourse(course.kind)
@@ -152,7 +159,7 @@ export const CourseCard = ({
           {startAction}
         </div>
       ) : (
-        <CourseProgress nouns={nouns} stats={stats} />
+        <CourseProgress nouns={nouns} stats={stats} timeZone={timeZone} />
       )}
       <div className="mt-auto">
         {courseAction(stats, practiceAction, learnAction)}

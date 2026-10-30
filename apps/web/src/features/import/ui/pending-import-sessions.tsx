@@ -1,5 +1,7 @@
 import type { ReactNode, RefObject } from 'react';
 import { useEffect, useRef, useState } from 'react';
+import { useOwnerTimeZone } from '../../../shared/dates/owner-time-zone';
+import { formatShortDate } from '../../../shared/dates/zoned-format';
 import { countNoun } from '../../../shared/format/count';
 import { Button } from '../../../shared/ui/button';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
@@ -47,6 +49,7 @@ export const PendingImportSessions = ({
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [discardingId, setDiscardingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const timeZone = useOwnerTimeZone();
   const confirming = sessions.find((session) => session.id === confirmingId);
   // A discarded batch takes its delete button with it, and the last one the
   // whole list, so once the batch is gone, focus goes to the list heading or
@@ -107,7 +110,7 @@ export const PendingImportSessions = ({
             session.pageCount,
             'Seite',
             'Seiten',
-          )}, ${new Date(session.capturedAt).toLocaleDateString('de-DE')}`;
+          )}, ${formatShortDate(session.capturedAt, timeZone)}`;
           return (
             <li className="relative mt-2 ml-2" key={session.id}>
               <div
@@ -123,7 +126,7 @@ export const PendingImportSessions = ({
                   <h3 className="font-display text-lg">{session.courseName}</h3>
                   <p className="text-muted-foreground text-sm">
                     {countNoun(session.pageCount, 'Seite', 'Seiten')} ·{' '}
-                    {new Date(session.capturedAt).toLocaleDateString('de-DE')}
+                    {formatShortDate(session.capturedAt, timeZone)}
                   </p>
                 </div>
                 <div className="flex flex-col gap-1.5">

@@ -1,17 +1,11 @@
-const millisecondsPerDay = 86_400_000;
+import { calendarDay, zonedDateFormat } from './zoned-format';
 
-const startOfDay = (date: Date): Date => {
-  const start = new Date(date);
-  start.setHours(0, 0, 0, 0);
-  return start;
-};
-
-const time = new Intl.DateTimeFormat('de-DE', {
+const time = zonedDateFormat({
   hour: '2-digit',
   minute: '2-digit',
 });
 
-const dateTime = new Intl.DateTimeFormat('de-DE', {
+const dateTime = zonedDateFormat({
   day: '2-digit',
   month: '2-digit',
   year: 'numeric',
@@ -19,12 +13,15 @@ const dateTime = new Intl.DateTimeFormat('de-DE', {
   minute: '2-digit',
 });
 
-export const formatLearningDate = (dueAt: Date, now = new Date()): string => {
-  const dueDay = startOfDay(dueAt);
-  const today = startOfDay(now);
-  const dayDifference = Math.round(
-    (dueDay.getTime() - today.getTime()) / millisecondsPerDay,
-  );
+// "Heute" and "morgen" are the owner's calendar days, the same ones the
+// dashboard counts today's answers and the streak in.
+export const formatLearningDate = (
+  dueAt: Date,
+  timeZone: string,
+  now = new Date(),
+): string => {
+  const dayDifference =
+    calendarDay(dueAt, timeZone) - calendarDay(now, timeZone);
 
   if (dueAt.getTime() <= now.getTime()) {
     if (dayDifference === 0) {
@@ -36,20 +33,21 @@ export const formatLearningDate = (dueAt: Date, now = new Date()): string => {
     return `Seit ${Math.abs(dayDifference)} Tagen fällig`;
   }
   if (dayDifference === 0) {
-    return `Heute um ${time.format(dueAt)}`;
+    return `Heute um ${time(timeZone).format(dueAt)}`;
   }
   if (dayDifference === 1) {
-    return `Morgen um ${time.format(dueAt)}`;
+    return `Morgen um ${time(timeZone).format(dueAt)}`;
   }
-  return dateTime.format(dueAt).replace(',', ' um');
+  return dateTime(timeZone).format(dueAt).replace(',', ' um');
 };
 
 // The same phrase mid-sentence: "Nächster Termin morgen um 12:40".
 export const formatLearningDateInline = (
   dueAt: Date,
+  timeZone: string,
   now = new Date(),
 ): string => {
-  const phrase = formatLearningDate(dueAt, now);
+  const phrase = formatLearningDate(dueAt, timeZone, now);
   return `${phrase.charAt(0).toLocaleLowerCase('de-DE')}${phrase.slice(1)}`;
 };
 

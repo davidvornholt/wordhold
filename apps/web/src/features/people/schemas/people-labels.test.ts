@@ -47,26 +47,31 @@ describe('personStatus', () => {
   });
 });
 
+const berlin = 'Europe/Berlin';
+// 00:30 on 4 October in Berlin (UTC+2), but still 3 October in UTC.
+const justAfterMidnight = new Date('2026-10-03T22:30:00.000Z');
+
 describe('lastActive', () => {
-  it('says when the person last used Wordhold', () => {
-    expect(lastActive({ lastActiveAt: null })).toBe('Noch nie angemeldet');
-    expect(
-      lastActive({ lastActiveAt: new Date('2026-10-04T12:00:00.000Z') }),
-    ).toBe('Zuletzt aktiv am 4. Oktober 2026');
+  it('says when the person last used Wordhold, in the owner time zone', () => {
+    expect(lastActive({ lastActiveAt: null }, berlin)).toBe(
+      'Noch nie angemeldet',
+    );
+    expect(lastActive({ lastActiveAt: justAfterMidnight }, berlin)).toBe(
+      'Zuletzt aktiv am 4. Oktober 2026',
+    );
   });
 });
 
 describe('codeStatus', () => {
-  it('names the kind of code and when it expires', () => {
-    const expiresAt = new Date('2026-10-04T12:00:00.000Z');
+  it('names the kind of code and when it expires, in the owner time zone', () => {
+    const expiresAt = justAfterMidnight;
 
-    expect(codeStatus({ kind: 'invitation', expiresAt })).toStartWith(
-      'Einladung gültig bis 4. Oktober',
+    expect(codeStatus({ kind: 'invitation', expiresAt }, berlin)).toBe(
+      'Einladung gültig bis 4. Oktober um 00:30 Uhr',
     );
-    expect(codeStatus({ kind: 'recovery', expiresAt })).toStartWith(
-      'Wiederherstellungscode gültig bis 4. Oktober',
+    expect(codeStatus({ kind: 'recovery', expiresAt }, berlin)).toBe(
+      'Wiederherstellungscode gültig bis 4. Oktober um 00:30 Uhr',
     );
-    expect(codeStatus({ kind: 'recovery', expiresAt })).toEndWith(' Uhr');
   });
 });
 

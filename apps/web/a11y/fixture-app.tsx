@@ -1,3 +1,4 @@
+import { OwnerTimeZoneContext } from '../src/shared/dates/owner-time-zone';
 import { AppShell } from '../src/shared/ui/app-shell';
 import { wordmarkClass } from '../src/shared/ui/shell-styles';
 import {
@@ -318,20 +319,26 @@ const fixtureContent = (state: FixtureState) => {
   }
 };
 
+const fixtureTimeZone = 'Europe/Berlin';
+
 export const FixtureApp = () => {
   const state = readFixtureState();
   const content = fixtureContent(state);
-  return bareStates.has(state) ? (
-    content
-  ) : (
-    <AppShell
-      home={
-        <a className={wordmarkClass} href="/?state=dashboard">
-          Wordhold
-        </a>
-      }
-    >
-      {content}
-    </AppShell>
+  return (
+    <OwnerTimeZoneContext value={fixtureTimeZone}>
+      {bareStates.has(state) ? (
+        content
+      ) : (
+        <AppShell
+          home={
+            <a className={wordmarkClass} href="/?state=dashboard">
+              Wordhold
+            </a>
+          }
+        >
+          {content}
+        </AppShell>
+      )}
+    </OwnerTimeZoneContext>
   );
 };

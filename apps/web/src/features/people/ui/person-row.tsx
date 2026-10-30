@@ -1,4 +1,5 @@
 import { type ReactNode, useState } from 'react';
+import { useOwnerTimeZone } from '../../../shared/dates/owner-time-zone';
 import { Button } from '../../../shared/ui/button';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { codeStatus, lastActive, personStatus } from '../schemas/people-labels';
@@ -24,6 +25,7 @@ export const PersonRow = ({ person, actions, inspectLink }: PersonRowProps) => {
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const timeZone = useOwnerTimeZone();
 
   const run = async (action: () => Promise<void>) => {
     setBusy(true);
@@ -42,11 +44,11 @@ export const PersonRow = ({ person, actions, inspectLink }: PersonRowProps) => {
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h3 className="font-display text-lg">{person.name}</h3>
         <p className="text-muted-foreground text-sm">
-          {personStatus(person)} · {lastActive(person)}
+          {personStatus(person)} · {lastActive(person, timeZone)}
         </p>
       </div>
       {person.code === null ? null : (
-        <p className="text-sm">{codeStatus(person.code)}</p>
+        <p className="text-sm">{codeStatus(person.code, timeZone)}</p>
       )}
       {person.admin ? null : (
         <div className="flex flex-wrap items-center gap-x-5 gap-y-1">

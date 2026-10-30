@@ -1,6 +1,7 @@
 import type { SpellingPitfall } from '@wordhold/ai/pitfalls/schema';
 import type { CourseKind, LanguageCode } from '@wordhold/db/schema/courses';
 import { formatLearningDateInline } from '../../../shared/dates/learning-date';
+import { useOwnerTimeZone } from '../../../shared/dates/owner-time-zone';
 import type { PreparedExampleSentence } from '../../../shared/examples/example-model';
 import { normalizeAnswerForComparison } from '../../../shared/grading/normalize';
 import {
@@ -77,12 +78,14 @@ const scheduleLead = (
 const ScheduleNote = ({
   result,
   repeated,
+  timeZone,
 }: {
   readonly result: Extract<
     FeedbackResult,
     { readonly graded: true; readonly stored: true }
   >;
   readonly repeated: boolean;
+  readonly timeZone: string;
 }) => (
   <p className="text-muted-foreground text-sm">
     {result.schedule.dueAt === null ? (
@@ -91,7 +94,7 @@ const ScheduleNote = ({
       <>
         {scheduleLead(result, repeated)}
         <time dateTime={result.schedule.dueAt.toISOString()}>
-          {formatLearningDateInline(result.schedule.dueAt)}
+          {formatLearningDateInline(result.schedule.dueAt, timeZone)}
         </time>
         .
       </>
@@ -231,6 +234,7 @@ export const FeedbackPanel = ({
   // A recited text is never held back for overruling, so only a word or a
   // definition gets here.
   const pendingWrong = result.graded && !result.stored;
+  const timeZone = useOwnerTimeZone();
 
   return (
     <div
@@ -275,7 +279,7 @@ export const FeedbackPanel = ({
         </p>
       ) : null}
       {result.graded && result.stored ? (
-        <ScheduleNote repeated={repeated} result={result} />
+        <ScheduleNote repeated={repeated} result={result} timeZone={timeZone} />
       ) : null}
       {pendingWrong ? (
         <p className="text-muted-foreground text-sm">

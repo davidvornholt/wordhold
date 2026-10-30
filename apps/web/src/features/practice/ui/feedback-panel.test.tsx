@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import type { SpellingPitfall } from '@wordhold/ai/pitfalls/schema';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { OwnerTimeZoneContext } from '../../../shared/dates/owner-time-zone';
 import type { FeedbackResult } from '../schemas/practice-models';
 import { FeedbackPanel } from './feedback-panel';
 import {
@@ -40,22 +41,24 @@ const render = (
   } = {},
 ) =>
   renderToStaticMarkup(
-    <FeedbackPanel
-      answerLanguage="en"
-      busy={false}
-      dictated={false}
-      example={null}
-      id={feedbackId}
-      kind="language"
-      playSentence={null}
-      playWord={null}
-      repeated={false}
-      result={{ ...result, ...overrides } as FeedbackResult}
-      skipped={skipped}
-      spellingPitfalls={spellingPitfalls}
-      submittedAnswer={submittedAnswer}
-      targetLanguage="en"
-    />,
+    <OwnerTimeZoneContext value="Europe/Berlin">
+      <FeedbackPanel
+        answerLanguage="en"
+        busy={false}
+        dictated={false}
+        example={null}
+        id={feedbackId}
+        kind="language"
+        playSentence={null}
+        playWord={null}
+        repeated={false}
+        result={{ ...result, ...overrides } as FeedbackResult}
+        skipped={skipped}
+        spellingPitfalls={spellingPitfalls}
+        submittedAnswer={submittedAnswer}
+        targetLanguage="en"
+      />
+    </OwnerTimeZoneContext>,
   );
 
 const heldResult: Partial<FeedbackResult> = {

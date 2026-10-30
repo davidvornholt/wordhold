@@ -3,6 +3,7 @@ import {
   earliestDate,
   formatLearningDate,
 } from '../../../shared/dates/learning-date';
+import { useOwnerTimeZone } from '../../../shared/dates/owner-time-zone';
 import { countNoun } from '../../../shared/format/count';
 import type { RailOutcome } from '../../../shared/session/rail-outcome';
 import { itemsInNextSection } from '../../../shared/session/section-policy';
@@ -48,10 +49,12 @@ export const Figure = ({
 const NextDue = ({
   nextDueAt,
   now,
+  timeZone,
   reviewIsDue,
 }: {
   readonly nextDueAt: Date;
   readonly now: Date;
+  readonly timeZone: string;
   readonly reviewIsDue: boolean;
 }) => (
   <div className="flex flex-col gap-1 border-primary border-l-4 pl-4">
@@ -60,7 +63,7 @@ const NextDue = ({
     </p>
     <p className="font-display text-xl">
       <time dateTime={nextDueAt.toISOString()}>
-        {formatLearningDate(nextDueAt, now)}
+        {formatLearningDate(nextDueAt, timeZone, now)}
       </time>
     </p>
   </div>
@@ -112,6 +115,7 @@ export const SessionSummary = ({
     initialNextDueAt,
   ]);
   const now = new Date();
+  const timeZone = useOwnerTimeZone();
   const reviewIsDue = nextDueAt !== null && nextDueAt <= now;
   const showContinueControl =
     continueControl !== undefined && (remainingReady > 0 || reviewIsDue);
@@ -132,7 +136,12 @@ export const SessionSummary = ({
         </Callout>
       )}
       {nextDueAt === null ? null : (
-        <NextDue nextDueAt={nextDueAt} now={now} reviewIsDue={reviewIsDue} />
+        <NextDue
+          nextDueAt={nextDueAt}
+          now={now}
+          reviewIsDue={reviewIsDue}
+          timeZone={timeZone}
+        />
       )}
       {remainingReady > 0 ? (
         <p className="text-muted-foreground text-sm">

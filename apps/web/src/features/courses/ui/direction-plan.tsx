@@ -1,5 +1,6 @@
 import { type ReactNode, useId } from 'react';
 import { formatLearningDateInline } from '../../../shared/dates/learning-date';
+import { useOwnerTimeZone } from '../../../shared/dates/owner-time-zone';
 import {
   type CourseSubject,
   directionDescription,
@@ -39,7 +40,10 @@ const isRecommended = (
   recommendation?.kind === kind &&
   recommendation.direction === progress.direction;
 
-const practiceStatus = (progress: DirectionProgress): string | null => {
+const practiceStatus = (
+  progress: DirectionProgress,
+  timeZone: string,
+): string | null => {
   if (progress.due > 0) {
     return `Üben: ${countNoun(progress.due, 'Wiederholung', 'Wiederholungen')} offen`;
   }
@@ -47,7 +51,7 @@ const practiceStatus = (progress: DirectionProgress): string | null => {
     return `Üben: ${countNoun(progress.firstReviews, 'Karte', 'Karten')} zum ersten Mal`;
   }
   if (progress.nextDueAt !== null) {
-    return `Üben: nächster Termin ${formatLearningDateInline(progress.nextDueAt)}`;
+    return `Üben: nächster Termin ${formatLearningDateInline(progress.nextDueAt, timeZone)}`;
   }
   if (progress.introduced === 0) {
     return null;
@@ -78,6 +82,7 @@ export const DirectionPlan = ({
   renderScheduledAction,
 }: DirectionPlanProps) => {
   const headingId = useId();
+  const timeZone = useOwnerTimeZone();
   const recommendation = recommendedAction(words);
   const recommendedProgress = words.directions.find(
     (progress) => progress.direction === recommendation?.direction,
@@ -122,7 +127,7 @@ export const DirectionPlan = ({
               !isRelationDirection(progress.direction) &&
               progress.unintroduced > 0 &&
               !learnIsNext;
-            const status = practiceStatus(progress);
+            const status = practiceStatus(progress, timeZone);
             const meter = meterTexts(progress, label);
             return (
               <li

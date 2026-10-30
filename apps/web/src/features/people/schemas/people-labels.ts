@@ -1,13 +1,14 @@
 import type { AiOperation } from '@wordhold/ai/usage';
+import { zonedDateFormat } from '../../../shared/dates/zoned-format';
 import type { Person, UsageRow } from './people-models';
 
-const day = new Intl.DateTimeFormat('de-DE', {
+const day = zonedDateFormat({
   day: 'numeric',
   month: 'long',
   year: 'numeric',
 });
 
-const dayAndTime = new Intl.DateTimeFormat('de-DE', {
+const dayAndTime = zonedDateFormat({
   day: 'numeric',
   month: 'long',
   hour: '2-digit',
@@ -24,16 +25,22 @@ export const personStatus = (person: Person): string => {
   return person.registered ? 'Aktiv' : 'Wartet auf die Einrichtung';
 };
 
-export const lastActive = (person: Pick<Person, 'lastActiveAt'>): string =>
+export const lastActive = (
+  person: Pick<Person, 'lastActiveAt'>,
+  timeZone: string,
+): string =>
   person.lastActiveAt === null
     ? 'Noch nie angemeldet'
-    : `Zuletzt aktiv am ${day.format(person.lastActiveAt)}`;
+    : `Zuletzt aktiv am ${day(timeZone).format(person.lastActiveAt)}`;
 
-export const codeExpiry = (expiresAt: Date): string =>
-  `${dayAndTime.format(expiresAt)} Uhr`;
+export const codeExpiry = (expiresAt: Date, timeZone: string): string =>
+  `${dayAndTime(timeZone).format(expiresAt)} Uhr`;
 
-export const codeStatus = (code: NonNullable<Person['code']>): string =>
-  `${code.kind === 'recovery' ? 'Wiederherstellungscode' : 'Einladung'} gültig bis ${codeExpiry(code.expiresAt)}`;
+export const codeStatus = (
+  code: NonNullable<Person['code']>,
+  timeZone: string,
+): string =>
+  `${code.kind === 'recovery' ? 'Wiederherstellungscode' : 'Einladung'} gültig bis ${codeExpiry(code.expiresAt, timeZone)}`;
 
 const operationLabels: Readonly<Record<AiOperation, string>> = {
   'page-extraction': 'Seiten auslesen',

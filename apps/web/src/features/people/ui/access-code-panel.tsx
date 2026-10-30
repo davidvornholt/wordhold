@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
+import { useOwnerTimeZone } from '../../../shared/dates/owner-time-zone';
 import { Button } from '../../../shared/ui/button';
 import { Callout } from '../../../shared/ui/callout';
 import { fieldOnCardClass } from '../../../shared/ui/field-styles';
@@ -24,6 +25,7 @@ export const AccessCodePanel = ({
   const fieldId = useId();
   const headingRef = useRef<HTMLHeadingElement>(null);
   const [copy, setCopy] = useState<CopyState>('idle');
+  const timeZone = useOwnerTimeZone();
   useEffect(() => {
     headingRef.current?.focus();
   }, []);
@@ -42,8 +44,9 @@ export const AccessCodePanel = ({
         </h2>
         <p className="max-w-prose text-sm">
           Schick {issued.name} diesen Link direkt, zum Beispiel per Nachricht.
-          Er funktioniert einmal und bis {codeExpiry(issued.expiresAt)}. Wer ihn
-          öffnet, speichert einen Passkey auf dem eigenen Gerät.
+          Er funktioniert einmal und bis{' '}
+          {codeExpiry(issued.expiresAt, timeZone)}. Wer ihn öffnet, speichert
+          einen Passkey auf dem eigenen Gerät.
           {recovery
             ? ` Der neue Passkey ersetzt alle bisherigen, und ${issued.name} wird auf allen Geräten abgemeldet.`
             : ''}
