@@ -7,6 +7,7 @@ import { importRuntime } from '../../features/import/runtime';
 import { parseBoundedMultipartFormData } from '../../features/import/services/multipart';
 import { storeUploadedPage } from '../../features/import/services/upload';
 import { maximumUploadBatchSize } from '../../features/import/services/upload-queue';
+import { AuthenticationError } from '../../shared/auth/authentication-error';
 import { assertOwned, NotOwnedError } from '../../shared/auth/ownership';
 import { requireMember } from '../../shared/auth/require-member';
 import { Uuid } from '../../shared/validate/uuid';
@@ -75,6 +76,9 @@ const uploadResponse = (request: Request) =>
   }).pipe(
     Effect.match({
       onFailure: (error) => {
+        if (error instanceof AuthenticationError) {
+          return Response.json({ error: error.message }, { status: 401 });
+        }
         if (error instanceof UploadValidationError) {
           return Response.json(
             { error: error.message },
