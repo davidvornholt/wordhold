@@ -319,7 +319,6 @@ const fixtureContent = (state: FixtureState) => {
   }
 };
 
-// Production's root route provides the zone it loads from the server.
 const fixtureTimeZone = 'Europe/Berlin';
 
 export const FixtureApp = () => {

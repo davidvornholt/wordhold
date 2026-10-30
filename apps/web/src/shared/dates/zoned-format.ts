@@ -1,7 +1,3 @@
-// Every date on a page is written in the owner's time zone, never in the zone
-// of the process or device that renders it, so the server's HTML and the
-// browser's hydration print the same text.
-
 // One formatter per zone, because building an Intl formatter costs far more
 // than using one and a vocabulary list formats a date per row.
 export const zonedDateFormat = (options: Intl.DateTimeFormatOptions) => {
@@ -23,7 +19,6 @@ const numericDate = zonedDateFormat({
   year: 'numeric',
 });
 
-// "24.8.2026"
 export const formatShortDate = (date: Date, timeZone: string): string =>
   numericDate(timeZone).format(date);
 

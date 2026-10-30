@@ -7,8 +7,9 @@ const getOwnerTimeZone = createServerFn().handler(() =>
 
 let ownerTimeZone: Promise<string> | undefined;
 
-// The zone is fixed while the server runs, so the root route's loader asks
-// for it once per page load rather than again on every router.invalidate().
+// A successful result is kept for the life of the runtime, because the zone
+// doesn't change while the server runs, so router.invalidate() doesn't
+// request it again.
 export const loadOwnerTimeZone = (): Promise<string> => {
   ownerTimeZone ??= getOwnerTimeZone().catch((cause: unknown) => {
     ownerTimeZone = undefined;

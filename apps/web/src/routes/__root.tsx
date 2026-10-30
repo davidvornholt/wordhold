@@ -91,8 +91,6 @@ export const Route = createRootRoute({
   }),
   beforeLoad: ({ location }) =>
     redirectUnauthorizedRoute(location.pathname, getSessionUser),
-  // Dates are written in the owner's time zone on the server and again in
-  // the browser; the loader data carries the zone across.
   loader: () => loadOwnerTimeZone(),
   shellComponent: RootDocument,
   component: RootRoute,
