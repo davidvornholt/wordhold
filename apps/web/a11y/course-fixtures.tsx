@@ -8,6 +8,7 @@ import { DirectionPlan } from '../src/features/courses/ui/direction-plan';
 import { listItemNameClass } from '../src/features/courses/ui/list-item-name-styles';
 import { progressSummary } from '../src/features/courses/ui/progress-status';
 import { QuickEntry } from '../src/features/courses/ui/quick-entry';
+import { useOwnerTimeZone } from '../src/shared/dates/owner-time-zone';
 import { directionLabel } from '../src/shared/directions';
 import { countNoun } from '../src/shared/format/count';
 import { itemsInNextSection } from '../src/shared/session/section-policy';
@@ -205,13 +206,14 @@ const entriesByState: Record<
 // One unit screen holds both learning paths and its selectable vocabulary.
 export const UnitFixture = ({ state = 'mixed' }: UnitFixtureProps) => {
   const unit = unitsByState[state];
+  const timeZone = useOwnerTimeZone();
   return (
     <PageLayout
       backControl={fixtureBackControl(currentBook.name, 'book')}
       title={unit.name}
     >
       <p className="text-muted-foreground text-sm">
-        {`${currentBook.name} · ${progressSummary(unit)}`}
+        {`${currentBook.name} · ${progressSummary(unit, timeZone)}`}
       </p>
       {unit.directions.length === 0 ? null : (
         <FixtureDirectionPlan progress={unit} />

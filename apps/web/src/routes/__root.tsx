@@ -8,6 +8,8 @@ import {
 } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { getSessionUser } from '../shared/auth/session-fn';
+import { OwnerTimeZoneContext } from '../shared/dates/owner-time-zone';
+import { loadOwnerTimeZone } from '../shared/dates/owner-time-zone-fn';
 import { documentLanguage } from '../shared/routing/document-language';
 import {
   RootError,
@@ -67,6 +69,12 @@ const RootLayout = () => {
   );
 };
 
+const RootRoute = () => (
+  <OwnerTimeZoneContext value={Route.useLoaderData()}>
+    <RootLayout />
+  </OwnerTimeZoneContext>
+);
+
 export const Route = createRootRoute({
   head: () => ({
     meta: [
@@ -83,8 +91,11 @@ export const Route = createRootRoute({
   }),
   beforeLoad: ({ location }) =>
     redirectUnauthorizedRoute(location.pathname, getSessionUser),
+  // Dates are written in the owner's time zone on the server and again in
+  // the browser; the loader data carries the zone across.
+  loader: () => loadOwnerTimeZone(),
   shellComponent: RootDocument,
-  component: RootLayout,
+  component: RootRoute,
   errorComponent: RootError,
   notFoundComponent: RootNotFound,
   pendingComponent: RootPending,

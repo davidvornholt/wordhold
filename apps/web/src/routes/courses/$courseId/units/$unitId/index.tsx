@@ -7,6 +7,7 @@ import {
 } from '../../../../../features/courses/services/server-fns';
 import { progressSummary } from '../../../../../features/courses/ui/progress-status';
 import { getCourse } from '../../../../../features/import/server-fns';
+import { useOwnerTimeZone } from '../../../../../shared/dates/owner-time-zone';
 import { isListCourse } from '../../../../../shared/directions';
 import { BackLink } from '../../../../../shared/ui/back-link';
 import { PageLayout } from '../../../../../shared/ui/page-layout';
@@ -24,6 +25,7 @@ const UnitScreen = () => {
   const { filter } = Route.useSearch();
   const { book, course, courseEntries, directions, unit, unitEntries } =
     Route.useLoaderData();
+  const timeZone = useOwnerTimeZone();
   const backControl =
     book === undefined ? (
       <BackLink params={{ courseId: course.id }} to="/courses/$courseId">
@@ -53,8 +55,8 @@ const UnitScreen = () => {
     <PageLayout backControl={backControl} title={unit.name}>
       <p className="text-muted-foreground text-sm">
         {book === undefined
-          ? progressSummary(unit)
-          : `${book.name} · ${progressSummary(unit)}`}
+          ? progressSummary(unit, timeZone)
+          : `${book.name} · ${progressSummary(unit, timeZone)}`}
       </p>
       {unit.directions.length === 0 ? null : (
         <PlaceDirectionPlan

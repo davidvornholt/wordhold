@@ -1,3 +1,5 @@
+import { zonedDateFormat } from '../../../shared/dates/zoned-format';
+
 export type OwnPasskey = {
   readonly id: string;
   readonly name: string | null;
@@ -6,7 +8,7 @@ export type OwnPasskey = {
   readonly backedUp: boolean;
 };
 
-const day = new Intl.DateTimeFormat('de-DE', {
+const day = zonedDateFormat({
   day: 'numeric',
   month: 'long',
   year: 'numeric',
@@ -14,8 +16,8 @@ const day = new Intl.DateTimeFormat('de-DE', {
 
 // Each new passkey is named after the day it was saved, so a list of
 // several stays tellable apart.
-export const newPasskeyName = (now: Date): string =>
-  `Passkey vom ${day.format(now)}`;
+export const newPasskeyName = (now: Date, timeZone: string): string =>
+  `Passkey vom ${day(timeZone).format(now)}`;
 
 export const passkeyStorage = (passkey: Pick<OwnPasskey, 'backedUp'>) =>
   passkey.backedUp

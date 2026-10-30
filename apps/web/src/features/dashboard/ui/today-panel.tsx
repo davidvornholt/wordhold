@@ -1,5 +1,6 @@
 import type { ReactNode, RefObject } from 'react';
 import { formatLearningDateInline } from '../../../shared/dates/learning-date';
+import { useOwnerTimeZone } from '../../../shared/dates/owner-time-zone';
 import { countNoun } from '../../../shared/format/count';
 import type { PracticeDay } from '../schemas/dashboard-models';
 import { WeekStrip } from './week-strip';
@@ -26,15 +27,18 @@ const restingHeading = (nextDueAt: Date | null): string =>
     ? 'Noch nichts zu wiederholen'
     : 'Alles für heute wiederholt';
 
-const detailLine = ({
-  ready,
-  reviewsToday,
-  cardsToday,
-  nextDueAt,
-}: Pick<
-  TodayPanelProps,
-  'ready' | 'reviewsToday' | 'cardsToday' | 'nextDueAt'
->): string | null => {
+const detailLine = (
+  {
+    ready,
+    reviewsToday,
+    cardsToday,
+    nextDueAt,
+  }: Pick<
+    TodayPanelProps,
+    'ready' | 'reviewsToday' | 'cardsToday' | 'nextDueAt'
+  >,
+  timeZone: string,
+): string | null => {
   const parts: Array<string> = [];
   if (reviewsToday > 0) {
     parts.push(
@@ -46,7 +50,9 @@ const detailLine = ({
     );
   }
   if (ready === 0 && nextDueAt !== null) {
-    parts.push(`Nächster Termin ${formatLearningDateInline(nextDueAt)}`);
+    parts.push(
+      `Nächster Termin ${formatLearningDateInline(nextDueAt, timeZone)}`,
+    );
   }
   return parts.length === 0 ? null : parts.join(' · ');
 };
@@ -55,7 +61,7 @@ const detailLine = ({
 // and the one action that starts them, beside the last seven days.
 export const TodayPanel = (props: TodayPanelProps) => {
   const { ready, nextDueAt, week, streak, action, headingRef } = props;
-  const detail = detailLine(props);
+  const detail = detailLine(props, useOwnerTimeZone());
   return (
     <section className="grid gap-6 border-border border-b pb-8 sm:grid-cols-[1fr_auto] sm:items-start">
       <div className="flex flex-col items-start gap-4">

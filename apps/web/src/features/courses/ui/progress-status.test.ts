@@ -7,6 +7,7 @@ import {
 } from './progress-status';
 
 const vocabularyCount = 12;
+const berlin = 'Europe/Berlin';
 
 const progress = {
   entries: 10,
@@ -38,31 +39,31 @@ const book = (overrides: Partial<CourseBook>): CourseBook => ({
 
 describe('practiceStatus', () => {
   it('reports due reviews first, with singular grammar', () => {
-    expect(practiceStatus(unit({ due: 1, firstReviews: 3 }))).toBe(
+    expect(practiceStatus(unit({ due: 1, firstReviews: 3 }), berlin)).toBe(
       '1 Wiederholung offen',
     );
   });
 
   it('reports first reviews when nothing is due', () => {
-    expect(practiceStatus(unit({ firstReviews: 2 }))).toBe(
+    expect(practiceStatus(unit({ firstReviews: 2 }), berlin)).toBe(
       '2 Karten zum ersten Mal üben',
     );
   });
 
   it('reports rest when nothing is scheduled', () => {
-    expect(practiceStatus(unit({}))).toBe('Für jetzt geschafft');
+    expect(practiceStatus(unit({}), berlin)).toBe('Für jetzt geschafft');
   });
 
   it('names the next date when work is only scheduled later', () => {
     expect(
-      practiceStatus(unit({ nextDueAt: new Date('2099-01-01') })),
+      practiceStatus(unit({ nextDueAt: new Date('2099-01-01') }), berlin),
     ).toStartWith('Nächster Termin');
   });
 });
 
 describe('progressSummary', () => {
   it('reports an empty unit without practice status', () => {
-    expect(progressSummary(unit({ entries: 0, introduced: 0 }))).toBe(
+    expect(progressSummary(unit({ entries: 0, introduced: 0 }), berlin)).toBe(
       'Noch keine Vokabeln',
     );
   });
@@ -76,6 +77,7 @@ describe('progressSummary', () => {
           unintroduced: 3,
           due: 2,
         }),
+        berlin,
       ),
     ).toBe('12 Vokabeln · 3 noch kennenlernen · 2 Wiederholungen offen');
   });
@@ -88,12 +90,13 @@ describe('progressSummary', () => {
           introduced: 0,
           unintroduced: vocabularyCount,
         }),
+        berlin,
       ),
     ).toBe('12 Vokabeln · 12 noch kennenlernen');
   });
 
   it('summarizes fully introduced words', () => {
-    expect(progressSummary(unit({ entries: 1, introduced: 1 }))).toBe(
+    expect(progressSummary(unit({ entries: 1, introduced: 1 }), berlin)).toBe(
       '1 Vokabel · Für jetzt geschafft',
     );
   });

@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { newPasskeyName } from '../features/access/schemas/passkey-models';
 import { JoinScreen } from '../features/access/ui/join-screen';
 import { authClient, rejectAuthError } from '../shared/auth/client';
+import { useOwnerTimeZone } from '../shared/dates/owner-time-zone';
 import { BackLink } from '../shared/ui/back-link';
 import { PageLayout } from '../shared/ui/page-layout';
 
@@ -27,6 +28,7 @@ const takeCodeFromAddress = (): string => {
 const Join = () => {
   const router = useRouter();
   const navigate = useNavigate();
+  const timeZone = useOwnerTimeZone();
   const [initialCode, setInitialCode] = useState('');
   useEffect(() => {
     setInitialCode(takeCodeFromAddress());
@@ -49,7 +51,7 @@ const Join = () => {
             await authClient.passkey.addPasskey({
               context: code,
               createSession: true,
-              name: newPasskeyName(new Date()),
+              name: newPasskeyName(new Date(), timeZone),
             }),
           );
           await router.invalidate();

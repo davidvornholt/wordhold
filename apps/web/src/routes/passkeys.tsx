@@ -3,12 +3,14 @@ import { newPasskeyName } from '../features/access/schemas/passkey-models';
 import { listOwnPasskeys } from '../features/access/services/server-fns';
 import { PasskeysScreen } from '../features/access/ui/passkeys-screen';
 import { authClient, rejectAuthError } from '../shared/auth/client';
+import { useOwnerTimeZone } from '../shared/dates/owner-time-zone';
 import { BackLink } from '../shared/ui/back-link';
 import { PageLayout } from '../shared/ui/page-layout';
 
 const Passkeys = () => {
   const passkeys = Route.useLoaderData();
   const router = useRouter();
+  const timeZone = useOwnerTimeZone();
   return (
     <PageLayout
       backControl={<BackLink to="/">Übersicht</BackLink>}
@@ -18,7 +20,7 @@ const Passkeys = () => {
         add={async () => {
           rejectAuthError(
             await authClient.passkey.addPasskey({
-              name: newPasskeyName(new Date()),
+              name: newPasskeyName(new Date(), timeZone),
             }),
           );
           await router.invalidate();

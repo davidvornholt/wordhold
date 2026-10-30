@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { OwnerTimeZoneContext } from '../../../shared/dates/owner-time-zone';
 import type { VocabularyEntry } from '../schemas/course-units';
 import { ScheduleItems } from './vocabulary-schedule';
 import {
@@ -49,29 +50,32 @@ const entry: VocabularyEntry = {
 };
 
 const now = new Date('2026-08-29T10:00:00Z');
+const berlin = 'Europe/Berlin';
 
 describe('vocabulary schedule', () => {
   it('keeps a disabled direction out of the compact regular-plan status', () => {
-    const summary = scheduleSummary(entry, ['to_target'], now);
+    const summary = scheduleSummary(entry, ['to_target'], now, berlin);
 
-    expect(summary).toContain('31.08.2026 um 10:00');
+    expect(summary).toContain('31.08.2026 um 12:00');
     expect(summary).not.toContain('Richtungen fällig');
   });
 
   it('lists a disabled direction as outside the plan', () => {
     const markup = renderToStaticMarkup(
-      <dl>
-        <ScheduleItems
-          enabledDirections={['to_target']}
-          entry={entry}
-          now={now}
-          renderCardAction={() => null}
-          subject={{ kind: 'language', targetLanguage: 'en' }}
-        />
-      </dl>,
+      <OwnerTimeZoneContext value={berlin}>
+        <dl>
+          <ScheduleItems
+            enabledDirections={['to_target']}
+            entry={entry}
+            now={now}
+            renderCardAction={() => null}
+            subject={{ kind: 'language', targetLanguage: 'en' }}
+          />
+        </dl>
+      </OwnerTimeZoneContext>,
     );
 
-    expect(markup).toContain('31.08.2026 um 10:00');
+    expect(markup).toContain('31.08.2026 um 12:00');
     expect(markup).toContain('Nicht im Lernplan');
     expect(markup).toContain('2× fast richtig');
     expect(markup).toContain('1× nicht gewusst');
@@ -110,7 +114,7 @@ describe('vocabulary schedule', () => {
       cards: [target, synonym],
     };
 
-    expect(cardStatus(synonym, now)).toBe(
+    expect(cardStatus(synonym, now, berlin)).toBe(
       'Wird abgefragt, sobald die Vokabel kennengelernt ist',
     );
     expect(learningChangeFor(synonym)).toBeNull();

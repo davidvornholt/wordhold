@@ -3,12 +3,15 @@ import type { ReactNode } from 'react';
 import { batchReviewSearchFor } from '../../features/import/schemas/batch-review-search';
 import { getImportSession } from '../../features/import/server-fns';
 import { ImportSessionStack } from '../../features/import/ui/import-session-stack';
+import { useOwnerTimeZone } from '../../shared/dates/owner-time-zone';
+import { formatShortDate } from '../../shared/dates/zoned-format';
 import { ActionLink } from '../../shared/ui/action-link';
 import { BackLink } from '../../shared/ui/back-link';
 import { PageLayout } from '../../shared/ui/page-layout';
 
 const ImportSessionScreen = () => {
   const session = Route.useLoaderData();
+  const timeZone = useOwnerTimeZone();
   const pageIds = session.pages.map((page) => page.id);
   const firstPendingPage = session.pages.find(
     (page) => page.status === 'awaiting_verification',
@@ -47,7 +50,7 @@ const ImportSessionScreen = () => {
       title={`${session.courseName}: Seitenstapel`}
     >
       <p className="-mt-4 text-muted-foreground text-sm">
-        Import vom {new Date(session.capturedAt).toLocaleDateString('de-DE')}
+        Import vom {formatShortDate(session.capturedAt, timeZone)}
       </p>
       <ImportSessionStack
         pageImageSource={(page) => `/api/pages/${page.id}/image`}

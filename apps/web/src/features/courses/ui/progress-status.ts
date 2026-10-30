@@ -32,7 +32,10 @@ export const bookSummary = (
     .join(' · ');
 };
 
-export const practiceStatus = (progress: WordProgress): string => {
+export const practiceStatus = (
+  progress: WordProgress,
+  timeZone: string,
+): string => {
   if (progress.due > 0) {
     return `${countNoun(progress.due, 'Wiederholung', 'Wiederholungen')} offen`;
   }
@@ -42,13 +45,16 @@ export const practiceStatus = (progress: WordProgress): string => {
   if (progress.nextDueAt === null) {
     return 'Für jetzt geschafft';
   }
-  return `Nächster Termin ${formatLearningDateInline(progress.nextDueAt)}`;
+  return `Nächster Termin ${formatLearningDateInline(progress.nextDueAt, timeZone)}`;
 };
 
 // One line describing how far a unit or a book's own words have come, in the
 // same terms as the course summary. Progress per direction lives on the
 // unit's or book's own page.
-export const progressSummary = (progress: WordProgress): string => {
+export const progressSummary = (
+  progress: WordProgress,
+  timeZone: string,
+): string => {
   if (progress.entries === 0) {
     return 'Noch keine Vokabeln';
   }
@@ -58,7 +64,7 @@ export const progressSummary = (progress: WordProgress): string => {
       : `${progress.unintroduced} noch kennenlernen`;
   const practice =
     progress.unintroduced === 0 || progress.due > 0 || progress.firstReviews > 0
-      ? practiceStatus(progress)
+      ? practiceStatus(progress, timeZone)
       : null;
   return [
     countNoun(progress.entries, 'Vokabel', 'Vokabeln'),
