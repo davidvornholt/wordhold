@@ -49,6 +49,17 @@
       }
     },
     {
+      // Server-only Nitro runtime plugin: Nitro loads it through its default
+      // export, and it ends the server process.
+      "includes": ["apps/web/src/shared/runtime/exit-on-close.ts"],
+      "linter": {
+        "rules": {
+          "correctness": { "noNodejsModules": "off" },
+          "style": { "noDefaultExport": "off" }
+        }
+      }
+    },
+    {
       // TanStack Start has no framework image component; plain <img> is the
       // only way to render the auth-gated page photos.
       "includes": ["apps/web/src/**", "!**/routeTree.gen.ts"],

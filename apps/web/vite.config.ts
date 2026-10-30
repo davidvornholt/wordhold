@@ -29,7 +29,10 @@ export default defineConfig({
         },
       },
     }),
-    nitro({ preset: 'bun' }),
+    nitro({
+      preset: 'bun',
+      plugins: ['./src/shared/runtime/exit-on-close.ts'],
+    }),
     viteReact(),
     tailwindcss(),
   ],
