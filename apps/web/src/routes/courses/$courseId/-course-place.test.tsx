@@ -57,6 +57,7 @@ it.each(
             renderDetail: () => null,
             renderEditor: () => null,
             remove: () => Promise.resolve(),
+            moving: null,
             skipLearning: () => Promise.resolve([]),
             returnToLearning: () => Promise.resolve([]),
             preparePitfalls: withoutPitfalls,

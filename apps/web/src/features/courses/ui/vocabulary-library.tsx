@@ -41,9 +41,13 @@ type VocabularyLibraryProps = {
   readonly subject: CourseSubject;
   readonly renderStudyAction: (action: StudyAction) => ReactNode;
   readonly entryActions: CourseEntryActions;
-  // Where focus goes when an entry's dialog closes and its row is gone:
-  // deleted, or corrected so it no longer matches the search.
+  // Where focus goes when an entry's row or the selection is gone: deleted,
+  // moved, or corrected so it no longer matches the search.
   readonly fallbackFocusRef: RefObject<HTMLElement | null>;
+  // What the last move or deletion of a selection did, for the parent to show,
+  // since the list itself may be gone once its last entry is. Empty while
+  // another one is being considered.
+  readonly onSelectionNotice: (notice: string) => void;
 };
 
 type VocabularySection = readonly [string, ReadonlyArray<VocabularyEntry>];
@@ -105,6 +109,19 @@ const matchesQuery = (entry: VocabularyEntry, query: string): boolean => {
   );
 };
 
+// A place without words has no option in the dropdown, whether a link named it
+// or its last words were just moved or deleted, so the whole list shows.
+const usePlaceFilter = (
+  entries: ReadonlyArray<VocabularyEntry>,
+  initialPlaceId: string | undefined,
+) => {
+  const [chosen, choose] = useState(initialPlaceId ?? 'all');
+  const placeFilter = entries.some((entry) => isInPlace(entry, chosen))
+    ? chosen
+    : 'all';
+  return [placeFilter, choose] as const;
+};
+
 // The search and, for a list by place, the book or unit chosen.
 type ListScope = {
   readonly query: string;
@@ -141,7 +158,6 @@ const useEntryDialog = (
   } as const;
 };
 
-// The entries chosen for practice or for skipping their learning pass.
 const useSelection = () => {
   const [selected, setSelected] = useState<ReadonlyArray<string>>([]);
   const toggleEntry = (entryId: string) =>
@@ -239,6 +255,7 @@ export const VocabularyLibrary = ({
   renderStudyAction,
   entryActions,
   fallbackFocusRef,
+  onSelectionNotice,
 }: VocabularyLibraryProps) => {
   const nouns = courseNouns(subject);
   const pitfalls =
@@ -248,12 +265,7 @@ export const VocabularyLibrary = ({
   const [filter, setFilter] = useState<VocabularyFilter>(
     initialFilter === 'pitfalls' && !pitfalls ? 'all' : initialFilter,
   );
-  const [placeFilter, setPlaceFilter] = useState(
-    initialPlaceId !== undefined &&
-      entries.some((entry) => isInPlace(entry, initialPlaceId))
-      ? initialPlaceId
-      : 'all',
-  );
+  const [placeFilter, setPlaceFilter] = usePlaceFilter(entries, initialPlaceId);
   const { selected, setSelected, toggleEntry, toggleAll } = useSelection();
   const { now, shown, visible, sections, searching } = useListedEntries({
     entries,
@@ -338,6 +350,12 @@ export const VocabularyLibrary = ({
         renderStudyAction={(intent, primary) =>
           renderStudyAction({ entryIds: selected, intent, primary, list })
         }
+        fallbackFocusRef={fallbackFocusRef}
+        onChangeStarted={() => onSelectionNotice('')}
+        onChanged={(notice) => {
+          setSelected([]);
+          onSelectionNotice(notice);
+        }}
         subject={subject}
       />
       <VocabularyEntryDialog

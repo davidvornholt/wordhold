@@ -17,7 +17,8 @@ import {
   VocabularyEntryNotFoundError,
 } from '../errors/courses-errors';
 import type {
-  DeleteEntryData,
+  DeleteEntriesData,
+  MoveEntriesData,
   UpdateVocabularyEntryData,
 } from '../schemas/entry-changes';
 import type {
@@ -75,6 +76,16 @@ const placeMissing = ({ unitId }: WordPlace) =>
         message: 'Diese Einheit gibt es nicht mehr. Lade die Seite neu.',
       });
 
+const moveEntries = (
+  store: VocabularyEntryStore['Service'],
+  input: MoveEntriesData,
+) =>
+  Effect.flatMap(store.move(input), (result) =>
+    result.kind === 'place-missing'
+      ? Effect.fail(placeMissing(input))
+      : Effect.succeed(result.moved),
+  );
+
 export class VocabularyEntryService extends Context.Service<
   VocabularyEntryService,
   {
@@ -102,8 +113,14 @@ export class VocabularyEntryService extends Context.Service<
       AiUsage
     >;
     readonly remove: (
-      input: DeleteEntryData,
+      input: DeleteEntriesData,
     ) => Effect.Effect<void, CourseDatabaseError>;
+    readonly move: (
+      input: MoveEntriesData,
+    ) => Effect.Effect<
+      number,
+      CourseDatabaseError | CourseBookNotFoundError | CourseUnitNotFoundError
+    >;
     readonly generateExample: (
       input: VocabularyExampleRequestData,
     ) => Effect.Effect<
@@ -203,7 +220,7 @@ export class VocabularyEntryService extends Context.Service<
         });
 
       // Words, terms and texts alike.
-      const remove = (input: DeleteEntryData) =>
+      const remove = (input: DeleteEntriesData) =>
         Effect.gen(function* () {
           const removed = yield* store.remove(input);
           yield* removeEntryFiles(storage, removed.unreferencedFiles);
@@ -251,6 +268,7 @@ export class VocabularyEntryService extends Context.Service<
         create,
         update,
         remove,
+        move: (input) => moveEntries(store, input),
         generateExample,
         translateExample,
         suggestTranslation,

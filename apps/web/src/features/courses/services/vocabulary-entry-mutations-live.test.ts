@@ -316,9 +316,12 @@ describe('VocabularyEntryStore deletion', () => {
         const kept = yield* practisedWord('vous', 'ihr');
         const entryId = yield* practisedWord('la mémoire', 'die Erinnerung');
         expect(
-          yield* store.remove({ courseId: otherCourseId, entryId }),
+          yield* store.remove({
+            courseId: otherCourseId,
+            entryIds: [entryId],
+          }),
         ).toEqual({ unreferencedFiles: [] });
-        const removed = yield* store.remove({ courseId, entryId });
+        const removed = yield* store.remove({ courseId, entryIds: [entryId] });
         expect([...removed.unreferencedFiles].sort()).toEqual([
           exampleAudio,
           wordAudio,
@@ -349,9 +352,36 @@ describe('VocabularyEntryStore deletion', () => {
           audio: 1,
         });
         expect((yield* storedWord(kept)).entry?.targetText).toBe('vous');
-        expect(yield* store.remove({ courseId, entryId })).toEqual({
+        expect(yield* store.remove({ courseId, entryIds: [entryId] })).toEqual({
           unreferencedFiles: [],
         });
+      }),
+    );
+  });
+
+  it('deletes a selection together and returns the files of each word', async () => {
+    await runStoreTest(
+      Effect.gen(function* () {
+        yield* seedCourses;
+        const sql = yield* Database;
+        const store = yield* VocabularyEntryStore;
+        const kept = yield* practisedWord('vous', 'ihr');
+        const first = yield* practisedWord('la mémoire', 'die Erinnerung');
+        const second = yield* practisedWord('le voyage', 'die Reise');
+        const removed = yield* store.remove({
+          courseId,
+          entryIds: [first, second],
+        });
+        expect([...removed.unreferencedFiles].sort()).toEqual([
+          exampleAudio,
+          exampleAudio,
+          wordAudio,
+          wordAudio,
+        ]);
+        const left = yield* sql<{
+          readonly id: string;
+        }>`select id from entries`;
+        expect(left.map((row) => row.id)).toEqual([kept]);
       }),
     );
   });

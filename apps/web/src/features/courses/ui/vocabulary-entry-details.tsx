@@ -133,7 +133,7 @@ const EntryDialogBody = ({
     setDeleteError(null);
     onBusyChange(true);
     try {
-      await actions.remove(entry);
+      await actions.remove([entry.id]);
       onBusyChange(false);
       onRemoved();
     } catch {

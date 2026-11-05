@@ -68,8 +68,10 @@ const useFixtureTerms = (initial: ReadonlyArray<VocabularyEntry>) => {
     );
     return Promise.resolve();
   };
-  const removeEntry = (entryId: string) =>
-    setEntries((current) => current.filter((entry) => entry.id !== entryId));
+  const removeEntries = (entryIds: ReadonlyArray<string>) =>
+    setEntries((current) =>
+      current.filter((entry) => !entryIds.includes(entry.id)),
+    );
   const changeEntryLearning = (
     cardIds: ReadonlyArray<string>,
     change: 'skip' | 'return',
@@ -83,7 +85,7 @@ const useFixtureTerms = (initial: ReadonlyArray<VocabularyEntry>) => {
     createEntry,
     keepKeyPoints,
     updateEntry,
-    removeEntry,
+    removeEntries,
     changeEntryLearning,
   };
 };
@@ -132,7 +134,7 @@ export const SubjectCourseFixture = ({
     createEntry,
     keepKeyPoints,
     updateEntry,
-    removeEntry,
+    removeEntries,
     changeEntryLearning,
   } = useFixtureTerms(empty ? [] : subjectEntries);
   // The list refreshes after the dialog has closed, as the page's loader
@@ -150,10 +152,11 @@ export const SubjectCourseFixture = ({
         updateEntry={(draft) => updateEntry(entry.id, draft)}
       />
     ),
-    remove: (entry) => {
-      globalThis.setTimeout(() => removeEntry(entry.id));
+    remove: (entryIds) => {
+      globalThis.setTimeout(() => removeEntries(entryIds));
       return Promise.resolve();
     },
+    moving: null,
     skipLearning: (cardIds) => changeEntryLearning(cardIds, 'skip'),
     returnToLearning: (cardIds) => changeEntryLearning(cardIds, 'return'),
     preparePitfalls: withoutPitfalls,

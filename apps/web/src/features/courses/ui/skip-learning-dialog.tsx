@@ -152,8 +152,6 @@ type SkipLearningDialogProps = {
   readonly enabledDirections: ReadonlyArray<AnswerDirection>;
   readonly subject: CourseSubject;
   readonly actions: CourseEntryActions;
-  // Where focus goes on closing once nothing is left to skip, since the
-  // button that opened the dialog is gone by then.
   readonly returnFocusRef: RefObject<HTMLElement | null> | undefined;
   readonly onClose: () => void;
 };

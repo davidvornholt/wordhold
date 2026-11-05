@@ -1,6 +1,7 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import type { VocabularyEntry } from '../src/features/courses/schemas/course-units';
 import type { VocabularyFilter } from '../src/features/courses/schemas/vocabulary-search';
+import { SelectionNotice } from '../src/features/courses/ui/selection-notice';
 import { VocabularyExample } from '../src/features/courses/ui/vocabulary-example';
 import { VocabularyLibrary } from '../src/features/courses/ui/vocabulary-library';
 import type { PreparePitfalls } from '../src/shared/pitfalls/pitfall-model';
@@ -241,7 +242,9 @@ export const VocabularyFixture = ({
   const { entries, entryActions } = useFixtureWords(
     fixtureEntries(state),
     (entry) => <FixtureExample entry={entry} />,
+    'by-place',
   );
+  const [selectionNotice, setSelectionNotice] = useState('');
   const introRef = useRef<HTMLParagraphElement>(null);
   return (
     <PageLayout
@@ -256,6 +259,7 @@ export const VocabularyFixture = ({
         Termine gelten pro Abfragerichtung. Wähle Vokabeln aus beliebigen
         Einheiten.
       </p>
+      <SelectionNotice notice={selectionNotice} />
       <VocabularyLibrary
         enabledDirections={
           related
@@ -273,6 +277,7 @@ export const VocabularyFixture = ({
         fallbackFocusRef={introRef}
         initialFilter={fixtureFilters[state] ?? 'all'}
         layout="by-place"
+        onSelectionNotice={setSelectionNotice}
         renderStudyAction={(action) => <FixtureStudyAction action={action} />}
         subject={englishSubject}
       />

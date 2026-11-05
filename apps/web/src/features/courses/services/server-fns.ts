@@ -19,7 +19,8 @@ import {
   decodeReorderCourseUnits,
 } from '../schemas/course-unit-management';
 import {
-  decodeDeleteEntry,
+  decodeDeleteEntries,
+  decodeMoveEntries,
   decodeUpdateVocabularyEntry,
 } from '../schemas/entry-changes';
 import {
@@ -219,16 +220,27 @@ export const updateVocabularyEntry = createServerFn({ method: 'POST' })
     );
   });
 
-// Words and terms alike.
-export const deleteCourseEntry = createServerFn({ method: 'POST' })
-  .validator(decodeDeleteEntry)
+// The store only touches entries of the course, so owning the course covers
+// them, and an entry deleted in the meantime does not fail the rest.
+export const deleteCourseEntries = createServerFn({ method: 'POST' })
+  .validator(decodeDeleteEntries)
+  .handler(async ({ data }) => {
+    await requestMember({ courses: [data.courseId] });
+    return vocabularyRuntime.runPromise(
+      Effect.flatMap(VocabularyEntryService, (service) => service.remove(data)),
+    );
+  });
+
+export const moveCourseEntries = createServerFn({ method: 'POST' })
+  .validator(decodeMoveEntries)
   .handler(async ({ data }) => {
     await requestMember({
       courses: [data.courseId],
-      entries: [data.entryId],
+      books: [data.bookId],
+      units: data.unitId === null ? [] : [data.unitId],
     });
     return vocabularyRuntime.runPromise(
-      Effect.flatMap(VocabularyEntryService, (service) => service.remove(data)),
+      Effect.flatMap(VocabularyEntryService, (service) => service.move(data)),
     );
   });
 

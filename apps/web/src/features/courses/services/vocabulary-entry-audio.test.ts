@@ -26,6 +26,7 @@ const store: VocabularyEntryStore['Service'] = {
   create: unreached,
   update: unreached,
   remove: unreached,
+  move: unreached,
   storeAudio: unreached,
 };
 

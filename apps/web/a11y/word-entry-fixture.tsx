@@ -105,6 +105,7 @@ export const FixturePlaceVocabulary = ({
   const { entries, createEntry, entryActions } = useFixtureWords(
     initialEntries,
     (entry) => <FixtureVocabularyExample entry={entry} />,
+    'flat',
   );
   return (
     <PlaceVocabulary

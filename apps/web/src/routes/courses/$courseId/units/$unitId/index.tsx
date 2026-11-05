@@ -23,8 +23,15 @@ import {
 // selectable list — no separate filtered Vokabelliste to jump to.
 const UnitScreen = () => {
   const { filter } = Route.useSearch();
-  const { book, course, courseEntries, directions, unit, unitEntries } =
-    Route.useLoaderData();
+  const {
+    book,
+    course,
+    courseEntries,
+    directions,
+    outline,
+    unit,
+    unitEntries,
+  } = Route.useLoaderData();
   const timeZone = useOwnerTimeZone();
   const backControl =
     book === undefined ? (
@@ -84,6 +91,7 @@ const UnitScreen = () => {
         enabledDirections={directions}
         entries={unitEntries}
         initialFilter={filter ?? 'all'}
+        outline={outline}
         place={place}
       />
     </PageLayout>
@@ -117,6 +125,7 @@ export const Route = createFileRoute('/courses/$courseId/units/$unitId/')({
       course,
       courseEntries: entries,
       directions,
+      outline,
       unit,
       unitEntries: entries.filter((entry) => entry.unitId === params.unitId),
     };

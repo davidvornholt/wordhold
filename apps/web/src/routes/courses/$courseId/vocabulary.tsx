@@ -1,10 +1,12 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { parseVocabularySearch } from '../../../features/courses/schemas/vocabulary-search';
 import {
   getCourseDirections,
+  getCourseOutline,
   listCourseVocabulary,
 } from '../../../features/courses/services/server-fns';
+import { SelectionNotice } from '../../../features/courses/ui/selection-notice';
 import { VocabularyLibrary } from '../../../features/courses/ui/vocabulary-library';
 import { getCourse } from '../../../features/import/server-fns';
 import { isListCourse } from '../../../shared/directions';
@@ -14,9 +16,12 @@ import { useCourseEntryActions } from './-entry-forms';
 import { SelectionActions } from './-selection-actions';
 
 const VocabularyScreen = () => {
-  const { course, directions, entries, filter, place } = Route.useLoaderData();
-  const entryActions = useCourseEntryActions(course, entries);
-  // Takes focus once a word is deleted, since its row is gone.
+  const { course, directions, entries, filter, outline, place } =
+    Route.useLoaderData();
+  const entryActions = useCourseEntryActions(course, entries, outline);
+  const [selectionNotice, setSelectionNotice] = useState('');
+  // Takes focus once a word is deleted or a selection moved, since the row or
+  // the selection is gone.
   const introRef = useRef<HTMLParagraphElement>(null);
   return (
     <PageLayout
@@ -35,6 +40,7 @@ const VocabularyScreen = () => {
         Termine gelten pro Abfragerichtung. Wähle beliebige Vokabeln aus und übe
         genau diese Auswahl.
       </p>
+      <SelectionNotice notice={selectionNotice} />
       <VocabularyLibrary
         enabledDirections={directions}
         entries={entries}
@@ -42,6 +48,7 @@ const VocabularyScreen = () => {
         fallbackFocusRef={introRef}
         initialFilter={filter}
         initialPlaceId={place}
+        onSelectionNotice={setSelectionNotice}
         renderStudyAction={(action) => (
           <SelectionActions
             action={action}
@@ -64,10 +71,11 @@ export const Route = createFileRoute('/courses/$courseId/vocabulary')({
     place: search.place,
   }),
   loader: async ({ params, deps }) => {
-    const [course, directions, entries] = await Promise.all([
+    const [course, directions, entries, outline] = await Promise.all([
       getCourse({ data: params.courseId }),
       getCourseDirections({ data: params.courseId }),
       listCourseVocabulary({ data: params.courseId }),
+      getCourseOutline({ data: params.courseId }),
     ]);
     // A subject's or collection's page is its list of entries.
     if (isListCourse(course.kind)) {
@@ -82,6 +90,7 @@ export const Route = createFileRoute('/courses/$courseId/vocabulary')({
       directions,
       entries,
       filter: deps.filter,
+      outline,
       place: deps.place,
     };
   },

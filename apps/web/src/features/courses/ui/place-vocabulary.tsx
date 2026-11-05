@@ -7,6 +7,7 @@ import type { VocabularyEntry } from '../schemas/course-units';
 import type { VocabularyFilter } from '../schemas/vocabulary-search';
 import type { CourseEntryActions } from './entry-actions';
 import { PlaceVocabularyEmpty } from './place-vocabulary-empty';
+import { SelectionNotice } from './selection-notice';
 import type { StudyAction } from './study-action';
 import { VocabularyLibrary } from './vocabulary-library';
 
@@ -40,9 +41,11 @@ export const PlaceVocabulary = ({
   entryActions,
 }: PlaceVocabularyProps) => {
   const [adding, setAdding] = useState(false);
+  const [selectionNotice, setSelectionNotice] = useState('');
   // The first saved word replaces the empty state's button with this one.
   const addRef = useRef<HTMLButtonElement>(null);
-  // Takes focus once an entry is deleted, since its row is gone.
+  // Takes focus once an entry is deleted or a selection moved, since the row
+  // or the selection is gone.
   const headingRef = useRef<HTMLHeadingElement>(null);
   const headingId = useId();
   const isEmpty = entries.length === 0;
@@ -72,6 +75,7 @@ export const PlaceVocabulary = ({
         fallbackFocusRef={headingRef}
         initialFilter={initialFilter}
         layout="flat"
+        onSelectionNotice={setSelectionNotice}
         renderStudyAction={renderStudyAction}
         subject={subject}
       />
@@ -99,6 +103,7 @@ export const PlaceVocabulary = ({
           </Button>
         )}
       </div>
+      <SelectionNotice notice={selectionNotice} />
       {content}
       <Dialog
         closable={true}

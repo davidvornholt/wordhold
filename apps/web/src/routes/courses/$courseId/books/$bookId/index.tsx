@@ -4,7 +4,7 @@ import {
   redirect,
   useRouter,
 } from '@tanstack/react-router';
-import { useId } from 'react';
+import { useId, useState } from 'react';
 import type {
   CourseOutline,
   CourseUnit,
@@ -88,9 +88,20 @@ const unitsOf = (
 // its units.
 const BookScreen = () => {
   const { filter } = Route.useSearch();
-  const { book, books, course, courseEntries, directions, entries, units } =
-    Route.useLoaderData();
+  const {
+    book,
+    books,
+    course,
+    courseEntries,
+    directions,
+    entries,
+    outline,
+    units,
+  } = Route.useLoaderData();
   const router = useRouter();
+  // The word list stays until the learner leaves, even once its last word was
+  // moved or deleted, because focus and the notice of that change are in it.
+  const [arrivedWithWords] = useState((book?.entries ?? 0) > 0);
   const backControl = (
     <BackLink params={{ courseId: course.id }} to="/courses/$courseId">
       {course.name}
@@ -112,13 +123,13 @@ const BookScreen = () => {
   const bookUnits = async (
     update: Promise<CourseOutline>,
   ): Promise<ReadonlyArray<CourseUnit>> => {
-    const outline = await update;
+    const updated = await update;
     await router.invalidate();
-    return unitsOf(outline, book.id);
+    return unitsOf(updated, book.id);
   };
   const place = { courseId: course.id, bookId: book.id };
   const wordPlace = { bookId: book.id, unitId: null };
-  const showWords = book.entries > 0 || units.length === 0;
+  const showWords = book.entries > 0 || units.length === 0 || arrivedWithWords;
   return (
     <PageLayout backControl={backControl} title={book.name}>
       <EditableBook
@@ -168,6 +179,7 @@ const BookScreen = () => {
             enabledDirections={directions}
             entries={entries}
             initialFilter={filter ?? 'all'}
+            outline={outline}
             place={wordPlace}
           />
         ) : null}
@@ -211,6 +223,7 @@ export const Route = createFileRoute('/courses/$courseId/books/$bookId/')({
       entries: entries.filter(
         (entry) => entry.bookId === params.bookId && entry.unitId === null,
       ),
+      outline,
       units: outline.units.filter((unit) => unit.bookId === params.bookId),
     };
   },

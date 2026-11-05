@@ -4,14 +4,15 @@ import { Context, Effect, Layer } from 'effect';
 import { insertVocabularyEntries } from '../../../shared/vocabulary/insert-entries';
 import { CourseDatabaseError } from '../errors/courses-errors';
 import type {
-  DeleteEntryData,
+  DeleteEntriesData,
+  MoveEntriesData,
   UpdateVocabularyEntryData,
 } from '../schemas/entry-changes';
 import type { CreateVocabularyEntryData } from '../schemas/vocabulary-entry-creation';
 import { findCourseDuplicate } from './vocabulary-entry-duplicates';
 import {
   makeVocabularyEntryMutations,
-  type RemovedEntry,
+  type RemovedEntries,
   type UpdateVocabularyEntryResult,
 } from './vocabulary-entry-mutations';
 
@@ -34,12 +35,69 @@ export type CreateVocabularyEntryResult =
   | { readonly kind: 'place-missing' }
   | { readonly kind: 'duplicate'; readonly location: string };
 
+export type MoveEntriesResult =
+  | { readonly kind: 'moved'; readonly moved: number }
+  | { readonly kind: 'place-missing' };
+
+const selectPlace = (
+  sql: Database,
+  courseId: string,
+  { bookId, unitId }: WordPlace,
+) =>
+  sql<PlaceContext>`
+    select co.kind, co.target_language as "targetLanguage",
+      u.name as "unitName"
+    from books b
+    join courses co on co.id = b.course_id
+    left join units u on u.id = ${unitId}::uuid and u.book_id = b.id
+    where b.id = ${bookId} and b.course_id = ${courseId}
+      and (${unitId}::uuid is null or u.id is not null)
+    limit 1
+  `.pipe(Effect.map((rows) => rows[0]));
+
 const databaseError = (operation: string, cause: unknown) =>
   new CourseDatabaseError({
     operation,
     cause,
     message: 'Die Vokabel konnte nicht gespeichert werden.',
   });
+
+// A word's book and unit change together, since the foreign keys tie its unit
+// to its book and its book to its course. Everything learned hangs off the
+// entry, so it moves along, and the duplicate check spans the whole course, so a
+// move cannot create a duplicate. A word of another course or one deleted in the
+// meantime is skipped.
+const moveEntries = (
+  sql: Database,
+  { courseId, entryIds, bookId, unitId }: MoveEntriesData,
+) =>
+  sql
+    .withTransaction(
+      Effect.gen(function* () {
+        const place = yield* selectPlace(sql, courseId, { bookId, unitId });
+        if (place === undefined) {
+          return { kind: 'place-missing' } as const;
+        }
+        const moved = yield* sql`
+          update entries
+          set book_id = ${bookId}, unit_id = ${unitId}::uuid
+          where id = any(${`{${entryIds.join(',')}}`}::uuid[])
+            and course_id = ${courseId}
+          returning id
+        `;
+        return { kind: 'moved', moved: moved.length } as const;
+      }),
+    )
+    .pipe(
+      Effect.mapError(
+        (cause) =>
+          new CourseDatabaseError({
+            operation: 'move entries',
+            cause,
+            message: 'Die Vokabeln konnten nicht verschoben werden.',
+          }),
+      ),
+    );
 
 export class VocabularyEntryStore extends Context.Service<
   VocabularyEntryStore,
@@ -65,8 +123,11 @@ export class VocabularyEntryStore extends Context.Service<
       input: UpdateVocabularyEntryData,
     ) => Effect.Effect<UpdateVocabularyEntryResult, CourseDatabaseError>;
     readonly remove: (
-      input: DeleteEntryData,
-    ) => Effect.Effect<RemovedEntry, CourseDatabaseError>;
+      input: DeleteEntriesData,
+    ) => Effect.Effect<RemovedEntries, CourseDatabaseError>;
+    readonly move: (
+      input: MoveEntriesData,
+    ) => Effect.Effect<MoveEntriesResult, CourseDatabaseError>;
   }
 >()('wordhold/VocabularyEntryStore') {
   static readonly live = Layer.effect(
@@ -85,22 +146,8 @@ export class VocabularyEntryStore extends Context.Service<
           ),
         );
 
-      // A book without the unit yields no row when a unit was asked for,
-      // because the unit's name is then required to match.
-      const selectPlace = (courseId: string, { bookId, unitId }: WordPlace) =>
-        sql<PlaceContext>`
-          select co.kind, co.target_language as "targetLanguage",
-            u.name as "unitName"
-          from books b
-          join courses co on co.id = b.course_id
-          left join units u on u.id = ${unitId}::uuid and u.book_id = b.id
-          where b.id = ${bookId} and b.course_id = ${courseId}
-            and (${unitId}::uuid is null or u.id is not null)
-          limit 1
-        `.pipe(Effect.map((rows) => rows[0]));
-
       const readPlace = (courseId: string, place: WordPlace) =>
-        selectPlace(courseId, place).pipe(
+        selectPlace(sql, courseId, place).pipe(
           Effect.mapError((cause) => databaseError('read place', cause)),
         );
 
@@ -115,7 +162,7 @@ export class VocabularyEntryStore extends Context.Service<
           .withTransaction(
             Effect.gen(function* () {
               yield* sql`select pg_advisory_xact_lock(hashtextextended(${input.courseId}, 0))`;
-              const place = yield* selectPlace(input.courseId, input);
+              const place = yield* selectPlace(sql, input.courseId, input);
               if (place === undefined) {
                 return { kind: 'place-missing' } as const;
               }
@@ -180,6 +227,7 @@ export class VocabularyEntryStore extends Context.Service<
         readCourse,
         readPlace,
         create,
+        move: (input: MoveEntriesData) => moveEntries(sql, input),
         storeAudio,
         ...makeVocabularyEntryMutations(sql),
       } as const;

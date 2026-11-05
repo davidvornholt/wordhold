@@ -224,8 +224,10 @@ const useFixtureTexts = (initial: ReadonlyArray<VocabularyEntry>) => {
     );
     return Promise.resolve();
   };
-  const removeEntry = (entryId: string) =>
-    setEntries((current) => current.filter((entry) => entry.id !== entryId));
+  const removeEntries = (entryIds: ReadonlyArray<string>) =>
+    setEntries((current) =>
+      current.filter((entry) => !entryIds.includes(entry.id)),
+    );
   const changeEntryLearning = (
     cardIds: ReadonlyArray<string>,
     change: 'skip' | 'return',
@@ -238,7 +240,7 @@ const useFixtureTexts = (initial: ReadonlyArray<VocabularyEntry>) => {
     entries,
     createEntry,
     updateEntry,
-    removeEntry,
+    removeEntries,
     changeEntryLearning,
   };
 };
@@ -266,7 +268,7 @@ export const TextsCourseFixture = ({
     entries,
     createEntry,
     updateEntry,
-    removeEntry,
+    removeEntries,
     changeEntryLearning,
   } = useFixtureTexts(empty ? [] : collectionEntries);
   const entryActions: CourseEntryActions = {
@@ -279,10 +281,11 @@ export const TextsCourseFixture = ({
         updateEntry={(draft) => updateEntry(entry.id, draft)}
       />
     ),
-    remove: (entry) => {
-      globalThis.setTimeout(() => removeEntry(entry.id));
+    remove: (entryIds) => {
+      globalThis.setTimeout(() => removeEntries(entryIds));
       return Promise.resolve();
     },
+    moving: null,
     skipLearning: (cardIds) => changeEntryLearning(cardIds, 'skip'),
     returnToLearning: (cardIds) => changeEntryLearning(cardIds, 'return'),
     preparePitfalls: withoutPitfalls,

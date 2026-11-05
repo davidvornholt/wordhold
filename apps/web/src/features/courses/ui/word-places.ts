@@ -38,6 +38,19 @@ export const wordPlaceOptions = ({
       })),
   ]);
 
+export const moveTargets = (
+  options: ReadonlyArray<WordPlaceOption>,
+  entries: ReadonlyArray<{
+    readonly bookId: string;
+    readonly unitId: string | null;
+  }>,
+): ReadonlyArray<WordPlaceOption> => {
+  const current = new Set(entries.map((entry) => entry.unitId ?? entry.bookId));
+  return current.size === 1
+    ? options.filter((option) => !current.has(option.value))
+    : options;
+};
+
 // The place that received the latest word. Before any word exists, the most
 // recently added book, since books are listed in the order they were added.
 export const lastUsedWordPlace = (

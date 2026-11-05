@@ -1,6 +1,7 @@
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import { useId } from 'react';
 import type {
+  CourseOutline,
   VocabularyEntry,
   WordProgress,
 } from '../../../features/courses/schemas/course-units';
@@ -174,6 +175,7 @@ type PlaceWordsProps = {
   readonly enabledDirections: ReadonlyArray<AnswerDirection>;
   readonly entries: ReadonlyArray<VocabularyEntry>;
   readonly courseEntries: ReadonlyArray<VocabularyEntry>;
+  readonly outline: CourseOutline;
 };
 
 export const PlaceWords = ({
@@ -183,10 +185,11 @@ export const PlaceWords = ({
   enabledDirections,
   entries,
   courseEntries,
+  outline,
 }: PlaceWordsProps) => {
   const courseId = course.id;
   const selection = placeSelection(place);
-  const entryActions = useCourseEntryActions(course, courseEntries);
+  const entryActions = useCourseEntryActions(course, courseEntries, outline);
   return (
     <PlaceVocabulary
       enabledDirections={enabledDirections}

@@ -127,6 +127,7 @@ const runService = <A, E>(
       create: () => Effect.succeed(createResult),
       update: () => Effect.succeed(updateResult),
       remove: () => Effect.succeed({ unreferencedFiles: staleFiles }),
+      move: () => Effect.die('moving is tested on its own'),
       storeAudio: (_entryId, profile) => {
         audioReferences.push(profile);
         return Effect.void;
@@ -353,12 +354,12 @@ describe('VocabularyEntryService corrections', () => {
 
   it('deletes the entry even when its files cannot be removed', async () => {
     const deleted = await runService((service) =>
-      service.remove({ courseId, entryId }),
+      service.remove({ courseId, entryIds: [entryId] }),
     );
     expect(deleted.result._tag).toBe('Success');
     expect(deleted.removed).toEqual(staleFiles);
     const stuck = await runService(
-      (service) => service.remove({ courseId, entryId }),
+      (service) => service.remove({ courseId, entryIds: [entryId] }),
       { removeFails: true },
     );
     expect(stuck.result._tag).toBe('Success');

@@ -72,7 +72,9 @@ test('a selection skips its learning pass per direction and can undo it', async 
   await page.goto('/?state=vocabulary');
   await page.getByLabel('memory auswählen').check();
   await page.getByLabel('the referee auswählen').check();
-  const openDialog = page.getByRole('button', {
+  const menuButton = page.getByRole('button', { name: 'Weitere Aktionen' });
+  await menuButton.click();
+  const openDialog = page.getByRole('menuitem', {
     exact: true,
     name: 'Kennenlernen überspringen',
   });
@@ -113,14 +115,14 @@ test('a selection skips its learning pass per direction and can undo it', async 
     'Überspringen rückgängig gemacht · Englisch → Deutsch',
   );
 
-  // Once nothing is left to skip, the button that opened the dialog is gone
-  // and focus returns to the selection instead.
   await skipButton.click();
   await expect(undo).toBeFocused();
   await dialog.getByRole('button', { name: 'Fertig' }).click();
   await expect(dialog).toBeHidden();
-  await expect(openDialog).toBeHidden();
-  await expect(page.getByText('2 Vokabeln ausgewählt')).toBeFocused();
+  await expect(menuButton).toBeFocused();
+  await menuButton.click();
+  await expect(openDialog).toHaveCount(0);
+  await page.keyboard.press('Escape');
 
   await page.getByRole('button', { exact: true, name: 'memory' }).click();
   await expect(
@@ -160,8 +162,9 @@ test('synonyms and opposites have no learning pass and follow their word', async
 
   await page.getByLabel('memory auswählen').check();
   await page.getByLabel('happy auswählen').check();
+  await page.getByRole('button', { name: 'Weitere Aktionen' }).click();
   await page
-    .getByRole('button', { exact: true, name: 'Kennenlernen überspringen' })
+    .getByRole('menuitem', { exact: true, name: 'Kennenlernen überspringen' })
     .click();
   const dialog = page.getByRole('dialog', {
     name: 'Kennenlernen überspringen',
@@ -180,8 +183,9 @@ test('a term has one learning pass to skip, without naming a direction', async (
   await page.goto('/?state=terms-course');
   await page.getByLabel('Enzym auswählen').check();
   await page.getByLabel('Katalysator auswählen').check();
+  await page.getByRole('button', { name: 'Weitere Aktionen' }).click();
   await page
-    .getByRole('button', { exact: true, name: 'Kennenlernen überspringen' })
+    .getByRole('menuitem', { exact: true, name: 'Kennenlernen überspringen' })
     .click();
   const dialog = page.getByRole('dialog', {
     name: 'Kennenlernen überspringen',
