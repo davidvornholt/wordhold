@@ -22,7 +22,6 @@ const bookId = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
 const unitId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const entryId = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
 
-// A move only asks the store.
 const unreached = () => Effect.die('moving uses nothing but the store');
 
 const moveTo = (targetUnitId: string | null, stored: MoveEntriesResult) =>

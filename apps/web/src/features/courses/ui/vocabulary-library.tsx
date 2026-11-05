@@ -158,7 +158,6 @@ const useEntryDialog = (
   } as const;
 };
 
-// The entries chosen for practice or for skipping their learning pass.
 const useSelection = () => {
   const [selected, setSelected] = useState<ReadonlyArray<string>>([]);
   const toggleEntry = (entryId: string) =>

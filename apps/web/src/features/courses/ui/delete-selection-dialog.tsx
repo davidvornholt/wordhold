@@ -79,7 +79,6 @@ export const DeleteSelectionDialog = ({
       onClose={onClose}
       open={open}
       returnFocusRef={returnFocusRef}
-      // Closed, it names no count, since no selection is being deleted.
       title={open ? `${count} löschen?` : ''}
     >
       <SelectionDeletion

@@ -39,8 +39,6 @@ export type MoveEntriesResult =
   | { readonly kind: 'moved'; readonly moved: number }
   | { readonly kind: 'place-missing' };
 
-// A book without the unit yields no row when a unit was asked for, because the
-// unit's name is then required to match.
 const selectPlace = (
   sql: Database,
   courseId: string,

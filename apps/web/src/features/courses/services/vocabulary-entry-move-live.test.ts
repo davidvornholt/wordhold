@@ -51,7 +51,6 @@ const seedCourses = Effect.gen(function* () {
   `;
 });
 
-// A word with a schedule, a history and an accepted alternative answer.
 const practisedWord = (targetText: string) =>
   Effect.gen(function* () {
     const sql = yield* Database;
@@ -91,7 +90,6 @@ const placeOf = (entryId: string) =>
     return place;
   });
 
-// All that was learned about a word, which a move must leave alone.
 const learnedAbout = (entryId: string) =>
   Effect.gen(function* () {
     const sql = yield* Database;

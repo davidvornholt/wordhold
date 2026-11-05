@@ -9,7 +9,6 @@ import type { WordPlace, WordPlaceOption } from './word-places';
 
 type MoveFormProps = {
   readonly options: ReadonlyArray<WordPlaceOption>;
-  // Resolves to the notice for what was moved.
   readonly move: (option: WordPlaceOption) => Promise<string>;
   readonly onBusyChange: (busy: boolean) => void;
   readonly onMoved: (notice: string) => void;
@@ -109,7 +108,6 @@ type MoveSelectionDialogProps = {
   readonly open: boolean;
   readonly entries: ReadonlyArray<VocabularyEntry>;
   readonly subject: CourseSubject;
-  // The places this selection can go to.
   readonly options: ReadonlyArray<WordPlaceOption>;
   readonly move: (
     entryIds: ReadonlyArray<string>,
@@ -145,7 +143,6 @@ export const MoveSelectionDialog = ({
       onClose={onClose}
       open={open}
       returnFocusRef={returnFocusRef}
-      // Closed, it names no count, since no selection is being moved.
       title={
         open
           ? `${countNoun(entries.length, nouns.singular, nouns.plural)} verschieben`

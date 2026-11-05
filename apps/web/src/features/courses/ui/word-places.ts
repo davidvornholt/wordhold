@@ -38,8 +38,6 @@ export const wordPlaceOptions = ({
       })),
   ]);
 
-// Where a selection can move to: every place, except the one all of it is
-// already in.
 export const moveTargets = (
   options: ReadonlyArray<WordPlaceOption>,
   entries: ReadonlyArray<{

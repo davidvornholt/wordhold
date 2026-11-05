@@ -115,7 +115,6 @@ export class VocabularyEntryService extends Context.Service<
     readonly remove: (
       input: DeleteEntriesData,
     ) => Effect.Effect<void, CourseDatabaseError>;
-    // Succeeds with how many words were moved.
     readonly move: (
       input: MoveEntriesData,
     ) => Effect.Effect<
