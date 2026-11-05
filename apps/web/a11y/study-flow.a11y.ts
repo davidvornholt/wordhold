@@ -4,7 +4,7 @@ import { assertNoAccessibilityViolations } from './a11y-assertions';
 
 const forwardDirectionPattern = /Deutsch → Englisch/u;
 const cardStartPattern = /Karten? starten/u;
-const studyActionPattern = /^Auswahl (?:kennenlernen|üben)$/u;
+const studyActionPattern = /^Auswahl /u;
 
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
@@ -110,8 +110,9 @@ test('a selection offers learning what is open before practising what is learned
   ).toHaveText(['Auswahl kennenlernen', 'Auswahl üben']);
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
 
+  await page.getByRole('button', { name: 'Weitere Aktionen' }).click();
   await page
-    .getByRole('button', { exact: true, name: 'Kennenlernen überspringen' })
+    .getByRole('menuitem', { exact: true, name: 'Kennenlernen überspringen' })
     .click();
   const dialog = page.getByRole('dialog', {
     name: 'Kennenlernen überspringen',

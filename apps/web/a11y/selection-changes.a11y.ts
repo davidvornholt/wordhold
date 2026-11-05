@@ -7,10 +7,20 @@ test.use({ contextOptions: { reducedMotion: 'reduce' } });
 // Playwright's Page type reaches this file only through the test fixtures.
 type Page = Parameters<Parameters<typeof test>[2]>[0]['page'];
 
-const moveButton = (page: Page) =>
-  page.getByRole('button', { name: 'Auswahl verschieben' });
-const deleteButton = (page: Page) =>
-  page.getByRole('button', { name: 'Auswahl löschen' });
+const menuButton = (page: Page) =>
+  page.getByRole('button', { name: 'Weitere Aktionen' });
+const moveItem = (page: Page) =>
+  page.getByRole('menuitem', { name: 'Auswahl verschieben' });
+const deleteItem = (page: Page) =>
+  page.getByRole('menuitem', { name: 'Auswahl löschen' });
+const chooseMove = async (page: Page) => {
+  await menuButton(page).click();
+  await moveItem(page).click();
+};
+const chooseDelete = async (page: Page) => {
+  await menuButton(page).click();
+  await deleteItem(page).click();
+};
 const notice = (page: Page) =>
   page.getByRole('status', { name: 'Status der Auswahl' });
 const intro = (page: Page) =>
@@ -28,7 +38,7 @@ test('a selection moves to another unit and keeps its words', async ({
   await page.goto('/?state=vocabulary');
   await select(page, 'memory');
   await select(page, 'the referee');
-  await moveButton(page).click();
+  await chooseMove(page);
   const dialog = page.getByRole('dialog', { name: '2 Vokabeln verschieben' });
   const place = dialog.getByLabel('Verschieben nach');
   await expect(place).toBeFocused();
@@ -48,7 +58,7 @@ test('a selection moves to another unit and keeps its words', async ({
     `2 Vokabeln nach „${target}“ verschoben.`,
   );
   await expect(intro(page)).toBeFocused();
-  await expect(moveButton(page)).toBeHidden();
+  await expect(menuButton(page)).toBeHidden();
   await expect(page.getByRole('checkbox', { name: target })).toBeVisible();
   await expect(entryRow(page, 'memory')).toBeVisible();
   await expect(entryRow(page, 'the referee')).toBeVisible();
@@ -62,7 +72,7 @@ test('a selection is deleted only after a warning that names its size', async ({
   await page.goto('/?state=vocabulary');
   await select(page, 'memory');
   await select(page, 'the referee');
-  await deleteButton(page).click();
+  await chooseDelete(page);
   const dialog = page.getByRole('dialog', { name: '2 Vokabeln löschen?' });
   await expect(
     dialog.getByText('Löschen entfernt auch den Lernstand', { exact: false }),
@@ -72,16 +82,16 @@ test('a selection is deleted only after a warning that names its size', async ({
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
   await dialog.getByRole('button', { name: 'Behalten' }).click();
   await expect(dialog).toBeHidden();
-  await expect(deleteButton(page)).toBeFocused();
+  await expect(menuButton(page)).toBeFocused();
   await expect(entryRow(page, 'memory')).toBeVisible();
-  await deleteButton(page).click();
+  await chooseDelete(page);
   await confirm.click();
   await expect(dialog).toBeHidden();
   await expect(notice(page)).toHaveText('2 Vokabeln gelöscht.');
   await expect(intro(page)).toBeFocused();
   await expect(entryRow(page, 'memory')).toHaveCount(0);
   await expect(entryRow(page, 'the referee')).toHaveCount(0);
-  await expect(deleteButton(page)).toBeHidden();
+  await expect(menuButton(page)).toBeHidden();
 });
 
 test('moving the last word of a unit hands focus to its heading and keeps the notice', async ({
@@ -89,7 +99,7 @@ test('moving the last word of a unit hands focus to its heading and keeps the no
 }) => {
   await page.goto('/?state=unit-due');
   await select(page, 'memory');
-  await moveButton(page).click();
+  await chooseMove(page);
   const dialog = page.getByRole('dialog', { name: '1 Vokabel verschieben' });
   await dialog.getByLabel('Verschieben nach').selectOption({ label: target });
   await dialog
@@ -110,7 +120,7 @@ test('a move that fails keeps the dialog, the selection and the choice', async (
 }) => {
   await page.goto('/?state=vocabulary&selectionResponse=failure');
   await select(page, 'memory');
-  await moveButton(page).click();
+  await chooseMove(page);
   const dialog = page.getByRole('dialog', { name: '1 Vokabel verschieben' });
   const place = dialog.getByLabel('Verschieben nach');
   await place.selectOption({ label: target });
@@ -125,7 +135,7 @@ test('a move that fails keeps the dialog, the selection and the choice', async (
   await expect(notice(page)).toBeEmpty();
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
   await dialog.getByRole('button', { name: 'Abbrechen' }).click();
-  await expect(moveButton(page)).toBeFocused();
+  await expect(menuButton(page)).toBeFocused();
   await expect(page.getByLabel('memory auswählen')).toBeChecked();
 });
 
@@ -134,7 +144,7 @@ test('a deletion that fails keeps the dialog and the selection', async ({
 }) => {
   await page.goto('/?state=vocabulary&selectionResponse=failure');
   await select(page, 'memory');
-  await deleteButton(page).click();
+  await chooseDelete(page);
   const dialog = page.getByRole('dialog', { name: '1 Vokabel löschen?' });
   const confirm = dialog.getByRole('button', { name: 'Endgültig löschen' });
   await confirm.click();
@@ -149,14 +159,14 @@ test('a deletion that fails keeps the dialog and the selection', async ({
 test('a new change clears the notice of the last one', async ({ page }) => {
   await page.goto('/?state=vocabulary');
   await select(page, 'memory');
-  await deleteButton(page).click();
+  await chooseDelete(page);
   await page
     .getByRole('dialog', { name: '1 Vokabel löschen?' })
     .getByRole('button', { name: 'Endgültig löschen' })
     .click();
   await expect(notice(page)).toHaveText('1 Vokabel gelöscht.');
   await select(page, 'the referee');
-  await deleteButton(page).click();
+  await chooseDelete(page);
   await expect(notice(page)).toBeEmpty();
 });
 
@@ -168,7 +178,7 @@ test('the place filter falls back to everything once its place is empty', async 
   await filter.selectOption({ label: 'Green Line 3 · Unit 4: Sport' });
   await expect(entryRow(page, 'memory')).toHaveCount(0);
   await select(page, 'the referee');
-  await deleteButton(page).click();
+  await chooseDelete(page);
   await page
     .getByRole('dialog', { name: '1 Vokabel löschen?' })
     .getByRole('button', { name: 'Endgültig löschen' })
@@ -183,13 +193,74 @@ test('a subject is one list, so a selection can only be deleted', async ({
 }) => {
   await page.goto('/?state=terms-course');
   await select(page, 'Katalysator');
-  await expect(deleteButton(page)).toBeVisible();
-  await expect(moveButton(page)).toHaveCount(0);
-  await deleteButton(page).click();
+  await menuButton(page).click();
+  await expect(deleteItem(page)).toBeVisible();
+  await expect(moveItem(page)).toHaveCount(0);
+  await deleteItem(page).click();
   await page
     .getByRole('dialog', { name: '1 Begriff löschen?' })
     .getByRole('button', { name: 'Endgültig löschen' })
     .click();
   await expect(notice(page)).toHaveText('1 Begriff gelöscht.');
   await expect(entryRow(page, 'Katalysator')).toHaveCount(0);
+});
+
+test('the selection menu works from the keyboard and closes without a choice', async ({
+  page,
+}) => {
+  await page.goto('/?state=vocabulary');
+  await select(page, 'memory');
+  const button = menuButton(page);
+  const menu = page.getByRole('menu', { name: 'Weitere Aktionen' });
+  const items = menu.getByRole('menuitem');
+  await expect(menu).toHaveCount(0);
+  await expect(button).toHaveAttribute('aria-expanded', 'false');
+
+  await button.focus();
+  await page.keyboard.press('Enter');
+  await expect(button).toHaveAttribute('aria-expanded', 'true');
+  await expect(items.first()).toBeFocused();
+  assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
+
+  await page.keyboard.press('ArrowUp');
+  await expect(items.last()).toBeFocused();
+  await expect(items.last()).toHaveText('Auswahl löschen');
+  assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
+  await page.keyboard.press('ArrowDown');
+  await expect(items.first()).toBeFocused();
+  await page.keyboard.press('End');
+  await expect(items.last()).toBeFocused();
+  await page.keyboard.press('Home');
+  await expect(items.first()).toBeFocused();
+
+  await page.keyboard.press('Escape');
+  await expect(menu).toHaveCount(0);
+  await expect(button).toBeFocused();
+
+  await page.keyboard.press('Enter');
+  await expect(items.first()).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(menu).toHaveCount(0);
+  await expect(
+    page.getByRole('button', { name: 'Auswahl kennenlernen' }),
+  ).toBeFocused();
+
+  await button.click();
+  await expect(menu).toBeVisible();
+  await button.click();
+  await expect(menu).toHaveCount(0);
+  await expect(button).toBeFocused();
+
+  await button.click();
+  await page.getByText('1 Vokabel ausgewählt').click();
+  await expect(menu).toHaveCount(0);
+
+  await button.focus();
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('End');
+  await page.keyboard.press('Enter');
+  await expect(menu).toHaveCount(0);
+  await expect(
+    page.getByRole('dialog', { name: '1 Vokabel löschen?' }),
+  ).toBeVisible();
 });

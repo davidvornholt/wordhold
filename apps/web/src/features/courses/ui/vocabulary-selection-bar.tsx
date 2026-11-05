@@ -2,7 +2,10 @@ import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import { type ReactNode, type RefObject, useRef, useState } from 'react';
 import { type CourseSubject, courseNouns } from '../../../shared/directions';
 import { countNoun } from '../../../shared/format/count';
-import { Button } from '../../../shared/ui/button';
+import {
+  ActionMenu,
+  type ActionMenuItem,
+} from '../../../shared/ui/action-menu';
 import type { VocabularyEntry } from '../schemas/course-units';
 import { DeleteSelectionDialog } from './delete-selection-dialog';
 import type { CourseEntryActions } from './entry-actions';
@@ -32,11 +35,9 @@ type VocabularySelectionBarProps = {
 };
 
 // Floats above the list edge while a selection exists, so the study actions
-// stay reachable however long the list grows. A selection with directions
-// still to learn can skip them instead. Once nothing is left to skip, its
-// button is gone, so closing the dialog hands focus to the selection's count.
-// A selection can also move elsewhere in the course, as long as there is
-// somewhere else, or be deleted.
+// stay reachable however long the list grows. Everything else a selection can
+// do waits in a menu: skipping the directions still to learn, moving elsewhere
+// in the course as long as there is somewhere else, and deleting.
 export const VocabularySelectionBar = ({
   entries,
   enabledDirections,
@@ -49,7 +50,7 @@ export const VocabularySelectionBar = ({
 }: VocabularySelectionBarProps) => {
   const [skipping, setSkipping] = useState(false);
   const [change, setChange] = useState<'move' | 'delete' | null>(null);
-  const countRef = useRef<HTMLParagraphElement>(null);
+  const menuTriggerRef = useRef<HTMLButtonElement>(null);
   const nouns = courseNouns(subject);
   const canSkip = hasOpenLearning(entries, enabledDirections);
   const intents = studyIntents(entries, enabledDirections);
@@ -63,9 +64,36 @@ export const VocabularySelectionBar = ({
     setChange(null);
     onChanged(notice);
   };
-  // The list empties the selection as the dialog closes on success. Otherwise
-  // focus returns to the button that opened it.
-  const changeFocusRef = entries.length === 0 ? fallbackFocusRef : undefined;
+  // The list empties the selection as the dialog closes on success, which takes
+  // the menu with it.
+  const changeFocusRef =
+    entries.length === 0 ? fallbackFocusRef : menuTriggerRef;
+  const menuItems: ReadonlyArray<ActionMenuItem> = [
+    ...(canSkip
+      ? [
+          {
+            label: 'Kennenlernen überspringen',
+            onSelect: () => setSkipping(true),
+            opensDialog: true,
+          },
+        ]
+      : []),
+    ...(targets.length === 0
+      ? []
+      : [
+          {
+            label: 'Auswahl verschieben',
+            onSelect: () => startChange('move'),
+            opensDialog: true,
+          },
+        ]),
+    {
+      destructive: true,
+      label: 'Auswahl löschen',
+      onSelect: () => startChange('delete'),
+      opensDialog: true,
+    },
+  ];
   // Each action keeps its own slot, so it stays in place while the selection
   // changes whether the other one is offered.
   const studyAction = (intent: StudyIntent) =>
@@ -75,42 +103,21 @@ export const VocabularySelectionBar = ({
   return (
     <>
       {entries.length === 0 ? null : (
-        <div className="sticky bottom-4 flex flex-wrap items-center justify-between gap-3 border border-primary bg-card p-4 shadow-lg">
-          <p
-            className="font-medium focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
-            ref={countRef}
-            tabIndex={-1}
-          >
-            {countNoun(entries.length, nouns.singular, nouns.plural)} ausgewählt
-          </p>
+        <div className="sticky bottom-4 flex flex-col gap-3 border border-primary bg-card p-4 shadow-lg">
+          <div className="flex items-center justify-between gap-3">
+            <p className="font-medium">
+              {countNoun(entries.length, nouns.singular, nouns.plural)}{' '}
+              ausgewählt
+            </p>
+            <ActionMenu
+              items={menuItems}
+              label="Weitere Aktionen"
+              triggerRef={menuTriggerRef}
+            />
+          </div>
           <div className="flex flex-wrap items-center gap-3">
             {studyAction('learn')}
             {studyAction('practice')}
-            {canSkip || skipping ? (
-              <Button
-                aria-haspopup="dialog"
-                onClick={() => setSkipping(true)}
-                variant="quiet"
-              >
-                Kennenlernen überspringen
-              </Button>
-            ) : null}
-            {targets.length === 0 ? null : (
-              <Button
-                aria-haspopup="dialog"
-                onClick={() => startChange('move')}
-                variant="quiet"
-              >
-                Auswahl verschieben
-              </Button>
-            )}
-            <Button
-              aria-haspopup="dialog"
-              onClick={() => startChange('delete')}
-              variant="quiet-muted"
-            >
-              Auswahl löschen
-            </Button>
           </div>
         </div>
       )}
@@ -120,7 +127,7 @@ export const VocabularySelectionBar = ({
         entries={entries}
         onClose={() => setSkipping(false)}
         open={skipping}
-        returnFocusRef={canSkip ? undefined : countRef}
+        returnFocusRef={menuTriggerRef}
         subject={subject}
       />
       {actions.moving === null ? null : (
