@@ -47,8 +47,6 @@ const nextIndex = (
 };
 
 // Opens upward, because it serves bars that sit at the bottom of the viewport.
-// The items leave the tab order, and the arrow keys move between them instead,
-// as the ARIA menu button pattern expects.
 export const ActionMenu = ({ label, items, triggerRef }: ActionMenuProps) => {
   const [open, setOpen] = useState(false);
   const menuId = useId();

@@ -35,9 +35,7 @@ type VocabularySelectionBarProps = {
 };
 
 // Floats above the list edge while a selection exists, so the study actions
-// stay reachable however long the list grows. Everything else a selection can
-// do waits in a menu: skipping the directions still to learn, moving elsewhere
-// in the course as long as there is somewhere else, and deleting.
+// stay reachable however long the list grows.
 export const VocabularySelectionBar = ({
   entries,
   enabledDirections,

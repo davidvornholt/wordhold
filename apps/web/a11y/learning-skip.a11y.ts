@@ -115,7 +115,6 @@ test('a selection skips its learning pass per direction and can undo it', async 
     'Überspringen rückgängig gemacht · Englisch → Deutsch',
   );
 
-  // Once nothing is left to skip, the menu stops offering it.
   await skipButton.click();
   await expect(undo).toBeFocused();
   await dialog.getByRole('button', { name: 'Fertig' }).click();
