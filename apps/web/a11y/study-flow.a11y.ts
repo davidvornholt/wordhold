@@ -4,7 +4,7 @@ import { assertNoAccessibilityViolations } from './a11y-assertions';
 
 const forwardDirectionPattern = /Deutsch → Englisch/u;
 const cardStartPattern = /Karten? starten/u;
-const studyActionPattern = /^Auswahl /u;
+const studyActionPattern = /^Auswahl (?:kennenlernen|üben)$/u;
 
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
 

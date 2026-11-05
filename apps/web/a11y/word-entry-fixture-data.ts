@@ -10,7 +10,8 @@ import type {
 } from '../src/features/courses/services/vocabulary-entry-service';
 import type { NewVocabularyEntryDraft } from '../src/features/courses/ui/use-new-vocabulary-entry';
 import type { WordSide } from '../src/features/courses/ui/word-pair-fields';
-import { fixtureEntry } from './course-fixture-data';
+import type { WordPlace } from '../src/features/courses/ui/word-places';
+import { courseOutline, fixtureEntry } from './course-fixture-data';
 import { changeLearning } from './fixture-learning';
 
 const tripExample = 'Wir packten unsere Koffer für die Reise.';
@@ -41,7 +42,7 @@ const storedExample = (draft: NewVocabularyEntryDraft) =>
 const pronunciation = (targetText: string) =>
   targetText === 'silence' ? 'failed' : 'generated';
 
-// Typed, corrected and deleted entries change the list in memory so the
+// Typed, corrected, moved and deleted entries change the list in memory so the
 // flows can be exercised end to end without a server. "silence" stands for a
 // word whose pronunciation cannot be made.
 export const useFixtureEntries = (initial: ReadonlyArray<VocabularyEntry>) => {
@@ -90,8 +91,27 @@ export const useFixtureEntries = (initial: ReadonlyArray<VocabularyEntry>) => {
           : pronunciation(draft.targetText),
     });
   };
-  const removeEntry = (entryId: string) =>
-    setEntries((current) => current.filter((entry) => entry.id !== entryId));
+  const removeEntries = (entryIds: ReadonlyArray<string>) =>
+    setEntries((current) =>
+      current.filter((entry) => !entryIds.includes(entry.id)),
+    );
+  const moveEntries = (entryIds: ReadonlyArray<string>, place: WordPlace) => {
+    const book = courseOutline.books.find(({ id }) => id === place.bookId);
+    const unit = courseOutline.units.find(({ id }) => id === place.unitId);
+    setEntries((current) =>
+      current.map((entry) =>
+        entryIds.includes(entry.id)
+          ? {
+              ...entry,
+              bookId: place.bookId,
+              bookName: book?.name ?? entry.bookName,
+              unitId: place.unitId,
+              unitName: unit?.name ?? null,
+            }
+          : entry,
+      ),
+    );
+  };
   const changeEntryLearning = (
     cardIds: ReadonlyArray<string>,
     change: 'skip' | 'return',
@@ -104,7 +124,8 @@ export const useFixtureEntries = (initial: ReadonlyArray<VocabularyEntry>) => {
     entries,
     createEntry,
     updateEntry,
-    removeEntry,
+    removeEntries,
+    moveEntries,
     changeEntryLearning,
   };
 };

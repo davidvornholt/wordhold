@@ -1,12 +1,16 @@
 import { useRouter } from '@tanstack/react-router';
 import type { BibleSummary } from '../../../features/bibles/schemas/bible-models';
 import { lookUpBiblePassage } from '../../../features/bibles/services/server-fns';
-import type { VocabularyEntry } from '../../../features/courses/schemas/course-units';
+import type {
+  CourseOutline,
+  VocabularyEntry,
+} from '../../../features/courses/schemas/course-units';
 import {
   createVocabularyEntry,
-  deleteCourseEntry,
+  deleteCourseEntries,
   generateVocabularyDraftExample,
   generateVocabularyExample,
+  moveCourseEntries,
   suggestVocabularyTranslation,
   translateVocabularyDraftExample,
   updateVocabularyEntry,
@@ -39,6 +43,7 @@ import {
 } from '../../../features/courses/ui/text-entry-forms';
 import { VocabularyExample } from '../../../features/courses/ui/vocabulary-example';
 import type { WordPlace } from '../../../features/courses/ui/word-places';
+import { wordPlaceOptions } from '../../../features/courses/ui/word-places';
 import {
   returnToLearning,
   skipLearning,
@@ -312,13 +317,16 @@ const CourseEntryEditor = ({
   );
 };
 
-// What an entry's dialog offers: its details, correcting it, and deleting
-// it. A deleted entry's list refreshes without being awaited, so the dialog
-// closes and hands focus on while the entry's row is still there. A skipped
-// or reopened learning pass is awaited, so the dialog shows the new state.
+// What an entry's dialog and a selection offer: its details, correcting it,
+// deleting and moving. After deleting or moving, the list refreshes without
+// being awaited, so the dialog closes and hands focus on while the rows are
+// still there. A skipped or reopened learning pass is awaited, so the dialog
+// shows the new state. A course without an outline is one list, so its entries
+// have nowhere to move to.
 export const useCourseEntryActions = (
   course: EntryCourse,
   entries: ReadonlyArray<VocabularyEntry>,
+  outline: CourseOutline | null,
 ): CourseEntryActions => {
   const router = useRouter();
   return {
@@ -333,12 +341,23 @@ export const useCourseEntryActions = (
         entry={entry}
       />
     ),
-    remove: async (entry) => {
-      await deleteCourseEntry({
-        data: { courseId: course.id, entryId: entry.id },
-      });
+    remove: async (entryIds) => {
+      await deleteCourseEntries({ data: { courseId: course.id, entryIds } });
       router.invalidate().catch(() => undefined);
     },
+    moving:
+      outline === null
+        ? null
+        : {
+            places: wordPlaceOptions(outline),
+            move: async (entryIds, place) => {
+              const moved = await moveCourseEntries({
+                data: { courseId: course.id, entryIds, ...place },
+              });
+              router.invalidate().catch(() => undefined);
+              return moved;
+            },
+          },
     skipLearning: async (cardIds) => {
       const changed = await skipLearning({
         data: { courseId: course.id, cardIds },

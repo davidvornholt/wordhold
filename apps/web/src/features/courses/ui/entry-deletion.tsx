@@ -8,9 +8,9 @@ type EntryDeletionProps = {
   readonly onKeep: () => void;
 };
 
-// The question whether to delete the entry, asked in place of its details.
-// Focus starts on the confirmation, which names what it does, and returns
-// there when deleting failed.
+// The question whether to delete, asked in place of an entry's details or for
+// a selection. Focus starts on the confirmation, which names what it does, and
+// returns there when deleting failed.
 export const EntryDeletion = ({
   deleting,
   error,

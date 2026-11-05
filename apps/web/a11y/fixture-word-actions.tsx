@@ -2,7 +2,8 @@ import type { ReactNode } from 'react';
 import type { VocabularyEntry } from '../src/features/courses/schemas/course-units';
 import { EditVocabularyForm } from '../src/features/courses/ui/edit-vocabulary-form';
 import type { CourseEntryActions } from '../src/features/courses/ui/entry-actions';
-import { targetLabel } from './course-fixture-data';
+import { wordPlaceOptions } from '../src/features/courses/ui/word-places';
+import { courseOutline, targetLabel } from './course-fixture-data';
 import { prepareAdolescentPitfalls } from './pitfall-fixture-data';
 import {
   fixtureDraftExample,
@@ -11,18 +12,25 @@ import {
   useFixtureEntries,
 } from './word-entry-fixture-data';
 
-// The English course's words, which the entry dialog corrects and deletes in
-// memory. The list refreshes after the dialog has closed, as the page's
-// loader does.
+const selectionFails = () =>
+  new URLSearchParams(globalThis.location.search).get('selectionResponse') ===
+  'failure';
+
+// The English course's words, which the entry dialog corrects and a selection
+// moves or deletes in memory. The list refreshes after the dialog has closed,
+// as the page's loader does. A list of one place loses the words moved away,
+// and the course's whole list shows them at their new place.
 export const useFixtureWords = (
   initialEntries: ReadonlyArray<VocabularyEntry>,
   renderDetail: (entry: VocabularyEntry) => ReactNode,
+  layout: 'flat' | 'by-place',
 ) => {
   const {
     entries,
     createEntry,
     updateEntry,
-    removeEntry,
+    removeEntries,
+    moveEntries,
     changeEntryLearning,
   } = useFixtureEntries(initialEntries);
   const entryActions: CourseEntryActions = {
@@ -40,9 +48,28 @@ export const useFixtureWords = (
         updateEntry={(draft) => updateEntry(entry.id, draft)}
       />
     ),
-    remove: (entry) => {
-      globalThis.setTimeout(() => removeEntry(entry.id));
+    remove: (entryIds) => {
+      if (selectionFails()) {
+        return Promise.reject(new Error('Die Verbindung ist abgebrochen.'));
+      }
+      globalThis.setTimeout(() => removeEntries(entryIds));
       return Promise.resolve();
+    },
+    moving: {
+      places: wordPlaceOptions(courseOutline),
+      move: (entryIds, place) => {
+        if (selectionFails()) {
+          return Promise.reject(
+            new Error('Diese Einheit gibt es nicht mehr. Lade die Seite neu.'),
+          );
+        }
+        globalThis.setTimeout(() =>
+          layout === 'flat'
+            ? removeEntries(entryIds)
+            : moveEntries(entryIds, place),
+        );
+        return Promise.resolve(entryIds.length);
+      },
     },
     skipLearning: (cardIds) => changeEntryLearning(cardIds, 'skip'),
     returnToLearning: (cardIds) => changeEntryLearning(cardIds, 'return'),

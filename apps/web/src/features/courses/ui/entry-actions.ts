@@ -1,6 +1,7 @@
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import type { PreparePitfalls } from '../../../shared/pitfalls/pitfall-model';
 import type { VocabularyEntry } from '../schemas/course-units';
+import type { WordPlace, WordPlaceOption } from './word-places';
 
 // What an entry's dialog hands the form that corrects the entry.
 export type EntryEditorControl = {
@@ -21,9 +22,20 @@ export type CourseEntryActions = {
     entry: VocabularyEntry,
     control: EntryEditorControl,
   ) => ReactNode;
-  // Resolves once the entry is deleted. The list refreshes afterwards, so
-  // the dialog closes while the entry's row is still there.
-  readonly remove: (entry: VocabularyEntry) => Promise<void>;
+  // Resolves once the entries are deleted. The list refreshes afterwards, so
+  // the dialog closes while their rows are still there.
+  readonly remove: (entryIds: ReadonlyArray<string>) => Promise<void>;
+  // Moving a selection to another book or unit. Null for a subject or a
+  // collection, which is one list.
+  readonly moving: {
+    readonly places: ReadonlyArray<WordPlaceOption>;
+    // Resolves to how many entries moved. The list refreshes afterwards, as
+    // after deleting.
+    readonly move: (
+      entryIds: ReadonlyArray<string>,
+      place: WordPlace,
+    ) => Promise<number>;
+  } | null;
   // Moves cards past the learning pass, straight to their first practice, or
   // returns cards not yet practised to it. Each resolves to the cards it
   // changed once the list shows the change.

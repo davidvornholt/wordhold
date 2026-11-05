@@ -5,7 +5,11 @@ import type {
   CourseUnit,
   WordProgress,
 } from '../schemas/course-units';
-import { lastUsedWordPlace, wordPlaceOptions } from './word-places';
+import {
+  lastUsedWordPlace,
+  moveTargets,
+  wordPlaceOptions,
+} from './word-places';
 
 const noWords: WordProgress = {
   entries: 0,
@@ -55,6 +59,27 @@ describe('wordPlaceOptions', () => {
         place: { bookId: textbook.id, unitId: unit.id },
       },
       { label: 'The Hobbit', place: { bookId: novel.id, unitId: null } },
+    ]);
+  });
+});
+
+describe('moveTargets', () => {
+  const options = wordPlaceOptions(outline([textbook, novel], [unit]));
+  const labels = (entries: Parameters<typeof moveTargets>[1]) =>
+    moveTargets(options, entries).map(({ label }) => label);
+  const inUnit = { bookId: textbook.id, unitId: unit.id };
+  const inBook = { bookId: textbook.id, unitId: null };
+
+  it('leaves out the place that holds the whole selection', () => {
+    expect(labels([inUnit, inUnit])).toEqual(['Green Line 3', 'The Hobbit']);
+    expect(labels([inBook])).toEqual(['Green Line 3 · Unit 1', 'The Hobbit']);
+  });
+
+  it('offers every place to a selection from several places', () => {
+    expect(labels([inUnit, inBook])).toEqual([
+      'Green Line 3',
+      'Green Line 3 · Unit 1',
+      'The Hobbit',
     ]);
   });
 });

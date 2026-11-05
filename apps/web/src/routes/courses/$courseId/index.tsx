@@ -258,7 +258,7 @@ const SubjectScreen = ({
   bibles,
 }: SubjectScreenProps) => {
   const { filter } = Route.useSearch();
-  const entryActions = useCourseEntryActions(course, entries);
+  const entryActions = useCourseEntryActions(course, entries, null);
   return (
     <SubjectOverview
       enabledDirections={directions}

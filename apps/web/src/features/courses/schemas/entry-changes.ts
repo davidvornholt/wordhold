@@ -27,15 +27,28 @@ export const UpdateTermEntry = Schema.Struct({
 });
 export type UpdateTermEntryData = typeof UpdateTermEntry.Type;
 
-// A word or term of the course, deleted with its cards and their history.
-export const DeleteEntry = Schema.Struct({
+const EntryIds = Schema.Array(Uuid).check(Schema.isMinLength(1));
+
+// Words or terms of the course, deleted with their cards and their history.
+export const DeleteEntries = Schema.Struct({
   courseId: Uuid,
-  entryId: Uuid,
+  entryIds: EntryIds,
 });
-export type DeleteEntryData = typeof DeleteEntry.Type;
+export type DeleteEntriesData = typeof DeleteEntries.Type;
+
+// Words of the course, moved together to a book of the same course or to one
+// of its units. Their cards, schedule and answers stay with them.
+export const MoveEntries = Schema.Struct({
+  courseId: Uuid,
+  entryIds: EntryIds,
+  bookId: Uuid,
+  unitId: Schema.NullOr(Uuid),
+});
+export type MoveEntriesData = typeof MoveEntries.Type;
 
 export const decodeUpdateVocabularyEntry = Schema.decodeUnknownSync(
   UpdateVocabularyEntry,
 );
 export const decodeUpdateTermEntry = Schema.decodeUnknownSync(UpdateTermEntry);
-export const decodeDeleteEntry = Schema.decodeUnknownSync(DeleteEntry);
+export const decodeDeleteEntries = Schema.decodeUnknownSync(DeleteEntries);
+export const decodeMoveEntries = Schema.decodeUnknownSync(MoveEntries);

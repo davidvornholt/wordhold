@@ -4,7 +4,7 @@ import type { NewExampleData } from '../../../shared/vocabulary/entry-fields';
 import { writeRelatedWords } from '../../../shared/vocabulary/related-words-store';
 import { CourseDatabaseError } from '../errors/courses-errors';
 import type {
-  DeleteEntryData,
+  DeleteEntriesData,
   UpdateVocabularyEntryData,
 } from '../schemas/entry-changes';
 import { replaceTextbookAnswers } from './entry-answers';
@@ -21,7 +21,7 @@ export type UpdateVocabularyEntryResult =
   | { readonly kind: 'entry-missing' }
   | { readonly kind: 'duplicate'; readonly location: string };
 
-export type RemovedEntry = {
+export type RemovedEntries = {
   // Audio files nothing refers to anymore.
   readonly unreferencedFiles: ReadonlyArray<string>;
 };
@@ -46,9 +46,9 @@ const updateError = (operation: string, cause: unknown) =>
 
 const removeError = (cause: unknown) =>
   new CourseDatabaseError({
-    operation: 'delete entry',
+    operation: 'delete entries',
     cause,
-    message: 'Der Eintrag konnte nicht gelöscht werden.',
+    message: 'Die Einträge konnten nicht gelöscht werden.',
   });
 
 const pathsOf = (path: string | null): ReadonlyArray<string> =>
@@ -236,30 +236,31 @@ export const makeVocabularyEntryMutations = (sql: Database) => {
       );
 
   // Words, terms and texts alike. The cards, their reviews and every other
-  // row of the entry go with it; its audio files are read first, since
-  // nothing refers to them afterwards. An entry that is already gone counts
-  // as deleted.
-  const remove = ({ courseId, entryId }: DeleteEntryData) =>
+  // row of an entry go with it; the audio files are read first, since nothing
+  // refers to them afterwards. An entry that is already gone counts as
+  // deleted, and one of another course stays.
+  const remove = ({ courseId, entryIds }: DeleteEntriesData) =>
     sql
       .withTransaction(
         Effect.gen(function* () {
+          const ids = `{${entryIds.join(',')}}`;
           const files = yield* sql<PathRow>`
             select a.path from entry_audio a
             join entries e on e.id = a.entry_id
-            where e.id = ${entryId} and e.course_id = ${courseId}
+            where e.id = any(${ids}::uuid[]) and e.course_id = ${courseId}
             union all
             select x.audio_path as path from entry_examples x
             join entries e on e.id = x.entry_id
-            where e.id = ${entryId} and e.course_id = ${courseId}
+            where e.id = any(${ids}::uuid[]) and e.course_id = ${courseId}
               and x.audio_path is not null
           `;
           yield* sql`
             delete from entries
-            where id = ${entryId} and course_id = ${courseId}
+            where id = any(${ids}::uuid[]) and course_id = ${courseId}
           `;
           return {
             unreferencedFiles: files.map((row) => row.path),
-          } satisfies RemovedEntry;
+          } satisfies RemovedEntries;
         }),
       )
       .pipe(Effect.mapError(removeError));

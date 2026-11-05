@@ -11,6 +11,7 @@ import { Dialog } from '../../../shared/ui/dialog';
 import type { VocabularyEntry } from '../schemas/course-units';
 import type { VocabularyFilter } from '../schemas/vocabulary-search';
 import type { CourseEntryActions } from './entry-actions';
+import { SelectionNotice } from './selection-notice';
 import type { StudyAction } from './study-action';
 import { VocabularyLibrary } from './vocabulary-library';
 
@@ -67,6 +68,7 @@ export const SubjectOverview = ({
   const isEmpty = entries.length === 0;
   const nouns = courseNouns(subject);
   const [adding, setAdding] = useState(false);
+  const [selectionNotice, setSelectionNotice] = useState('');
   const headingId = useId();
   // Takes focus once an entry is deleted, since its row is gone, and counts
   // the entries that are left.
@@ -107,6 +109,7 @@ export const SubjectOverview = ({
       >
         {entryForm}
       </Dialog>
+      <SelectionNotice notice={selectionNotice} />
       {isEmpty ? null : (
         <section aria-labelledby={headingId} className="flex flex-col gap-3">
           <h2 className="font-display text-xl" id={headingId}>
@@ -119,6 +122,7 @@ export const SubjectOverview = ({
             entryActions={entryActions}
             fallbackFocusRef={summaryRef}
             layout="flat"
+            onSelectionNotice={setSelectionNotice}
             renderStudyAction={renderStudyAction}
             subject={subject}
           />
