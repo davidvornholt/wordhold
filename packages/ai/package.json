@@ -45,13 +45,13 @@
     "benchmark:models": "bun src/benchmark/cli.ts"
   },
   "dependencies": {
-    "@ai-sdk/amazon-bedrock": "^5.0.126",
-    "@ai-sdk/google-vertex": "^5.0.125",
+    "@ai-sdk/amazon-bedrock": "^5.0.130",
+    "@ai-sdk/google-vertex": "^5.0.129",
     "@ai-sdk/openai": "^4.0.104",
-    "@aws-sdk/client-polly": "^3.1146.0",
-    "@aws-sdk/client-transcribe-streaming": "^3.1156.0",
-    "ai": "^7.0.155",
-    "effect": "^4.0.6"
+    "@aws-sdk/client-polly": "^3.1161.0",
+    "@aws-sdk/client-transcribe-streaming": "^3.1161.0",
+    "ai": "^7.0.159",
+    "effect": "^4.1.2"
   },
   "devDependencies": {
     "@davidvornholt/typescript-config": "workspace:*",
