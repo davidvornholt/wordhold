@@ -29,6 +29,11 @@
     "test:a11y": {
       "dependsOn": ["build"],
       "cache": false
+    },
+    "test:smoke": {
+      "dependsOn": ["build"],
+      "env": ["DATABASE_URL"],
+      "cache": false
     }
   }
 }

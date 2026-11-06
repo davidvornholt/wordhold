@@ -31,8 +31,27 @@
     },
     {
       // The child process receives the application's exact environment names.
-      "includes": ["apps/web/src/shared/auth/auth-handler.integration.test.ts"],
+      "includes": [
+        "apps/web/src/shared/auth/auth-handler.integration.test.ts",
+        "apps/web/smoke/playwright.config.ts",
+        "apps/web/smoke/serve.ts"
+      ],
       "linter": { "rules": { "style": { "useNamingConvention": "off" } } }
+    },
+    {
+      // @playwright/test exports only `test`, with no `it` alias. The canonical
+      // base applies this exception to the accessibility suite's folder only.
+      "includes": ["apps/web/smoke/*.smoke.ts"],
+      "linter": {
+        "rules": {
+          "nursery": {
+            "useConsistentTestIt": {
+              "level": "error",
+              "options": { "function": "test" }
+            }
+          }
+        }
+      }
     },
     {
       // Designated server environment boundary: the one application file

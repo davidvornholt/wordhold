@@ -12,6 +12,7 @@
     "provider:verify": "bun scripts/verify-ai-provider.ts",
     "test": "bun test",
     "test:a11y": "playwright install chromium && a11y-playwright",
+    "test:smoke": "playwright install chromium && playwright test --config smoke/playwright.config.ts",
     "practice:repair": "bun --env-file=.env.local scripts/repair-practice-reviews.ts",
     "practice:repair:production": "bun .output/maintenance/repair-practice-reviews.js"
   },
