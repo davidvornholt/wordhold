@@ -3,9 +3,6 @@ import { Effect, Exit } from 'effect';
 
 const { Bun, process } = globalThis;
 
-// Runs the built server on a migrated database of its own, so the check never
-// touches the database that DATABASE_URL names. The database is dropped when
-// the server stops.
 const serveBuild = (databaseUrl: string) =>
   Effect.acquireUseRelease(
     Effect.sync(() =>
