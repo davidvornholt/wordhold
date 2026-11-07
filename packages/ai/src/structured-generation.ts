@@ -31,8 +31,8 @@ const unusableDetail = (cause: unknown): string => {
 };
 
 // One structured request to the production model, decoded with the Effect
-// schema. Bedrock receives the schema only as an instruction, so the answer
-// text occasionally misses it; an unusable answer is requested once more, and
+// schema. Native structured output cannot enforce every bound of the schema and
+// an answer can be cut short, so an unusable answer is requested once more, and
 // every request is metered. `validate` names why a decoded answer cannot be
 // used, such as a skipped item, and returns undefined to accept it. The model
 // reasons at medium effort unless the operation asks for more.
