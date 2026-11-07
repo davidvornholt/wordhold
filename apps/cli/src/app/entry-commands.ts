@@ -62,7 +62,7 @@ const list = Command.make(
     course: idArgument('Course id', 'course'),
     book: optionalString(
       'book',
-      'Only the words that live directly in this book',
+      'Only the words of this book, including those in its units',
     ),
     unit: optionalString('unit', 'Only the words of this unit'),
     filter: once(
