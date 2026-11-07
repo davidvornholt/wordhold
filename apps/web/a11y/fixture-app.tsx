@@ -2,6 +2,7 @@ import { OwnerTimeZoneContext } from '../src/shared/dates/owner-time-zone';
 import { AppShell } from '../src/shared/ui/app-shell';
 import { wordmarkClass } from '../src/shared/ui/shell-styles';
 import {
+  DeviceFixture,
   JoinFixture,
   PasskeysFixture,
   SignedOutFixture,
@@ -207,6 +208,10 @@ const accountFixture = (state: FixtureState) => {
       return <JoinFixture />;
     case 'passkeys':
       return <PasskeysFixture />;
+    case 'device':
+      return <DeviceFixture code="WXYZ7K3P" />;
+    case 'device-entry':
+      return <DeviceFixture code="" />;
     case 'people':
       return <PeopleFixture />;
     case 'people-progress':
@@ -235,6 +240,8 @@ const fixtureContent = (state: FixtureState) => {
     case 'signed-out':
     case 'join':
     case 'passkeys':
+    case 'device':
+    case 'device-entry':
     case 'people':
     case 'people-progress':
       return accountFixture(state);

@@ -1,8 +1,11 @@
 import { passkeyClient } from '@better-auth/passkey/client';
+import { deviceAuthorizationClient } from 'better-auth/client/plugins';
 import { createAuthClient } from 'better-auth/react';
 import { AuthenticationError } from './authentication-error';
 
-export const authClient = createAuthClient({ plugins: [passkeyClient()] });
+export const authClient = createAuthClient({
+  plugins: [passkeyClient(), deviceAuthorizationClient()],
+});
 
 // Better Auth's client reports failures in the result instead of throwing;
 // this turns them into a rejection the calling form can show.

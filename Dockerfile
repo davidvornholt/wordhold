@@ -3,9 +3,11 @@ FROM oven/bun:1.4.3@sha256:ec06c3b6cea04192ae6770c434f668ca41d343ad19fa6472216c7
 WORKDIR /app
 
 COPY package.json bun.lock turbo.json ./
+COPY apps/cli/package.json apps/cli/package.json
 COPY apps/web/package.json apps/web/package.json
 COPY packages/a11y-testing/package.json packages/a11y-testing/package.json
 COPY packages/ai/package.json packages/ai/package.json
+COPY packages/api/package.json packages/api/package.json
 COPY packages/db/package.json packages/db/package.json
 COPY packages/typescript-config/package.json packages/typescript-config/package.json
 COPY packages/ui/package.json packages/ui/package.json
@@ -21,9 +23,11 @@ FROM oven/bun:1.4.3@sha256:ec06c3b6cea04192ae6770c434f668ca41d343ad19fa6472216c7
 WORKDIR /app
 
 COPY package.json bun.lock ./
+COPY apps/cli/package.json apps/cli/package.json
 COPY apps/web/package.json apps/web/package.json
 COPY packages/a11y-testing/package.json packages/a11y-testing/package.json
 COPY packages/ai/package.json packages/ai/package.json
+COPY packages/api/package.json packages/api/package.json
 COPY packages/db/package.json packages/db/package.json
 COPY packages/typescript-config/package.json packages/typescript-config/package.json
 COPY packages/ui/package.json packages/ui/package.json

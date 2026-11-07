@@ -4,6 +4,7 @@ import { aiUsage } from './schema/ai-usage';
 import {
   account,
   accountRelations,
+  deviceCode,
   passkey,
   passkeyRelations,
   session,
@@ -32,6 +33,7 @@ export const schema = {
   account,
   verification,
   passkey,
+  deviceCode,
   userRelations,
   sessionRelations,
   accountRelations,

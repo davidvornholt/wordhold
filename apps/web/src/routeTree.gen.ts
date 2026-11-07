@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DeviceRouteImport } from './routes/device'
 import { Route as JoinRouteImport } from './routes/join'
 import { Route as PasskeysRouteImport } from './routes/passkeys'
 import { Route as ApiBiblesRouteImport } from './routes/api/bibles'
@@ -20,6 +21,7 @@ import { Route as ImportsSessionIdRouteImport } from './routes/imports/$sessionI
 import { Route as PeopleIndexRouteImport } from './routes/people/index'
 import { Route as PeopleUserIdRouteImport } from './routes/people/$userId'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiCliSplatRouteImport } from './routes/api/cli/$'
 import { Route as CoursesCourseIdIndexRouteImport } from './routes/courses/$courseId/index'
 import { Route as CoursesCourseIdImportRouteImport } from './routes/courses/$courseId/import'
 import { Route as CoursesCourseIdLearnRouteImport } from './routes/courses/$courseId/learn'
@@ -42,6 +44,11 @@ import { Route as CoursesCourseIdUnitsUnitIdLearnRouteImport } from './routes/co
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeviceRoute = DeviceRouteImport.update({
+  id: '/device',
+  path: '/device',
   getParentRoute: () => rootRouteImport,
 } as any)
 const JoinRoute = JoinRouteImport.update({
@@ -92,6 +99,11 @@ const PeopleUserIdRoute = PeopleUserIdRouteImport.update({
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCliSplatRoute = ApiCliSplatRouteImport.update({
+  id: '/api/cli/$',
+  path: '/api/cli/$',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CoursesCourseIdIndexRoute = CoursesCourseIdIndexRouteImport.update({
@@ -195,6 +207,7 @@ const CoursesCourseIdUnitsUnitIdLearnRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/device': typeof DeviceRoute
   '/join': typeof JoinRoute
   '/passkeys': typeof PasskeysRoute
   '/api/bibles': typeof ApiBiblesRoute
@@ -205,6 +218,7 @@ export interface FileRoutesByFullPath {
   '/people/$userId': typeof PeopleUserIdRoute
   '/people/': typeof PeopleIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/cli/$': typeof ApiCliSplatRoute
   '/courses/$courseId/import': typeof CoursesCourseIdImportRoute
   '/courses/$courseId/learn': typeof CoursesCourseIdLearnRoute
   '/courses/$courseId/practice': typeof CoursesCourseIdPracticeRoute
@@ -226,6 +240,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/device': typeof DeviceRoute
   '/join': typeof JoinRoute
   '/passkeys': typeof PasskeysRoute
   '/api/bibles': typeof ApiBiblesRoute
@@ -236,6 +251,7 @@ export interface FileRoutesByTo {
   '/people/$userId': typeof PeopleUserIdRoute
   '/people': typeof PeopleIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/cli/$': typeof ApiCliSplatRoute
   '/courses/$courseId/import': typeof CoursesCourseIdImportRoute
   '/courses/$courseId/learn': typeof CoursesCourseIdLearnRoute
   '/courses/$courseId/practice': typeof CoursesCourseIdPracticeRoute
@@ -258,6 +274,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/device': typeof DeviceRoute
   '/join': typeof JoinRoute
   '/passkeys': typeof PasskeysRoute
   '/api/bibles': typeof ApiBiblesRoute
@@ -268,6 +285,7 @@ export interface FileRoutesById {
   '/people/$userId': typeof PeopleUserIdRoute
   '/people/': typeof PeopleIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/cli/$': typeof ApiCliSplatRoute
   '/courses/$courseId/import': typeof CoursesCourseIdImportRoute
   '/courses/$courseId/learn': typeof CoursesCourseIdLearnRoute
   '/courses/$courseId/practice': typeof CoursesCourseIdPracticeRoute
@@ -291,6 +309,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/device'
     | '/join'
     | '/passkeys'
     | '/api/bibles'
@@ -301,6 +320,7 @@ export interface FileRouteTypes {
     | '/people/$userId'
     | '/people/'
     | '/api/auth/$'
+    | '/api/cli/$'
     | '/courses/$courseId/import'
     | '/courses/$courseId/learn'
     | '/courses/$courseId/practice'
@@ -322,6 +342,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/device'
     | '/join'
     | '/passkeys'
     | '/api/bibles'
@@ -332,6 +353,7 @@ export interface FileRouteTypes {
     | '/people/$userId'
     | '/people'
     | '/api/auth/$'
+    | '/api/cli/$'
     | '/courses/$courseId/import'
     | '/courses/$courseId/learn'
     | '/courses/$courseId/practice'
@@ -353,6 +375,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/device'
     | '/join'
     | '/passkeys'
     | '/api/bibles'
@@ -363,6 +386,7 @@ export interface FileRouteTypes {
     | '/people/$userId'
     | '/people/'
     | '/api/auth/$'
+    | '/api/cli/$'
     | '/courses/$courseId/import'
     | '/courses/$courseId/learn'
     | '/courses/$courseId/practice'
@@ -385,6 +409,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DeviceRoute: typeof DeviceRoute
   JoinRoute: typeof JoinRoute
   PasskeysRoute: typeof PasskeysRoute
   ApiBiblesRoute: typeof ApiBiblesRoute
@@ -395,6 +420,7 @@ export interface RootRouteChildren {
   PeopleUserIdRoute: typeof PeopleUserIdRoute
   PeopleIndexRoute: typeof PeopleIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiCliSplatRoute: typeof ApiCliSplatRoute
   CoursesCourseIdImportRoute: typeof CoursesCourseIdImportRoute
   CoursesCourseIdLearnRoute: typeof CoursesCourseIdLearnRoute
   CoursesCourseIdPracticeRoute: typeof CoursesCourseIdPracticeRoute
@@ -421,6 +447,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/device': {
+      id: '/device'
+      path: '/device'
+      fullPath: '/device'
+      preLoaderRoute: typeof DeviceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/join': {
@@ -491,6 +524,13 @@ declare module '@tanstack/react-router' {
       path: '/api/auth/$'
       fullPath: '/api/auth/$'
       preLoaderRoute: typeof ApiAuthSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/cli/$': {
+      id: '/api/cli/$'
+      path: '/api/cli/$'
+      fullPath: '/api/cli/$'
+      preLoaderRoute: typeof ApiCliSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/courses/$courseId/': {
@@ -636,6 +676,7 @@ const ApiPagesRouteWithChildren = ApiPagesRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DeviceRoute: DeviceRoute,
   JoinRoute: JoinRoute,
   PasskeysRoute: PasskeysRoute,
   ApiBiblesRoute: ApiBiblesRoute,
@@ -646,6 +687,7 @@ const rootRouteChildren: RootRouteChildren = {
   PeopleUserIdRoute: PeopleUserIdRoute,
   PeopleIndexRoute: PeopleIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiCliSplatRoute: ApiCliSplatRoute,
   CoursesCourseIdImportRoute: CoursesCourseIdImportRoute,
   CoursesCourseIdLearnRoute: CoursesCourseIdLearnRoute,
   CoursesCourseIdPracticeRoute: CoursesCourseIdPracticeRoute,

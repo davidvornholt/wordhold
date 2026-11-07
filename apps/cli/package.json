@@ -1,0 +1,21 @@
+{
+  "name": "@wordhold/cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "bun build --compile src/app/cli.ts --outfile dist/wordhold",
+    "check-types": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@effect/platform-bun": "4.0.6",
+    "@wordhold/api": "workspace:*",
+    "effect": "^4.0.6"
+  },
+  "devDependencies": {
+    "@davidvornholt/typescript-config": "workspace:*",
+    "@types/bun": "^1.4.3",
+    "typescript": "7.0.2"
+  }
+}

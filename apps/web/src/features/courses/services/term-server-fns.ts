@@ -1,8 +1,6 @@
 import { createServerFn } from '@tanstack/react-start';
-import { PgLive } from '@wordhold/db/client';
-import { Effect, Layer, ManagedRuntime } from 'effect';
-import { definitionLayer } from '../../../shared/ai/runtime';
-import { billedTo, UsageLedger } from '../../../shared/ai/usage-ledger';
+import { Effect } from 'effect';
+import { billedTo } from '../../../shared/ai/usage-ledger';
 import { requestMember } from '../../../shared/auth/member-request';
 import { decodeUpdateTermEntry } from '../schemas/entry-changes';
 import {
@@ -11,20 +9,8 @@ import {
   decodeTermKeyPointsRequest,
   decodeUpdateTermKeyPoints,
 } from '../schemas/term-entry-creation';
+import { termRuntime } from './course-runtimes';
 import { TermEntryService } from './term-entry-service';
-import { TermEntryStore } from './term-entry-store';
-
-const termRuntime = ManagedRuntime.make(
-  TermEntryService.layer.pipe(
-    Layer.provide(
-      Layer.mergeAll(
-        TermEntryStore.live.pipe(Layer.provide(PgLive)),
-        definitionLayer,
-      ),
-    ),
-    Layer.provideMerge(UsageLedger.live(PgLive)),
-  ),
-);
 
 export const createTermEntry = createServerFn({ method: 'POST' })
   .validator(decodeCreateTermEntry)

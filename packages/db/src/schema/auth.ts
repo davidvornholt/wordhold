@@ -112,6 +112,29 @@ export const passkey = pgTable(
   (table) => [index('passkey_userId_idx').on(table.userId)],
 );
 
+// Written by the Better Auth device-authorization plugin. `wordhold login`
+// asks for a code, the member approves it at /device, and the command then
+// receives a session token it sends as a bearer token.
+export const deviceCode = pgTable(
+  'device_code',
+  {
+    id: text('id').primaryKey(),
+    deviceCode: text('device_code').notNull(),
+    userCode: text('user_code').notNull(),
+    userId: text('user_id').references(() => user.id, { onDelete: 'cascade' }),
+    expiresAt: timestamp('expires_at').notNull(),
+    status: text('status').notNull(),
+    lastPolledAt: timestamp('last_polled_at'),
+    pollingInterval: integer('polling_interval'),
+    clientId: text('client_id'),
+    scope: text('scope'),
+  },
+  (table) => [
+    uniqueIndex('device_code_deviceCode_idx').on(table.deviceCode),
+    uniqueIndex('device_code_userCode_idx').on(table.userCode),
+  ],
+);
+
 export const userRelations = relations(user, ({ many }) => ({
   sessions: many(session),
   accounts: many(account),

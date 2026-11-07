@@ -15,6 +15,8 @@ just dev
 
 Run `bun run check:fix` for the full gate. See [database operations](packages/db/README.md) for backfills required when upgrading old databases and [provider operations](apps/web/README.md) for credential rotation and verification. Run `provider:verify` in `apps/web` before deploying a changed judge or sentence provider.
 
+The `wordhold` command for agents lives in `apps/cli` and calls the app's `/api/cli` API, defined in `packages/api`. The flake packages it with its skill as `wordhold-cli` for nix-config. CI doesn't build that package, so after changing `bun.lock` or the Bun version, run `nix build .#wordhold-cli` and update `outputHash` in `nix/package.nix` to the hash the failing build prints.
+
 ## Deployment
 
 Merging to `main` releases `https://wordhold.vornholt.online`. `Publish container` builds the image while the `Standards` gate checks the same commit. Once that gate passes, the workflow's `release` job asks prod-1 to run migrations and switch traffic to that exact digest without downtime. The job fails when the release fails; the previous version keeps serving. [personal-infra](https://github.com/davidvornholt/personal-infra) owns the host, the `wordhold` app-release unit, and its runtime configuration. Back up PostgreSQL and `WORDHOLD_DATA_DIR` together; the latter contains original page images and generated audio.

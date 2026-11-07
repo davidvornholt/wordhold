@@ -12,7 +12,8 @@ const isMemberRoute = (pathname: string): boolean =>
   pathname.startsWith('/courses/') ||
   pathname.startsWith('/imports/') ||
   pathname.startsWith('/pages/') ||
-  pathname === '/passkeys';
+  pathname === '/passkeys' ||
+  pathname === '/device';
 
 // Sends someone whose session expired, or who is not the administrator on an
 // administrator page, back to the overview before any loader runs.

@@ -1,15 +1,10 @@
 import { createServerFn } from '@tanstack/react-start';
-import { BedrockProvider } from '@wordhold/ai/providers/bedrock';
-import { SentenceGen } from '@wordhold/ai/sentence';
-import { Tts } from '@wordhold/ai/tts';
-import { PgLive } from '@wordhold/db/client';
-import { Effect, Layer, ManagedRuntime, Schema } from 'effect';
-import { billedTo, UsageLedger } from '../../../shared/ai/usage-ledger';
+import { Effect, Schema } from 'effect';
+import { billedTo } from '../../../shared/ai/usage-ledger';
 import {
   requestMember,
   requestOwnedEntries,
 } from '../../../shared/auth/member-request';
-import { StorageLive } from '../../../shared/storage/server';
 import { Uuid } from '../../../shared/validate/uuid';
 import { decodeSetCourseDirections } from '../schemas/course-directions';
 import {
@@ -33,35 +28,10 @@ import {
   decodeVocabularyTranslationRequest,
   decodeVocabularyTranslationSuggestion,
 } from '../schemas/vocabulary-entry-creation';
+import { courseRuntime, vocabularyRuntime } from './course-runtimes';
 import { CourseService } from './course-service';
-import { CourseStore } from './course-store';
 import { VocabularyEntryService } from './vocabulary-entry-service';
-import { VocabularyEntryStore } from './vocabulary-entry-store';
 import { VocabularyExampleService } from './vocabulary-example-service';
-import { VocabularyExampleStore } from './vocabulary-example-store';
-
-const courseLive = CourseService.layer.pipe(
-  Layer.provide(CourseStore.live.pipe(Layer.provide(PgLive))),
-);
-
-const courseRuntime = ManagedRuntime.make(courseLive);
-
-// Examples and typed entries share one runtime: both talk to the sentence
-// generator, text-to-speech and file storage.
-const vocabularyDependencies = Layer.mergeAll(
-  VocabularyExampleStore.live.pipe(Layer.provide(PgLive)),
-  VocabularyEntryStore.live.pipe(Layer.provide(PgLive)),
-  SentenceGen.layer.pipe(Layer.provide(BedrockProvider.live)),
-  StorageLive,
-  Tts.layer,
-  UsageLedger.live(PgLive),
-);
-const vocabularyRuntime = ManagedRuntime.make(
-  Layer.mergeAll(
-    VocabularyExampleService.layer,
-    VocabularyEntryService.layer,
-  ).pipe(Layer.provideMerge(vocabularyDependencies)),
-);
 
 const decodeId = Schema.decodeUnknownSync(Uuid);
 const decodeIds = Schema.decodeUnknownSync(Schema.Array(Uuid));
