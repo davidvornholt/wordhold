@@ -11,7 +11,7 @@ import {
   firstReviewEntryId,
   seedIntroducedCardFixture,
 } from '../../../shared/testing/introduced-card-fixture';
-import { applyRating } from './fsrs';
+import { applyRating } from '../../../shared/practice/fsrs';
 import { PracticeJudge } from './practice-judge';
 import { applyReviewRepairs, planReviewRepairs } from './review-repair';
 import type { RepairCard } from './review-repair-plan';

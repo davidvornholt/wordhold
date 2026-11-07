@@ -25,6 +25,8 @@ To rotate the release SSH key, add the new public key to `services.appRelease.un
 
 Label a same-repository, non-draft PR `pr-preview` for `https://<number>.pr.wordhold.vornholt.online`. Remove the label to tear it down. If teardown fails, rerun the failed `pr-preview-deploy.yml` workflow through GitHub Actions.
 
+A preview's database starts empty. After migrating it, the preview host runs `bun run db:seed:preview`, which fills it with made-up people, courses and practice history dated relative to that moment. Signing in with GitHub account 157214705 opens the sample administrator's courses. The command needs only `DATABASE_URL` and leaves a database that already holds data untouched. Change the sample data in `apps/web/src/features/sample-data/content` when a change needs something new to look at.
+
 ## Preview credential rotation
 
 Rotate the preview age identity without creating a decryption gap. First add the new recipient beside the old recipient in `.sops.yaml`, re-encrypt `secrets/pr-preview.yaml` with `sops updatekeys`, and merge that pull request. Then replace the environment's `SOPS_AGE_KEY`. Finally remove the old recipient and re-encrypt in a second pull request.

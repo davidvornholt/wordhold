@@ -20,7 +20,7 @@ import type {
   PersistReviewInput,
   SubmissionRecord,
 } from '../schemas/practice-models';
-import { applyRating } from './fsrs';
+import { applyRating } from '../../../shared/practice/fsrs';
 import { commitGradedAnswer, type RunReviewTransaction } from './review-commit';
 import { advancesSchedule } from './schedule-guard';
 

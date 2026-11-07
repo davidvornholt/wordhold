@@ -17,6 +17,7 @@
     "check:fix": "standards check && turbo run lint:fix check-types test build test:a11y --output-logs=errors-only && turbo run test:smoke --output-logs=errors-only",
     "lint": "biome check --error-on-warnings .",
     "lint:fix": "biome check --write --error-on-warnings .",
+    "db:seed:preview": "bun run --cwd apps/web db:seed:preview",
     "test:a11y": "turbo run test:a11y"
   },
   "devDependencies": {

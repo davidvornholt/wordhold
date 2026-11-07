@@ -7,7 +7,11 @@ import { Cause, Context, Effect, Layer } from 'effect';
 // USD estimates keep eight decimal places, as the column does.
 const usdDecimals = 8;
 
-const settledColumns = (call: AiCall, usage: AiCallUsage | undefined) => {
+// The columns a settled request writes, also used for made-up preview usage.
+export const settledColumns = (
+  call: AiCall,
+  usage: AiCallUsage | undefined,
+) => {
   const price = aiPrice(call);
   const estimate =
     usage === undefined || price === undefined

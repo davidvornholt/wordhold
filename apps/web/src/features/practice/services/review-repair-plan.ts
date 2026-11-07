@@ -3,7 +3,7 @@ import type {
   DerivedRating,
   GradeOutcome,
 } from '../../../shared/grading/rating';
-import { applyRating } from './fsrs';
+import { applyRating } from '../../../shared/practice/fsrs';
 import { advancesSchedule } from './schedule-guard';
 
 export type RepairCard = typeof cards.$inferSelect;

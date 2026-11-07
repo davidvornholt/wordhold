@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "bun --bun vite dev",
-    "build": "vite build && bun build --target=bun --outdir=.output/maintenance scripts/repair-practice-reviews.ts",
+    "build": "vite build && bun build --target=bun --outdir=.output/maintenance scripts/repair-practice-reviews.ts scripts/seed-sample-data.ts",
     "start": "bun .output/server/index.mjs",
     "check-types": "tsc --noEmit",
     "icons:render": "bun scripts/render-app-icons.ts",
@@ -14,7 +14,8 @@
     "test:a11y": "playwright install chromium && a11y-playwright",
     "test:smoke": "playwright install chromium && playwright test --config smoke/playwright.config.ts",
     "practice:repair": "bun --env-file=.env.local scripts/repair-practice-reviews.ts",
-    "practice:repair:production": "bun .output/maintenance/repair-practice-reviews.js"
+    "practice:repair:production": "bun .output/maintenance/repair-practice-reviews.js",
+    "db:seed:preview": "bun .output/maintenance/seed-sample-data.js"
   },
   "dependencies": {
     "@better-auth/passkey": "1.7.7",
