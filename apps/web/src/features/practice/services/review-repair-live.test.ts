@@ -7,11 +7,11 @@ import {
 } from '@wordhold/db/testing/postgres-test-database';
 import { Effect } from 'effect';
 import { ratings } from '../../../shared/grading/rating';
+import { applyRating } from '../../../shared/practice/fsrs';
 import {
   firstReviewEntryId,
   seedIntroducedCardFixture,
 } from '../../../shared/testing/introduced-card-fixture';
-import { applyRating } from './fsrs';
 import { PracticeJudge } from './practice-judge';
 import { applyReviewRepairs, planReviewRepairs } from './review-repair';
 import type { RepairCard } from './review-repair-plan';
