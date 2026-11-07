@@ -134,9 +134,12 @@ export type ImportPageRemoval = {
   readonly importSessionId: string;
   readonly pageId: string;
   readonly position: number;
-  // The batch size before this removal. It tells a repeated request from a
-  // new one, because only the first removal finds the batch at this size.
-  readonly expectedPageCount: number;
+  // The browser's queue before this removal. Its length is the batch size the
+  // browser expects, and its positions tell a repeated removal from a stale one.
+  readonly queue: ReadonlyArray<{
+    readonly pageId: string;
+    readonly position: number;
+  }>;
 };
 
 export type InsertedEntry = {

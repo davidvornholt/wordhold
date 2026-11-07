@@ -28,28 +28,44 @@ export const deletePendingImportSession = (sql: Database, sessionId: string) =>
       ),
     );
 
-// The browser repeats a removal whose response it did not receive. The batch
-// is then one page smaller and the page is gone, so the first request already
-// removed it. Any other difference means the queue no longer matches the batch.
-const compareBatchSize = (sql: Database, removal: ImportPageRemoval) =>
+type StoredPosition = { readonly id: string; readonly position: number };
+
+// Where each page of the browser's queue sits once this page is taken out.
+const sitsWhereQueueSays = (
+  stored: ReadonlyArray<StoredPosition>,
+  removal: ImportPageRemoval,
+) => {
+  const after = new Map(
+    removal.queue
+      .filter((page) => page.pageId !== removal.pageId)
+      .map((page) => [
+        page.pageId,
+        page.position > removal.position ? page.position - 1 : page.position,
+      ]),
+  );
+  return stored.every((row) => after.get(row.id) === row.position);
+};
+
+// The browser repeats a removal whose response it did not receive. A batch one
+// page smaller with the page gone is not proof on its own: another removal may
+// have committed meanwhile. So a repeat also needs every stored page to sit
+// where the browser's queue puts it without this page. Any other difference
+// means the queue no longer matches the batch.
+const compareBatch = (sql: Database, removal: ImportPageRemoval) =>
   Effect.gen(function* () {
-    const batches = yield* sql<{
-      expectedPageCount: number;
-    }>`select import_expected_count as "expectedPageCount" from pages where import_session_id = ${removal.importSessionId} and course_id = ${removal.courseId} limit 1`;
-    const [batch] = batches;
-    if (
-      batch === undefined ||
-      batch.expectedPageCount === removal.expectedPageCount
-    ) {
+    const stored = yield* sql<
+      StoredPosition & { expectedPageCount: number }
+    >`select id, import_position as position, import_expected_count as "expectedPageCount" from pages where import_session_id = ${removal.importSessionId} and course_id = ${removal.courseId}`;
+    const [batch] = stored;
+    const queued = removal.queue.length;
+    if (batch === undefined || batch.expectedPageCount === queued) {
       return 'matches' as const;
     }
-    if (batch.expectedPageCount === removal.expectedPageCount - 1) {
-      const stillStored = yield* sql<{
-        id: string;
-      }>`select id from pages where id = ${removal.pageId} limit 1`;
-      if (stillStored.length === 0) {
-        return 'already-removed' as const;
-      }
+    if (
+      batch.expectedPageCount === queued - 1 &&
+      sitsWhereQueueSays(stored, removal)
+    ) {
+      return 'already-removed' as const;
     }
     return yield* Effect.fail(
       new Error('The removed page batch size does not match.'),
@@ -72,7 +88,7 @@ export const removePendingImportPage = (
         if (reviewStarted.length > 0) {
           return;
         }
-        const batch = yield* compareBatchSize(sql, removal);
+        const batch = yield* compareBatch(sql, removal);
         if (batch === 'already-removed') {
           return { imagePath: null };
         }
