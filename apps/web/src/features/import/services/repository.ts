@@ -135,7 +135,8 @@ export type ImportPageRemoval = {
   readonly pageId: string;
   readonly position: number;
   // The browser's queue before this removal. Its length is the batch size the
-  // browser expects, and its positions tell a repeated removal from a stale one.
+  // browser expects. A removal repeated after a lost response is acknowledged
+  // only when the stored pages sit where this queue puts them without the page.
   readonly queue: ReadonlyArray<{
     readonly pageId: string;
     readonly position: number;
