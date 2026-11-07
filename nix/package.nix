@@ -8,9 +8,8 @@
 }:
 let
   pname = "wordhold-cli";
-  # The repository without dependencies, build output, local secrets, and local
-  # state, which a dirty checkout or a path: flake would otherwise copy into the
-  # store.
+  # Keeps dependencies, build output, and local state, which a dirty checkout or
+  # a path: flake would otherwise copy, out of the store.
   # lib.fileset can't exclude a directory by name at any depth, so this filters
   # the source by name instead.
   src = lib.cleanSourceWith {
@@ -55,9 +54,6 @@ let
       runHook postInstall
     '';
     dontFixup = true;
-    # A change to bun.lock or to the Bun version in package.json's
-    # packageManager needs a new hash here. The failing build prints it after
-    # "got:".
     outputHash = "sha256-aPrO/A2n+URwq2D1asarbNbHx/C+dq2Oqkqlvn5DeP0=";
     outputHashAlgo = "sha256";
     outputHashMode = "recursive";

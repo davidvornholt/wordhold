@@ -15,7 +15,7 @@ just dev
 
 Run `bun run check:fix` for the full gate. See [database operations](packages/db/README.md) for backfills required when upgrading old databases and [provider operations](apps/web/README.md) for credential rotation and verification. Run `provider:verify` in `apps/web` before deploying a changed judge or sentence provider.
 
-The `wordhold` command for agents lives in `apps/cli` and calls the app's `/api/cli` API, defined in `packages/api`. The flake packages it with its skill as `wordhold-cli` for nix-config. CI doesn't build that package, so after changing `bun.lock` or the Bun version, run `nix build .#wordhold-cli` and update `outputHash` in `nix/package.nix` to the hash the failing build prints.
+CI doesn't build the flake's `wordhold-cli` package, so after changing `bun.lock` or the Bun version, run `nix build .#wordhold-cli` and update `outputHash` in `nix/package.nix` to the hash the failing build prints.
 
 ## Deployment
 
