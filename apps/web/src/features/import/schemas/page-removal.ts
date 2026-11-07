@@ -10,6 +10,10 @@ export const PageRemovalRequest = Schema.Struct({
     Schema.isInt(),
     Schema.isBetween({ minimum: 0, maximum: maximumUploadBatchSize - 1 }),
   ),
+  expectedPageCount: Schema.Number.check(
+    Schema.isInt(),
+    Schema.isBetween({ minimum: 1, maximum: maximumUploadBatchSize }),
+  ),
 });
 
 export const decodePageRemovalRequest =

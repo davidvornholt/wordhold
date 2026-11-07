@@ -44,6 +44,28 @@ export const removePendingImportPage = (
         if (reviewStarted.length > 0) {
           return;
         }
+        const batches = yield* sql<{
+          expectedPageCount: number;
+        }>`select import_expected_count as "expectedPageCount" from pages where import_session_id = ${removal.importSessionId} and course_id = ${removal.courseId} limit 1`;
+        const [batch] = batches;
+        if (batch !== undefined) {
+          // The browser repeats a removal whose response it did not receive.
+          // The batch is then one page smaller and the page is gone, so the
+          // first request already removed it.
+          if (batch.expectedPageCount === removal.expectedPageCount - 1) {
+            const stillStored = yield* sql<{
+              id: string;
+            }>`select id from pages where id = ${removal.pageId} limit 1`;
+            if (stillStored.length === 0) {
+              return { imagePath: null };
+            }
+          }
+          if (batch.expectedPageCount !== removal.expectedPageCount) {
+            return yield* Effect.fail(
+              new Error('The removed page batch size does not match.'),
+            );
+          }
+        }
         const removed = yield* sql<{
           imagePath: string;
           position: number;

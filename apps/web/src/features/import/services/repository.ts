@@ -134,6 +134,9 @@ export type ImportPageRemoval = {
   readonly importSessionId: string;
   readonly pageId: string;
   readonly position: number;
+  // The batch size before this removal. It tells a repeated request from a
+  // new one, because only the first removal finds the batch at this size.
+  readonly expectedPageCount: number;
 };
 
 export type InsertedEntry = {

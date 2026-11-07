@@ -49,12 +49,17 @@ it('takes stored and unstored pages out of a batch and keeps it completable', as
               removed.push(path);
             }),
         });
-        const discard = (pageId: string, position: number) =>
+        const discard = (
+          pageId: string,
+          position: number,
+          expectedPageCount: number,
+        ) =>
           discardPendingImportPage({
             courseId,
             importSessionId,
             pageId,
             position,
+            expectedPageCount,
           }).pipe(
             Effect.provideService(Storage, storage),
             Effect.provide(ImportRepositoryLive),
@@ -69,7 +74,7 @@ it('takes stored and unstored pages out of a batch and keeps it completable', as
           order by import_position
         `;
 
-        expect(yield* discard(failedPageId, 1)).toEqual({
+        expect(yield* discard(failedPageId, 1, 5)).toEqual({
           cleanupPending: false,
         });
         expect(removed).toEqual(['pages/failed.jpg']);
@@ -80,7 +85,7 @@ it('takes stored and unstored pages out of a batch and keeps it completable', as
         ]);
 
         // The unstored photo moved up to position 3 in the queue as well.
-        expect(yield* discard(unstoredPageId, 3)).toEqual({
+        expect(yield* discard(unstoredPageId, 3, 4)).toEqual({
           cleanupPending: false,
         });
         expect(removed).toEqual(['pages/failed.jpg']);
@@ -92,15 +97,94 @@ it('takes stored and unstored pages out of a batch and keeps it completable', as
         const session = yield* repository.getImportSession(importSessionId);
         expect(session?.isComplete).toBe(true);
 
-        const mismatch = yield* Effect.flip(discard(lastPageId, 0));
+        const mismatch = yield* Effect.flip(discard(lastPageId, 0, 3));
         expect(mismatch).toBeInstanceOf(ImportDatabaseError);
         expect(yield* batch).toHaveLength(3);
 
         yield* sql`update pages set status = 'verified', verified_at = now() where id = ${firstPageId}`;
-        const reviewed = yield* Effect.flip(discard(lastPageId, 2));
+        const reviewed = yield* Effect.flip(discard(lastPageId, 2, 3));
         expect(reviewed).toBeInstanceOf(PageNotPendingError);
         expect(yield* batch).toHaveLength(3);
         expect(removed).toEqual(['pages/failed.jpg']);
+      }).pipe(
+        Effect.provide(ImportRepositoryLive),
+        Effect.provide(testDatabaseLayer(database.url)),
+      ),
+    ),
+  );
+});
+
+it('treats a retried removal as done when its first response was lost', async () => {
+  await Effect.runPromise(
+    withMigratedTestDatabase((database) =>
+      Effect.gen(function* () {
+        const sql = yield* Database;
+        const repository = yield* ImportRepository;
+        yield* sql`
+          insert into courses (id, name, target_language)
+          values (${courseId}, 'English', 'en')
+        `;
+        // Five photos: the first three are stored, and the last two never
+        // reached the server.
+        yield* sql`
+          insert into pages (id, course_id, import_session_id, import_position, import_expected_count, image_path)
+          values
+            (${firstPageId}, ${courseId}, ${importSessionId}, 0, 5, 'pages/first.jpg'),
+            (${secondPageId}, ${courseId}, ${importSessionId}, 1, 5, 'pages/second.jpg'),
+            (${lastPageId}, ${courseId}, ${importSessionId}, 2, 5, 'pages/last.jpg')
+        `;
+        const removed: Array<string> = [];
+        const storage = makeStorage({
+          remove: (path) =>
+            Effect.sync(() => {
+              removed.push(path);
+            }),
+        });
+        const discard = (
+          pageId: string,
+          position: number,
+          expectedPageCount: number,
+        ) =>
+          discardPendingImportPage({
+            courseId,
+            importSessionId,
+            pageId,
+            position,
+            expectedPageCount,
+          }).pipe(
+            Effect.provideService(Storage, storage),
+            Effect.provide(ImportRepositoryLive),
+          );
+        const batch = sql<{
+          readonly id: string;
+          readonly position: number;
+          readonly expected: number;
+        }>`
+          select id, import_position as position, import_expected_count as expected
+          from pages where import_session_id = ${importSessionId}
+          order by import_position
+        `;
+
+        // The browser keeps a page whose removal response did not arrive and
+        // sends the same removal again.
+        yield* discard(unstoredPageId, 4, 5);
+        yield* discard(unstoredPageId, 4, 5);
+        yield* discard(secondPageId, 1, 4);
+        expect(yield* discard(secondPageId, 1, 4)).toEqual({
+          cleanupPending: false,
+        });
+        expect(removed).toEqual(['pages/second.jpg']);
+        expect(yield* batch).toEqual([
+          { id: firstPageId, position: 0, expected: 3 },
+          { id: lastPageId, position: 1, expected: 3 },
+        ]);
+        const session = yield* repository.getImportSession(importSessionId);
+        expect(session?.isComplete).toBe(false);
+
+        // A queue whose batch size disagrees with the server's changes nothing.
+        const stale = yield* Effect.flip(discard(lastPageId, 1, 5));
+        expect(stale).toBeInstanceOf(ImportDatabaseError);
+        expect(yield* batch).toHaveLength(2);
       }).pipe(
         Effect.provide(ImportRepositoryLive),
         Effect.provide(testDatabaseLayer(database.url)),
