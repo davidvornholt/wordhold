@@ -1,5 +1,5 @@
 import type { Database } from '@wordhold/db/client';
-import { Effect } from 'effect';
+import { Array as Arr, Effect } from 'effect';
 import { ImportDatabaseError } from '../errors/import-database-error';
 import { listOrSeedCourses } from './course-seeding';
 import type { Course } from './repository';
@@ -32,7 +32,7 @@ export const courseRepositoryLive = (sql: Database) => ({
           return yield* listOrSeedCourses({
             list: listCourses(sql, ownerId),
             insertSeeds:
-              sql`insert into courses ${sql.insert(seeds.map((course) => ({ ...course, ownerId })))}`.pipe(
+              sql`insert into courses ${sql.insert(Arr.map(seeds, (course) => ({ ...course, ownerId })))}`.pipe(
                 Effect.andThen(listCourses(sql, ownerId)),
               ),
           });

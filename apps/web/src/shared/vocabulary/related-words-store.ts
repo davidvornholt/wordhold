@@ -1,5 +1,5 @@
 import type { Database } from '@wordhold/db/client';
-import { Effect } from 'effect';
+import { Array as Arr, Effect } from 'effect';
 import { normalizeAnswer } from '../grading/normalize';
 import { syncRelationIntroduction } from '../practice/relation-introduction';
 import type { RelatedWordListsData } from './related-words';
@@ -67,7 +67,7 @@ const syncRelationCards = (
         and direction in ('to_synonym', 'to_antonym')
     `;
     const answers = relationAnswers(writes);
-    if (answers.length > 0) {
+    if (Arr.isArrayNonEmpty(answers)) {
       yield* sql`insert into accepted_answers ${sql.insert(answers)} on conflict do nothing`;
     }
     yield* sql`
