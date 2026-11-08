@@ -1,6 +1,6 @@
 import type { Database } from '@wordhold/db/client';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
-import { Effect } from 'effect';
+import { Array as Arr, Effect } from 'effect';
 import { normalizeAnswer } from '../../../shared/grading/normalize';
 
 type TextbookAnswer = {
@@ -16,7 +16,7 @@ type TextbookAnswer = {
 export const replaceTextbookAnswers = (
   sql: Database,
   entryId: string,
-  answers: ReadonlyArray<TextbookAnswer>,
+  answers: Arr.NonEmptyReadonlyArray<TextbookAnswer>,
 ) =>
   Effect.gen(function* () {
     const directions = `{${answers.map((answer) => answer.direction).join(',')}}`;
@@ -27,7 +27,7 @@ export const replaceTextbookAnswers = (
           and direction = any(${directions}::answer_direction[])))
     `;
     yield* sql`insert into accepted_answers ${sql.insert(
-      answers.map((answer) => ({
+      Arr.map(answers, (answer) => ({
         entryId,
         direction: answer.direction,
         text: answer.text,

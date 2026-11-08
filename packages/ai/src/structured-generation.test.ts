@@ -37,8 +37,8 @@ const generate = (
   return { calls, result, settled };
 };
 
-// Bedrock receives the schema only as an instruction, so the answer text can
-// miss it. Every request is metered, including the repeated one.
+// An unusable answer is requested once more. Every request is metered,
+// including the repeated one.
 describe('generateStructured', () => {
   it.each([
     {

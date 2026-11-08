@@ -101,7 +101,10 @@ describe('Bedrock workload transport', () => {
       'additionalModelRequestFields.thinking.type',
       'adaptive',
     );
-    expect(JSON.stringify(calls[0]?.body.system)).toContain('JSON schema');
+    expect(calls[0]?.body).toHaveProperty(
+      'additionalModelRequestFields.output_config.format.type',
+      'json_schema',
+    );
     expect(calls[0]?.body).not.toHaveProperty('toolConfig');
     expect(JSON.stringify(calls[0]?.body)).toContain('café');
   });
@@ -142,7 +145,10 @@ describe('Bedrock sentence transport', () => {
       'additionalModelRequestFields.thinking.type',
       'adaptive',
     );
-    expect(JSON.stringify(calls[0]?.body.system)).toContain('JSON schema');
+    expect(calls[0]?.body).toHaveProperty(
+      'additionalModelRequestFields.output_config.format.type',
+      'json_schema',
+    );
     expect(calls[0]?.body).not.toHaveProperty('toolConfig');
   });
 
@@ -212,7 +218,10 @@ describe('Bedrock sentence transport', () => {
         'additionalModelRequestFields.thinking.type',
         'adaptive',
       );
-      expect(JSON.stringify(calls[0]?.body.system)).toContain('JSON schema');
+      expect(calls[0]?.body).toHaveProperty(
+        'additionalModelRequestFields.output_config.format.type',
+        'json_schema',
+      );
       expect(calls[0]?.body).not.toHaveProperty('toolConfig');
     },
   );
@@ -249,7 +258,10 @@ describe('Bedrock extraction transport', () => {
         'additionalModelRequestFields.thinking.type',
         'adaptive',
       );
-      expect(JSON.stringify(calls[0]?.body.system)).toContain('JSON schema');
+      expect(calls[0]?.body).toHaveProperty(
+        'additionalModelRequestFields.output_config.format.type',
+        'json_schema',
+      );
       expect(calls[0]?.body).not.toHaveProperty('toolConfig');
       expect(calls[0]?.body).toHaveProperty(
         'messages.0.content.0.image.format',

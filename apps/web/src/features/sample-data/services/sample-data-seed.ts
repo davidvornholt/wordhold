@@ -1,5 +1,5 @@
 import { Database } from '@wordhold/db/client';
-import { Effect } from 'effect';
+import { Array as Arr, Effect } from 'effect';
 import { settledColumns } from '../../../shared/ai/usage-ledger';
 import {
   accessCodeLifetimeHours,
@@ -110,9 +110,9 @@ const writePerson = (person: SamplePerson, now: Date) =>
       entries += written.entries;
       answers += written.answers;
     }
-    if (person.usage.length > 0) {
+    if (Arr.isReadonlyArrayNonEmpty(person.usage)) {
       yield* sql`insert into ai_usage ${sql.insert(
-        person.usage.map((request) => ({
+        Arr.map(person.usage, (request) => ({
           userId,
           operation: request.call.operation,
           provider: request.call.provider,

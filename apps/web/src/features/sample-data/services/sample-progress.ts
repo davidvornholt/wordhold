@@ -3,7 +3,7 @@ import {
   type AnswerDirection,
   answerDirections,
 } from '@wordhold/db/schema/directions';
-import { Effect } from 'effect';
+import { Array as Arr, Effect } from 'effect';
 import { isRelationDirection } from '../../../shared/directions';
 import { ratings } from '../../../shared/grading/rating';
 import { syncRelationIntroduction } from '../../../shared/practice/relation-introduction';
@@ -124,7 +124,7 @@ export const writeSampleProgress = (
       )
       where c.id = v.id
     `;
-    if (reviews.length > 0) {
+    if (Arr.isArrayNonEmpty(reviews)) {
       yield* sql`insert into reviews ${sql.insert(reviews)}`;
     }
     yield* syncRelationIntroduction(sql, ids);

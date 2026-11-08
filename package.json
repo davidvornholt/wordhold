@@ -21,8 +21,8 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",
-    "@davidvornholt/standards": "0.31.0",
-    "turbo": "^2.11.7",
+    "@davidvornholt/standards": "0.33.0",
+    "turbo": "^2.11.10",
     "typescript": "7.0.2"
   },
   "engines": {
@@ -31,6 +31,6 @@
   },
   "packageManager": "bun@1.4.3",
   "overrides": {
-    "@effect/platform-node-shared": "4.0.6"
+    "@effect/platform-node-shared": "4.1.2"
   }
 }

@@ -1,5 +1,5 @@
 import type { Database } from '@wordhold/db/client';
-import { Effect } from 'effect';
+import { Array as Arr, Effect } from 'effect';
 import { normalizeAnswer } from '../grading/normalize';
 import type { NewExampleData } from './entry-fields';
 import type { RelatedWordListsData } from './related-words';
@@ -31,12 +31,12 @@ export const insertVocabularyEntries = (
   entries: ReadonlyArray<NewVocabularyEntry>,
 ) =>
   Effect.gen(function* () {
-    if (entries.length === 0) {
+    if (!Arr.isReadonlyArrayNonEmpty(entries)) {
       return [] as ReadonlyArray<InsertedVocabularyEntry>;
     }
     const inserted =
       yield* sql<InsertedVocabularyEntry>`insert into entries ${sql.insert(
-        entries.map((entry) => ({
+        Arr.map(entries, (entry) => ({
           courseId: entry.courseId,
           bookId: entry.bookId,
           unitId: entry.unitId,
@@ -58,7 +58,7 @@ export const insertVocabularyEntries = (
             },
           ];
     });
-    if (examples.length > 0) {
+    if (Arr.isArrayNonEmpty(examples)) {
       yield* sql`insert into entry_examples ${sql.insert(examples)}`;
     }
     const relatedWords = entries.flatMap((entry, index) => {
@@ -99,14 +99,14 @@ export const insertVocabularyEntries = (
             },
           ];
     });
-    if (answers.length > 0) {
+    if (Arr.isArrayNonEmpty(answers)) {
       yield* sql`insert into accepted_answers ${sql.insert(answers)} on conflict do nothing`;
     }
     const cardRows = inserted.flatMap((entry) => [
       { entryId: entry.id, direction: 'to_target' },
       { entryId: entry.id, direction: 'to_native' },
     ]);
-    if (cardRows.length > 0) {
+    if (Arr.isArrayNonEmpty(cardRows)) {
       yield* sql`insert into cards ${sql.insert(cardRows)}`;
     }
     return inserted;
