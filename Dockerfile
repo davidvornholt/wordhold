@@ -45,7 +45,10 @@ ENV NODE_ENV=production
 ENV PORT=3000
 
 COPY --from=production-dependencies /app/node_modules ./node_modules
-COPY --from=build /app/package.json ./package.json
+# Preview hosts run `bun run db:seed:preview` from the image root. The
+# repository's root scripts are quality gates and Turbo aliases, which the
+# image can't run, so the image gets a root manifest of its own.
+RUN echo '{"private":true,"type":"module","scripts":{"db:seed:preview":"bun run --cwd apps/web db:seed:preview"}}' > package.json
 COPY --from=build /app/apps/web/.output ./apps/web/.output
 COPY --from=build /app/apps/web/package.json ./apps/web/package.json
 COPY --from=build /app/packages/db/drizzle ./packages/db/drizzle

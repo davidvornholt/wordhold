@@ -154,8 +154,18 @@
       }
     },
     {
+      // Made-up sample data is literal by nature, like test inputs. Naming
+      // each number would move it away from the word or answer it describes.
+      "includes": ["apps/web/src/features/sample-data/content/**"],
+      "linter": {
+        "rules": {
+          "style": { "noMagicNumbers": "off" }
+        }
+      }
+    },
+    {
       // Boundary to the ts-fsrs scheduler, whose Card type speaks snake_case.
-      "includes": ["apps/web/src/features/practice/services/fsrs.ts"],
+      "includes": ["apps/web/src/shared/practice/fsrs.ts"],
       "linter": {
         "rules": {
           "style": { "useNamingConvention": "off" }

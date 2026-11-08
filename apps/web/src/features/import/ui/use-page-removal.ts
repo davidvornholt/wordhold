@@ -8,6 +8,7 @@ const removeStoredPage = (
   courseId: string,
   importSessionId: string,
   page: Pick<QueuedPage, 'id' | 'position'>,
+  queue: ReadonlyArray<Pick<QueuedPage, 'id' | 'position'>>,
 ) =>
   Effect.tryPromise({
     try: () =>
@@ -17,6 +18,10 @@ const removeStoredPage = (
           importSessionId,
           pageId: page.id,
           position: page.position,
+          queue: queue.map((queued) => ({
+            pageId: queued.id,
+            position: queued.position,
+          })),
         },
       }),
     catch: (cause) => {
@@ -74,7 +79,9 @@ export const usePageRemoval =
     await lock.run(async () => {
       setError(null);
       const removal = await Effect.runPromise(
-        Effect.result(removeStoredPage(courseId, importSessionId, page)),
+        Effect.result(
+          removeStoredPage(courseId, importSessionId, page, pagesRef.current),
+        ),
       );
       if (Result.isFailure(removal)) {
         setError(removal.failure.message);

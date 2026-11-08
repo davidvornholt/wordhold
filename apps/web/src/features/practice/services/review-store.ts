@@ -7,6 +7,7 @@ import type { cards } from '@wordhold/db/schema/practice';
 import { Context, Effect, Layer } from 'effect';
 import type { AcceptedAnswer } from '../../../shared/grading/deterministic-match';
 import { ratings } from '../../../shared/grading/rating';
+import { applyRating } from '../../../shared/practice/fsrs';
 import { entryIsKnown } from '../../../shared/practice/known-entry';
 import { cardRelatedWords } from '../../../shared/practice/practised-directions';
 import { saveDerivedKeyPoints } from '../../../shared/vocabulary/key-points';
@@ -20,7 +21,6 @@ import type {
   PersistReviewInput,
   SubmissionRecord,
 } from '../schemas/practice-models';
-import { applyRating } from './fsrs';
 import { commitGradedAnswer, type RunReviewTransaction } from './review-commit';
 import { advancesSchedule } from './schedule-guard';
 

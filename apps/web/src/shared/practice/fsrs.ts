@@ -2,9 +2,21 @@
 // useNamingConvention override in the root biome.jsonc).
 import type { CardState, cards } from '@wordhold/db/schema/practice';
 import { type Card, createEmptyCard, fsrs, type Grade, State } from 'ts-fsrs';
-import type { DerivedRating } from '../../../shared/grading/rating';
+import type { DerivedRating } from '../grading/rating';
 
-type CardRow = typeof cards.$inferSelect;
+// The scheduling columns of a card, which is all a rating reads.
+export type CardSchedule = Pick<
+  typeof cards.$inferSelect,
+  | 'state'
+  | 'dueAt'
+  | 'stability'
+  | 'difficulty'
+  | 'reps'
+  | 'lapses'
+  | 'scheduledDays'
+  | 'learningSteps'
+  | 'lastReviewedAt'
+>;
 
 const scheduler = fsrs();
 
@@ -22,7 +34,7 @@ const nameByState: Record<State, CardState> = {
   [State.Relearning]: 'relearning',
 };
 
-const toFsrsCard = (row: CardRow, now: Date): Card => {
+const toFsrsCard = (row: CardSchedule, now: Date): Card => {
   if (row.stability === null || row.difficulty === null) {
     return createEmptyCard(now);
   }
@@ -41,7 +53,11 @@ const toFsrsCard = (row: CardRow, now: Date): Card => {
 };
 
 // Returns the column updates for one graded review.
-export const applyRating = (row: CardRow, rating: DerivedRating, now: Date) => {
+export const applyRating = (
+  row: CardSchedule,
+  rating: DerivedRating,
+  now: Date,
+) => {
   const { card } = scheduler.next(toFsrsCard(row, now), now, rating as Grade);
   return {
     state: nameByState[card.state],
