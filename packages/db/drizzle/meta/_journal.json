@@ -246,6 +246,13 @@
       "when": 1792039591756,
       "tag": "0034_reset_spelling_pitfalls",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1794069163794,
+      "tag": "0035_device_login",
+      "breakpoints": true
     }
   ]
 }

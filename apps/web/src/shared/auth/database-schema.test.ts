@@ -2,6 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import { passkey as passkeyPlugin } from '@better-auth/passkey';
 import {
   account,
+  deviceCode,
   passkey,
   session,
   user,
@@ -10,6 +11,7 @@ import {
 import { getAuthTables } from 'better-auth/db';
 import { getTableColumns } from 'drizzle-orm';
 import { getTableConfig, type PgTable } from 'drizzle-orm/pg-core';
+import { commandLinePlugins } from './device-login';
 
 // better-auth builds its queries from the field names it declares, so a field
 // missing from the Drizzle schema produces invalid SQL at sign-in rather than a
@@ -21,6 +23,7 @@ const drizzleTables: Readonly<Record<string, PgTable>> = {
   account,
   verification,
   passkey,
+  deviceCode,
 };
 
 const drizzleTableFor = (modelName: string): PgTable => {
@@ -47,7 +50,7 @@ const uniqueColumnSets = (table: PgTable): ReadonlyArray<string> =>
 
 describe('better-auth database schema', () => {
   for (const [model, definition] of Object.entries(
-    getAuthTables({ plugins: [passkeyPlugin()] }),
+    getAuthTables({ plugins: [passkeyPlugin(), ...commandLinePlugins()] }),
   )) {
     const fields = Object.entries(definition.fields);
 

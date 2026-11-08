@@ -1,19 +1,12 @@
 import { createServerFn } from '@tanstack/react-start';
-import { PgLive } from '@wordhold/db/client';
-import { Effect, Layer, ManagedRuntime } from 'effect';
+import { Effect } from 'effect';
 import { requestMember } from '../../../shared/auth/member-request';
 import {
   decodeCreateTextEntry,
   decodeUpdateTextEntry,
 } from '../schemas/text-entry-changes';
+import { textRuntime } from './course-runtimes';
 import { TextEntryService } from './text-entry-service';
-import { TextEntryStore } from './text-entry-store';
-
-const textRuntime = ManagedRuntime.make(
-  TextEntryService.layer.pipe(
-    Layer.provide(TextEntryStore.live.pipe(Layer.provide(PgLive))),
-  ),
-);
 
 export const createTextEntry = createServerFn({ method: 'POST' })
   .validator(decodeCreateTextEntry)

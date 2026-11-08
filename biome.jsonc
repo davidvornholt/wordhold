@@ -30,6 +30,25 @@
       }
     },
     {
+      // The wordhold CLI is compiled into a single Bun binary and never runs
+      // in a browser or on an edge runtime, which is what noNodejsModules
+      // protects; the `Bun` global comes from that runtime.
+      "includes": ["apps/cli/**"],
+      "javascript": { "globals": ["Bun"] },
+      "linter": {
+        "rules": { "correctness": { "noNodejsModules": "off" } }
+      }
+    },
+    {
+      // The device sign-in fixtures are RFC 8628 wire bodies, whose field
+      // names are snake_case.
+      "includes": [
+        "apps/cli/src/features/login/device-login.test.ts",
+        "apps/web/src/shared/auth/auth-commit.test.ts"
+      ],
+      "linter": { "rules": { "style": { "useNamingConvention": "off" } } }
+    },
+    {
       // The child process receives the application's exact environment names.
       "includes": [
         "apps/web/src/shared/auth/auth-handler.integration.test.ts",
