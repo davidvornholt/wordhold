@@ -1,20 +1,13 @@
 import { createServerFn } from '@tanstack/react-start';
-import { PgLive } from '@wordhold/db/client';
-import { Effect, Layer, ManagedRuntime } from 'effect';
+import { Effect } from 'effect';
 import {
   requestAdministrator,
   requestMember,
 } from '../../../shared/auth/member-request';
 import { serverEnv } from '../../../shared/env/server';
 import { requireString } from '../../../shared/validate/input';
+import { dashboardRuntime } from './dashboard-runtime';
 import { DashboardService } from './dashboard-service';
-import { DashboardStore } from './dashboard-store';
-
-const dashboardLive = DashboardService.layer.pipe(
-  Layer.provide(DashboardStore.live.pipe(Layer.provide(PgLive))),
-);
-
-const dashboardRuntime = ManagedRuntime.make(dashboardLive);
 
 // Everyone in the family shares the instance's time zone, so "today" and the
 // streak mean the same calendar day for all of them.

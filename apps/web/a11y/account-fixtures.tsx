@@ -1,4 +1,5 @@
 import { HomeShell } from '../src/app/home-shell';
+import { DeviceScreen } from '../src/features/access/ui/device-screen';
 import { JoinScreen } from '../src/features/access/ui/join-screen';
 import { PasskeysScreen } from '../src/features/access/ui/passkeys-screen';
 import { SignInPanel } from '../src/features/access/ui/sign-in-panel';
@@ -64,6 +65,25 @@ export const PasskeysFixture = () => (
           backedUp: false,
         },
       ]}
+    />
+  </PageLayout>
+);
+
+// Any code but XXXXXXXX is waiting for approval, so a flow test can reach the
+// expired-code message too.
+export const DeviceFixture = ({ code }: { readonly code: string }) => (
+  <PageLayout
+    backControl={fixtureBackControl('Übersicht', 'dashboard')}
+    title="Befehlszeile anmelden"
+  >
+    <DeviceScreen
+      check={(typed) =>
+        typed === 'XXXXXXXX'
+          ? Promise.reject(new Error('Unknown code'))
+          : Promise.resolve('pending')
+      }
+      decide={async () => undefined}
+      initialCode={code}
     />
   </PageLayout>
 );

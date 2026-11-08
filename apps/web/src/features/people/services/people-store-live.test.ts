@@ -57,6 +57,17 @@ const seedSession = (userId: string) =>
         ${`token-${userId}`}, now(), ${userId})`;
   });
 
+const seedApprovedDeviceCode = (userId: string) =>
+  Effect.gen(function* () {
+    const sql = yield* Database;
+    yield* sql`insert into device_code (
+        id, device_code, user_code, user_id, expires_at, status
+      ) values (
+        ${`device-code-${userId}`}, ${`device-${userId}`}, 'USERCODE',
+        ${userId}, now() + interval '15 minutes', 'approved'
+      )`;
+  });
+
 const failureTag = <A, E extends { readonly _tag: string }, R>(
   effect: Effect.Effect<A, E, R>,
 ) =>
@@ -140,18 +151,22 @@ describe('PeopleStore invitations', () => {
 });
 
 describe('PeopleStore access', () => {
-  it('signs a suspended person out and withdraws their code', async () => {
+  it('signs a suspended person out and withdraws their codes', async () => {
     await runWithStore(
       Effect.gen(function* () {
         const sql = yield* Database;
         const store = yield* PeopleStore;
         const invited = yield* store.invite('Clara');
         yield* seedSession(invited.userId);
+        yield* seedApprovedDeviceCode(invited.userId);
 
         yield* store.setEnabled(invited.userId, false);
         const sessions = yield* sql`
           select 1 from session where user_id = ${invited.userId}`;
         expect(sessions).toHaveLength(0);
+        const deviceCodes = yield* sql`
+          select 1 from device_code where user_id = ${invited.userId}`;
+        expect(deviceCodes).toHaveLength(0);
         expect(yield* store.get(invited.userId)).toMatchObject({
           enabled: false,
           code: null,

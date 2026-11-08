@@ -2,6 +2,8 @@ export const fixtureStates = [
   'signed-out',
   'join',
   'passkeys',
+  'device',
+  'device-entry',
   'people',
   'people-progress',
   'dashboard',

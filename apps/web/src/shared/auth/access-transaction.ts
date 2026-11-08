@@ -2,6 +2,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { sql, TransactionRollbackError } from 'drizzle-orm';
 import { db } from '../db/server';
+import { commitsResult } from './auth-commit';
 
 type AuthDatabase = typeof db;
 type AccessTransaction = Parameters<
@@ -9,7 +10,6 @@ type AccessTransaction = Parameters<
 >[0];
 
 const currentTransaction = new AsyncLocalStorage<AccessTransaction>();
-const httpErrorStatus = 400;
 
 // Better Auth, its plugins and the access checks in their hooks all read and
 // write through this client, so inside an access transaction they see each
@@ -25,10 +25,11 @@ export const authDb = new Proxy(db, {
 
 // Serializes sign-ins, passkey registrations and account changes across
 // server processes, so a code is redeemed once and a suspension cannot race a
-// registration. Better Auth reports failures as error responses rather than
-// throwing, so those roll back as well.
+// registration. `commits` decides whether the outermost transaction keeps the
+// work's writes; by default an error response rolls back.
 export const withAccessTransaction = async <A>(
   work: () => Promise<A>,
+  commits: (result: A) => boolean | Promise<boolean> = commitsResult,
 ): Promise<A> => {
   if (currentTransaction.getStore() !== undefined) {
     return work();
@@ -40,7 +41,7 @@ export const withAccessTransaction = async <A>(
         sql`select pg_advisory_xact_lock(hashtextextended('wordhold:access', 0))`,
       );
       const result = await currentTransaction.run(transaction, work);
-      if (result instanceof Response && result.status >= httpErrorStatus) {
+      if (!(await commits(result))) {
         rejected = { result };
         transaction.rollback();
       }

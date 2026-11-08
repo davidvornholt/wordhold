@@ -1,0 +1,26 @@
+{
+  "name": "@wordhold/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./api": "./src/api.ts",
+    "./authorization": "./src/authorization.ts",
+    "./current-member": "./src/current-member.ts",
+    "./device-login": "./src/device-login.ts",
+    "./errors": "./src/errors/api-errors.ts",
+    "./vocabulary": "./src/vocabulary.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "effect": "^4.0.6"
+  },
+  "devDependencies": {
+    "@davidvornholt/typescript-config": "workspace:*",
+    "@types/bun": "^1.4.3",
+    "typescript": "7.0.2"
+  }
+}

@@ -39,7 +39,9 @@ export const resolveAccessCode = async (
 
 // Runs after the new passkey was verified and in the same access transaction
 // that stores it, so of two concurrent redemptions exactly one succeeds. A
-// recovery code replaces every earlier passkey and signs out every device.
+// recovery code replaces every earlier passkey and signs out every device,
+// including a command-line login that an old session approved but that has
+// not yet collected its token.
 export const consumeAccessCode = async (
   database: CodeDatabase,
   code: string,
@@ -59,5 +61,8 @@ export const consumeAccessCode = async (
   if (consumed.kind === 'recovery') {
     await database.execute(sql`delete from session where user_id = ${userId}`);
     await database.execute(sql`delete from passkey where user_id = ${userId}`);
+    await database.execute(
+      sql`delete from device_code where user_id = ${userId}`,
+    );
   }
 };

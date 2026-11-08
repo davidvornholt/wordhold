@@ -189,6 +189,7 @@ const setEnabled = (sql: Database, userId: string, enabled: boolean) =>
     }
     if (!enabled) {
       yield* sql`delete from session where user_id = ${userId}`;
+      yield* sql`delete from device_code where user_id = ${userId}`;
       yield* sql`delete from access_codes where user_id = ${userId}`;
     }
   });

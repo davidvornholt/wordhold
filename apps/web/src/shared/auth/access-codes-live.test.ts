@@ -61,6 +61,12 @@ const seedDevice = Effect.gen(function* () {
   yield* sql`insert into session (id, expires_at, token, updated_at, user_id)
     values ('old-session', now() + interval '1 day', 'old-token', now(),
       ${memberId})`;
+  yield* sql`insert into device_code (
+      id, device_code, user_code, user_id, expires_at, status
+    ) values (
+      'old-device-code', 'device', 'USERCODE', ${memberId},
+      now() + interval '15 minutes', 'approved'
+    )`;
 });
 
 const rejection = (attempt: () => Promise<unknown>) =>
@@ -121,6 +127,7 @@ describe('consumeAccessCode', () => {
         expect(yield* sql`select 1 from access_codes`).toHaveLength(0);
         expect(yield* sql`select 1 from passkey`).toHaveLength(1);
         expect(yield* sql`select 1 from session`).toHaveLength(1);
+        expect(yield* sql`select 1 from device_code`).toHaveLength(1);
         expect(
           yield* rejection(() => consumeAccessCode(codes, code, memberId)),
         ).toBe(invalidMessage);
@@ -128,7 +135,7 @@ describe('consumeAccessCode', () => {
     );
   });
 
-  it('replaces earlier passkeys and sessions with a recovery code', async () => {
+  it('replaces earlier passkeys, sessions and approved device codes with a recovery code', async () => {
     await runWithCodes((codes) =>
       Effect.gen(function* () {
         const sql = yield* Database;
@@ -139,6 +146,7 @@ describe('consumeAccessCode', () => {
 
         expect(yield* sql`select 1 from passkey`).toHaveLength(0);
         expect(yield* sql`select 1 from session`).toHaveLength(0);
+        expect(yield* sql`select 1 from device_code`).toHaveLength(0);
       }),
     );
   });
