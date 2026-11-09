@@ -56,12 +56,10 @@ const positiveFlag = (name: string, fallback: number | undefined) => {
 };
 
 const worstCaseUsd = (model: BenchmarkModel): number =>
-  model.usdPerMillionTokens === null
-    ? Number.POSITIVE_INFINITY
-    : (inputTokenAllowance * model.usdPerMillionTokens.input +
-        (model.maxOutputTokens ?? assumedMaxOutputTokens) *
-          model.usdPerMillionTokens.output) /
-      tokensPerMillion;
+  (inputTokenAllowance * model.usdPerMillionTokens.input +
+    (model.maxOutputTokens ?? assumedMaxOutputTokens) *
+      model.usdPerMillionTokens.output) /
+  tokensPerMillion;
 
 // Estimated spend. Each request reserves its worst case before it starts, so
 // concurrent requests cannot together exceed the limit, and settles to its
@@ -225,15 +223,6 @@ const runBenchmark = (
 ) =>
   Effect.gen(function* () {
     const models = yield* benchmarkModels(options.models);
-    const unpriced = models.filter(
-      ({ usdPerMillionTokens }) => usdPerMillionTokens === null,
-    );
-    if (unpriced.length > 0) {
-      yield* print(
-        `No price recorded for ${unpriced.map(({ name }) => name).join(', ')}; add one before running it under a budget.`,
-      );
-      return false;
-    }
     const tasks = planTasks(models, options.cases, options.repetitions);
     const samples: Array<Sample> = [];
     const budget = makeBudget(budgetUsd);

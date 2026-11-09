@@ -1,5 +1,5 @@
 import { Context, Effect, Layer } from 'effect';
-import { BedrockProvider } from '../providers/bedrock';
+import { AnthropicProvider } from '../providers/anthropic';
 import type { AiUsage } from '../usage';
 import type { DefinitionError } from './error';
 import { generateDefinitionOutput } from './generate';
@@ -46,7 +46,7 @@ export class DefinitionWriter extends Context.Service<
   static readonly layer = Layer.effect(
     DefinitionWriter,
     Effect.gen(function* () {
-      const model = yield* BedrockProvider;
+      const model = yield* AnthropicProvider;
 
       const keyPoints = (
         request: KeyPointRequest,

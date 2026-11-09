@@ -95,7 +95,7 @@ describe('judge cache validity', () => {
     let cached: CachedVerdict = {
       assessmentId,
       verdict,
-      model: 'bedrock-runtime:old-model',
+      model: 'retired-provider:old-model',
     };
     let judgeCalls = 0;
     const result = await Effect.runPromise(

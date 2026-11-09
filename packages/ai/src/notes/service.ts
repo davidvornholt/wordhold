@@ -6,7 +6,7 @@ import {
   type QuarterTurn,
   turnModelImage,
 } from '../extraction/page-image';
-import { BedrockProvider, productionModelId } from '../providers/bedrock';
+import { AnthropicProvider, productionModelId } from '../providers/anthropic';
 import { generateStructured } from '../structured-generation';
 import { UnusableAnswerError } from '../unusable-answer-error';
 import type { AiUsage } from '../usage';
@@ -50,7 +50,7 @@ export class NotesExtraction extends Context.Service<
   static readonly layer = Layer.effect(
     NotesExtraction,
     Effect.gen(function* () {
-      const model = yield* BedrockProvider;
+      const model = yield* AnthropicProvider;
       const modelId = productionModelId;
 
       const read = (

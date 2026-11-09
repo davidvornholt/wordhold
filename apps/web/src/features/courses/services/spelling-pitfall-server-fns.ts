@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start';
 import { SpellingPitfalls } from '@wordhold/ai/pitfalls';
 import { maximumPitfallBatch } from '@wordhold/ai/pitfalls/schema';
-import { BedrockProvider } from '@wordhold/ai/providers/bedrock';
+import { AnthropicProvider } from '@wordhold/ai/providers/anthropic';
 import { PgLive } from '@wordhold/db/client';
 import { Effect, Layer, ManagedRuntime, Schema } from 'effect';
 import { billedTo, UsageLedger } from '../../../shared/ai/usage-ledger';
@@ -15,7 +15,7 @@ const pitfallRuntime = ManagedRuntime.make(
     Layer.provide(
       Layer.mergeAll(
         SpellingPitfallStore.live.pipe(Layer.provide(PgLive)),
-        SpellingPitfalls.layer.pipe(Layer.provide(BedrockProvider.live)),
+        SpellingPitfalls.layer.pipe(Layer.provide(AnthropicProvider.live)),
       ),
     ),
     Layer.provideMerge(UsageLedger.live(PgLive)),

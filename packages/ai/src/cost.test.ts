@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'bun:test';
 import { aiPrice, estimateUsd } from './cost';
-import { productionModelId } from './providers/bedrock';
+import { productionModelId } from './providers/anthropic';
 
-const sonnet = aiPrice({ provider: 'bedrock', model: productionModelId });
+const sonnet = aiPrice({ provider: 'anthropic', model: productionModelId });
 const polly = aiPrice({ provider: 'polly', model: 'generative' });
 const transcribe = aiPrice({ provider: 'transcribe', model: 'standard' });
 
@@ -19,7 +19,7 @@ describe('aiPrice', () => {
   it('leaves unknown models unpriced', () => {
     expect(aiPrice({ provider: 'polly', model: 'neural' })).toBeUndefined();
     expect(
-      aiPrice({ provider: 'bedrock', model: 'anthropic.claude-haiku' }),
+      aiPrice({ provider: 'anthropic', model: 'claude-haiku-5-5' }),
     ).toBeUndefined();
   });
 });

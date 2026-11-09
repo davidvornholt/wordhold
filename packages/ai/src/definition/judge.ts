@@ -1,5 +1,5 @@
 import { Context, Effect, Layer } from 'effect';
-import { BedrockProvider, productionModelId } from '../providers/bedrock';
+import { AnthropicProvider, productionModelId } from '../providers/anthropic';
 import type { AiUsage } from '../usage';
 import type { DefinitionError } from './error';
 import { generateDefinitionOutput } from './generate';
@@ -39,7 +39,7 @@ export class DefinitionJudge extends Context.Service<
   static readonly layer = Layer.effect(
     DefinitionJudge,
     Effect.gen(function* () {
-      const model = yield* BedrockProvider;
+      const model = yield* AnthropicProvider;
       const modelId = productionModelId;
 
       // A verdict that skips or adds a key point cannot be lined up with the

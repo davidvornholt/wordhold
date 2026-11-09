@@ -13,8 +13,8 @@ export const jsonSchemaOf = (schema: Schema.Top): JsonSchema.JsonSchema => {
     : { ...document.schema, $defs: document.definitions };
 };
 
-// Bedrock receives the complete schema as native structured output, which
-// leaves out bounds it cannot enforce. Decode each answer with
+// The Claude API receives the complete schema as native structured output,
+// which leaves out bounds it cannot enforce. Decode each answer with
 // decodeModelOutput before returning it to the application.
 export const providerJsonSchema = (schema: Schema.Top) =>
   jsonSchema<unknown>(jsonSchemaOf(schema));

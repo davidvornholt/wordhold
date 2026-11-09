@@ -1,5 +1,5 @@
 import { Context, Effect, Layer } from 'effect';
-import { BedrockProvider } from '../providers/bedrock';
+import { AnthropicProvider } from '../providers/anthropic';
 import { generateStructured } from '../structured-generation';
 import type { AiUsage } from '../usage';
 import { RelationError } from './error';
@@ -38,7 +38,7 @@ export class WordRelations extends Context.Service<
   static readonly layer = Layer.effect(
     WordRelations,
     Effect.gen(function* () {
-      const model = yield* BedrockProvider;
+      const model = yield* AnthropicProvider;
       const failure = (cause: unknown) =>
         new RelationError({ cause, message: suggestionFailure });
 

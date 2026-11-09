@@ -253,6 +253,13 @@
       "when": 1794069163794,
       "tag": "0035_device_login",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1794238644135,
+      "tag": "0036_claude_api_provider",
+      "breakpoints": true
     }
   ]
 }

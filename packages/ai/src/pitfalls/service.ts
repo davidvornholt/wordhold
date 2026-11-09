@@ -1,5 +1,5 @@
 import { Context, Effect, Layer } from 'effect';
-import { BedrockProvider } from '../providers/bedrock';
+import { AnthropicProvider } from '../providers/anthropic';
 import { generateStructured } from '../structured-generation';
 import type { AiUsage } from '../usage';
 import { SpellingPitfallError } from './error';
@@ -43,7 +43,7 @@ export class SpellingPitfalls extends Context.Service<
   static readonly layer = Layer.effect(
     SpellingPitfalls,
     Effect.gen(function* () {
-      const model = yield* BedrockProvider;
+      const model = yield* AnthropicProvider;
       const failure = (cause: unknown) =>
         new SpellingPitfallError({ cause, message: pitfallFailure });
 

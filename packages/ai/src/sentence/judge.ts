@@ -1,5 +1,5 @@
 import { Context, Effect, Layer } from 'effect';
-import { BedrockProvider, productionModelId } from '../providers/bedrock';
+import { AnthropicProvider, productionModelId } from '../providers/anthropic';
 import { generateStructured } from '../structured-generation';
 import type { AiUsage } from '../usage';
 import { SentenceJudgeError } from './judge-error';
@@ -42,7 +42,7 @@ export class SentenceJudge extends Context.Service<
   static readonly layer = Layer.effect(
     SentenceJudge,
     Effect.gen(function* () {
-      const model = yield* BedrockProvider;
+      const model = yield* AnthropicProvider;
       const modelId = productionModelId;
       const failure = (cause: unknown) =>
         new SentenceJudgeError({ cause, message: judgeFailure });

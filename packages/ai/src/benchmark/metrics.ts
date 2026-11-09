@@ -40,8 +40,8 @@ export const tokenCounts = (usage: LanguageModelUsage) => {
     outputTokens: output,
     reasoningTokens: reasoning,
     // The SDK normalizes providers so that outputTokens includes reasoning.
-    // Bedrock Converse reports thinking as output without a reasoning count,
-    // so the visible share is only known when reasoning is.
+    // A provider may report thinking as output without a reasoning count, so
+    // the visible share is only known when reasoning is.
     visibleOutputTokens:
       reasoning === null
         ? null
@@ -51,15 +51,15 @@ export const tokenCounts = (usage: LanguageModelUsage) => {
   };
 };
 
-// Billed output includes reasoning. Unknown when the price or a count is.
+// Billed output includes reasoning. Unknown when a count is.
 export const estimateUsd = (
-  price: UsdPerMillionTokens | null,
+  price: UsdPerMillionTokens,
   tokens: {
     readonly inputTokens: number | null;
     readonly outputTokens: number | null;
   },
 ): number | null =>
-  price === null || tokens.inputTokens === null || tokens.outputTokens === null
+  tokens.inputTokens === null || tokens.outputTokens === null
     ? null
     : (tokens.inputTokens * price.input + tokens.outputTokens * price.output) /
       tokensPerMillion;

@@ -22,8 +22,8 @@ export const providerCompatibleJsonSchema = (value: unknown): unknown => {
   return value;
 };
 
-// The production JSON Schema without array length bounds, for the Gemini and
-// OpenAI candidates. Claude candidates receive the production schema as is.
+// The production JSON Schema without array length bounds, for the Gemini
+// candidate. Claude candidates receive the production schema as is.
 export const compatibleJsonSchema = (schema: Schema.Top) =>
   jsonSchema<unknown>(
     providerCompatibleJsonSchema(jsonSchemaOf(schema)) as ReturnType<

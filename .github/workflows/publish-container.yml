@@ -138,6 +138,7 @@ jobs:
           AWS_REGION=eu-central-1
           AWS_ACCESS_KEY_ID=preview-inert
           AWS_SECRET_ACCESS_KEY=preview-inert
+          ANTHROPIC_API_KEY=preview-inert
           PORT=3100
           ENV
 

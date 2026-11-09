@@ -57,7 +57,7 @@ const usageRow = (row: Partial<UsageRow>): UsageRow => ({
   userId: 'anna',
   name: 'Anna',
   operation: 'page-extraction',
-  provider: 'bedrock',
+  provider: 'anthropic',
   model: 'claude-sonnet-5-5',
   requests: 1,
   failed: 0,

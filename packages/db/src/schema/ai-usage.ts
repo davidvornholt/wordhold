@@ -11,7 +11,14 @@ import {
 } from 'drizzle-orm/pg-core';
 import { user } from './auth';
 
-export const aiProviders = ['bedrock', 'polly', 'transcribe'] as const;
+// `bedrock` labels the requests made on Amazon Bedrock before the model moved
+// to the Claude API; no request is recorded with it anymore.
+export const aiProviders = [
+  'bedrock',
+  'polly',
+  'transcribe',
+  'anthropic',
+] as const;
 export type AiProvider = (typeof aiProviders)[number];
 export const aiProviderEnum = pgEnum('ai_provider', aiProviders);
 

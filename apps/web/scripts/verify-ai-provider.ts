@@ -4,7 +4,7 @@ import { isDefinitionCorrect } from '@wordhold/ai/definition/schema';
 import { DefinitionWriter } from '@wordhold/ai/definition/writer';
 import { Extraction } from '@wordhold/ai/extraction';
 import { Judge } from '@wordhold/ai/judge';
-import { BedrockProvider } from '@wordhold/ai/providers/bedrock';
+import { AnthropicProvider } from '@wordhold/ai/providers/anthropic';
 import { SentenceGen } from '@wordhold/ai/sentence';
 import { SentenceJudge } from '@wordhold/ai/sentence/judge';
 import { isSentenceCorrect } from '@wordhold/ai/sentence/judge-schema';
@@ -54,7 +54,7 @@ const services = Layer.mergeAll(
   SentenceGen.layer,
   SentenceJudge.layer,
 ).pipe(
-  Layer.provide(BedrockProvider.live),
+  Layer.provide(AnthropicProvider.live),
   Layer.merge(Stt.layer),
   Layer.merge(printedUsage),
 );

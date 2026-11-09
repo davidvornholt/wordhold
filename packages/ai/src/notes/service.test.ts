@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { Effect, Layer } from 'effect';
-import { BedrockProvider } from '../providers/bedrock';
-import { capturedBedrockModel } from '../testing/bedrock';
+import { AnthropicProvider } from '../providers/anthropic';
+import { capturedAnthropicModel } from '../testing/anthropic';
 import { untrackedAiUsage } from '../testing/usage';
 import type { NotesPageData } from './schema';
 import { NotesExtraction } from './service';
@@ -28,20 +28,20 @@ const reading = (
   ],
 });
 
-type ConverseImage = {
-  readonly image: { readonly source: { readonly bytes: string } };
+type ImageBlock = {
+  readonly source: { readonly data: string };
 };
 
 // The size of the image each request sent, in request order.
 const sentImageSizes = (
-  calls: ReturnType<typeof capturedBedrockModel>['calls'],
+  calls: ReturnType<typeof capturedAnthropicModel>['calls'],
 ) =>
   Promise.all(
     calls.map(async (call) => {
       const [message] = call.body.messages as ReadonlyArray<{
-        readonly content: ReadonlyArray<ConverseImage>;
+        readonly content: ReadonlyArray<ImageBlock>;
       }>;
-      const bytes = message?.content[0]?.image.source.bytes ?? '';
+      const bytes = message?.content[0]?.source.data ?? '';
       const { width, height } = await new globalThis.Bun.Image(
         Uint8Array.fromBase64(bytes),
       ).metadata();
@@ -50,7 +50,7 @@ const sentImageSizes = (
   );
 
 const extract = async (...answers: ReadonlyArray<NotesPageData>) => {
-  const { calls, model } = capturedBedrockModel(...answers);
+  const { calls, model } = capturedAnthropicModel(...answers);
   const photo = await landscapePhoto();
   const result = await Effect.runPromise(
     Effect.gen(function* () {
@@ -58,7 +58,7 @@ const extract = async (...answers: ReadonlyArray<NotesPageData>) => {
     }).pipe(
       Effect.provide(
         NotesExtraction.layer.pipe(
-          Layer.provide(Layer.succeed(BedrockProvider, model)),
+          Layer.provide(Layer.succeed(AnthropicProvider, model)),
           Layer.merge(untrackedAiUsage),
         ),
       ),

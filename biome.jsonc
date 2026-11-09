@@ -49,6 +49,12 @@
       "linter": { "rules": { "style": { "useNamingConvention": "off" } } }
     },
     {
+      // The fake Claude API answers are Messages API wire bodies, whose field
+      // names are snake_case.
+      "includes": ["packages/ai/src/testing/anthropic.ts"],
+      "linter": { "rules": { "style": { "useNamingConvention": "off" } } }
+    },
+    {
       // The child process receives the application's exact environment names.
       "includes": [
         "apps/web/src/shared/auth/auth-handler.integration.test.ts",
