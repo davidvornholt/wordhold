@@ -47,8 +47,7 @@ export const connectionReset = (): Error =>
 // The production model with its requests recorded. Each request receives the
 // next of `answers` and the last one repeats; a Response is returned as is, an
 // Error rejects the request, a string is sent as the answer text, anything
-// else as JSON text. A made-up key keeps the requests offline; serialization
-// is real.
+// else as JSON text.
 export const capturedAnthropicModel = (...answers: ReadonlyArray<unknown>) => {
   const calls: Array<CapturedAnthropicCall> = [];
   const answerAt = (index: number) =>

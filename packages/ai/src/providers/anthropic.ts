@@ -16,8 +16,6 @@ export const sonnetProviderOptions = (effort: ReasoningEffort) =>
     anthropic: { thinking: { type: 'adaptive' }, effort },
   }) satisfies { anthropic: AnthropicLanguageModelOptions };
 
-// The production model on the Claude API. A missing key fails the layer, so
-// the features that need the model report that AI is not configured.
 export class AnthropicProvider extends Context.Service<
   AnthropicProvider,
   LanguageModel

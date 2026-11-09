@@ -17,7 +17,6 @@ import { AnthropicProvider, productionModelId } from './anthropic';
 
 const modelId = productionModelId;
 
-// The parts of a Messages API request that every workload shares.
 const claudeRequest = (call: CapturedAnthropicCall | undefined) => ({
   url: call?.url,
   apiKey: call?.headers.get('x-api-key'),
@@ -28,8 +27,6 @@ const claudeRequest = (call: CapturedAnthropicCall | undefined) => ({
     call?.body.tools !== undefined || call?.body.tool_choice !== undefined,
 });
 
-// The production model with adaptive thinking at medium effort, and the answer
-// constrained by native structured output rather than a forced tool call.
 const productionRequest = {
   url: 'https://api.anthropic.com/v1/messages',
   apiKey: 'test-anthropic-key',
