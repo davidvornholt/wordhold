@@ -28,4 +28,4 @@ Rotate the Claude API key or the AWS SigV4 pair with the replace, verify, revoke
 
 Run `bun run --cwd apps/web provider:verify` with the generated environment before deployment. The check uses a synthetic textbook page and a synthetic recording and exercises every production AI task with the application's credentials.
 
-`GOOGLE_SERVICE_ACCOUNT_JSON` and `GOOGLE_VERTEX_LOCATION` are used only by the model benchmark. They are not production application requirements. The benchmark (`bun run --cwd packages/ai benchmark:models`) sends its Claude candidates to the Claude API with `ANTHROPIC_API_KEY` and its GPT candidates to Bedrock's OpenAI-compatible endpoint with `AWS_BEDROCK_API_KEY`.
+`GOOGLE_SERVICE_ACCOUNT_JSON` and `GOOGLE_VERTEX_LOCATION` are used only by the model benchmark. They are not production application requirements. The benchmark (`bun run --cwd packages/ai benchmark:models`) sends its Claude candidates to the Claude API with `ANTHROPIC_API_KEY`.

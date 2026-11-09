@@ -47,7 +47,6 @@
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.96",
     "@ai-sdk/google-vertex": "^5.0.131",
-    "@ai-sdk/openai": "^4.0.104",
     "@aws-sdk/client-polly": "^3.1162.0",
     "@aws-sdk/client-transcribe-streaming": "^3.1162.0",
     "ai": "^7.0.162",

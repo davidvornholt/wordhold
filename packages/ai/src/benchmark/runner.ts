@@ -38,7 +38,7 @@ export type BenchmarkModel = {
   readonly name: string;
   readonly region: string;
   readonly reasoning: string;
-  readonly usdPerMillionTokens: UsdPerMillionTokens | null;
+  readonly usdPerMillionTokens: UsdPerMillionTokens;
   readonly model: LanguageModel;
   readonly providerOptions: NonNullable<
     Parameters<typeof generateText>[0]['providerOptions']
