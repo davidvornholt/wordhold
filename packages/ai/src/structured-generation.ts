@@ -9,6 +9,7 @@ import {
   RetryError,
 } from 'ai';
 import { Effect, Schema } from 'effect';
+import { FailedRequestError } from './failed-request-error';
 import {
   productionModelId,
   type ReasoningEffort,
@@ -38,19 +39,20 @@ const forbidden = 403;
 // output limit. Asking again would most likely end the same way.
 export class IncompleteAnswerError extends Schema.TaggedError<IncompleteAnswerError>()(
   'IncompleteAnswerError',
-  {
-    finishReason: Schema.String,
-    cause: Schema.optional(Schema.Unknown),
-    message: Schema.String,
-  },
+  { finishReason: Schema.String, message: Schema.String },
 ) {}
 
-const incomplete = (finishReason: FinishReason, cause?: unknown) =>
+const incomplete = (finishReason: FinishReason) =>
   new IncompleteAnswerError({
     finishReason,
-    cause,
     message: `The model stopped with ${finishReason} before a complete answer.`,
   });
+
+type GenerationFailure =
+  | UnusableAnswerError
+  | IncompleteAnswerError
+  | FailedRequestError
+  | AiUsageError;
 
 const apiCallError = (error: unknown): APICallError | undefined => {
   if (APICallError.isInstance(error)) {
@@ -66,9 +68,6 @@ const apiCallError = (error: unknown): APICallError | undefined => {
 // rejected key or missing permission needs a configuration change; the AI SDK
 // has already retried a failure that can pass.
 export const describeFailure = (error: unknown): string => {
-  if (error instanceof IncompleteAnswerError) {
-    return error.message;
-  }
   const apiError = apiCallError(error);
   if (apiError === undefined) {
     return error instanceof Error
@@ -84,6 +83,16 @@ export const describeFailure = (error: unknown): string => {
   }
   return `The Claude API rejected the request (HTTP ${status ?? 'unknown'}).`;
 };
+
+const requestFailure = (
+  error: unknown,
+): IncompleteAnswerError | FailedRequestError =>
+  error instanceof IncompleteAnswerError
+    ? error
+    : new FailedRequestError({
+        statusCode: apiCallError(error)?.statusCode,
+        message: describeFailure(error),
+      });
 
 // One request with the AI SDK's retries. The usage is reported even for an
 // answer that cannot be used, because it was generated and billed.
@@ -116,7 +125,7 @@ const requestAnswer = async (
         report(languageModelUsage(error.usage));
       }
       if (error.finishReason !== 'stop') {
-        throw incomplete(error.finishReason ?? 'other', error);
+        throw incomplete(error.finishReason ?? 'other');
       }
     }
     throw error;
@@ -127,20 +136,22 @@ const requestAnswer = async (
 // schema. Native structured output cannot enforce every bound of the schema,
 // so an unusable answer is requested once more, and every request is metered.
 // `validate` names why a decoded answer cannot be used, such as a skipped
-// item, and returns undefined to accept it. The model reasons at medium effort
-// unless the operation asks for more.
+// item, without quoting it, and returns undefined to accept it. The model
+// reasons at medium effort unless the operation asks for more. Callers log
+// the errors it returns, so they name what failed, such as the HTTP status or
+// the finish reason, and never hold the request, the answer or the provider's
+// text.
 export const generateStructured = <A, E>(input: {
   readonly model: LanguageModel;
   readonly operation: AiOperation;
   readonly schema: Schema.Decoder<A>;
   readonly prompt: string | Array<ModelMessage>;
-  readonly failure: (cause: unknown) => E;
+  readonly failure: (cause: GenerationFailure) => E;
   readonly validate?: (answer: A) => string | undefined;
   readonly effort?: ReasoningEffort;
 }): Effect.Effect<A, E, AiUsage> => {
   const decode = decodeModelOutput(input.schema);
-  const unusable = (message: string, cause: unknown) =>
-    new UnusableAnswerError({ cause, message });
+  const unusable = (message: string) => new UnusableAnswerError({ message });
 
   const request = metered(
     {
@@ -162,22 +173,23 @@ export const generateStructured = <A, E>(input: {
           ),
         catch: (error) => error,
       }).pipe(
-        Effect.catch(
-          (error): Effect.Effect<never, E | UnusableAnswerError> =>
-            NoObjectGeneratedError.isInstance(error)
-              ? Effect.fail(unusable('The answer is not a JSON object.', error))
-              : Effect.logWarning(
-                  `${input.operation} request failed: ${describeFailure(error)}`,
-                ).pipe(Effect.andThen(Effect.fail(input.failure(error)))),
-        ),
+        Effect.catch((error): Effect.Effect<never, E | UnusableAnswerError> => {
+          if (NoObjectGeneratedError.isInstance(error)) {
+            return Effect.fail(unusable('The answer is not a JSON object.'));
+          }
+          const failure = requestFailure(error);
+          return Effect.logWarning(
+            `${input.operation} request failed: ${failure.message}`,
+          ).pipe(Effect.andThen(Effect.fail(input.failure(failure))));
+        }),
       ),
   );
 
   const attempt = request.pipe(
     Effect.flatMap((output) =>
       decode(output).pipe(
-        Effect.mapError((cause) =>
-          unusable('The answer does not match the schema.', cause),
+        Effect.mapError(() =>
+          unusable('The answer does not match the schema.'),
         ),
       ),
     ),
@@ -185,9 +197,8 @@ export const generateStructured = <A, E>(input: {
       const problem = input.validate?.(answer);
       return problem === undefined
         ? Effect.succeed(answer)
-        : Effect.fail(unusable(problem, answer));
+        : Effect.fail(unusable(problem));
     }),
-    // The message names the problem; the answer itself stays out of the log.
     Effect.tapError((error) =>
       error instanceof UnusableAnswerError
         ? Effect.logWarning(

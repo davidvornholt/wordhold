@@ -30,9 +30,13 @@ export const anthropicMessage = (
 
 // A Claude API error response, shaped as the API sends it. It asks for an
 // immediate retry, so a test of the AI SDK's retries does not wait.
-export const anthropicError = (status: number, type: string): Response =>
+export const anthropicError = (
+  status: number,
+  type: string,
+  message = `Test ${type}`,
+): Response =>
   Response.json(
-    { type: 'error', error: { type, message: `Test ${type}` } },
+    { type: 'error', error: { type, message } },
     { status, headers: { 'retry-after-ms': '0' } },
   );
 
