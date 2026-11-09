@@ -1,4 +1,4 @@
-import { BedrockProvider } from '@wordhold/ai/providers/bedrock';
+import { AnthropicProvider } from '@wordhold/ai/providers/anthropic';
 import { SentenceGen } from '@wordhold/ai/sentence';
 import { Tts } from '@wordhold/ai/tts';
 import { PgLive } from '@wordhold/db/client';
@@ -32,7 +32,7 @@ export const courseRuntime = ManagedRuntime.make(
 const vocabularyDependencies = Layer.mergeAll(
   VocabularyExampleStore.live.pipe(Layer.provide(PgLive)),
   VocabularyEntryStore.live.pipe(Layer.provide(PgLive)),
-  SentenceGen.layer.pipe(Layer.provide(BedrockProvider.live)),
+  SentenceGen.layer.pipe(Layer.provide(AnthropicProvider.live)),
   StorageLive,
   Tts.layer,
   UsageLedger.live(PgLive),

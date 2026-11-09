@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start';
-import { BedrockProvider } from '@wordhold/ai/providers/bedrock';
+import { AnthropicProvider } from '@wordhold/ai/providers/anthropic';
 import { WordRelations } from '@wordhold/ai/relations';
 import { PgLive } from '@wordhold/db/client';
 import { Effect, Layer, ManagedRuntime } from 'effect';
@@ -17,7 +17,7 @@ const relationRuntime = ManagedRuntime.make(
     Layer.provide(
       Layer.mergeAll(
         WordRelationStore.live.pipe(Layer.provide(PgLive)),
-        WordRelations.layer.pipe(Layer.provide(BedrockProvider.live)),
+        WordRelations.layer.pipe(Layer.provide(AnthropicProvider.live)),
       ),
     ),
     Layer.provideMerge(UsageLedger.live(PgLive)),

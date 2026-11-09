@@ -40,8 +40,8 @@ export const tokenCounts = (usage: LanguageModelUsage) => {
     outputTokens: output,
     reasoningTokens: reasoning,
     // The SDK normalizes providers so that outputTokens includes reasoning.
-    // Bedrock Converse reports thinking as output without a reasoning count,
-    // so the visible share is only known when reasoning is.
+    // A provider may report thinking as output without a reasoning count, so
+    // the visible share is only known when reasoning is.
     visibleOutputTokens:
       reasoning === null
         ? null

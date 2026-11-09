@@ -27,7 +27,12 @@ export const capacityBackoffSeconds: ReadonlyArray<number> = Array.from(
 );
 const tooManyRequests = 429;
 const serviceUnavailable = 503;
-const capacityStatusCodes = new Set([tooManyRequests, serviceUnavailable]);
+const overloaded = 529;
+const capacityStatusCodes = new Set([
+  tooManyRequests,
+  serviceUnavailable,
+  overloaded,
+]);
 
 export type BenchmarkModel = {
   readonly name: string;

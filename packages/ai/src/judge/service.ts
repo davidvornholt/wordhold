@@ -1,5 +1,5 @@
 import { Context, Effect, Layer } from 'effect';
-import { BedrockProvider, productionModelId } from '../providers/bedrock';
+import { AnthropicProvider, productionModelId } from '../providers/anthropic';
 import { generateStructured } from '../structured-generation';
 import type { AiUsage } from '../usage';
 import { JudgeError } from './error';
@@ -128,7 +128,7 @@ export class Judge extends Context.Service<
   static readonly layer = Layer.effect(
     Judge,
     Effect.gen(function* () {
-      const model = yield* BedrockProvider;
+      const model = yield* AnthropicProvider;
       const modelId = productionModelId;
 
       const judge = (

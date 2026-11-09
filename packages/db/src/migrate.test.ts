@@ -332,6 +332,7 @@ it('drops the synonyms the judge accepted into the target language', async () =>
         `;
         yield* sql`alter table entries add column grammar jsonb, add column notes text`;
         yield* sql`drop table device_code`;
+        yield* sql`alter type ai_provider rename value 'anthropic' to 'replayed_anthropic'`;
         yield* unrecordMigrationsFrom(judgeTargetSynonymsMigrationHash);
         yield* migrateDatabase(database.url);
         return yield* sql<{
@@ -374,6 +375,7 @@ it('drops the judge verdicts stored without otherWording', async () => {
             ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'to_native', 'definition', '{"keyPoints":[],"accuracy":{"ok":true,"note":null},"explanation":null}', 'definition')
         `;
         yield* sql`drop table device_code`;
+        yield* sql`alter type ai_provider rename value 'anthropic' to 'replayed_anthropic'`;
         yield* unrecordMigrationsFrom(staleJudgeVerdictsMigrationHash);
         yield* migrateDatabase(database.url);
         return yield* sql<{ readonly answer: string }>`

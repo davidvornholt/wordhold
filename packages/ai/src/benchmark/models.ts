@@ -1,8 +1,8 @@
-import { createAmazonBedrock } from '@ai-sdk/amazon-bedrock';
+import { createAnthropic } from '@ai-sdk/anthropic';
 import { createOpenAI } from '@ai-sdk/openai';
 import { Config, Effect, Redacted } from 'effect';
+import { anthropicApiKey } from '../config';
 import { providerJsonSchema } from '../structured-output';
-import { awsCliCredentialProvider } from './aws-cli-credentials';
 import type { BenchmarkModel } from './runner';
 import {
   compatibleJsonSchema,
@@ -10,13 +10,10 @@ import {
 } from './structured-output';
 import { VertexProvider } from './vertex';
 
-// The region the application calls Bedrock from; the global inference
-// profiles route each request from there.
-const bedrockRegion = 'eu-central-1';
 const otherProviderMaxOutputTokens = 4096;
 
-// Anthropic list prices, which Bedrock global inference profiles match.
-// Haiku 5.5 prompts stay under the 100,000-token threshold of its higher tier.
+// Claude API list prices. Haiku 5.5 prompts stay under the 100,000-token
+// threshold of its higher tier.
 const claudeCandidates = [
   {
     family: 'sonnet',
@@ -34,27 +31,21 @@ const claudeNames = claudeCandidates.flatMap(({ family, efforts }) =>
   efforts.map((effort) => `claude-${family}-5-5-${effort}`),
 );
 
-// The same model, request options and schema as production, except effort.
+// The same API, request options and schema as production, except effort.
 const claudeModels = Effect.gen(function* () {
-  const bedrock = createAmazonBedrock({
-    region: bedrockRegion,
-    credentialProvider: yield* awsCliCredentialProvider,
+  const anthropic = createAnthropic({
+    apiKey: Redacted.value(yield* anthropicApiKey),
   });
   return claudeCandidates.flatMap(({ family, efforts, usdPerMillionTokens }) =>
     efforts.map(
       (effort): BenchmarkModel => ({
         name: `claude-${family}-5-5-${effort}`,
-        region: `${bedrockRegion} (global profile)`,
+        region: 'Claude API',
         reasoning: effort,
         usdPerMillionTokens,
-        model: bedrock(`global.anthropic.claude-${family}-5-5`),
+        model: anthropic(`claude-${family}-5-5`),
         providerOptions: {
-          bedrock: {
-            reasoningConfig: {
-              type: 'adaptive',
-              maxReasoningEffort: effort,
-            },
-          },
+          anthropic: { thinking: { type: 'adaptive' }, effort },
         },
         jsonSchema: providerJsonSchema,
         maxOutputTokens: undefined,

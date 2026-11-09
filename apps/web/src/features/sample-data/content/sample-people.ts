@@ -1,3 +1,4 @@
+import { productionModelId } from '@wordhold/ai/providers/anthropic';
 import type { AiCall, AiOperation } from '@wordhold/ai/usage';
 import type { SampleCourse, SamplePerson, SampleUsage } from './sample-models';
 import {
@@ -123,9 +124,6 @@ const poemCourse: SampleCourse = {
   ],
 };
 
-// The model the app uses in production, the one the price list covers.
-const bedrockModel = 'global.anthropic.claude-sonnet-5-5';
-
 const model = (
   daysAgo: number,
   operation: AiOperation,
@@ -133,7 +131,7 @@ const model = (
   output: number,
 ): SampleUsage => ({
   daysAgo,
-  call: { operation, provider: 'bedrock', model: bedrockModel },
+  call: { operation, provider: 'anthropic', model: productionModelId },
   usage: {
     tokens: { input, cachedInput: 0, cacheWrite: 0, output },
     raw: { inputTokens: input, outputTokens: output },
@@ -191,8 +189,8 @@ const administrator: SamplePerson = {
     transcription(14, 18),
     failed(13.01, {
       operation: 'page-extraction',
-      provider: 'bedrock',
-      model: bedrockModel,
+      provider: 'anthropic',
+      model: productionModelId,
     }),
     model(13, 'page-extraction', 5100, 1250),
     model(12, 'answer-grading', 1880, 170),

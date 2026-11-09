@@ -71,8 +71,8 @@ export const UsagePanel = ({
       </p>
       <p className="max-w-prose text-muted-foreground text-sm">
         Die Schätzung rechnet die gemeldete Nutzung mit den Preisen zum
-        Zeitpunkt der Anfrage. Maßgeblich ist die Rechnung von AWS. Ohne
-        gemeldete Nutzung bleiben die Kosten unbekannt statt null.
+        Zeitpunkt der Anfrage. Maßgeblich sind die Rechnungen von Anthropic und
+        AWS. Ohne gemeldete Nutzung bleiben die Kosten unbekannt statt null.
       </p>
       {rows.length === 0 ? (
         <p className="text-muted-foreground text-sm">

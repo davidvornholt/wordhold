@@ -3,7 +3,7 @@ import {
   maximumEntryTextLength,
   maximumExampleLength,
 } from '../extraction/schema';
-import { BedrockProvider } from '../providers/bedrock';
+import { AnthropicProvider } from '../providers/anthropic';
 import { generateStructured } from '../structured-generation';
 import type { AiOperation, AiUsage } from '../usage';
 import { SentenceGenError } from './error';
@@ -111,7 +111,7 @@ export class SentenceGen extends Context.Service<
   static readonly layer = Layer.effect(
     SentenceGen,
     Effect.gen(function* () {
-      const model = yield* BedrockProvider;
+      const model = yield* AnthropicProvider;
 
       const generateSentenceOutput = <A>(
         operation: AiOperation,

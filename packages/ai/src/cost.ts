@@ -33,18 +33,15 @@ export type PriceSnapshot =
 export const aiPrice = (
   call: Pick<AiCall, 'provider' | 'model'>,
 ): PriceSnapshot | undefined => {
-  if (
-    call.provider === 'bedrock' &&
-    call.model === 'global.anthropic.claude-sonnet-5-5'
-  ) {
+  if (call.provider === 'anthropic' && call.model === 'claude-sonnet-5-5') {
     return {
       unit: 'tokens',
       input: 2,
       cachedInput: 0.2,
       output: 10,
       source: 'https://platform.claude.com/docs/en/about-claude/pricing',
-      checkedOn: '2026-10-04',
-      basis: 'Bedrock standard global pricing; no prompt cache writes',
+      checkedOn: '2026-11-09',
+      basis: 'Claude API standard pricing; no prompt cache writes',
     };
   }
   if (call.provider === 'polly' && call.model === 'generative') {

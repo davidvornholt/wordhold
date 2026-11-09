@@ -23,7 +23,7 @@ export type AiOperation = (typeof aiOperations)[number];
 
 export type AiCall = {
   readonly operation: AiOperation;
-  readonly provider: 'bedrock' | 'polly' | 'transcribe';
+  readonly provider: 'anthropic' | 'polly' | 'transcribe';
   readonly model: string;
 };
 
@@ -71,8 +71,8 @@ const tokenCount = (value: number | undefined): number | undefined =>
     ? value
     : undefined;
 
-// Bedrock reports cached input apart from the input it processes, and its
-// output already includes the reasoning tokens.
+// The Claude API reports cached input apart from the input it processes, and
+// its output already includes the reasoning tokens.
 export const languageModelTokens = (
   usage: LanguageModelUsage,
 ): TokenCounts | undefined => {

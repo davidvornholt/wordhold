@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./providers/bedrock": "./src/providers/bedrock.ts",
+    "./providers/anthropic": "./src/providers/anthropic.ts",
     "./extraction": "./src/extraction/service.ts",
     "./extraction/error": "./src/extraction/error.ts",
     "./extraction/page-image": "./src/extraction/page-image.ts",
@@ -45,7 +45,7 @@
     "benchmark:models": "bun src/benchmark/cli.ts"
   },
   "dependencies": {
-    "@ai-sdk/amazon-bedrock": "^5.0.132",
+    "@ai-sdk/anthropic": "^4.0.96",
     "@ai-sdk/google-vertex": "^5.0.131",
     "@ai-sdk/openai": "^4.0.104",
     "@aws-sdk/client-polly": "^3.1162.0",

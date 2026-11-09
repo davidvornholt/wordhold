@@ -1,5 +1,5 @@
 import { Judge } from '@wordhold/ai/judge';
-import { BedrockProvider } from '@wordhold/ai/providers/bedrock';
+import { AnthropicProvider } from '@wordhold/ai/providers/anthropic';
 import { AiUsage } from '@wordhold/ai/usage';
 import { Database, PgLive } from '@wordhold/db/client';
 import { Effect, Layer, Schema } from 'effect';
@@ -34,7 +34,7 @@ const administratorUsage = Layer.effect(
 ).pipe(Layer.provide(UsageLedger.live(PgLive)));
 
 const services = PracticeJudge.live.pipe(
-  Layer.provide(Judge.layer.pipe(Layer.provide(BedrockProvider.live))),
+  Layer.provide(Judge.layer.pipe(Layer.provide(AnthropicProvider.live))),
   Layer.merge(administratorUsage),
   Layer.provideMerge(PgLive),
 );

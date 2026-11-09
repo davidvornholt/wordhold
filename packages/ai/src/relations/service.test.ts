@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { Effect, Layer, Schema } from 'effect';
-import { BedrockProvider } from '../providers/bedrock';
-import { capturedBedrockModel } from '../testing/bedrock';
+import { AnthropicProvider } from '../providers/anthropic';
+import { capturedAnthropicModel } from '../testing/anthropic';
 import { untrackedAiUsage } from '../testing/usage';
 import {
   maximumSuggestedRelations,
@@ -23,14 +23,14 @@ const request: RelationRequest = {
 };
 
 const suggest = (response: unknown) => {
-  const { calls, model } = capturedBedrockModel(response);
+  const { calls, model } = capturedAnthropicModel(response);
   const result = Effect.runPromise(
     Effect.gen(function* () {
       return yield* (yield* WordRelations).suggest(request);
     }).pipe(
       Effect.provide(
         WordRelations.layer.pipe(
-          Layer.provide(Layer.succeed(BedrockProvider, model)),
+          Layer.provide(Layer.succeed(AnthropicProvider, model)),
           Layer.merge(untrackedAiUsage),
         ),
       ),
@@ -105,10 +105,7 @@ describe('WordRelations', () => {
     const { calls, result } = suggest(response);
     expect(await result).toMatchObject({ _tag: 'Success', success: response });
     expect(calls).toHaveLength(1);
-    expect(calls[0]?.body).toHaveProperty(
-      'additionalModelRequestFields.output_config.effort',
-      'medium',
-    );
+    expect(calls[0]?.body).toHaveProperty('output_config.effort', 'medium');
   });
 
   it('rejects an answer that skips a word', async () => {

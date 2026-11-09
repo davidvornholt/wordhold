@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { Effect, Layer } from 'effect';
+import { ConfigProvider, Effect, Layer } from 'effect';
 import { DefinitionJudge } from '../definition/judge';
 import { DefinitionWriter } from '../definition/writer';
 import type { ExtractedPageData } from '../extraction/schema';
@@ -8,18 +8,43 @@ import type { JudgeVerdictData } from '../judge/schema';
 import { Judge } from '../judge/service';
 import { SentenceJudge } from '../sentence/judge';
 import { SentenceGen } from '../sentence/service';
-import { capturedBedrockModel } from '../testing/bedrock';
+import {
+  type CapturedAnthropicCall,
+  capturedAnthropicModel,
+} from '../testing/anthropic';
 import { type AiCall, type AiCallUsage, AiUsage } from '../usage';
-import { BedrockProvider, productionModelId } from './bedrock';
+import { AnthropicProvider, productionModelId } from './anthropic';
 
 const modelId = productionModelId;
+
+// The parts of a Messages API request that every workload shares.
+const claudeRequest = (call: CapturedAnthropicCall | undefined) => ({
+  url: call?.url,
+  apiKey: call?.headers.get('x-api-key'),
+  model: call?.body.model,
+  thinking: call?.body.thinking,
+  outputConfig: call?.body.output_config,
+  forcedTool:
+    call?.body.tools !== undefined || call?.body.tool_choice !== undefined,
+});
+
+// The production model with adaptive thinking at medium effort, and the answer
+// constrained by native structured output rather than a forced tool call.
+const productionRequest = {
+  url: 'https://api.anthropic.com/v1/messages',
+  apiKey: 'test-anthropic-key',
+  model: modelId,
+  thinking: { type: 'adaptive' },
+  outputConfig: { effort: 'medium', format: { type: 'json_schema' } },
+  forcedTool: false,
+};
 
 const onePixelPng = Uint8Array.fromBase64(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
 );
 
 const capturedServices = (response: unknown) => {
-  const { calls, model } = capturedBedrockModel(response);
+  const { calls, model } = capturedAnthropicModel(response);
   const usage: Array<{
     call: AiCall;
     succeeded: boolean;
@@ -33,7 +58,7 @@ const capturedServices = (response: unknown) => {
     DefinitionWriter.layer,
     SentenceJudge.layer,
   ).pipe(
-    Layer.provide(Layer.succeed(BedrockProvider, model)),
+    Layer.provide(Layer.succeed(AnthropicProvider, model)),
     Layer.merge(
       Layer.succeed(
         AiUsage,
@@ -52,7 +77,34 @@ const capturedServices = (response: unknown) => {
   return { calls, services, usage };
 };
 
-describe('Bedrock workload transport', () => {
+const liveModel = (config: Record<string, string>) =>
+  Effect.runPromise(
+    Effect.gen(function* () {
+      return yield* AnthropicProvider;
+    }).pipe(
+      Effect.provide(AnthropicProvider.live),
+      Effect.provide(ConfigProvider.layer(ConfigProvider.fromUnknown(config))),
+      Effect.result,
+    ),
+  );
+
+describe('AnthropicProvider.live', () => {
+  it('serves the production model on the Claude API', async () => {
+    expect(
+      // biome-ignore lint/style/useNamingConvention: Environment variable name.
+      await liveModel({ ANTHROPIC_API_KEY: 'test-anthropic-key' }),
+    ).toMatchObject({
+      _tag: 'Success',
+      success: { provider: 'anthropic.messages', modelId },
+    });
+  });
+
+  it('fails to build without an API key', async () => {
+    expect(await liveModel({})).toMatchObject({ _tag: 'Failure' });
+  });
+});
+
+describe('Claude API workload transport', () => {
   it('sends judge requests with medium reasoning and decodes Unicode output', async () => {
     const verdict: JudgeVerdictData = {
       correct: true,
@@ -82,7 +134,7 @@ describe('Bedrock workload transport', () => {
       {
         call: {
           operation: 'answer-grading',
-          provider: 'bedrock',
+          provider: 'anthropic',
           model: modelId,
         },
         succeeded: true,
@@ -92,25 +144,12 @@ describe('Bedrock workload transport', () => {
       },
     ]);
     expect(calls).toHaveLength(1);
-    expect(calls[0]?.url).toContain(`${modelId}/converse`);
-    expect(calls[0]?.body).toHaveProperty(
-      'additionalModelRequestFields.output_config.effort',
-      'medium',
-    );
-    expect(calls[0]?.body).toHaveProperty(
-      'additionalModelRequestFields.thinking.type',
-      'adaptive',
-    );
-    expect(calls[0]?.body).toHaveProperty(
-      'additionalModelRequestFields.output_config.format.type',
-      'json_schema',
-    );
-    expect(calls[0]?.body).not.toHaveProperty('toolConfig');
+    expect(claudeRequest(calls[0])).toMatchObject(productionRequest);
     expect(JSON.stringify(calls[0]?.body)).toContain('café');
   });
 });
 
-describe('Bedrock sentence transport', () => {
+describe('Claude API sentence transport', () => {
   it('grades sentence translations with the production model and medium reasoning', async () => {
     const verdict = {
       meaningKept: true,
@@ -136,20 +175,7 @@ describe('Bedrock sentence transport', () => {
     );
     expect(result).toEqual(verdict);
     expect(calls).toHaveLength(1);
-    expect(calls[0]?.url).toContain(`${modelId}/converse`);
-    expect(calls[0]?.body).toHaveProperty(
-      'additionalModelRequestFields.output_config.effort',
-      'medium',
-    );
-    expect(calls[0]?.body).toHaveProperty(
-      'additionalModelRequestFields.thinking.type',
-      'adaptive',
-    );
-    expect(calls[0]?.body).toHaveProperty(
-      'additionalModelRequestFields.output_config.format.type',
-      'json_schema',
-    );
-    expect(calls[0]?.body).not.toHaveProperty('toolConfig');
+    expect(claudeRequest(calls[0])).toMatchObject(productionRequest);
   });
 
   it('returns a typed error for a malformed sentence verdict', async () => {
@@ -209,25 +235,12 @@ describe('Bedrock sentence transport', () => {
       );
       expect(result).toEqual(response);
       expect(calls).toHaveLength(1);
-      expect(calls[0]?.url).toContain(`${modelId}/converse`);
-      expect(calls[0]?.body).toHaveProperty(
-        'additionalModelRequestFields.output_config.effort',
-        'medium',
-      );
-      expect(calls[0]?.body).toHaveProperty(
-        'additionalModelRequestFields.thinking.type',
-        'adaptive',
-      );
-      expect(calls[0]?.body).toHaveProperty(
-        'additionalModelRequestFields.output_config.format.type',
-        'json_schema',
-      );
-      expect(calls[0]?.body).not.toHaveProperty('toolConfig');
+      expect(claudeRequest(calls[0])).toMatchObject(productionRequest);
     },
   );
 });
 
-describe('Bedrock extraction transport', () => {
+describe('Claude API extraction transport', () => {
   it.each([1, 0])(
     'extracts once at confidence %s without an escalation model',
     async (confidence) => {
@@ -249,29 +262,16 @@ describe('Bedrock extraction transport', () => {
       );
       expect(result).toEqual({ page, modelId });
       expect(calls).toHaveLength(1);
-      expect(calls[0]?.url).toContain(`${modelId}/converse`);
+      expect(claudeRequest(calls[0])).toMatchObject(productionRequest);
       expect(calls[0]?.body).toHaveProperty(
-        'additionalModelRequestFields.output_config.effort',
-        'medium',
-      );
-      expect(calls[0]?.body).toHaveProperty(
-        'additionalModelRequestFields.thinking.type',
-        'adaptive',
-      );
-      expect(calls[0]?.body).toHaveProperty(
-        'additionalModelRequestFields.output_config.format.type',
-        'json_schema',
-      );
-      expect(calls[0]?.body).not.toHaveProperty('toolConfig');
-      expect(calls[0]?.body).toHaveProperty(
-        'messages.0.content.0.image.format',
-        'webp',
+        'messages.0.content.0.source.media_type',
+        'image/webp',
       );
     },
   );
 });
 
-describe('Bedrock definition transport', () => {
+describe('Claude API definition transport', () => {
   it.each(['judge', 'keyPoints', 'suggest'] as const)(
     'sends definition %s with medium reasoning',
     async (operation) => {
@@ -310,16 +310,7 @@ describe('Bedrock definition transport', () => {
       );
       expect(result).toEqual(response);
       expect(calls).toHaveLength(1);
-      expect(calls[0]?.url).toContain(`${modelId}/converse`);
-      expect(calls[0]?.body).toHaveProperty(
-        'additionalModelRequestFields.thinking.type',
-        'adaptive',
-      );
-      expect(calls[0]?.body).toHaveProperty(
-        'additionalModelRequestFields.output_config.effort',
-        'medium',
-      );
-      expect(calls[0]?.body).not.toHaveProperty('toolConfig');
+      expect(claudeRequest(calls[0])).toMatchObject(productionRequest);
     },
   );
 
@@ -327,7 +318,7 @@ describe('Bedrock definition transport', () => {
     { keyPoints: [] },
     { keyPoints: ['one', 'two', 'three', 'four', 'five'] },
   ])(
-    'rejects an out-of-bounds key point list from Bedrock',
+    'rejects an out-of-bounds key point list from the model',
     async ({ keyPoints }) => {
       const { services } = capturedServices({ keyPoints });
       const result = await Effect.runPromise(

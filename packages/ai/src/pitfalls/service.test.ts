@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { Effect, Layer, Schema } from 'effect';
-import { BedrockProvider } from '../providers/bedrock';
-import { capturedBedrockModel } from '../testing/bedrock';
+import { AnthropicProvider } from '../providers/anthropic';
+import { capturedAnthropicModel } from '../testing/anthropic';
 import { untrackedAiUsage } from '../testing/usage';
 import { type PitfallRequest, PitfallSuggestions } from './schema';
 import { pitfallPrompt, SpellingPitfalls } from './service';
@@ -22,14 +22,14 @@ const adolescentPitfall = {
 };
 
 const find = (response: unknown) => {
-  const { calls, model } = capturedBedrockModel(response);
+  const { calls, model } = capturedAnthropicModel(response);
   const result = Effect.runPromise(
     Effect.gen(function* () {
       return yield* (yield* SpellingPitfalls).find(request);
     }).pipe(
       Effect.provide(
         SpellingPitfalls.layer.pipe(
-          Layer.provide(Layer.succeed(BedrockProvider, model)),
+          Layer.provide(Layer.succeed(AnthropicProvider, model)),
           Layer.merge(untrackedAiUsage),
         ),
       ),
@@ -112,10 +112,7 @@ describe('SpellingPitfalls', () => {
       ],
     });
     expect(calls).toHaveLength(1);
-    expect(calls[0]?.body).toHaveProperty(
-      'additionalModelRequestFields.output_config.effort',
-      'high',
-    );
+    expect(calls[0]?.body).toHaveProperty('output_config.effort', 'high');
   });
 
   it('rejects an answer that skips a word', async () => {

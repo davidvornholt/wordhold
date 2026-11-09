@@ -64,7 +64,7 @@ describe('providerJsonSchema', () => {
     });
   });
 
-  it('keeps key point bounds in the schema sent to Bedrock', () => {
+  it('keeps key point bounds in the schema sent to the Claude API', () => {
     const schema = providerJsonSchema(KeyPointList).jsonSchema;
     expect(schema).toHaveProperty('properties.keyPoints.minItems', 1);
     expect(schema).toHaveProperty(
@@ -99,7 +99,7 @@ describe('providerJsonSchema', () => {
 });
 
 describe('decodeModelOutput', () => {
-  // The schema sent to Bedrock allows null for absent optional fields.
+  // The schema sent to the Claude API allows null for absent optional fields.
   it('reads a null optional field as absent', () => {
     const page = Effect.runSync(
       decodeModelOutput(ExtractedPage)({

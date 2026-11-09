@@ -1,5 +1,5 @@
 import { Context, Effect, Layer } from 'effect';
-import { BedrockProvider, productionModelId } from '../providers/bedrock';
+import { AnthropicProvider, productionModelId } from '../providers/anthropic';
 import { generateStructured } from '../structured-generation';
 import { UnusableAnswerError } from '../unusable-answer-error';
 import type { AiUsage } from '../usage';
@@ -43,7 +43,7 @@ export class Extraction extends Context.Service<
   static readonly layer = Layer.effect(
     Extraction,
     Effect.gen(function* () {
-      const model = yield* BedrockProvider;
+      const model = yield* AnthropicProvider;
       const modelId = productionModelId;
 
       const runModel = (
