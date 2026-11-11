@@ -51,8 +51,6 @@ const courseCandidates = (course: ApiCourse) =>
     entries.map((entry) => ({ course, entry })),
   );
 
-// A word keeps its example, synonyms and antonyms unless the edit replaces or
-// removes them.
 const editWord = (
   member: Member,
   current: VocabularyEntry,

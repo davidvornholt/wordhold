@@ -58,8 +58,6 @@ const relationFlags = {
   ),
 };
 
-// The list an edit sends: the words given, an empty list to remove them, or
-// nothing to keep the stored ones.
 const relatedWordsOf = (
   words: ReadonlyArray<string>,
   remove: boolean,

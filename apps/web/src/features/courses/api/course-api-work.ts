@@ -55,11 +55,6 @@ export const notInSubjects = new Rejected({
     'Terms and texts have no books, units, example sentences, synonyms or antonyms. Leave those out.',
 });
 
-/**
- * A word's synonyms or antonyms after an edit. A list given replaces the
- * stored one, cleaned as the app cleans a typed list, and leaves out the word
- * itself; a list left out stays as it is.
- */
 export const relatedWordsAfterEdit = (
   stored: ReadonlyArray<string> | null,
   given: ReadonlyArray<string> | undefined,
