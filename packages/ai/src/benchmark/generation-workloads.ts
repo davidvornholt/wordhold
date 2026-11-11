@@ -1,6 +1,7 @@
 import { DefinitionSuggestion, KeyPointList } from '../definition/schema';
 import { definitionPrompt, keyPointPrompt } from '../definition/writer';
 import {
+  maximumGeneratedExampleWords,
   SentenceBatch,
   SentenceTranslation,
   sentencePrompt,
@@ -12,6 +13,8 @@ import {
 import { catalyst, osmosis } from './grading-workloads';
 import { readModelOutput } from './structured-output';
 import { quoteFailures, textWorkload, type Workload } from './workload';
+
+const whitespace = /\s+/u;
 
 const sentenceCount = 3;
 
@@ -42,6 +45,14 @@ const sentenceWorkload = (
       }
       if (output.sentences.some((item) => !usesWord.test(item.target))) {
         failures.push('Vocabulary missing from sentence');
+      }
+      if (
+        output.sentences.some(
+          (item) =>
+            item.target.split(whitespace).length > maximumGeneratedExampleWords,
+        )
+      ) {
+        failures.push('Sentence too long');
       }
       return [
         ...failures,
