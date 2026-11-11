@@ -1,6 +1,7 @@
 import { DefinitionSuggestion, KeyPointList } from '../definition/schema';
 import { definitionPrompt, keyPointPrompt } from '../definition/writer';
 import {
+  maximumGeneratedExampleWords,
   SentenceBatch,
   SentenceTranslation,
   sentencePrompt,
@@ -42,6 +43,14 @@ const sentenceWorkload = (
       }
       if (output.sentences.some((item) => !usesWord.test(item.target))) {
         failures.push('Vocabulary missing from sentence');
+      }
+      if (
+        output.sentences.some(
+          (item) =>
+            item.target.split(/\s+/u).length > maximumGeneratedExampleWords,
+        )
+      ) {
+        failures.push('Sentence too long');
       }
       return [
         ...failures,

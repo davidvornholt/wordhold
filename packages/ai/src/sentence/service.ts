@@ -52,11 +52,17 @@ export type SentenceRequest = {
   readonly count: number;
 };
 
+// Learners read this sentence after every answer and translate it in sentence
+// practice, so its length slows each review. The prompt names a number
+// because "short" alone produced twice the words of a textbook example.
+export const maximumGeneratedExampleWords = 10;
+
 export const sentencePrompt = (request: SentenceRequest): string =>
   [
-    `Write ${request.count} short, natural ${request.targetLanguage} example sentences using`,
+    `Write ${request.count} natural ${request.targetLanguage} example sentences using`,
     `"${request.targetText}" (German: "${request.nativeText}") in a natural form.`,
-    'Use everyday school-life contexts for teenagers. Translate each faithfully into German as native.',
+    `Each has at most ${maximumGeneratedExampleWords} words, like a textbook vocabulary example.`,
+    'Prefer everyday teenage life. Translate each faithfully into German as native.',
     'Use single quotes for quotations, never double or typographic quotes.',
   ].join(' ');
 

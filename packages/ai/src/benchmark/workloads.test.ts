@@ -95,6 +95,21 @@ describe('generation scoring', () => {
     ).toEqual(['Double quotes used']);
   });
 
+  it('rejects an example sentence over the word limit', async () => {
+    const sentence = (target: string) => ({ target, native: 'Übersetzung' });
+    expect(
+      (await workload('sentences')).qualityFailures({
+        sentences: [
+          sentence('Mi abogado es muy simpático.'),
+          sentence('La abogada de mi tía trabaja en Madrid.'),
+          sentence(
+            'Mi tía dice que el abogado de su empresa siempre llega tarde a las reuniones.',
+          ),
+        ],
+      }),
+    ).toEqual(['Sentence too long']);
+  });
+
   it('rejects a word-for-word idiom translation', async () => {
     expect(
       (await workload('translation-idiom')).qualityFailures({
