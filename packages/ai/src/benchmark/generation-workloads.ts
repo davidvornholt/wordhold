@@ -14,6 +14,8 @@ import { catalyst, osmosis } from './grading-workloads';
 import { readModelOutput } from './structured-output';
 import { quoteFailures, textWorkload, type Workload } from './workload';
 
+const whitespace = /\s+/u;
+
 const sentenceCount = 3;
 
 const sentenceWorkload = (
@@ -47,7 +49,7 @@ const sentenceWorkload = (
       if (
         output.sentences.some(
           (item) =>
-            item.target.split(/\s+/u).length > maximumGeneratedExampleWords,
+            item.target.split(whitespace).length > maximumGeneratedExampleWords,
         )
       ) {
         failures.push('Sentence too long');
