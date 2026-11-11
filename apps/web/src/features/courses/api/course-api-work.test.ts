@@ -6,7 +6,12 @@ import type {
   CourseUnit,
   WordProgress,
 } from '../schemas/course-units';
-import { foundExample, keptExample, wordPlace } from './course-api-work';
+import {
+  foundExample,
+  keptExample,
+  relatedWordsAfterEdit,
+  wordPlace,
+} from './course-api-work';
 
 const noWords: WordProgress = {
   entries: 0,
@@ -124,5 +129,28 @@ describe('examples', () => {
       }),
     ).toEqual({ targetText: 'Tomo un café.', source: 'generated' });
     expect(keptExample(null)).toBeUndefined();
+  });
+});
+
+describe('synonyms and antonyms after an edit', () => {
+  it('keeps a stored list, settled or not, that the edit leaves out', () => {
+    expect(relatedWordsAfterEdit(['le copain'], undefined, 'le pote')).toEqual([
+      'le copain',
+    ]);
+    expect(relatedWordsAfterEdit(null, undefined, 'le pote')).toBeNull();
+  });
+
+  it('replaces the list with the words given, each once and without the word itself', () => {
+    expect(
+      relatedWordsAfterEdit(
+        ['le camarade'],
+        ['le copain', ' Le  copain', 'le pote', "l'ami"],
+        'le pote',
+      ),
+    ).toEqual(['le copain', "l'ami"]);
+  });
+
+  it('settles an empty list as none', () => {
+    expect(relatedWordsAfterEdit(['le copain'], [], 'le pote')).toEqual([]);
   });
 });

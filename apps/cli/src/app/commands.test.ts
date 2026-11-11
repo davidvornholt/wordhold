@@ -223,14 +223,36 @@ describe('wordhold entries edit', () => {
     expect(sent[0]?.body).toEqual({ example: null });
   });
 
-  it.each([[[]], [['--no-example', '--example', 'La mesa es grande.']]])(
-    'refuses %j before asking the server',
-    async (flags) => {
-      const failure = await failureOf('entries', 'edit', entryId, ...flags);
-      expect(failure._tag).toBe('InvalidInput');
-      expect(sent).toEqual([]);
-    },
-  );
+  it('replaces the synonyms with the trimmed words given, one per flag', async () => {
+    await runOk(
+      'entries',
+      'edit',
+      entryId,
+      '--synonym',
+      ' el escritorio ',
+      '--synonym',
+      'la mesa, la tabla',
+    );
+    expect(sent[0]?.body).toEqual({
+      synonyms: ['el escritorio', 'la mesa, la tabla'],
+    });
+  });
+
+  it('removes the antonyms with --no-antonyms and keeps the synonyms', async () => {
+    await runOk('entries', 'edit', entryId, '--no-antonyms');
+    expect(sent[0]?.body).toEqual({ antonyms: [] });
+  });
+
+  it.each([
+    [[]],
+    [['--no-example', '--example', 'La mesa es grande.']],
+    [['--no-synonyms', '--synonym', 'el escritorio']],
+    [['--antonym', ' ']],
+  ])('refuses %j before asking the server', async (flags) => {
+    const failure = await failureOf('entries', 'edit', entryId, ...flags);
+    expect(failure._tag).toBe('InvalidInput');
+    expect(sent).toEqual([]);
+  });
 });
 
 describe('wordhold entries list and search', () => {

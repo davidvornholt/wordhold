@@ -34,4 +34,9 @@ describe('the request bodies', () => {
     );
     expect(isEdit({ targetText: '' })).toBe(false);
   });
+
+  it('lets an edit replace or remove synonyms and antonyms', () => {
+    expect(isEdit({ synonyms: ['le copain'], antonyms: [] })).toBe(true);
+    expect(isEdit({ synonyms: [' '] })).toBe(false);
+  });
 });

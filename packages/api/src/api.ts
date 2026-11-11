@@ -48,11 +48,21 @@ export const AddEntryPayloadSchema = Schema.Struct({
 });
 export type AddEntryPayload = typeof AddEntryPayloadSchema.Type;
 
-/** Changes only the fields given. A null example removes the stored one. */
+// Synonyms or antonyms of a word, in the course's language. The server checks
+// how many a word may have.
+const relatedWords = Schema.Array(text(entryTextLength));
+
+/**
+ * Changes only the fields given. A null example removes the stored one. A
+ * word's synonyms or antonyms replace its stored list, and an empty list
+ * removes them; terms and texts have neither.
+ */
 export const EditEntryPayloadSchema = Schema.Struct({
   targetText: Schema.optional(text(entryTextLength)),
   nativeText: Schema.optional(text(memorizedTextLength)),
   example: Schema.optional(Schema.NullOr(ExamplePayloadSchema)),
+  synonyms: Schema.optional(relatedWords),
+  antonyms: Schema.optional(relatedWords),
 });
 export type EditEntryPayload = typeof EditEntryPayloadSchema.Type;
 
