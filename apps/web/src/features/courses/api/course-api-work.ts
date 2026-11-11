@@ -4,6 +4,7 @@ import { Effect } from 'effect';
 import { runIn } from '../../../shared/api/api-failure';
 import { authRuntime } from '../../../shared/auth/runtime';
 import type { NewExampleData } from '../../../shared/vocabulary/entry-fields';
+import { distinctRelatedWords } from '../../../shared/vocabulary/related-words';
 import type { CourseOutline, VocabularyExample } from '../schemas/course-units';
 import { courseRuntime } from '../services/course-runtimes';
 import { CourseService } from '../services/course-service';
@@ -51,8 +52,15 @@ export const courseEntry = (course: ApiCourse, entryId: string) =>
 
 export const notInSubjects = new Rejected({
   message:
-    'Terms and texts have no books, units or example sentences. Leave those out.',
+    'Terms and texts have no books, units, example sentences, synonyms or antonyms. Leave those out.',
 });
+
+export const relatedWordsAfterEdit = (
+  stored: ReadonlyArray<string> | null,
+  given: ReadonlyArray<string> | undefined,
+  word: string,
+): ReadonlyArray<string> | null =>
+  given === undefined ? stored : distinctRelatedWords(given, word);
 
 /**
  * An example given through the API is one the owner came across, so it is

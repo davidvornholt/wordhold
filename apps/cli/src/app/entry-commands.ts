@@ -35,6 +35,43 @@ const exampleFlags = {
   ),
 };
 
+// Each flag adds one word, so a word may contain a comma.
+const relatedWordsFlag = (name: string, description: string) =>
+  Flag.String(name).pipe(Flag.withDescription(description), Flag.atLeast(0));
+
+const relationFlags = {
+  synonyms: relatedWordsFlag(
+    'synonym',
+    "A synonym in the course's language (words only). Repeat it for more; together they replace the stored synonyms.",
+  ),
+  antonyms: relatedWordsFlag(
+    'antonym',
+    "An antonym in the course's language (words only). Repeat it for more; together they replace the stored antonyms.",
+  ),
+  noSynonyms: flag(
+    'no-synonyms',
+    'Remove the synonyms, with the practice card that asks for them',
+  ),
+  noAntonyms: flag(
+    'no-antonyms',
+    'Remove the antonyms, with the practice card that asks for them',
+  ),
+};
+
+const relatedWordsOf = (
+  words: ReadonlyArray<string>,
+  remove: boolean,
+  name: string,
+) => {
+  if (remove && words.length > 0) {
+    return fail(`Pass either --${name} or --no-${name}s.`);
+  }
+  if (remove) {
+    return Effect.succeed([]);
+  }
+  return Effect.succeed(words.length === 0 ? undefined : words);
+};
+
 type ExampleInput = {
   readonly example: Option.Option<string>;
   readonly exampleTranslation: Option.Option<string>;
@@ -189,6 +226,7 @@ const edit = Command.make(
     ),
     ...exampleFlags,
     noExample: flag('no-example', 'Remove the example sentence'),
+    ...relationFlags,
   },
   (input) =>
     runApi(
@@ -198,6 +236,16 @@ const edit = Command.make(
           return yield* fail('Pass either --example or --no-example.');
         }
         const example = input.noExample ? null : yield* exampleOf(input);
+        const synonyms = yield* relatedWordsOf(
+          input.synonyms,
+          input.noSynonyms,
+          'synonym',
+        );
+        const antonyms = yield* relatedWordsOf(
+          input.antonyms,
+          input.noAntonyms,
+          'antonym',
+        );
         const changes = {
           ...Option.match(input.target, {
             onNone: () => ({}),
@@ -208,10 +256,12 @@ const edit = Command.make(
             onSome: (nativeText) => ({ nativeText }),
           }),
           ...(example === undefined ? {} : { example }),
+          ...(synonyms === undefined ? {} : { synonyms }),
+          ...(antonyms === undefined ? {} : { antonyms }),
         };
         if (Object.keys(changes).length === 0) {
           return yield* fail(
-            'Nothing to change. Pass --target, --native, --example or --no-example.',
+            'Nothing to change. Pass a text, an example, synonyms or antonyms; see --help.',
           );
         }
         const payload = yield* validate(
@@ -227,7 +277,7 @@ const edit = Command.make(
     ),
 ).pipe(
   Command.withDescription(
-    'Change an entry. Only the fields given change; a new example replaces the old one. Prints the saved entry.',
+    'Change an entry. Only the fields given change; a new example replaces the old one, and synonyms or antonyms replace the stored list. Prints the saved entry.',
   ),
 );
 

@@ -31,6 +31,7 @@ import {
   memberCourse,
   memberEntryCourse,
   notInSubjects,
+  relatedWordsAfterEdit,
 } from './course-api-work';
 import { type ApiCourse, ownedCourses } from './course-records';
 import { searchEntries, toApiEntry } from './entry-wire';
@@ -50,8 +51,6 @@ const courseCandidates = (course: ApiCourse) =>
     entries.map((entry) => ({ course, entry })),
   );
 
-// A word keeps its synonyms and antonyms, and its example unless the edit
-// replaces or removes it.
 const editWord = (
   member: Member,
   current: VocabularyEntry,
@@ -59,14 +58,23 @@ const editWord = (
   payload: EditEntryPayload,
 ) => {
   const example = editedExample(current, payload);
+  const targetText = payload.targetText ?? current.targetText;
   const update = Schema.decodeUnknownEffect(UpdateVocabularyEntry)({
     courseId,
     entryId: current.id,
-    targetText: payload.targetText ?? current.targetText,
+    targetText,
     nativeText: payload.nativeText ?? current.nativeText,
     ...(example === undefined ? {} : { example }),
-    synonyms: current.synonyms,
-    antonyms: current.antonyms,
+    synonyms: relatedWordsAfterEdit(
+      current.synonyms,
+      payload.synonyms,
+      targetText,
+    ),
+    antonyms: relatedWordsAfterEdit(
+      current.antonyms,
+      payload.antonyms,
+      targetText,
+    ),
   }).pipe(
     Effect.flatMap((input) =>
       Effect.flatMap(VocabularyEntryService, (service) =>
@@ -84,7 +92,11 @@ const editSubjectEntry = (
   payload: EditEntryPayload,
 ) =>
   Effect.gen(function* () {
-    if (payload.example !== undefined) {
+    if (
+      payload.example !== undefined ||
+      payload.synonyms !== undefined ||
+      payload.antonyms !== undefined
+    ) {
       return yield* notInSubjects;
     }
     const targetText = payload.targetText ?? current.targetText;
