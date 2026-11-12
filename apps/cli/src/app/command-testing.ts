@@ -34,8 +34,6 @@ type FakeServer = {
   home: string;
 };
 
-// Stands in for the Wordhold server: records each request and answers it with
-// `answer`, so no test reaches a real server.
 export const server: FakeServer = {
   sent: [],
   answer: () => Response.json({}),

@@ -38,7 +38,6 @@ export class ExamStore extends Context.Service<
     readonly listEntries: (
       examId: string,
     ) => Effect.Effect<ReadonlyArray<ExamEntry>, ExamDatabaseError>;
-    // Only units of the given course.
     readonly listUnitEntries: (
       courseId: string,
       unitIds: ReadonlyArray<string>,

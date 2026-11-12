@@ -123,7 +123,6 @@ export class ExamService extends Context.Service<
       courseId: string,
     ) => Effect.Effect<ReadonlyArray<ExamSummary>, ExamDatabaseError>;
     readonly get: (examId: string) => Effect.Effect<ExamDetail, ExamFailure>;
-    // The words of the course's units, for a test that covers whole units.
     readonly unitEntryIds: (
       courseId: string,
       unitIds: ReadonlyArray<string>,

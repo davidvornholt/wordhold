@@ -50,7 +50,6 @@ const changesContent = (payload: EditExamPayload) =>
   payload.directions !== undefined ||
   changesWords(payload);
 
-// Saves the test's name, directions and words as the edit leaves them.
 const saveContent = (
   service: Service,
   exam: ExamDetail,

@@ -16,7 +16,6 @@ import {
 } from './command-inputs';
 import { runApi } from './root';
 
-// Each flag names one id, so a test's words can come from several units.
 const idsFlag = (name: string, description: string) =>
   Flag.String(name).pipe(
     Flag.withDescription(description),
@@ -32,7 +31,6 @@ const directionsFlag = (description: string) =>
     Flag.atLeast(0),
   );
 
-// An empty list leaves the field out of the request.
 const nonEmpty = <A>(values: ReadonlyArray<A>) =>
   values.length === 0 ? undefined : values;
 
