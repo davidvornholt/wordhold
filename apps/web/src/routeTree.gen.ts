@@ -36,7 +36,7 @@ import { Route as PagesPageIdVerifyRouteImport } from './routes/pages/$pageId/ve
 import { Route as ApiEntriesEntryIdAudioRouteImport } from './routes/api/entries/$entryId/audio'
 import { Route as ApiEntriesEntryIdExampleAudioRouteImport } from './routes/api/entries/$entryId/example-audio'
 import { Route as ApiPagesPageIdImageRouteImport } from './routes/api/pages/$pageId/image'
-import { Route as CoursesCourseIdExamsIndexRouteImport } from './routes/courses/$courseId/exams/index'
+import { Route as CoursesCourseIdExamsArchiveRouteImport } from './routes/courses/$courseId/exams/archive'
 import { Route as CoursesCourseIdExamsNewRouteImport } from './routes/courses/$courseId/exams/new'
 import { Route as CoursesCourseIdBooksBookIdIndexRouteImport } from './routes/courses/$courseId/books/$bookId/index'
 import { Route as CoursesCourseIdBooksBookIdLearnRouteImport } from './routes/courses/$courseId/books/$bookId/learn'
@@ -185,10 +185,10 @@ const ApiPagesPageIdImageRoute = ApiPagesPageIdImageRouteImport.update({
   path: '/$pageId/image',
   getParentRoute: () => ApiPagesRoute,
 } as any)
-const CoursesCourseIdExamsIndexRoute =
-  CoursesCourseIdExamsIndexRouteImport.update({
-    id: '/courses/$courseId/exams/',
-    path: '/courses/$courseId/exams/',
+const CoursesCourseIdExamsArchiveRoute =
+  CoursesCourseIdExamsArchiveRouteImport.update({
+    id: '/courses/$courseId/exams/archive',
+    path: '/courses/$courseId/exams/archive',
     getParentRoute: () => rootRouteImport,
   } as any)
 const CoursesCourseIdExamsNewRoute = CoursesCourseIdExamsNewRouteImport.update({
@@ -267,8 +267,8 @@ export interface FileRoutesByFullPath {
   '/api/entries/$entryId/audio': typeof ApiEntriesEntryIdAudioRoute
   '/api/entries/$entryId/example-audio': typeof ApiEntriesEntryIdExampleAudioRoute
   '/api/pages/$pageId/image': typeof ApiPagesPageIdImageRoute
+  '/courses/$courseId/exams/archive': typeof CoursesCourseIdExamsArchiveRoute
   '/courses/$courseId/exams/new': typeof CoursesCourseIdExamsNewRoute
-  '/courses/$courseId/exams/': typeof CoursesCourseIdExamsIndexRoute
   '/courses/$courseId/books/$bookId/learn': typeof CoursesCourseIdBooksBookIdLearnRoute
   '/courses/$courseId/exams/$examId/edit': typeof CoursesCourseIdExamsExamIdEditRoute
   '/courses/$courseId/units/$unitId/learn': typeof CoursesCourseIdUnitsUnitIdLearnRoute
@@ -305,8 +305,8 @@ export interface FileRoutesByTo {
   '/api/entries/$entryId/audio': typeof ApiEntriesEntryIdAudioRoute
   '/api/entries/$entryId/example-audio': typeof ApiEntriesEntryIdExampleAudioRoute
   '/api/pages/$pageId/image': typeof ApiPagesPageIdImageRoute
+  '/courses/$courseId/exams/archive': typeof CoursesCourseIdExamsArchiveRoute
   '/courses/$courseId/exams/new': typeof CoursesCourseIdExamsNewRoute
-  '/courses/$courseId/exams': typeof CoursesCourseIdExamsIndexRoute
   '/courses/$courseId/books/$bookId/learn': typeof CoursesCourseIdBooksBookIdLearnRoute
   '/courses/$courseId/exams/$examId/edit': typeof CoursesCourseIdExamsExamIdEditRoute
   '/courses/$courseId/units/$unitId/learn': typeof CoursesCourseIdUnitsUnitIdLearnRoute
@@ -344,8 +344,8 @@ export interface FileRoutesById {
   '/api/entries/$entryId/audio': typeof ApiEntriesEntryIdAudioRoute
   '/api/entries/$entryId/example-audio': typeof ApiEntriesEntryIdExampleAudioRoute
   '/api/pages/$pageId/image': typeof ApiPagesPageIdImageRoute
+  '/courses/$courseId/exams/archive': typeof CoursesCourseIdExamsArchiveRoute
   '/courses/$courseId/exams/new': typeof CoursesCourseIdExamsNewRoute
-  '/courses/$courseId/exams/': typeof CoursesCourseIdExamsIndexRoute
   '/courses/$courseId/books/$bookId/learn': typeof CoursesCourseIdBooksBookIdLearnRoute
   '/courses/$courseId/exams/$examId/edit': typeof CoursesCourseIdExamsExamIdEditRoute
   '/courses/$courseId/units/$unitId/learn': typeof CoursesCourseIdUnitsUnitIdLearnRoute
@@ -384,8 +384,8 @@ export interface FileRouteTypes {
     | '/api/entries/$entryId/audio'
     | '/api/entries/$entryId/example-audio'
     | '/api/pages/$pageId/image'
+    | '/courses/$courseId/exams/archive'
     | '/courses/$courseId/exams/new'
-    | '/courses/$courseId/exams/'
     | '/courses/$courseId/books/$bookId/learn'
     | '/courses/$courseId/exams/$examId/edit'
     | '/courses/$courseId/units/$unitId/learn'
@@ -422,8 +422,8 @@ export interface FileRouteTypes {
     | '/api/entries/$entryId/audio'
     | '/api/entries/$entryId/example-audio'
     | '/api/pages/$pageId/image'
+    | '/courses/$courseId/exams/archive'
     | '/courses/$courseId/exams/new'
-    | '/courses/$courseId/exams'
     | '/courses/$courseId/books/$bookId/learn'
     | '/courses/$courseId/exams/$examId/edit'
     | '/courses/$courseId/units/$unitId/learn'
@@ -460,8 +460,8 @@ export interface FileRouteTypes {
     | '/api/entries/$entryId/audio'
     | '/api/entries/$entryId/example-audio'
     | '/api/pages/$pageId/image'
+    | '/courses/$courseId/exams/archive'
     | '/courses/$courseId/exams/new'
-    | '/courses/$courseId/exams/'
     | '/courses/$courseId/books/$bookId/learn'
     | '/courses/$courseId/exams/$examId/edit'
     | '/courses/$courseId/units/$unitId/learn'
@@ -498,8 +498,8 @@ export interface RootRouteChildren {
   CoursesCourseIdIndexRoute: typeof CoursesCourseIdIndexRoute
   ApiEntriesEntryIdAudioRoute: typeof ApiEntriesEntryIdAudioRoute
   ApiEntriesEntryIdExampleAudioRoute: typeof ApiEntriesEntryIdExampleAudioRoute
+  CoursesCourseIdExamsArchiveRoute: typeof CoursesCourseIdExamsArchiveRoute
   CoursesCourseIdExamsNewRoute: typeof CoursesCourseIdExamsNewRoute
-  CoursesCourseIdExamsIndexRoute: typeof CoursesCourseIdExamsIndexRoute
   CoursesCourseIdBooksBookIdLearnRoute: typeof CoursesCourseIdBooksBookIdLearnRoute
   CoursesCourseIdExamsExamIdEditRoute: typeof CoursesCourseIdExamsExamIdEditRoute
   CoursesCourseIdUnitsUnitIdLearnRoute: typeof CoursesCourseIdUnitsUnitIdLearnRoute
@@ -700,11 +700,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPagesPageIdImageRouteImport
       parentRoute: typeof ApiPagesRoute
     }
-    '/courses/$courseId/exams/': {
-      id: '/courses/$courseId/exams/'
-      path: '/courses/$courseId/exams'
-      fullPath: '/courses/$courseId/exams/'
-      preLoaderRoute: typeof CoursesCourseIdExamsIndexRouteImport
+    '/courses/$courseId/exams/archive': {
+      id: '/courses/$courseId/exams/archive'
+      path: '/courses/$courseId/exams/archive'
+      fullPath: '/courses/$courseId/exams/archive'
+      preLoaderRoute: typeof CoursesCourseIdExamsArchiveRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/courses/$courseId/exams/new': {
@@ -805,8 +805,8 @@ const rootRouteChildren: RootRouteChildren = {
   CoursesCourseIdIndexRoute: CoursesCourseIdIndexRoute,
   ApiEntriesEntryIdAudioRoute: ApiEntriesEntryIdAudioRoute,
   ApiEntriesEntryIdExampleAudioRoute: ApiEntriesEntryIdExampleAudioRoute,
+  CoursesCourseIdExamsArchiveRoute: CoursesCourseIdExamsArchiveRoute,
   CoursesCourseIdExamsNewRoute: CoursesCourseIdExamsNewRoute,
-  CoursesCourseIdExamsIndexRoute: CoursesCourseIdExamsIndexRoute,
   CoursesCourseIdBooksBookIdLearnRoute: CoursesCourseIdBooksBookIdLearnRoute,
   CoursesCourseIdExamsExamIdEditRoute: CoursesCourseIdExamsExamIdEditRoute,
   CoursesCourseIdUnitsUnitIdLearnRoute: CoursesCourseIdUnitsUnitIdLearnRoute,

@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router';
+import { SettingsIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { BibleSummary } from '../../../features/bibles/schemas/bible-models';
 import { listBibles } from '../../../features/bibles/services/server-fns';
@@ -21,6 +22,8 @@ import { QuickEntry } from '../../../features/courses/ui/quick-entry';
 import { SubjectOverview } from '../../../features/courses/ui/subject-overview';
 import type { CourseStats } from '../../../features/dashboard/schemas/dashboard-models';
 import { getDashboard } from '../../../features/dashboard/services/server-fns';
+import type { ExamSummary } from '../../../features/exams/schemas/exam-models';
+import { listExams } from '../../../features/exams/services/server-fns';
 import { getCourse } from '../../../features/import/server-fns';
 import {
   type CourseSubject,
@@ -35,6 +38,7 @@ import { itemsInNextSection } from '../../../shared/session/section-policy';
 import { ActionLink } from '../../../shared/ui/action-link';
 import { BackLink } from '../../../shared/ui/back-link';
 import { PageLayout } from '../../../shared/ui/page-layout';
+import { CourseExams } from './-course-exams';
 import { coursePlaces, PlaceLearnLink } from './-course-place';
 import {
   type EntryCourse,
@@ -121,27 +125,20 @@ const coursePrimaryAction = ({
 
 const SettingsLink = ({ courseId }: { readonly courseId: string }) => (
   <ActionLink
+    aria-label="Einstellungen"
     params={{ courseId }}
+    title="Einstellungen"
     to="/courses/$courseId/settings"
-    variant="quiet"
+    variant="icon"
   >
-    Einstellungen
-  </ActionLink>
-);
-
-const ExamsLink = ({ courseId }: { readonly courseId: string }) => (
-  <ActionLink
-    params={{ courseId }}
-    to="/courses/$courseId/exams"
-    variant="quiet"
-  >
-    Tests
+    <SettingsIcon aria-hidden={true} className="size-5" />
   </ActionLink>
 );
 
 type LanguageScreenProps = {
   readonly course: ScreenCourse;
   readonly entries: ReadonlyArray<VocabularyEntry>;
+  readonly exams: ReadonlyArray<ExamSummary>;
   readonly outline: CourseOutline;
   readonly stats: CourseStats | undefined;
 };
@@ -149,6 +146,7 @@ type LanguageScreenProps = {
 const LanguageScreen = ({
   course,
   entries,
+  exams,
   outline,
   stats,
 }: LanguageScreenProps) => {
@@ -208,8 +206,7 @@ const LanguageScreen = ({
           {book.name}
         </Link>
       )}
-      examsAction={<ExamsLink courseId={course.id} />}
-      settingsAction={<SettingsLink courseId={course.id} />}
+      examSection={<CourseExams course={course} exams={exams} />}
       vocabularyAction={
         <ActionLink
           params={{ courseId: course.id }}
@@ -257,6 +254,7 @@ type SubjectScreenProps = {
   readonly course: ScreenCourse;
   readonly directions: LoaderDirections;
   readonly entries: ReadonlyArray<VocabularyEntry>;
+  readonly exams: ReadonlyArray<ExamSummary>;
   readonly stats: CourseStats | undefined;
   readonly bibles: ReadonlyArray<BibleSummary>;
 };
@@ -265,6 +263,7 @@ const SubjectScreen = ({
   course,
   directions,
   entries,
+  exams,
   stats,
   bibles,
 }: SubjectScreenProps) => {
@@ -275,6 +274,7 @@ const SubjectScreen = ({
       enabledDirections={directions}
       entries={entries}
       entryActions={entryActions}
+      examSection={<CourseExams course={course} exams={exams} />}
       entryForm={
         course.kind === 'texts' ? (
           <TextEntryForm bibles={bibles} course={course} entries={entries} />
@@ -306,8 +306,6 @@ const SubjectScreen = ({
           sentences={false}
         />
       )}
-      examsAction={<ExamsLink courseId={course.id} />}
-      settingsAction={<SettingsLink courseId={course.id} />}
       subject={course}
     />
   );
@@ -316,12 +314,13 @@ const SubjectScreen = ({
 // A language is organised into books and units; a subject is one list of
 // terms and a collection one list of texts.
 const CourseScreen = () => {
-  const { bibles, course, directions, entries, outline, stats } =
+  const { bibles, course, directions, entries, exams, outline, stats } =
     Route.useLoaderData();
   return (
     <PageLayout
       backControl={<BackLink to="/">Übersicht</BackLink>}
       title={course.name}
+      titleAction={<SettingsLink courseId={course.id} />}
     >
       {isListCourse(course.kind) ? (
         <SubjectScreen
@@ -329,12 +328,14 @@ const CourseScreen = () => {
           course={course}
           directions={directions}
           entries={entries}
+          exams={exams}
           stats={stats}
         />
       ) : (
         <LanguageScreen
           course={course}
           entries={entries}
+          exams={exams}
           outline={outline}
           stats={stats}
         />
@@ -350,7 +351,7 @@ export const Route = createFileRoute('/courses/$courseId/')({
   loader: async ({ params }) => {
     // Bibles are looked up in from any collection, so they are listed for
     // every course; the list is short and cheap.
-    const [course, outline, directions, entries, dashboard, bibles] =
+    const [course, outline, directions, entries, dashboard, bibles, exams] =
       await Promise.all([
         getCourse({ data: params.courseId }),
         getCourseOutline({ data: params.courseId }),
@@ -358,12 +359,14 @@ export const Route = createFileRoute('/courses/$courseId/')({
         listCourseVocabulary({ data: params.courseId }),
         getDashboard(),
         listBibles(),
+        listExams({ data: { courseId: params.courseId } }),
       ]);
     return {
       bibles,
       course,
       directions,
       entries,
+      exams,
       outline,
       stats: dashboard.perCourse.find((stats) => stats.courseId === course.id),
     };

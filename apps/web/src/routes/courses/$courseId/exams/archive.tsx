@@ -1,13 +1,13 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { listItemNameClass } from '../../../../features/courses/ui/list-item-name-styles';
 import { listExams } from '../../../../features/exams/services/server-fns';
-import { ExamList } from '../../../../features/exams/ui/exam-list';
+import { ArchivedExamList } from '../../../../features/exams/ui/exam-list';
 import { getCourse } from '../../../../features/import/server-fns';
-import { ActionLink } from '../../../../shared/ui/action-link';
 import { BackLink } from '../../../../shared/ui/back-link';
 import { PageLayout } from '../../../../shared/ui/page-layout';
 
-const ExamsScreen = () => {
+// The tests still ahead are on the course's page.
+const ArchiveScreen = () => {
   const { course, exams } = Route.useLoaderData();
   return (
     <PageLayout
@@ -16,17 +16,13 @@ const ExamsScreen = () => {
           {course.name}
         </BackLink>
       }
-      title={`${course.name}: Tests`}
+      title={`${course.name}: archivierte Tests`}
     >
-      <ActionLink
-        className="w-fit"
-        params={{ courseId: course.id }}
-        to="/courses/$courseId/exams/new"
-        variant={exams.length === 0 ? 'primary' : 'outline'}
-      >
-        Test anlegen
-      </ActionLink>
-      <ExamList
+      <p className="text-muted-foreground text-sm">
+        Ein archivierter Test behält seine Runden, startet aber keine neue. Auf
+        der Seite eines Tests holst du ihn zurück.
+      </p>
+      <ArchivedExamList
         exams={exams}
         renderExamLink={(exam) => (
           <Link
@@ -43,7 +39,7 @@ const ExamsScreen = () => {
   );
 };
 
-export const Route = createFileRoute('/courses/$courseId/exams/')({
+export const Route = createFileRoute('/courses/$courseId/exams/archive')({
   loader: async ({ params }) => {
     const [course, exams] = await Promise.all([
       getCourse({ data: params.courseId }),
@@ -51,5 +47,5 @@ export const Route = createFileRoute('/courses/$courseId/exams/')({
     ]);
     return { course, exams };
   },
-  component: ExamsScreen,
+  component: ArchiveScreen,
 });

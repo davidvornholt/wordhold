@@ -67,6 +67,7 @@ const round = (
   completed: answered === learnedCards,
 });
 
+const openingRound = round(5, 4, 12, 5);
 const firstRound = round(1, 6, 12, 7);
 const givenUpRound = round(2, 8, 5, 4);
 const secondRound = round(3, 9, 12, 10);
@@ -77,7 +78,7 @@ const baseExam = {
   courseId: '00000000-0000-0000-0000-000000000001',
   name: 'Vokabeltest Unit 3 und 4',
   directions: ['to_target', 'to_native'],
-  createdAt: new Date('2026-11-05T15:00:00Z'),
+  createdAt: new Date('2026-11-03T15:00:00Z'),
   archivedAt: null,
   entryCount: examEntries.length,
 } as const;
@@ -94,9 +95,10 @@ const missed = (
   nativeText: entry.nativeText,
 });
 
-// Two finished rounds, one given up between them, and a fourth under way.
-// One word of the second unit is not learned yet, and the course learns only
-// one way round, so one of that word's cards is in a switched-off direction.
+// Three finished rounds, one given up between the last two, and a fifth
+// under way. One word of the second unit is not learned yet, and the course
+// learns only one way round, so one of that word's cards is in a switched-off
+// direction.
 export const practisedExam: ExamDetail = {
   ...baseExam,
   entries: examEntries,
@@ -106,7 +108,7 @@ export const practisedExam: ExamDetail = {
     unlearnedEntryIds: [coach.id],
     switchedOff: 1,
   },
-  rounds: [openRound, secondRound, givenUpRound, firstRound],
+  rounds: [openRound, secondRound, givenUpRound, firstRound, openingRound],
   openRound,
   readiness: {
     lastRound: secondRound,
@@ -127,6 +129,14 @@ export const freshExam: ExamDetail = {
     rightTwice: null,
     missed: [],
   },
+};
+
+// Written and archived, so it starts no round.
+export const archivedExam: ExamDetail = {
+  ...practisedExam,
+  archivedAt: new Date('2026-11-12T15:00:00Z'),
+  rounds: practisedExam.rounds.filter((score) => score.completed),
+  openRound: null,
 };
 
 export const examSummaries: ReadonlyArray<ExamSummary> = [

@@ -25,6 +25,49 @@ export const trendText = (last: RoundScore, previous: RoundScore): string => {
     : `${points} schlechter als davor`;
 };
 
+// The chart shows the newest completed rounds, oldest first, few enough for
+// each bar to carry its own label on a phone.
+export const chartedRounds = 8;
+
+export const completedRounds = (
+  rounds: ReadonlyArray<RoundScore>,
+): ReadonlyArray<RoundScore> =>
+  rounds
+    .filter((round) => round.completed)
+    .sort((a, b) => a.startedAt.getTime() - b.startedAt.getTime())
+    .slice(-chartedRounds);
+
+export type RoundPart = {
+  readonly kind: 'right-twice' | 'right-last' | 'right' | 'wrong';
+  readonly label: string;
+  readonly count: number;
+};
+
+// The newest completed round's cards by how they went. Until there is a
+// round before it, a right card is only right.
+export const roundParts = (
+  last: RoundScore,
+  rightTwice: number | null,
+): ReadonlyArray<RoundPart> => {
+  const wrong = {
+    kind: 'wrong',
+    label: 'falsch',
+    count: last.total - last.correct,
+  } as const;
+  if (rightTwice === null) {
+    return [{ kind: 'right', label: 'richtig', count: last.correct }, wrong];
+  }
+  return [
+    { kind: 'right-twice', label: 'zweimal richtig', count: rightTwice },
+    {
+      kind: 'right-last',
+      label: 'nur zuletzt richtig',
+      count: Math.max(0, last.correct - rightTwice),
+    },
+    wrong,
+  ];
+};
+
 // A round other than the open one that has unanswered cards was given up
 // when a newer round started.
 export const roundStatus = (round: RoundScore, open: boolean): string => {

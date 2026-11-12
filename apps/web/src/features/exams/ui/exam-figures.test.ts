@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'bun:test';
 import type { RoundScore } from '../schemas/exam-models';
 import {
+  chartedRounds,
+  completedRounds,
   entryGroups,
   missedPracticeSearch,
   type PickableEntry,
+  roundParts,
   roundStatus,
   trendText,
 } from './exam-figures';
@@ -32,6 +35,43 @@ const entry = (
   unitName: unit?.name ?? null,
   targetText: `word-${id}`,
   nativeText: `Wort-${id}`,
+});
+
+const partCounts = (parts: ReturnType<typeof roundParts>) =>
+  parts.map((part) => [part.kind, part.count]);
+
+describe('completedRounds', () => {
+  it('keeps the newest completed rounds, oldest first', () => {
+    const rounds = Array.from({ length: chartedRounds + 2 }, (_, day) => ({
+      ...round(day, 12),
+      id: `round-${day}`,
+      startedAt: new Date(Date.UTC(2026, 10, day + 1)),
+    }));
+    const open = {
+      ...round(1, 12, 3),
+      startedAt: new Date(Date.UTC(2026, 10, 20)),
+    };
+    expect(
+      completedRounds([open, ...[...rounds].reverse()]).map((r) => r.id),
+    ).toEqual(rounds.slice(-chartedRounds).map((r) => r.id));
+  });
+});
+
+describe('roundParts', () => {
+  it('splits the first completed round into right and wrong', () => {
+    expect(partCounts(roundParts(round(7, 12), null))).toEqual([
+      ['right', 7],
+      ['wrong', 5],
+    ]);
+  });
+
+  it('splits the right cards into right twice and right only now', () => {
+    expect(partCounts(roundParts(round(10, 12), 6))).toEqual([
+      ['right-twice', 6],
+      ['right-last', 4],
+      ['wrong', 2],
+    ]);
+  });
 });
 
 describe('trendText', () => {
