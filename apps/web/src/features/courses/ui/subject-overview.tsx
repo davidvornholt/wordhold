@@ -27,8 +27,8 @@ type SubjectOverviewProps = {
   readonly entryForm: ReactNode;
   // A subject's photographed notes are read as terms; a collection has none.
   readonly photoAction: ReactNode | null;
-  readonly examsAction: ReactNode;
-  readonly settingsAction: ReactNode;
+  // The subject's tests, above its list, which can run long.
+  readonly examSection: ReactNode;
   readonly renderStudyAction: (action: StudyAction) => ReactNode;
   readonly entryActions: CourseEntryActions;
 };
@@ -62,8 +62,7 @@ export const SubjectOverview = ({
   primaryAction,
   entryForm,
   photoAction,
-  examsAction,
-  settingsAction,
+  examSection,
   renderStudyAction,
   entryActions,
 }: SubjectOverviewProps) => {
@@ -99,9 +98,7 @@ export const SubjectOverview = ({
         >
           {nouns.singular} eintragen
         </Button>
-        {examsAction}
         {photoAction}
-        {settingsAction}
       </div>
       <Dialog
         closable={true}
@@ -113,6 +110,7 @@ export const SubjectOverview = ({
         {entryForm}
       </Dialog>
       <SelectionNotice notice={selectionNotice} />
+      {examSection}
       {isEmpty ? null : (
         <section aria-labelledby={headingId} className="flex flex-col gap-3">
           <h2 className="font-display text-xl" id={headingId}>

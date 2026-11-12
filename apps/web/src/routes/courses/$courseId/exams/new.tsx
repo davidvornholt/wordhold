@@ -18,20 +18,17 @@ const NewExamScreen = () => {
   return (
     <PageLayout
       backControl={
-        <BackLink
-          params={{ courseId: course.id }}
-          to="/courses/$courseId/exams"
-        >
-          Tests
+        <BackLink params={{ courseId: course.id }} to="/courses/$courseId">
+          {course.name}
         </BackLink>
       }
-      title="Test anlegen"
+      title="Neuer Test"
     >
       <ExamForm
         cancelControl={
           <ActionLink
             params={{ courseId: course.id }}
-            to="/courses/$courseId/exams"
+            to="/courses/$courseId"
             variant="quiet-muted"
           >
             Abbrechen

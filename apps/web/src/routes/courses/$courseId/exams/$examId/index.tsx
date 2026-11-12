@@ -3,12 +3,10 @@ import {
   useNavigate,
   useRouter,
 } from '@tanstack/react-router';
+import { PencilIcon } from 'lucide-react';
 import { useState } from 'react';
 import type { ExamDetail } from '../../../../../features/exams/schemas/exam-models';
-import {
-  setExamArchived,
-  startExamRound,
-} from '../../../../../features/exams/services/server-fns';
+import { startExamRound } from '../../../../../features/exams/services/server-fns';
 import {
   failureText,
   missedPracticeSearch,
@@ -21,6 +19,7 @@ import { Button } from '../../../../../shared/ui/button';
 import { ConfirmDialog } from '../../../../../shared/ui/confirm-dialog';
 import { PageLayout } from '../../../../../shared/ui/page-layout';
 import { getExamOfCourse } from '../-exam-of-course';
+import { ArchiveToggle } from './-archive-toggle';
 
 const roundPage = (exam: ExamDetail, roundId: string) =>
   ({
@@ -35,9 +34,6 @@ const RoundControls = ({ exam }: { readonly exam: ExamDetail }) => {
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
-  if (exam.archivedAt !== null || exam.cards.learned === 0) {
-    return null;
-  }
   const start = async () => {
     setBusy(true);
     setStatus(null);
@@ -54,7 +50,7 @@ const RoundControls = ({ exam }: { readonly exam: ExamDetail }) => {
   };
   const { openRound } = exam;
   return (
-    <>
+    <div className="flex flex-wrap items-center gap-4">
       {openRound === null ? (
         <Button disabled={busy} onClick={start}>
           {busy ? 'Wird vorbereitet …' : 'Runde starten'}
@@ -84,53 +80,25 @@ const RoundControls = ({ exam }: { readonly exam: ExamDetail }) => {
         open={confirming}
         title="Neue Runde starten?"
       />
-    </>
+    </div>
   );
 };
 
-const ManageActions = ({ exam }: { readonly exam: ExamDetail }) => {
+// An archived test asks nothing until it is brought back.
+const ExamActions = ({ exam }: { readonly exam: ExamDetail }) => {
   const router = useRouter();
-  const [busy, setBusy] = useState(false);
-  const [status, setStatus] = useState<string | null>(null);
-  const archived = exam.archivedAt !== null;
-  return (
-    <>
-      <ActionLink
-        params={{ courseId: exam.courseId, examId: exam.id }}
-        to="/courses/$courseId/exams/$examId/edit"
-        variant="quiet"
-      >
-        Bearbeiten
-      </ActionLink>
-      <Button
-        disabled={busy}
-        onClick={async () => {
-          setBusy(true);
-          setStatus(null);
-          try {
-            await setExamArchived({
-              data: { examId: exam.id, archived: !archived },
-            });
-            await router.invalidate();
-          } catch (cause) {
-            setStatus(
-              failureText(cause, 'Der Test konnte nicht gespeichert werden.'),
-            );
-          } finally {
-            setBusy(false);
-          }
-        }}
-        variant="quiet"
-      >
-        {archived ? 'Zurückholen' : 'Archivieren'}
-      </Button>
-      {status === null ? null : (
-        <p className="w-full text-destructive text-sm" role="alert">
-          {status}
+  if (exam.archivedAt !== null) {
+    return (
+      <div className="flex flex-col gap-3">
+        <p className="text-sm">
+          Der Test ist archiviert. Er behält seine Runden, startet aber keine
+          neue.
         </p>
-      )}
-    </>
-  );
+        <ArchiveToggle afterChange={() => router.invalidate()} exam={exam} />
+      </div>
+    );
+  }
+  return exam.cards.learned === 0 ? null : <RoundControls exam={exam} />;
 };
 
 const ExamScreen = () => {
@@ -140,14 +108,31 @@ const ExamScreen = () => {
   return (
     <PageLayout
       backControl={
-        <BackLink
-          params={{ courseId: course.id }}
-          to="/courses/$courseId/exams"
-        >
-          Tests
-        </BackLink>
+        exam.archivedAt === null ? (
+          <BackLink params={{ courseId: course.id }} to="/courses/$courseId">
+            {course.name}
+          </BackLink>
+        ) : (
+          <BackLink
+            params={{ courseId: course.id }}
+            to="/courses/$courseId/exams/archive"
+          >
+            Archivierte Tests
+          </BackLink>
+        )
       }
       title={exam.name}
+      titleAction={
+        <ActionLink
+          aria-label="Test bearbeiten"
+          params={{ courseId: course.id, examId: exam.id }}
+          title="Test bearbeiten"
+          to="/courses/$courseId/exams/$examId/edit"
+          variant="icon"
+        >
+          <PencilIcon aria-hidden={true} className="size-5" />
+        </ActionLink>
+      }
     >
       <ExamOverview
         exam={exam}
@@ -162,13 +147,12 @@ const ExamScreen = () => {
                 exam: exam.id,
               }}
               to="/courses/$courseId/study"
-              variant="outline"
+              variant="quiet"
             >
               Jetzt kennenlernen
             </ActionLink>
           )
         }
-        manageActions={<ManageActions exam={exam} />}
         practiceMissedAction={
           missed.length === 0 ? null : (
             <ActionLink
@@ -186,7 +170,7 @@ const ExamScreen = () => {
             </ActionLink>
           )
         }
-        roundAction={<RoundControls exam={exam} />}
+        roundAction={<ExamActions exam={exam} />}
         subject={course}
       />
     </PageLayout>

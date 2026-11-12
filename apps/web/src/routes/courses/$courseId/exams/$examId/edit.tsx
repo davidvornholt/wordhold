@@ -17,6 +17,7 @@ import { Button } from '../../../../../shared/ui/button';
 import { ConfirmDialog } from '../../../../../shared/ui/confirm-dialog';
 import { PageLayout } from '../../../../../shared/ui/page-layout';
 import { getExamOfCourse } from '../-exam-of-course';
+import { ArchiveToggle } from './-archive-toggle';
 
 // Deleting a test removes its rounds. The answers stay in the review log as
 // ordinary practice.
@@ -34,7 +35,7 @@ const DeleteExam = ({
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   return (
-    <section className="flex flex-col gap-3 border-border border-t pt-6">
+    <section className="flex flex-col gap-3">
       <Button
         className="w-fit"
         onClick={() => setOpen(true)}
@@ -57,7 +58,7 @@ const DeleteExam = ({
             await deleteExam({ data: { examId } });
             await navigate({
               params: { courseId },
-              to: '/courses/$courseId/exams',
+              to: '/courses/$courseId',
             });
           } catch (cause) {
             setStatus(
@@ -111,7 +112,17 @@ const EditExamScreen = () => {
         subject={course}
         submitLabel="Speichern"
       />
-      <DeleteExam courseId={course.id} examId={exam.id} name={exam.name} />
+      <div className="flex flex-col gap-6 border-border border-t pt-6">
+        <section className="flex flex-col gap-3">
+          <p className="text-sm">
+            {exam.archivedAt === null
+              ? 'Ist der Test geschrieben, archivierst du ihn. Er behält seine Runden, startet aber keine neue, und steht dann im Archiv des Kurses.'
+              : 'Der Test ist archiviert. Holst du ihn zurück, kannst du wieder Runden starten.'}
+          </p>
+          <ArchiveToggle afterChange={() => navigate(examPage)} exam={exam} />
+        </section>
+        <DeleteExam courseId={course.id} examId={exam.id} name={exam.name} />
+      </div>
     </PageLayout>
   );
 };

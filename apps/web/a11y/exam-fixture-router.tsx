@@ -1,13 +1,13 @@
-import { freshExam, practisedExam } from './exam-fixture-data';
-import { ExamFixture, ExamsFixture, NewExamFixture } from './exam-fixtures';
+import { archivedExam, freshExam, practisedExam } from './exam-fixture-data';
+import { ArchiveFixture, ExamFixture, NewExamFixture } from './exam-fixtures';
 import type { FixtureState } from './fixture-state';
 
-// A course's tests: their list, one test's standing and the form.
+// A course's archived tests, one test's standing and the form.
 const examStates = [
-  'exams',
-  'exams-empty',
+  'exams-archive',
   'exam',
   'exam-fresh',
+  'exam-archived',
   'exam-new',
 ] as const satisfies ReadonlyArray<FixtureState>;
 
@@ -18,14 +18,14 @@ export const isExamState = (state: FixtureState): state is ExamState =>
 
 export const examFixture = (state: ExamState) => {
   switch (state) {
-    case 'exams':
-      return <ExamsFixture empty={false} />;
-    case 'exams-empty':
-      return <ExamsFixture empty={true} />;
+    case 'exams-archive':
+      return <ArchiveFixture />;
     case 'exam':
       return <ExamFixture exam={practisedExam} />;
     case 'exam-fresh':
       return <ExamFixture exam={freshExam} />;
+    case 'exam-archived':
+      return <ExamFixture exam={archivedExam} />;
     case 'exam-new':
       return <NewExamFixture />;
     default:

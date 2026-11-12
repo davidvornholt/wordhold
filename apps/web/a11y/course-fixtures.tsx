@@ -26,7 +26,13 @@ import {
   novelEntries,
   unintroducedUnit,
 } from './course-fixture-data';
-import { fixtureBackControl, fixtureControl } from './fixture-controls';
+import { examSummaries } from './exam-fixture-data';
+import { FixtureExamSection } from './exam-fixtures';
+import {
+  fixtureBackControl,
+  fixtureControl,
+  fixtureSettingsControl,
+} from './fixture-controls';
 import { navigateToFixture } from './fixture-state';
 import {
   FixtureNewVocabularyForm,
@@ -89,6 +95,7 @@ export const CourseFixture = ({
     <PageLayout
       backControl={fixtureBackControl('Übersicht', 'dashboard')}
       title="English A2"
+      titleAction={fixtureSettingsControl('course-settings')}
     >
       <CourseOverview
         createBook={openNewBook}
@@ -133,12 +140,9 @@ export const CourseFixture = ({
             {book.name}
           </button>
         )}
-        examsAction={fixtureControl('Tests', 'exams', 'quiet')}
-        settingsAction={fixtureControl(
-          'Einstellungen',
-          'course-settings',
-          'quiet',
-        )}
+        examSection={
+          <FixtureExamSection exams={examSummaries} subject={englishSubject} />
+        }
         vocabularyAction={fixtureControl('Vokabelliste', 'vocabulary', 'quiet')}
       />
     </PageLayout>

@@ -8,22 +8,19 @@ import {
 import { countNoun } from '../../../shared/format/count';
 import { Callout } from '../../../shared/ui/callout';
 import type { ExamDetail } from '../schemas/exam-models';
-import {
-  ExamReadinessFigures,
-  MissedCards,
-  RoundHistory,
-} from './exam-readiness';
+import { MissedCards, RoundHistory } from './exam-readiness';
+import { ExamStanding } from './exam-standing';
 
 type ExamOverviewProps = {
   readonly exam: ExamDetail;
   readonly subject: CourseSubject;
-  // Starts or continues a round; null while there is nothing to ask.
+  // Starts or continues a round, or brings an archived test back; null
+  // while there is nothing to ask.
   readonly roundAction: ReactNode | null;
   // Learns the cards a round leaves out; null when the learning pass has none
   // of them.
   readonly learnAction: ReactNode | null;
   readonly practiceMissedAction: ReactNode;
-  readonly manageActions: ReactNode;
 };
 
 // Synonyms and antonyms are named once, as one switch turns them on.
@@ -61,37 +58,36 @@ const unlearnedText = (cards: ExamDetail['cards']): string =>
     .filter((sentence): sentence is string => sentence !== null)
     .join(' ');
 
+// An archived test starts no round, so it leaves out what prepares one.
 export const ExamOverview = ({
   exam,
   subject,
   roundAction,
   learnAction,
   practiceMissedAction,
-  manageActions,
 }: ExamOverviewProps) => (
   <>
     <p className="text-muted-foreground text-sm">
       {examSummary(exam, subject)}
     </p>
-    {exam.cards.unlearned === 0 ? null : (
+    {exam.cards.unlearned === 0 || exam.archivedAt !== null ? null : (
       <Callout tone="neutral">
         <p className="text-sm">{unlearnedText(exam.cards)}</p>
         {learnAction}
       </Callout>
     )}
-    <div className="flex flex-wrap items-center gap-4">
-      {roundAction}
-      {manageActions}
-    </div>
-    <p className="text-muted-foreground text-sm">
-      Eine Runde fragt alle Karten des Tests in zufälliger Reihenfolge ab.
-      Gezählt wird jeweils die erste Antwort. Eine richtige Antwort vor ihrem
-      Termin verschiebt den Lernplan nicht; eine falsche wird früher wieder
-      eingeplant.
-    </p>
+    {roundAction}
+    {exam.archivedAt === null ? (
+      <p className="text-muted-foreground text-sm">
+        Eine Runde fragt alle Karten des Tests in zufälliger Reihenfolge ab.
+        Gezählt wird jeweils die erste Antwort. Eine richtige Antwort vor ihrem
+        Termin verschiebt den Lernplan nicht; eine falsche wird früher wieder
+        eingeplant.
+      </p>
+    ) : null}
     <section className="flex flex-col gap-3">
       <h2 className="font-display text-xl">Stand</h2>
-      <ExamReadinessFigures readiness={exam.readiness} />
+      <ExamStanding readiness={exam.readiness} rounds={exam.rounds} />
     </section>
     <MissedCards
       practiceAction={practiceMissedAction}
