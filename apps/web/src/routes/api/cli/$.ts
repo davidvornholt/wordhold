@@ -6,6 +6,7 @@ import { HttpApiBuilder } from 'effect/http-api';
 import { coursesApi } from '../../../features/courses/api/courses-api';
 import { entriesApi } from '../../../features/courses/api/entries-api';
 import { overviewApi } from '../../../features/dashboard/api/overview-api';
+import { examsApi } from '../../../features/exams/api/exams-api';
 import { accountApi } from '../../../shared/api/account-api';
 import { apiAuthorization } from '../../../shared/api/api-authorization';
 import { applyPrivateResponseHeaders } from '../../../shared/api/private-response';
@@ -25,6 +26,7 @@ const cliHandler = (): Handler => {
       coursesApi,
       entriesApi,
       overviewApi,
+      examsApi,
     ).pipe(
       Layer.provide(
         apiAuthorization((headers) =>

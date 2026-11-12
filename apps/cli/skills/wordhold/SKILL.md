@@ -1,6 +1,6 @@
 ---
 name: wordhold
-description: Read and add to the user's vocabulary in Wordhold with the wordhold command. Use when the user asks about the words, terms or texts they are learning, whether they already have a word, how their practice is going, which words they keep getting wrong, or wants a word they came across added or an entry corrected.
+description: Read and add to the user's vocabulary in Wordhold with the wordhold command. Use when the user asks about the words, terms or texts they are learning, whether they already have a word, how their practice is going, which words they keep getting wrong, wants a word they came across added or an entry corrected, or prepares for a vocabulary test at school.
 ---
 
 # Wordhold
@@ -14,4 +14,5 @@ Run `wordhold --help` for commands and `wordhold <command> --help` for options. 
 - Pass `--example` only for a sentence the user actually came across, never one you made up. Wordhold stores it as found rather than AI-written, and the app can write examples itself.
 - Change an entry only when the user asks or agrees. Changing a word's `targetText` records its pronunciation again, and changing a term's definition clears its key points until the app derives them again.
 - A word with synonyms or antonyms gets a practice card that asks for them, and `--no-synonyms` or `--no-antonyms` deletes that card with its schedule. The course asks these cards only while "Synonyme und Gegenteile" is switched on in its settings, which `wordhold courses get` shows as `to_synonym` and `to_antonym` in `directions`.
-- Deleting or moving entries, a course's practice directions, and new courses, books and units are done in the app, not with this command.
+- A test (`wordhold exams`) is a set of a course's words and the directions it asks them in, for a test at school. The user practises it in rounds in the app; a round asks every learned card of the test once and counts the first answer per card, and it doesn't change the learning plan beyond an ordinary answer. `wordhold exams get` shows the newest finished round, the one before, how many cards were right in both, and the cards missed. Wordhold gives no verdict on whether the user is ready, so report these numbers rather than one of your own. Cards the user hasn't learned yet are not asked; `cards.unlearned` counts them.
+- Deleting or moving entries, deleting tests, practising rounds, a course's practice directions, and new courses, books and units are done in the app, not with this command.

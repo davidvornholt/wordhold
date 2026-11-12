@@ -34,6 +34,10 @@ const courseMissing = new ExamNotFoundError({
     'Diese Sprache, dieses Fach oder diese Sammlung gibt es nicht mehr. Lade die Seite neu.',
 });
 
+const unitMissing = new ExamNotFoundError({
+  message: 'Eine der gewählten Einheiten gibt es in diesem Kurs nicht.',
+});
+
 const foreignEntries = new ExamInputError({
   message:
     'Einige der gewählten Einträge gibt es hier nicht mehr. Lade die Seite neu und wähle noch einmal aus.',
@@ -119,6 +123,11 @@ export class ExamService extends Context.Service<
       courseId: string,
     ) => Effect.Effect<ReadonlyArray<ExamSummary>, ExamDatabaseError>;
     readonly get: (examId: string) => Effect.Effect<ExamDetail, ExamFailure>;
+    // The words of the course's units, for a test that covers whole units.
+    readonly unitEntryIds: (
+      courseId: string,
+      unitIds: ReadonlyArray<string>,
+    ) => Effect.Effect<ReadonlyArray<string>, ExamFailure>;
     readonly create: (
       input: CreateExamData,
     ) => Effect.Effect<
@@ -182,6 +191,20 @@ export class ExamService extends Context.Service<
         } satisfies ExamDetail;
       });
 
+      const unitEntryIds = Effect.fn('ExamService.unitEntryIds')(function* (
+        courseId: string,
+        unitIds: ReadonlyArray<string>,
+      ) {
+        const rows = yield* store.listUnitEntries(courseId, unitIds);
+        const found = new Set(rows.map((row) => row.unitId));
+        if (!unitIds.every((unitId) => found.has(unitId))) {
+          return yield* unitMissing;
+        }
+        return rows.flatMap((row) =>
+          row.entryId === null ? [] : [row.entryId],
+        );
+      });
+
       const create = Effect.fn('ExamService.create')(function* (
         input: CreateExamData,
       ) {
@@ -219,6 +242,7 @@ export class ExamService extends Context.Service<
       return ExamService.of({
         list,
         get,
+        unitEntryIds,
         create,
         update,
         setArchived,

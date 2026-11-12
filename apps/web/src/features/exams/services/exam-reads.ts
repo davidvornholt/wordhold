@@ -18,6 +18,12 @@ export type ExamRow = {
   readonly entryCount: number;
 };
 
+// A unit of the course with one of its words, or with none when it is empty.
+export type UnitEntryRow = {
+  readonly unitId: string;
+  readonly entryId: string | null;
+};
+
 export type ExamCardCounts = {
   readonly learned: number;
   readonly unlearned: number;
@@ -92,6 +98,17 @@ export const makeExamReads = (sql: Database) => {
             e.target_text, e.id
         `.pipe(Effect.mapError(readFailure));
 
+  const listUnitEntries = (courseId: string, unitIds: ReadonlyArray<string>) =>
+    unitIds.length === 0
+      ? Effect.succeed([])
+      : sql<UnitEntryRow>`
+              select u.id as "unitId", e.id as "entryId"
+              from units u
+              left join entries e on e.unit_id = u.id
+              where u.course_id = ${courseId}
+                and u.id = any(${uuidArray(unitIds)}::uuid[])
+            `.pipe(Effect.mapError(readFailure));
+
   const countCards = (examId: string) =>
     sql<ExamCardCounts>`
           select
@@ -162,6 +179,7 @@ export const makeExamReads = (sql: Database) => {
     list,
     read,
     listEntries,
+    listUnitEntries,
     countCards,
     listRounds,
     listRoundCards,

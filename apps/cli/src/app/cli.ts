@@ -6,12 +6,21 @@ import packageJson from '../../package.json' with { type: 'json' };
 import { login, logout, status } from './account-commands';
 import { courses } from './course-commands';
 import { entries } from './entry-commands';
+import { exams } from './exam-commands';
 import { report } from './output';
 import { progress } from './progress-command';
 import { root } from './root';
 
 const wordhold = root.pipe(
-  Command.withSubcommands([login, logout, status, courses, entries, progress]),
+  Command.withSubcommands([
+    login,
+    logout,
+    status,
+    courses,
+    entries,
+    exams,
+    progress,
+  ]),
 );
 
 // The CLI library prints a command's help to stdout before it fails on a
