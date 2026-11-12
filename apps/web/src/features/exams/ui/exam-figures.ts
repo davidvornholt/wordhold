@@ -48,7 +48,6 @@ export const missedPracticeSearch = (missed: ReadonlyArray<MissedCard>) => {
   } as const;
 };
 
-// A word of the course as the word picker shows it.
 export type PickableEntry = {
   readonly id: string;
   readonly bookId: string;

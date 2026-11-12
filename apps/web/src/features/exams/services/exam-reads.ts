@@ -44,7 +44,6 @@ const readFailure = (cause: unknown) =>
     message: 'Die Tests konnten nicht geladen werden.',
   });
 
-// The exam store's queries that only read.
 export const makeExamReads = (sql: Database) => {
   const decodeExam = (row: StoredExamRow) =>
     Effect.map(

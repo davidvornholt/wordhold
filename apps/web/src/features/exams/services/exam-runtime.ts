@@ -3,9 +3,8 @@ import { Layer, ManagedRuntime } from 'effect';
 import { ExamService } from './exam-service';
 import { ExamStore } from './exam-store';
 
-// Shared by the exams feature's server functions and the CLI's API so both
-// use one database pool. A runtime builds its layers on first use, so
-// importing this module runs nothing.
+// A runtime builds its layers on first use, so importing this module runs
+// nothing.
 export const examRuntime = ManagedRuntime.make(
   ExamService.layer.pipe(
     Layer.provide(ExamStore.live.pipe(Layer.provide(PgLive))),
