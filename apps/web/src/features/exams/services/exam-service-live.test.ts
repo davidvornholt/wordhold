@@ -11,10 +11,15 @@ import {
   dueEntryId,
   firstReviewEntryId,
   fixtureCourseId,
+  fixtureUnitId,
   seedIntroducedCardFixture,
   unintroducedEntryId,
 } from '../../../shared/testing/introduced-card-fixture';
-import { ExamInputError, ExamStateError } from '../errors/exam-errors';
+import {
+  ExamInputError,
+  ExamNotFoundError,
+  ExamStateError,
+} from '../errors/exam-errors';
 import { ExamService } from './exam-service';
 import { ExamStore } from './exam-store';
 
@@ -138,6 +143,26 @@ describe('ExamService', () => {
           }),
         );
         expect(failure).toBeInstanceOf(ExamInputError);
+      }),
+    );
+  });
+
+  it("lists the words of the course's units and refuses a unit it lacks", async () => {
+    await runExamTest(
+      Effect.gen(function* () {
+        const service = yield* ExamService;
+        const words = yield* service.unitEntryIds(fixtureCourseId, [
+          fixtureUnitId,
+        ]);
+        expect(words.toSorted()).toEqual(
+          [unintroducedEntryId, firstReviewEntryId, dueEntryId].toSorted(),
+        );
+        const failure = yield* Effect.flip(
+          service.unitEntryIds('ffffffff-ffff-4fff-8fff-ffffffffffff', [
+            fixtureUnitId,
+          ]),
+        );
+        expect(failure).toBeInstanceOf(ExamNotFoundError);
       }),
     );
   });

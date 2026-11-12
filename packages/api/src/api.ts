@@ -2,9 +2,11 @@ import { Schema } from 'effect';
 import { HttpApi, HttpApiEndpoint, HttpApiGroup } from 'effect/http-api';
 import { Authorization } from './authorization';
 import { failures } from './errors/api-errors';
+import { ExamSchema, ExamSummarySchema } from './exams';
 import {
   CourseOutlineSchema,
   CourseSchema,
+  DirectionSchema,
   EntryFilterSchema,
   EntrySchema,
   IdSchema,
@@ -19,6 +21,7 @@ export const memorizedTextLength = 4000;
 export const exampleLength = 1000;
 /** How many entries a search returns at most, best matches first. */
 export const searchLimit = 50;
+export const examNameLength = 80;
 
 const text = (maximum: number) =>
   Schema.Trim.check(Schema.isMinLength(1), Schema.isMaxLength(maximum));
@@ -67,6 +70,42 @@ export const EditEntryPayloadSchema = Schema.Struct({
 export type EditEntryPayload = typeof EditEntryPayloadSchema.Type;
 
 export const SearchQuerySchema = text(entryTextLength);
+
+const ids = Schema.Array(IdSchema);
+
+const examDirections = Schema.Array(DirectionSchema).check(
+  Schema.isMinLength(1),
+  Schema.isUnique(),
+);
+
+/**
+ * A new test of a course. Its words are the entries given together with every
+ * word of the units given; it needs at least one.
+ */
+export const CreateExamPayloadSchema = Schema.Struct({
+  name: text(examNameLength),
+  directions: examDirections,
+  entryIds: Schema.optional(ids),
+  unitIds: Schema.optional(ids),
+});
+export type CreateExamPayload = typeof CreateExamPayloadSchema.Type;
+
+/**
+ * Changes only the fields given; directions replace the stored ones. Words
+ * are added before any are removed, so removing one word of an added unit
+ * leaves that word out. A test keeps at least one word. Rounds already
+ * started keep the cards they asked.
+ */
+export const EditExamPayloadSchema = Schema.Struct({
+  name: Schema.optional(text(examNameLength)),
+  directions: Schema.optional(examDirections),
+  addEntryIds: Schema.optional(ids),
+  removeEntryIds: Schema.optional(ids),
+  addUnitIds: Schema.optional(ids),
+  removeUnitIds: Schema.optional(ids),
+  archived: Schema.optional(Schema.Boolean),
+});
+export type EditExamPayload = typeof EditExamPayloadSchema.Type;
 
 export const AccountApi = HttpApiGroup.make('account').add(
   HttpApiEndpoint.get('me', '/me', { success: MemberSchema, error: failures }),
@@ -137,6 +176,33 @@ export const OverviewApi = HttpApiGroup.make('overview').add(
   }),
 );
 
+/** A course's tests and the results of their rounds. Rounds are practised in the app. */
+export const ExamsApi = HttpApiGroup.make('exams').add(
+  /** Active tests first, newest first. */
+  HttpApiEndpoint.get('list', '/courses/:id/exams', {
+    params: idParams,
+    success: Schema.Array(ExamSummarySchema),
+    error: failures,
+  }),
+  HttpApiEndpoint.post('create', '/courses/:id/exams', {
+    params: idParams,
+    payload: CreateExamPayloadSchema,
+    success: ExamSchema,
+    error: failures,
+  }),
+  HttpApiEndpoint.get('get', '/exams/:id', {
+    params: idParams,
+    success: ExamSchema,
+    error: failures,
+  }),
+  HttpApiEndpoint.patch('edit', '/exams/:id', {
+    params: idParams,
+    payload: EditExamPayloadSchema,
+    success: ExamSchema,
+    error: failures,
+  }),
+);
+
 export const apiPrefix = '/api/cli';
 
 export class WordholdApi extends HttpApi.make('wordhold')
@@ -144,5 +210,6 @@ export class WordholdApi extends HttpApi.make('wordhold')
   .add(CoursesApi)
   .add(EntriesApi)
   .add(OverviewApi)
+  .add(ExamsApi)
   .middleware(Authorization)
   .prefix(apiPrefix) {}

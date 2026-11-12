@@ -16,7 +16,12 @@ import {
   type UpdateExamResult,
   updateExam,
 } from './exam-mutations';
-import { type ExamCardCounts, type ExamRow, makeExamReads } from './exam-reads';
+import {
+  type ExamCardCounts,
+  type ExamRow,
+  makeExamReads,
+  type UnitEntryRow,
+} from './exam-reads';
 import type { RoundCardRow, RoundCountRow } from './exam-results';
 
 export class ExamStore extends Context.Service<
@@ -33,6 +38,10 @@ export class ExamStore extends Context.Service<
     readonly listEntries: (
       examId: string,
     ) => Effect.Effect<ReadonlyArray<ExamEntry>, ExamDatabaseError>;
+    readonly listUnitEntries: (
+      courseId: string,
+      unitIds: ReadonlyArray<string>,
+    ) => Effect.Effect<ReadonlyArray<UnitEntryRow>, ExamDatabaseError>;
     readonly countCards: (
       examId: string,
     ) => Effect.Effect<ExamCardCounts, ExamDatabaseError>;

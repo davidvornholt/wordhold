@@ -22,11 +22,14 @@ const notFoundTags = new Set([
   'CourseBookNotFoundError',
   'CourseUnitNotFoundError',
   'VocabularyEntryNotFoundError',
+  'ExamNotFoundError',
 ]);
 const rejectedTags = new Set([
   'VocabularyEntryConflictError',
   'CourseKindMismatchError',
   'CourseUnitConflictError',
+  'ExamInputError',
+  'ExamStateError',
 ]);
 
 const taggedMessage = (error: unknown) =>

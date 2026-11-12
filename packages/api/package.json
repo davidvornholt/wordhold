@@ -9,6 +9,7 @@
     "./current-member": "./src/current-member.ts",
     "./device-login": "./src/device-login.ts",
     "./errors": "./src/errors/api-errors.ts",
+    "./exams": "./src/exams.ts",
     "./vocabulary": "./src/vocabulary.ts"
   },
   "scripts": {
