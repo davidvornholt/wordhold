@@ -22,6 +22,7 @@ export type ExamCardCounts = {
   readonly learned: number;
   readonly unlearned: number;
   readonly unlearnedEntryIds: ReadonlyArray<string>;
+  readonly switchedOff: number;
 };
 
 export const uuidArray = (ids: ReadonlyArray<string>) => `{${ids.join(',')}}`;
@@ -92,6 +93,9 @@ export const makeExamReads = (sql: Database) => {
             e.target_text, e.id
         `.pipe(Effect.mapError(readFailure));
 
+  // `switchedOff` counts the unlearned cards the learning pass leaves out,
+  // as it introduces only the course's directions. Synonym and antonym cards
+  // come with their word.
   const countCards = (examId: string) =>
     sql<ExamCardCounts>`
           select
@@ -101,8 +105,14 @@ export const makeExamReads = (sql: Database) => {
               array_agg(distinct c.entry_id::text)
                 filter (where c.introduced_at is null),
               '{}'
-            )::text[] as "unlearnedEntryIds"
+            )::text[] as "unlearnedEntryIds",
+            count(*) filter (
+              where c.introduced_at is null
+                and c.direction in ('to_target', 'to_native')
+                and c.direction <> all(co.directions)
+            )::int as "switchedOff"
           from exams x
+          join courses co on co.id = x.course_id
           join exam_entries xe on xe.exam_id = x.id
           join cards c on c.entry_id = xe.entry_id
             and c.direction = any(x.directions)
@@ -110,7 +120,12 @@ export const makeExamReads = (sql: Database) => {
         `.pipe(
       Effect.map(
         (rows) =>
-          rows[0] ?? { learned: 0, unlearned: 0, unlearnedEntryIds: [] },
+          rows[0] ?? {
+            learned: 0,
+            unlearned: 0,
+            unlearnedEntryIds: [],
+            switchedOff: 0,
+          },
       ),
       Effect.mapError(readFailure),
     );

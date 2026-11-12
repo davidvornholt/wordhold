@@ -19,7 +19,8 @@ type ExamOverviewProps = {
   readonly subject: CourseSubject;
   // Starts or continues a round; null while there is nothing to ask.
   readonly roundAction: ReactNode | null;
-  // Learns the cards a round leaves out; null when there are none.
+  // Learns the cards a round leaves out; null when the learning pass has none
+  // of them.
   readonly learnAction: ReactNode | null;
   readonly practiceMissedAction: ReactNode;
   readonly manageActions: ReactNode;
@@ -48,6 +49,18 @@ const examSummary = (exam: ExamDetail, subject: CourseSubject): string => {
     .join(' · ');
 };
 
+const switchedOffText = (count: number): string =>
+  `${countNoun(count, 'Karte', 'Karten')} davon ${count === 1 ? 'gehört' : 'gehören'} zu einer Richtung, die in den Einstellungen ausgeschaltet ist. Du lernst sie erst kennen, wenn du diese Richtung dort einschaltest.`;
+
+const unlearnedText = (cards: ExamDetail['cards']): string =>
+  [
+    `${countNoun(cards.unlearned, 'Karte', 'Karten')} dieses Tests hast du noch nicht kennengelernt.`,
+    cards.switchedOff === 0 ? null : switchedOffText(cards.switchedOff),
+    'Eine Runde fragt nur Karten ab, die du schon kennengelernt hast.',
+  ]
+    .filter((sentence): sentence is string => sentence !== null)
+    .join(' ');
+
 export const ExamOverview = ({
   exam,
   subject,
@@ -62,11 +75,7 @@ export const ExamOverview = ({
     </p>
     {exam.cards.unlearned === 0 ? null : (
       <Callout tone="neutral">
-        <p className="text-sm">
-          {countNoun(exam.cards.unlearned, 'Karte', 'Karten')} dieses Tests hast
-          du noch nicht kennengelernt. Eine Runde fragt nur Karten ab, die du
-          schon kennengelernt hast.
-        </p>
+        <p className="text-sm">{unlearnedText(exam.cards)}</p>
         {learnAction}
       </Callout>
     )}
