@@ -86,6 +86,29 @@ const insertJudgeAlternative = (
       )
     : Effect.succeed(false);
 
+// The answer counts for its test round only while no newer round of the
+// same test has given that round up. A late answer to a given-up round is
+// stored as ordinary practice.
+const insertReview = (sql: Database, input: PersistReviewInput) =>
+  sql`
+    insert into reviews
+      (card_id, rating, answer_text, grading, elapsed_ms, mode, exam_round_id)
+    values (${input.card.id}, ${input.rating}, ${input.answer},
+      ${JSON.stringify(input.outcome)}::jsonb, ${input.elapsedMs},
+      ${input.mode}::review_mode,
+      (select rc.round_id from exam_round_cards rc
+        join exam_rounds r on r.id = rc.round_id
+        where rc.round_id = ${input.examRoundId}::uuid
+          and rc.card_id = ${input.card.id}
+          and not exists (
+            select from exam_rounds newer
+            where newer.exam_id = r.exam_id
+              and (newer.started_at, newer.id) > (r.started_at, r.id))))
+  `.pipe(
+    Effect.asVoid,
+    Effect.mapError((cause) => databaseError('commit graded answer', cause)),
+  );
+
 const listCourseEntries = (sql: Database, entryId: string) =>
   sql<CourseEntryPlace>`
     select e.target_text as text, coalesce(u.name, b.name) as place
@@ -232,14 +255,7 @@ export class PracticeReviewStore extends Context.Service<
                     ),
                   insertAcceptedAlternative: () =>
                     insertJudgeAlternative(sql, input, unchanged),
-                  insertReview: () =>
-                    sql`
-                    insert into reviews
-                      (card_id, rating, answer_text, grading, elapsed_ms, mode)
-                    values (${input.card.id}, ${input.rating}, ${input.answer},
-                      ${JSON.stringify(input.outcome)}::jsonb, ${input.elapsedMs},
-                      ${input.mode}::review_mode)
-                  `.pipe(Effect.asVoid, Effect.mapError(mapCommitError)),
+                  insertReview: () => insertReview(sql, input),
                   entryKnown: () => loadEntryKnown(sql, input.entryId),
                 });
               }),

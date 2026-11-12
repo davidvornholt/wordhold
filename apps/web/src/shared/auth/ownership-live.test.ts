@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import type { Database } from '@wordhold/db/client';
+import { Database } from '@wordhold/db/client';
 import {
   testDatabaseLayer,
   withMigratedTestDatabase,
@@ -18,12 +18,25 @@ import { assertOwned, ownedEntryIds } from './ownership';
 
 const otherOwnerId = 'other-owner';
 const missingId = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
+const examId = '12121212-1212-4212-8212-121212121212';
+const roundId = '34343434-3434-4434-8434-343434343434';
+
+const seedExam = Effect.gen(function* () {
+  const sql = yield* Database;
+  yield* sql`
+    insert into exams (id, course_id, name, directions)
+    values (${examId}, ${fixtureCourseId}, 'Vokabeltest', '{to_target}')
+  `;
+  yield* sql`insert into exam_rounds (id, exam_id) values (${roundId}, ${examId})`;
+});
 
 const runWithFixture = <A, E>(work: Effect.Effect<A, E, Database>) =>
   Effect.runPromise(
     withMigratedTestDatabase((database) =>
       Effect.andThen(
-        Effect.all([seedIntroducedCardFixture, seedOwner(otherOwnerId)]),
+        Effect.all([seedIntroducedCardFixture, seedOwner(otherOwnerId)]).pipe(
+          Effect.andThen(seedExam),
+        ),
         work,
       ).pipe(Effect.provide(testDatabaseLayer(database.url))),
     ),
@@ -49,6 +62,8 @@ describe('assertOwned', () => {
               units: [fixtureUnitId],
               entries: [dueEntryId, dueEntryId],
               pages: [],
+              exams: [examId],
+              examRounds: [roundId],
             }),
           ),
         ).toBe('owned');
@@ -71,6 +86,12 @@ describe('assertOwned', () => {
         ).toBe('NotOwnedError');
         expect(
           yield* outcome(assertOwned(fixtureOwnerId, { units: ['unit-1'] })),
+        ).toBe('NotOwnedError');
+        expect(
+          yield* outcome(assertOwned(otherOwnerId, { exams: [examId] })),
+        ).toBe('NotOwnedError');
+        expect(
+          yield* outcome(assertOwned(otherOwnerId, { examRounds: [roundId] })),
         ).toBe('NotOwnedError');
       }),
     );

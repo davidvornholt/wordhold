@@ -60,6 +60,9 @@ export class PracticeService extends Context.Service<
     readonly getStudySession: (
       data: StudyRequestData,
     ) => Effect.Effect<PracticeSession, PracticeDatabaseError>;
+    readonly getExamRoundSession: (
+      roundId: string,
+    ) => Effect.Effect<PracticeSession, PracticeDatabaseError>;
     readonly submit: (
       data: SubmitPayloadData,
     ) => Effect.Effect<
@@ -104,9 +107,29 @@ export class PracticeService extends Context.Service<
             },
           } satisfies PracticeSession;
         });
+      // A test asks its words in no order the learner could anticipate, so a
+      // round mixes all of its cards rather than one section at a time.
+      const getExamRoundSession = (roundId: string) =>
+        Effect.gen(function* () {
+          const items = yield* sessions.loadExamRound(roundId);
+          return {
+            items: yield* Random.shuffle(items.map(withPrompt)),
+            available: {
+              due: 0,
+              firstReviews: items.length,
+              ready: items.length,
+              nextDueAt: null,
+            },
+          } satisfies PracticeSession;
+        });
       const submit = (data: SubmitPayloadData) =>
         resolveAnswerSubmission(data, { reviews, cache, judge, grader });
-      return PracticeService.of({ getSession, getStudySession, submit });
+      return PracticeService.of({
+        getSession,
+        getStudySession,
+        getExamRoundSession,
+        submit,
+      });
     }),
   );
 }

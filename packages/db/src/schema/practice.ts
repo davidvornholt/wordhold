@@ -1,8 +1,12 @@
+import { sql } from 'drizzle-orm';
 import {
+  index,
   integer,
   jsonb,
   pgEnum,
   pgTable,
+  // biome-ignore lint/suspicious/noDeprecatedImports: Only the positional overload is deprecated; this file calls the object form Drizzle recommends.
+  primaryKey,
   real,
   smallint,
   text,
@@ -12,6 +16,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { answerDirectionEnum } from './directions';
 import { entries } from './entries';
+import { examRounds } from './exams';
 
 export const cardStates = ['new', 'learning', 'review', 'relearning'] as const;
 export type CardState = (typeof cardStates)[number];
@@ -58,22 +63,54 @@ export const reviewModes = ['scheduled', 'drill'] as const;
 export type ReviewMode = (typeof reviewModes)[number];
 export const reviewModeEnum = pgEnum('review_mode', reviewModes);
 
+// The cards a test round asks, fixed when it starts: the test's cards in its
+// directions that had been learned by then.
+export const examRoundCards = pgTable(
+  'exam_round_cards',
+  {
+    roundId: uuid('round_id')
+      .notNull()
+      .references(() => examRounds.id, { onDelete: 'cascade' }),
+    cardId: uuid('card_id')
+      .notNull()
+      .references(() => cards.id, { onDelete: 'cascade' }),
+  },
+  (table) => [
+    primaryKey({ columns: [table.roundId, table.cardId] }),
+    index('exam_round_cards_card_id').on(table.cardId),
+  ],
+);
+
 // Full review log: FSRS parameter fitting and the dashboard's fragile-entry
 // list both need per-review history, not just current card state.
-export const reviews = pgTable('reviews', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  cardId: uuid('card_id')
-    .notNull()
-    .references(() => cards.id, { onDelete: 'cascade' }),
-  reviewedAt: timestamp('reviewed_at', { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  rating: smallint('rating').notNull(),
-  mode: reviewModeEnum('mode').notNull().default('scheduled'),
-  answerText: text('answer_text').notNull(),
-  grading: jsonb('grading'),
-  elapsedMs: integer('elapsed_ms'),
-});
+export const reviews = pgTable(
+  'reviews',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    cardId: uuid('card_id')
+      .notNull()
+      .references(() => cards.id, { onDelete: 'cascade' }),
+    reviewedAt: timestamp('reviewed_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    rating: smallint('rating').notNull(),
+    mode: reviewModeEnum('mode').notNull().default('scheduled'),
+    answerText: text('answer_text').notNull(),
+    grading: jsonb('grading'),
+    elapsedMs: integer('elapsed_ms'),
+    // The test round the answer was given in, if any. A round's score is its
+    // cards' first answers in it. Deleting the test keeps the answers as
+    // ordinary practice.
+    examRoundId: uuid('exam_round_id').references(() => examRounds.id, {
+      onDelete: 'set null',
+    }),
+  },
+  (table) => [
+    index('reviews_exam_round_id')
+      .on(table.examRoundId, table.cardId, table.reviewedAt)
+      .where(sql`${table.examRoundId} is not null`),
+  ],
+);
 
 // Judge verdicts cached per (entry, direction, normalized answer): repeating
 // the same wrong answer never re-bills a model call.

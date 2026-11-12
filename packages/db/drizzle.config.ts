@@ -15,6 +15,7 @@ export default defineConfig({
     './src/schema/books.ts',
     './src/schema/units.ts',
     './src/schema/entries.ts',
+    './src/schema/exams.ts',
     './src/schema/practice.ts',
   ],
   out: './drizzle',

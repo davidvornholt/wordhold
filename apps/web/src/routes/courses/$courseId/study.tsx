@@ -42,18 +42,32 @@ type StudyOrigin = {
   readonly place: CoursePlace | undefined;
   readonly list: VocabularySearchData;
   readonly fromFragile: boolean;
+  readonly examId: string | undefined;
 };
 
 // A selection is made on a book's or unit's page, in a language's word list,
 // or on a subject's or collection's own page, which is its list of entries.
 // The way back leads to where it was made, with the list's filter and place
-// as they were. The overview's Wackelkandidaten lead back to the overview.
+// as they were. The overview's Wackelkandidaten lead back to the overview,
+// and a test's unlearned or missed words back to the test.
 const StudySelectionControl = ({
   course,
   place,
   list,
   fromFragile,
+  examId,
 }: StudyOrigin) => {
+  if (examId !== undefined) {
+    return (
+      <ActionLink
+        params={{ courseId: course.id, examId }}
+        to="/courses/$courseId/exams/$examId"
+        variant="quiet-muted"
+      >
+        Zurück zum Test
+      </ActionLink>
+    );
+  }
   if (place !== undefined) {
     return (
       <PlacePageLink
@@ -99,7 +113,18 @@ const StudyBackControl = ({
   place,
   list,
   fromFragile,
+  examId,
 }: StudyOrigin) => {
+  if (examId !== undefined) {
+    return (
+      <BackLink
+        params={{ courseId: course.id, examId }}
+        to="/courses/$courseId/exams/$examId"
+      >
+        Test
+      </BackLink>
+    );
+  }
   if (place !== undefined) {
     return (
       <PlaceBackLink
@@ -234,12 +259,15 @@ const StudyScreen = () => {
     place,
     list: { filter: search.filter, place: search.place },
     fromFragile,
+    examId: search.exam,
   };
   const nouns = courseNouns(course);
   // Entries picked by hand are a selection of their own, even when they
   // were picked on a book's or unit's page.
   let titleSubject = 'Auswahl';
-  if (fromFragile) {
+  if (search.exam !== undefined) {
+    titleSubject = 'Test';
+  } else if (fromFragile) {
     titleSubject = 'Wackelkandidaten';
   } else if (
     place !== undefined &&

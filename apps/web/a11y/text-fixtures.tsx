@@ -34,7 +34,12 @@ import { WordCard } from '../src/shared/ui/word-card';
 import { fixtureTextLookup } from './bible-fixture-data';
 import { FixtureBibleLibrary } from './bible-fixtures';
 import { textsSubject } from './course-fixture-data';
-import { fixtureBackControl, fixtureControl } from './fixture-controls';
+import { FixtureExamSection } from './exam-fixtures';
+import {
+  fixtureBackControl,
+  fixtureControl,
+  fixtureSettingsControl,
+} from './fixture-controls';
 import { changeLearning } from './fixture-learning';
 import { navigateToFixture } from './fixture-state';
 import {
@@ -294,6 +299,7 @@ export const TextsCourseFixture = ({
     <PageLayout
       backControl={fixtureBackControl('Übersicht', 'dashboard-subjects')}
       title={collectionName}
+      titleAction={fixtureSettingsControl('texts-settings')}
     >
       <SubjectOverview
         enabledDirections={['to_native']}
@@ -314,11 +320,7 @@ export const TextsCourseFixture = ({
             : fixtureControl('1 Karte üben', 'texts-practice', 'primary')
         }
         renderStudyAction={textsStudyAction}
-        settingsAction={fixtureControl(
-          'Einstellungen',
-          'texts-settings',
-          'quiet',
-        )}
+        examSection={<FixtureExamSection exams={[]} subject={textsSubject} />}
         subject={textsSubject}
       />
     </PageLayout>

@@ -39,6 +39,9 @@ const SubmitPayloadBase = Schema.Struct({
   // log. Scheduling is derived from the server-owned card state.
   mode: Schema.Literals(reviewModes),
   elapsedMs: Schema.optional(ElapsedMilliseconds),
+  // The test round the card was asked in. Its first answer there counts
+  // towards the round's score; the schedule treats it like any drill.
+  examRoundId: Schema.optional(Uuid),
 });
 
 const AnsweredPayloadBase = Schema.Struct({

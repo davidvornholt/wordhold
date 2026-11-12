@@ -122,6 +122,7 @@ const commitOutcome = ({
       direction: row.card.direction,
       normalizedAnswer,
       mode: data.mode,
+      examRoundId: data.examRoundId ?? null,
       gradedTexts: {
         targetText: row.entry.targetText,
         nativeText: row.entry.nativeText,

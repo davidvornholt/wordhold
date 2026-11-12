@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'bun:test';
 import { Database } from '@wordhold/db/client';
 import { Effect } from 'effect';
-import { dueEntryId } from '../../../shared/testing/introduced-card-fixture';
+import {
+  dueEntryId,
+  fixtureCourseId,
+} from '../../../shared/testing/introduced-card-fixture';
 import { StaleAnswerSubmissionError } from '../errors/practice-errors';
 import { PracticeReviewStore } from './review-store';
 import {
@@ -173,6 +176,101 @@ describe('PracticeReviewStore free-practice failure handling', () => {
           group by c.id
         `;
         expect(rows.at(0)).toEqual({ revision: 1, reviews: 1 });
+      }),
+    );
+  });
+});
+
+describe('PracticeReviewStore test round links', () => {
+  it('links an answer to a test round only when the round asks its card', async () => {
+    await runReviewTest(
+      Effect.gen(function* () {
+        const store = yield* PracticeReviewStore;
+        const sql = yield* Database;
+        const asked = yield* makeReviewInput({
+          entryId: dueEntryId,
+          direction: 'to_target',
+          answer: 'mémoire',
+          mode: 'drill',
+        });
+        const notAsked = yield* makeReviewInput({
+          entryId: dueEntryId,
+          direction: 'to_native',
+          answer: 'Erinnerung',
+          mode: 'drill',
+        });
+        const [exam] = yield* sql<{ readonly id: string }>`
+          insert into exams (course_id, name, directions)
+          values (${fixtureCourseId}, 'Vokabeltest', '{to_target}')
+          returning id
+        `;
+        const [round] = yield* sql<{ readonly id: string }>`
+          insert into exam_rounds (exam_id) values (${exam?.id}) returning id
+        `;
+        const roundId = round?.id ?? '';
+        yield* sql`
+          insert into exam_round_cards (round_id, card_id)
+          values (${roundId}, ${asked.card.id})
+        `;
+        yield* store.commit({ ...asked, examRoundId: roundId });
+        yield* store.commit({ ...notAsked, examRoundId: roundId });
+
+        const reviews = yield* sql<{
+          readonly cardId: string;
+          readonly examRoundId: string | null;
+        }>`
+          select card_id as "cardId", exam_round_id as "examRoundId"
+          from reviews
+        `;
+        expect(
+          reviews.find((review) => review.cardId === asked.card.id)
+            ?.examRoundId,
+        ).toBe(roundId);
+        expect(
+          reviews.find((review) => review.cardId === notAsked.card.id)
+            ?.examRoundId,
+        ).toBeNull();
+      }),
+    );
+  });
+
+  it('stores a late answer to a given-up round as ordinary practice', async () => {
+    await runReviewTest(
+      Effect.gen(function* () {
+        const store = yield* PracticeReviewStore;
+        const sql = yield* Database;
+        const input = yield* makeReviewInput({
+          entryId: dueEntryId,
+          direction: 'to_target',
+          answer: 'mémoire',
+          mode: 'drill',
+        });
+        const [exam] = yield* sql<{ readonly id: string }>`
+          insert into exams (course_id, name, directions)
+          values (${fixtureCourseId}, 'Vokabeltest', '{to_target}')
+          returning id
+        `;
+        const [givenUp] = yield* sql<{ readonly id: string }>`
+          insert into exam_rounds (exam_id, started_at)
+          values (${exam?.id}, now() - interval '1 hour')
+          returning id
+        `;
+        const [replacement] = yield* sql<{ readonly id: string }>`
+          insert into exam_rounds (exam_id) values (${exam?.id}) returning id
+        `;
+        const givenUpId = givenUp?.id ?? '';
+        yield* sql`
+          insert into exam_round_cards (round_id, card_id)
+          values (${givenUpId}, ${input.card.id}),
+            (${replacement?.id ?? ''}, ${input.card.id})
+        `;
+        yield* store.commit({ ...input, examRoundId: givenUpId });
+
+        const reviews = yield* sql<{ readonly examRoundId: string | null }>`
+          select exam_round_id as "examRoundId" from reviews
+          where card_id = ${input.card.id}
+        `;
+        expect(reviews).toEqual([{ examRoundId: null }]);
       }),
     );
   });

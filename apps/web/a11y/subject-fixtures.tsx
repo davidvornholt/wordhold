@@ -12,7 +12,12 @@ import { withoutPitfalls } from '../src/shared/pitfalls/pitfall-model';
 import { Button } from '../src/shared/ui/button';
 import { PageLayout } from '../src/shared/ui/page-layout';
 import { termsSubject } from './course-fixture-data';
-import { fixtureBackControl, fixtureControl } from './fixture-controls';
+import { FixtureExamSection } from './exam-fixtures';
+import {
+  fixtureBackControl,
+  fixtureControl,
+  fixtureSettingsControl,
+} from './fixture-controls';
 import { changeLearning } from './fixture-learning';
 import { navigateToFixture } from './fixture-state';
 import {
@@ -165,6 +170,7 @@ export const SubjectCourseFixture = ({
     <PageLayout
       backControl={fixtureBackControl('Übersicht', 'dashboard-subjects')}
       title={subjectName}
+      titleAction={fixtureSettingsControl('terms-settings')}
     >
       <SubjectOverview
         enabledDirections={['to_native']}
@@ -189,11 +195,7 @@ export const SubjectCourseFixture = ({
             : fixtureControl('1 Karte üben', 'terms-practice', 'primary')
         }
         renderStudyAction={termsStudyAction}
-        settingsAction={fixtureControl(
-          'Einstellungen',
-          'terms-settings',
-          'quiet',
-        )}
+        examSection={<FixtureExamSection exams={[]} subject={termsSubject} />}
         subject={termsSubject}
       />
     </PageLayout>

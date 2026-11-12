@@ -21,8 +21,9 @@ type CourseOverviewProps = {
   // Typing a word into any book or unit. Null while the course has no book
   // to put it in.
   readonly quickEntry: ReactNode | null;
-  readonly settingsAction: ReactNode;
   readonly vocabularyAction: ReactNode;
+  // The course's tests, under its books.
+  readonly examSection: ReactNode;
   readonly renderBookLink: (book: CourseBook) => ReactNode;
   // Creates a book and opens its page.
   readonly createBook: (name: string) => Promise<void>;
@@ -50,8 +51,8 @@ export const CourseOverview = ({
   primaryAction,
   importAction,
   quickEntry,
-  settingsAction,
   vocabularyAction,
+  examSection,
   renderBookLink,
   createBook,
 }: CourseOverviewProps) => {
@@ -77,7 +78,6 @@ export const CourseOverview = ({
         )}
         {vocabularyAction}
         {importAction}
-        {settingsAction}
       </div>
       <Dialog
         closable={true}
@@ -93,6 +93,7 @@ export const CourseOverview = ({
         outline={outline}
         renderBookLink={renderBookLink}
       />
+      {examSection}
     </>
   );
 };

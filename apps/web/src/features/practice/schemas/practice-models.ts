@@ -152,6 +152,8 @@ export type PersistReviewInput = {
   readonly direction: AnswerDirection;
   readonly normalizedAnswer: string;
   readonly mode: ReviewMode;
+  // Ignored unless the round asks this card.
+  readonly examRoundId: string | null;
   readonly gradedTexts: {
     readonly targetText: string;
     readonly nativeText: string;

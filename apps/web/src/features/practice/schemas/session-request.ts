@@ -40,6 +40,10 @@ export type StudyRequestData = typeof StudyRequest.Type;
 
 export const decodeStudyRequest = Schema.decodeUnknownSync(StudyRequest);
 
+const ExamRoundRequest = Schema.Struct({ roundId: Uuid });
+export const decodeExamRoundRequest =
+  Schema.decodeUnknownSync(ExamRoundRequest);
+
 const PracticeSearch = Schema.Struct({
   direction: Schema.optional(SessionDirectionSchema),
   book: Schema.optional(Uuid),
@@ -64,6 +68,9 @@ const StudySearch = Schema.Struct({
   // The selection is the overview's Wackelkandidaten, so the sitting is named
   // after them and leads back to the overview.
   from: Schema.optional(Schema.Literal('fragile')),
+  // The selection is a test's unlearned or missed words, so the sitting
+  // leads back to the test.
+  exam: Schema.optional(Uuid),
 });
 
 export type StudySearchData = typeof StudySearch.Type;

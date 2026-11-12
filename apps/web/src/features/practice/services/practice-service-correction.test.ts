@@ -89,6 +89,7 @@ const runSubmit = async (
           },
         }),
       loadSelection: () => Effect.succeed([]),
+      loadExamRound: () => Effect.succeed([]),
     }),
     Layer.succeed(JudgeCacheStore, {
       read: (_key, selector) =>

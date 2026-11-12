@@ -1,3 +1,5 @@
+import { SettingsIcon } from 'lucide-react';
+import type { ReactNode } from 'react';
 import type { ActionVariant } from '../src/shared/ui/action-styles';
 import { Button } from '../src/shared/ui/button';
 import { type FixtureState, navigateToFixture } from './fixture-state';
@@ -26,3 +28,27 @@ export const fixtureBackControl = (
     ← {label}
   </button>
 );
+
+// A square glyph control, such as the settings beside a course's title.
+export const fixtureIconControl = (
+  label: string,
+  destination: FixtureState,
+  icon: ReactNode,
+) => (
+  <Button
+    aria-label={label}
+    onClick={() => navigateToFixture(destination)}
+    title={label}
+    variant="icon"
+  >
+    {icon}
+  </Button>
+);
+
+// The gear beside a course's title, leading to its settings.
+export const fixtureSettingsControl = (destination: FixtureState) =>
+  fixtureIconControl(
+    'Einstellungen',
+    destination,
+    <SettingsIcon aria-hidden={true} className="size-5" />,
+  );

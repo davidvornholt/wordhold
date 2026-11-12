@@ -90,6 +90,7 @@ describe('PracticeReviewStore introduction contract', () => {
                 direction: identity.direction,
                 normalizedAnswer: 'nouveau',
                 gradedTexts: { targetText: 'nouveau', nativeText: 'neu' },
+                examRoundId: null,
               })
               .pipe(Effect.result);
             const failure =
