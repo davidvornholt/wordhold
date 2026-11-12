@@ -95,7 +95,8 @@ const missed = (
 });
 
 // Two finished rounds, one given up between them, and a fourth under way.
-// One word of the second unit is not learned yet.
+// One word of the second unit is not learned yet, and the course learns only
+// one way round, so one of that word's cards is in a switched-off direction.
 export const practisedExam: ExamDetail = {
   ...baseExam,
   entries: examEntries,
@@ -103,6 +104,7 @@ export const practisedExam: ExamDetail = {
     learned: learnedCards,
     unlearned: 2,
     unlearnedEntryIds: [coach.id],
+    switchedOff: 1,
   },
   rounds: [openRound, secondRound, givenUpRound, firstRound],
   openRound,

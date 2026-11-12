@@ -5,7 +5,6 @@ import type {
   RoundScore,
 } from '../schemas/exam-models';
 
-// A round's counts as the store reads them.
 export type RoundCountRow = {
   readonly id: string;
   readonly examId: string;

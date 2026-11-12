@@ -27,8 +27,9 @@ import type {
 // They all require the direction to be one the course still practises
 // (`practisedDirections`) as well as the one picked for this sitting. The
 // exception is a hand-picked selection, which may also ask a switched-off
-// direction. A test round asks the cards fixed when it started, which were
-// all introduced by then, in the test's own directions.
+// direction. A test round asks the cards fixed when it started, in the test's
+// own directions. One returned to learning since then waits until it is
+// learned again, and the round stays open for it.
 // "Both" is passed as null, which the null check in each query turns into "no
 // extra restriction"; the casts keep Postgres from having to guess the
 // parameter's type when it is null.
@@ -67,7 +68,7 @@ export class PracticeSessionStore extends Context.Service<
     readonly loadSelection: (
       request: StudyRequestData,
     ) => Effect.Effect<ReadonlyArray<ItemRow>, PracticeDatabaseError>;
-    // The round's cards not yet answered in it.
+    // The round's cards still learned and not yet answered in it.
     readonly loadExamRound: (
       roundId: string,
     ) => Effect.Effect<ReadonlyArray<ItemRow>, PracticeDatabaseError>;
@@ -209,6 +210,7 @@ export class PracticeSessionStore extends Context.Service<
           join entries e on e.id = c.entry_id
           join courses co on co.id = e.course_id
           where rc.round_id = ${roundId}
+            and c.introduced_at is not null
             and not exists (
               select 1 from reviews r
               where r.exam_round_id = rc.round_id and r.card_id = rc.card_id

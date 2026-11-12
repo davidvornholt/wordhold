@@ -92,9 +92,42 @@ describe('ExamService', () => {
           learned: 4,
           unlearned: 2,
           unlearnedEntryIds: [unintroducedEntryId],
+          switchedOff: 0,
         });
         expect(exam.openRound).toBeNull();
         expect(exam.readiness.lastRound).toBeNull();
+      }),
+    );
+  });
+
+  it('tells unlearned cards of a switched-off direction apart from cards still to learn', async () => {
+    await runExamTest(
+      Effect.gen(function* () {
+        const sql = yield* Database;
+        const service = yield* ExamService;
+        // The course learns only one way round, so a word learned in it has
+        // its other card not introduced.
+        yield* sql`
+          update courses set directions = '{to_target}'
+          where id = ${fixtureCourseId}
+        `;
+        yield* sql`
+          update cards set introduced_at = null
+          where entry_id = ${firstReviewEntryId} and direction = 'to_native'
+        `;
+        const { examId } = yield* service.create({
+          courseId: fixtureCourseId,
+          name: 'Vokabeltest',
+          directions: ['to_target', 'to_native'],
+          entryIds: [dueEntryId, unintroducedEntryId, firstReviewEntryId],
+        });
+        const exam = yield* service.get(examId);
+        expect(exam.cards).toEqual({
+          learned: 3,
+          unlearned: 3,
+          unlearnedEntryIds: [unintroducedEntryId, firstReviewEntryId],
+          switchedOff: 2,
+        });
       }),
     );
   });

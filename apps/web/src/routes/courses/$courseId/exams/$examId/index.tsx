@@ -136,7 +136,7 @@ const ManageActions = ({ exam }: { readonly exam: ExamDetail }) => {
 const ExamScreen = () => {
   const { course, exam } = Route.useLoaderData();
   const { missed } = exam.readiness;
-  const { unlearnedEntryIds } = exam.cards;
+  const { unlearned, unlearnedEntryIds, switchedOff } = exam.cards;
   return (
     <PageLayout
       backControl={
@@ -152,7 +152,7 @@ const ExamScreen = () => {
       <ExamOverview
         exam={exam}
         learnAction={
-          unlearnedEntryIds.length === 0 ? null : (
+          unlearned <= switchedOff ? null : (
             <ActionLink
               className="w-fit"
               params={{ courseId: course.id }}

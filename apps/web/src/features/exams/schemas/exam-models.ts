@@ -117,6 +117,9 @@ export type ExamDetail = Omit<ExamSummary, 'lastRound'> & {
     readonly learned: number;
     readonly unlearned: number;
     readonly unlearnedEntryIds: ReadonlyArray<string>;
+    // Unlearned cards in a translation direction the course has switched
+    // off. The learning pass leaves them out until it is switched on.
+    readonly switchedOff: number;
   };
   // Newest first.
   readonly rounds: ReadonlyArray<RoundScore>;
