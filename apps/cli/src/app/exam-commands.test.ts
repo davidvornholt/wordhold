@@ -24,7 +24,7 @@ const exam: Exam = {
   archivedAt: null,
   entryCount: 1,
   entries: [{ id: entryId, targetText: 'la mesa', nativeText: 'der Tisch' }],
-  cards: { learned: 2, unlearned: 0, unlearnedEntryIds: [] },
+  cards: { learned: 2, unlearned: 0, unlearnedEntryIds: [], switchedOff: 0 },
   rounds: [],
   openRound: null,
   readiness: {

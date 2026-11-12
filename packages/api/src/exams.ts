@@ -66,6 +66,11 @@ export const ExamSchema = Schema.Struct({
     learned: Count,
     unlearned: Count,
     unlearnedEntryIds: Schema.Array(IdSchema),
+    /**
+     * The unlearned cards in a direction the course has switched off, which
+     * the app introduces only once that direction is switched on again.
+     */
+    switchedOff: Count,
   }),
   /**
    * Newest first. An unfinished round other than `openRound` was given up
