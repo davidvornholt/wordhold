@@ -100,8 +100,6 @@ describe('ExamService', () => {
       Effect.gen(function* () {
         const sql = yield* Database;
         const service = yield* ExamService;
-        // The course learns only one way round, so a word learned in it has
-        // its other card not introduced.
         yield* sql`
           update courses set directions = '{to_target}'
           where id = ${fixtureCourseId}
