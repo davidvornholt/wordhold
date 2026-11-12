@@ -39,7 +39,7 @@ const RoundScreen = () => {
       ) : (
         <SessionRunner
           backControl={<ActionLink {...examPage}>Ergebnis ansehen</ActionLink>}
-          emptyMessage="Die übrigen Karten dieser Runde sind wieder zum Kennenlernen offen. Sobald du sie kennengelernt hast, kommen sie zurück in die Runde. Du kannst beim Test auch eine neue Runde beginnen."
+          emptyMessage="Diese Runde hat gerade keine Karten offen. Karten, die wieder zum Kennenlernen offen sind, kommen zurück in die Runde, sobald du sie kennengelernt hast."
           key={roundId}
           mode="drill"
           prepareExamples={prepareVocabularyExamples}
