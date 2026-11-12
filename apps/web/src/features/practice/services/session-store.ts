@@ -27,7 +27,8 @@ import type {
 // They all require the direction to be one the course still practises
 // (`practisedDirections`) as well as the one picked for this sitting. The
 // exception is a hand-picked selection, which may also ask a switched-off
-// direction.
+// direction. A test round asks the cards fixed when it started, which were
+// all introduced by then, in the test's own directions.
 // "Both" is passed as null, which the null check in each query turns into "no
 // extra restriction"; the casts keep Postgres from having to guess the
 // parameter's type when it is null.
@@ -65,6 +66,10 @@ export class PracticeSessionStore extends Context.Service<
     >;
     readonly loadSelection: (
       request: StudyRequestData,
+    ) => Effect.Effect<ReadonlyArray<ItemRow>, PracticeDatabaseError>;
+    // The round's cards not yet answered in it.
+    readonly loadExamRound: (
+      roundId: string,
     ) => Effect.Effect<ReadonlyArray<ItemRow>, PracticeDatabaseError>;
   }
 >()('wordhold/PracticeSessionStore') {
@@ -191,7 +196,35 @@ export class PracticeSessionStore extends Context.Service<
           ),
         );
       };
-      return { loadScheduled, loadSelection } as const;
+      const loadExamRound = (roundId: string) =>
+        sql<ItemRow>`
+          select c.id as "cardId", c.revision, c.direction,
+            e.id as "entryId", ${entryIsKnown(sql)} as "entryKnown",
+            e.target_text as "targetText", e.native_text as "nativeText",
+            ${cardRelatedWords(sql)} as "relatedWords",
+            e.spelling_pitfalls as "spellingPitfalls",
+            exists(select 1 from entry_audio a where a.entry_id = e.id) as "hasAudio"
+          from exam_round_cards rc
+          join cards c on c.id = rc.card_id
+          join entries e on e.id = c.entry_id
+          join courses co on co.id = e.course_id
+          where rc.round_id = ${roundId}
+            and not exists (
+              select 1 from reviews r
+              where r.exam_round_id = rc.round_id and r.card_id = rc.card_id
+            )
+          order by e.created_at asc, c.direction asc
+        `.pipe(
+          Effect.mapError(
+            (cause) =>
+              new PracticeDatabaseError({
+                operation: 'load test round',
+                cause,
+                message: 'Die Testrunde konnte nicht geladen werden.',
+              }),
+          ),
+        );
+      return { loadScheduled, loadSelection, loadExamRound } as const;
     }),
   );
 }

@@ -5,6 +5,7 @@ import { definitionLayer, judgeLayer } from '../../../shared/ai/runtime';
 import { billedTo, UsageLedger } from '../../../shared/ai/usage-ledger';
 import { requestMember } from '../../../shared/auth/member-request';
 import {
+  decodeExamRoundRequest,
   decodeSessionRequest,
   decodeStudyRequest,
 } from '../schemas/session-request';
@@ -57,10 +58,24 @@ export const getStudySession = createServerFn()
     );
   });
 
+export const getExamRoundSession = createServerFn()
+  .validator(decodeExamRoundRequest)
+  .handler(async ({ data }) => {
+    await requestMember({ examRounds: [data.roundId] });
+    return practiceRuntime.runPromise(
+      Effect.flatMap(PracticeService, (service) =>
+        service.getExamRoundSession(data.roundId),
+      ),
+    );
+  });
+
 export const submitAnswer = createServerFn({ method: 'POST' })
   .validator((input: unknown) => decodeSubmitPayload(input))
   .handler(async ({ data }) => {
-    const member = await requestMember({ cards: [data.cardId] });
+    const member = await requestMember({
+      cards: [data.cardId],
+      examRounds: data.examRoundId === undefined ? [] : [data.examRoundId],
+    });
     return practiceRuntime.runPromise(
       Effect.flatMap(PracticeService, (service) => service.submit(data)).pipe(
         billedTo(member.userId),

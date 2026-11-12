@@ -133,6 +133,7 @@ export const CourseFixture = ({
             {book.name}
           </button>
         )}
+        examsAction={fixtureControl('Tests', 'exams', 'quiet')}
         settingsAction={fixtureControl(
           'Einstellungen',
           'course-settings',

@@ -16,6 +16,7 @@ import {
   CourseSettingsFixture,
   DeferredCourseSettingsFixture,
 } from './direction-fixtures';
+import { examFixture, isExamState } from './exam-fixture-router';
 import { type FixtureState, readFixtureState } from './fixture-state';
 import { ImportSessionFixture } from './import-session-fixture';
 import {
@@ -235,6 +236,9 @@ const dashboardFixture = (state: FixtureState) => (
 const fixtureContent = (state: FixtureState) => {
   if (isPracticeState(state)) {
     return practiceFixture(state);
+  }
+  if (isExamState(state)) {
+    return examFixture(state);
   }
   switch (state) {
     case 'signed-out':

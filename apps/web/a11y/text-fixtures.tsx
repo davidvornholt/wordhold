@@ -314,6 +314,7 @@ export const TextsCourseFixture = ({
             : fixtureControl('1 Karte üben', 'texts-practice', 'primary')
         }
         renderStudyAction={textsStudyAction}
+        examsAction={fixtureControl('Tests', 'exams', 'quiet')}
         settingsAction={fixtureControl(
           'Einstellungen',
           'texts-settings',

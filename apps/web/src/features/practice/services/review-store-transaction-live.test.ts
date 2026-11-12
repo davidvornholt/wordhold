@@ -59,6 +59,7 @@ const makeInput = (
       answer,
       elapsedMs: 750,
       mode: 'scheduled',
+      examRoundId: null,
       entryId,
       direction,
       normalizedAnswer: answer,

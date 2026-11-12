@@ -129,6 +129,16 @@ const SettingsLink = ({ courseId }: { readonly courseId: string }) => (
   </ActionLink>
 );
 
+const ExamsLink = ({ courseId }: { readonly courseId: string }) => (
+  <ActionLink
+    params={{ courseId }}
+    to="/courses/$courseId/exams"
+    variant="quiet"
+  >
+    Tests
+  </ActionLink>
+);
+
 type LanguageScreenProps = {
   readonly course: ScreenCourse;
   readonly entries: ReadonlyArray<VocabularyEntry>;
@@ -198,6 +208,7 @@ const LanguageScreen = ({
           {book.name}
         </Link>
       )}
+      examsAction={<ExamsLink courseId={course.id} />}
       settingsAction={<SettingsLink courseId={course.id} />}
       vocabularyAction={
         <ActionLink
@@ -295,6 +306,7 @@ const SubjectScreen = ({
           sentences={false}
         />
       )}
+      examsAction={<ExamsLink courseId={course.id} />}
       settingsAction={<SettingsLink courseId={course.id} />}
       subject={course}
     />

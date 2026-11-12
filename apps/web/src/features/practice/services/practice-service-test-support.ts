@@ -83,6 +83,7 @@ const emptySessions: PracticeSessionStore['Service'] = {
       },
     }),
   loadSelection: () => Effect.succeed([]),
+  loadExamRound: () => Effect.succeed([]),
 };
 
 const emptyCache: JudgeCacheStore['Service'] = {

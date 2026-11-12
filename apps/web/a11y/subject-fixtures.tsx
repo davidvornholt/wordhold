@@ -189,6 +189,7 @@ export const SubjectCourseFixture = ({
             : fixtureControl('1 Karte üben', 'terms-practice', 'primary')
         }
         renderStudyAction={termsStudyAction}
+        examsAction={fixtureControl('Tests', 'exams', 'quiet')}
         settingsAction={fixtureControl(
           'Einstellungen',
           'terms-settings',

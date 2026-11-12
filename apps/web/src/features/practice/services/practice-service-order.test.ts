@@ -44,6 +44,7 @@ describe('PracticeService asking order', () => {
               },
             }),
           loadSelection: () => Effect.die('no selection was picked'),
+          loadExamRound: () => Effect.die('no test round was started'),
         },
         (service) => service.getSession({ courseId, direction: 'both' }),
       ).pipe(Random.withSeed('scheduled')),
@@ -61,6 +62,7 @@ describe('PracticeService asking order', () => {
         {
           loadScheduled: () => Effect.die('the sitting is hand-picked'),
           loadSelection: () => Effect.succeed(loaded),
+          loadExamRound: () => Effect.die('no test round was started'),
         },
         (service) =>
           service.getStudySession({
@@ -77,6 +79,28 @@ describe('PracticeService asking order', () => {
     expect(asked.slice(0, 20)).not.toEqual(first);
     expect(sorted(asked.slice(0, 20))).toEqual(sorted(first));
     expect(sorted(asked.slice(20))).toEqual(sorted(cardIds(loaded.slice(20))));
+    expect(session.available.ready).toBe(25);
+  });
+
+  it('mixes a test round across its sections', async () => {
+    const loaded = loadedCards(25);
+    const session = await Effect.runPromise(
+      runSessionLoad(
+        {
+          loadScheduled: () => Effect.die('the sitting is a test round'),
+          loadSelection: () => Effect.die('the sitting is a test round'),
+          loadExamRound: () => Effect.succeed(loaded),
+        },
+        (service) =>
+          service.getExamRoundSession('00000000-0000-0000-0000-000000000021'),
+      ).pipe(Random.withSeed('round')),
+    );
+
+    const asked = cardIds(session.items);
+    expect(sorted(asked.slice(20))).not.toEqual(
+      sorted(cardIds(loaded.slice(20))),
+    );
+    expect(sorted(asked)).toEqual(sorted(cardIds(loaded)));
     expect(session.available.ready).toBe(25);
   });
 });

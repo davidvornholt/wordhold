@@ -27,6 +27,7 @@ type SubjectOverviewProps = {
   readonly entryForm: ReactNode;
   // A subject's photographed notes are read as terms; a collection has none.
   readonly photoAction: ReactNode | null;
+  readonly examsAction: ReactNode;
   readonly settingsAction: ReactNode;
   readonly renderStudyAction: (action: StudyAction) => ReactNode;
   readonly entryActions: CourseEntryActions;
@@ -61,6 +62,7 @@ export const SubjectOverview = ({
   primaryAction,
   entryForm,
   photoAction,
+  examsAction,
   settingsAction,
   renderStudyAction,
   entryActions,
@@ -97,6 +99,7 @@ export const SubjectOverview = ({
         >
           {nouns.singular} eintragen
         </Button>
+        {examsAction}
         {photoAction}
         {settingsAction}
       </div>

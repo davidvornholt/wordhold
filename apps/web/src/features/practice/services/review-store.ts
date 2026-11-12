@@ -235,10 +235,14 @@ export class PracticeReviewStore extends Context.Service<
                   insertReview: () =>
                     sql`
                     insert into reviews
-                      (card_id, rating, answer_text, grading, elapsed_ms, mode)
+                      (card_id, rating, answer_text, grading, elapsed_ms, mode,
+                        exam_round_id)
                     values (${input.card.id}, ${input.rating}, ${input.answer},
                       ${JSON.stringify(input.outcome)}::jsonb, ${input.elapsedMs},
-                      ${input.mode}::review_mode)
+                      ${input.mode}::review_mode,
+                      (select rc.round_id from exam_round_cards rc
+                        where rc.round_id = ${input.examRoundId}::uuid
+                          and rc.card_id = ${input.card.id}))
                   `.pipe(Effect.asVoid, Effect.mapError(mapCommitError)),
                   entryKnown: () => loadEntryKnown(sql, input.entryId),
                 });

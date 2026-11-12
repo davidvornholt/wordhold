@@ -23,6 +23,7 @@ type CourseOverviewProps = {
   readonly quickEntry: ReactNode | null;
   readonly settingsAction: ReactNode;
   readonly vocabularyAction: ReactNode;
+  readonly examsAction: ReactNode;
   readonly renderBookLink: (book: CourseBook) => ReactNode;
   // Creates a book and opens its page.
   readonly createBook: (name: string) => Promise<void>;
@@ -52,6 +53,7 @@ export const CourseOverview = ({
   quickEntry,
   settingsAction,
   vocabularyAction,
+  examsAction,
   renderBookLink,
   createBook,
 }: CourseOverviewProps) => {
@@ -76,6 +78,7 @@ export const CourseOverview = ({
           </Button>
         )}
         {vocabularyAction}
+        {examsAction}
         {importAction}
         {settingsAction}
       </div>

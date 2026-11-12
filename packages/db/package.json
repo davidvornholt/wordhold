@@ -17,6 +17,7 @@
     "./schema/pages": "./src/schema/pages.ts",
     "./schema/units": "./src/schema/units.ts",
     "./schema/entries": "./src/schema/entries.ts",
+    "./schema/exams": "./src/schema/exams.ts",
     "./schema/practice": "./src/schema/practice.ts",
     "./testing/postgres-test-database": "./src/testing/postgres-test-database.ts",
     "./testing/postgres-test-preload": "./src/testing/postgres-test-preload.ts",

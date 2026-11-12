@@ -13,6 +13,8 @@ export type OwnedReferences = {
   readonly cards?: ReadonlyArray<string>;
   readonly pages?: ReadonlyArray<string>;
   readonly importSessions?: ReadonlyArray<string>;
+  readonly exams?: ReadonlyArray<string>;
+  readonly examRounds?: ReadonlyArray<string>;
 };
 
 // Someone else's record is reported like a missing one, so its existence
@@ -61,6 +63,15 @@ const ownedCount = (
       }>`select count(distinct p.import_session_id)::int as count
         from pages p join courses c on c.id = p.course_id
         where p.import_session_id = any(${ids}::uuid[]) and c.owner_id = ${ownerId}`;
+    case 'exams':
+      return sql<{ count: number }>`select count(*)::int as count from exams x
+        join courses c on c.id = x.course_id
+        where x.id = any(${ids}::uuid[]) and c.owner_id = ${ownerId}`;
+    case 'examRounds':
+      return sql<{ count: number }>`select count(*)::int as count
+        from exam_rounds r join exams x on x.id = r.exam_id
+        join courses c on c.id = x.course_id
+        where r.id = any(${ids}::uuid[]) and c.owner_id = ${ownerId}`;
     default:
       return kind satisfies never;
   }

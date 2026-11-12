@@ -138,6 +138,8 @@ it(
           yield* sql`create unique index units_course_name on units (course_id, name)`;
           yield* sql`create unique index units_course_position on units (course_id, position)`;
           yield* sql`drop table device_code`;
+          yield* sql`alter table reviews drop column exam_round_id`;
+          yield* sql`drop table exam_round_cards, exam_rounds, exam_entries, exams`;
           yield* unrecordMigrationsFrom(importPositionConstraintMigrationHash);
           yield* migrateDatabase(database.url);
           const pages = yield* sql<{ readonly expected: number }>`
@@ -332,6 +334,8 @@ it('drops the synonyms the judge accepted into the target language', async () =>
         `;
         yield* sql`alter table entries add column grammar jsonb, add column notes text`;
         yield* sql`drop table device_code`;
+        yield* sql`alter table reviews drop column exam_round_id`;
+        yield* sql`drop table exam_round_cards, exam_rounds, exam_entries, exams`;
         yield* sql`alter type ai_provider rename value 'anthropic' to 'replayed_anthropic'`;
         yield* unrecordMigrationsFrom(judgeTargetSynonymsMigrationHash);
         yield* migrateDatabase(database.url);
@@ -375,6 +379,8 @@ it('drops the judge verdicts stored without otherWording', async () => {
             ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'to_native', 'definition', '{"keyPoints":[],"accuracy":{"ok":true,"note":null},"explanation":null}', 'definition')
         `;
         yield* sql`drop table device_code`;
+        yield* sql`alter table reviews drop column exam_round_id`;
+        yield* sql`drop table exam_round_cards, exam_rounds, exam_entries, exams`;
         yield* sql`alter type ai_provider rename value 'anthropic' to 'replayed_anthropic'`;
         yield* unrecordMigrationsFrom(staleJudgeVerdictsMigrationHash);
         yield* migrateDatabase(database.url);

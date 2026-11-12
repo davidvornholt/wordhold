@@ -29,6 +29,7 @@ type MakeReviewInputOptions = {
   readonly direction: AnswerDirection;
   readonly answer: string;
   readonly mode?: ReviewMode;
+  readonly examRoundId?: string;
   readonly reviewedAt?: Date;
   readonly correct?: boolean;
 };
@@ -38,6 +39,7 @@ export const makeReviewInput = ({
   direction,
   answer,
   mode = 'scheduled',
+  examRoundId,
   reviewedAt = new Date('2026-08-20T12:01:00.000Z'),
   correct = true,
 }: MakeReviewInputOptions) =>
@@ -79,6 +81,7 @@ export const makeReviewInput = ({
       direction,
       normalizedAnswer: answer,
       mode,
+      examRoundId: examRoundId ?? null,
       gradedTexts: {
         targetText: submission.entry.targetText,
         nativeText: submission.entry.nativeText,
