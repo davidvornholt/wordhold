@@ -36,6 +36,12 @@
         }
       );
 
+      checks = forAllSystems (system: {
+        package-source = nixpkgs.legacyPackages.${system}.callPackage ./nix/package-source-check.nix {
+          inherit (self.packages.${system}.wordhold-cli) src;
+        };
+      });
+
       devShells = forAllSystems (
         system:
         let

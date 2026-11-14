@@ -8,26 +8,8 @@
 }:
 let
   pname = "wordhold-cli";
-  # Keeps dependencies, build output, and local state, which a dirty checkout or
-  # a path: flake would otherwise copy, out of the store.
-  # lib.fileset can't exclude a directory by name at any depth, so this filters
-  # the source by name instead.
-  src = lib.cleanSourceWith {
-    src = lib.cleanSource ../.;
-    filter =
-      path: _type:
-      !builtins.elem (baseNameOf path) [
-        ".direnv"
-        ".env.local"
-        ".output"
-        ".tanstack"
-        ".turbo"
-        "dist"
-        "node_modules"
-        "playwright-report"
-        "test-results"
-      ];
-  };
+  # The files git doesn't ignore; package-source.nix says what that protects.
+  src = import ./package-source.nix { inherit lib; } ../.;
   skills = builtins.attrNames (
     lib.filterAttrs (_name: type: type == "directory") (builtins.readDir ../apps/cli/skills)
   );
@@ -54,7 +36,7 @@ let
       runHook postInstall
     '';
     dontFixup = true;
-    outputHash = "sha256-9FbuF/kevayQG+GrdHXkDMfalFv8bGoAemhZ7qGVne8=";
+    outputHash = "sha256-O3EH2Jj7yQEn+J8ZaJ5veAJDk8CJL1H8cC4d1K2IQec=";
     outputHashAlgo = "sha256";
     outputHashMode = "recursive";
     impureEnvVars = lib.fetchers.proxyImpureEnvVars;
