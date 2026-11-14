@@ -17,7 +17,7 @@
       "dependencies": {
         "@effect/platform-bun": "4.1.2",
         "@wordhold/api": "workspace:*",
-        "effect": "^4.1.2",
+        "effect": "^4.1.4",
       },
       "devDependencies": {
         "@davidvornholt/typescript-config": "workspace:*",
@@ -43,7 +43,7 @@
         "@wordhold/ui": "workspace:*",
         "better-auth": "^1.7.18",
         "drizzle-orm": "^0.45.4",
-        "effect": "^4.1.2",
+        "effect": "^4.1.4",
         "image-dimensions": "^2.6.0",
         "lucide-react": "^1.70.0",
         "react": "^19.3.1",
@@ -92,7 +92,7 @@
         "@aws-sdk/client-polly": "^3.1164.0",
         "@aws-sdk/client-transcribe-streaming": "^3.1164.0",
         "ai": "^7.0.166",
-        "effect": "^4.1.2",
+        "effect": "^4.1.4",
       },
       "devDependencies": {
         "@davidvornholt/typescript-config": "workspace:*",
@@ -104,7 +104,7 @@
       "name": "@wordhold/api",
       "version": "0.0.0",
       "dependencies": {
-        "effect": "^4.1.2",
+        "effect": "^4.1.4",
       },
       "devDependencies": {
         "@davidvornholt/typescript-config": "workspace:*",
@@ -118,7 +118,7 @@
       "dependencies": {
         "@effect/sql-pg": "^4.1.2",
         "drizzle-orm": "^0.45.4",
-        "effect": "^4.1.2",
+        "effect": "^4.1.4",
         "postgres": "^3.4.9",
       },
       "devDependencies": {
@@ -690,7 +690,7 @@
 
     "ecdsa-sig-formatter": ["ecdsa-sig-formatter@1.0.11", "", { "dependencies": { "safe-buffer": "^5.0.1" } }, "sha512-nagl3RYrbNv6kQkeJIpt6NJZy8twLB/2vtz6yN9Z4vRKHN4/QZJIEbqohALSgwKdnksuY3k5Addp5lg8sVoVcQ=="],
 
-    "effect": ["effect@4.1.2", "", {}, "sha512-d3Oah1WyKxFLFh19yWheS5IXIVaITzxZ71JkE1rkUozq/6EcJSU5nPk5bF2QrSygZ3SQoiNQB8TsxFriyMeMaQ=="],
+    "effect": ["effect@4.1.4", "", {}, "sha512-Tgrv/9FN+TZYyOn8XSli+fVqAfwDrDAkiX5Uu9vztINb675VTQdhD0gWI5Kzvhlh9QqzjZvw72iugqw5pwoghQ=="],
 
     "electron-to-chromium": ["electron-to-chromium@1.5.439", "", {}, "sha512-qu6QIPXhsb+CRcAiTMNjR4A1y/7tCYKkKjr5CZXRVih6qkDf79peZ2BpEU3qoDBNCRrcy3Mra3X9nG5oruuA7Q=="],
 
