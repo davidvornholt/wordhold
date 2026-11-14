@@ -36,43 +36,51 @@ let
   # A path that each .gitignore pattern matches, also one directory deeper for
   # a pattern that applies at any depth. Patterns with character classes or
   # escapes are left out.
-  patternSamples = lib.concatMap (
-    { relative, ... }:
-    let
-      base = dirOf relative;
-      lines = lib.splitString "\n" (builtins.readFile "${rootString}/${relative}");
-      usable = line: builtins.match "(#.*|[[:space:]]*|.*[][\\\\].*)" line == null;
-      sample =
-        line:
+  patternSamples =
+    lib.concatMap
+      (
+        { relative, ... }:
         let
-          pattern = lib.removePrefix "!" line;
-          directory = lib.hasSuffix "/" pattern;
-          trimmed = lib.removePrefix "/" (lib.removeSuffix "/" pattern);
-          name =
-            builtins.replaceStrings
-              [
-                "**/"
-                "**"
-                "*"
-                "?"
-              ]
-              [
-                ""
-                "x"
-                "x"
-                "x"
-              ]
-              trimmed;
-          anchored = lib.hasPrefix "/" pattern || lib.hasInfix "/" trimmed;
-          at = prefix: {
-            relative = join (if base == "." then "" else base) (prefix + name);
-            type = if directory then "directory" else "regular";
-          };
+          base = dirOf relative;
+          lines = lib.splitString "\n" (builtins.readFile "${rootString}/${relative}");
+          usable = line: builtins.match "(#.*|[[:space:]]*|.*[][\\\\].*)" line == null;
+          sample =
+            line:
+            let
+              pattern = lib.removePrefix "!" line;
+              directory = lib.hasSuffix "/" pattern;
+              trimmed = lib.removePrefix "/" (lib.removeSuffix "/" pattern);
+              name =
+                builtins.replaceStrings
+                  [
+                    "**/"
+                    "**"
+                    "*"
+                    "?"
+                  ]
+                  [
+                    ""
+                    "x"
+                    "x"
+                    "x"
+                  ]
+                  trimmed;
+              anchored = lib.hasPrefix "/" pattern || lib.hasInfix "/" trimmed;
+              at = prefix: {
+                relative = join (if base == "." then "" else base) (prefix + name);
+                type = if directory then "directory" else "regular";
+              };
+            in
+            [ (at "") ] ++ lib.optional (!anchored) (at "sample-directory/");
         in
-        [ (at "") ] ++ lib.optional (!anchored) (at "sample-directory/");
-    in
-    lib.concatMap sample (lib.filter usable lines)
-  ) (lib.filter ({ relative, type }: type == "regular" && baseNameOf relative == ".gitignore" && keepsPath relative type) existingPaths);
+        lib.concatMap sample (lib.filter usable lines)
+      )
+      (
+        lib.filter (
+          { relative, type }:
+          type == "regular" && baseNameOf relative == ".gitignore" && keepsPath relative type
+        ) existingPaths
+      );
 
   # Whether the source keeps a path that may not exist, which needs every
   # directory above it kept as well.

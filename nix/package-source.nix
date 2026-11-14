@@ -70,8 +70,7 @@ let
             let
               relative = if dir == "" then name else "${dir}/${name}";
             in
-            lib.cleanSourceFilter "${rootString}/${relative}" "directory"
-            && keeps rules relative "directory"
+            lib.cleanSourceFilter "${rootString}/${relative}" "directory" && keeps rules relative "directory"
           ) (lib.attrNames (lib.filterAttrs (_: type: type == "directory") (builtins.readDir (pathOf dir))));
         in
         lib.foldl' (acc: name: acc // walk (if dir == "" then name else "${dir}/${name}") rules) {
