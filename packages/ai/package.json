@@ -45,11 +45,11 @@
     "benchmark:models": "bun src/benchmark/cli.ts"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^4.0.96",
-    "@ai-sdk/google-vertex": "^5.0.131",
-    "@aws-sdk/client-polly": "^3.1162.0",
-    "@aws-sdk/client-transcribe-streaming": "^3.1162.0",
-    "ai": "^7.0.162",
+    "@ai-sdk/anthropic": "^4.0.99",
+    "@ai-sdk/google-vertex": "^5.0.134",
+    "@aws-sdk/client-polly": "^3.1164.0",
+    "@aws-sdk/client-transcribe-streaming": "^3.1164.0",
+    "ai": "^7.0.166",
     "effect": "^4.1.2"
   },
   "devDependencies": {
