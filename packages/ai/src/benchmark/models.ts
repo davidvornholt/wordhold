@@ -9,6 +9,7 @@ import {
 } from './structured-output';
 import { VertexProvider } from './vertex';
 
+const claudeMaxOutputTokens = 32_000;
 const otherProviderMaxOutputTokens = 4096;
 
 // Claude API list prices. Haiku 5.5 prompts stay under the 100,000-token
@@ -30,7 +31,9 @@ const claudeNames = claudeCandidates.flatMap(({ family, efforts }) =>
   efforts.map((effort) => `claude-${family}-5-5-${effort}`),
 );
 
-// The same API, request options and schema as production, except effort.
+// The same API, request options and schema as production, except effort and
+// the output limit, which production leaves to the provider. A request that
+// reaches the limit ends as a sample with an error.
 const claudeModels = Effect.gen(function* () {
   const anthropic = createAnthropic({
     apiKey: Redacted.value(yield* anthropicApiKey),
@@ -47,7 +50,7 @@ const claudeModels = Effect.gen(function* () {
           anthropic: { thinking: { type: 'adaptive' }, effort },
         },
         jsonSchema: providerJsonSchema,
-        maxOutputTokens: undefined,
+        maxOutputTokens: claudeMaxOutputTokens,
       }),
     ),
   );
