@@ -47,8 +47,8 @@ export type BenchmarkModel = {
   readonly jsonSchema: (
     schema: Schema.Top,
   ) => ReturnType<typeof providerJsonSchema>;
-  // Undefined sends no limit, as production does.
-  readonly maxOutputTokens: number | undefined;
+  // Sent with every request, so it also bounds the request's cost.
+  readonly maxOutputTokens: number;
 };
 
 class BenchmarkRequestError extends Schema.TaggedError<BenchmarkRequestError>()(

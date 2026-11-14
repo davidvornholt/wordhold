@@ -1,5 +1,6 @@
-import { Cause, Duration, Effect, Exit, Semaphore } from 'effect';
+import { Cause, Effect, Exit, Semaphore } from 'effect';
 import { aiOperations } from '../usage';
+import { makeBudget, worstCaseUsd } from './budget';
 import { densePage, simplePage } from './extraction-workloads';
 import { type Sample, summarize } from './metrics';
 import { benchmarkModels, candidateNames } from './models';
@@ -12,15 +13,9 @@ import {
 import type { Workload } from './workload';
 import { workloads } from './workloads';
 
-// Reserved for each request until its usage is known. Prompts stay well
-// below the allowance; output is bounded by the request or by this cap.
-const inputTokenAllowance = 20_000;
-const assumedMaxOutputTokens = 32_000;
-const tokensPerMillion = 1_000_000;
 const defaultRepetitions = 3;
 const reportEvery = 10;
 const usdDecimals = 4;
-const reservationPollMs = 250;
 
 const usage = [
   'Usage: bun run benchmark:models /absolute/path/results.json --budget-usd=N',
@@ -53,40 +48,6 @@ const positiveFlag = (name: string, fallback: number | undefined) => {
   const value = flag(name);
   const parsed = value === undefined ? fallback : Number(value);
   return parsed !== undefined && parsed > 0 ? parsed : undefined;
-};
-
-const worstCaseUsd = (model: BenchmarkModel): number =>
-  (inputTokenAllowance * model.usdPerMillionTokens.input +
-    (model.maxOutputTokens ?? assumedMaxOutputTokens) *
-      model.usdPerMillionTokens.output) /
-  tokensPerMillion;
-
-// Estimated spend. Each request reserves its worst case before it starts, so
-// concurrent requests cannot together exceed the limit, and settles to its
-// reported cost when it ends.
-const makeBudget = (limitUsd: number) => {
-  let spentUsd = 0;
-  let reservedUsd = 0;
-  // Waits while running requests hold the room this one needs. Succeeds with
-  // false when it does not fit even once they have settled.
-  const reserve = (amountUsd: number): Effect.Effect<boolean> =>
-    Effect.suspend(() => {
-      if (spentUsd + reservedUsd + amountUsd <= limitUsd) {
-        reservedUsd += amountUsd;
-        return Effect.succeed(true);
-      }
-      return reservedUsd > 0
-        ? Effect.andThen(
-            Effect.sleep(Duration.millis(reservationPollMs)),
-            reserve(amountUsd),
-          )
-        : Effect.succeed(false);
-    });
-  const settle = (reservedUsdForRequest: number, actualUsd: number | null) => {
-    reservedUsd -= reservedUsdForRequest;
-    spentUsd += actualUsd ?? reservedUsdForRequest;
-  };
-  return { reserve, settle, spent: () => spentUsd };
 };
 
 type Options = {
@@ -246,7 +207,7 @@ const runBenchmark = (
           region,
           reasoning,
           usdPerMillionTokens,
-          maxOutputTokens: maxOutputTokens ?? null,
+          maxOutputTokens,
         }),
       ),
       summaries: summaries(models, options.cases, samples),
