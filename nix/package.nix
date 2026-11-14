@@ -3,31 +3,15 @@
 {
   bun,
   lib,
+  nix-gitignore,
   stdenvNoCC,
   version,
 }:
 let
   pname = "wordhold-cli";
-  # Keeps dependencies, build output, and local state, which a dirty checkout or
-  # a path: flake would otherwise copy, out of the store.
-  # lib.fileset can't exclude a directory by name at any depth, so this filters
-  # the source by name instead.
-  src = lib.cleanSourceWith {
-    src = lib.cleanSource ../.;
-    filter =
-      path: _type:
-      !builtins.elem (baseNameOf path) [
-        ".direnv"
-        ".env.local"
-        ".output"
-        ".tanstack"
-        ".turbo"
-        "dist"
-        "node_modules"
-        "playwright-report"
-        "test-results"
-      ];
-  };
+  # The files git doesn't ignore, so that a dirty checkout or a path: flake
+  # can't copy local env files, dependencies, or build output into the store.
+  src = import ./package-source.nix { inherit lib nix-gitignore; } ../.;
   skills = builtins.attrNames (
     lib.filterAttrs (_name: type: type == "directory") (builtins.readDir ../apps/cli/skills)
   );
