@@ -207,6 +207,19 @@ describe('VocabularyEntryStore corrections', () => {
         expect((yield* storedWord(entryId)).examples).toEqual([
           { ...translated, audioPath: exampleAudio },
         ]);
+        // The same sentence marked as written by AI, with and without a new
+        // translation, keeps its audio.
+        const marked = { ...translated, source: 'generated' } as const;
+        yield* store.update({ ...word, example: marked });
+        expect((yield* storedWord(entryId)).examples).toEqual([
+          { ...marked, audioPath: exampleAudio },
+        ]);
+        yield* store.update({ ...word, example: translated });
+        const retranslated = { ...example, source: 'generated' } as const;
+        yield* store.update({ ...word, example: retranslated });
+        expect((yield* storedWord(entryId)).examples).toEqual([
+          { ...retranslated, audioPath: exampleAudio },
+        ]);
         const replaced = {
           targetText: 'Il a une bonne mémoire.',
           nativeText: 'Er hat ein gutes Gedächtnis.',

@@ -66,15 +66,17 @@ export const relatedWordsAfterEdit = (
 ): ReadonlyArray<string> | null =>
   given === undefined ? stored : distinctRelatedWords(given, word);
 
+type GivenExample = {
+  readonly targetText: string;
+  readonly nativeText?: string | undefined;
+  readonly source?: NewExampleData['source'] | undefined;
+};
+
 /**
  * An example given through the API is one the owner came across unless the
  * request marks it as written by AI.
  */
-export const givenExample = (example: {
-  readonly targetText: string;
-  readonly nativeText?: string | undefined;
-  readonly source?: NewExampleData['source'] | undefined;
-}): NewExampleData => ({
+export const givenExample = (example: GivenExample): NewExampleData => ({
   targetText: example.targetText,
   ...(example.nativeText === undefined
     ? {}
@@ -95,6 +97,31 @@ export const keptExample = (
           : { nativeText: example.nativeText }),
         source: example.source,
       };
+
+/**
+ * The example an edit stores: the stored one when the edit leaves it out,
+ * none when it removes it, and otherwise the one given. A given sentence that
+ * repeats the stored one and names no source keeps where it came from, so
+ * correcting the translation of an AI-written sentence doesn't relabel it.
+ */
+export const editedExample = (
+  stored: VocabularyExample | null,
+  given: GivenExample | null | undefined,
+): NewExampleData | undefined => {
+  if (given === undefined) {
+    return keptExample(stored);
+  }
+  if (given === null) {
+    return undefined;
+  }
+  const keepsSource =
+    given.source === undefined &&
+    stored !== null &&
+    stored.targetText === given.targetText;
+  return givenExample(
+    keepsSource ? { ...given, source: stored.source } : given,
+  );
+};
 
 /**
  * The unit a request created, read from the outline after the creation.

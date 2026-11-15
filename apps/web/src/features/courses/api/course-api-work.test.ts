@@ -8,6 +8,7 @@ import type {
 } from '../schemas/course-units';
 import {
   createdUnit,
+  editedExample,
   givenExample,
   keptExample,
   relatedWordsAfterEdit,
@@ -184,6 +185,41 @@ describe('examples', () => {
       }),
     ).toEqual({ targetText: 'Tomo un café.', source: 'generated' });
     expect(keptExample(null)).toBeUndefined();
+  });
+});
+
+describe('the example an edit stores', () => {
+  const written = {
+    targetText: 'Tomo un café.',
+    nativeText: 'Ich trinke einen Kaffee.',
+    source: 'generated',
+  } as const;
+
+  it('keeps the stored example when the edit leaves it out', () => {
+    expect(editedExample(written, undefined)).toEqual(written);
+    expect(editedExample(written, null)).toBeUndefined();
+  });
+
+  it('keeps the source of a repeated sentence that names none', () => {
+    expect(
+      editedExample(written, {
+        targetText: written.targetText,
+        nativeText: 'Ich nehme einen Kaffee.',
+      }),
+    ).toEqual({ ...written, nativeText: 'Ich nehme einen Kaffee.' });
+  });
+
+  it('takes the source the edit names, and treats a new sentence as found', () => {
+    expect(
+      editedExample(
+        { ...written, source: 'textbook' },
+        { targetText: written.targetText, source: 'generated' },
+      ),
+    ).toEqual({ targetText: written.targetText, source: 'generated' });
+    expect(editedExample(written, { targetText: 'Tomo un té.' })).toEqual({
+      targetText: 'Tomo un té.',
+      source: 'textbook',
+    });
   });
 });
 
