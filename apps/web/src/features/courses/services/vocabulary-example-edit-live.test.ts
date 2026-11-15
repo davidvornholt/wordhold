@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { SentenceGen } from '@wordhold/ai/sentence';
 import { untrackedAiUsage } from '@wordhold/ai/testing/usage';
-import type { Database } from '@wordhold/db/client';
+import { Database } from '@wordhold/db/client';
 import {
   testDatabaseLayer,
   withMigratedTestDatabase,
@@ -60,6 +60,25 @@ const runTest = <A, E>(
 const editElsewhere = (store: VocabularyEntryStore['Service']) =>
   Effect.runPromise(store.update(correction));
 
+// Until another backend waits for one of this backend's locks, so the test
+// can't pass merely because the edit hadn't started yet. It reads pg_locks,
+// because pg_stat_activity stays as first read for the caller's transaction.
+const waitUntilBlockedBy = (sql: Database, pid: number) =>
+  Effect.gen(function* () {
+    for (;;) {
+      const [waiting] = yield* sql<{ readonly blocked: boolean }>`
+        select exists (
+          select 1 from pg_locks
+          where not granted and ${pid} = any(pg_blocking_pids(pid))
+        ) as blocked
+      `;
+      if (waiting?.blocked === true) {
+        return;
+      }
+      yield* Effect.sleep('10 millis');
+    }
+  }).pipe(Effect.timeout('3 seconds'), Effect.orDie);
+
 describe('VocabularyExampleStore and a concurrent correction', () => {
   it('drops an example generated for the word as it was before the edit', async () => {
     const after = await runTest(
@@ -104,12 +123,16 @@ describe('VocabularyExampleStore and a concurrent correction', () => {
   it('lets an edit that waited for a stored example correct it', async () => {
     const after = await runTest(
       Effect.gen(function* () {
+        const sql = yield* Database;
         const words = yield* VocabularyEntryStore;
         const examples = yield* VocabularyExampleStore;
         let editDone = false;
         const edit = yield* examples.withCriticalSection(
           entryId,
           Effect.gen(function* () {
+            const [backend] = yield* sql<{ readonly pid: number }>`
+              select pg_backend_pid() as pid
+            `;
             expect(
               yield* examples.storeGenerated(
                 { entryId, targetText: 'livre', nativeText: 'Buch' },
@@ -122,7 +145,7 @@ describe('VocabularyExampleStore and a concurrent correction', () => {
               editDone = true;
               return result;
             });
-            yield* Effect.sleep('300 millis');
+            yield* waitUntilBlockedBy(sql, backend?.pid ?? 0);
             expect(editDone).toBe(false);
             return pending;
           }),
