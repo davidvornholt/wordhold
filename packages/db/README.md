@@ -28,4 +28,4 @@ The accounts rollout has the same two phases. Phase one adds a nullable `courses
 
 Before deploying phase two, run `SELECT count(*) FROM courses WHERE owner_id IS NULL;` in every deployed database and record that it returns exactly `0`. The generated phase-two migration makes `courses.owner_id` required.
 
-Cards are scheduled with FSRS-7, whose memory includes a short-term stability, `cards.stability_fast`. A card answered under FSRS-6 has `stability` but no `stability_fast`, and its FSRS-6 stability and difficulty don't carry over. `db:migrate` rebuilds each such card from its answers in `reviews`, as if FSRS-7 had always scheduled it, so its due date changes at that deploy. The step is idempotent, runs on every migration, and fails if such a card has no answers.
+A card answered under FSRS-6 has `stability` but no `stability_fast`, and its FSRS-6 stability and difficulty don't carry over. `db:migrate` rebuilds each such card from its answers in `reviews`, as if FSRS-7 had always scheduled it, so its due date changes at that deploy.
