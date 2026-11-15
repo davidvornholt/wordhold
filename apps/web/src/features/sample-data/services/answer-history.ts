@@ -1,5 +1,5 @@
+import { applyRating, type CardSchedule, unscheduled } from '@wordhold/db/fsrs';
 import { type DerivedRating, ratings } from '../../../shared/grading/rating';
-import { applyRating, type CardSchedule } from '../../../shared/practice/fsrs';
 import {
   type HistoryAnswer,
   histories,
@@ -35,18 +35,6 @@ const goodAnswerMs = 6500;
 const forgottenAnswerMs = 12_000;
 const answerTimeSteps = 7;
 const answerTimeStepMs = 300;
-
-const unscheduled: CardSchedule = {
-  state: 'new',
-  dueAt: null,
-  stability: null,
-  difficulty: null,
-  reps: 0,
-  lapses: 0,
-  scheduledDays: 0,
-  learningSteps: 0,
-  lastReviewedAt: null,
-};
 
 const baseAnswerMs = (rating: DerivedRating) => {
   if (rating === ratings.easy) {

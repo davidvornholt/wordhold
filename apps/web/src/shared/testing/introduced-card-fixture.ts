@@ -38,13 +38,13 @@ export const seedIntroducedCardFixture = Effect.gen(function* () {
   yield* sql`
     insert into cards (
       entry_id, direction, introduced_at, state, due_at,
-      stability, difficulty, reps, scheduled_days, last_reviewed_at
+      stability, stability_fast, difficulty, reps, scheduled_days, last_reviewed_at
     ) values
-      (${unintroducedEntryId}, 'to_target', null, 'new', null, null, null, 0, 0, null),
-      (${unintroducedEntryId}, 'to_native', null, 'new', null, null, null, 0, 0, null),
-      (${firstReviewEntryId}, 'to_target', ${fixtureNow}, 'new', null, null, null, 0, 0, null),
-      (${firstReviewEntryId}, 'to_native', ${fixtureNow}, 'new', null, null, null, 0, 0, null),
-      (${dueEntryId}, 'to_target', ${fixtureNow}, 'review', ${new Date('2026-08-19T12:00:00.000Z')}, 10, 5, 4, 10, ${new Date('2026-08-09T12:00:00.000Z')}),
-      (${dueEntryId}, 'to_native', ${fixtureNow}, 'review', ${new Date('2026-08-21T12:00:00.000Z')}, 10, 5, 4, 10, ${new Date('2026-08-11T12:00:00.000Z')})
+      (${unintroducedEntryId}, 'to_target', null, 'new', null, null, null, null, 0, 0, null),
+      (${unintroducedEntryId}, 'to_native', null, 'new', null, null, null, null, 0, 0, null),
+      (${firstReviewEntryId}, 'to_target', ${fixtureNow}, 'new', null, null, null, null, 0, 0, null),
+      (${firstReviewEntryId}, 'to_native', ${fixtureNow}, 'new', null, null, null, null, 0, 0, null),
+      (${dueEntryId}, 'to_target', ${fixtureNow}, 'review', ${new Date('2026-08-19T12:00:00.000Z')}, 10, 2, 5, 4, 10, ${new Date('2026-08-09T12:00:00.000Z')}),
+      (${dueEntryId}, 'to_native', ${fixtureNow}, 'review', ${new Date('2026-08-21T12:00:00.000Z')}, 10, 2, 5, 4, 10, ${new Date('2026-08-11T12:00:00.000Z')})
   `;
 });

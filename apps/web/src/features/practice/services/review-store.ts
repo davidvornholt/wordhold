@@ -1,5 +1,6 @@
 import { isAcceptedAlternative } from '@wordhold/ai/judge/schema';
 import { Database } from '@wordhold/db/client';
+import { advancesSchedule, applyRating } from '@wordhold/db/fsrs';
 import type { CourseKind, LanguageCode } from '@wordhold/db/schema/courses';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import type { AnswerSource } from '@wordhold/db/schema/entries';
@@ -7,7 +8,6 @@ import type { cards } from '@wordhold/db/schema/practice';
 import { Context, Effect, Layer } from 'effect';
 import type { AcceptedAnswer } from '../../../shared/grading/deterministic-match';
 import { ratings } from '../../../shared/grading/rating';
-import { applyRating } from '../../../shared/practice/fsrs';
 import { entryIsKnown } from '../../../shared/practice/known-entry';
 import { cardRelatedWords } from '../../../shared/practice/practised-directions';
 import { saveDerivedKeyPoints } from '../../../shared/vocabulary/key-points';
@@ -22,7 +22,6 @@ import type {
   SubmissionRecord,
 } from '../schemas/practice-models';
 import { commitGradedAnswer, type RunReviewTransaction } from './review-commit';
-import { advancesSchedule } from './schedule-guard';
 
 type SubmissionRow = typeof cards.$inferSelect & {
   readonly targetText: string;
@@ -159,7 +158,8 @@ export class PracticeReviewStore extends Context.Service<
       const findSubmission = (cardId: string, revision: number) =>
         sql<SubmissionRow>`
           select c.id, c.entry_id as "entryId", c.direction,
-            c.state, c.due_at as "dueAt", c.stability, c.difficulty,
+            c.state, c.due_at as "dueAt", c.stability,
+            c.stability_fast as "stabilityFast", c.difficulty,
             c.reps, c.lapses, c.scheduled_days as "scheduledDays",
             c.learning_steps as "learningSteps",
             c.last_reviewed_at as "lastReviewedAt", c.revision,
@@ -234,6 +234,7 @@ export class PracticeReviewStore extends Context.Service<
                       ? sql<{ readonly revision: number }>`
                         update cards set state = ${next.state}::card_state,
                           due_at = ${next.dueAt}, stability = ${next.stability},
+                          stability_fast = ${next.stabilityFast},
                           difficulty = ${next.difficulty}, reps = ${next.reps},
                           lapses = ${next.lapses}, scheduled_days = ${next.scheduledDays},
                           learning_steps = ${next.learningSteps},

@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import { Effect, Schema } from 'effect';
 import { makeDrizzle } from './drizzle';
+import { type ReplayedReview, replayReviews } from './fsrs';
 
 export const migrationsFolder = `${import.meta.dir}/../drizzle`;
 
@@ -149,6 +150,80 @@ const alignRelationCardsWithTheirWords = (
     catch: migrationError,
   });
 
+// Cards scheduled before FSRS-7 have no short-term stability, and their
+// FSRS-6 stability and difficulty mean something else under FSRS-7. Every
+// answer is in `reviews`, so each such card is rebuilt from its answers as if
+// FSRS-7 had always scheduled it, due date included. Safe to rerun: rebuilt
+// cards have their short-term stability.
+type CardAnswers = {
+  readonly cardId: string;
+  readonly answers: ReadonlyArray<{
+    readonly reviewedAt: string;
+    readonly rating: ReplayedReview['rating'];
+  }>;
+};
+
+const rebuildSchedule = ({ cardId, answers }: CardAnswers) => {
+  const schedule = replayReviews(
+    answers.map((answer) => ({
+      reviewedAt: new Date(answer.reviewedAt),
+      rating: answer.rating,
+    })),
+  );
+  if (schedule.stability === null) {
+    throw new Error(`Card ${cardId} has a schedule but no answers.`);
+  }
+  return { id: cardId, ...schedule };
+};
+
+const rescheduleCardsWithFsrs7 = (database: ReturnType<typeof makeDrizzle>) =>
+  Effect.tryPromise({
+    try: () =>
+      database.transaction(async (transaction) => {
+        const cards = await transaction.execute<CardAnswers>(sql`
+          select card.id as "cardId",
+            coalesce(
+              jsonb_agg(
+                jsonb_build_object('reviewedAt', review.reviewed_at, 'rating', review.rating)
+                order by review.reviewed_at, review.id
+              ) filter (where review.id is not null),
+              '[]'::jsonb
+            ) as answers
+          from cards as card
+          left join reviews as review on review.card_id = card.id
+          where card.stability is not null and card.stability_fast is null
+          group by card.id
+        `);
+        if (cards.length === 0) {
+          return;
+        }
+        const schedules = cards.map(rebuildSchedule);
+        await transaction.execute(sql`
+          update cards as card set
+            state = v.state,
+            due_at = v."dueAt",
+            stability = v.stability,
+            stability_fast = v."stabilityFast",
+            difficulty = v.difficulty,
+            reps = v.reps,
+            lapses = v.lapses,
+            scheduled_days = v."scheduledDays",
+            learning_steps = v."learningSteps",
+            last_reviewed_at = v."lastReviewedAt",
+            revision = card.revision + 1
+          from jsonb_to_recordset(${JSON.stringify(schedules)}::jsonb) as v(
+            id uuid, state card_state, "dueAt" timestamptz,
+            stability double precision, "stabilityFast" double precision,
+            difficulty double precision, reps integer, lapses integer,
+            "scheduledDays" double precision, "learningSteps" integer,
+            "lastReviewedAt" timestamptz
+          )
+          where card.id = v.id
+        `);
+      }),
+    catch: migrationError,
+  });
+
 export const migrateDatabase = (url: string) =>
   Effect.acquireUseRelease(
     Effect.try({
@@ -168,6 +243,7 @@ export const migrateDatabase = (url: string) =>
         Effect.flatMap(() => fileUnitsIntoBooks(database)),
         Effect.flatMap(() => fileEntriesIntoBooks(database)),
         Effect.flatMap(() => alignRelationCardsWithTheirWords(database)),
+        Effect.flatMap(() => rescheduleCardsWithFsrs7(database)),
       ),
     (database) => Effect.promise(() => database.$client.end()),
   );

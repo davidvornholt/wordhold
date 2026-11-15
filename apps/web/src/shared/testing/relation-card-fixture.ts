@@ -26,7 +26,7 @@ export const seedDueSynonymCard = Effect.gen(function* () {
   yield* sql`
     update cards
     set introduced_at = ${fixtureNow}, state = 'review',
-      due_at = ${synonymDueAt}, stability = 10, difficulty = 5, reps = 4,
+      due_at = ${synonymDueAt}, stability = 10, stability_fast = 2, difficulty = 5, reps = 4,
       scheduled_days = 10, last_reviewed_at = ${new Date('2026-08-09T12:00:00.000Z')}
     where entry_id = ${dueEntryId} and direction = 'to_synonym'
   `;

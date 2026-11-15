@@ -1,10 +1,9 @@
+import { replayReviews } from '@wordhold/db/fsrs';
 import type { cards } from '@wordhold/db/schema/practice';
 import type {
   DerivedRating,
   GradeOutcome,
 } from '../../../shared/grading/rating';
-import { applyRating } from '../../../shared/practice/fsrs';
-import { advancesSchedule } from './schedule-guard';
 
 export type RepairCard = typeof cards.$inferSelect;
 export type RepairReview = {
@@ -28,28 +27,18 @@ export const replayCorrectedReviews = (
   reviews: ReadonlyArray<RepairReview>,
   corrections: ReadonlyArray<ReviewCorrection>,
 ): RepairCard => {
-  let card: RepairCard = {
-    ...stored,
-    state: 'new',
-    dueAt: null,
-    stability: null,
-    difficulty: null,
-    reps: 0,
-    lapses: 0,
-    scheduledDays: 0,
-    learningSteps: 0,
-    lastReviewedAt: null,
-  };
   const correctedRatings = new Map(
     corrections.map((item) => [item.review.id, item.rating]),
   );
-  for (const review of reviews) {
-    const rating = correctedRatings.get(review.id) ?? review.rating;
-    if (advancesSchedule(card, review.reviewedAt, rating !== 1)) {
-      card = { ...card, ...applyRating(card, rating, review.reviewedAt) };
-    }
-  }
-  return card;
+  return {
+    ...stored,
+    ...replayReviews(
+      reviews.map((review) => ({
+        reviewedAt: review.reviewedAt,
+        rating: correctedRatings.get(review.id) ?? review.rating,
+      })),
+    ),
+  };
 };
 
 export const needsReassessment = (review: RepairReview): boolean => {

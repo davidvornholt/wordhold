@@ -7,6 +7,7 @@ import {
 } from '@wordhold/db/testing/postgres-test-database';
 import { readMigrationFiles } from 'drizzle-orm/migrator';
 import { Effect } from 'effect';
+import { replayReviews } from './fsrs';
 import {
   DatabaseMigrationError,
   migrateDatabase,
@@ -27,8 +28,10 @@ const migrationCount = migrations.length;
 // a cold hosted runner. Every other test clones the migrated template.
 const migrationReplayTimeoutMs = 15_000;
 
+const getMigrationErrorEffect = (url: string) =>
+  migrateDatabase(url).pipe(Effect.flip);
 const getMigrationError = (url: string) =>
-  Effect.runPromise(migrateDatabase(url).pipe(Effect.flip));
+  Effect.runPromise(getMigrationErrorEffect(url));
 
 // The migrator applies only migrations newer than the newest recorded one,
 // so a replay unrecords the given migration and every later one.
@@ -140,6 +143,7 @@ it(
           yield* sql`drop table device_code`;
           yield* sql`alter table reviews drop column exam_round_id`;
           yield* sql`drop table exam_round_cards, exam_rounds, exam_entries, exams`;
+          yield* sql`alter table cards drop column stability_fast`;
           yield* unrecordMigrationsFrom(importPositionConstraintMigrationHash);
           yield* migrateDatabase(database.url);
           const pages = yield* sql<{ readonly expected: number }>`
@@ -337,6 +341,7 @@ it('drops the synonyms the judge accepted into the target language', async () =>
         yield* sql`alter table reviews drop column exam_round_id`;
         yield* sql`drop table exam_round_cards, exam_rounds, exam_entries, exams`;
         yield* sql`alter type ai_provider rename value 'anthropic' to 'replayed_anthropic'`;
+        yield* sql`alter table cards drop column stability_fast`;
         yield* unrecordMigrationsFrom(judgeTargetSynonymsMigrationHash);
         yield* migrateDatabase(database.url);
         return yield* sql<{
@@ -382,6 +387,7 @@ it('drops the judge verdicts stored without otherWording', async () => {
         yield* sql`alter table reviews drop column exam_round_id`;
         yield* sql`drop table exam_round_cards, exam_rounds, exam_entries, exams`;
         yield* sql`alter type ai_provider rename value 'anthropic' to 'replayed_anthropic'`;
+        yield* sql`alter table cards drop column stability_fast`;
         yield* unrecordMigrationsFrom(staleJudgeVerdictsMigrationHash);
         yield* migrateDatabase(database.url);
         return yield* sql<{ readonly answer: string }>`
@@ -392,6 +398,96 @@ it('drops the judge verdicts stored without otherWording', async () => {
   );
 
   expect(answers).toEqual([{ answer: 'current' }, { answer: 'definition' }]);
+});
+
+const fsrs6Answers = [
+  { reviewedAt: new Date('2026-09-01T08:00:00Z'), rating: 3 },
+  { reviewedAt: new Date('2026-09-05T08:00:00Z'), rating: 3 },
+  { reviewedAt: new Date('2026-09-20T08:00:00Z'), rating: 1 },
+  { reviewedAt: new Date('2026-09-20T08:12:00Z'), rating: 3 },
+  { reviewedAt: new Date('2026-10-01T08:00:00Z'), rating: 4 },
+] as const;
+
+const insertFsrs6Card = Effect.gen(function* () {
+  const sql = yield* Database;
+  yield* sql`
+    insert into courses (id, name, target_language)
+    values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'Englisch', 'en')
+  `;
+  yield* sql`
+    insert into entries (id, course_id, target_text, native_text)
+    values ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'happy', 'glücklich')
+  `;
+  // The memory and due date FSRS-6 left after those answers.
+  yield* sql`
+    insert into cards (id, entry_id, direction, introduced_at, state, due_at,
+      stability, difficulty, reps, lapses, scheduled_days, last_reviewed_at)
+    values ('dddddddd-dddd-4ddd-8ddd-dddddddddddd', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+      'to_target', '2026-09-01T07:00:00Z', 'review', '2026-11-20T08:00:00Z',
+      48.2, 4.1, 5, 1, 50, '2026-10-01T08:00:00Z')
+  `;
+});
+
+const loadRebuiltCard = Effect.gen(function* () {
+  const sql = yield* Database;
+  const rows = yield* sql<{
+    readonly state: string;
+    readonly dueAt: Date | null;
+    readonly stability: number | null;
+    readonly stabilityFast: number | null;
+    readonly difficulty: number | null;
+    readonly reps: number;
+    readonly lapses: number;
+    readonly scheduledDays: number;
+    readonly learningSteps: number;
+    readonly lastReviewedAt: Date | null;
+    readonly revision: number;
+  }>`
+    select state, due_at as "dueAt", stability, stability_fast as "stabilityFast",
+      difficulty, reps, lapses, scheduled_days as "scheduledDays",
+      learning_steps as "learningSteps", last_reviewed_at as "lastReviewedAt",
+      revision
+    from cards
+  `;
+  return rows[0];
+});
+
+it('reschedules FSRS-6 cards from their answers under FSRS-7', async () => {
+  const card = await Effect.runPromise(
+    withMigratedTestDatabase((database) =>
+      Effect.gen(function* () {
+        const sql = yield* Database;
+        yield* insertFsrs6Card;
+        for (const answer of fsrs6Answers) {
+          yield* sql`
+            insert into reviews (card_id, reviewed_at, rating, answer_text)
+            values ('dddddddd-dddd-4ddd-8ddd-dddddddddddd', ${answer.reviewedAt}, ${answer.rating}, 'happy')
+          `;
+        }
+        yield* migrateDatabase(database.url);
+        yield* migrateDatabase(database.url);
+        return yield* loadRebuiltCard;
+      }).pipe(Effect.provide(testDatabaseLayer(database.url))),
+    ),
+  );
+
+  const expected = replayReviews(fsrs6Answers);
+  expect(expected.stabilityFast).not.toBeNull();
+  expect(card).toEqual({ ...expected, revision: 1 });
+  expect(card?.dueAt).not.toEqual(new Date('2026-11-20T08:00:00Z'));
+});
+
+it('refuses to reschedule a card whose answers are missing', async () => {
+  const error = await Effect.runPromise(
+    withMigratedTestDatabase((database) =>
+      Effect.gen(function* () {
+        yield* insertFsrs6Card;
+        return yield* getMigrationErrorEffect(database.url);
+      }).pipe(Effect.provide(testDatabaseLayer(database.url))),
+    ),
+  );
+
+  expect(error).toBeInstanceOf(DatabaseMigrationError);
 });
 
 it('reports a malformed database URL as a typed migration error', async () => {

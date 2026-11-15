@@ -68,6 +68,7 @@ describe('PracticeReviewStore introduction contract', () => {
               state: 'new',
               dueAt: null,
               stability: null,
+              stabilityFast: null,
               difficulty: null,
               reps: 0,
               lapses: 0,
