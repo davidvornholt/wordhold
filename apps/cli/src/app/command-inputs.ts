@@ -42,3 +42,11 @@ export const idArgument = (description: string, name = 'id') =>
 const decodeId = validate(IdSchema, 'id');
 
 export const validId = (value: string) => decodeId(value.trim());
+
+/** A flag given once per id; it may be left out. */
+export const idsFlag = (name: string, description: string) =>
+  Flag.String(name).pipe(
+    Flag.withDescription(description),
+    Flag.atLeast(0),
+    Flag.map((ids) => ids.map((id) => id.trim())),
+  );

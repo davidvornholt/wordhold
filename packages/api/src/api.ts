@@ -13,6 +13,7 @@ import {
   MemberSchema,
   ProgressSchema,
   SavedEntrySchema,
+  UnitSchema,
 } from './vocabulary';
 
 /** The app's own limits; a word or term is short, a text may be long. */
@@ -72,6 +73,35 @@ export type EditEntryPayload = typeof EditEntryPayloadSchema.Type;
 export const SearchQuerySchema = text(entryTextLength);
 
 const ids = Schema.Array(IdSchema);
+
+/**
+ * A new unit at the end of a book of a language course. The server checks
+ * how long its name may be, by the same rule as the app.
+ */
+export const AddUnitPayloadSchema = Schema.Struct({
+  bookId: IdSchema,
+  name: Schema.Trim.check(Schema.isMinLength(1)),
+});
+export type AddUnitPayload = typeof AddUnitPayloadSchema.Type;
+
+/**
+ * Words of a course moved together into one of its units, or directly into
+ * one of its books when only a book is given. Their cards, schedules and
+ * answers move with them.
+ */
+export const MoveEntriesPayloadSchema = Schema.Struct({
+  entryIds: ids.check(Schema.isMinLength(1), Schema.isUnique()),
+  bookId: Schema.optional(IdSchema),
+  unitId: Schema.optional(IdSchema),
+}).check(
+  Schema.makeFilter(
+    (payload) =>
+      payload.bookId !== undefined ||
+      payload.unitId !== undefined ||
+      'Name the unit or the book to move the words to.',
+  ),
+);
+export type MoveEntriesPayload = typeof MoveEntriesPayloadSchema.Type;
 
 const examDirections = Schema.Array(DirectionSchema).check(
   Schema.isMinLength(1),
@@ -134,6 +164,19 @@ export const CoursesApi = HttpApiGroup.make('courses')
       params: idParams,
       payload: AddEntryPayloadSchema,
       success: SavedEntrySchema,
+      error: failures,
+    }),
+    /** The moved words as they are now, in course order. */
+    HttpApiEndpoint.post('move', '/:id/entries/move', {
+      params: idParams,
+      payload: MoveEntriesPayloadSchema,
+      success: Schema.Array(EntrySchema),
+      error: failures,
+    }),
+    HttpApiEndpoint.post('addUnit', '/:id/units', {
+      params: idParams,
+      payload: AddUnitPayloadSchema,
+      success: UnitSchema,
       error: failures,
     }),
   )

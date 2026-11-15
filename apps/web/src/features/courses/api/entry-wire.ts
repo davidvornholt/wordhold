@@ -1,10 +1,12 @@
 import type {
   CourseOutline as ApiOutline,
   Entry,
+  Unit,
 } from '@wordhold/api/vocabulary';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import type {
   CourseOutline,
+  CourseUnit,
   VocabularyEntry,
   WordProgress,
 } from '../schemas/course-units';
@@ -57,6 +59,12 @@ const placeNumbers = (progress: WordProgress) => ({
   nextDueAt: instant(progress.nextDueAt),
 });
 
+export const toApiUnit = (unit: CourseUnit): Unit => ({
+  id: unit.id,
+  name: unit.name,
+  ...placeNumbers(unit),
+});
+
 export const toApiOutline = (
   course: ApiCourse,
   directions: ReadonlyArray<AnswerDirection>,
@@ -70,13 +78,7 @@ export const toApiOutline = (
           id: book.id,
           name: book.name,
           ...placeNumbers(book),
-          units: units
-            .filter((unit) => unit.bookId === book.id)
-            .map((unit) => ({
-              id: unit.id,
-              name: unit.name,
-              ...placeNumbers(unit),
-            })),
+          units: units.filter((unit) => unit.bookId === book.id).map(toApiUnit),
         }))
       : [],
 });
