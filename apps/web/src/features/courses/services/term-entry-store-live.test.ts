@@ -229,10 +229,18 @@ describe('TermEntryStore edits', () => {
           readonly source: string;
         }>`select text, source from accepted_answers where entry_id = ${entryId}`;
         expect(answers).toEqual([{ text: corrected, source: 'textbook' }]);
+        // Saving the same term again leaves the card on screen answerable.
+        yield* store.update({
+          ...edit,
+          term: 'Katalysatoren',
+          definition: corrected,
+        });
         const cards = yield* sql<{
           readonly reps: number;
-        }>`select reps from cards where entry_id = ${entryId}`;
-        expect(cards).toEqual([{ reps: 3 }]);
+          readonly revision: number;
+        }>`select reps, revision from cards where entry_id = ${entryId}`;
+        // Each correction expired the card shown before it.
+        expect(cards).toEqual([{ reps: 3, revision: 2 }]);
       }),
     );
   });
