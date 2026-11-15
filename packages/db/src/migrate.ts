@@ -180,6 +180,24 @@ const rescheduleCardsWithFsrs7 = (database: ReturnType<typeof makeDrizzle>) =>
   Effect.tryPromise({
     try: () =>
       database.transaction(async (transaction) => {
+        // The previous app version keeps answering during a deploy, and it
+        // writes an answer and its card in one transaction guarded by the
+        // card's revision. Locking the cards first lets an answer in flight
+        // commit before their answers are read, and makes a later answer
+        // wait and then fail its revision check. The answers are read by a
+        // second statement because a statement sees only what was committed
+        // when it started, not what committed while it waited for a lock.
+        // It reads only the locked cards: a card first answered after the
+        // lock is not locked, so a rebuild could overwrite its next answer.
+        const locked = await transaction.execute<{ readonly id: string }>(sql`
+          select id from cards
+          where stability is not null and stability_fast is null
+          for update
+        `);
+        if (locked.length === 0) {
+          return;
+        }
+        const lockedIds = JSON.stringify(locked.map((card) => card.id));
         const cards = await transaction.execute<CardAnswers>(sql`
           select card.id as "cardId",
             coalesce(
@@ -191,12 +209,11 @@ const rescheduleCardsWithFsrs7 = (database: ReturnType<typeof makeDrizzle>) =>
             ) as answers
           from cards as card
           left join reviews as review on review.card_id = card.id
-          where card.stability is not null and card.stability_fast is null
+          where card.id in (
+            select value::uuid from jsonb_array_elements_text(${lockedIds}::jsonb)
+          )
           group by card.id
         `);
-        if (cards.length === 0) {
-          return;
-        }
         const schedules = cards.map(rebuildSchedule);
         await transaction.execute(sql`
           update cards as card set
