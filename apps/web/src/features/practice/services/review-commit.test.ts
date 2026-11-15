@@ -51,7 +51,7 @@ describe('commitGradedAnswer', () => {
     verdict({ spelling: { ok: false, note: 'Tippfehler' } }),
   ])('rechecks the alternative predicate before persistence', async (value) => {
     const { store, transaction } = makeStore();
-    await Effect.runPromise(commitGradedAnswer(transaction, value, true));
+    await Effect.runPromise(commitGradedAnswer(transaction, value));
     expect(store.alternatives).toBe(0);
     expect(store.reviews).toBe(1);
   });

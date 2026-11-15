@@ -1,6 +1,11 @@
 import { isAcceptedAlternative } from '@wordhold/ai/judge/schema';
 import { Database } from '@wordhold/db/client';
-import { advancesSchedule, applyRating } from '@wordhold/db/fsrs';
+import {
+  advancesSchedule,
+  applyRating,
+  type ReplayedReview,
+  replayReviews,
+} from '@wordhold/db/fsrs';
 import type { CourseKind, LanguageCode } from '@wordhold/db/schema/courses';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import type { AnswerSource } from '@wordhold/db/schema/entries';
@@ -38,6 +43,19 @@ const databaseError = (operation: string, cause: unknown) =>
     cause,
     message: 'Die Antwort konnte nicht gespeichert werden.',
   });
+
+// The previous app version keeps answering during a deploy and after a roll
+// back, so a card can still have FSRS-6 memory after the migration rebuilt
+// every such card. It is rebuilt from its answers the way the migration does,
+// and the commit stores the result under the card's revision guard.
+const withFsrs7Memory = (sql: Database, row: SubmissionRow) =>
+  row.stability === null || row.stabilityFast !== null
+    ? Effect.succeed(row)
+    : sql<ReplayedReview>`
+        select reviewed_at as "reviewedAt", rating from reviews
+        where card_id = ${row.id}
+        order by reviewed_at, id
+      `.pipe(Effect.map((history) => ({ ...row, ...replayReviews(history) })));
 
 const loadEntryKnown = (sql: Database, entryId: string) =>
   sql<{ readonly known: boolean }>`
@@ -175,9 +193,13 @@ export class PracticeReviewStore extends Context.Service<
           where c.id = ${cardId} and c.revision = ${revision}
             and c.introduced_at is not null
         `.pipe(
-          Effect.map((rows) => {
-            const [row] = rows;
-            return row === undefined
+          Effect.flatMap(([stored]) =>
+            stored === undefined
+              ? Effect.succeed(undefined)
+              : withFsrs7Memory(sql, stored),
+          ),
+          Effect.map((row) =>
+            row === undefined
               ? undefined
               : {
                   card: row,
@@ -190,8 +212,8 @@ export class PracticeReviewStore extends Context.Service<
                   },
                   courseKind: row.courseKind,
                   targetLanguage: row.targetLanguage,
-                };
-          }),
+                },
+          ),
           Effect.mapError((cause) =>
             databaseError('find submitted card', cause),
           ),
@@ -220,7 +242,16 @@ export class PracticeReviewStore extends Context.Service<
           Effect.mapError((cause) => databaseError('save key points', cause)),
         );
       const commit = (input: PersistReviewInput) => {
-        const next = applyRating(input.card, input.rating, input.reviewedAt);
+        const scheduleAdvances = advancesSchedule(
+          input.card,
+          input.reviewedAt,
+          input.rating !== ratings.again,
+        );
+        // A held answer writes back the schedule the card was loaded with,
+        // which stores the memory findSubmission rebuilt from FSRS-6.
+        const next = scheduleAdvances
+          ? applyRating(input.card, input.rating, input.reviewedAt)
+          : input.card;
         const mapCommitError = (cause: unknown) =>
           databaseError('commit graded answer', cause);
         const runTransaction: RunReviewTransaction<PracticeDatabaseError> = (
@@ -231,9 +262,8 @@ export class PracticeReviewStore extends Context.Service<
               Effect.gen(function* () {
                 const unchanged = yield* lockGradedEntry(sql, input);
                 return yield* work({
-                  advanceCard: (advanceSchedule) =>
-                    (advanceSchedule
-                      ? sql<{ readonly revision: number }>`
+                  advanceCard: () =>
+                    sql<{ readonly revision: number }>`
                         update cards set state = ${next.state}::card_state,
                           due_at = ${next.dueAt}, stability = ${next.stability},
                           stability_fast = ${next.stabilityFast},
@@ -245,14 +275,7 @@ export class PracticeReviewStore extends Context.Service<
                         where id = ${input.card.id} and revision = ${input.expectedRevision}
                           and introduced_at is not null
                         returning revision
-                      `
-                      : sql<{ readonly revision: number }>`
-                        update cards set revision = revision + 1
-                        where id = ${input.card.id} and revision = ${input.expectedRevision}
-                          and introduced_at is not null
-                        returning revision
-                      `
-                    ).pipe(
+                      `.pipe(
                       Effect.map((rows) => rows.at(0)?.revision),
                       Effect.mapError(mapCommitError),
                     ),
@@ -268,29 +291,17 @@ export class PracticeReviewStore extends Context.Service<
                 Effect.fail(mapCommitError(cause)),
               ),
             );
-        const scheduleAdvances = advancesSchedule(
-          input.card,
-          input.reviewedAt,
-          input.rating !== ratings.again,
-        );
         return commitGradedAnswer(
           runTransaction,
           input.outcome.method === 'judge' ? input.outcome.verdict : null,
-          scheduleAdvances,
         ).pipe(
           Effect.map((committed) => ({
             ...committed,
-            schedule: scheduleAdvances
-              ? {
-                  advanced: true,
-                  state: next.state,
-                  dueAt: next.dueAt,
-                }
-              : {
-                  advanced: false,
-                  state: input.card.state,
-                  dueAt: input.card.dueAt,
-                },
+            schedule: {
+              advanced: scheduleAdvances,
+              state: next.state,
+              dueAt: next.dueAt,
+            },
           })),
         );
       };
