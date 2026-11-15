@@ -14,6 +14,12 @@ export type VocabularyExampleContext = {
   readonly exampleAudioPath: string | null;
 };
 
+// The word an example was generated for.
+export type GeneratedFor = Pick<
+  VocabularyExampleContext,
+  'entryId' | 'targetText' | 'nativeText'
+>;
+
 type VocabularyExampleRow = {
   readonly entryId: string;
   readonly targetText: string;
@@ -33,6 +39,22 @@ const databaseError = (operation: string, cause: unknown) =>
     message: 'Der Beispielsatz konnte nicht gespeichert werden.',
   });
 
+const insertGenerated = (
+  sql: Database,
+  entryId: string,
+  example: Omit<VocabularyExample, 'source'>,
+) =>
+  sql<VocabularyExample>`
+    insert into entry_examples (
+      entry_id, target_text, native_text, source, position
+    )
+    values (
+      ${entryId}, ${example.targetText}, ${example.nativeText}, 'generated', 0
+    )
+    returning target_text as "targetText",
+      native_text as "nativeText", source
+  `.pipe(Effect.map((rows) => rows[0] ?? ('entry-missing' as const)));
+
 export class VocabularyExampleStore extends Context.Service<
   VocabularyExampleStore,
   {
@@ -42,10 +64,19 @@ export class VocabularyExampleStore extends Context.Service<
       VocabularyExampleContext | undefined,
       CourseDatabaseError
     >;
+    // Resolves to the entry's example, or to why the one generated for the
+    // word was not stored. Generation takes long enough for the word to be
+    // corrected meanwhile, and a sentence for the old word must not land on
+    // the new one. The entry's row lock, held until the transaction ends,
+    // orders this check with an edit, which locks the row before it reads
+    // the stored example.
     readonly storeGenerated: (
-      entryId: string,
+      word: GeneratedFor,
       example: Omit<VocabularyExample, 'source'>,
-    ) => Effect.Effect<VocabularyExample | undefined, CourseDatabaseError>;
+    ) => Effect.Effect<
+      VocabularyExample | 'entry-missing' | 'word-changed',
+      CourseDatabaseError
+    >;
     readonly storeAudio: (
       entryId: string,
       exampleTargetText: string,
@@ -133,30 +164,27 @@ export class VocabularyExampleStore extends Context.Service<
           );
 
       const storeGenerated = (
-        entryId: string,
+        { entryId, targetText, nativeText }: GeneratedFor,
         example: Omit<VocabularyExample, 'source'>,
       ) =>
         withCriticalSection(
           entryId,
           Effect.gen(function* () {
+            yield* sql`select 1 from entries where id = ${entryId} for share`;
             const context = yield* read(entryId);
             if (context === undefined) {
-              return;
+              return 'entry-missing' as const;
             }
             if (context.example !== null) {
               return context.example;
             }
-            const inserted = yield* sql<VocabularyExample>`
-                insert into entry_examples (
-                  entry_id, target_text, native_text, source, position
-                )
-                values (
-                  ${entryId}, ${example.targetText}, ${example.nativeText}, 'generated', 0
-                )
-                returning target_text as "targetText",
-                  native_text as "nativeText", source
-              `;
-            return inserted[0];
+            if (
+              context.targetText !== targetText ||
+              context.nativeText !== nativeText
+            ) {
+              return 'word-changed' as const;
+            }
+            return yield* insertGenerated(sql, entryId, example);
           }),
         ).pipe(
           Effect.mapError((cause) =>

@@ -51,13 +51,19 @@ export const generateMissingExample = (
     if (generated === undefined) {
       return yield* generationFailed;
     }
-    const stored = yield* store.storeGenerated(context.entryId, {
+    const stored = yield* store.storeGenerated(context, {
       targetText: generated.target,
       nativeText: generated.native,
     });
-    if (stored === undefined) {
+    if (stored === 'entry-missing') {
       return yield* new VocabularyEntryNotFoundError({
         message: 'Vokabel nicht gefunden.',
+      });
+    }
+    if (stored === 'word-changed') {
+      return yield* new CourseExampleGenerationError({
+        message:
+          'Die Vokabel wurde inzwischen geändert. Erzeuge den Beispielsatz noch einmal.',
       });
     }
     return stored;
