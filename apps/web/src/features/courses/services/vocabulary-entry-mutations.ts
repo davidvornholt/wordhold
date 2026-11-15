@@ -7,7 +7,7 @@ import type {
   DeleteEntriesData,
   UpdateVocabularyEntryData,
 } from '../schemas/entry-changes';
-import { replaceTextbookAnswers } from './entry-answers';
+import { expireEntryCards, replaceTextbookAnswers } from './entry-answers';
 import { findCourseDuplicate } from './vocabulary-entry-duplicates';
 
 export type UpdateVocabularyEntryResult =
@@ -170,6 +170,7 @@ export const makeVocabularyEntryMutations = (sql: Database) => {
         { direction: 'to_target', text: input.targetText },
         { direction: 'to_native', text: input.nativeText },
       ]);
+      yield* expireEntryCards(sql, input.entryId);
       if (!wordChanged) {
         return [];
       }

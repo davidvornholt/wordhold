@@ -203,8 +203,9 @@ export const applyReviewRepairs = (plans: ReadonlyArray<ReviewRepairPlan>) =>
     yield* sql.withTransaction(
       Effect.gen(function* () {
         for (const plan of plans) {
-          yield* sql`select id from cards where id = ${plan.card.id} for update`;
+          // Entry before card, the order answers and corrections take them in.
           yield* sql`select id from entries where id = ${plan.card.entryId} for update`;
+          yield* sql`select id from cards where id = ${plan.card.id} for update`;
           const current = (yield* loadCards([plan.card.id])).at(0);
           const history = yield* loadHistory(plan.card);
           if (

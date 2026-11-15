@@ -9,7 +9,7 @@ import { saveDerivedKeyPoints } from '../../../shared/vocabulary/key-points';
 import { CourseDatabaseError } from '../errors/courses-errors';
 import type { UpdateTermEntryData } from '../schemas/entry-changes';
 import type { CreateTermEntryData } from '../schemas/term-entry-creation';
-import { replaceTextbookAnswers } from './entry-answers';
+import { expireEntryCards, replaceTextbookAnswers } from './entry-answers';
 
 export type TermCourse = {
   readonly kind: CourseKind;
@@ -79,6 +79,7 @@ const correctTerm = (sql: Database, input: UpdateTermEntryData) =>
     yield* replaceTextbookAnswers(sql, input.entryId, [
       { direction: 'to_native', text: input.definition },
     ]);
+    yield* expireEntryCards(sql, input.entryId);
     return { kind: 'updated', definitionChanged } as const;
   });
 

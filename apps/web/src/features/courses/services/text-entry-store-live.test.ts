@@ -137,21 +137,26 @@ describe('TextEntryStore', () => {
         expect(
           yield* store.update({ ...corrected, courseId: subjectId }),
         ).toEqual({ kind: 'text-missing' });
+        // Saving the same text again leaves the card on screen answerable.
+        expect(yield* store.update(corrected)).toEqual({ kind: 'updated' });
         const rows = yield* sql<{
           readonly targetText: string;
           readonly nativeText: string;
           readonly cardId: string;
+          readonly revision: number;
         }>`
           select e.target_text as "targetText",
-            e.native_text as "nativeText", c.id as "cardId"
+            e.native_text as "nativeText", c.id as "cardId", c.revision
           from entries e join cards c on c.entry_id = e.id
           where e.id = ${entryId}
         `;
+        // The correction expired the card shown before it.
         expect(rows).toEqual([
           {
             targetText: corrected.title,
             nativeText: corrected.text,
             cardId: card?.id ?? '',
+            revision: 1,
           },
         ]);
       }),

@@ -7,8 +7,8 @@ import { StaleAnswerSubmissionError } from '../errors/practice-errors';
 
 export type ReviewCommitOperations<E> = {
   // Every graded answer claims the expected revision and writes the card's
-  // schedule, which a held answer leaves as loaded. Undefined means another
-  // submission got there first.
+  // schedule, which a held answer leaves as loaded. Undefined means the card
+  // is stale: another submission or a correction of its entry came first.
   readonly advanceCard: () => Effect.Effect<number | undefined, E>;
   readonly insertReview: () => Effect.Effect<void, E>;
   readonly insertAcceptedAlternative: () => Effect.Effect<boolean, E>;

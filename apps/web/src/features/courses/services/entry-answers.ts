@@ -36,3 +36,14 @@ export const replaceTextbookAnswers = (
       })),
     )} on conflict do nothing`;
   });
+
+// A shown card is answered with its revision, and grading reads the entry's
+// current texts. Corrected texts would grade the answer against a card the
+// learner wasn't shown, so they expire every card of the entry: an answer to
+// the old card, also one still being graded, is turned away as stale. The
+// cards keep their schedule. Runs inside the caller's transaction, after the
+// entry row is locked, the order answers take entries and cards in.
+export const expireEntryCards = (sql: Database, entryId: string) =>
+  sql`
+    update cards set revision = revision + 1 where entry_id = ${entryId}
+  `.pipe(Effect.asVoid);
