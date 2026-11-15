@@ -14,6 +14,7 @@ const stored: RepairCard = {
   introducedAt: new Date('2026-09-21T10:00:00Z'),
   dueAt: null,
   stability: 4,
+  stabilityFast: 1,
   difficulty: 9.54,
   reps: 7,
   lapses: 0,
@@ -48,7 +49,8 @@ describe('review repair replay', () => {
       })),
     );
     expect(repaired.state).toBe('review');
-    expect(repaired.reps).toBe(2);
+    // FSRS-7 graduates the first Good answer, so both repeats are premature.
+    expect(repaired.reps).toBe(1);
     expect(repaired.difficulty).toBeLessThan(stored.difficulty ?? 0);
     expect(repaired.revision).toBe(stored.revision);
   });

@@ -27,8 +27,10 @@ const migrationCount = migrations.length;
 // a cold hosted runner. Every other test clones the migrated template.
 const migrationReplayTimeoutMs = 15_000;
 
+const getMigrationErrorEffect = (url: string) =>
+  migrateDatabase(url).pipe(Effect.flip);
 const getMigrationError = (url: string) =>
-  Effect.runPromise(migrateDatabase(url).pipe(Effect.flip));
+  Effect.runPromise(getMigrationErrorEffect(url));
 
 // The migrator applies only migrations newer than the newest recorded one,
 // so a replay unrecords the given migration and every later one.
@@ -140,6 +142,7 @@ it(
           yield* sql`drop table device_code`;
           yield* sql`alter table reviews drop column exam_round_id`;
           yield* sql`drop table exam_round_cards, exam_rounds, exam_entries, exams`;
+          yield* sql`alter table cards drop column stability_fast`;
           yield* unrecordMigrationsFrom(importPositionConstraintMigrationHash);
           yield* migrateDatabase(database.url);
           const pages = yield* sql<{ readonly expected: number }>`
@@ -337,6 +340,7 @@ it('drops the synonyms the judge accepted into the target language', async () =>
         yield* sql`alter table reviews drop column exam_round_id`;
         yield* sql`drop table exam_round_cards, exam_rounds, exam_entries, exams`;
         yield* sql`alter type ai_provider rename value 'anthropic' to 'replayed_anthropic'`;
+        yield* sql`alter table cards drop column stability_fast`;
         yield* unrecordMigrationsFrom(judgeTargetSynonymsMigrationHash);
         yield* migrateDatabase(database.url);
         return yield* sql<{
@@ -382,6 +386,7 @@ it('drops the judge verdicts stored without otherWording', async () => {
         yield* sql`alter table reviews drop column exam_round_id`;
         yield* sql`drop table exam_round_cards, exam_rounds, exam_entries, exams`;
         yield* sql`alter type ai_provider rename value 'anthropic' to 'replayed_anthropic'`;
+        yield* sql`alter table cards drop column stability_fast`;
         yield* unrecordMigrationsFrom(staleJudgeVerdictsMigrationHash);
         yield* migrateDatabase(database.url);
         return yield* sql<{ readonly answer: string }>`

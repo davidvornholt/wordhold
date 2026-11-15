@@ -142,10 +142,10 @@ describe('PracticeSessionStore queue policy', () => {
           yield* sql`
             insert into cards (
               entry_id, direction, introduced_at, state, due_at,
-              stability, difficulty, reps, scheduled_days, last_reviewed_at
+              stability, stability_fast, difficulty, reps, scheduled_days, last_reviewed_at
             )
             select id, 'to_target', ${fixtureNow}, 'review',
-              ${fixtureNow}::timestamptz - interval '1 day', 10, 5, 4, 10,
+              ${fixtureNow}::timestamptz - interval '1 day', 10, 2, 5, 4, 10,
               ${fixtureNow}::timestamptz - interval '11 days'
             from entries where target_text like 'overdue-%'
           `;

@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import { Effect, Schema } from 'effect';
 import { makeDrizzle } from './drizzle';
+import { type ReplayedReview, replayReviews } from './fsrs';
 
 export const migrationsFolder = `${import.meta.dir}/../drizzle`;
 
@@ -149,6 +150,97 @@ const alignRelationCardsWithTheirWords = (
     catch: migrationError,
   });
 
+// Cards scheduled before FSRS-7 have no short-term stability, and their
+// FSRS-6 stability and difficulty mean something else under FSRS-7. Every
+// answer is in `reviews`, so each such card is rebuilt from its answers as if
+// FSRS-7 had always scheduled it, due date included. Safe to rerun: rebuilt
+// cards have their short-term stability.
+type CardAnswers = {
+  readonly cardId: string;
+  readonly answers: ReadonlyArray<{
+    readonly reviewedAt: string;
+    readonly rating: ReplayedReview['rating'];
+  }>;
+};
+
+const rebuildSchedule = ({ cardId, answers }: CardAnswers) => {
+  const schedule = replayReviews(
+    answers.map((answer) => ({
+      reviewedAt: new Date(answer.reviewedAt),
+      rating: answer.rating,
+    })),
+  );
+  if (schedule.stability === null) {
+    throw new Error(`Card ${cardId} has a schedule but no answers.`);
+  }
+  return { id: cardId, ...schedule };
+};
+
+const rescheduleCardsWithFsrs7 = (database: ReturnType<typeof makeDrizzle>) =>
+  Effect.tryPromise({
+    try: () =>
+      database.transaction(async (transaction) => {
+        // The previous app version keeps answering during a deploy, and it
+        // writes an answer and its card in one transaction guarded by the
+        // card's revision. Locking the cards first lets an answer in flight
+        // commit before their answers are read, and makes a later answer
+        // wait and then fail its revision check. The answers are read by a
+        // second statement because a statement sees only what was committed
+        // when it started, not what committed while it waited for a lock.
+        // It reads only the locked cards: a card first answered after the
+        // lock is not locked, so a rebuild could overwrite its next answer.
+        const locked = await transaction.execute<{ readonly id: string }>(sql`
+          select id from cards
+          where stability is not null and stability_fast is null
+          for update
+        `);
+        if (locked.length === 0) {
+          return;
+        }
+        const lockedIds = JSON.stringify(locked.map((card) => card.id));
+        const cards = await transaction.execute<CardAnswers>(sql`
+          select card.id as "cardId",
+            coalesce(
+              jsonb_agg(
+                jsonb_build_object('reviewedAt', review.reviewed_at, 'rating', review.rating)
+                order by review.reviewed_at, review.id
+              ) filter (where review.id is not null),
+              '[]'::jsonb
+            ) as answers
+          from cards as card
+          left join reviews as review on review.card_id = card.id
+          where card.id in (
+            select value::uuid from jsonb_array_elements_text(${lockedIds}::jsonb)
+          )
+          group by card.id
+        `);
+        const schedules = cards.map(rebuildSchedule);
+        await transaction.execute(sql`
+          update cards as card set
+            state = v.state,
+            due_at = v."dueAt",
+            stability = v.stability,
+            stability_fast = v."stabilityFast",
+            difficulty = v.difficulty,
+            reps = v.reps,
+            lapses = v.lapses,
+            scheduled_days = v."scheduledDays",
+            learning_steps = v."learningSteps",
+            last_reviewed_at = v."lastReviewedAt",
+            revision = card.revision + 1
+          from jsonb_to_recordset(${JSON.stringify(schedules)}::jsonb) as v(
+            id uuid, state card_state, "dueAt" timestamptz,
+            stability double precision, "stabilityFast" double precision,
+            difficulty double precision, reps integer, lapses integer,
+            "scheduledDays" double precision, "learningSteps" integer,
+            "lastReviewedAt" timestamptz
+          )
+          where card.id = v.id
+        `);
+      }),
+    catch: migrationError,
+  });
+
 export const migrateDatabase = (url: string) =>
   Effect.acquireUseRelease(
     Effect.try({
@@ -168,6 +260,7 @@ export const migrateDatabase = (url: string) =>
         Effect.flatMap(() => fileUnitsIntoBooks(database)),
         Effect.flatMap(() => fileEntriesIntoBooks(database)),
         Effect.flatMap(() => alignRelationCardsWithTheirWords(database)),
+        Effect.flatMap(() => rescheduleCardsWithFsrs7(database)),
       ),
     (database) => Effect.promise(() => database.$client.end()),
   );

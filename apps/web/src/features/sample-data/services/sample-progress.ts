@@ -110,6 +110,7 @@ export const writeSampleProgress = (
         state = v.state,
         due_at = v."dueAt",
         stability = v.stability,
+        stability_fast = v."stabilityFast",
         difficulty = v.difficulty,
         reps = v.reps,
         lapses = v.lapses,
@@ -118,8 +119,10 @@ export const writeSampleProgress = (
         last_reviewed_at = v."lastReviewedAt"
       from jsonb_to_recordset(${JSON.stringify(schedules)}::jsonb) as v(
         id uuid, "introducedAt" timestamptz, state card_state,
-        "dueAt" timestamptz, stability real, difficulty real, reps integer,
-        lapses integer, "scheduledDays" real, "learningSteps" integer,
+        "dueAt" timestamptz, stability double precision,
+        "stabilityFast" double precision, difficulty double precision,
+        reps integer, lapses integer, "scheduledDays" double precision,
+        "learningSteps" integer,
         "lastReviewedAt" timestamptz
       )
       where c.id = v.id

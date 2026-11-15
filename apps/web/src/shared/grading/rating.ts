@@ -109,8 +109,8 @@ const recitationRating = (outcome: RecitationOutcome): DerivedRating => {
 
 // `state` is the card's state before this answer. Only a card that has come
 // back after days can be rated easy. Minutes after a word was first seen, a
-// quick answer shows short-term memory, and easy would skip FSRS's learning
-// steps and schedule the card more than a week out.
+// quick answer shows short-term memory, and easy would schedule the card
+// almost two months out.
 export const deriveRating = (
   outcome: GradeOutcome,
   elapsedMs: number | null,

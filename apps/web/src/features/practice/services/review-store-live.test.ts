@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import type { JudgeVerdictData } from '@wordhold/ai/judge/schema';
 import { Database } from '@wordhold/db/client';
+import { replayReviews } from '@wordhold/db/fsrs';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import type { cards } from '@wordhold/db/schema/practice';
 import {
@@ -10,11 +11,16 @@ import {
 import { Effect, Layer } from 'effect';
 import { ratings } from '../../../shared/grading/rating';
 import {
+  dueEntryId,
   fixtureNow,
   seedIntroducedCardFixture,
 } from '../../../shared/testing/introduced-card-fixture';
 import { StaleAnswerSubmissionError } from '../errors/practice-errors';
 import { PracticeReviewStore } from './review-store';
+import {
+  makeReviewInput,
+  runReviewTest,
+} from './review-store-live-test-support';
 
 type CardIdentity = {
   readonly id: string;
@@ -68,6 +74,7 @@ describe('PracticeReviewStore introduction contract', () => {
               state: 'new',
               dueAt: null,
               stability: null,
+              stabilityFast: null,
               difficulty: null,
               reps: 0,
               lapses: 0,
@@ -120,6 +127,67 @@ describe('PracticeReviewStore introduction contract', () => {
             });
             expect(counts).toEqual({ reviews: 0, alternatives: 0 });
           }).pipe(Effect.provide(reviewLayer), Effect.provide(databaseLayer));
+        }),
+      );
+    },
+  );
+});
+
+// The previous app version keeps answering during a deploy and after a roll
+// back, so a card can reach this app with FSRS-6 memory after the migration's
+// rebuild. Its stored due date is FSRS-6's; the rebuilt one is weeks later.
+const fsrs6History = [
+  { reviewedAt: new Date('2026-08-01T12:00:00.000Z'), rating: ratings.good },
+  { reviewedAt: new Date('2026-08-02T12:00:00.000Z'), rating: ratings.good },
+  { reviewedAt: new Date('2026-08-09T12:00:00.000Z'), rating: ratings.good },
+] as const;
+
+describe('PracticeReviewStore FSRS-6 memory', () => {
+  it.each([
+    ['a wrong answer', false, true],
+    ['an early correct answer', true, false],
+  ] as const)(
+    'rebuilds the card from its answers before scheduling %s',
+    async (_answer, correct, advanced) => {
+      await runReviewTest(
+        Effect.gen(function* () {
+          const sql = yield* Database;
+          const store = yield* PracticeReviewStore;
+          const [card] = yield* sql<{ readonly id: string }>`
+            update cards set stability_fast = null
+            where entry_id = ${dueEntryId} and direction = 'to_target'
+            returning id
+          `;
+          for (const review of fsrs6History) {
+            yield* sql`
+              insert into reviews (card_id, reviewed_at, rating, answer_text)
+              values (${card?.id}, ${review.reviewedAt}, ${review.rating}, 'souvenir')
+            `;
+          }
+          const input = yield* makeReviewInput({
+            entryId: dueEntryId,
+            direction: 'to_target',
+            answer: 'souvenir',
+            correct,
+          });
+
+          const committed = yield* store.commit(input);
+          const [stored] = yield* sql`
+            select state, due_at as "dueAt", stability,
+              stability_fast as "stabilityFast", difficulty, reps, lapses,
+              scheduled_days as "scheduledDays",
+              learning_steps as "learningSteps",
+              last_reviewed_at as "lastReviewedAt", revision
+            from cards where id = ${input.card.id}
+          `;
+          expect(committed.schedule.advanced).toBe(advanced);
+          expect(stored).toEqual({
+            ...replayReviews([
+              ...fsrs6History,
+              { reviewedAt: input.reviewedAt, rating: input.rating },
+            ]),
+            revision: 1,
+          });
         }),
       );
     },

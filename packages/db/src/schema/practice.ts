@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
 import {
+  doublePrecision,
   index,
   integer,
   jsonb,
@@ -7,7 +8,6 @@ import {
   pgTable,
   // biome-ignore lint/suspicious/noDeprecatedImports: Only the positional overload is deprecated; this file calls the object form Drizzle recommends.
   primaryKey,
-  real,
   smallint,
   text,
   timestamp,
@@ -41,11 +41,15 @@ export const cards = pgTable(
     introducedAt: timestamp('introduced_at', { withTimezone: true }),
     state: cardStateEnum('state').notNull().default('new'),
     dueAt: timestamp('due_at', { withTimezone: true }),
-    stability: real('stability'),
-    difficulty: real('difficulty'),
+    // Double precision, so a stored memory is exactly the one the scheduler
+    // computed and replaying a card's answers reproduces it.
+    stability: doublePrecision('stability'),
+    // FSRS-7's short-term memory trace, set with `stability`.
+    stabilityFast: doublePrecision('stability_fast'),
+    difficulty: doublePrecision('difficulty'),
     reps: integer('reps').notNull().default(0),
     lapses: integer('lapses').notNull().default(0),
-    scheduledDays: real('scheduled_days').notNull().default(0),
+    scheduledDays: doublePrecision('scheduled_days').notNull().default(0),
     learningSteps: integer('learning_steps').notNull().default(0),
     lastReviewedAt: timestamp('last_reviewed_at', { withTimezone: true }),
     revision: integer('revision').notNull().default(0),

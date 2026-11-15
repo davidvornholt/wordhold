@@ -170,15 +170,6 @@
       }
     },
     {
-      // Boundary to the ts-fsrs scheduler, whose Card type speaks snake_case.
-      "includes": ["apps/web/src/shared/practice/fsrs.ts"],
-      "linter": {
-        "rules": {
-          "style": { "useNamingConvention": "off" }
-        }
-      }
-    },
-    {
       // Test-only Vite fixtures load Tailwind through their separate HTML
       // entrypoint, which Biome's import graph cannot connect to each JSX file.
       "includes": ["apps/web/a11y/*.tsx"],

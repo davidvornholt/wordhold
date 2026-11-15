@@ -1,5 +1,11 @@
 import { isAcceptedAlternative } from '@wordhold/ai/judge/schema';
 import { Database } from '@wordhold/db/client';
+import {
+  advancesSchedule,
+  applyRating,
+  type ReplayedReview,
+  replayReviews,
+} from '@wordhold/db/fsrs';
 import type { CourseKind, LanguageCode } from '@wordhold/db/schema/courses';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import type { AnswerSource } from '@wordhold/db/schema/entries';
@@ -7,7 +13,6 @@ import type { cards } from '@wordhold/db/schema/practice';
 import { Context, Effect, Layer } from 'effect';
 import type { AcceptedAnswer } from '../../../shared/grading/deterministic-match';
 import { ratings } from '../../../shared/grading/rating';
-import { applyRating } from '../../../shared/practice/fsrs';
 import { entryIsKnown } from '../../../shared/practice/known-entry';
 import { cardRelatedWords } from '../../../shared/practice/practised-directions';
 import { saveDerivedKeyPoints } from '../../../shared/vocabulary/key-points';
@@ -22,7 +27,6 @@ import type {
   SubmissionRecord,
 } from '../schemas/practice-models';
 import { commitGradedAnswer, type RunReviewTransaction } from './review-commit';
-import { advancesSchedule } from './schedule-guard';
 
 type SubmissionRow = typeof cards.$inferSelect & {
   readonly targetText: string;
@@ -39,6 +43,19 @@ const databaseError = (operation: string, cause: unknown) =>
     cause,
     message: 'Die Antwort konnte nicht gespeichert werden.',
   });
+
+// The previous app version keeps answering during a deploy and after a roll
+// back, so a card can still have FSRS-6 memory after the migration rebuilt
+// every such card. It is rebuilt from its answers the way the migration does,
+// and the commit stores the result under the card's revision guard.
+const withFsrs7Memory = (sql: Database, row: SubmissionRow) =>
+  row.stability === null || row.stabilityFast !== null
+    ? Effect.succeed(row)
+    : sql<ReplayedReview>`
+        select reviewed_at as "reviewedAt", rating from reviews
+        where card_id = ${row.id}
+        order by reviewed_at, id
+      `.pipe(Effect.map((history) => ({ ...row, ...replayReviews(history) })));
 
 const loadEntryKnown = (sql: Database, entryId: string) =>
   sql<{ readonly known: boolean }>`
@@ -88,12 +105,14 @@ const insertJudgeAlternative = (
 
 // The answer counts for its test round only while no newer round of the
 // same test has given that round up. A late answer to a given-up round is
-// stored as ordinary practice.
+// stored as ordinary practice. The review logs the time the schedule was
+// computed for, which repair replays exactly.
 const insertReview = (sql: Database, input: PersistReviewInput) =>
   sql`
     insert into reviews
-      (card_id, rating, answer_text, grading, elapsed_ms, mode, exam_round_id)
-    values (${input.card.id}, ${input.rating}, ${input.answer},
+      (card_id, reviewed_at, rating, answer_text, grading, elapsed_ms, mode,
+        exam_round_id)
+    values (${input.card.id}, ${input.reviewedAt}, ${input.rating}, ${input.answer},
       ${JSON.stringify(input.outcome)}::jsonb, ${input.elapsedMs},
       ${input.mode}::review_mode,
       (select rc.round_id from exam_round_cards rc
@@ -159,7 +178,8 @@ export class PracticeReviewStore extends Context.Service<
       const findSubmission = (cardId: string, revision: number) =>
         sql<SubmissionRow>`
           select c.id, c.entry_id as "entryId", c.direction,
-            c.state, c.due_at as "dueAt", c.stability, c.difficulty,
+            c.state, c.due_at as "dueAt", c.stability,
+            c.stability_fast as "stabilityFast", c.difficulty,
             c.reps, c.lapses, c.scheduled_days as "scheduledDays",
             c.learning_steps as "learningSteps",
             c.last_reviewed_at as "lastReviewedAt", c.revision,
@@ -173,9 +193,13 @@ export class PracticeReviewStore extends Context.Service<
           where c.id = ${cardId} and c.revision = ${revision}
             and c.introduced_at is not null
         `.pipe(
-          Effect.map((rows) => {
-            const [row] = rows;
-            return row === undefined
+          Effect.flatMap(([stored]) =>
+            stored === undefined
+              ? Effect.succeed(undefined)
+              : withFsrs7Memory(sql, stored),
+          ),
+          Effect.map((row) =>
+            row === undefined
               ? undefined
               : {
                   card: row,
@@ -188,8 +212,8 @@ export class PracticeReviewStore extends Context.Service<
                   },
                   courseKind: row.courseKind,
                   targetLanguage: row.targetLanguage,
-                };
-          }),
+                },
+          ),
           Effect.mapError((cause) =>
             databaseError('find submitted card', cause),
           ),
@@ -218,7 +242,16 @@ export class PracticeReviewStore extends Context.Service<
           Effect.mapError((cause) => databaseError('save key points', cause)),
         );
       const commit = (input: PersistReviewInput) => {
-        const next = applyRating(input.card, input.rating, input.reviewedAt);
+        const scheduleAdvances = advancesSchedule(
+          input.card,
+          input.reviewedAt,
+          input.rating !== ratings.again,
+        );
+        // A held answer writes back the schedule the card was loaded with,
+        // which stores the memory findSubmission rebuilt from FSRS-6.
+        const next = scheduleAdvances
+          ? applyRating(input.card, input.rating, input.reviewedAt)
+          : input.card;
         const mapCommitError = (cause: unknown) =>
           databaseError('commit graded answer', cause);
         const runTransaction: RunReviewTransaction<PracticeDatabaseError> = (
@@ -229,11 +262,11 @@ export class PracticeReviewStore extends Context.Service<
               Effect.gen(function* () {
                 const unchanged = yield* lockGradedEntry(sql, input);
                 return yield* work({
-                  advanceCard: (advanceSchedule) =>
-                    (advanceSchedule
-                      ? sql<{ readonly revision: number }>`
+                  advanceCard: () =>
+                    sql<{ readonly revision: number }>`
                         update cards set state = ${next.state}::card_state,
                           due_at = ${next.dueAt}, stability = ${next.stability},
+                          stability_fast = ${next.stabilityFast},
                           difficulty = ${next.difficulty}, reps = ${next.reps},
                           lapses = ${next.lapses}, scheduled_days = ${next.scheduledDays},
                           learning_steps = ${next.learningSteps},
@@ -242,14 +275,7 @@ export class PracticeReviewStore extends Context.Service<
                         where id = ${input.card.id} and revision = ${input.expectedRevision}
                           and introduced_at is not null
                         returning revision
-                      `
-                      : sql<{ readonly revision: number }>`
-                        update cards set revision = revision + 1
-                        where id = ${input.card.id} and revision = ${input.expectedRevision}
-                          and introduced_at is not null
-                        returning revision
-                      `
-                    ).pipe(
+                      `.pipe(
                       Effect.map((rows) => rows.at(0)?.revision),
                       Effect.mapError(mapCommitError),
                     ),
@@ -265,29 +291,17 @@ export class PracticeReviewStore extends Context.Service<
                 Effect.fail(mapCommitError(cause)),
               ),
             );
-        const scheduleAdvances = advancesSchedule(
-          input.card,
-          input.reviewedAt,
-          input.rating !== ratings.again,
-        );
         return commitGradedAnswer(
           runTransaction,
           input.outcome.method === 'judge' ? input.outcome.verdict : null,
-          scheduleAdvances,
         ).pipe(
           Effect.map((committed) => ({
             ...committed,
-            schedule: scheduleAdvances
-              ? {
-                  advanced: true,
-                  state: next.state,
-                  dueAt: next.dueAt,
-                }
-              : {
-                  advanced: false,
-                  state: input.card.state,
-                  dueAt: input.card.dueAt,
-                },
+            schedule: {
+              advanced: scheduleAdvances,
+              state: next.state,
+              dueAt: next.dueAt,
+            },
           })),
         );
       };

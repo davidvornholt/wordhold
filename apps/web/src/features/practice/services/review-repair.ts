@@ -51,7 +51,8 @@ const loadCards = (ids: ReadonlyArray<string>) =>
     const sql = yield* Database;
     return yield* sql<EntryCard>`
     select c.id, c.entry_id as "entryId", c.direction, c.introduced_at as "introducedAt",
-      c.state, c.due_at as "dueAt", c.stability, c.difficulty, c.reps, c.lapses,
+      c.state, c.due_at as "dueAt", c.stability, c.stability_fast as "stabilityFast",
+      c.difficulty, c.reps, c.lapses,
       c.scheduled_days as "scheduledDays", c.learning_steps as "learningSteps",
       c.last_reviewed_at as "lastReviewedAt", c.revision,
       e.target_text as "targetText", e.native_text as "nativeText",
@@ -231,7 +232,8 @@ export const applyReviewRepairs = (plans: ReadonlyArray<ReviewRepairPlan>) =>
           }
           const { next } = plan;
           yield* sql`update cards set state = ${next.state}::card_state, due_at = ${next.dueAt},
-        stability = ${next.stability}, difficulty = ${next.difficulty}, reps = ${next.reps},
+        stability = ${next.stability}, stability_fast = ${next.stabilityFast},
+        difficulty = ${next.difficulty}, reps = ${next.reps},
         lapses = ${next.lapses}, scheduled_days = ${next.scheduledDays}, learning_steps = ${next.learningSteps},
         last_reviewed_at = ${next.lastReviewedAt}, revision = revision + 1 where id = ${next.id}`;
           yield* sql`delete from judge_cache where entry_id = ${plan.card.entryId} and direction = ${plan.card.direction}`;

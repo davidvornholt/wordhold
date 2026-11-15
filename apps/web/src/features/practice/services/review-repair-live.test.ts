@@ -1,13 +1,13 @@
 import { expect, it } from 'bun:test';
 import { untrackedAiUsage } from '@wordhold/ai/testing/usage';
 import { Database } from '@wordhold/db/client';
+import { applyRating } from '@wordhold/db/fsrs';
 import {
   testDatabaseLayer,
   withMigratedTestDatabase,
 } from '@wordhold/db/testing/postgres-test-database';
 import { Effect } from 'effect';
 import { ratings } from '../../../shared/grading/rating';
-import { applyRating } from '../../../shared/practice/fsrs';
 import {
   firstReviewEntryId,
   seedIntroducedCardFixture,
@@ -40,6 +40,7 @@ it('plans without writes, refuses concurrent changes, and preserves original gra
           introducedAt: reviewedAt,
           dueAt: null,
           stability: null,
+          stabilityFast: null,
           difficulty: null,
           reps: 0,
           lapses: 0,
@@ -50,7 +51,10 @@ it('plans without writes, refuses concurrent changes, and preserves original gra
         };
         const original = applyRating(empty, 2, reviewedAt);
         yield* sql`update cards set state = ${original.state}::card_state, due_at = ${original.dueAt},
-      stability = ${original.stability}, difficulty = ${original.difficulty}, reps = ${original.reps},
+      stability = ${original.stability}, stability_fast = ${original.stabilityFast},
+      difficulty = ${original.difficulty}, reps = ${original.reps},
+      lapses = ${original.lapses}, scheduled_days = ${original.scheduledDays},
+      learning_steps = ${original.learningSteps},
       last_reviewed_at = ${original.lastReviewedAt}, revision = 1 where id = ${card.id}`;
         yield* sql`insert into reviews (card_id, reviewed_at, rating, answer_text, grading, elapsed_ms)
       values (${card.id}, ${reviewedAt}, 2, 'el abogado / la abogada', '{"method":"judge","original":true}'::jsonb, 3000)`;
