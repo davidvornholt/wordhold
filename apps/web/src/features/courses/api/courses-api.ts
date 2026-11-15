@@ -29,6 +29,7 @@ import {
   courseEntry,
   courseOutline,
   courseVocabulary,
+  createdUnit,
   foundExample,
   memberCourse,
   notInSubjects,
@@ -112,24 +113,22 @@ const requireLanguage = (course: ApiCourse) =>
 const addUnit = (course: ApiCourse, payload: AddUnitPayload) =>
   Effect.gen(function* () {
     yield* requireLanguage(course);
-    const [, before] = yield* courseOutline(course.id);
-    if (!before.books.some(({ id }) => id === payload.bookId)) {
+    const [, outline] = yield* courseOutline(course.id);
+    if (!outline.books.some(({ id }) => id === payload.bookId)) {
       return yield* new NotFound({ message: 'This course has no such book.' });
     }
-    const after = yield* runIn(
+    const unit = yield* runIn(
       courseRuntime,
-      Schema.decodeUnknownEffect(CreateCourseUnit)({
-        courseId: course.id,
-        bookId: payload.bookId,
-        name: payload.name,
-      }).pipe(
-        Effect.flatMap((input) =>
-          Effect.flatMap(CourseService, (service) => service.createUnit(input)),
-        ),
-      ),
+      Effect.gen(function* () {
+        const input = yield* Schema.decodeUnknownEffect(CreateCourseUnit)({
+          courseId: course.id,
+          bookId: payload.bookId,
+          name: payload.name,
+        });
+        const service = yield* CourseService;
+        return createdUnit(yield* service.createUnit(input), input);
+      }),
     );
-    const known = new Set(before.units.map(({ id }) => id));
-    const unit = after.units.find(({ id }) => !known.has(id));
     return unit === undefined
       ? yield* new ServerError({ message: 'The new unit could not be read.' })
       : toApiUnit(unit);

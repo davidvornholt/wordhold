@@ -7,6 +7,7 @@ import type {
   WordProgress,
 } from '../schemas/course-units';
 import {
+  createdUnit,
   foundExample,
   keptExample,
   relatedWordsAfterEdit,
@@ -109,6 +110,54 @@ describe('wordPlace', () => {
     expect(failure({ books: [], units: [] }, {})).toContain(
       'The course has no book yet.',
     );
+  });
+});
+
+// Two requests may each add a unit to the course before either reads the
+// outline back, so the outline after a creation can list another request's
+// new unit ahead of the requested one. `outline` is the course before both.
+describe('createdUnit', () => {
+  const requested: CourseUnit = {
+    ...noWords,
+    id: '00000000-0000-4000-8000-000000000041',
+    bookId: secondBook.id,
+    name: 'Lección 2',
+  };
+
+  it('finds the requested unit when another request first added one to the same book', () => {
+    const otherRequest: CourseUnit = {
+      ...noWords,
+      id: '00000000-0000-4000-8000-000000000042',
+      bookId: secondBook.id,
+      name: 'Lección 1',
+    };
+    expect(
+      createdUnit(
+        { books: outline.books, units: [unit, otherRequest, requested] },
+        { bookId: secondBook.id, name: 'Lección 2' },
+      ),
+    ).toEqual(requested);
+  });
+
+  it('finds the requested unit when another request first added one of the same name to another book', () => {
+    const otherRequest: CourseUnit = {
+      ...noWords,
+      id: '00000000-0000-4000-8000-000000000043',
+      bookId: firstBook.id,
+      name: 'Lección 2',
+    };
+    expect(
+      createdUnit(
+        { books: outline.books, units: [unit, otherRequest, requested] },
+        { bookId: secondBook.id, name: 'Lección 2' },
+      ),
+    ).toEqual(requested);
+  });
+
+  it('finds nothing when the outline lacks the unit', () => {
+    expect(
+      createdUnit(outline, { bookId: secondBook.id, name: 'Lección 2' }),
+    ).toBeUndefined();
   });
 });
 

@@ -5,7 +5,11 @@ import { runIn } from '../../../shared/api/api-failure';
 import { authRuntime } from '../../../shared/auth/runtime';
 import type { NewExampleData } from '../../../shared/vocabulary/entry-fields';
 import { distinctRelatedWords } from '../../../shared/vocabulary/related-words';
-import type { CourseOutline, VocabularyExample } from '../schemas/course-units';
+import type {
+  CourseOutline,
+  CourseUnit,
+  VocabularyExample,
+} from '../schemas/course-units';
 import { courseRuntime } from '../services/course-runtimes';
 import { CourseService } from '../services/course-service';
 import {
@@ -90,6 +94,19 @@ export const keptExample = (
           : { nativeText: example.nativeText }),
         source: example.source,
       };
+
+/**
+ * The unit a request created, read from the outline after the creation.
+ * Another request may add a unit to the course before that read, so the unit
+ * is found by its book and name, which no other unit in that book shares.
+ */
+export const createdUnit = (
+  outline: CourseOutline,
+  created: { readonly bookId: string; readonly name: string },
+): CourseUnit | undefined =>
+  outline.units.find(
+    ({ bookId, name }) => bookId === created.bookId && name === created.name,
+  );
 
 type PlaceRequest = {
   readonly bookId?: string | undefined;
