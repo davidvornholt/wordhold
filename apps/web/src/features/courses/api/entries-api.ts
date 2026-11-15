@@ -26,8 +26,7 @@ import { VocabularyEntryService } from '../services/vocabulary-entry-service';
 import {
   courseEntry,
   courseVocabulary,
-  foundExample,
-  keptExample,
+  editedExample,
   memberCourse,
   memberEntryCourse,
   notInSubjects,
@@ -37,13 +36,6 @@ import { type ApiCourse, ownedCourses } from './course-records';
 import { searchEntries, toApiEntry } from './entry-wire';
 
 type Member = CurrentMember['Service'];
-
-const editedExample = (current: VocabularyEntry, payload: EditEntryPayload) => {
-  if (payload.example === undefined) {
-    return keptExample(current.example);
-  }
-  return payload.example === null ? undefined : foundExample(payload.example);
-};
 
 // The entries of one course, each with the course it belongs to.
 const courseCandidates = (course: ApiCourse) =>
@@ -57,7 +49,7 @@ const editWord = (
   courseId: string,
   payload: EditEntryPayload,
 ) => {
-  const example = editedExample(current, payload);
+  const example = editedExample(current.example, payload.example);
   const targetText = payload.targetText ?? current.targetText;
   const update = Schema.decodeUnknownEffect(UpdateVocabularyEntry)({
     courseId,

@@ -8,7 +8,8 @@ import type {
 } from '../schemas/course-units';
 import {
   createdUnit,
-  foundExample,
+  editedExample,
+  givenExample,
   keptExample,
   relatedWordsAfterEdit,
   wordPlace,
@@ -163,10 +164,16 @@ describe('createdUnit', () => {
 
 describe('examples', () => {
   it('stores a given example as one the owner came across', () => {
-    expect(foundExample({ targetText: 'Tomo un café.' })).toEqual({
+    expect(givenExample({ targetText: 'Tomo un café.' })).toEqual({
       targetText: 'Tomo un café.',
       source: 'textbook',
     });
+  });
+
+  it('stores a given example as AI-written when the request says so', () => {
+    expect(
+      givenExample({ targetText: 'Tomo un café.', source: 'generated' }),
+    ).toEqual({ targetText: 'Tomo un café.', source: 'generated' });
   });
 
   it('gives a stored example back unchanged, AI-written or not', () => {
@@ -178,6 +185,41 @@ describe('examples', () => {
       }),
     ).toEqual({ targetText: 'Tomo un café.', source: 'generated' });
     expect(keptExample(null)).toBeUndefined();
+  });
+});
+
+describe('the example an edit stores', () => {
+  const written = {
+    targetText: 'Tomo un café.',
+    nativeText: 'Ich trinke einen Kaffee.',
+    source: 'generated',
+  } as const;
+
+  it('keeps the stored example when the edit leaves it out', () => {
+    expect(editedExample(written, undefined)).toEqual(written);
+    expect(editedExample(written, null)).toBeUndefined();
+  });
+
+  it('keeps the source of a repeated sentence that names none', () => {
+    expect(
+      editedExample(written, {
+        targetText: written.targetText,
+        nativeText: 'Ich nehme einen Kaffee.',
+      }),
+    ).toEqual({ ...written, nativeText: 'Ich nehme einen Kaffee.' });
+  });
+
+  it('takes the source the edit names, and treats a new sentence as found', () => {
+    expect(
+      editedExample(
+        { ...written, source: 'textbook' },
+        { targetText: written.targetText, source: 'generated' },
+      ),
+    ).toEqual({ targetText: written.targetText, source: 'generated' });
+    expect(editedExample(written, { targetText: 'Tomo un té.' })).toEqual({
+      targetText: 'Tomo un té.',
+      source: 'textbook',
+    });
   });
 });
 

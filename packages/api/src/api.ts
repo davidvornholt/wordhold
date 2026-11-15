@@ -9,6 +9,7 @@ import {
   DirectionSchema,
   EntryFilterSchema,
   EntrySchema,
+  exampleSources,
   IdSchema,
   MemberSchema,
   ProgressSchema,
@@ -33,9 +34,14 @@ const idParams = { id: IdSchema };
 // sending it. Limits that depend on the course's kind are checked by the
 // server.
 
+/**
+ * An example sentence. Its source is `textbook` for one the owner came across,
+ * the default, and `generated` for one written by AI, which the app marks.
+ */
 export const ExamplePayloadSchema = Schema.Struct({
   targetText: text(exampleLength),
   nativeText: Schema.optional(text(exampleLength)),
+  source: Schema.optional(Schema.Literals(exampleSources)),
 });
 
 /**

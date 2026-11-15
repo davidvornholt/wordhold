@@ -32,6 +32,7 @@ type StoredWord = {
   readonly exampleId: string | null;
   readonly exampleTargetText: string | null;
   readonly exampleNativeText: string | null;
+  readonly exampleSource: NewExampleData['source'] | null;
   readonly exampleAudioPath: string | null;
 };
 
@@ -69,14 +70,16 @@ type ExampleCorrection =
       readonly example: NewExampleData;
     }
   | {
-      readonly kind: 'translate';
+      readonly kind: 'correct';
       readonly exampleId: string;
       readonly nativeText: string | null;
+      readonly source: NewExampleData['source'];
     };
 
 // The learner sees and corrects the first example. A new sentence drops
 // the old sentence's audio, which is prepared again when the word's details
-// are next shown; a corrected translation keeps it.
+// are next shown; the same sentence keeps it, with the translation and the
+// source the edit gives.
 const exampleCorrection = (
   stored: StoredWord,
   example: NewExampleData | undefined,
@@ -100,9 +103,15 @@ const exampleCorrection = (
     };
   }
   const nativeText = example.nativeText ?? null;
-  return nativeText === stored.exampleNativeText
+  return nativeText === stored.exampleNativeText &&
+    example.source === stored.exampleSource
     ? { kind: 'none' }
-    : { kind: 'translate', exampleId: stored.exampleId, nativeText };
+    : {
+        kind: 'correct',
+        exampleId: stored.exampleId,
+        nativeText,
+        source: example.source,
+      };
 };
 
 export const makeVocabularyEntryMutations = (sql: Database) => {
@@ -132,9 +141,11 @@ export const makeVocabularyEntryMutations = (sql: Database) => {
             audio_profile = null, audio_path = null
           where id = ${correction.exampleId}
         `.pipe(Effect.as(pathsOf(correction.audioPath)));
-      case 'translate':
+      case 'correct':
         return sql`
-          update entry_examples set native_text = ${correction.nativeText}
+          update entry_examples
+          set native_text = ${correction.nativeText},
+            source = ${correction.source}
           where id = ${correction.exampleId}
         `.pipe(Effect.as([]));
       default:
@@ -187,10 +198,11 @@ export const makeVocabularyEntryMutations = (sql: Database) => {
               e.native_text as "nativeText",
               x.id as "exampleId", x.target_text as "exampleTargetText",
               x.native_text as "exampleNativeText",
+              x.source as "exampleSource",
               x.audio_path as "exampleAudioPath"
             from entries e
             left join lateral (
-              select id, target_text, native_text, audio_path
+              select id, target_text, native_text, source, audio_path
               from entry_examples
               where entry_id = e.id
               order by position, id
