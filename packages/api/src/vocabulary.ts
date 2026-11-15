@@ -84,6 +84,7 @@ const placeFields = {
 };
 
 export const UnitSchema = Schema.Struct(placeFields);
+export type Unit = typeof UnitSchema.Type;
 
 /** A book's numbers cover only the words that live directly in it. */
 export const BookSchema = Schema.Struct({

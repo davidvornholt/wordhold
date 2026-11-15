@@ -10,18 +10,12 @@ import {
   fail,
   flag,
   idArgument,
+  idsFlag,
   optionalString,
   validate,
   validId,
 } from './command-inputs';
 import { runApi } from './root';
-
-const idsFlag = (name: string, description: string) =>
-  Flag.String(name).pipe(
-    Flag.withDescription(description),
-    Flag.atLeast(0),
-    Flag.map((ids) => ids.map((id) => id.trim())),
-  );
 
 const directionsFlag = (description: string) =>
   Flag.Literals('direction', directions).pipe(

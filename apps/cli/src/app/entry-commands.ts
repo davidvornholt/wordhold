@@ -1,6 +1,7 @@
 import {
   AddEntryPayloadSchema,
   EditEntryPayloadSchema,
+  MoveEntriesPayloadSchema,
   SearchQuerySchema,
 } from '@wordhold/api/api';
 import { entryFilters } from '@wordhold/api/vocabulary';
@@ -11,6 +12,7 @@ import {
   fail,
   flag,
   idArgument,
+  idsFlag,
   once,
   optionalString,
   validate,
@@ -281,7 +283,53 @@ const edit = Command.make(
   ),
 );
 
+const move = Command.make(
+  'move',
+  {
+    course: idArgument('Course id', 'course'),
+    entries: idsFlag('entry', 'A word to move. Repeat it for more.'),
+    unit: optionalString('unit', 'Move the words into this unit'),
+    book: optionalString(
+      'book',
+      'Move the words directly into this book, outside its units',
+    ),
+  },
+  (input) =>
+    runApi(
+      Effect.gen(function* () {
+        const id = yield* validId(input.course);
+        if (input.entries.length === 0) {
+          return yield* fail('Name the words to move with --entry.');
+        }
+        if (Option.isNone(input.unit) && Option.isNone(input.book)) {
+          return yield* fail(
+            'Pass --unit, or --book to move the words directly into a book.',
+          );
+        }
+        const payload = yield* validate(
+          MoveEntriesPayloadSchema,
+          'move',
+        )({
+          entryIds: input.entries,
+          ...(Option.isSome(input.book) ? { bookId: input.book.value } : {}),
+          ...(Option.isSome(input.unit) ? { unitId: input.unit.value } : {}),
+        });
+        return { id, payload };
+      }),
+      ({ id, payload }) =>
+        callWordhold((client) =>
+          client.courses.move({ params: { id }, payload }),
+        ),
+    ),
+).pipe(
+  Command.withDescription(
+    'Move words of a language course into one of its units, or with --book alone directly into a book. Their cards and practice history move with them. Prints the moved words.',
+  ),
+);
+
 export const entries = Command.make('entries').pipe(
-  Command.withDescription('Find, read, add and change words, terms and texts'),
-  Command.withSubcommands([list, search, get, add, edit]),
+  Command.withDescription(
+    'Find, read, add, change and move words, terms and texts',
+  ),
+  Command.withSubcommands([list, search, get, add, edit, move]),
 );
