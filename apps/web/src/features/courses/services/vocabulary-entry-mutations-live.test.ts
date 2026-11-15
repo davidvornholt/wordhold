@@ -116,7 +116,8 @@ const storedWord = (entryId: string) =>
     }>`select path from entry_audio where entry_id = ${entryId}`;
     const cards = yield* sql<{
       readonly reps: number;
-    }>`select reps from cards where entry_id = ${entryId} order by direction`;
+      readonly revision: number;
+    }>`select reps, revision from cards where entry_id = ${entryId} order by direction`;
     const [reviews] = yield* sql<{ readonly count: number }>`
       select count(*)::int as count from reviews r
       join cards c on c.id = r.card_id
@@ -128,6 +129,7 @@ const storedWord = (entryId: string) =>
       examples,
       audio: audio.map((row) => row.path),
       reps: cards.map((card) => card.reps),
+      revisions: cards.map((card) => card.revision),
       reviews: reviews?.count,
     };
   });
@@ -178,6 +180,9 @@ describe('VocabularyEntryStore corrections', () => {
           audio: [],
           // The synonym card starts new beside the practised ones.
           reps: [practisedReps, practisedReps, 0],
+          // Practice grades against the current texts, so an answer to a
+          // card shown before the correction is turned away as stale.
+          revisions: [1, 1, 0],
           reviews: 2,
         });
       }),
@@ -243,6 +248,8 @@ describe('VocabularyEntryStore corrections', () => {
           'judge',
         );
         expect(stored.audio).toEqual([wordAudio]);
+        // They also leave the cards on screen answerable.
+        expect(stored.revisions).toEqual([0, 0]);
       }),
     );
   });

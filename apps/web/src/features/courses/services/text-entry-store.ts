@@ -6,6 +6,7 @@ import type {
   CreateTextEntryData,
   UpdateTextEntryData,
 } from '../schemas/text-entry-changes';
+import { expireEntryCards } from './entry-answers';
 
 export type CreateTextEntryResult =
   | { readonly kind: 'created'; readonly entryId: string }
@@ -148,11 +149,16 @@ export class TextEntryStore extends Context.Service<
               ) {
                 return { kind: 'duplicate' } as const;
               }
-              yield* sql`
+              const changed = yield* sql`
                 update entries
                 set target_text = ${input.title}, native_text = ${input.text}
                 where id = ${input.entryId}
+                  and (target_text <> ${input.title} or native_text <> ${input.text})
+                returning id
               `;
+              if (changed.length > 0) {
+                yield* expireEntryCards(sql, input.entryId);
+              }
               return { kind: 'updated' } as const;
             }),
           )
