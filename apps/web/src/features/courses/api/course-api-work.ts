@@ -72,10 +72,6 @@ type GivenExample = {
   readonly source?: NewExampleData['source'] | undefined;
 };
 
-/**
- * An example given through the API is one the owner came across unless the
- * request marks it as written by AI.
- */
 export const givenExample = (example: GivenExample): NewExampleData => ({
   targetText: example.targetText,
   ...(example.nativeText === undefined
