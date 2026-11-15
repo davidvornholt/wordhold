@@ -10,6 +10,7 @@ import { exams } from './exam-commands';
 import { report } from './output';
 import { progress } from './progress-command';
 import { root } from './root';
+import { units } from './unit-commands';
 
 const wordhold = root.pipe(
   Command.withSubcommands([
@@ -18,6 +19,7 @@ const wordhold = root.pipe(
     status,
     courses,
     entries,
+    units,
     exams,
     progress,
   ]),

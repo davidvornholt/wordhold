@@ -12,6 +12,7 @@ import { entries } from './entry-commands';
 import { exams } from './exam-commands';
 import { progress } from './progress-command';
 import { root } from './root';
+import { units } from './unit-commands';
 
 export const origin = 'https://wordhold.example.com';
 export const token = 'session-token';
@@ -55,7 +56,15 @@ const fakeFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
 }) as typeof globalThis.fetch;
 
 const wordhold = root.pipe(
-  Command.withSubcommands([logout, status, courses, entries, exams, progress]),
+  Command.withSubcommands([
+    logout,
+    status,
+    courses,
+    entries,
+    units,
+    exams,
+    progress,
+  ]),
 );
 
 let printedLines: Array<string> = [];
