@@ -188,11 +188,17 @@ export const makeVocabularyEntryMutations = (sql: Database) => {
   // word and a new one never both pass the duplicate check. Only an exact
   // repeat of another word is refused, as for a typed word. The cards keep
   // their schedule: a correction does not make the word new to the learner.
+  // The entry's row is locked before its example is read, so an example
+  // generated meanwhile is either stored first and corrected here like any
+  // other, or sees the new word and is dropped (see storeGenerated).
   const update = (input: UpdateVocabularyEntryData) =>
     sql
       .withTransaction(
         Effect.gen(function* () {
           yield* sql`select pg_advisory_xact_lock(hashtextextended(${input.courseId}, 0))`;
+          // Its own statement, so the read below sees what a waited-for
+          // transaction committed.
+          yield* sql`select from entries where id = ${input.entryId} for no key update`;
           const [stored] = yield* sql<StoredWord>`
             select e.target_text as "targetText",
               e.native_text as "nativeText",

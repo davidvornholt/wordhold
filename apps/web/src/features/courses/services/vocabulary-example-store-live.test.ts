@@ -9,6 +9,7 @@ import { seedIntroducedCardFixture } from '../../../shared/testing/introduced-ca
 import { VocabularyExampleStore } from './vocabulary-example-store';
 
 const entryId = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+const word = { entryId, targetText: 'livre', nativeText: 'Buch' };
 
 describe('VocabularyExampleStore PostgreSQL contract', () => {
   it('stores one generated example and preserves it on repeated writes', async () => {
@@ -26,7 +27,7 @@ describe('VocabularyExampleStore PostgreSQL contract', () => {
             example: null,
           });
 
-          const first = yield* store.storeGenerated(entryId, {
+          const first = yield* store.storeGenerated(word, {
             targetText: 'Je lis un livre.',
             nativeText: 'Ich lese ein Buch.',
           });
@@ -35,7 +36,7 @@ describe('VocabularyExampleStore PostgreSQL contract', () => {
             nativeText: 'Ich lese ein Buch.',
             source: 'generated',
           });
-          if (first === undefined) {
+          if (typeof first === 'string') {
             throw new Error('Expected the generated example to be stored.');
           }
 
@@ -52,7 +53,7 @@ describe('VocabularyExampleStore PostgreSQL contract', () => {
           ).toBe(true);
 
           expect(
-            yield* store.storeGenerated(entryId, {
+            yield* store.storeGenerated(word, {
               targetText: 'Un autre livre.',
               nativeText: 'Ein anderes Buch.',
             }),
