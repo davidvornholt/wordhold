@@ -35,6 +35,10 @@ const exampleFlags = {
     'example-translation',
     'The example sentence in German; needs --example',
   ),
+  exampleByAi: flag(
+    'example-by-ai',
+    'Mark the example sentence as written by AI rather than found in a text; needs --example',
+  ),
 };
 
 // Each flag adds one word, so a word may contain a comma.
@@ -77,14 +81,23 @@ const relatedWordsOf = (
 type ExampleInput = {
   readonly example: Option.Option<string>;
   readonly exampleTranslation: Option.Option<string>;
+  readonly exampleByAi: boolean;
 };
 
-const exampleOf = ({ example, exampleTranslation }: ExampleInput) =>
+const exampleOf = ({
+  example,
+  exampleTranslation,
+  exampleByAi,
+}: ExampleInput) =>
   Option.match(example, {
-    onNone: () =>
-      Option.isSome(exampleTranslation)
-        ? fail('--example-translation needs --example.')
-        : Effect.succeed(undefined),
+    onNone: () => {
+      if (Option.isSome(exampleTranslation)) {
+        return fail('--example-translation needs --example.');
+      }
+      return exampleByAi
+        ? fail('--example-by-ai needs --example.')
+        : Effect.succeed(undefined);
+    },
     onSome: (targetText) =>
       Effect.succeed({
         targetText,
@@ -92,6 +105,7 @@ const exampleOf = ({ example, exampleTranslation }: ExampleInput) =>
           onNone: () => ({}),
           onSome: (nativeText) => ({ nativeText }),
         }),
+        ...(exampleByAi ? { source: 'generated' as const } : {}),
       }),
   });
 
@@ -237,7 +251,8 @@ const edit = Command.make(
         if (input.noExample && Option.isSome(input.example)) {
           return yield* fail('Pass either --example or --no-example.');
         }
-        const example = input.noExample ? null : yield* exampleOf(input);
+        const given = yield* exampleOf(input);
+        const example = input.noExample ? null : given;
         const synonyms = yield* relatedWordsOf(
           input.synonyms,
           input.noSynonyms,

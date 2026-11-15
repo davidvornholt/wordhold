@@ -79,6 +79,26 @@ describe('wordhold entries add', () => {
     expect(printed()).toEqual(saved);
   });
 
+  it('marks an example as written by AI with --example-by-ai', async () => {
+    await runOk(
+      'entries',
+      'add',
+      course,
+      '--target',
+      'la mesa',
+      '--native',
+      'der Tisch',
+      '--example',
+      'La mesa es grande.',
+      '--example-by-ai',
+    );
+    expect(server.sent[0]?.body).toEqual({
+      targetText: 'la mesa',
+      nativeText: 'der Tisch',
+      example: { targetText: 'La mesa es grande.', source: 'generated' },
+    });
+  });
+
   it('leaves the place to the server when none is given', async () => {
     await runOk('entries', 'add', course, '--target', 'el', '--native', 'der');
     expect(server.sent[0]?.body).toEqual({
@@ -160,6 +180,8 @@ describe('wordhold entries edit', () => {
   it.each([
     [[]],
     [['--no-example', '--example', 'La mesa es grande.']],
+    [['--no-example', '--example-by-ai']],
+    [['--native', 'der Tisch', '--example-by-ai']],
     [['--no-synonyms', '--synonym', 'el escritorio']],
     [['--antonym', ' ']],
   ])('refuses %j before asking the server', async (flags) => {

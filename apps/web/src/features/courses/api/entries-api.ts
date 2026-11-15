@@ -26,7 +26,7 @@ import { VocabularyEntryService } from '../services/vocabulary-entry-service';
 import {
   courseEntry,
   courseVocabulary,
-  foundExample,
+  givenExample,
   keptExample,
   memberCourse,
   memberEntryCourse,
@@ -42,7 +42,7 @@ const editedExample = (current: VocabularyEntry, payload: EditEntryPayload) => {
   if (payload.example === undefined) {
     return keptExample(current.example);
   }
-  return payload.example === null ? undefined : foundExample(payload.example);
+  return payload.example === null ? undefined : givenExample(payload.example);
 };
 
 // The entries of one course, each with the course it belongs to.

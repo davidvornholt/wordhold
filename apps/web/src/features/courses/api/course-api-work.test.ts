@@ -8,7 +8,7 @@ import type {
 } from '../schemas/course-units';
 import {
   createdUnit,
-  foundExample,
+  givenExample,
   keptExample,
   relatedWordsAfterEdit,
   wordPlace,
@@ -163,10 +163,16 @@ describe('createdUnit', () => {
 
 describe('examples', () => {
   it('stores a given example as one the owner came across', () => {
-    expect(foundExample({ targetText: 'Tomo un café.' })).toEqual({
+    expect(givenExample({ targetText: 'Tomo un café.' })).toEqual({
       targetText: 'Tomo un café.',
       source: 'textbook',
     });
+  });
+
+  it('stores a given example as AI-written when the request says so', () => {
+    expect(
+      givenExample({ targetText: 'Tomo un café.', source: 'generated' }),
+    ).toEqual({ targetText: 'Tomo un café.', source: 'generated' });
   });
 
   it('gives a stored example back unchanged, AI-written or not', () => {

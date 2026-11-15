@@ -67,18 +67,19 @@ export const relatedWordsAfterEdit = (
   given === undefined ? stored : distinctRelatedWords(given, word);
 
 /**
- * An example given through the API is one the owner came across, so it is
- * stored like a textbook's rather than marked as written by AI.
+ * An example given through the API is one the owner came across unless the
+ * request marks it as written by AI.
  */
-export const foundExample = (example: {
+export const givenExample = (example: {
   readonly targetText: string;
   readonly nativeText?: string | undefined;
+  readonly source?: NewExampleData['source'] | undefined;
 }): NewExampleData => ({
   targetText: example.targetText,
   ...(example.nativeText === undefined
     ? {}
     : { nativeText: example.nativeText }),
-  source: 'textbook',
+  source: example.source ?? 'textbook',
 });
 
 /** A stored example, given back unchanged so an edit keeps it and its audio. */

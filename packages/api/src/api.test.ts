@@ -40,6 +40,12 @@ describe('the request bodies', () => {
     expect(isEdit({ targetText: '' })).toBe(false);
   });
 
+  it('lets an example say whether AI wrote it', () => {
+    const example = { targetText: 'Mi casa es tu casa.' };
+    expect(isEdit({ example: { ...example, source: 'generated' } })).toBe(true);
+    expect(isEdit({ example: { ...example, source: 'ai' } })).toBe(false);
+  });
+
   it('lets an edit replace or remove synonyms and antonyms', () => {
     expect(isEdit({ synonyms: ['le copain'], antonyms: [] })).toBe(true);
     expect(isEdit({ synonyms: [' '] })).toBe(false);

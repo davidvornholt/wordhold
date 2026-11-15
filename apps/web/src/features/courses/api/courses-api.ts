@@ -30,7 +30,7 @@ import {
   courseOutline,
   courseVocabulary,
   createdUnit,
-  foundExample,
+  givenExample,
   memberCourse,
   notInSubjects,
   wordPlace,
@@ -51,7 +51,7 @@ const addWord = (member: Member, course: ApiCourse, payload: AddEntryPayload) =>
       nativeText: payload.nativeText,
       ...(payload.example === undefined
         ? {}
-        : { example: foundExample(payload.example) }),
+        : { example: givenExample(payload.example) }),
     }).pipe(
       Effect.flatMap((input) =>
         Effect.flatMap(VocabularyEntryService, (service) =>
