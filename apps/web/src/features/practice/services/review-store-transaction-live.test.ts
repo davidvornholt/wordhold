@@ -105,7 +105,9 @@ const judgeAlternatives = (sql: Database) =>
   `;
 
 describe('PracticeReviewStore PostgreSQL transaction', () => {
-  it('returns the revision written by PostgreSQL', async () => {
+  // The review keeps the time the schedule was computed for, not the
+  // transaction time, so repair can replay its fractional intervals exactly.
+  it('returns the revision written by PostgreSQL and logs the scheduled time', async () => {
     await runReviewTest(
       Effect.gen(function* () {
         const store = yield* PracticeReviewStore;
@@ -114,15 +116,22 @@ describe('PracticeReviewStore PostgreSQL transaction', () => {
         expect(yield* store.commit(input)).toMatchObject({ revision: 1 });
         const rows = yield* sql<{
           readonly revision: number;
-          readonly reviews: number;
+          readonly lastReviewedAt: Date | null;
+          readonly reviewedAt: Date;
         }>`
-          select c.revision, count(r.id)::integer as reviews
+          select c.revision, c.last_reviewed_at as "lastReviewedAt",
+            r.reviewed_at as "reviewedAt"
           from cards c
-          left join reviews r on r.card_id = c.id
+          join reviews r on r.card_id = c.id
           where c.id = ${input.card.id}
-          group by c.id
         `;
-        expect(rows.at(0)).toEqual({ revision: 1, reviews: 1 });
+        expect(rows).toEqual([
+          {
+            revision: 1,
+            lastReviewedAt: input.reviewedAt,
+            reviewedAt: input.reviewedAt,
+          },
+        ]);
       }),
     );
   });

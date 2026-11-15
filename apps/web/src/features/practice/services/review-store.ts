@@ -87,12 +87,14 @@ const insertJudgeAlternative = (
 
 // The answer counts for its test round only while no newer round of the
 // same test has given that round up. A late answer to a given-up round is
-// stored as ordinary practice.
+// stored as ordinary practice. The review logs the time the schedule was
+// computed for, which repair replays exactly.
 const insertReview = (sql: Database, input: PersistReviewInput) =>
   sql`
     insert into reviews
-      (card_id, rating, answer_text, grading, elapsed_ms, mode, exam_round_id)
-    values (${input.card.id}, ${input.rating}, ${input.answer},
+      (card_id, reviewed_at, rating, answer_text, grading, elapsed_ms, mode,
+        exam_round_id)
+    values (${input.card.id}, ${input.reviewedAt}, ${input.rating}, ${input.answer},
       ${JSON.stringify(input.outcome)}::jsonb, ${input.elapsedMs},
       ${input.mode}::review_mode,
       (select rc.round_id from exam_round_cards rc
