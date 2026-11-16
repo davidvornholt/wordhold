@@ -49,6 +49,14 @@ const seedPasskey = (userId: string) =>
       )`;
   });
 
+const countMembers = (name: string) =>
+  Effect.gen(function* () {
+    const sql = yield* Database;
+    const rows = yield* sql<{ readonly n: number }>`
+      select count(*)::int as n from members where name = ${name}`;
+    return rows[0]?.n;
+  });
+
 const seedSession = (userId: string) =>
   Effect.gen(function* () {
     const sql = yield* Database;
@@ -145,6 +153,98 @@ describe('PeopleStore invitations', () => {
         expect(yield* failureTag(store.issueCode(administratorId))).toBe(
           'PersonNotFoundError',
         );
+      }),
+    );
+  });
+});
+
+describe('PeopleStore invitation sent again', () => {
+  it('control: one invitation stores one member', async () => {
+    await runWithStore(
+      Effect.gen(function* () {
+        const store = yield* PeopleStore;
+        yield* store.invite('Anna Synthetic', crypto.randomUUID());
+        expect(yield* countMembers('Anna Synthetic')).toBe(1);
+      }),
+    );
+  });
+
+  it('answers the same form fill sent again with the same person and a code that works', async () => {
+    await runWithStore(
+      Effect.gen(function* () {
+        const sql = yield* Database;
+        const store = yield* PeopleStore;
+        const submissionId = crypto.randomUUID();
+        const first = yield* store.invite('Anna Synthetic', submissionId);
+        const again = yield* store.invite('Anna Synthetic', submissionId);
+
+        expect(again.userId).toBe(first.userId);
+        expect(again.kind).toBe('invitation');
+        expect(yield* countMembers('Anna Synthetic')).toBe(1);
+        const [users] = yield* sql<{ readonly n: number }>`
+          select count(*)::int as n from "user" where name = 'Anna Synthetic'`;
+        expect(users?.n).toBe(1);
+        const codes = yield* sql<{ readonly digest: string }>`
+          select digest from access_codes where user_id = ${first.userId}`;
+        expect(codes).toEqual([
+          { digest: yield* Effect.promise(() => codeDigest(again.code)) },
+        ]);
+      }),
+    );
+  });
+
+  it('stores one member when the twin requests run at the same time', async () => {
+    await runWithStore(
+      Effect.gen(function* () {
+        const store = yield* PeopleStore;
+        const submissionId = crypto.randomUUID();
+        const [first, second] = yield* Effect.all(
+          [
+            store.invite('Anna Synthetic', submissionId),
+            store.invite('Anna Synthetic', submissionId),
+          ],
+          { concurrency: 'unbounded' },
+        );
+        expect(second.userId).toBe(first.userId);
+        expect(yield* countMembers('Anna Synthetic')).toBe(1);
+      }),
+    );
+  });
+
+  it('creates a new member for a new form fill with the same name', async () => {
+    await runWithStore(
+      Effect.gen(function* () {
+        const store = yield* PeopleStore;
+        yield* store.invite('Anna Synthetic', crypto.randomUUID());
+        yield* store.invite('Anna Synthetic', crypto.randomUUID());
+        expect(yield* countMembers('Anna Synthetic')).toBe(2);
+      }),
+    );
+  });
+
+  it('still creates a member for an invitation sent without an ID, as a page loaded before the deploy does', async () => {
+    await runWithStore(
+      Effect.gen(function* () {
+        const store = yield* PeopleStore;
+        yield* store.invite('Anna Synthetic');
+        yield* store.invite('Anna Synthetic');
+        expect(yield* countMembers('Anna Synthetic')).toBe(2);
+      }),
+    );
+  });
+
+  it('gives no code for a repeated invitation once the person is suspended', async () => {
+    await runWithStore(
+      Effect.gen(function* () {
+        const store = yield* PeopleStore;
+        const submissionId = crypto.randomUUID();
+        const first = yield* store.invite('Anna Synthetic', submissionId);
+        yield* store.setEnabled(first.userId, false);
+        const result = yield* Effect.flip(
+          store.invite('Anna Synthetic', submissionId),
+        );
+        expect(result._tag).toBe('PersonSuspendedError');
+        expect(yield* countMembers('Anna Synthetic')).toBe(1);
       }),
     );
   });

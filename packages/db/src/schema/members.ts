@@ -6,6 +6,7 @@ import {
   text,
   timestamp,
   uniqueIndex,
+  uuid,
 } from 'drizzle-orm/pg-core';
 import { user } from './auth';
 
@@ -25,11 +26,14 @@ export const members = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),
+    // Members invited without one have none, and any number of rows may.
+    submissionId: uuid('submission_id'),
   },
   (table) => [
     uniqueIndex('members_single_admin')
       .on(table.admin)
       .where(sql`${table.admin}`),
+    uniqueIndex('members_submission_id').on(table.submissionId),
   ],
 );
 

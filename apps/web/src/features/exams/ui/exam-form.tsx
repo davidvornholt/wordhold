@@ -11,6 +11,7 @@ import {
   directionLabel,
   isListCourse,
 } from '../../../shared/directions';
+import { createSubmissionIds } from '../../../shared/forms/submission-ids';
 import { Button } from '../../../shared/ui/button';
 import { fieldClass } from '../../../shared/ui/field-styles';
 import { Checkbox } from '../../../shared/ui/selection-controls';
@@ -34,7 +35,8 @@ type ExamFormProps = {
   readonly initial: ExamDraft;
   readonly submitLabel: string;
   readonly cancelControl: ReactNode;
-  readonly save: (draft: ExamDraft) => Promise<void>;
+  // Only a create needs the ID.
+  readonly save: (draft: ExamDraft, submissionId: string) => Promise<void>;
 };
 
 const draftProblem = (
@@ -75,6 +77,7 @@ export const ExamForm = ({
   );
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const [submissionIds] = useState(createSubmissionIds);
   // In the course's order, which is also the order a test lists them in.
   const entryIds = entries
     .filter((entry) => selected.has(entry.id))
@@ -91,7 +94,8 @@ export const ExamForm = ({
     setSaving(true);
     setStatus(null);
     try {
-      await save(draft);
+      await save(draft, submissionIds.idFor(draft));
+      submissionIds.settle();
     } catch (cause) {
       setStatus(
         failureText(cause, 'Der Test konnte nicht gespeichert werden.'),

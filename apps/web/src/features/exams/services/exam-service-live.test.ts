@@ -168,6 +168,95 @@ describe('ExamService', () => {
   });
 });
 
+describe('ExamService create sent again', () => {
+  const draft = {
+    courseId: fixtureCourseId,
+    name: 'Vokabeltest Unité 3',
+    directions: ['to_target', 'to_native'] as Array<AnswerDirection>,
+    entryIds: [dueEntryId, firstReviewEntryId],
+  };
+  const countExams = Effect.gen(function* () {
+    const sql = yield* Database;
+    const rows = yield* sql<{ readonly n: number }>`
+      select count(*)::int as n from exams`;
+    return rows[0]?.n;
+  });
+
+  it('control: one create stores one test', async () => {
+    await runExamTest(
+      Effect.gen(function* () {
+        const service = yield* ExamService;
+        yield* service.create({ ...draft, submissionId: crypto.randomUUID() });
+        expect(yield* countExams).toBe(1);
+      }),
+    );
+  });
+
+  it('answers the same form fill sent again with the first test and stores no second', async () => {
+    await runExamTest(
+      Effect.gen(function* () {
+        const service = yield* ExamService;
+        const sql = yield* Database;
+        const submissionId = crypto.randomUUID();
+        const first = yield* service.create({ ...draft, submissionId });
+        const again = yield* service.create({ ...draft, submissionId });
+        expect(again).toEqual(first);
+        expect(yield* countExams).toBe(1);
+        const [entries] = yield* sql<{ readonly n: number }>`
+          select count(*)::int as n from exam_entries`;
+        expect(entries?.n).toBe(2);
+      }),
+    );
+  });
+
+  it('stores one test when the twin requests run at the same time', async () => {
+    await runExamTest(
+      Effect.gen(function* () {
+        const service = yield* ExamService;
+        const submissionId = crypto.randomUUID();
+        const [first, second] = yield* Effect.all(
+          [
+            service.create({ ...draft, submissionId }),
+            service.create({ ...draft, submissionId }),
+          ],
+          { concurrency: 'unbounded' },
+        );
+        expect(second).toEqual(first);
+        expect(yield* countExams).toBe(1);
+      }),
+    );
+  });
+
+  it('stores a new test for a new form fill with the same content', async () => {
+    await runExamTest(
+      Effect.gen(function* () {
+        const service = yield* ExamService;
+        const first = yield* service.create({
+          ...draft,
+          submissionId: crypto.randomUUID(),
+        });
+        const second = yield* service.create({
+          ...draft,
+          submissionId: crypto.randomUUID(),
+        });
+        expect(second.examId).not.toBe(first.examId);
+        expect(yield* countExams).toBe(2);
+      }),
+    );
+  });
+
+  it('still stores a test sent without an ID, as a page loaded before the deploy does', async () => {
+    await runExamTest(
+      Effect.gen(function* () {
+        const service = yield* ExamService;
+        yield* service.create(draft);
+        yield* service.create(draft);
+        expect(yield* countExams).toBe(2);
+      }),
+    );
+  });
+});
+
 describe('ExamService rounds', () => {
   it('scores the first answer per card and compares the two newest rounds', async () => {
     await runExamTest(

@@ -1,5 +1,6 @@
 import type { AccessCodeKind } from '@wordhold/db/schema/members';
 import { Option, Schema } from 'effect';
+import { Uuid } from '../../../shared/validate/uuid';
 
 export const maximumPersonNameLength = 80;
 const maximumUserIdLength = 100;
@@ -62,7 +63,7 @@ const UserId = Schema.String.check(
 );
 
 export const decodeInvitation = Schema.decodeUnknownSync(
-  Schema.Struct({ name: PersonName }),
+  Schema.Struct({ name: PersonName, submissionId: Schema.optional(Uuid) }),
 );
 
 export const decodeUserId = Schema.decodeUnknownSync(UserId);

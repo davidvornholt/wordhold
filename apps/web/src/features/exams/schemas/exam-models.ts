@@ -27,6 +27,7 @@ const ExamEntryIds = Schema.Array(Uuid).check(
 );
 
 export const CreateExam = Schema.Struct({
+  submissionId: Schema.optional(Uuid),
   courseId: Uuid,
   name: ExamName,
   directions: ExamDirections,

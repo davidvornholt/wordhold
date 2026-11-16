@@ -48,10 +48,17 @@ export type PeopleStoreShape = {
     userId: string,
   ) => Effect.Effect<Person, PeopleDatabaseError | PersonNotFoundError>;
   // Creates the account and the invitation that lets the person save their
-  // first passkey.
+  // first passkey. Sending the same `submissionId` again, for example after a
+  // lost answer, creates no second account. Only the digest of a code is
+  // stored, so the first code cannot be shown again: the repeat replaces it
+  // with a new code for the same person.
   readonly invite: (
     name: string,
-  ) => Effect.Effect<IssuedCode, PeopleDatabaseError>;
+    submissionId?: string,
+  ) => Effect.Effect<
+    IssuedCode,
+    PeopleDatabaseError | PersonNotFoundError | PersonSuspendedError
+  >;
   // A new invitation for someone who never registered, otherwise a recovery
   // code that replaces their passkeys. Replaces any earlier code.
   readonly issueCode: (
@@ -143,15 +150,6 @@ const storeCode = (
     } satisfies IssuedCode;
   });
 
-const invite = (sql: Database, name: string) =>
-  Effect.gen(function* () {
-    const userId = crypto.randomUUID();
-    yield* sql`insert into "user" (id, name, email)
-      values (${userId}, ${name}, ${placeholderEmail(name, userId)})`;
-    yield* sql`insert into members (user_id, name) values (${userId}, ${name})`;
-    return yield* storeCode(sql, { userId, name, kind: 'invitation' });
-  });
-
 const issueCode = (sql: Database, userId: string) =>
   Effect.gen(function* () {
     const [person] = yield* sql<{
@@ -178,6 +176,27 @@ const issueCode = (sql: Database, userId: string) =>
       name: person.name,
       kind: person.registered ? 'recovery' : 'invitation',
     });
+  });
+
+// The access lock serializes invitations, so two requests with the same
+// `submissionId` never both miss the stored member.
+const invite = (sql: Database, name: string, submissionId?: string) =>
+  Effect.gen(function* () {
+    if (submissionId !== undefined) {
+      const [stored] = yield* sql<{ readonly userId: string }>`
+        select user_id as "userId" from members
+        where submission_id = ${submissionId}
+      `;
+      if (stored !== undefined) {
+        return yield* issueCode(sql, stored.userId);
+      }
+    }
+    const userId = crypto.randomUUID();
+    yield* sql`insert into "user" (id, name, email)
+      values (${userId}, ${name}, ${placeholderEmail(name, userId)})`;
+    yield* sql`insert into members (user_id, name, submission_id)
+      values (${userId}, ${name}, ${submissionId ?? null})`;
+    return yield* storeCode(sql, { userId, name, kind: 'invitation' });
   });
 
 const setEnabled = (sql: Database, userId: string, enabled: boolean) =>
@@ -268,9 +287,11 @@ export class PeopleStore extends Context.Service<
                 : Effect.succeed(person),
             ),
           ),
-        invite: (name) =>
-          withAccessLock(sql, invite(sql, name)).pipe(
-            Effect.mapError(changeFailed('invite person')),
+        invite: (name, submissionId) =>
+          withAccessLock(sql, invite(sql, name, submissionId)).pipe(
+            Effect.catchTag('SqlError', (cause) =>
+              Effect.fail(changeFailed('invite person')(cause)),
+            ),
           ),
         issueCode: (userId) =>
           withAccessLock(sql, issueCode(sql, userId)).pipe(

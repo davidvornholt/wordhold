@@ -1,16 +1,18 @@
 import { type SubmitEvent, useState } from 'react';
+import { createSubmissionIds } from '../../../shared/forms/submission-ids';
 import { Button } from '../../../shared/ui/button';
 import { fieldClass } from '../../../shared/ui/field-styles';
 import { maximumPersonNameLength } from '../schemas/people-models';
 
 type InviteFormProps = {
-  readonly invite: (name: string) => Promise<void>;
+  readonly invite: (name: string, submissionId: string) => Promise<void>;
 };
 
 export const InviteForm = ({ invite }: InviteFormProps) => {
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [submissionIds] = useState(createSubmissionIds);
   const trimmed = name.trim();
 
   const submit = async (event: SubmitEvent<HTMLFormElement>) => {
@@ -21,7 +23,8 @@ export const InviteForm = ({ invite }: InviteFormProps) => {
     setBusy(true);
     setFailed(false);
     try {
-      await invite(trimmed);
+      await invite(trimmed, submissionIds.idFor(trimmed));
+      submissionIds.settle();
       setName('');
     } catch {
       setFailed(true);
