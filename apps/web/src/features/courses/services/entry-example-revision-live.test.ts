@@ -65,7 +65,7 @@ const storedExample = Effect.gen(function* () {
 // example it showed (none, when it was opened before one existed).
 const saveFrom = (
   revision: number,
-  shown?: { readonly targetText: string; readonly nativeText: string | null },
+  shown?: { readonly targetText: string; readonly nativeText?: string },
 ) =>
   Effect.flatMap(VocabularyEntryStore, (store) =>
     store.update({
@@ -127,7 +127,6 @@ describe('saving a word from an editor loaded before an example was written', ()
         );
         const refused = yield* saveFrom(loaded, {
           targetText: example.targetText,
-          nativeText: null,
         });
         return {
           stored,
