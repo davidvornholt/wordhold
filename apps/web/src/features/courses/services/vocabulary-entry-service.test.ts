@@ -26,6 +26,7 @@ import {
   type CreateVocabularyEntryResult,
   VocabularyEntryStore,
 } from './vocabulary-entry-store';
+import { idleStoreMethods, staleFiles } from './vocabulary-entry-store-stubs';
 
 const courseId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const bookId = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
@@ -48,8 +49,6 @@ const correction = {
   synonyms: null,
   antonyms: null,
 };
-
-const staleFiles = ['audio/old-word.mp3', 'audio/old-example.mp3'];
 
 type Stubs = {
   readonly createResult?: CreateVocabularyEntryResult;
@@ -127,7 +126,7 @@ const runService = <A, E>(
       create: () => Effect.succeed(createResult),
       update: () => Effect.succeed(updateResult),
       remove: () => Effect.succeed({ unreferencedFiles: staleFiles }),
-      move: () => Effect.die('moving is tested on its own'),
+      ...idleStoreMethods,
       storeAudio: (_entryId, profile) => {
         audioReferences.push(profile);
         return Effect.void;

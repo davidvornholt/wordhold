@@ -28,6 +28,8 @@ const store: VocabularyEntryStore['Service'] = {
   remove: unreached,
   move: unreached,
   storeAudio: unreached,
+  hasAudio: unreached,
+  withAudioLock: unreached,
 };
 
 const tts = Tts.of({

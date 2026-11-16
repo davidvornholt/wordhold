@@ -46,6 +46,8 @@ const moveTo = (targetUnitId: string | null, stored: MoveEntriesResult) =>
                 remove: unreached,
                 move: () => Effect.succeed(stored),
                 storeAudio: unreached,
+                hasAudio: unreached,
+                withAudioLock: unreached,
               }),
               Layer.succeed(
                 SentenceGen,

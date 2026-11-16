@@ -2,6 +2,7 @@ import { ttsAudioProfile } from '@wordhold/ai/tts/speech-text';
 import { Database } from '@wordhold/db/client';
 import type { LanguageCode } from '@wordhold/db/schema/courses';
 import { Context, Effect, Layer } from 'effect';
+import { entryAudioLockKey } from '../../../shared/audio/speech-audio';
 import { ImportDatabaseError } from '../errors/import-database-error';
 import type { InsertedEntry } from './repository';
 
@@ -106,7 +107,7 @@ export const AudioGenerationStoreLive = Layer.effect(
         sql
           .withTransaction(
             Effect.andThen(
-              sql`select pg_advisory_xact_lock(hashtextextended(${`wordhold:entry-audio:${entryId}`}, 0))`,
+              sql`select pg_advisory_xact_lock(hashtextextended(${entryAudioLockKey(entryId)}, 0))`,
               effect,
             ),
           )

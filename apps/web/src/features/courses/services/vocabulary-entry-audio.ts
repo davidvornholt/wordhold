@@ -43,6 +43,29 @@ export const prepareEntryAudio = (
     Effect.catch(() => Effect.succeed('failed' as const)),
   );
 
+// A save that leaves the word as it was still repairs pronunciation that is
+// missing, for example from a creation that was interrupted before it was
+// generated. The lock and the check keep two saves, or a save and a page
+// retry, from each calling the speech provider.
+export const restoreEntryAudio = (
+  dependencies: EntryAudioDependencies,
+  entryId: string,
+  targetText: string,
+  language: LanguageCode,
+) =>
+  dependencies.store.withAudioLock(
+    entryId,
+    Effect.gen(function* () {
+      const present = yield* dependencies.store.hasAudio(
+        entryId,
+        speechAudioProfile(targetText, language),
+      );
+      return present
+        ? ('kept' as const)
+        : yield* prepareEntryAudio(dependencies, entryId, targetText, language);
+    }),
+  );
+
 // The database is authoritative. A file that cannot be removed stays for the
 // reconciliation pass, which removes unreferenced files.
 export const removeEntryFiles = (
