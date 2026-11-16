@@ -3,6 +3,8 @@ import type { CourseDatabaseError } from '../errors/courses-errors';
 import {
   CourseKindMismatchError,
   CourseSettingsNotFoundError,
+  type StaleEntryEditError,
+  staleEntryEdit,
   VocabularyEntryConflictError,
   VocabularyEntryNotFoundError,
 } from '../errors/courses-errors';
@@ -49,6 +51,7 @@ export class TextEntryService extends Context.Service<
       | CourseDatabaseError
       | VocabularyEntryConflictError
       | VocabularyEntryNotFoundError
+      | StaleEntryEditError
     >;
   }
 >()('wordhold/TextEntryService') {
@@ -80,6 +83,8 @@ export class TextEntryService extends Context.Service<
           switch (result.kind) {
             case 'text-missing':
               return yield* textMissing;
+            case 'stale':
+              return yield* staleEntryEdit;
             case 'duplicate':
               return yield* duplicateTitle(input.title);
             case 'updated':

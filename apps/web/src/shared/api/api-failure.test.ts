@@ -11,6 +11,7 @@ import {
 } from 'effect';
 import {
   CourseDatabaseError,
+  staleEntryEdit,
   VocabularyEntryConflictError,
 } from '../../features/courses/errors/courses-errors';
 import { NotOwnedError } from '../auth/ownership';
@@ -31,6 +32,12 @@ describe('apiFailure', () => {
 
     expect(apiFailure(Cause.fail(conflict))).toEqual(
       new Rejected({ message: 'Dieses Wort gibt es in diesem Kurs schon.' }),
+    );
+  });
+
+  it('tells an API client its edit lost to a newer save', () => {
+    expect(apiFailure(Cause.fail(staleEntryEdit))).toEqual(
+      new Rejected({ message: staleEntryEdit.message }),
     );
   });
 

@@ -127,6 +127,7 @@ describe('TextEntryStore', () => {
         const corrected = {
           courseId: collectionId,
           entryId,
+          revision: 0,
           title: 'Johannes 3,16',
           text: 'Denn so sehr hat Gott die Welt geliebt.',
         };
@@ -138,7 +139,9 @@ describe('TextEntryStore', () => {
           yield* store.update({ ...corrected, courseId: subjectId }),
         ).toEqual({ kind: 'text-missing' });
         // Saving the same text again leaves the card on screen answerable.
-        expect(yield* store.update(corrected)).toEqual({ kind: 'updated' });
+        expect(yield* store.update({ ...corrected, revision: 1 })).toEqual({
+          kind: 'updated',
+        });
         const rows = yield* sql<{
           readonly targetText: string;
           readonly nativeText: string;

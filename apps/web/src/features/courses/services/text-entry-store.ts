@@ -17,6 +17,7 @@ export type CreateTextEntryResult =
 export type UpdateTextEntryResult =
   | { readonly kind: 'updated' }
   | { readonly kind: 'text-missing' }
+  | { readonly kind: 'stale' }
   | { readonly kind: 'duplicate' };
 
 const databaseError = (operation: string, cause: unknown) =>
@@ -130,14 +131,17 @@ export class TextEntryStore extends Context.Service<
           .withTransaction(
             Effect.gen(function* () {
               yield* lockCourse(sql, input.courseId);
-              const stored = yield* sql<{ readonly id: string }>`
-                select e.id from entries e
+              const stored = yield* sql<{ readonly revision: number }>`
+                select e.revision from entries e
                 join courses co on co.id = e.course_id
                 where e.id = ${input.entryId} and e.course_id = ${input.courseId}
                   and co.kind = 'texts'
               `;
               if (stored.length === 0) {
                 return { kind: 'text-missing' } as const;
+              }
+              if (stored[0]?.revision !== input.revision) {
+                return { kind: 'stale' } as const;
               }
               if (
                 yield* repeatsTitle(
@@ -151,7 +155,8 @@ export class TextEntryStore extends Context.Service<
               }
               const changed = yield* sql`
                 update entries
-                set target_text = ${input.title}, native_text = ${input.text}
+                set target_text = ${input.title}, native_text = ${input.text},
+                  revision = revision + 1
                 where id = ${input.entryId}
                   and (target_text <> ${input.title} or native_text <> ${input.text})
                 returning id

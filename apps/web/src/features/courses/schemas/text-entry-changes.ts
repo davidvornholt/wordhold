@@ -1,6 +1,7 @@
 import { Schema } from 'effect';
 import { Uuid } from '../../../shared/validate/uuid';
 import {
+  EntryRevision,
   EntryText,
   MemorizedText,
 } from '../../../shared/vocabulary/entry-fields';
@@ -19,6 +20,7 @@ export type CreateTextEntryData = typeof CreateTextEntry.Type;
 export const UpdateTextEntry = Schema.Struct({
   courseId: Uuid,
   entryId: Uuid,
+  revision: EntryRevision,
   title: EntryText,
   text: MemorizedText,
 });

@@ -10,6 +10,7 @@ import { PlaceBackLink, PlacePageLink } from './-course-place';
 
 const entry: VocabularyEntry = {
   id: '00000000-0000-0000-0000-000000000003',
+  revision: 0,
   bookId: '00000000-0000-0000-0000-000000000001',
   bookName: 'Book',
   unitId: null,

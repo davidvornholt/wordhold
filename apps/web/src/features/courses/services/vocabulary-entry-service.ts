@@ -13,6 +13,8 @@ import {
   CourseKindMismatchError,
   CourseSettingsNotFoundError,
   CourseUnitNotFoundError,
+  type StaleEntryEditError,
+  staleEntryEdit,
   VocabularyEntryConflictError,
   VocabularyEntryNotFoundError,
 } from '../errors/courses-errors';
@@ -114,7 +116,8 @@ export class VocabularyEntryService extends Context.Service<
       | CourseSettingsNotFoundError
       | CourseKindMismatchError
       | VocabularyEntryConflictError
-      | VocabularyEntryNotFoundError,
+      | VocabularyEntryNotFoundError
+      | StaleEntryEditError,
       AiUsage
     >;
     readonly remove: (
@@ -208,6 +211,9 @@ export class VocabularyEntryService extends Context.Service<
           const result = yield* store.update(input);
           if (result.kind === 'entry-missing') {
             return yield* entryMissing;
+          }
+          if (result.kind === 'stale') {
+            return yield* staleEntryEdit;
           }
           if (result.kind === 'duplicate') {
             return yield* duplicateWord(input.targetText, result.location);

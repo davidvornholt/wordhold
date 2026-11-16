@@ -45,6 +45,19 @@ export class VocabularyEntryConflictError extends Schema.TaggedError<VocabularyE
   { targetText: Schema.String, message: Schema.String },
 ) {}
 
+export const staleEntryEditMessage =
+  'Dieser Eintrag wurde inzwischen an anderer Stelle geändert, deshalb ist deine Änderung nicht gespeichert. Lade die Seite neu und ändere ihn dann noch einmal.';
+
+// An entry was saved from an editor that loaded an older version of it.
+export class StaleEntryEditError extends Schema.TaggedError<StaleEntryEditError>()(
+  'StaleEntryEditError',
+  { message: Schema.String },
+) {}
+
+export const staleEntryEdit = new StaleEntryEditError({
+  message: staleEntryEditMessage,
+});
+
 export class CourseExampleGenerationError extends Schema.TaggedError<CourseExampleGenerationError>()(
   'CourseExampleGenerationError',
   { message: Schema.String },

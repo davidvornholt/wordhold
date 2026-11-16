@@ -23,6 +23,7 @@ import { VocabularyEntryStore } from './vocabulary-entry-store';
 const unchanged = {
   courseId: fixtureCourseId,
   entryId: unintroducedEntryId,
+  revision: 0,
   targetText: 'neuf',
   nativeText: 'neu',
   synonyms: null,
@@ -90,6 +91,7 @@ const staleRecording = (
     const slow = yield* service.update(unchanged).pipe(Effect.forkChild);
     yield* Deferred.await(started);
     const correction = yield* service
+      // The slower save changes nothing, so the revision is still the same.
       .update({ ...unchanged, targetText: 'nouveau' })
       .pipe(Effect.forkChild);
     // The correction is stored while the first recording is still pending.
@@ -157,7 +159,11 @@ describe('saving a word while its pronunciation is generated', () => {
           yield* interleave;
 
           correctionFails = false;
-          yield* service.update({ ...unchanged, targetText: 'nouveau' });
+          yield* service.update({
+            ...unchanged,
+            revision: 1,
+            targetText: 'nouveau',
+          });
 
           expect(yield* recording).toEqual({
             text: 'nouveau',

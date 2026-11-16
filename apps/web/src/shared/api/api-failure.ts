@@ -30,6 +30,7 @@ const rejectedTags = new Set([
   'CourseUnitConflictError',
   'ExamInputError',
   'ExamStateError',
+  'StaleEntryEditError',
 ]);
 
 const taggedMessage = (error: unknown) =>

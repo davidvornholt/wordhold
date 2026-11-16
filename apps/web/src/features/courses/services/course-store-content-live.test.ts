@@ -24,10 +24,11 @@ import {
   runCourseStoreTest,
 } from './course-store-content-test-fixtures';
 
-// An entry's cards and pitfalls are checked on their own, with its answers.
-const withoutCardsOrPitfalls = ({
+// An entry's cards, pitfalls and revision are checked on their own.
+const withoutDetails = ({
   cards: _cards,
   spellingPitfalls: _pitfalls,
+  revision: _revision,
   ...entry
 }: VocabularyEntry) => entry;
 
@@ -166,14 +167,13 @@ describe('CourseStore PostgreSQL entry contents', () => {
             0
           )
         `;
-
         yield* sql`
           update entries set synonyms = array['bouquin'], antonyms = '{}'
           where id = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd'
         `;
 
         const listed = yield* store.listVocabulary(fixtureCourseId);
-        expect(listed.map(withoutCardsOrPitfalls)).toEqual([
+        expect(listed.map(withoutDetails)).toEqual([
           {
             id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
             targetText: 'livre',
@@ -245,6 +245,7 @@ describe('CourseStore PostgreSQL entry contents', () => {
         `;
         expect(yield* store.listVocabulary(fixtureCourseId)).toContainEqual({
           id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+          revision: 0,
           targetText: 'neuf',
           nativeText: 'neu',
           keyPoints: null,

@@ -33,6 +33,7 @@ const entry = (
   overrides: Partial<VocabularyEntry> = {},
 ): VocabularyEntry => ({
   id: '00000000-0000-0000-0000-000000000011',
+  revision: 0,
   bookId: '00000000-0000-0000-0000-000000000009',
   bookName: 'Green Line 3',
   unitId: '00000000-0000-0000-0000-000000000003',

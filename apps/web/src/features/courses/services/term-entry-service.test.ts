@@ -209,7 +209,7 @@ describe('TermEntryService', () => {
 
 describe('TermEntryService edits', () => {
   it('reports a changed definition and names each refused edit', async () => {
-    const edit = { ...input, entryId };
+    const edit = { ...input, entryId, revision: 0 };
     const edited = await runService((service) => service.update(edit));
     expect(edited.result).toEqual(
       expect.objectContaining({ success: { definitionChanged: true } }),

@@ -12,6 +12,7 @@ export type VocabularyRow = {
   readonly unitName: string | null;
   readonly targetText: string;
   readonly nativeText: string;
+  readonly revision: number;
   readonly keyPoints: ReadonlyArray<string> | null;
   readonly synonyms: ReadonlyArray<string> | null;
   readonly antonyms: ReadonlyArray<string> | null;
@@ -52,6 +53,7 @@ export const groupVocabularyRows = (
         unitName: row.unitName,
         targetText: row.targetText,
         nativeText: row.nativeText,
+        revision: row.revision,
         keyPoints: row.keyPoints,
         synonyms: row.synonyms,
         antonyms: row.antonyms,

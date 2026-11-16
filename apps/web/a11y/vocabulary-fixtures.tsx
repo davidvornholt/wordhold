@@ -16,6 +16,7 @@ import { FixtureStudyAction } from './word-entry-fixture';
 const storedEntries: ReadonlyArray<VocabularyEntry> = [
   {
     id: '00000000-0000-0000-0000-000000000011',
+    revision: 0,
     bookId: '00000000-0000-0000-0000-000000000031',
     bookName: 'Green Line 3',
     unitId: '00000000-0000-0000-0000-000000000003',
@@ -55,6 +56,7 @@ const storedEntries: ReadonlyArray<VocabularyEntry> = [
   },
   {
     id: '00000000-0000-0000-0000-000000000012',
+    revision: 0,
     bookId: '00000000-0000-0000-0000-000000000031',
     bookName: 'Green Line 3',
     unitId: '00000000-0000-0000-0000-000000000004',
@@ -94,6 +96,7 @@ const storedEntries: ReadonlyArray<VocabularyEntry> = [
 // in either direction, so its synonyms and opposites wait for it.
 const relatedEntry: VocabularyEntry = {
   id: '00000000-0000-0000-0000-000000000013',
+  revision: 0,
   bookId: '00000000-0000-0000-0000-000000000031',
   bookName: 'Green Line 3',
   unitId: '00000000-0000-0000-0000-000000000003',
@@ -151,6 +154,7 @@ const relatedEntry: VocabularyEntry = {
 // difficulty shows.
 const adolescentEntry: VocabularyEntry = {
   id: adolescentEntryId,
+  revision: 0,
   bookId: '00000000-0000-0000-0000-000000000031',
   bookName: 'Green Line 3',
   unitId: '00000000-0000-0000-0000-000000000003',

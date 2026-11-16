@@ -202,7 +202,7 @@ export class CourseStore extends Context.Service<
         sql<VocabularyRow>`
           select e.id, e.book_id as "bookId", b.name as "bookName",
             e.unit_id as "unitId", u.name as "unitName",
-            e.target_text as "targetText", e.native_text as "nativeText",
+            e.target_text as "targetText", e.native_text as "nativeText", e.revision,
             e.key_points as "keyPoints", e.synonyms, e.antonyms,
             e.spelling_pitfalls as "spellingPitfalls",
             example.target_text as "exampleTargetText",

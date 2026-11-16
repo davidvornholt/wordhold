@@ -78,6 +78,9 @@ export type VocabularyEntry = {
   readonly unitName: string | null;
   readonly targetText: string;
   readonly nativeText: string;
+  // The version of the texts and related words, which an editor sends back
+  // so that a save from an older editor can be refused.
+  readonly revision: number;
   // What a definition must state, for a term; null for a word, and for a
   // term whose key points are not derived yet.
   readonly keyPoints: ReadonlyArray<string> | null;

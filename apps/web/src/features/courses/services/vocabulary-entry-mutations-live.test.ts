@@ -6,6 +6,7 @@ import {
 } from '@wordhold/db/testing/postgres-test-database';
 import { Effect } from 'effect';
 import type { NewExampleData } from '../../../shared/vocabulary/entry-fields';
+import type { UpdateVocabularyEntryData } from '../schemas/entry-changes';
 import { VocabularyEntryStore } from './vocabulary-entry-store';
 
 const courseId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
@@ -36,6 +37,18 @@ const runStoreTest = <A, E>(
       );
     }),
   );
+
+// Saves as an editor would that was opened just before: with the revision the
+// entry has now. Each save adds one, so a run of saves cannot reuse a number.
+const updateFresh = (input: Omit<UpdateVocabularyEntryData, 'revision'>) =>
+  Effect.gen(function* () {
+    const sql = yield* Database;
+    const store = yield* VocabularyEntryStore;
+    const [row] = yield* sql<{
+      readonly revision: number;
+    }>`select revision from entries where id = ${input.entryId}`;
+    return yield* store.update({ ...input, revision: row?.revision ?? 0 });
+  });
 
 const seedCourses = Effect.gen(function* () {
   const sql = yield* Database;
@@ -139,7 +152,6 @@ describe('VocabularyEntryStore corrections', () => {
     await runStoreTest(
       Effect.gen(function* () {
         yield* seedCourses;
-        const store = yield* VocabularyEntryStore;
         const entryId = yield* practisedWord('la mémoire', 'die Erinnerung');
         const edit = {
           courseId,
@@ -149,7 +161,7 @@ describe('VocabularyEntryStore corrections', () => {
           antonyms: [],
         };
         expect(
-          yield* store.update({
+          yield* updateFresh({
             ...edit,
             targetText: 'le souvenir',
             nativeText: 'die Erinnerung',
@@ -193,7 +205,6 @@ describe('VocabularyEntryStore corrections', () => {
     await runStoreTest(
       Effect.gen(function* () {
         yield* seedCourses;
-        const store = yield* VocabularyEntryStore;
         const entryId = yield* practisedWord('la mémoire', 'die Erinnerung');
         const word = {
           courseId,
@@ -204,7 +215,7 @@ describe('VocabularyEntryStore corrections', () => {
           antonyms: null,
         };
         const translated = { ...example, nativeText: 'Die Reise.' };
-        expect(yield* store.update({ ...word, example: translated })).toEqual({
+        expect(yield* updateFresh({ ...word, example: translated })).toEqual({
           kind: 'updated',
           wordChanged: false,
           unreferencedFiles: [],
@@ -215,13 +226,13 @@ describe('VocabularyEntryStore corrections', () => {
         // The same sentence marked as written by AI, with and without a new
         // translation, keeps its audio.
         const marked = { ...translated, source: 'generated' } as const;
-        yield* store.update({ ...word, example: marked });
+        yield* updateFresh({ ...word, example: marked });
         expect((yield* storedWord(entryId)).examples).toEqual([
           { ...marked, audioPath: exampleAudio },
         ]);
-        yield* store.update({ ...word, example: translated });
+        yield* updateFresh({ ...word, example: translated });
         const retranslated = { ...example, source: 'generated' } as const;
-        yield* store.update({ ...word, example: retranslated });
+        yield* updateFresh({ ...word, example: retranslated });
         expect((yield* storedWord(entryId)).examples).toEqual([
           { ...retranslated, audioPath: exampleAudio },
         ]);
@@ -230,7 +241,7 @@ describe('VocabularyEntryStore corrections', () => {
           nativeText: 'Er hat ein gutes Gedächtnis.',
           source: 'generated',
         } satisfies NewExampleData;
-        expect(yield* store.update({ ...word, example: replaced })).toEqual({
+        expect(yield* updateFresh({ ...word, example: replaced })).toEqual({
           kind: 'updated',
           wordChanged: false,
           unreferencedFiles: [exampleAudio],
@@ -238,9 +249,9 @@ describe('VocabularyEntryStore corrections', () => {
         expect((yield* storedWord(entryId)).examples).toEqual([
           { ...replaced, audioPath: null },
         ]);
-        yield* store.update(word);
+        yield* updateFresh(word);
         expect((yield* storedWord(entryId)).examples).toEqual([]);
-        yield* store.update({ ...word, example });
+        yield* updateFresh({ ...word, example });
         const stored = yield* storedWord(entryId);
         expect(stored.examples).toEqual([{ ...example, audioPath: null }]);
         // Unchanged texts keep every accepted answer and the pronunciation.
@@ -261,7 +272,6 @@ describe('VocabularyEntryStore spelling pitfalls', () => {
       Effect.gen(function* () {
         yield* seedCourses;
         const sql = yield* Database;
-        const store = yield* VocabularyEntryStore;
         const entryId = yield* practisedWord('la mémoire', 'die Erinnerung');
         yield* sql`update entries set spelling_pitfalls = '[]'::jsonb where id = ${entryId}`;
         const pitfalls = Effect.map(
@@ -272,13 +282,13 @@ describe('VocabularyEntryStore spelling pitfalls', () => {
           (rows) => rows[0]?.pitfalls,
         );
         const edit = { courseId, entryId, example, synonyms: [], antonyms: [] };
-        yield* store.update({
+        yield* updateFresh({
           ...edit,
           targetText: 'la mémoire',
           nativeText: 'das Gedächtnis',
         });
         const afterMeaning = yield* pitfalls;
-        yield* store.update({
+        yield* updateFresh({
           ...edit,
           targetText: 'le souvenir',
           nativeText: 'das Gedächtnis',
@@ -295,7 +305,6 @@ describe('VocabularyEntryStore refused corrections', () => {
     await runStoreTest(
       Effect.gen(function* () {
         yield* seedCourses;
-        const store = yield* VocabularyEntryStore;
         yield* practisedWord('vous', 'ihr');
         const entryId = yield* practisedWord('merci', 'danke');
         const edit = {
@@ -306,15 +315,15 @@ describe('VocabularyEntryStore refused corrections', () => {
           synonyms: null,
           antonyms: null,
         };
-        expect(yield* store.update({ ...edit, targetText: 'vous' })).toEqual({
+        expect(yield* updateFresh({ ...edit, targetText: 'vous' })).toEqual({
           kind: 'duplicate',
           location: 'Découvertes 3 · Unité 1',
         });
         expect(
-          (yield* store.update({ ...edit, targetText: 'merci' })).kind,
+          (yield* updateFresh({ ...edit, targetText: 'merci' })).kind,
         ).toBe('updated');
         expect(
-          yield* store.update({
+          yield* updateFresh({
             ...edit,
             courseId: otherCourseId,
             targetText: 'gracias',
