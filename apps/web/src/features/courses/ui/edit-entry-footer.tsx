@@ -1,4 +1,5 @@
 import { Button } from '../../../shared/ui/button';
+import { staleEntryEditMessage } from '../errors/courses-errors';
 
 type EditEntryFooterProps = {
   readonly busy: boolean;
@@ -8,7 +9,9 @@ type EditEntryFooterProps = {
 };
 
 // The end of a form that corrects an entry: why saving failed, and the
-// buttons to save or to go back to the details unchanged.
+// buttons to save or to go back to the details unchanged. An entry saved
+// meanwhile from another tab can only be corrected after the page is loaded
+// again, so that failure also offers to do so.
 export const EditEntryFooter = ({
   busy,
   submittable,
@@ -28,6 +31,15 @@ export const EditEntryFooter = ({
       <Button disabled={busy} onClick={onCancel} variant="quiet-muted">
         Abbrechen
       </Button>
+      {error === staleEntryEditMessage ? (
+        <Button
+          onClick={() => globalThis.location.reload()}
+          type="button"
+          variant="quiet-muted"
+        >
+          Seite neu laden
+        </Button>
+      ) : null}
     </div>
   </>
 );

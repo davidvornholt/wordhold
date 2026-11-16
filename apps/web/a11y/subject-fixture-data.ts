@@ -31,6 +31,7 @@ export const termEntry = (
   { term, definition, keyPoints, introduced, failures }: FixtureTerm,
 ): VocabularyEntry => ({
   id: fixtureId(entryIdOffset, index),
+  revision: 0,
   bookId: subjectBook.id,
   bookName: subjectBook.name,
   unitId: null,

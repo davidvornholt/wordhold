@@ -54,6 +54,10 @@ export const entries = pgTable(
     // without one, and null again when the word is respelled. Always null
     // outside a language course.
     spellingPitfalls: jsonb('spelling_pitfalls'),
+    // The version of what the editors show: both texts and the related
+    // words. Every save of them adds one, and a save made from an editor that
+    // loaded an older version is refused instead of undoing the newer one.
+    revision: integer('revision').notNull().default(0),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),

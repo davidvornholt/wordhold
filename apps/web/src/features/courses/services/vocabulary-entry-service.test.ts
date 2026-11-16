@@ -44,6 +44,7 @@ const input = {
 const correction = {
   courseId,
   entryId,
+  revision: 0,
   targetText: 'le souvenir',
   nativeText: 'die Erinnerung',
   synonyms: null,

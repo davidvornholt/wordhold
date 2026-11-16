@@ -54,6 +54,7 @@ const editWord = (
   const update = Schema.decodeUnknownEffect(UpdateVocabularyEntry)({
     courseId,
     entryId: current.id,
+    revision: current.revision,
     targetText,
     nativeText: payload.nativeText ?? current.nativeText,
     ...(example === undefined ? {} : { example }),
@@ -99,6 +100,7 @@ const editSubjectEntry = (
         Schema.decodeUnknownEffect(UpdateTermEntry)({
           courseId: course.id,
           entryId: current.id,
+          revision: current.revision,
           term: targetText,
           definition: nativeText,
         }).pipe(
@@ -115,6 +117,7 @@ const editSubjectEntry = (
         Schema.decodeUnknownEffect(UpdateTextEntry)({
           courseId: course.id,
           entryId: current.id,
+          revision: current.revision,
           title: targetText,
           text: nativeText,
         }).pipe(

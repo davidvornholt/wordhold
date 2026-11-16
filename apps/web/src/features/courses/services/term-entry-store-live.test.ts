@@ -204,7 +204,12 @@ describe('TermEntryStore edits', () => {
         `;
         const edit = { courseId: subjectId, entryId };
         expect(
-          yield* store.update({ ...edit, term: 'Katalysatoren', definition }),
+          yield* store.update({
+            ...edit,
+            revision: 0,
+            term: 'Katalysatoren',
+            definition,
+          }),
         ).toEqual({ kind: 'updated', definitionChanged: false });
         expect(yield* store.readTerm(subjectId, entryId)).toEqual({
           term: 'Katalysatoren',
@@ -215,6 +220,7 @@ describe('TermEntryStore edits', () => {
         expect(
           yield* store.update({
             ...edit,
+            revision: 1,
             term: 'Katalysatoren',
             definition: corrected,
           }),
@@ -232,6 +238,7 @@ describe('TermEntryStore edits', () => {
         // Saving the same term again leaves the card on screen answerable.
         yield* store.update({
           ...edit,
+          revision: 2,
           term: 'Katalysatoren',
           definition: corrected,
         });
@@ -252,7 +259,7 @@ describe('TermEntryStore edits', () => {
         const store = yield* TermEntryStore;
         yield* store.create(term('Enzym'));
         const entryId = createdId(yield* store.create(term('Katalysator')));
-        const edit = { courseId: subjectId, entryId, definition };
+        const edit = { courseId: subjectId, entryId, revision: 0, definition };
         expect(yield* store.update({ ...edit, term: 'Enzym' })).toEqual({
           kind: 'duplicate',
         });

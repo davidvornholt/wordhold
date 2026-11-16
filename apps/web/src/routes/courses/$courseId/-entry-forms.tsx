@@ -244,6 +244,8 @@ const CourseEntryEditor = ({
   const router = useRouter();
   const courseId = course.id;
   const entryId = entry.id;
+  // The version this editor shows, which a save sends back.
+  const { revision } = entry;
   if (course.kind === 'texts') {
     return (
       <EditTextForm
@@ -251,7 +253,9 @@ const CourseEntryEditor = ({
         entries={entries}
         entry={entry}
         updateEntry={async (draft) => {
-          await updateTextEntry({ data: { courseId, entryId, ...draft } });
+          await updateTextEntry({
+            data: { courseId, entryId, revision, ...draft },
+          });
           await router.invalidate();
         }}
       />
@@ -268,7 +272,7 @@ const CourseEntryEditor = ({
         }
         updateEntry={async (draft) => {
           const { definitionChanged } = await updateTermEntry({
-            data: { courseId, entryId, ...draft },
+            data: { courseId, entryId, revision, ...draft },
           });
           if (definitionChanged) {
             deriveTermKeyPoints({ data: { courseId, entryId } })
@@ -308,7 +312,7 @@ const CourseEntryEditor = ({
       }
       updateEntry={async (draft) => {
         const updated = await updateVocabularyEntry({
-          data: { courseId, entryId, ...draft },
+          data: { courseId, entryId, revision, ...draft },
         });
         await router.invalidate();
         return updated;

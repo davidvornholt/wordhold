@@ -195,6 +195,7 @@ export const fixtureEntry = (
   unit: CourseUnit | null,
 ): VocabularyEntry => ({
   id: fixtureId(entryIdOffset, index),
+  revision: 0,
   bookId: book.id,
   bookName: book.name,
   unitId: unit?.id ?? null,

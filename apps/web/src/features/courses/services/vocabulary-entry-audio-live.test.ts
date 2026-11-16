@@ -94,8 +94,11 @@ describe('a manual word whose creation stopped while speech was pending', () => 
           yield* Deferred.await(stalled.started);
           yield* Fiber.interrupt(interrupted);
 
-          const [stored] = yield* sql<{ readonly id: string }>`
-            select id from entries where target_text = ${word.targetText}
+          const [stored] = yield* sql<{
+            readonly id: string;
+            readonly revision: number;
+          }>`
+            select id, revision from entries where target_text = ${word.targetText}
           `;
           if (stored === undefined) {
             return yield* Effect.die('The word should have been committed.');
@@ -108,6 +111,7 @@ describe('a manual word whose creation stopped while speech was pending', () => 
             service.update({
               courseId: fixtureCourseId,
               entryId: stored.id,
+              revision: stored.revision,
               targetText: word.targetText,
               nativeText: word.nativeText,
               synonyms: null,

@@ -5,6 +5,8 @@ import type { CourseDatabaseError } from '../errors/courses-errors';
 import {
   CourseKindMismatchError,
   CourseSettingsNotFoundError,
+  type StaleEntryEditError,
+  staleEntryEdit,
   TermAssistError,
   VocabularyEntryConflictError,
   VocabularyEntryNotFoundError,
@@ -65,6 +67,7 @@ export class TermEntryService extends Context.Service<
       | CourseDatabaseError
       | VocabularyEntryConflictError
       | VocabularyEntryNotFoundError
+      | StaleEntryEditError
     >;
     readonly suggestDefinition: (
       input: TermDefinitionSuggestionData,
@@ -122,6 +125,8 @@ export class TermEntryService extends Context.Service<
           switch (result.kind) {
             case 'term-missing':
               return yield* termMissing;
+            case 'stale':
+              return yield* staleEntryEdit;
             case 'duplicate':
               return yield* duplicateTerm(input.term);
             case 'updated':

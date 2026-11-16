@@ -19,6 +19,7 @@ export type UpdateVocabularyEntryResult =
       readonly unreferencedFiles: ReadonlyArray<string>;
     }
   | { readonly kind: 'entry-missing' }
+  | { readonly kind: 'stale' }
   | { readonly kind: 'duplicate'; readonly location: string };
 
 export type RemovedEntries = {
@@ -27,6 +28,7 @@ export type RemovedEntries = {
 };
 
 type StoredWord = {
+  readonly revision: number;
   readonly targetText: string;
   readonly nativeText: string;
   readonly exampleId: string | null;
@@ -201,7 +203,7 @@ export const makeVocabularyEntryMutations = (sql: Database) => {
           // transaction committed.
           yield* sql`select from entries where id = ${input.entryId} for no key update`;
           const [stored] = yield* sql<StoredWord>`
-            select e.target_text as "targetText",
+            select e.revision, e.target_text as "targetText",
               e.native_text as "nativeText",
               x.id as "exampleId", x.target_text as "exampleTargetText",
               x.native_text as "exampleNativeText",
@@ -219,6 +221,10 @@ export const makeVocabularyEntryMutations = (sql: Database) => {
           `;
           if (stored === undefined) {
             return { kind: 'entry-missing' } as const;
+          }
+          // An older editor would write its wording over a newer one.
+          if (stored.revision !== input.revision) {
+            return { kind: 'stale' } as const;
           }
           const duplicate = yield* findCourseDuplicate(
             sql,

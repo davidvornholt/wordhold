@@ -108,12 +108,15 @@ export const writeRelatedWords = (
       order by e.id
       for no key update of e
     `;
+    // Every write adds a revision, so an editor that read the entry before
+    // it is refused, whatever it changed.
     const written = yield* sql<WrittenRow>`
       update entries e
       set synonyms = case when r.synonyms is null then null
             else array(select jsonb_array_elements_text(r.synonyms)) end,
           antonyms = case when r.antonyms is null then null
-            else array(select jsonb_array_elements_text(r.antonyms)) end
+            else array(select jsonb_array_elements_text(r.antonyms)) end,
+          revision = e.revision + 1
       from jsonb_to_recordset(${JSON.stringify(writes)}::jsonb)
         as r("courseId" uuid, "entryId" uuid, synonyms jsonb, antonyms jsonb)
       where e.id = r."entryId" and e.course_id = r."courseId"

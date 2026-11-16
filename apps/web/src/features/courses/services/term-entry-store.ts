@@ -22,6 +22,9 @@ export type StoredTerm = {
   readonly keyPoints: ReadonlyArray<string> | null;
 };
 
+// What a correction compares with: the term as stored and its version.
+type StoredTermVersion = StoredTerm & { readonly revision: number };
+
 export type CreateTermEntryResult =
   | { readonly kind: 'created'; readonly entryId: string }
   | { readonly kind: 'course-missing' }
@@ -31,6 +34,7 @@ export type CreateTermEntryResult =
 export type UpdateTermEntryResult =
   | { readonly kind: 'updated'; readonly definitionChanged: boolean }
   | { readonly kind: 'term-missing' }
+  | { readonly kind: 'stale' }
   | { readonly kind: 'duplicate' };
 
 const databaseError = (operation: string, cause: unknown) =>
@@ -41,9 +45,9 @@ const databaseError = (operation: string, cause: unknown) =>
   });
 
 const selectTerm = (sql: Database, courseId: string, entryId: string) =>
-  sql<StoredTerm>`
+  sql<StoredTermVersion>`
     select e.target_text as term, e.native_text as definition,
-      e.key_points as "keyPoints"
+      e.revision, e.key_points as "keyPoints"
     from entries e
     join courses co on co.id = e.course_id
     where e.id = ${entryId} and e.course_id = ${courseId}
@@ -61,6 +65,9 @@ const correctTerm = (sql: Database, input: UpdateTermEntryData) =>
     if (stored === undefined) {
       return { kind: 'term-missing' } as const;
     }
+    if (stored.revision !== input.revision) {
+      return { kind: 'stale' } as const;
+    }
     if (yield* repeatsTerm(sql, input.courseId, input.term, input.entryId)) {
       return { kind: 'duplicate' } as const;
     }
@@ -71,6 +78,7 @@ const correctTerm = (sql: Database, input: UpdateTermEntryData) =>
     yield* sql`
       update entries
       set target_text = ${input.term}, native_text = ${input.definition},
+        revision = revision + 1,
         key_points = case
           when native_text = ${input.definition} then key_points
         end
@@ -175,6 +183,15 @@ export class TermEntryStore extends Context.Service<
 
       const readTerm = (courseId: string, entryId: string) =>
         selectTerm(sql, courseId, entryId).pipe(
+          Effect.map((row) =>
+            row === undefined
+              ? undefined
+              : {
+                  term: row.term,
+                  definition: row.definition,
+                  keyPoints: row.keyPoints,
+                },
+          ),
           Effect.mapError((cause) => databaseError('read term', cause)),
         );
 

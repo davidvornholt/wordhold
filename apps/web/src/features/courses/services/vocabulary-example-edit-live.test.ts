@@ -20,6 +20,7 @@ import { VocabularyExampleStore } from './vocabulary-example-store';
 const correction = {
   courseId,
   entryId,
+  revision: 0,
   targetText: 'chat',
   nativeText: 'die Katze',
   synonyms: null,

@@ -4,6 +4,9 @@ import {
 } from '@wordhold/ai/extraction/schema';
 import { Schema } from 'effect';
 
+// The version of an entry an editor loaded; see entries.revision.
+export const EntryRevision = Schema.Int.check(Schema.isGreaterThanOrEqualTo(0));
+
 export const EntryText = Schema.Trim.check(
   Schema.isMinLength(1),
   Schema.isMaxLength(maximumEntryTextLength),
