@@ -137,12 +137,8 @@
           "name": "account_user_id_user_id_fk",
           "tableFrom": "account",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -255,12 +251,8 @@
           "name": "device_code_user_id_user_id_fk",
           "tableFrom": "device_code",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -365,12 +357,8 @@
           "name": "passkey_user_id_user_id_fk",
           "tableFrom": "passkey",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -380,9 +368,7 @@
         "passkey_credential_id_unique": {
           "name": "passkey_credential_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "credential_id"
-          ]
+          "columns": ["credential_id"]
         }
       },
       "policies": {},
@@ -465,12 +451,8 @@
           "name": "session_user_id_user_id_fk",
           "tableFrom": "session",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -480,9 +462,7 @@
         "session_token_unique": {
           "name": "session_token_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "token"
-          ]
+          "columns": ["token"]
         }
       },
       "policies": {},
@@ -546,9 +526,7 @@
         "user_email_unique": {
           "name": "user_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "policies": {},
@@ -665,12 +643,8 @@
           "name": "access_codes_user_id_members_user_id_fk",
           "tableFrom": "access_codes",
           "tableTo": "members",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "user_id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["user_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -680,9 +654,7 @@
         "access_codes_user_id_unique": {
           "name": "access_codes_user_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "user_id"
-          ]
+          "columns": ["user_id"]
         }
       },
       "policies": {},
@@ -777,12 +749,8 @@
           "name": "members_user_id_user_id_fk",
           "tableFrom": "members",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -930,12 +898,8 @@
           "name": "ai_usage_user_id_user_id_fk",
           "tableFrom": "ai_usage",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -987,12 +951,8 @@
           "name": "bible_verses_bible_id_bibles_id_fk",
           "tableFrom": "bible_verses",
           "tableTo": "bibles",
-          "columnsFrom": [
-            "bible_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["bible_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1000,12 +960,7 @@
       "compositePrimaryKeys": {
         "bible_verses_bible_id_book_chapter_verse_pk": {
           "name": "bible_verses_bible_id_book_chapter_verse_pk",
-          "columns": [
-            "bible_id",
-            "book",
-            "chapter",
-            "verse"
-          ]
+          "columns": ["bible_id", "book", "chapter", "verse"]
         }
       },
       "uniqueConstraints": {},
@@ -1083,12 +1038,8 @@
           "name": "bibles_owner_id_user_id_fk",
           "tableFrom": "bibles",
           "tableTo": "user",
-          "columnsFrom": [
-            "owner_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["owner_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1190,12 +1141,8 @@
           "name": "courses_owner_id_user_id_fk",
           "tableFrom": "courses",
           "tableTo": "user",
-          "columnsFrom": [
-            "owner_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["owner_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1379,12 +1326,8 @@
           "name": "pages_course_id_courses_id_fk",
           "tableFrom": "pages",
           "tableTo": "courses",
-          "columnsFrom": [
-            "course_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["course_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1520,12 +1463,8 @@
           "name": "books_course_id_courses_id_fk",
           "tableFrom": "books",
           "tableTo": "courses",
-          "columnsFrom": [
-            "course_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["course_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1678,12 +1617,8 @@
           "name": "units_course_id_courses_id_fk",
           "tableFrom": "units",
           "tableTo": "courses",
-          "columnsFrom": [
-            "course_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["course_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1691,14 +1626,8 @@
           "name": "units_book_course_books_id_course_fk",
           "tableFrom": "units",
           "tableTo": "books",
-          "columnsFrom": [
-            "book_id",
-            "course_id"
-          ],
-          "columnsTo": [
-            "id",
-            "course_id"
-          ],
+          "columnsFrom": ["book_id", "course_id"],
+          "columnsTo": ["id", "course_id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1794,12 +1723,8 @@
           "name": "accepted_answers_entry_id_entries_id_fk",
           "tableFrom": "accepted_answers",
           "tableTo": "entries",
-          "columnsFrom": [
-            "entry_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["entry_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1902,12 +1827,8 @@
           "name": "entries_course_id_courses_id_fk",
           "tableFrom": "entries",
           "tableTo": "courses",
-          "columnsFrom": [
-            "course_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["course_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1915,12 +1836,8 @@
           "name": "entries_page_id_pages_id_fk",
           "tableFrom": "entries",
           "tableTo": "pages",
-          "columnsFrom": [
-            "page_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["page_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -1928,14 +1845,8 @@
           "name": "entries_book_course_books_id_course_fk",
           "tableFrom": "entries",
           "tableTo": "books",
-          "columnsFrom": [
-            "book_id",
-            "course_id"
-          ],
-          "columnsTo": [
-            "id",
-            "course_id"
-          ],
+          "columnsFrom": ["book_id", "course_id"],
+          "columnsTo": ["id", "course_id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -1943,14 +1854,8 @@
           "name": "entries_unit_book_units_id_book_fk",
           "tableFrom": "entries",
           "tableTo": "units",
-          "columnsFrom": [
-            "unit_id",
-            "book_id"
-          ],
-          "columnsTo": [
-            "id",
-            "book_id"
-          ],
+          "columnsFrom": ["unit_id", "book_id"],
+          "columnsTo": ["id", "book_id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -2026,12 +1931,8 @@
           "name": "entry_audio_entry_id_entries_id_fk",
           "tableFrom": "entry_audio",
           "tableTo": "entries",
-          "columnsFrom": [
-            "entry_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["entry_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2105,12 +2006,8 @@
           "name": "entry_examples_entry_id_entries_id_fk",
           "tableFrom": "entry_examples",
           "tableTo": "entries",
-          "columnsFrom": [
-            "entry_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["entry_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2165,12 +2062,8 @@
           "name": "exam_entries_exam_id_exams_id_fk",
           "tableFrom": "exam_entries",
           "tableTo": "exams",
-          "columnsFrom": [
-            "exam_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["exam_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2178,12 +2071,8 @@
           "name": "exam_entries_entry_id_entries_id_fk",
           "tableFrom": "exam_entries",
           "tableTo": "entries",
-          "columnsFrom": [
-            "entry_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["entry_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2191,10 +2080,7 @@
       "compositePrimaryKeys": {
         "exam_entries_exam_id_entry_id_pk": {
           "name": "exam_entries_exam_id_entry_id_pk",
-          "columns": [
-            "exam_id",
-            "entry_id"
-          ]
+          "columns": ["exam_id", "entry_id"]
         }
       },
       "uniqueConstraints": {},
@@ -2255,12 +2141,8 @@
           "name": "exam_rounds_exam_id_exams_id_fk",
           "tableFrom": "exam_rounds",
           "tableTo": "exams",
-          "columnsFrom": [
-            "exam_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["exam_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2364,12 +2246,8 @@
           "name": "exams_course_id_courses_id_fk",
           "tableFrom": "exams",
           "tableTo": "courses",
-          "columnsFrom": [
-            "course_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["course_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2517,12 +2395,8 @@
           "name": "cards_entry_id_entries_id_fk",
           "tableFrom": "cards",
           "tableTo": "entries",
-          "columnsFrom": [
-            "entry_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["entry_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2572,12 +2446,8 @@
           "name": "exam_round_cards_round_id_exam_rounds_id_fk",
           "tableFrom": "exam_round_cards",
           "tableTo": "exam_rounds",
-          "columnsFrom": [
-            "round_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["round_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2585,12 +2455,8 @@
           "name": "exam_round_cards_card_id_cards_id_fk",
           "tableFrom": "exam_round_cards",
           "tableTo": "cards",
-          "columnsFrom": [
-            "card_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["card_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2598,10 +2464,7 @@
       "compositePrimaryKeys": {
         "exam_round_cards_round_id_card_id_pk": {
           "name": "exam_round_cards_round_id_card_id_pk",
-          "columns": [
-            "round_id",
-            "card_id"
-          ]
+          "columns": ["round_id", "card_id"]
         }
       },
       "uniqueConstraints": {},
@@ -2693,12 +2556,8 @@
           "name": "judge_cache_entry_id_entries_id_fk",
           "tableFrom": "judge_cache",
           "tableTo": "entries",
-          "columnsFrom": [
-            "entry_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["entry_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2807,12 +2666,8 @@
           "name": "reviews_card_id_cards_id_fk",
           "tableFrom": "reviews",
           "tableTo": "cards",
-          "columnsFrom": [
-            "card_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["card_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2820,12 +2675,8 @@
           "name": "reviews_exam_round_id_exam_rounds_id_fk",
           "tableFrom": "reviews",
           "tableTo": "exam_rounds",
-          "columnsFrom": [
-            "exam_round_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["exam_round_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -2841,109 +2692,62 @@
     "public.access_code_kind": {
       "name": "access_code_kind",
       "schema": "public",
-      "values": [
-        "invitation",
-        "recovery"
-      ]
+      "values": ["invitation", "recovery"]
     },
     "public.ai_provider": {
       "name": "ai_provider",
       "schema": "public",
-      "values": [
-        "bedrock",
-        "polly",
-        "transcribe",
-        "anthropic"
-      ]
+      "values": ["bedrock", "polly", "transcribe", "anthropic"]
     },
     "public.ai_usage_status": {
       "name": "ai_usage_status",
       "schema": "public",
-      "values": [
-        "pending",
-        "succeeded",
-        "failed"
-      ]
+      "values": ["pending", "succeeded", "failed"]
     },
     "public.course_kind": {
       "name": "course_kind",
       "schema": "public",
-      "values": [
-        "language",
-        "terms",
-        "texts"
-      ]
+      "values": ["language", "terms", "texts"]
     },
     "public.language": {
       "name": "language",
       "schema": "public",
-      "values": [
-        "de",
-        "en",
-        "es",
-        "fr"
-      ]
+      "values": ["de", "en", "es", "fr"]
     },
     "public.answer_direction": {
       "name": "answer_direction",
       "schema": "public",
-      "values": [
-        "to_target",
-        "to_native",
-        "to_synonym",
-        "to_antonym"
-      ]
+      "values": ["to_target", "to_native", "to_synonym", "to_antonym"]
     },
     "public.page_review_order": {
       "name": "page_review_order",
       "schema": "public",
-      "values": [
-        "page_number",
-        "scan"
-      ]
+      "values": ["page_number", "scan"]
     },
     "public.page_status": {
       "name": "page_status",
       "schema": "public",
-      "values": [
-        "awaiting_verification",
-        "verified"
-      ]
+      "values": ["awaiting_verification", "verified"]
     },
     "public.answer_source": {
       "name": "answer_source",
       "schema": "public",
-      "values": [
-        "textbook",
-        "manual",
-        "judge"
-      ]
+      "values": ["textbook", "manual", "judge"]
     },
     "public.example_source": {
       "name": "example_source",
       "schema": "public",
-      "values": [
-        "textbook",
-        "generated"
-      ]
+      "values": ["textbook", "generated"]
     },
     "public.card_state": {
       "name": "card_state",
       "schema": "public",
-      "values": [
-        "new",
-        "learning",
-        "review",
-        "relearning"
-      ]
+      "values": ["new", "learning", "review", "relearning"]
     },
     "public.review_mode": {
       "name": "review_mode",
       "schema": "public",
-      "values": [
-        "scheduled",
-        "drill"
-      ]
+      "values": ["scheduled", "drill"]
     }
   },
   "schemas": {},
