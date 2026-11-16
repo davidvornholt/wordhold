@@ -194,6 +194,7 @@ describe('TermEntryStore edits', () => {
         const store = yield* TermEntryStore;
         const entryId = createdId(yield* store.create(term('Katalysator')));
         const keyPoints = ['senkt die Aktivierungsenergie'];
+        // Setting the key points is an edit too, so the form loads revision 1.
         yield* store.setKeyPoints(subjectId, entryId, keyPoints);
         yield* sql`update cards set reps = 3 where entry_id = ${entryId}`;
         yield* sql`
@@ -206,7 +207,7 @@ describe('TermEntryStore edits', () => {
         expect(
           yield* store.update({
             ...edit,
-            revision: 0,
+            revision: 1,
             term: 'Katalysatoren',
             definition,
           }),
@@ -220,7 +221,7 @@ describe('TermEntryStore edits', () => {
         expect(
           yield* store.update({
             ...edit,
-            revision: 1,
+            revision: 2,
             term: 'Katalysatoren',
             definition: corrected,
           }),
@@ -238,7 +239,7 @@ describe('TermEntryStore edits', () => {
         // Saving the same term again leaves the card on screen answerable.
         yield* store.update({
           ...edit,
-          revision: 2,
+          revision: 3,
           term: 'Katalysatoren',
           definition: corrected,
         });

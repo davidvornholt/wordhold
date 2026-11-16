@@ -91,9 +91,8 @@ const staleRecording = (
     const slow = yield* service.update(unchanged).pipe(Effect.forkChild);
     yield* Deferred.await(started);
     const correction = yield* service
-      // The slower save has stored its version by now, so a form shown after
-      // it holds the next revision.
-      .update({ ...unchanged, revision: 1, targetText: 'nouveau' })
+      // The slower save changes nothing, so the revision is still the same.
+      .update({ ...unchanged, targetText: 'nouveau' })
       .pipe(Effect.forkChild);
     // The correction is stored while the first recording is still pending.
     yield* Effect.gen(function* () {
@@ -162,7 +161,7 @@ describe('saving a word while its pronunciation is generated', () => {
           correctionFails = false;
           yield* service.update({
             ...unchanged,
-            revision: 2,
+            revision: 1,
             targetText: 'nouveau',
           });
 

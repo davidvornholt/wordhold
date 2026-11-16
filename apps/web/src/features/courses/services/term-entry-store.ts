@@ -61,6 +61,9 @@ const selectTerm = (sql: Database, courseId: string, entryId: string) =>
 const correctTerm = (sql: Database, input: UpdateTermEntryData) =>
   Effect.gen(function* () {
     yield* sql`select pg_advisory_xact_lock(hashtextextended(${input.courseId}, 0))`;
+    // Key points are written without the course lock, so the entry's row is
+    // locked in its own statement before it is read.
+    yield* sql`select from entries where id = ${input.entryId} for no key update`;
     const stored = yield* selectTerm(sql, input.courseId, input.entryId);
     if (stored === undefined) {
       return { kind: 'term-missing' } as const;
@@ -211,10 +214,14 @@ export class TermEntryStore extends Context.Service<
       ) =>
         sql`
           update entries e
-          set key_points = array(
-            select jsonb_array_elements_text(${JSON.stringify(keyPoints)}::jsonb)
-          )
-          from courses co
+          set key_points = n.points,
+            revision = case when e.key_points is distinct from n.points
+              then e.revision + 1 else e.revision end
+          from courses co, lateral (
+            select array(
+              select jsonb_array_elements_text(${JSON.stringify(keyPoints)}::jsonb)
+            ) as points
+          ) n
           where e.id = ${entryId} and e.course_id = ${courseId}
             and co.id = e.course_id and co.kind = 'terms'
           returning e.id

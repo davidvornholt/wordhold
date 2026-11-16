@@ -116,6 +116,21 @@ const exampleCorrection = (
       };
 };
 
+// An example edit alone adds a revision; any other change already did, so
+// the revision the editor loaded is replaced only once.
+const markExampleEdited = (
+  sql: Database,
+  entryId: string,
+  stored: StoredWord,
+  correction: ExampleCorrection,
+) =>
+  correction.kind === 'none'
+    ? Effect.void
+    : sql`
+        update entries set revision = revision + 1
+        where id = ${entryId} and revision = ${stored.revision}
+      `;
+
 export const makeVocabularyEntryMutations = (sql: Database) => {
   // Resolves to the audio files the correction leaves unreferenced.
   const correctExample = (entryId: string, correction: ExampleCorrection) => {
@@ -165,7 +180,8 @@ export const makeVocabularyEntryMutations = (sql: Database) => {
       }
       yield* sql`
         update entries
-        set target_text = ${input.targetText}, native_text = ${input.nativeText}
+        set target_text = ${input.targetText}, native_text = ${input.nativeText},
+          revision = revision + 1
         where id = ${input.entryId}
       `;
       yield* replaceTextbookAnswers(sql, input.entryId, [
@@ -242,11 +258,10 @@ export const makeVocabularyEntryMutations = (sql: Database) => {
             } as const;
           }
           const pronunciation = yield* correctTexts(input, stored);
-          const exampleAudio = yield* correctExample(
-            input.entryId,
-            exampleCorrection(stored, input.example),
-          );
+          const correction = exampleCorrection(stored, input.example);
+          const exampleAudio = yield* correctExample(input.entryId, correction);
           yield* writeRelatedWords(sql, [input]);
+          yield* markExampleEdited(sql, input.entryId, stored, correction);
           return {
             kind: 'updated',
             wordChanged: stored.targetText !== input.targetText,
