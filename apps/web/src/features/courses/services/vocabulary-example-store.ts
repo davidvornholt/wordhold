@@ -69,6 +69,85 @@ const insertGenerated = (
     return rows[0] ?? ('entry-missing' as const);
   });
 
+// The entry's row is locked first, as an edit locks it before it reads
+// the example. The revision rises only when the write changes what is
+// stored, so repeating it does not outdate another open editor.
+type ExampleAudio = {
+  readonly exampleTargetText: string;
+  readonly audioProfile: string;
+  readonly audioPath: string;
+};
+
+const storeAudio = (
+  sql: Database,
+  entryId: string,
+  { exampleTargetText, audioProfile, audioPath }: ExampleAudio,
+) =>
+  sql
+    .withTransaction(
+      Effect.gen(function* () {
+        yield* lockEntry(sql, entryId);
+        const rows = yield* sql<{ readonly changed: boolean }>`
+          update entry_examples x
+          set audio_profile = ${audioProfile}, audio_path = ${audioPath}
+          from (
+            select id, audio_profile, audio_path from entry_examples
+            where entry_id = ${entryId}
+            order by position, id
+            limit 1
+          ) first
+          where x.id = first.id and x.target_text = ${exampleTargetText}
+          returning (
+            first.audio_profile is distinct from ${audioProfile}
+            or first.audio_path is distinct from ${audioPath}
+          ) as changed
+        `;
+        if (rows[0]?.changed === true) {
+          yield* markExampleWritten(sql, entryId);
+        }
+        return rows[0] !== undefined;
+      }),
+    )
+    .pipe(
+      Effect.mapError((cause) => databaseError('store example audio', cause)),
+    );
+
+const storeTranslation = (
+  sql: Database,
+  entryId: string,
+  exampleTargetText: string,
+  nativeText: string,
+) =>
+  sql
+    .withTransaction(
+      Effect.gen(function* () {
+        yield* lockEntry(sql, entryId);
+        const rows = yield* sql<{ readonly stored: boolean }>`
+          update entry_examples
+          set native_text = ${nativeText}
+          where id = (
+            select id from entry_examples
+            where entry_id = ${entryId}
+            order by position, id
+            limit 1
+          )
+            and target_text = ${exampleTargetText}
+            and native_text is null
+          returning true as stored
+        `;
+        if (rows[0] === undefined) {
+          return false;
+        }
+        yield* markExampleWritten(sql, entryId);
+        return true;
+      }),
+    )
+    .pipe(
+      Effect.mapError((cause) =>
+        databaseError('store example translation', cause),
+      ),
+    );
+
 export class VocabularyExampleStore extends Context.Service<
   VocabularyExampleStore,
   {
@@ -206,86 +285,25 @@ export class VocabularyExampleStore extends Context.Service<
           ),
         );
 
-      // The entry's row is locked first, as an edit locks it before it reads
-      // the example. The revision rises only when the write changes what is
-      // stored, so repeating it does not outdate another open editor.
-      const storeAudio = (
-        entryId: string,
-        exampleTargetText: string,
-        audioProfile: string,
-        audioPath: string,
-      ) =>
-        sql
-          .withTransaction(
-            Effect.gen(function* () {
-              yield* lockEntry(sql, entryId);
-              const rows = yield* sql<{ readonly changed: boolean }>`
-                update entry_examples x
-                set audio_profile = ${audioProfile}, audio_path = ${audioPath}
-                from (
-                  select id, audio_profile, audio_path from entry_examples
-                  where entry_id = ${entryId}
-                  order by position, id
-                  limit 1
-                ) first
-                where x.id = first.id and x.target_text = ${exampleTargetText}
-                returning (
-                  first.audio_profile is distinct from ${audioProfile}
-                  or first.audio_path is distinct from ${audioPath}
-                ) as changed
-              `;
-              if (rows[0]?.changed === true) {
-                yield* markExampleWritten(sql, entryId);
-              }
-              return rows[0] !== undefined;
-            }),
-          )
-          .pipe(
-            Effect.mapError((cause) =>
-              databaseError('store example audio', cause),
-            ),
-          );
-
-      const storeTranslation = (
-        entryId: string,
-        exampleTargetText: string,
-        nativeText: string,
-      ) =>
-        sql
-          .withTransaction(
-            Effect.gen(function* () {
-              yield* lockEntry(sql, entryId);
-              const rows = yield* sql<{ readonly stored: boolean }>`
-                update entry_examples
-                set native_text = ${nativeText}
-                where id = (
-                  select id from entry_examples
-                  where entry_id = ${entryId}
-                  order by position, id
-                  limit 1
-                )
-                  and target_text = ${exampleTargetText}
-                  and native_text is null
-                returning true as stored
-              `;
-              if (rows[0] === undefined) {
-                return false;
-              }
-              yield* markExampleWritten(sql, entryId);
-              return true;
-            }),
-          )
-          .pipe(
-            Effect.mapError((cause) =>
-              databaseError('store example translation', cause),
-            ),
-          );
-
       return {
         read,
         storeGenerated,
-        storeAudio,
-        storeTranslation,
+        storeAudio: (
+          entryId: string,
+          exampleTargetText: string,
+          audioProfile: string,
+          audioPath: string,
+        ) =>
+          storeAudio(sql, entryId, {
+            exampleTargetText,
+            audioProfile,
+            audioPath,
+          }),
+        storeTranslation: (
+          entryId: string,
+          exampleTargetText: string,
+          nativeText: string,
+        ) => storeTranslation(sql, entryId, exampleTargetText, nativeText),
         withCriticalSection,
       } as const;
     }),

@@ -161,7 +161,9 @@ describe('saving a word from an editor loaded before an example was written', ()
     );
     expect(outcome).toEqual({ stored: true, refused: 'stale', revision: 1 });
   });
+});
 
+describe('saving a word after an example write', () => {
   it('lets an editor loaded after the write save', async () => {
     const outcome = await run(
       Effect.gen(function* () {
