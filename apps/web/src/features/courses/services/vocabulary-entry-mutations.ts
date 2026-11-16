@@ -208,8 +208,9 @@ export const makeVocabularyEntryMutations = (sql: Database) => {
   // repeat of another word is refused, as for a typed word. The cards keep
   // their schedule: a correction does not make the word new to the learner.
   // The entry's row is locked before its example is read, so an example
-  // generated meanwhile is either stored first and corrected here like any
-  // other, or sees the new word and is dropped (see storeGenerated).
+  // generated meanwhile is either stored first, which raises the revision and
+  // refuses an editor that did not show it, or sees the new word and is
+  // dropped (see storeGenerated).
   const update = (input: UpdateVocabularyEntryData) =>
     sql
       .withTransaction(
