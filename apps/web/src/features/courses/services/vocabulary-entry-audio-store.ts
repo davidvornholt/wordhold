@@ -11,17 +11,28 @@ const databaseError = (operation: string, cause: unknown) =>
   });
 
 export const makeEntryAudioStore = (sql: Database) => {
+  // The reference is stored only while the entry still holds the spoken text.
+  // The share lock on its row, kept until the surrounding transaction ends, makes
+  // a correction wait and then drop the reference like any other of the old word.
   const storeAudio = (
     entryId: string,
+    targetText: string,
     audioProfile: string,
     audioPath: string,
   ) =>
-    sql`
+    sql<{ entryId: string }>`
       insert into entry_audio (entry_id, voice, path)
-      values (${entryId}, ${audioProfile}, ${audioPath})
+      select e.id, ${audioProfile}, ${audioPath} from entries e
+      where e.id = ${entryId} and e.target_text = ${targetText}
+      for share of e
       on conflict (entry_id, voice) do update set path = excluded.path
+      returning entry_id as "entryId"
     `.pipe(
-      Effect.asVoid,
+      Effect.flatMap((rows) =>
+        rows.length === 0
+          ? Effect.fail('The word changed while its audio was generated.')
+          : Effect.void,
+      ),
       Effect.mapError((cause) => databaseError('store entry audio', cause)),
     );
 

@@ -81,7 +81,7 @@ const practisedWord = (targetText: string, nativeText: string) =>
       values (${entryId}, 'to_native', 'das Andenken', 'das andenken', 'judge'),
         (${entryId}, 'to_native', 'die Gedächtnis', 'die gedächtnis', 'manual')
     `;
-    yield* store.storeAudio(entryId, 'remi', wordAudio);
+    yield* store.storeAudio(entryId, targetText, 'remi', wordAudio);
     yield* sql`
       update entry_examples
       set audio_profile = 'remi', audio_path = ${exampleAudio}

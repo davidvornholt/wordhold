@@ -117,6 +117,7 @@ export class VocabularyEntryStore extends Context.Service<
     ) => Effect.Effect<CreateVocabularyEntryResult, CourseDatabaseError>;
     readonly storeAudio: (
       entryId: string,
+      targetText: string,
       audioProfile: string,
       audioPath: string,
     ) => Effect.Effect<void, CourseDatabaseError>;

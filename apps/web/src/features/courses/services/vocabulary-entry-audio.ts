@@ -32,7 +32,12 @@ export const prepareEntryAudio = (
     const path = audioRelativePath(entryId, audioProfile);
     yield* persistFileReference({
       write: storage.write(path, result.audio),
-      persistReference: store.storeAudio(entryId, audioProfile, path),
+      persistReference: store.storeAudio(
+        entryId,
+        targetText,
+        audioProfile,
+        path,
+      ),
       remove: storage.remove(path),
     });
     return 'generated' as const;
