@@ -36,7 +36,7 @@ export const invitePerson = createServerFn({ method: 'POST' })
   .validator(decodeInvitation)
   .handler(async ({ data }) => {
     await requestAdministrator();
-    return withStore((store) => store.invite(data.name));
+    return withStore((store) => store.invite(data.name, data.submissionId));
   });
 
 export const issueAccessCode = createServerFn({ method: 'POST' })

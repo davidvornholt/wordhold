@@ -85,16 +85,29 @@ export const createExam = (sql: Database, input: CreateExamData) =>
         if (!(yield* entriesFit(sql, input.courseId, input.entryIds))) {
           return { kind: 'foreign-entries' } as const;
         }
+        // A repeat of a stored fill hits the unique index (a twin that is
+        // still running makes this insert wait for its commit) and gets the
+        // stored test back, with its words untouched.
         const [exam] = yield* sql<{ readonly id: string }>`
-          insert into exams (course_id, name, directions)
+          insert into exams (course_id, name, directions, submission_id)
           values (
             ${input.courseId}, ${input.name},
-            ${directionsLiteral(input.directions)}::answer_direction[]
+            ${directionsLiteral(input.directions)}::answer_direction[],
+            ${input.submissionId ?? null}
           )
+          on conflict (course_id, submission_id) do nothing
           returning id
         `;
         if (exam === undefined) {
-          return yield* Effect.die(new Error('The test was not inserted.'));
+          const [stored] = yield* sql<{ readonly id: string }>`
+            select id from exams
+            where course_id = ${input.courseId}
+              and submission_id = ${input.submissionId ?? null}
+          `;
+          if (stored === undefined) {
+            return yield* Effect.die(new Error('The test was not inserted.'));
+          }
+          return { kind: 'created', examId: stored.id } as const;
         }
         yield* insertEntries(sql, exam.id, input.entryIds);
         return { kind: 'created', examId: exam.id } as const;

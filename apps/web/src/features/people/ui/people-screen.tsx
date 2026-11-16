@@ -19,7 +19,7 @@ type PeopleScreenProps = {
   readonly renderInspectLink: (person: Person) => ReactNode;
   // The page that redeems a code, as a link to send.
   readonly joinLink: (code: string) => string;
-  readonly invite: (name: string) => Promise<IssuedCode>;
+  readonly invite: (name: string, submissionId: string) => Promise<IssuedCode>;
   readonly issueCode: (person: Person) => Promise<IssuedCode>;
   readonly withdrawCode: (person: Person) => Promise<void>;
   readonly setAccess: (person: Person, enabled: boolean) => Promise<void>;
@@ -71,8 +71,8 @@ export const PeopleScreen = ({
       <section className={`${cardClass} flex flex-col gap-4`}>
         <h2 className="font-display text-xl">Person einladen</h2>
         <InviteForm
-          invite={async (name) => {
-            setIssued(await invite(name));
+          invite={async (name, submissionId) => {
+            setIssued(await invite(name, submissionId));
           }}
         />
       </section>

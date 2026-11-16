@@ -1,5 +1,6 @@
 import type { AccessCodeKind } from '@wordhold/db/schema/members';
 import { Option, Schema } from 'effect';
+import { Uuid } from '../../../shared/validate/uuid';
 
 export const maximumPersonNameLength = 80;
 const maximumUserIdLength = 100;
@@ -61,8 +62,10 @@ const UserId = Schema.String.check(
   Schema.isMaxLength(maximumUserIdLength),
 );
 
+// `submissionId` identifies one form fill: sending it again creates no second
+// member. A page loaded before the ID existed sends none and always creates.
 export const decodeInvitation = Schema.decodeUnknownSync(
-  Schema.Struct({ name: PersonName }),
+  Schema.Struct({ name: PersonName, submissionId: Schema.optional(Uuid) }),
 );
 
 export const decodeUserId = Schema.decodeUnknownSync(UserId);

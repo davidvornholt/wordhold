@@ -32,8 +32,8 @@ const People = () => {
       title="Personen"
     >
       <PeopleScreen
-        invite={async (name) => {
-          const issued = await invitePerson({ data: { name } });
+        invite={async (name, submissionId) => {
+          const issued = await invitePerson({ data: { name, submissionId } });
           await router.invalidate();
           return issued;
         }}

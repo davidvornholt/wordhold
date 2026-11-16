@@ -45,9 +45,9 @@ const NewExamScreen = () => {
             : translationDirections,
           entryIds: [],
         }}
-        save={async (draft) => {
+        save={async (draft, submissionId) => {
           const { examId } = await createExam({
-            data: { courseId: course.id, ...draft },
+            data: { courseId: course.id, submissionId, ...draft },
           });
           await navigate({
             params: { courseId: course.id, examId },

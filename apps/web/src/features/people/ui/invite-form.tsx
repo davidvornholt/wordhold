@@ -1,16 +1,20 @@
 import { type SubmitEvent, useState } from 'react';
+import { createSubmissionIds } from '../../../shared/forms/submission-ids';
 import { Button } from '../../../shared/ui/button';
 import { fieldClass } from '../../../shared/ui/field-styles';
 import { maximumPersonNameLength } from '../schemas/people-models';
 
 type InviteFormProps = {
-  readonly invite: (name: string) => Promise<void>;
+  readonly invite: (name: string, submissionId: string) => Promise<void>;
 };
 
 export const InviteForm = ({ invite }: InviteFormProps) => {
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
+  // The same ID for the same name, so pressing the button again after a lost
+  // answer does not invite the person twice.
+  const [submissionIds] = useState(createSubmissionIds);
   const trimmed = name.trim();
 
   const submit = async (event: SubmitEvent<HTMLFormElement>) => {
@@ -21,7 +25,8 @@ export const InviteForm = ({ invite }: InviteFormProps) => {
     setBusy(true);
     setFailed(false);
     try {
-      await invite(trimmed);
+      await invite(trimmed, submissionIds.idFor(trimmed));
+      submissionIds.settle();
       setName('');
     } catch {
       setFailed(true);
