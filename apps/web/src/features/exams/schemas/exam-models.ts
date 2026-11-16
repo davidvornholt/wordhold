@@ -26,8 +26,6 @@ const ExamEntryIds = Schema.Array(Uuid).check(
   Schema.isUnique(),
 );
 
-// `submissionId` identifies one form fill: saving it again stores no second
-// test. A page loaded before the ID existed sends none and always creates.
 export const CreateExam = Schema.Struct({
   submissionId: Schema.optional(Uuid),
   courseId: Uuid,

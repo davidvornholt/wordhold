@@ -12,8 +12,6 @@ export const InviteForm = ({ invite }: InviteFormProps) => {
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
-  // The same ID for the same name, so pressing the button again after a lost
-  // answer does not invite the person twice.
   const [submissionIds] = useState(createSubmissionIds);
   const trimmed = name.trim();
 

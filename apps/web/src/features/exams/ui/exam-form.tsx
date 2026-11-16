@@ -35,8 +35,7 @@ type ExamFormProps = {
   readonly initial: ExamDraft;
   readonly submitLabel: string;
   readonly cancelControl: ReactNode;
-  // The ID is the same while the draft stays the same, so a save repeated
-  // after a lost answer can be recognised. Only a create needs it.
+  // Only a create needs the ID.
   readonly save: (draft: ExamDraft, submissionId: string) => Promise<void>;
 };
 

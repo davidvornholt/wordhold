@@ -184,8 +184,6 @@ describe('PeopleStore invitation sent again', () => {
         const [users] = yield* sql<{ readonly n: number }>`
           select count(*)::int as n from "user" where name = 'Anna Synthetic'`;
         expect(users?.n).toBe(1);
-        // Only the digest of a code is stored, so the repeat replaced the
-        // first code with the one it returns.
         const codes = yield* sql<{ readonly digest: string }>`
           select digest from access_codes where user_id = ${first.userId}`;
         expect(codes).toEqual([

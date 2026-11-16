@@ -34,8 +34,6 @@ export const exams = pgTable(
       .notNull()
       .defaultNow(),
     archivedAt: timestamp('archived_at', { withTimezone: true }),
-    // The ID the create form chose for one form fill, so saving the same fill
-    // again after a lost answer finds this test instead of adding a second.
     // Tests created without one (before this column, or by a page loaded
     // before the deploy) have none, and any number of rows may.
     submissionId: uuid('submission_id'),

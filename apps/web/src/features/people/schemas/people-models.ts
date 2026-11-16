@@ -62,8 +62,6 @@ const UserId = Schema.String.check(
   Schema.isMaxLength(maximumUserIdLength),
 );
 
-// `submissionId` identifies one form fill: sending it again creates no second
-// member. A page loaded before the ID existed sends none and always creates.
 export const decodeInvitation = Schema.decodeUnknownSync(
   Schema.Struct({ name: PersonName, submissionId: Schema.optional(Uuid) }),
 );
