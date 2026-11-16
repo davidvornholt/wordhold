@@ -121,7 +121,7 @@ describe('VocabularyExampleStore and a concurrent correction', () => {
     expect(after).toMatchObject({ targetText: 'chat', example: null });
   });
 
-  it('lets an edit that waited for a stored example correct it', async () => {
+  it('refuses an edit that waited for an example it had not seen', async () => {
     const after = await runTest(
       Effect.gen(function* () {
         const sql = yield* Database;
@@ -151,11 +151,15 @@ describe('VocabularyExampleStore and a concurrent correction', () => {
             return pending;
           }),
         );
-        expect((yield* Effect.promise(() => edit)).kind).toBe('updated');
+        expect((yield* Effect.promise(() => edit)).kind).toBe('stale');
         return yield* examples.read(entryId);
       }),
     );
-    // The edit came without an example, so the old word's sentence is gone.
-    expect(after).toMatchObject({ targetText: 'chat', example: null });
+    // The edit's editor was opened before the sentence was stored, so it is
+    // refused and the sentence stays with the word it was generated for.
+    expect(after).toMatchObject({
+      targetText: 'livre',
+      example: oldWordsExample,
+    });
   });
 });

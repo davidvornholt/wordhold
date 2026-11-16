@@ -39,21 +39,114 @@ const databaseError = (operation: string, cause: unknown) =>
     message: 'Der Beispielsatz konnte nicht gespeichert werden.',
   });
 
+// A vocabulary editor shows the example, so an example written after it was
+// opened makes it outdated: its save would remove or overwrite the example.
+// Callers hold the entry's row lock, which an edit takes before it compares
+// revisions.
+const markExampleWritten = (sql: Database, entryId: string) =>
+  sql`update entries set revision = revision + 1 where id = ${entryId}`;
+
+const lockEntry = (sql: Database, entryId: string) =>
+  sql`select 1 from entries where id = ${entryId} for no key update`;
+
 const insertGenerated = (
   sql: Database,
   entryId: string,
   example: Omit<VocabularyExample, 'source'>,
 ) =>
-  sql<VocabularyExample>`
-    insert into entry_examples (
-      entry_id, target_text, native_text, source, position
+  Effect.gen(function* () {
+    const rows = yield* sql<VocabularyExample>`
+      insert into entry_examples (
+        entry_id, target_text, native_text, source, position
+      )
+      values (
+        ${entryId}, ${example.targetText}, ${example.nativeText}, 'generated', 0
+      )
+      returning target_text as "targetText",
+        native_text as "nativeText", source
+    `;
+    yield* markExampleWritten(sql, entryId);
+    return rows[0] ?? ('entry-missing' as const);
+  });
+
+// The entry's row is locked first, as an edit locks it before it reads
+// the example. The revision rises only when the write changes what is
+// stored, so repeating it does not outdate another open editor.
+type ExampleAudio = {
+  readonly exampleTargetText: string;
+  readonly audioProfile: string;
+  readonly audioPath: string;
+};
+
+const storeAudio = (
+  sql: Database,
+  entryId: string,
+  { exampleTargetText, audioProfile, audioPath }: ExampleAudio,
+) =>
+  sql
+    .withTransaction(
+      Effect.gen(function* () {
+        yield* lockEntry(sql, entryId);
+        const rows = yield* sql<{ readonly changed: boolean }>`
+          update entry_examples x
+          set audio_profile = ${audioProfile}, audio_path = ${audioPath}
+          from (
+            select id, audio_profile, audio_path from entry_examples
+            where entry_id = ${entryId}
+            order by position, id
+            limit 1
+          ) first
+          where x.id = first.id and x.target_text = ${exampleTargetText}
+          returning (
+            first.audio_profile is distinct from ${audioProfile}
+            or first.audio_path is distinct from ${audioPath}
+          ) as changed
+        `;
+        if (rows[0]?.changed === true) {
+          yield* markExampleWritten(sql, entryId);
+        }
+        return rows[0] !== undefined;
+      }),
     )
-    values (
-      ${entryId}, ${example.targetText}, ${example.nativeText}, 'generated', 0
+    .pipe(
+      Effect.mapError((cause) => databaseError('store example audio', cause)),
+    );
+
+const storeTranslation = (
+  sql: Database,
+  entryId: string,
+  exampleTargetText: string,
+  nativeText: string,
+) =>
+  sql
+    .withTransaction(
+      Effect.gen(function* () {
+        yield* lockEntry(sql, entryId);
+        const rows = yield* sql<{ readonly stored: boolean }>`
+          update entry_examples
+          set native_text = ${nativeText}
+          where id = (
+            select id from entry_examples
+            where entry_id = ${entryId}
+            order by position, id
+            limit 1
+          )
+            and target_text = ${exampleTargetText}
+            and native_text is null
+          returning true as stored
+        `;
+        if (rows[0] === undefined) {
+          return false;
+        }
+        yield* markExampleWritten(sql, entryId);
+        return true;
+      }),
     )
-    returning target_text as "targetText",
-      native_text as "nativeText", source
-  `.pipe(Effect.map((rows) => rows[0] ?? ('entry-missing' as const)));
+    .pipe(
+      Effect.mapError((cause) =>
+        databaseError('store example translation', cause),
+      ),
+    );
 
 export class VocabularyExampleStore extends Context.Service<
   VocabularyExampleStore,
@@ -170,7 +263,7 @@ export class VocabularyExampleStore extends Context.Service<
         withCriticalSection(
           entryId,
           Effect.gen(function* () {
-            yield* sql`select 1 from entries where id = ${entryId} for share`;
+            yield* lockEntry(sql, entryId);
             const context = yield* read(entryId);
             if (context === undefined) {
               return 'entry-missing' as const;
@@ -192,59 +285,25 @@ export class VocabularyExampleStore extends Context.Service<
           ),
         );
 
-      const storeAudio = (
-        entryId: string,
-        exampleTargetText: string,
-        audioProfile: string,
-        audioPath: string,
-      ) =>
-        sql<{ readonly stored: boolean }>`
-          update entry_examples
-          set audio_profile = ${audioProfile}, audio_path = ${audioPath}
-          where id = (
-            select id from entry_examples
-            where entry_id = ${entryId}
-            order by position, id
-            limit 1
-          )
-            and target_text = ${exampleTargetText}
-          returning true as stored
-        `.pipe(
-          Effect.map((rows) => rows[0]?.stored === true),
-          Effect.mapError((cause) =>
-            databaseError('store example audio', cause),
-          ),
-        );
-
-      const storeTranslation = (
-        entryId: string,
-        exampleTargetText: string,
-        nativeText: string,
-      ) =>
-        sql<{ readonly stored: boolean }>`
-          update entry_examples
-          set native_text = ${nativeText}
-          where id = (
-            select id from entry_examples
-            where entry_id = ${entryId}
-            order by position, id
-            limit 1
-          )
-            and target_text = ${exampleTargetText}
-            and native_text is null
-          returning true as stored
-        `.pipe(
-          Effect.map((rows) => rows[0]?.stored === true),
-          Effect.mapError((cause) =>
-            databaseError('store example translation', cause),
-          ),
-        );
-
       return {
         read,
         storeGenerated,
-        storeAudio,
-        storeTranslation,
+        storeAudio: (
+          entryId: string,
+          exampleTargetText: string,
+          audioProfile: string,
+          audioPath: string,
+        ) =>
+          storeAudio(sql, entryId, {
+            exampleTargetText,
+            audioProfile,
+            audioPath,
+          }),
+        storeTranslation: (
+          entryId: string,
+          exampleTargetText: string,
+          nativeText: string,
+        ) => storeTranslation(sql, entryId, exampleTargetText, nativeText),
         withCriticalSection,
       } as const;
     }),
