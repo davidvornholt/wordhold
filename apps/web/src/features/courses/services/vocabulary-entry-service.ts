@@ -35,7 +35,7 @@ import {
 import {
   prepareEntryAudio,
   removeEntryFiles,
-  restoreEntryAudio,
+  syncEntryAudio,
 } from './vocabulary-entry-audio';
 import { VocabularyEntryStore, type WordPlace } from './vocabulary-entry-store';
 
@@ -213,14 +213,14 @@ export class VocabularyEntryService extends Context.Service<
             return yield* duplicateWord(input.targetText, result.location);
           }
           yield* removeEntryFiles(storage, result.unreferencedFiles);
-          const prepare = result.wordChanged
-            ? prepareEntryAudio
-            : restoreEntryAudio;
-          const audio = yield* prepare(
+          const audio = yield* syncEntryAudio(
             { tts, storage, store },
-            input.entryId,
-            input.targetText,
-            language,
+            {
+              entryId: input.entryId,
+              targetText: input.targetText,
+              language,
+              replace: result.wordChanged,
+            },
           );
           return { audio } satisfies UpdatedVocabularyEntry;
         });

@@ -120,12 +120,12 @@ export class VocabularyEntryStore extends Context.Service<
       audioProfile: string,
       audioPath: string,
     ) => Effect.Effect<void, CourseDatabaseError>;
-    readonly hasAudio: (
+    readonly needsAudio: (
       entryId: string,
+      targetText: string,
       audioProfile: string,
+      replace: boolean,
     ) => Effect.Effect<boolean, CourseDatabaseError>;
-    // Serializes pronunciation generation for one entry, also against the
-    // retry of an imported page.
     readonly withAudioLock: <A, E, R>(
       entryId: string,
       effect: Effect.Effect<A, E, R>,

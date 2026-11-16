@@ -25,14 +25,27 @@ export const makeEntryAudioStore = (sql: Database) => {
       Effect.mapError((cause) => databaseError('store entry audio', cause)),
     );
 
-  const hasAudio = (entryId: string, audioProfile: string) =>
-    sql<{ present: boolean }>`
+  // Whether the entry still holds `targetText` and lacks the recording, or the
+  // recording is to be replaced. A save that changed the word meanwhile has
+  // its own recording to make.
+  const needsAudio = (
+    entryId: string,
+    targetText: string,
+    audioProfile: string,
+    replace: boolean,
+  ) =>
+    sql<{ needed: boolean }>`
       select exists(
-        select 1 from entry_audio
-        where entry_id = ${entryId} and voice = ${audioProfile}
-      ) as present
+        select 1 from entries
+        where id = ${entryId}
+          and target_text = ${targetText}
+          and (${replace} or not exists(
+            select 1 from entry_audio
+            where entry_id = ${entryId} and voice = ${audioProfile}
+          ))
+      ) as needed
     `.pipe(
-      Effect.map((rows) => rows[0]?.present === true),
+      Effect.map((rows) => rows[0]?.needed === true),
       Effect.mapError((cause) => databaseError('check entry audio', cause)),
     );
 
@@ -53,5 +66,5 @@ export const makeEntryAudioStore = (sql: Database) => {
         ),
       );
 
-  return { storeAudio, hasAudio, withAudioLock } as const;
+  return { storeAudio, needsAudio, withAudioLock } as const;
 };

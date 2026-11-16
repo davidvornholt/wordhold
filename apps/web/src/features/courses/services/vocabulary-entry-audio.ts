@@ -43,28 +43,48 @@ export const prepareEntryAudio = (
     Effect.catch(() => Effect.succeed('failed' as const)),
   );
 
-// A save that leaves the word as it was still repairs pronunciation that is
-// missing, for example from a creation that was interrupted before it was
-// generated. The lock and the check keep two saves, or a save and a page
-// retry, from each calling the speech provider.
-export const restoreEntryAudio = (
+export const syncEntryAudio = (
   dependencies: EntryAudioDependencies,
-  entryId: string,
-  targetText: string,
-  language: LanguageCode,
-) =>
-  dependencies.store.withAudioLock(
+  {
     entryId,
-    Effect.gen(function* () {
-      const present = yield* dependencies.store.hasAudio(
-        entryId,
-        speechAudioProfile(targetText, language),
-      );
-      return present
-        ? ('kept' as const)
-        : yield* prepareEntryAudio(dependencies, entryId, targetText, language);
-    }),
-  );
+    targetText,
+    language,
+    replace,
+  }: {
+    readonly entryId: string;
+    readonly targetText: string;
+    readonly language: LanguageCode;
+    readonly replace: boolean;
+  },
+) =>
+  dependencies.store
+    .withAudioLock(
+      entryId,
+      Effect.gen(function* () {
+        const needed = yield* dependencies.store.needsAudio(
+          entryId,
+          targetText,
+          speechAudioProfile(targetText, language),
+          replace,
+        );
+        return needed
+          ? yield* prepareEntryAudio(
+              dependencies,
+              entryId,
+              targetText,
+              language,
+            )
+          : ('kept' as const);
+      }),
+    )
+    // The word is already saved. A failure of the lock or of the transaction
+    // around the recording, which a failed reference aborts, is reported too.
+    .pipe(
+      Effect.tapCause((cause) =>
+        Effect.logWarning('entry audio sync failed', Cause.pretty(cause)),
+      ),
+      Effect.catch(() => Effect.succeed('failed' as const)),
+    );
 
 // The database is authoritative. A file that cannot be removed stays for the
 // reconciliation pass, which removes unreferenced files.
