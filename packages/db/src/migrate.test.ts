@@ -341,6 +341,7 @@ it('drops the synonyms the judge accepted into the target language', async () =>
         yield* sql`drop table exam_round_cards, exam_rounds, exam_entries, exams`;
         yield* sql`alter type ai_provider rename value 'anthropic' to 'replayed_anthropic'`;
         yield* sql`alter table cards drop column stability_fast`;
+        yield* sql`alter table members drop column submission_id`;
         yield* unrecordMigrationsFrom(judgeTargetSynonymsMigrationHash);
         yield* migrateDatabase(database.url);
         return yield* sql<{
@@ -387,6 +388,7 @@ it('drops the judge verdicts stored without otherWording', async () => {
         yield* sql`drop table exam_round_cards, exam_rounds, exam_entries, exams`;
         yield* sql`alter type ai_provider rename value 'anthropic' to 'replayed_anthropic'`;
         yield* sql`alter table cards drop column stability_fast`;
+        yield* sql`alter table members drop column submission_id`;
         yield* unrecordMigrationsFrom(staleJudgeVerdictsMigrationHash);
         yield* migrateDatabase(database.url);
         return yield* sql<{ readonly answer: string }>`
