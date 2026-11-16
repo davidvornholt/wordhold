@@ -32,7 +32,11 @@ import {
   suggestDraftTranslation,
   translateDraftExample,
 } from './vocabulary-draft-examples';
-import { prepareEntryAudio, removeEntryFiles } from './vocabulary-entry-audio';
+import {
+  prepareEntryAudio,
+  removeEntryFiles,
+  syncEntryAudio,
+} from './vocabulary-entry-audio';
 import { VocabularyEntryStore, type WordPlace } from './vocabulary-entry-store';
 
 export type CreatedVocabularyEntry = {
@@ -42,7 +46,8 @@ export type CreatedVocabularyEntry = {
 };
 
 export type UpdatedVocabularyEntry = {
-  // A changed word needs new pronunciation; otherwise the stored one is kept.
+  // A changed word needs new pronunciation. An unchanged one keeps its stored
+  // pronunciation, or gets it generated when it is missing.
   readonly audio: 'generated' | 'failed' | 'kept';
 };
 
@@ -208,14 +213,15 @@ export class VocabularyEntryService extends Context.Service<
             return yield* duplicateWord(input.targetText, result.location);
           }
           yield* removeEntryFiles(storage, result.unreferencedFiles);
-          const audio = result.wordChanged
-            ? yield* prepareEntryAudio(
-                { tts, storage, store },
-                input.entryId,
-                input.targetText,
-                language,
-              )
-            : 'kept';
+          const audio = yield* syncEntryAudio(
+            { tts, storage, store },
+            {
+              entryId: input.entryId,
+              targetText: input.targetText,
+              language,
+              replace: result.wordChanged,
+            },
+          );
           return { audio } satisfies UpdatedVocabularyEntry;
         });
 

@@ -4,7 +4,7 @@ import {
   testDatabaseLayer,
   withMigratedTestDatabase,
 } from '@wordhold/db/testing/postgres-test-database';
-import { Effect, Layer } from 'effect';
+import { Effect, Layer, Result } from 'effect';
 import { CourseStore } from './course-store';
 import { VocabularyEntryStore } from './vocabulary-entry-store';
 
@@ -222,12 +222,30 @@ describe('VocabularyEntryStore PostgreSQL places', () => {
         expect(yield* store.readCourse(missingUnitId)).toBeUndefined();
         const created = yield* store.create(word('bonjour'));
         const entryId = created.kind === 'created' ? created.entryId : '';
-        yield* store.storeAudio(entryId, 'fr-voice', 'audio/first.mp3');
-        yield* store.storeAudio(entryId, 'fr-voice', 'audio/second.mp3');
+        yield* store.storeAudio(
+          entryId,
+          'bonjour',
+          'fr-voice',
+          'audio/first.mp3',
+        );
+        yield* store.storeAudio(
+          entryId,
+          'bonjour',
+          'fr-voice',
+          'audio/second.mp3',
+        );
         const audio = yield* sql<{
           readonly path: string;
         }>`select path from entry_audio where entry_id = ${entryId}`;
         expect(audio).toEqual([{ path: 'audio/second.mp3' }]);
+        // The recording speaks a word the entry no longer holds.
+        const stale = yield* store
+          .storeAudio(entryId, 'salut', 'fr-voice', 'audio/third.mp3')
+          .pipe(Effect.result);
+        expect(Result.isFailure(stale)).toBe(true);
+        expect(yield* sql`select path from entry_audio`).toEqual([
+          { path: 'audio/second.mp3' },
+        ]);
       }),
     );
   });

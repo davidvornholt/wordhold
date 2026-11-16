@@ -7,6 +7,11 @@ export const speechAudioProfile = (
   language: LanguageCode,
 ): string => ttsAudioProfile(text, language);
 
+// One lock per entry for generating its pronunciation, so a page retry and an
+// unchanged save never both call the speech provider for the same word.
+export const entryAudioLockKey = (entryId: string): string =>
+  `wordhold:entry-audio:${entryId}`;
+
 export const synthesizeSpeechAudio = (
   tts: Tts['Service'],
   text: string,

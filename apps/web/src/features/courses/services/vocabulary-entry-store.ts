@@ -9,6 +9,7 @@ import type {
   UpdateVocabularyEntryData,
 } from '../schemas/entry-changes';
 import type { CreateVocabularyEntryData } from '../schemas/vocabulary-entry-creation';
+import { makeEntryAudioStore } from './vocabulary-entry-audio-store';
 import { findCourseDuplicate } from './vocabulary-entry-duplicates';
 import {
   makeVocabularyEntryMutations,
@@ -116,9 +117,20 @@ export class VocabularyEntryStore extends Context.Service<
     ) => Effect.Effect<CreateVocabularyEntryResult, CourseDatabaseError>;
     readonly storeAudio: (
       entryId: string,
+      targetText: string,
       audioProfile: string,
       audioPath: string,
     ) => Effect.Effect<void, CourseDatabaseError>;
+    readonly needsAudio: (
+      entryId: string,
+      targetText: string,
+      audioProfile: string,
+      replace: boolean,
+    ) => Effect.Effect<boolean, CourseDatabaseError>;
+    readonly withAudioLock: <A, E, R>(
+      entryId: string,
+      effect: Effect.Effect<A, E, R>,
+    ) => Effect.Effect<A, E | CourseDatabaseError, R>;
     readonly update: (
       input: UpdateVocabularyEntryData,
     ) => Effect.Effect<UpdateVocabularyEntryResult, CourseDatabaseError>;
@@ -209,26 +221,12 @@ export class VocabularyEntryStore extends Context.Service<
             ),
           );
 
-      const storeAudio = (
-        entryId: string,
-        audioProfile: string,
-        audioPath: string,
-      ) =>
-        sql`
-          insert into entry_audio (entry_id, voice, path)
-          values (${entryId}, ${audioProfile}, ${audioPath})
-          on conflict (entry_id, voice) do update set path = excluded.path
-        `.pipe(
-          Effect.asVoid,
-          Effect.mapError((cause) => databaseError('store entry audio', cause)),
-        );
-
       return {
         readCourse,
         readPlace,
         create,
         move: (input: MoveEntriesData) => moveEntries(sql, input),
-        storeAudio,
+        ...makeEntryAudioStore(sql),
         ...makeVocabularyEntryMutations(sql),
       } as const;
     }),
