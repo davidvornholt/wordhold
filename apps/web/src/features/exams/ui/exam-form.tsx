@@ -17,7 +17,11 @@ import { fieldClass } from '../../../shared/ui/field-styles';
 import { Checkbox } from '../../../shared/ui/selection-controls';
 import { cardCompactClass } from '../../../shared/ui/surface-styles';
 import { maximumExamNameLength } from '../schemas/exam-models';
-import { failureText, type PickableEntry } from './exam-figures';
+import {
+  failureText,
+  type PickableEntry,
+  unlearnableDirections,
+} from './exam-figures';
 import { ExamWordPicker } from './exam-word-picker';
 
 export type ExamDraft = {
@@ -191,13 +195,7 @@ const ExamDirections = ({
       directions: relationDirections,
     },
   ];
-  const notLearned = switches.filter(
-    (candidate) =>
-      candidate.directions.some((direction) => value.includes(direction)) &&
-      !candidate.directions.some((direction) =>
-        courseDirections.includes(direction),
-      ),
-  );
+  const notLearned = unlearnableDirections(value, courseDirections);
   return (
     <fieldset className="flex flex-col gap-3">
       <legend className="mb-3 font-medium">Abgefragte Richtungen</legend>
@@ -216,9 +214,11 @@ const ExamDirections = ({
       {notLearned.length === 0 ? null : (
         <p className="text-muted-foreground text-sm">
           In den Einstellungen ausgeschaltet:{' '}
-          {notLearned.map((candidate) => candidate.label).join(', ')}. Neue
-          Karten einer ausgeschalteten Richtung lernst du nicht kennen, und eine
-          Runde fragt nur Karten ab, die du schon kennengelernt hast.
+          {notLearned
+            .map((direction) => directionLabel(direction, subject))
+            .join(', ')}
+          . Neue Karten einer ausgeschalteten Richtung lernst du nicht kennen,
+          und eine Runde fragt nur Karten ab, die du schon kennengelernt hast.
         </p>
       )}
     </fieldset>

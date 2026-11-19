@@ -9,6 +9,7 @@ import {
   roundParts,
   roundStatus,
   trendText,
+  unlearnableDirections,
 } from './exam-figures';
 
 const round = (
@@ -139,5 +140,23 @@ describe('entryGroups', () => {
       ['Band 1', ['a']],
       ['Band 1 · Unité 1', ['b', 'c']],
     ]);
+  });
+});
+
+describe('unlearnableDirections', () => {
+  it('names a translation direction the course has switched off', () => {
+    expect(
+      unlearnableDirections(['to_target', 'to_native'], ['to_target']),
+    ).toEqual(['to_native']);
+  });
+
+  // Their cards come with the word, so a test still asks them.
+  it('leaves out synonyms and antonyms the course has switched off', () => {
+    expect(
+      unlearnableDirections(
+        ['to_target', 'to_synonym', 'to_antonym'],
+        ['to_target', 'to_native'],
+      ),
+    ).toEqual([]);
   });
 });

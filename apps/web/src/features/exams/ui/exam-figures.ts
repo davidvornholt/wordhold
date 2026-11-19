@@ -1,8 +1,23 @@
-import type { AnswerDirection } from '@wordhold/db/schema/directions';
+import {
+  type AnswerDirection,
+  translationDirections,
+} from '@wordhold/db/schema/directions';
 import { countNoun } from '../../../shared/format/count';
 import type { MissedCard, RoundScore } from '../schemas/exam-models';
 
 const percentFactor = 100;
+
+// The translation directions a test asks that the course has switched off,
+// whose new cards the learning pass leaves out. Synonym and antonym cards
+// come with their word whether or not the course practises them.
+export const unlearnableDirections = (
+  asked: ReadonlyArray<AnswerDirection>,
+  courseDirections: ReadonlyArray<AnswerDirection>,
+): ReadonlyArray<AnswerDirection> =>
+  translationDirections.filter(
+    (direction) =>
+      asked.includes(direction) && !courseDirections.includes(direction),
+  );
 
 export const scoreText = (round: RoundScore): string =>
   `${round.correct} von ${round.total} richtig`;
