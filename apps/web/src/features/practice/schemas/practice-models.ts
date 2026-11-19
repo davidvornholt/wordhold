@@ -119,8 +119,8 @@ export type SubmitResult =
       readonly entryKnown: boolean;
     };
 
-// Every result the card answers with feedback: all but another wording,
-// which leaves the card open.
+// Every result the card answers with feedback: all but another wording in
+// test practice, which leaves the card open.
 export type FeedbackResult = Exclude<SubmitResult, OtherWordingResult>;
 
 export type ResolvedSubmitResult = Exclude<
