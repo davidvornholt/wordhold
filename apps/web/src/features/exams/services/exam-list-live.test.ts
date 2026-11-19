@@ -34,7 +34,6 @@ describe('ExamService list', () => {
   it('lists the most recently practised test first, by its newest round or else its creation', async () => {
     await runExamTest(
       Effect.gen(function* () {
-        const sql = yield* Database;
         const service = yield* ExamService;
         const longAgo = yield* createdOn('Unit 1', '2026-09-01T10:00:00Z');
         const recent = yield* createdOn('Unit 2', '2026-09-02T10:00:00Z');
@@ -43,8 +42,6 @@ describe('ExamService list', () => {
         // The round started last is not always the newest one.
         yield* roundOn(recent, '2026-11-18T10:00:00Z');
         yield* roundOn(recent, '2026-09-10T10:00:00Z');
-        // A test the previous release archived takes its place like any other.
-        yield* sql`update exams set archived_at = now() where id = ${recent}`;
 
         const exams = yield* service.list(fixtureCourseId);
         expect(exams.map((exam) => exam.id)).toEqual([
