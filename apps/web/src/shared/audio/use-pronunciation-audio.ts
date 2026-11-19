@@ -1,8 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+// One sound a card can play, and whether it is playing now.
+export type SoundControl = {
+  readonly play: () => Promise<void>;
+  readonly stop: () => void;
+  readonly playing: boolean;
+};
+
 export const useAudioPlayback = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [playing, setPlaying] = useState(false);
+  // The URL of the sound playing now, so each control can show its own.
+  const [playingUrl, setPlayingUrl] = useState<string | null>(null);
 
   useEffect(
     () => () => {
@@ -16,7 +24,7 @@ export const useAudioPlayback = () => {
     const { current } = audioRef;
     audioRef.current = null;
     current?.pause();
-    setPlaying(false);
+    setPlayingUrl(null);
   }, []);
 
   const playAudio = useCallback(async (audioUrl: string | null) => {
@@ -29,19 +37,32 @@ export const useAudioPlayback = () => {
     current.onended = () => {
       if (audioRef.current === current) {
         audioRef.current = null;
-        setPlaying(false);
+        setPlayingUrl(null);
       }
     };
-    setPlaying(true);
+    setPlayingUrl(audioUrl);
     await current.play().catch(() => {
       if (audioRef.current === current) {
         audioRef.current = null;
-        setPlaying(false);
+        setPlayingUrl(null);
       }
     });
   }, []);
 
-  return { playAudio, playing, stopAudio } as const;
+  // The control for one URL, or null when there is nothing to play.
+  const sound = useCallback(
+    (audioUrl: string | null): SoundControl | null =>
+      audioUrl === null
+        ? null
+        : {
+            play: () => playAudio(audioUrl),
+            stop: stopAudio,
+            playing: playingUrl === audioUrl,
+          },
+    [playAudio, playingUrl, stopAudio],
+  );
+
+  return { playAudio, playingUrl, sound, stopAudio } as const;
 };
 
 export const usePronunciationAudio = (audioUrl: string | null) => {

@@ -130,7 +130,8 @@ export const OtherWordingFixture = ({
       activeIndex={0}
       activeOutcome={null}
       description="0 von 1 Karte bearbeitet"
-      label="Abschnitt 1"
+      label={null}
+      progress="0 von 1"
       ticks={[null]}
     />
     <CardPractice

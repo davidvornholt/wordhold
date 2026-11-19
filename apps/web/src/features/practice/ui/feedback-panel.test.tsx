@@ -49,14 +49,15 @@ const render = (
         example={null}
         id={feedbackId}
         kind="language"
-        playSentence={null}
-        playWord={null}
         repeated={false}
         result={{ ...result, ...overrides } as FeedbackResult}
+        retype={null}
+        sentence={null}
         skipped={skipped}
         spellingPitfalls={spellingPitfalls}
         submittedAnswer={submittedAnswer}
         targetLanguage="en"
+        word={null}
       />
     </OwnerTimeZoneContext>,
   );
@@ -111,7 +112,7 @@ describe('answer feedback', () => {
 
   it('counts an answer in other words as right and names the book word', () => {
     const markup = render('server', { rating: 2 });
-    expect(markup).toContain('>Richtig</p>');
+    expect(markup).toContain('>Richtig</span>');
     expect(markup).toContain('Im Buch: ');
     expect(markup).toContain('>waiter</span>');
     expect(markup).not.toContain('Erwartet:');
@@ -125,8 +126,10 @@ describe('answer feedback', () => {
   });
 
   it('distinguishes an early free exercise from a regular review', () => {
-    expect(render('waiter', heldResult)).toContain('Zusätzliche Übung.');
-    expect(render('waiter', heldResult)).toContain('Lernplan unverändert.');
+    expect(render('waiter', heldResult)).toContain(
+      'Zusätzliche Übung, kommt wie geplant',
+    );
+    expect(render('waiter')).not.toContain('Zusätzliche Übung');
   });
 
   it('reveals the solution of a skipped card without judging an attempt', () => {
@@ -134,13 +137,6 @@ describe('answer feedback', () => {
     expect(markup).toContain('Nicht gewusst');
     expect(markup).toContain('Erwartet:');
     expect(markup).not.toContain('Als richtig werten');
-  });
-
-  it('explains the regrading option only while a wrong answer is pending', () => {
-    expect(render('waitor', pendingWrongResult)).toContain(
-      'nicht als weitere Lösung',
-    );
-    expect(render('server')).not.toContain('nicht als weitere Lösung');
   });
 
   it('shows where the word is misspelled after a right answer too', () => {

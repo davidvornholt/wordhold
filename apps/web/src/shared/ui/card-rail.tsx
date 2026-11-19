@@ -1,7 +1,9 @@
 import type { RailOutcome } from '../session/rail-outcome';
 
 type CardRailProps = {
-  readonly label: string;
+  // The part of the round being asked, where naming it says something: a
+  // later section, or the after-round. Null otherwise.
+  readonly label: string | null;
   // One entry per card in the round, in asking order; null until judged.
   readonly ticks: ReadonlyArray<RailOutcome | null>;
   // The tick of the card being asked now, or null between cards.
@@ -9,8 +11,10 @@ type CardRailProps = {
   // The verdict on the active card once judged and before it moves on, so
   // its tick fills at the same moment the card does.
   readonly activeOutcome: RailOutcome | null;
-  // The spoken form of the rail, kept visible so the state never relies on
-  // color alone.
+  // How far the round has come, short: "3 von 20 · 1 noch einmal". It names
+  // the misses too, so the rail never relies on color alone.
+  readonly progress: string;
+  // The rail in words, read in place of the ticks.
   readonly description: string;
 };
 
@@ -20,37 +24,51 @@ const outcomeClass: Record<RailOutcome, string> = {
   ungraded: 'bg-warning-foreground',
 };
 
-const tickClass = (outcome: RailOutcome | null, active: boolean): string => {
-  if (outcome !== null) {
-    return active
-      ? `${outcomeClass[outcome]} outline-2 outline-offset-2 outline-foreground/30`
-      : outcomeClass[outcome];
+// The active tick shows the verdict on its card as soon as there is one. In
+// the after-round it already had a color before the card was asked, so it is
+// outlined to show which card is being asked.
+const tickClass = (
+  recorded: RailOutcome | null,
+  shown: RailOutcome | null,
+  active: boolean,
+): string => {
+  if (shown === null) {
+    return active ? 'bg-foreground/45' : 'bg-border';
   }
-  return active ? 'bg-muted-foreground/60' : 'bg-border';
+  return active && recorded !== null
+    ? `${outcomeClass[shown]} outline-1 outline-offset-2 outline-foreground/40`
+    : outcomeClass[shown];
 };
 
 // One tick per card in the round, filled with its outcome as the round goes
-// on. Replaces a plain progress bar so the row records what happened, not
-// only how far along it is. In the after-round the active tick is one that
-// already has a color, so it is outlined to show which card is being asked.
+// on, so the row records what happened, not only how far along it is. It
+// stays thin and quiet: the card is what the screen is about.
 export const CardRail = ({
   label,
   ticks,
   activeIndex,
   activeOutcome,
+  progress,
   description,
 }: CardRailProps) => (
   <div className="flex flex-col gap-2">
-    <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-sm">
-      <p className="font-medium">{label}</p>
-      <p className="text-muted-foreground tabular-nums">{description}</p>
+    <p className="sr-only">
+      {label === null ? description : `${label}: ${description}`}
+    </p>
+    <div
+      aria-hidden="true"
+      className="flex items-baseline justify-between gap-3 text-muted-foreground text-xs tabular-nums"
+    >
+      <span className="font-medium text-foreground">{label}</span>
+      <span>{progress}</span>
     </div>
-    <ol aria-hidden="true" className="flex gap-1">
+    <ol aria-hidden="true" className="flex gap-0.5">
       {ticks.map((outcome, index) => {
         const active = index === activeIndex;
         return (
           <li
-            className={`h-1.5 flex-1 transition-colors ${tickClass(
+            className={`h-1 flex-1 transition-colors duration-(--motion-slow) ${tickClass(
+              outcome,
               active ? (activeOutcome ?? outcome) : outcome,
               active,
             )}`}

@@ -82,6 +82,7 @@ const Outcome = ({ queue }: { readonly queue: SessionQueue }) => {
           'Karten',
         )}`}
         label="Erster Durchgang"
+        progress={`${queue.processedCardIds.length} von ${queue.total}`}
         ticks={firstPassOutcomes(queue)}
       />
       <dl className="grid grid-cols-2 gap-6 sm:grid-cols-3">

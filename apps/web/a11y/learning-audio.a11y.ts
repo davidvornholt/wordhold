@@ -53,21 +53,22 @@ test('the learning pass starts the example sentence only once', async ({
   await expect(
     page.getByText('This memory still makes me smile.'),
   ).toBeVisible();
-  await expect(
-    page.getByRole('button', { name: 'Satz anhören' }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole('button', { name: 'Wort anhören' }),
-  ).toBeVisible();
   await expect
     .poll(() => page.evaluate(() => Reflect.get(globalThis, '__audioUrls')))
     .toEqual([
       '/api/entries/00000000-0000-0000-0000-000000000001/example-audio',
     ]);
+  // The playing sentence's button stops it; the word's still plays it.
+  await expect(
+    page.getByRole('button', { name: 'Wort anhören' }),
+  ).toBeVisible();
   await page.getByRole('button', { name: 'Audio stoppen' }).click();
   await expect
     .poll(() => page.evaluate(() => Reflect.get(globalThis, '__audioPlaying')))
     .toBe(false);
+  await expect(
+    page.getByRole('button', { name: 'Satz anhören' }),
+  ).toBeVisible();
   await expect
     .poll(() =>
       page.evaluate(() => Reflect.get(globalThis, '__audioPausedUrls')),
@@ -104,10 +105,11 @@ test('a new word shows before its example sentence is ready', async ({
   await page.getByRole('button', { name: 'Beispielsatz freigeben' }).click();
   await expect(sentence).toBeVisible();
   await expect(preparing).toHaveCount(0);
-  await expect(
-    page.getByRole('button', { name: 'Satz anhören' }),
-  ).toBeVisible();
+  // The sentence plays as it arrives, so its button offers to stop it.
   await expect.poll(() => playedUrls(page)).toEqual([sentenceAudio]);
+  await expect(
+    page.getByRole('button', { name: 'Audio stoppen' }),
+  ).toBeVisible();
 
   // The next word waits for its own sentence and plays nothing meanwhile.
   await page.getByLabel('Schreib die Antwort').fill('memory');
@@ -128,14 +130,14 @@ test('a word whose example cannot be prepared is learned without one', async ({
   await expect(
     page.getByRole('heading', { level: 2, name: 'die Erinnerung' }),
   ).toBeVisible();
-  await expect(
-    page.getByRole('button', { name: 'Wort anhören' }),
-  ).toBeVisible();
   await expect(page.getByText('Beispielsatz wird vorbereitet …')).toHaveCount(
     0,
   );
-  await expect(page.getByText('Im Satz')).toHaveCount(0);
   await expect.poll(() => playedUrls(page)).toEqual([wordAudio]);
+  await page.getByRole('button', { name: 'Audio stoppen' }).click();
+  await expect(
+    page.getByRole('button', { name: 'Wort anhören' }),
+  ).toBeVisible();
 
   await page.getByLabel('Schreib die Antwort').fill('memory');
   await page.getByRole('button', { name: 'Weiter' }).click();

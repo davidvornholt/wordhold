@@ -1,9 +1,10 @@
-import type { CardTone } from '../../../shared/ui/word-card';
 import type { FeedbackResult } from '../schemas/practice-models';
 import type { SentenceOutcome } from './use-sentence-check';
 
-// The verdict's color, shared by the card edge, the answer field and the
-// reveal so one answer never shows two tones.
+// The verdict's color. Only the words naming the verdict take it; the card
+// itself stays quiet whatever the answer was.
+export type CardTone = 'positive' | 'destructive' | 'warning';
+
 export const feedbackTone = (result: FeedbackResult): CardTone => {
   if (!result.graded) {
     return 'warning';
@@ -22,25 +23,8 @@ export const sentenceTone = (outcome: SentenceOutcome): CardTone => {
   return outcome.result.correct ? 'positive' : 'destructive';
 };
 
-// The heading, the divider above the reveal and the answer field's border
-// take the same tone.
 export const toneText: Record<CardTone, string> = {
-  neutral: 'text-foreground',
   positive: 'text-primary',
   destructive: 'text-destructive',
   warning: 'text-warning-foreground',
-};
-
-export const toneDivider: Record<CardTone, string> = {
-  neutral: 'border-border',
-  positive: 'border-primary',
-  destructive: 'border-destructive',
-  warning: 'border-warning-foreground',
-};
-
-export const toneField: Record<CardTone, string> = {
-  neutral: 'border-input',
-  positive: 'border-primary',
-  destructive: 'border-destructive',
-  warning: 'border-warning-foreground',
 };

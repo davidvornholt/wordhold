@@ -129,7 +129,8 @@ export const TermsPracticeFixture = () => (
       activeIndex={0}
       activeOutcome={null}
       description="0 von 1 Karte bearbeitet"
-      label="Abschnitt 1"
+      label={null}
+      progress="0 von 1"
       ticks={[null]}
     />
     <CardPractice
@@ -153,8 +154,7 @@ export const TermsFeedbackFixture = () => {
     <FocusLayout exit={backControl} title={title}>
       <WordCard
         deck={0}
-        eyebrow="Erkläre den Begriff"
-        tone="destructive"
+        instruction="Erkläre den Begriff"
         word={term}
         wordId={promptId}
         wordLang="de"
@@ -166,14 +166,15 @@ export const TermsFeedbackFixture = () => {
           example={null}
           id={feedbackId}
           kind="terms"
-          playSentence={null}
-          playWord={null}
           repeated={false}
           result={missedPoint}
+          retype={null}
+          sentence={null}
           skipped={false}
           spellingPitfalls={null}
           submittedAnswer={submittedAnswer}
           targetLanguage="de"
+          word={null}
         />
       </WordCard>
     </FocusLayout>

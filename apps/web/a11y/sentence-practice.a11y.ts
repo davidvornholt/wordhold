@@ -28,12 +28,16 @@ test('a round of sentences is translated, corrected and summed up', async ({
   await field.press('Enter');
   const feedback = page.getByRole('status');
   await expect(feedback).toContainText('Noch nicht richtig');
-  await expect(feedback).toContainText(
-    'Korrigiert: My sister is working at a hospital.',
-  );
-  await expect(feedback).toContainText(
-    'Musterlösung: My sister works in a hospital.',
-  );
+  await expect(feedback.getByText('Korrigiert', { exact: true })).toBeVisible();
+  await expect(
+    feedback.getByText('My sister is working at a hospital.', { exact: true }),
+  ).toBeVisible();
+  await expect(
+    feedback.getByText('Musterlösung', { exact: true }),
+  ).toBeVisible();
+  await expect(
+    feedback.getByText('My sister works in a hospital.', { exact: true }),
+  ).toBeVisible();
   const next = page.getByRole('button', { name: 'Weiter' });
   await expect(next).toBeFocused();
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
@@ -50,9 +54,14 @@ test('a round of sentences is translated, corrected and summed up', async ({
   await field.fill("I'm reading an exciting book.");
   await page.getByRole('button', { name: 'Prüfen' }).click();
   await expect(page.getByRole('status')).toContainText('Richtig');
-  await expect(page.getByRole('status')).toContainText(
-    'Auch möglich: I am reading an exciting book.',
-  );
+  await expect(
+    page.getByRole('status').getByText('Auch möglich', { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page
+      .getByRole('status')
+      .getByText('I am reading an exciting book.', { exact: true }),
+  ).toBeVisible();
 
   await page.getByRole('button', { name: 'Weiter' }).click();
   // The missed sentence comes back until it is translated correctly.
@@ -92,9 +101,14 @@ test('a sentence given up on shows the stored translation', async ({
   await page.goto('/?state=sentence-practice');
   await page.getByRole('button', { name: 'Weiß ich nicht' }).click();
   await expect(page.getByRole('status')).toContainText('Nicht gewusst');
-  await expect(page.getByRole('status')).toContainText(
-    'Musterlösung: My sister works in a hospital.',
-  );
+  await expect(
+    page.getByRole('status').getByText('Musterlösung', { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page
+      .getByRole('status')
+      .getByText('My sister works in a hospital.', { exact: true }),
+  ).toBeVisible();
   await expect(page.getByRole('button', { name: 'Weiter' })).toBeFocused();
   // Giving up is the learner's own verdict; there is nothing to overrule.
   await expect(

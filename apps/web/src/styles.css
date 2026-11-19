@@ -41,6 +41,10 @@
   --ease-settle: var(--motion-ease-settle);
   --animate-rise: rise var(--motion-slow) var(--motion-ease) both;
   --animate-settle: settle var(--motion-base) var(--motion-ease-settle) both;
+  --animate-deal-in: deal-in var(--motion-deal) var(--motion-ease) both;
+  --animate-draw: draw var(--motion-slow) var(--motion-ease) both;
+  --animate-ink: ink var(--motion-base) var(--motion-ease) both;
+  --animate-scan: scan var(--motion-loop) var(--motion-ease) infinite;
 
   @keyframes rise {
     from {
@@ -53,6 +57,74 @@
     from {
       transform: scale(0.985);
     }
+  }
+
+  /* The next card lifts off the deck into the place of the one dealt away. */
+  @keyframes deal-in {
+    from {
+      transform: translate(0.375rem, 0.375rem);
+    }
+  }
+
+  /* A pen stroke drawn along its path; the path sets pathLength="1". */
+  @keyframes draw {
+    from {
+      stroke-dashoffset: 1;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  /* Handwriting appearing on the card, a little after the stroke before it. */
+  @keyframes ink {
+    from {
+      opacity: 0;
+      transform: translateY(0.25rem);
+    }
+  }
+
+  /* A mark running along the answer line while the answer is checked. */
+  @keyframes scan {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(300%);
+    }
+  }
+}
+
+@keyframes strike {
+  from {
+    background-size: 0% 0.125rem;
+  }
+}
+
+/*
+ * The answered card is dealt off the stack to the left. It plays only in the
+ * transition dealCard starts, which marks the root with data-dealing, so a
+ * route change still cross-fades the card like the rest of the page. The
+ * card stays opaque until it has cleared most of the next one, which it
+ * covers like a real card; the next card animates its own entrance from the
+ * deck (deal-in), inside the live new image, so its image is not animated
+ * twice.
+ */
+@keyframes deal-out {
+  70% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translate(-75%, 1.5rem) rotate(-8deg);
+  }
+}
+
+/* The old card's actions leave before the next card's arrive, so two
+ * labels never show through each other. */
+@keyframes leave {
+  to {
+    opacity: 0;
   }
 }
 
@@ -67,6 +139,32 @@
   ::view-transition-new(root) {
     animation-duration: var(--motion-base);
     animation-timing-function: var(--motion-ease);
+  }
+
+  ::view-transition-group(practice-card),
+  ::view-transition-group(practice-actions) {
+    animation-duration: var(--motion-deal);
+    animation-timing-function: var(--motion-ease);
+  }
+
+  :root[data-dealing]::view-transition-old(practice-card) {
+    animation: deal-out var(--motion-deal) var(--motion-ease-exit) both;
+    mix-blend-mode: normal;
+    transform-origin: bottom left;
+    z-index: 1;
+  }
+
+  :root[data-dealing]::view-transition-new(practice-card) {
+    animation: none;
+    mix-blend-mode: normal;
+  }
+
+  :root[data-dealing]::view-transition-old(practice-actions) {
+    animation: leave var(--motion-fast) var(--motion-ease-exit) both;
+  }
+
+  :root[data-dealing]::view-transition-new(practice-actions) {
+    animation: ink var(--motion-base) var(--motion-ease) var(--motion-fast) both;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -87,9 +185,53 @@
   @apply mx-auto w-full max-w-3xl;
 }
 
-/* Small-caps style kicker above a value or heading. */
+/* A quiet kicker above a value or heading, in sentence case like all text. */
 @utility eyebrow {
-  @apply text-muted-foreground text-xs uppercase tracking-wide;
+  @apply text-muted-foreground text-sm;
+}
+
+/*
+ * The top card of a practice or learning stack, and the actions beneath it,
+ * each keep their own view-transition group, so dealing a card moves them
+ * instead of cross-fading them with the page.
+ */
+@utility practice-card {
+  view-transition-name: practice-card;
+}
+
+@utility practice-actions {
+  view-transition-name: practice-actions;
+}
+
+/*
+ * Lined paper behind a field that wraps: a rule under every line of text,
+ * scrolling with the text. Set --rule to color the lines.
+ */
+@utility ruled-lines {
+  --rule: var(--input);
+  background-image: linear-gradient(
+    to bottom,
+    transparent calc(100% - 1px),
+    var(--rule) calc(100% - 1px)
+  );
+  background-size: 100% 1lh;
+
+  /* A field that scrolls takes its lines along. */
+  @supports (background-attachment: local) {
+    background-attachment: local;
+  }
+}
+
+/*
+ * A wrong answer struck through, drawn from its first letter to its last.
+ * The line is a background, so it follows an answer that wraps.
+ */
+@utility struck {
+  background-image: linear-gradient(var(--destructive), var(--destructive));
+  background-repeat: no-repeat;
+  background-position: 0 58%;
+  background-size: 100% 0.125rem;
+  animation: strike var(--motion-slow) var(--motion-ease) both;
 }
 
 /* The persistent top bar keeps its own view-transition group. */

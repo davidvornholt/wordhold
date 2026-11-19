@@ -17,12 +17,14 @@ import {
   cardPrompt,
   foreignPromptLanguage,
 } from '../../../shared/practice/card-texts';
+import { ActionBar } from '../../../shared/ui/action-bar';
 import {
   AnswerField,
   type AnswerFieldElement,
 } from '../../../shared/ui/answer-field';
 import { Button } from '../../../shared/ui/button';
 import { KeyPointList } from '../../../shared/ui/key-point-list';
+import { SoundButton } from '../../../shared/ui/sound-button';
 import { SpellingPitfallNote } from '../../../shared/ui/spelling-pitfall-note';
 import { WordCard } from '../../../shared/ui/word-card';
 import type { LearnItem } from '../schemas/learning-models';
@@ -31,7 +33,8 @@ import {
   copiesLearnText,
   matchesLearnItem,
 } from '../services/learn-check';
-import { LearnExampleAudio } from './learn-example-audio';
+import { LearnExample } from './learn-example';
+import { useLearnAudio } from './use-learn-audio';
 
 type LearnEntryProps = {
   readonly item: LearnItem;
@@ -46,59 +49,32 @@ type LearnEntryProps = {
 };
 
 // A definition is shown to be copied, with what it must state once known. A
-// text is shown to be copied. Both keep their own line breaks. A word has its
-// example sentence and audio instead, and where it is most often misspelled
-// while its answer is shown.
-const LearnCardBody = ({
+// text is shown to be copied. Both keep their own line breaks and stand
+// above the page they are copied onto.
+const CopySource = ({
   item,
-  examplePending,
-  subject,
+  kind,
   definitionId,
-  answerShown,
 }: {
   readonly item: LearnItem;
-  readonly examplePending: boolean;
-  readonly subject: CourseSubject;
+  readonly kind: 'terms' | 'texts';
   readonly definitionId: string;
-  readonly answerShown: boolean;
-}) => {
-  if (subject.kind === 'texts') {
-    return (
-      <p className="whitespace-pre-line text-lg" id={definitionId}>
-        {cardAnswer(item)}
-      </p>
-    );
-  }
-  return subject.kind === 'terms' ? (
-    <>
-      <p className="whitespace-pre-line text-lg" id={definitionId}>
-        {cardAnswer(item)}
-      </p>
-      {item.keyPoints === null ? null : (
-        <KeyPointList
-          items={item.keyPoints.map((text) => ({
-            text,
-            covered: null,
-            note: null,
-          }))}
-        />
-      )}
-    </>
-  ) : (
-    <>
-      <SpellingPitfallNote
-        covered={!answerShown}
-        language={subject.targetLanguage}
-        pitfalls={shownPitfalls(item)}
+}) => (
+  <>
+    <p className="whitespace-pre-line text-lg" id={definitionId}>
+      {cardAnswer(item)}
+    </p>
+    {kind === 'terms' && item.keyPoints !== null ? (
+      <KeyPointList
+        items={item.keyPoints.map((text) => ({
+          text,
+          covered: null,
+          note: null,
+        }))}
       />
-      <LearnExampleAudio
-        item={item}
-        pending={examplePending}
-        targetLanguage={subject.targetLanguage}
-      />
-    </>
-  );
-};
+    ) : null}
+  </>
+);
 
 // What the learner is asked to copy, and what is said when saving fails.
 const copyLabels = {
@@ -174,8 +150,8 @@ const actionLabelFor = (busy: boolean, saveFailed: boolean): string => {
   return saveFailed ? 'Erneut versuchen' : 'Weiter';
 };
 
-// One direction of the learning pass. A word's answer starts as the field's
-// prompt, then disappears once typing begins so the learner has to hold it in
+// One direction of the learning pass. A word's answer starts as the line's
+// template, then disappears once typing begins so the learner has to hold it in
 // memory. A definition or text is too long for that, so it stays on the card
 // and is copied; recalling it is left to practice. Being wrong only asks
 // again.
@@ -199,6 +175,7 @@ export const LearnEntry = ({
   const answer = cardAnswer(item);
   const prompt = cardPrompt(item);
   const answerLang = answerLanguage(item.direction, subject.targetLanguage);
+  const audio = useLearnAudio({ item, pending: examplePending });
   useEffect(() => {
     if (busy) {
       return;
@@ -237,69 +214,93 @@ export const LearnEntry = ({
 
   const hintVisible = copied || typed === '';
   return (
-    <>
+    <form aria-busy={busy} className="flex flex-col gap-4" onSubmit={onSubmit}>
       <WordCard
         deck={deck}
-        eyebrow={directionLabel(item.direction, subject)}
-        tone={missedMessage === null ? 'neutral' : 'warning'}
+        instruction={directionLabel(item.direction, subject)}
         word={prompt}
         wordId={promptId}
         wordLang={foreignPromptLanguage(item.direction, subject.targetLanguage)}
       >
-        <LearnCardBody
-          answerShown={hintVisible}
-          definitionId={answerHintId}
-          examplePending={examplePending}
-          item={item}
-          subject={subject}
-        />
-      </WordCard>
-      <form
-        aria-busy={busy}
-        className="flex flex-col gap-3"
-        onSubmit={onSubmit}
-      >
-        <label className="sr-only" htmlFor={inputId}>
-          {copyLabels[subject.kind].field}
-        </label>
-        {!copied && typed === '' ? (
-          <span className="sr-only" id={answerHintId}>
-            Vorlage: <span lang={answerLang}>{answer}</span>
-          </span>
+        {subject.kind === 'language' ? null : (
+          <CopySource
+            definitionId={answerHintId}
+            item={item}
+            kind={subject.kind}
+          />
+        )}
+        <div>
+          <label className="sr-only" htmlFor={inputId}>
+            {copyLabels[subject.kind].field}
+          </label>
+          {!copied && typed === '' ? (
+            <span className="sr-only" id={answerHintId}>
+              Vorlage: <span lang={answerLang}>{answer}</span>
+            </span>
+          ) : null}
+          <div className="flex items-start gap-3">
+            <div className="min-w-0 flex-1">
+              <AnswerField
+                aria-describedby={
+                  hintVisible ? `${promptId} ${answerHintId}` : promptId
+                }
+                characters={answerCharacters(subject.kind, answerLang)}
+                disabled={busy}
+                fieldRef={inputRef}
+                id={inputId}
+                missed={missedMessage !== null}
+                multiline={copied}
+                onChange={(value) => {
+                  setTyped(value);
+                  setSaveFailed(false);
+                }}
+                placeholder={copyLabels[subject.kind].placeholder ?? answer}
+                value={typed}
+              />
+            </div>
+            {copied || audio.word === null ? null : (
+              // Level with the line the word is written on.
+              <span className="flex h-12 shrink-0 items-center">
+                <SoundButton label="Wort anhören" sound={audio.word} />
+              </span>
+            )}
+          </div>
+          <p
+            aria-live="polite"
+            className="mt-2 text-sm text-warning-foreground empty:mt-0"
+          >
+            {missedMessage}
+          </p>
+        </div>
+        {subject.kind === 'language' ? (
+          <>
+            <SpellingPitfallNote
+              covered={!hintVisible}
+              language={subject.targetLanguage}
+              pitfalls={shownPitfalls(item)}
+            />
+            <LearnExample
+              item={item}
+              pending={examplePending}
+              sentence={audio.sentence}
+              targetLanguage={subject.targetLanguage}
+            />
+          </>
         ) : null}
-        <AnswerField
-          aria-describedby={
-            hintVisible ? `${promptId} ${answerHintId}` : promptId
-          }
-          borderClass={
-            missedMessage === null
-              ? 'border-input'
-              : 'border-warning-foreground'
-          }
-          characters={answerCharacters(subject.kind, answerLang)}
-          disabled={busy}
-          fieldRef={inputRef}
-          id={inputId}
-          multiline={copied}
-          onChange={(value) => {
-            setTyped(value);
-            setSaveFailed(false);
-          }}
-          placeholder={copyLabels[subject.kind].placeholder ?? answer}
-          value={typed}
-        />
-        <Button disabled={busy || typed.trim() === ''} type="submit">
-          {actionLabel}
-        </Button>
-      </form>
-      <p aria-live="polite" className="text-center text-sm">
-        {missedMessage}
-      </p>
+      </WordCard>
       {saveFailed ? (
         <p className="text-destructive text-sm" role="alert">
           {copyLabels[subject.kind].saveFailed}
         </p>
       ) : null}
-    </>
+      <ActionBar
+        primary={
+          <Button disabled={busy || typed.trim() === ''} type="submit">
+            {actionLabel}
+          </Button>
+        }
+        secondary={null}
+      />
+    </form>
   );
 };

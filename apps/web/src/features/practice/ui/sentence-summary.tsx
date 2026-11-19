@@ -42,6 +42,7 @@ export const SentenceSummary = ({
         activeOutcome={null}
         description={countNoun(counts.firstPass.length, 'Satz', 'Sätze')}
         label="Erster Durchgang"
+        progress={countNoun(counts.firstPass.length, 'Satz', 'Sätze')}
         ticks={counts.firstPass}
       />
       <dl className="grid grid-cols-2 gap-6">

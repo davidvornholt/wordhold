@@ -9,6 +9,7 @@ import { CardPractice } from '../src/features/practice/ui/card-practice';
 import { FeedbackPanel } from '../src/features/practice/ui/feedback-panel';
 import { SessionSummary } from '../src/features/practice/ui/session-summary';
 import { withoutExamples } from '../src/shared/examples/example-model';
+import { ActionBar } from '../src/shared/ui/action-bar';
 import { Button } from '../src/shared/ui/button';
 import { CardRail } from '../src/shared/ui/card-rail';
 import { FocusLayout } from '../src/shared/ui/focus-layout';
@@ -68,7 +69,8 @@ export const PracticeFixture = () => {
         activeIndex={0}
         activeOutcome={null}
         description="0 von 1 Karte bearbeitet"
-        label="Abschnitt 1"
+        label={null}
+        progress="0 von 1"
         ticks={[null]}
       />
       <CardPractice
@@ -142,8 +144,7 @@ export const PracticeFeedbackFixture = ({
     <FocusLayout exit={backControl} title="English A2 · Üben">
       <WordCard
         deck={1}
-        eyebrow="Übersetze auf Englisch"
-        tone={alternative ? 'positive' : 'destructive'}
+        instruction="Übersetze auf Englisch"
         word={item.prompt}
         wordId={promptId}
         wordLang={undefined}
@@ -155,19 +156,25 @@ export const PracticeFeedbackFixture = ({
           example={item.example}
           id={feedbackId}
           kind="language"
-          playSentence={null}
-          playWord={null}
           repeated={false}
           result={alternative ? alternativeResult : result}
+          retype={null}
+          sentence={null}
           skipped={false}
           spellingPitfalls={null}
           submittedAnswer={alternative ? 'recollection' : 'wrong'}
           targetLanguage="en"
+          word={null}
         />
       </WordCard>
-      <Button onClick={() => navigateToFixture('practice-empty')}>
-        Weiter
-      </Button>
+      <ActionBar
+        primary={
+          <Button onClick={() => navigateToFixture('practice-empty')}>
+            Weiter
+          </Button>
+        }
+        secondary={null}
+      />
     </FocusLayout>
   );
 };

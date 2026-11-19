@@ -4,6 +4,9 @@ import { assertNoAccessibilityViolations } from './a11y-assertions';
 
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
+// Overruling a typo does not store it as another answer.
+const overruleConsequence = /nicht als weitere Lösung/u;
+
 test('a running sitting keeps the direction fixed', async ({ page }) => {
   await page.goto('/?state=practice-session');
   await expect(
@@ -113,10 +116,9 @@ test('a rejected typo can be stored as Hard without teaching it as an answer', a
   await answer.fill('memroy');
   await page.getByRole('button', { name: 'Prüfen' }).click();
   await expect(page.getByText('Noch nicht sicher')).toBeVisible();
-  await expect(
-    page.getByText('nicht als weitere Lösung', { exact: false }),
-  ).toBeVisible();
-  await page.getByRole('button', { name: 'Als richtig werten' }).click();
+  const overrule = page.getByRole('button', { name: 'Als richtig werten' });
+  await expect(overrule).toHaveAccessibleDescription(overruleConsequence);
+  await overrule.click();
 
   await expect(
     page.getByRole('heading', { level: 2, name: 'Ferien' }),

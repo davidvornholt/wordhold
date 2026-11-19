@@ -6,7 +6,6 @@ import { AnswerField, type AnswerFieldElement } from './answer-field';
 const render = (multiline: boolean) =>
   renderToStaticMarkup(
     <AnswerField
-      borderClass=""
       characters={null}
       disabled={false}
       fieldRef={createRef<AnswerFieldElement>()}

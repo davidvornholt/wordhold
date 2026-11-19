@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'bun:test';
-import { formatLearningDate, formatLearningDateInline } from './learning-date';
+import {
+  formatLearningDate,
+  formatLearningDateInline,
+  formatReturn,
+} from './learning-date';
 
 const berlin = 'Europe/Berlin';
 
@@ -93,5 +97,38 @@ describe('formatLearningDateInline', () => {
     expect(
       formatLearningDate(new Date('2026-09-21T10:40:00Z'), berlin, lateEvening),
     ).toBe('Morgen um 12:40');
+  });
+});
+
+describe('formatReturn', () => {
+  const at = (offsetMinutes: number) =>
+    new Date(lateEvening.getTime() + offsetMinutes * 60_000);
+
+  it('counts the minutes to a card due within the hour', () => {
+    expect(formatReturn(at(0), berlin, lateEvening)).toBe('gleich');
+    expect(formatReturn(at(-5), berlin, lateEvening)).toBe('gleich');
+    expect(formatReturn(at(1), berlin, lateEvening)).toBe('in einer Minute');
+    expect(formatReturn(at(10), berlin, lateEvening)).toBe('in 10 Minuten');
+  });
+
+  it('names the time today and the day after that', () => {
+    const afternoon = new Date('2026-09-20T10:00:00Z');
+    expect(
+      formatReturn(new Date('2026-09-20T13:20:00Z'), berlin, afternoon),
+    ).toBe('heute um 15:20');
+    // 00:40 the next day in Berlin, though still the same day in UTC.
+    expect(formatReturn(at(70), berlin, lateEvening)).toBe('morgen');
+  });
+
+  it('rounds a later return the further off it is', () => {
+    const inDays = (days: number) => at(days * 24 * 60);
+    expect(formatReturn(inDays(3), berlin, lateEvening)).toBe('in 3 Tagen');
+    expect(formatReturn(inDays(13), berlin, lateEvening)).toBe('in 13 Tagen');
+    expect(formatReturn(inDays(17), berlin, lateEvening)).toBe('in 2 Wochen');
+    expect(formatReturn(inDays(75), berlin, lateEvening)).toBe('in 2 Monaten');
+    expect(formatReturn(inDays(400), berlin, lateEvening)).toBe(
+      'in einem Jahr',
+    );
+    expect(formatReturn(inDays(800), berlin, lateEvening)).toBe('in 2 Jahren');
   });
 });

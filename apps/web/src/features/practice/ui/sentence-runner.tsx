@@ -4,6 +4,7 @@ import type { PrepareExamples } from '../../../shared/examples/example-model';
 import { useExampleWarmup } from '../../../shared/examples/use-example-warmup';
 import { countNoun } from '../../../shared/format/count';
 import { CardRail } from '../../../shared/ui/card-rail';
+import { dealCard } from '../../../shared/ui/deal-card';
 import type { SentenceItem, SentenceSession } from '../schemas/sentence-models';
 import {
   acceptSentence,
@@ -70,6 +71,20 @@ const railDescription = (
     : processed;
 };
 
+const railProgress = (
+  round: SentenceRound,
+  roundSize: number,
+  repeated: boolean,
+): string => {
+  if (repeated) {
+    return `${round.repeat.length} noch einmal`;
+  }
+  const processed = `${round.asked.length} von ${roundSize}`;
+  return round.repeat.length > 0
+    ? `${processed} · ${round.repeat.length} für die Nachrunde`
+    : processed;
+};
+
 // The round's sentences are prepared one after the other while the learner
 // translates, as in card practice. A word whose example could not be
 // prepared, or has no German side, leaves the round once that is known.
@@ -113,7 +128,8 @@ export const SentenceRunner = ({
         activeIndex={entryIds.indexOf(active.entryId)}
         activeOutcome={round.judged}
         description={railDescription(round, items.length, next.repeated)}
-        label={next.repeated ? 'Nachrunde' : 'Runde'}
+        label={next.repeated ? 'Nachrunde' : null}
+        progress={railProgress(round, items.length, next.repeated)}
         ticks={entryIds.map((entryId) => round.outcomes.get(entryId) ?? null)}
       />
       {prompt === null ? (
@@ -128,10 +144,14 @@ export const SentenceRunner = ({
           }
           key={`${prompt.entryId}-${round.turn}`}
           onAccept={() =>
-            setRound((current) => acceptSentence(current, prompt.entryId))
+            dealCard(() =>
+              setRound((current) => acceptSentence(current, prompt.entryId)),
+            )
           }
           onNext={() =>
-            setRound((current) => finishSentence(current, prompt.entryId))
+            dealCard(() =>
+              setRound((current) => finishSentence(current, prompt.entryId)),
+            )
           }
           onOutcome={(outcome) =>
             setRound((current) =>

@@ -1,40 +1,20 @@
-import type { ReviewMode } from '@wordhold/db/schema/practice';
-import { type ReactNode, useId, useRef } from 'react';
+import { type ReactNode, useId } from 'react';
 import {
   type CourseSubject,
   isRelationDirection,
 } from '../../../shared/directions';
-import type { PrepareExamples } from '../../../shared/examples/example-model';
 import { germanLabels } from '../../../shared/languages';
 import { shownPitfalls } from '../../../shared/pitfalls/pitfall-model';
-import { answerCharacters } from '../../../shared/practice/answer-characters';
-import {
-  answerLanguage,
-  foreignPromptLanguage,
-} from '../../../shared/practice/card-texts';
-import type { RailOutcome } from '../../../shared/session/rail-outcome';
-import type { AnswerFieldElement } from '../../../shared/ui/answer-field';
+import { foreignPromptLanguage } from '../../../shared/practice/card-texts';
 import { RelationQuestion } from '../../../shared/ui/relation-question';
 import { WordCard } from '../../../shared/ui/word-card';
-import type {
-  PracticeSession,
-  ResolvedSubmitResult,
-  SubmitResult,
-} from '../schemas/practice-models';
-import type { SubmitPayloadData } from '../schemas/submission-schema';
-import { CardFeedback } from './card-feedback';
-import { FeedbackActions } from './feedback-actions';
-import { feedbackTone } from './feedback-tone';
-import { PracticeAnswerForm } from './practice-answer-form';
+import { AnswerEntry, RetypeLine } from './answer-entry';
+import { CheckActions, ContinueActions } from './card-actions';
+import { FeedbackPanel } from './feedback-panel';
 import { SubmissionNotice } from './submission-notice';
-import { useCardContinuation } from './use-card-continuation';
-import { useCardFlow } from './use-card-flow';
-import { useCardSubmission } from './use-card-submission';
-import { usePracticeAudio } from './use-practice-audio';
-import { usePreparedExample } from './use-prepared-example';
-import { useRetype } from './use-retype';
+import { type PracticeCardInput, usePracticeCard } from './use-practice-card';
 
-type SessionItem = PracticeSession['items'][number];
+type SessionItem = PracticeCardInput['item'];
 
 // "auf" takes the plain language name, so every target language declines
 // correctly ("auf Französisch", "auf Latein" — never "ins Lateine"). A
@@ -64,141 +44,120 @@ const practiceInstruction = (
   return repeated ? `${instruction} · Noch einmal` : instruction;
 };
 
-type CardPracticeProps = {
-  readonly item: SessionItem;
+type CardPracticeProps = PracticeCardInput & {
   // Cards still waiting behind this one in the round.
   readonly deck: number;
   readonly repeated: boolean;
-  readonly subject: CourseSubject;
-  readonly mode: ReviewMode;
-  readonly prepareExamples: PrepareExamples;
-  readonly submit: (input: {
-    readonly data: SubmitPayloadData;
-  }) => Promise<SubmitResult>;
-  // Fires as soon as an answer is judged, before "Weiter" moves on.
-  readonly onJudged: (outcome: RailOutcome) => void;
-  readonly onNext: (result: ResolvedSubmitResult) => void;
 };
 
+// One card, answered and continued in one form: Enter checks the answer,
+// and once judged, writes the missed one out or moves on. The one button at
+// the right does both, so the hand stays in place.
 export const CardPractice = ({
-  item,
   deck,
   repeated,
-  subject,
-  mode,
-  prepareExamples,
-  submit,
-  onJudged,
-  onNext,
+  ...input
 }: CardPracticeProps) => {
-  const inputRef = useRef<AnswerFieldElement>(null);
+  const { item, subject } = input;
   const { targetLanguage } = subject;
-  const nextButtonRef = useRef<HTMLButtonElement>(null);
   const promptId = useId();
   const feedbackDescriptionId = useId();
-  const { example, loadExample } = usePreparedExample(
-    item.entryId,
-    item.example,
-    prepareExamples,
-  );
-  const audio = usePracticeAudio({
-    entryId: item.entryId,
-    hasWordAudio: item.hasAudio,
+  const {
+    answerLang,
+    audio,
+    characters,
+    dictating,
+    dictation,
     example,
-    loadExample,
-  });
-  const submission = useCardSubmission({
-    cardId: item.cardId,
-    revision: item.revision,
-    mode,
-    playFeedbackAudio: audio.playFeedbackAudio,
-    submit,
-    onNext,
-  });
-  const { result, busy, resolution, error, reconnecting } = submission;
-  const answerLang = answerLanguage(item.direction, targetLanguage);
-  const retype = useRetype(result, answerLang, subject.kind, item.relatedWords);
-  useCardFlow({
-    busy,
-    result,
-    example,
-    loadExample,
-    onJudged,
     inputRef,
     nextButtonRef,
-    retypeRequired: retype.required,
-  });
-  const tone = result === null ? 'neutral' : feedbackTone(result);
-  const { continueCard, onSubmit } = useCardContinuation({
+    onSubmit,
+    retype,
+    skip,
+    skipping,
     submission,
-    checkRetype: retype.check,
-    inputRef,
-    onNext,
-  });
+  } = usePracticeCard(input);
+  const { result, busy, resolution, error, reconnecting } = submission;
 
   return (
-    <>
+    <form aria-busy={busy} className="flex flex-col gap-4" onSubmit={onSubmit}>
       <WordCard
         deck={deck}
-        eyebrow={practiceInstruction(item.direction, subject, repeated)}
-        tone={tone}
+        instruction={practiceInstruction(item.direction, subject, repeated)}
         word={item.prompt}
         wordId={promptId}
         wordLang={foreignPromptLanguage(item.direction, targetLanguage)}
       >
-        <CardFeedback
-          answerLanguage={answerLang}
-          busy={busy || resolution !== null}
-          dictated={submission.submittedDictated}
-          example={example}
-          id={feedbackDescriptionId}
-          kind={subject.kind}
-          otherWording={submission.otherWording}
-          playSentence={audio.playSentence}
-          playWord={audio.playWord}
-          repeated={repeated}
-          result={result}
-          skipped={submission.skipped}
-          spellingPitfalls={shownPitfalls(item)}
-          submittedAnswer={submission.submittedAnswer ?? ''}
-          targetLanguage={targetLanguage}
-        />
+        {result === null ? (
+          <AnswerEntry
+            answerLanguage={answerLang}
+            busy={busy}
+            characters={characters}
+            checking={busy && !skipping}
+            dictation={dictation}
+            inputRef={inputRef}
+            kind={subject.kind}
+            onAnswerChange={submission.setAnswer}
+            otherWording={submission.otherWording}
+            promptId={promptId}
+            value={submission.submittedAnswer ?? submission.answer}
+          />
+        ) : (
+          <FeedbackPanel
+            answerLanguage={answerLang}
+            busy={busy || resolution !== null}
+            dictated={submission.submittedDictated}
+            example={example}
+            id={feedbackDescriptionId}
+            kind={subject.kind}
+            repeated={repeated}
+            result={result}
+            retype={
+              retype.field === null ? null : (
+                <RetypeLine
+                  busy={busy}
+                  characters={characters}
+                  hintId={`${promptId}-retype-hint`}
+                  inputRef={inputRef}
+                  kind={subject.kind}
+                  promptId={promptId}
+                  retype={retype.field}
+                />
+              )
+            }
+            sentence={audio.sentence}
+            skipped={submission.skipped}
+            spellingPitfalls={shownPitfalls(item)}
+            submittedAnswer={submission.submittedAnswer ?? ''}
+            targetLanguage={targetLanguage}
+            word={audio.word}
+          />
+        )}
       </WordCard>
-      <PracticeAnswerForm
-        answer={submission.answer}
-        busy={busy}
-        characters={answerCharacters(subject.kind, answerLang)}
-        disabled={result !== null}
-        inputRef={inputRef}
-        kind={subject.kind}
-        onAnswerChange={submission.setAnswer}
-        onDictation={submission.appendDictation}
-        onSkip={submission.skipCard}
-        onSubmit={onSubmit}
-        promptId={promptId}
-        retype={retype.field}
-        skipping={busy && submission.skipped}
-        submittedAnswer={submission.submittedAnswer}
-        tone={tone}
-      />
       <SubmissionNotice error={error} reconnecting={reconnecting} />
-      {result === null ? null : (
-        <FeedbackActions
-          audioPlaying={audio.playing}
+      {result === null ? (
+        <CheckActions
+          blocked={busy || dictating}
+          checking={busy && !skipping}
+          empty={submission.answer.trim() === ''}
+          nextButtonRef={nextButtonRef}
+          onSkip={skip}
+          skipping={skipping}
+        />
+      ) : (
+        <ContinueActions
           busy={busy}
-          example={example}
-          feedbackDescriptionId={feedbackDescriptionId}
-          graded={result.graded}
-          nextButton={nextButtonRef}
-          nextDisabled={retype.required && retype.empty}
-          onNext={continueCard}
-          onResolveWrong={submission.resolveWrongAnswer}
-          pendingWrong={result.graded && !result.stored}
-          playWord={audio.playWord}
+          feedbackId={feedbackDescriptionId}
+          kind={subject.kind}
+          nextButtonRef={nextButtonRef}
+          onOverrule={() => {
+            submission.resolveWrongAnswer('hard').catch(() => undefined);
+          }}
+          overrulable={result.graded && !result.stored}
           resolution={resolution}
-          stopAudio={audio.stopAudio}
+          retypeMissing={retype.required && retype.empty}
         />
       )}
-    </>
+    </form>
   );
 };
