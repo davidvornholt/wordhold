@@ -130,8 +130,8 @@ export const freshExam: ExamDetail = {
   },
 };
 
-// Most recently practised first, as the store lists them: more than the
-// course page shows before it folds the rest away.
+// In the store's order, and more than the course page shows before it folds
+// the rest away.
 export const examSummaries: ReadonlyArray<ExamSummary> = [
   { ...baseExam, lastRound: secondRound },
   {

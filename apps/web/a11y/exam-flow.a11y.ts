@@ -79,8 +79,8 @@ test('a test shows its standing and its rounds', async ({ page }) => {
   );
 });
 
-// The course page shows the three tests practised most recently and folds
-// the older ones away, one click from opening.
+// The course page shows its first three tests and folds the older ones away,
+// one click from opening.
 test('older tests fold away on the course page', async ({ page }) => {
   await page.goto('/?state=course');
   const tests = page.getByRole('region', { name: 'Tests' });

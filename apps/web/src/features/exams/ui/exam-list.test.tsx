@@ -35,7 +35,7 @@ const split = (markup: string) => {
 };
 
 describe('ExamSection', () => {
-  it('shows the three tests practised most recently and folds the rest away', () => {
+  it('shows the first three tests and folds the rest away', () => {
     const markup = render(exams(5));
     expect(split(markup)).toEqual({
       shown: ['Test 1', 'Test 2', 'Test 3'],

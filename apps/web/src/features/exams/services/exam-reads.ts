@@ -64,8 +64,6 @@ export const makeExamReads = (sql: Database) => {
           as "entryCount"
       `;
 
-  // A test was last practised when its newest round started, or, before its
-  // first round, when it was created.
   const list = (courseId: string) =>
     sql<StoredExamRow>`
           select ${examColumns} from exams x

@@ -26,8 +26,8 @@ import type { RoundCardRow, RoundCountRow } from './exam-results';
 export class ExamStore extends Context.Service<
   ExamStore,
   {
-    // The most recently practised first: by the start of the newest round,
-    // or by creation before the first round.
+    // Newest first, by the start of each test's newest round, or by its
+    // creation before its first round.
     readonly list: (
       courseId: string,
     ) => Effect.Effect<ReadonlyArray<ExamRow>, ExamDatabaseError>;

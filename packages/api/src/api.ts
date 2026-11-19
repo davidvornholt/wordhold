@@ -226,7 +226,7 @@ export const OverviewApi = HttpApiGroup.make('overview').add(
 
 /** A course's tests and the results of their rounds. Rounds are practised in the app. */
 export const ExamsApi = HttpApiGroup.make('exams').add(
-  /** Active tests first, newest first. */
+  /** Newest first, by the start of each test's newest round, or by its creation before its first round. */
   HttpApiEndpoint.get('list', '/courses/:id/exams', {
     params: idParams,
     success: Schema.Array(ExamSummarySchema),

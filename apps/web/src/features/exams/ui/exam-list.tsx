@@ -35,16 +35,15 @@ const ExamRows = ({ exams, subject, renderExamLink }: ExamRowsProps) => (
   </ul>
 );
 
-// The tests practised most recently stay in view; the older ones are rarely
-// opened, so they fold away.
+// The first tests in the store's order stay in view; the older ones are
+// rarely opened, so they fold away.
 const shownExams = 3;
 
 type ExamSectionProps = ExamRowsProps & {
   readonly newExamAction: ReactNode;
 };
 
-// The course's tests, under its books or above its list, most recently
-// practised first as the store lists them. Without a test the section is one
+// The course's tests in the store's order. Without a test the section is one
 // quiet line, since most of the time none is due.
 export const ExamSection = ({
   exams,
