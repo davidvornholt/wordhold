@@ -38,7 +38,6 @@ export const gradeFixtureAnswer = (
       expectedAnswer: expected,
       explanation: null,
       acceptedAsAlternative: false,
-      acceptedAsOtherWording: false,
       keyPoints: null,
       schedule: {
         advanced: true,
@@ -81,7 +80,6 @@ export const gradeFixtureAnswer = (
     expectedAnswer: expected,
     explanation: null,
     acceptedAsAlternative: false,
-    acceptedAsOtherWording: false,
     keyPoints: null,
     schedule: {
       advanced: scheduleAdvances,

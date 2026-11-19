@@ -58,7 +58,6 @@ const submitSynonym = ({
     expectedAnswer: oppositeGiven.expectedAnswer,
     explanation: null,
     acceptedAsAlternative: false,
-    acceptedAsOtherWording: false,
     keyPoints: null,
     schedule: { advanced: true, state: 'relearning', dueAt: new Date() },
     entryKnown: false,

@@ -18,7 +18,6 @@ const result: FeedbackResult = {
   expectedAnswer: 'waiter',
   explanation: null,
   acceptedAsAlternative: false,
-  acceptedAsOtherWording: false,
   keyPoints: null,
   schedule: {
     advanced: true,
@@ -111,17 +110,12 @@ describe('answer feedback', () => {
   });
 
   it('counts an answer in other words as right and names the book word', () => {
-    const markup = render('server', {
-      rating: 2,
-      acceptedAsOtherWording: true,
-    });
+    const markup = render('server', { rating: 2 });
     expect(markup).toContain('>Richtig</p>');
     expect(markup).toContain('Im Buch: ');
     expect(markup).toContain('>waiter</span>');
-    expect(markup).toContain('Im Test zählt nur das Wort aus dem Buch.');
     expect(markup).not.toContain('Erwartet:');
     expect(markup).not.toContain('als gültige Alternative gespeichert');
-    expect(render('server')).not.toContain('Im Test zählt nur');
   });
 
   it('shows the expected answer beside a wrong answer', () => {

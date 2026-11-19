@@ -70,7 +70,6 @@ const storedResult = (
   expectedAnswer: textbookAnswer,
   explanation: null,
   acceptedAsAlternative: false,
-  acceptedAsOtherWording: otherWording,
   keyPoints: null,
   schedule: correct
     ? { advanced: true, state: 'review', dueAt: new Date() }

@@ -110,8 +110,6 @@ export type SubmitResult =
       readonly expectedAnswer: string;
       readonly explanation: string | null;
       readonly acceptedAsAlternative: boolean;
-      // Right in other words than the book's, outside test practice.
-      readonly acceptedAsOtherWording: boolean;
       // Only for a definition the judge graded; null otherwise.
       readonly keyPoints: ReadonlyArray<KeyPointFinding> | null;
       readonly schedule: CardSchedule;
