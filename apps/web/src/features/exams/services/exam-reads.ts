@@ -14,7 +14,6 @@ export type ExamRow = {
   readonly name: string;
   readonly directions: ReadonlyArray<AnswerDirection>;
   readonly createdAt: Date;
-  readonly archivedAt: Date | null;
   readonly entryCount: number;
 };
 
@@ -60,7 +59,7 @@ export const makeExamReads = (sql: Database) => {
   const examColumns = sql`
         x.id, x.course_id as "courseId", x.name,
         x.directions::text[] as directions,
-        x.created_at as "createdAt", x.archived_at as "archivedAt",
+        x.created_at as "createdAt",
         (select count(*)::int from exam_entries xe where xe.exam_id = x.id)
           as "entryCount"
       `;
@@ -69,7 +68,12 @@ export const makeExamReads = (sql: Database) => {
     sql<StoredExamRow>`
           select ${examColumns} from exams x
           where x.course_id = ${courseId}
-          order by x.archived_at is not null, x.created_at desc, x.id
+          order by coalesce(
+              (select max(r.started_at) from exam_rounds r
+                where r.exam_id = x.id),
+              x.created_at
+            ) desc,
+            x.created_at desc, x.id
         `.pipe(
       Effect.flatMap(Effect.forEach(decodeExam)),
       Effect.mapError(readFailure),

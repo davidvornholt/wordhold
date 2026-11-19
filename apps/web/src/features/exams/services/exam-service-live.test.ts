@@ -1,18 +1,13 @@
 import { describe, expect, it } from 'bun:test';
 import { Database } from '@wordhold/db/client';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
-import {
-  testDatabaseLayer,
-  withMigratedTestDatabase,
-} from '@wordhold/db/testing/postgres-test-database';
-import { Effect, Layer } from 'effect';
+import { Effect } from 'effect';
 import { ratings } from '../../../shared/grading/rating';
 import {
   dueEntryId,
   firstReviewEntryId,
   fixtureCourseId,
   fixtureUnitId,
-  seedIntroducedCardFixture,
   unintroducedEntryId,
 } from '../../../shared/testing/introduced-card-fixture';
 import {
@@ -21,35 +16,10 @@ import {
   ExamStateError,
 } from '../errors/exam-errors';
 import { ExamService } from './exam-service';
-import { ExamStore } from './exam-store';
-
-const runExamTest = <A, E>(
-  program: Effect.Effect<A, E, Database | ExamService>,
-) =>
-  Effect.runPromise(
-    withMigratedTestDatabase((database) => {
-      const databaseLayer = testDatabaseLayer(database.url);
-      return Effect.andThen(seedIntroducedCardFixture, program).pipe(
-        Effect.provide(
-          ExamService.layer.pipe(
-            Layer.provide(ExamStore.live.pipe(Layer.provide(databaseLayer))),
-          ),
-        ),
-        Effect.provide(databaseLayer),
-      );
-    }),
-  );
-
-// The fixture's two introduced words, asked both ways: four learned cards.
-const createLearnedExam = Effect.gen(function* () {
-  const service = yield* ExamService;
-  return yield* service.create({
-    courseId: fixtureCourseId,
-    name: 'Vokabeltest',
-    directions: ['to_target', 'to_native'],
-    entryIds: [dueEntryId, firstReviewEntryId],
-  });
-});
+import {
+  createLearnedExam,
+  runExamTest,
+} from './exam-service-live-test-support';
 
 let answerCount = 0;
 
@@ -262,7 +232,7 @@ describe('ExamService rounds', () => {
     await runExamTest(
       Effect.gen(function* () {
         const service = yield* ExamService;
-        const { examId } = yield* createLearnedExam;
+        const { examId } = yield* createLearnedExam();
         const first = yield* service.startRound(examId);
         yield* answer(first.roundId, dueEntryId, 'to_target', false);
         yield* answer(first.roundId, dueEntryId, 'to_target', true);
@@ -301,7 +271,7 @@ describe('ExamService rounds', () => {
     await runExamTest(
       Effect.gen(function* () {
         const service = yield* ExamService;
-        const { examId } = yield* createLearnedExam;
+        const { examId } = yield* createLearnedExam();
         const first = yield* service.startRound(examId);
         yield* answer(first.roundId, dueEntryId, 'to_target', true);
         const underway = yield* service.get(examId);
@@ -346,17 +316,13 @@ describe('ExamService rounds', () => {
       }),
     );
   });
+});
 
-  it('starts no round for an archived test or one with nothing learned', async () => {
+describe('ExamService round start', () => {
+  it('starts no round for a test with nothing learned', async () => {
     await runExamTest(
       Effect.gen(function* () {
         const service = yield* ExamService;
-        const { examId } = yield* createLearnedExam;
-        yield* service.setArchived({ examId, archived: true });
-        expect(yield* Effect.flip(service.startRound(examId))).toBeInstanceOf(
-          ExamStateError,
-        );
-
         const unlearned = yield* service.create({
           courseId: fixtureCourseId,
           name: 'Neue Wörter',

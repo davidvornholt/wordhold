@@ -45,18 +45,11 @@ export const UpdateExam = Schema.Struct({
 });
 export type UpdateExamData = typeof UpdateExam.Type;
 
-export const SetExamArchived = Schema.Struct({
-  examId: Uuid,
-  archived: Schema.Boolean,
-});
-export type SetExamArchivedData = typeof SetExamArchived.Type;
-
 const ExamRequest = Schema.Struct({ examId: Uuid });
 const CourseExamsRequest = Schema.Struct({ courseId: Uuid });
 
 export const decodeCreateExam = Schema.decodeUnknownSync(CreateExam);
 export const decodeUpdateExam = Schema.decodeUnknownSync(UpdateExam);
-export const decodeSetExamArchived = Schema.decodeUnknownSync(SetExamArchived);
 export const decodeExamRequest = Schema.decodeUnknownSync(ExamRequest);
 export const decodeCourseExamsRequest =
   Schema.decodeUnknownSync(CourseExamsRequest);
@@ -78,7 +71,6 @@ export type ExamSummary = {
   readonly name: string;
   readonly directions: ReadonlyArray<AnswerDirection>;
   readonly createdAt: Date;
-  readonly archivedAt: Date | null;
   readonly entryCount: number;
   // The newest completed round, if any.
   readonly lastRound: RoundScore | null;

@@ -11,7 +11,6 @@ import {
   createExam,
   deleteExam,
   type StartRoundResult,
-  setExamArchived,
   startExamRound,
   type UpdateExamResult,
   updateExam,
@@ -27,7 +26,8 @@ import type { RoundCardRow, RoundCountRow } from './exam-results';
 export class ExamStore extends Context.Service<
   ExamStore,
   {
-    // Active tests first, newest first.
+    // Newest first, by the start of each test's newest round, or by its
+    // creation before its first round.
     readonly list: (
       courseId: string,
     ) => Effect.Effect<ReadonlyArray<ExamRow>, ExamDatabaseError>;
@@ -59,10 +59,6 @@ export class ExamStore extends Context.Service<
       input: UpdateExamData,
     ) => Effect.Effect<UpdateExamResult, ExamDatabaseError>;
     // Resolves false when there is no such test.
-    readonly setArchived: (
-      examId: string,
-      archived: boolean,
-    ) => Effect.Effect<boolean, ExamDatabaseError>;
     readonly remove: (
       examId: string,
     ) => Effect.Effect<boolean, ExamDatabaseError>;
@@ -79,8 +75,6 @@ export class ExamStore extends Context.Service<
         ...makeExamReads(sql),
         create: (input) => createExam(sql, input),
         update: (input) => updateExam(sql, input),
-        setArchived: (examId, archived) =>
-          setExamArchived(sql, examId, archived),
         remove: (examId) => deleteExam(sql, examId),
         startRound: (examId) => startExamRound(sql, examId),
       });

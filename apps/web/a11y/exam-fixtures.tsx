@@ -5,16 +5,13 @@ import type {
   ExamSummary,
 } from '../src/features/exams/schemas/exam-models';
 import { ExamForm } from '../src/features/exams/ui/exam-form';
-import {
-  ArchivedExamList,
-  ExamSection,
-} from '../src/features/exams/ui/exam-list';
+import { ExamSection } from '../src/features/exams/ui/exam-list';
 import { ExamOverview } from '../src/features/exams/ui/exam-overview';
 import type { CourseSubject } from '../src/shared/directions';
 import { Button } from '../src/shared/ui/button';
 import { PageLayout } from '../src/shared/ui/page-layout';
 import { englishSubject } from './course-fixture-data';
-import { courseEntries, examSummaries } from './exam-fixture-data';
+import { courseEntries } from './exam-fixture-data';
 import {
   fixtureBackControl,
   fixtureControl,
@@ -27,9 +24,7 @@ const courseName = 'English A2';
 const examLink = (exam: ExamSummary) => (
   <button
     className={listItemNameClass}
-    onClick={() =>
-      navigateToFixture(exam.archivedAt === null ? 'exam' : 'exam-archived')
-    }
+    onClick={() => navigateToFixture('exam')}
     type="button"
   >
     {exam.name}
@@ -47,76 +42,31 @@ export const FixtureExamSection = ({
   <ExamSection
     exams={exams}
     newExamAction={fixtureControl('Neuer Test', 'exam-new', 'quiet')}
-    renderArchiveLink={(count) => (
-      <Button
-        className="w-fit"
-        onClick={() => navigateToFixture('exams-archive')}
-        variant="quiet-muted"
-      >
-        Archiv ({count})
-      </Button>
-    )}
     renderExamLink={examLink}
     subject={subject}
   />
 );
 
-export const ArchiveFixture = () => (
-  <PageLayout
-    backControl={fixtureBackControl(courseName, 'course')}
-    title={`${courseName}: archivierte Tests`}
-  >
-    <p className="text-muted-foreground text-sm">
-      Ein archivierter Test behält seine Runden, startet aber keine neue. Auf
-      der Seite eines Tests holst du ihn zurück.
-    </p>
-    <ArchivedExamList
-      exams={examSummaries}
-      renderExamLink={examLink}
-      subject={englishSubject}
-    />
-  </PageLayout>
+const roundAction = (exam: ExamDetail) => (
+  <div className="flex flex-wrap items-center gap-4">
+    {exam.openRound === null ? (
+      fixtureControl('Runde starten', 'study-session', 'primary')
+    ) : (
+      <>
+        {fixtureControl(
+          `Runde fortsetzen (${exam.openRound.answered} von ${exam.openRound.total})`,
+          'study-session',
+          'primary',
+        )}
+        <Button variant="quiet">Neu beginnen</Button>
+      </>
+    )}
+  </div>
 );
-
-const roundAction = (exam: ExamDetail) => {
-  if (exam.archivedAt !== null) {
-    return (
-      <div className="flex flex-col gap-3">
-        <p className="text-sm">
-          Der Test ist archiviert. Er behält seine Runden, startet aber keine
-          neue.
-        </p>
-        <Button className="w-fit" variant="outline">
-          Zurückholen
-        </Button>
-      </div>
-    );
-  }
-  return (
-    <div className="flex flex-wrap items-center gap-4">
-      {exam.openRound === null ? (
-        fixtureControl('Runde starten', 'study-session', 'primary')
-      ) : (
-        <>
-          {fixtureControl(
-            `Runde fortsetzen (${exam.openRound.answered} von ${exam.openRound.total})`,
-            'study-session',
-            'primary',
-          )}
-          <Button variant="quiet">Neu beginnen</Button>
-        </>
-      )}
-    </div>
-  );
-};
 
 export const ExamFixture = ({ exam }: { readonly exam: ExamDetail }) => (
   <PageLayout
-    backControl={
-      exam.archivedAt === null
-        ? fixtureBackControl(courseName, 'course')
-        : fixtureBackControl('Archivierte Tests', 'exams-archive')
-    }
+    backControl={fixtureBackControl(courseName, 'course')}
     title={exam.name}
     titleAction={fixtureIconControl(
       'Test bearbeiten',

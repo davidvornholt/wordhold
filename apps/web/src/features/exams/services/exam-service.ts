@@ -9,7 +9,6 @@ import type {
   CreateExamData,
   ExamDetail,
   ExamSummary,
-  SetExamArchivedData,
   UpdateExamData,
 } from '../schemas/exam-models';
 import type {
@@ -45,11 +44,6 @@ const foreignEntries = new ExamInputError({
 
 const invalidDirections = new ExamInputError({
   message: 'Ein Fach oder eine Sammlung fragt nur in eine Richtung ab.',
-});
-
-const archived = new ExamStateError({
-  message:
-    'Dieser Test ist archiviert. Hole ihn zurück, um eine neue Runde zu starten.',
 });
 
 const nothingLearned = new ExamStateError({
@@ -105,8 +99,6 @@ const started = (
   switch (result.kind) {
     case 'exam-missing':
       return Effect.fail(examMissing);
-    case 'archived':
-      return Effect.fail(archived);
     case 'nothing-learned':
       return Effect.fail(nothingLearned);
     case 'started':
@@ -136,9 +128,6 @@ export class ExamService extends Context.Service<
     readonly update: (
       input: UpdateExamData,
     ) => Effect.Effect<void, ExamFailure | ExamInputError>;
-    readonly setArchived: (
-      input: SetExamArchivedData,
-    ) => Effect.Effect<void, ExamFailure>;
     readonly remove: (examId: string) => Effect.Effect<void, ExamFailure>;
     readonly startRound: (
       examId: string,
@@ -216,14 +205,6 @@ export class ExamService extends Context.Service<
         return yield* updated(yield* store.update(input));
       });
 
-      const setArchived = Effect.fn('ExamService.setArchived')(function* (
-        input: SetExamArchivedData,
-      ) {
-        if (!(yield* store.setArchived(input.examId, input.archived))) {
-          return yield* examMissing;
-        }
-      });
-
       const remove = Effect.fn('ExamService.remove')(function* (
         examId: string,
       ) {
@@ -244,7 +225,6 @@ export class ExamService extends Context.Service<
         unitEntryIds,
         create,
         update,
-        setArchived,
         remove,
         startRound,
       });
