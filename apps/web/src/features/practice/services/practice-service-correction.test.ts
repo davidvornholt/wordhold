@@ -46,6 +46,7 @@ const submission: SubmissionRecord = {
   },
   targetLanguage: 'en',
   courseKind: 'language',
+  examInCourse: false,
 };
 
 const rejectedTypo = {

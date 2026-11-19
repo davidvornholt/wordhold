@@ -1,4 +1,7 @@
-import { isOtherWording } from '@wordhold/ai/judge/schema';
+import {
+  isOtherWording,
+  type JudgeVerdictData,
+} from '@wordhold/ai/judge/schema';
 import { Effect } from 'effect';
 import { isDeterministicMatch } from '../../../shared/grading/deterministic-match';
 import type {
@@ -10,20 +13,29 @@ import type { AnsweredSubmitData } from '../schemas/submission-schema';
 import type { AssessedAnswer } from './answer-assessment';
 import type { PracticeReviewStore } from './review-store';
 
-// A vocabulary test asks for the textbook's word, but a complete translation
-// in other words shows the task was understood. Into the target language of a
-// language course, such an answer is not a miss: the card stays open for
-// another try. Resolving an earlier rejection never reopens the card.
-export const allowsAnotherTry = (
+// The verdict of a complete, correct translation into the target language
+// of a language course in other words than the textbook's, or null. Resolving
+// an earlier rejection leaves the rejection as it was.
+export const otherWordingVerdict = (
   row: SubmissionRecord,
   data: AnsweredSubmitData,
-  assessed: AssessedAnswer,
-): boolean =>
+  { outcome }: AssessedAnswer,
+): JudgeVerdictData | null =>
   data.wrongAnswerResolution === 'defer' &&
   row.courseKind === 'language' &&
   row.card.direction === 'to_target' &&
-  assessed.outcome.method === 'judge' &&
-  isOtherWording(assessed.outcome.verdict);
+  outcome.method === 'judge' &&
+  isOtherWording(outcome.verdict)
+    ? outcome.verdict
+    : null;
+
+// A vocabulary test asks for the textbook's word, so practice for a test
+// keeps the card open for another try. Any other practice counts such an
+// answer as right.
+export const isTestPractice = (
+  row: SubmissionRecord,
+  data: AnsweredSubmitData,
+): boolean => data.examRoundId !== undefined || row.examInCourse;
 
 // The entry of the course the answer spells out, read in textbook notation so
 // 'concentrarse en algo' finds 'concentrarse (en algo)'. The first one the

@@ -315,7 +315,9 @@ const StudyScreen = () => {
         preparePitfalls={prepareSpellingPitfalls}
         session={session}
         subject={course}
-        submit={submitAnswer}
+        submit={({ data }) =>
+          submitAnswer({ data: { ...data, examId: search.exam } })
+        }
       />
     );
   }

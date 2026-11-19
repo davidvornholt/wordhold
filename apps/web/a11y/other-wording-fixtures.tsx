@@ -49,15 +49,28 @@ const otherWordings = ['concentrarse en algo', 'centrarse en algo'];
 const matches = (answer: string, text: string) =>
   isDeterministicMatch(answer, [{ text, source: 'textbook' }]);
 
-const storedResult = (correct: boolean, revision: number): SubmitResult => ({
+// Another wording fails intendedConstruction, so it is rated hard.
+const storedRating = (correct: boolean, otherWording: boolean) => {
+  if (!correct) {
+    return ratings.again;
+  }
+  return otherWording ? ratings.hard : ratings.good;
+};
+
+const storedResult = (
+  correct: boolean,
+  revision: number,
+  otherWording = false,
+): SubmitResult => ({
   graded: true,
   correct,
   stored: true,
   revision: revision + 1,
-  rating: correct ? ratings.good : ratings.again,
+  rating: storedRating(correct, otherWording),
   expectedAnswer: textbookAnswer,
   explanation: null,
   acceptedAsAlternative: false,
+  acceptedAsOtherWording: otherWording,
   keyPoints: null,
   schedule: correct
     ? { advanced: true, state: 'review', dueAt: new Date() }
@@ -65,43 +78,54 @@ const storedResult = (correct: boolean, revision: number): SubmitResult => ({
   entryKnown: false,
 });
 
-// The book's word is right; another wording leaves the card open and names
-// the course entry it spells out, if any; anything else is a miss.
-const submitTranslation = ({
-  data,
-}: {
-  readonly data: SubmitPayloadData;
-}): Promise<SubmitResult> => {
-  if ('skipped' in data || data.wrongAnswerResolution !== 'defer') {
-    return Promise.resolve(storedResult(false, data.revision));
-  }
-  const { answer } = data;
-  if (matches(answer, textbookAnswer)) {
-    return Promise.resolve(storedResult(true, data.revision));
-  }
-  if (otherWordings.some((wording) => matches(answer, wording))) {
+// The book's word is right. Practice for a test leaves another wording open
+// and names the course entry it spells out, if any; other practice counts it
+// as right. Anything else is a miss.
+const submitTranslation =
+  (testPractice: boolean) =>
+  ({ data }: { readonly data: SubmitPayloadData }): Promise<SubmitResult> => {
+    if ('skipped' in data || data.wrongAnswerResolution !== 'defer') {
+      return Promise.resolve(storedResult(false, data.revision));
+    }
+    const { answer } = data;
+    if (matches(answer, textbookAnswer)) {
+      return Promise.resolve(storedResult(true, data.revision));
+    }
+    if (!otherWordings.some((wording) => matches(answer, wording))) {
+      return Promise.resolve({
+        graded: true,
+        correct: false,
+        stored: false,
+        expectedAnswer: textbookAnswer,
+        explanation: null,
+        acceptedAsAlternative: false,
+        keyPoints: null,
+        assessmentId: '00000000-0000-0000-0000-000000000073',
+      });
+    }
+    if (!testPractice) {
+      return Promise.resolve(storedResult(true, data.revision, true));
+    }
     const matched = courseEntries.find((entry) => matches(answer, entry.text));
     return Promise.resolve({
       otherWording: true,
       courseEntry: matched ? { text: answer, place: matched.place } : null,
     });
-  }
-  return Promise.resolve({
-    graded: true,
-    correct: false,
-    stored: false,
-    expectedAnswer: textbookAnswer,
-    explanation: null,
-    acceptedAsAlternative: false,
-    keyPoints: null,
-    assessmentId: '00000000-0000-0000-0000-000000000073',
-  });
-};
+  };
 
-export const OtherWordingFixture = () => (
+// A test's missed words, or a unit's scheduled review.
+export const OtherWordingFixture = ({
+  testPractice,
+}: {
+  readonly testPractice: boolean;
+}) => (
   <FocusLayout
-    exit={fixtureBackControl('U1 ¡Bienvenidos!', 'unit')}
-    title="Spanisch · Üben"
+    exit={
+      testPractice
+        ? fixtureBackControl('Test', 'exam')
+        : fixtureBackControl('U1 ¡Bienvenidos!', 'unit')
+    }
+    title={testPractice ? 'Test · Üben' : 'Spanisch · Üben'}
   >
     <CardRail
       activeIndex={0}
@@ -113,13 +137,13 @@ export const OtherWordingFixture = () => (
     <CardPractice
       deck={0}
       item={practiceItem}
-      mode="scheduled"
+      mode={testPractice ? 'drill' : 'scheduled'}
       onJudged={() => undefined}
       onNext={() => navigateToFixture('practice-empty')}
       prepareExamples={withoutExamples}
       repeated={false}
       subject={spanishSubject}
-      submit={submitTranslation}
+      submit={submitTranslation(testPractice)}
     />
   </FocusLayout>
 );

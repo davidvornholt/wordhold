@@ -33,6 +33,7 @@ const practiceStates = [
   'sentence-practice',
   'synonym-practice',
   'practice-other-wording',
+  'practice-other-wording-accepted',
 ] as const satisfies ReadonlyArray<FixtureState>;
 
 type PracticeState = (typeof practiceStates)[number];
@@ -71,7 +72,9 @@ export const practiceFixture = (state: PracticeState) => {
     case 'synonym-practice':
       return <SynonymPracticeFixture />;
     case 'practice-other-wording':
-      return <OtherWordingFixture />;
+      return <OtherWordingFixture testPractice={true} />;
+    case 'practice-other-wording-accepted':
+      return <OtherWordingFixture testPractice={false} />;
     default:
       return state satisfies never;
   }

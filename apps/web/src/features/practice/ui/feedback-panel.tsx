@@ -103,7 +103,9 @@ const ScheduleNote = ({
 );
 
 // What the judge found: the key points of a definition, its explanation, and
-// whether the answer now counts as an alternative.
+// whether the answer now counts as an alternative. An answer in other words
+// than the book's comes without an explanation, which would read as a
+// rejection, and with a note that a test wants the book's word shown above.
 const JudgeNotes = ({
   result,
 }: {
@@ -120,6 +122,9 @@ const JudgeNotes = ({
       <p className="text-accent-foreground text-sm">
         Deine Antwort wurde als gültige Alternative gespeichert.
       </p>
+    ) : null}
+    {result.stored && result.acceptedAsOtherWording ? (
+      <p className="text-sm">Im Test zählt nur das Wort aus dem Buch.</p>
     ) : null}
   </>
 );

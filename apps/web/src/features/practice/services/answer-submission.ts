@@ -1,4 +1,5 @@
 import { maximumEntryTextLength } from '@wordhold/ai/extraction/schema';
+import type { JudgeVerdictData } from '@wordhold/ai/judge/schema';
 import { Clock, Effect } from 'effect';
 import { normalizeAnswer } from '../../../shared/grading/normalize';
 import {
@@ -27,7 +28,11 @@ import {
 } from './answer-assessment';
 import type { DefinitionGrader } from './definition-grader';
 import type { JudgeCacheStore } from './judge-cache-store';
-import { allowsAnotherTry, otherWordingResult } from './other-wording';
+import {
+  isTestPractice,
+  otherWordingResult,
+  otherWordingVerdict,
+} from './other-wording';
 import type { PracticeJudge } from './practice-judge';
 import type { PracticeReviewStore } from './review-store';
 
@@ -58,12 +63,26 @@ const keyPointFindings = (
       }))
     : null;
 
+// The judge words its verdict on another wording as a rejection, so that
+// feedback goes without the judge's explanation and names the book's word.
+const judgeFeedback = (outcome: GradeOutcome) => {
+  const assessed =
+    outcome.method === 'learner-correction' ? outcome.assessed : outcome;
+  return assessed.method === 'skip' || assessed.method === 'other-wording'
+    ? { explanation: null, keyPoints: null }
+    : {
+        explanation: explanationOf(assessed),
+        keyPoints: keyPointFindings(assessed),
+      };
+};
+
 const pendingRejectedResult = (
   assessed: AssessedAnswer,
+  outcome: GradeOutcome,
   data: AnsweredSubmitData,
   expectedAnswer: string,
 ): SubmitResult | null => {
-  if (isCorrect(assessed.outcome) || data.wrongAnswerResolution !== 'defer') {
+  if (isCorrect(outcome) || data.wrongAnswerResolution !== 'defer') {
     return null;
   }
   if (assessed.assessmentId === null) {
@@ -79,6 +98,21 @@ const pendingRejectedResult = (
     keyPoints: keyPointFindings(assessed.outcome),
     assessmentId: assessed.assessmentId,
   };
+};
+
+// Another wording outside test practice counts as right, and a rejection the
+// learner overrules commits as a correction.
+const committedOutcome = (
+  { outcome }: AssessedAnswer,
+  data: AnsweredSubmitData,
+  otherWording: JudgeVerdictData | null,
+): GradeOutcome => {
+  if (otherWording !== null) {
+    return { method: 'other-wording', verdict: otherWording };
+  }
+  return !isCorrect(outcome) && data.wrongAnswerResolution === 'hard'
+    ? { method: 'learner-correction', assessed: outcome }
+    : outcome;
 };
 
 type CommitOutcomeInput = {
@@ -128,8 +162,6 @@ const commitOutcome = ({
         nativeText: row.entry.nativeText,
       },
     });
-    const assessed =
-      outcome.method === 'learner-correction' ? outcome.assessed : outcome;
     return {
       graded: true as const,
       correct: isCorrect(outcome),
@@ -137,9 +169,9 @@ const commitOutcome = ({
       revision: persisted.revision,
       rating,
       expectedAnswer,
-      explanation: assessed.method === 'skip' ? null : explanationOf(assessed),
+      ...judgeFeedback(outcome),
       acceptedAsAlternative: persisted.alternativeStored,
-      keyPoints: assessed.method === 'skip' ? null : keyPointFindings(assessed),
+      acceptedAsOtherWording: outcome.method === 'other-wording',
       schedule: persisted.schedule,
       entryKnown: persisted.entryKnown,
     };
@@ -161,7 +193,11 @@ export const resolveAnswerSubmission = (
   { reviews, cache, judge, grader }: SubmissionDependencies,
 ) =>
   Effect.gen(function* () {
-    const row = yield* reviews.findSubmission(data.cardId, data.revision);
+    const row = yield* reviews.findSubmission(
+      data.cardId,
+      data.revision,
+      data.examId ?? null,
+    );
     if (row === undefined) {
       return yield* new StaleAnswerSubmissionError({
         message: 'Diese Karte wurde bereits beantwortet. Lade die Übung neu.',
@@ -218,18 +254,20 @@ export const resolveAnswerSubmission = (
           'Der KI-Prüfer ist gerade nicht erreichbar; die Antwort wurde nicht gewertet.',
       };
     }
-    if (allowsAnotherTry(row, data, assessment)) {
+    const otherWording = otherWordingVerdict(row, data, assessment);
+    if (otherWording !== null && isTestPractice(row, data)) {
       return yield* otherWordingResult(reviews, row, data.answer);
     }
-    const pending = pendingRejectedResult(assessment, data, expectedAnswer);
+    const outcome = committedOutcome(assessment, data, otherWording);
+    const pending = pendingRejectedResult(
+      assessment,
+      outcome,
+      data,
+      expectedAnswer,
+    );
     if (pending !== null) {
       return pending;
     }
-    const assessed = assessment.outcome;
-    const outcome: GradeOutcome =
-      !isCorrect(assessed) && data.wrongAnswerResolution === 'hard'
-        ? { method: 'learner-correction', assessed }
-        : assessed;
     return yield* commitOutcome({
       reviews,
       row,

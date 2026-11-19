@@ -152,6 +152,29 @@ describe('deriveRating', () => {
   });
 });
 
+describe('answer in other words than the book', () => {
+  it('counts as right and is rated Hard, however fast', () => {
+    const otherWording = verdict({
+      correct: false,
+      otherWording: true,
+      intendedConstruction: {
+        ok: false,
+        note: 'Im Buch steht ein anderes Wort.',
+      },
+    });
+    expect(
+      deriveRating(
+        { method: 'other-wording', verdict: otherWording },
+        fastMs,
+        'review',
+      ),
+    ).toBe(ratings.hard);
+    expect(isCorrect({ method: 'other-wording', verdict: otherWording })).toBe(
+      true,
+    );
+  });
+});
+
 describe('isCorrect', () => {
   it('treats exact matches as correct', () => {
     expect(isCorrect({ method: 'exact' })).toBe(true);

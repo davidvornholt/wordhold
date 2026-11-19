@@ -40,6 +40,7 @@ export const testSubmission: SubmissionRecord = {
   },
   targetLanguage: 'en',
   courseKind: 'language',
+  examInCourse: false,
 };
 
 export const persistedReview = {

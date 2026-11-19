@@ -5,6 +5,7 @@ import { ratings } from '../../../shared/grading/rating';
 import type {
   CachedVerdict,
   CourseEntryPlace,
+  PersistReviewInput,
   SubmissionRecord,
 } from '../schemas/practice-models';
 import type { SubmitPayloadData } from '../schemas/submission-schema';
@@ -53,11 +54,17 @@ type Calls = { commits: number; lookups: number; judged: number };
 
 const freshCalls = (): Calls => ({ commits: 0, lookups: 0, judged: 0 });
 
+// The test of the card's course; any other id names a test elsewhere.
+const courseExamId = '00000000-0000-0000-0000-000000000006';
+const roundId = '00000000-0000-0000-0000-000000000007';
+
 const reviewStore = (
   row: SubmissionRecord,
   calls: Calls,
+  committed: Array<PersistReviewInput>,
 ): PracticeReviewStore['Service'] => ({
-  findSubmission: () => Effect.succeed(row),
+  findSubmission: (_cardId, _revision, examId) =>
+    Effect.succeed({ ...row, examInCourse: examId === courseExamId }),
   listCourseEntries: (entryId) =>
     Effect.sync(() => {
       calls.lookups += 1;
@@ -66,9 +73,10 @@ const reviewStore = (
   saveKeyPoints: (_entryId, _definition, points) => Effect.succeed(points),
   listAcceptedAnswers: () =>
     Effect.succeed([{ text: row.entry.targetText, source: 'textbook' }]),
-  commit: () =>
+  commit: (input) =>
     Effect.sync(() => {
       calls.commits += 1;
+      committed.push(input);
       return persistedReview;
     }),
 });
@@ -120,11 +128,25 @@ const answer = (text: string): FirstAnswer => ({
   mode: 'scheduled',
 });
 
+const inRound = (text: string): FirstAnswer => ({
+  ...answer(text),
+  mode: 'drill',
+  examRoundId: roundId,
+});
+
+// A sitting opened from a test's page, such as its missed words.
+const forExam = (text: string, examId = courseExamId): FirstAnswer => ({
+  ...answer(text),
+  mode: 'drill',
+  examId,
+});
+
 type SubmitOptions = {
   readonly row?: SubmissionRecord;
   readonly verdict?: JudgeVerdictData;
   readonly calls?: Calls;
   readonly cache?: JudgeCacheStore['Service'];
+  readonly committed?: Array<PersistReviewInput>;
 };
 
 // A Spanish card into the target language whose judge finds other wording,
@@ -136,10 +158,11 @@ const submitWith = async (
     verdict = otherWording,
     calls = freshCalls(),
     cache = memoryCache(),
+    committed = [],
   }: SubmitOptions = {},
 ) => {
   const result = await runSubmitPayload(
-    reviewStore(row, calls),
+    reviewStore(row, calls, committed),
     judgeReturning(verdict, calls),
     payload,
     { cache },
@@ -147,10 +170,10 @@ const submitWith = async (
   return result._tag === 'Success' ? result.success : result.failure;
 };
 
-describe('PracticeService answer in other wording', () => {
+describe('PracticeService answer in other wording in test practice', () => {
   it('leaves the card open and names the course entry the answer spells out', async () => {
     const calls = freshCalls();
-    const result = await submitWith(answer('concentrarse en algo'), { calls });
+    const result = await submitWith(inRound('concentrarse en algo'), { calls });
     // Nothing about the book's word: no expected answer, no explanation.
     expect(result).toEqual({
       otherWording: true,
@@ -160,7 +183,7 @@ describe('PracticeService answer in other wording', () => {
   });
 
   it('does not reveal the solution through another course entry', async () => {
-    const result = await submitWith(answer('cell phone'), {
+    const result = await submitWith(inRound('cell phone'), {
       row: {
         ...testSubmission,
         entry: {
@@ -179,24 +202,35 @@ describe('PracticeService answer in other wording', () => {
   });
 
   it('names no entry for a wording the course does not teach', async () => {
-    expect(await submitWith(answer('centrarse en algo'))).toEqual({
+    expect(await submitWith(inRound('centrarse en algo'))).toEqual({
       otherWording: true,
       courseEntry: null,
     });
   });
 
+  it('leaves the card open in a sitting for a test of the course', async () => {
+    const calls = freshCalls();
+    expect(
+      await submitWith(forExam('concentrarse en algo'), { calls }),
+    ).toEqual({
+      otherWording: true,
+      courseEntry: { text: 'concentrarse en algo', place: unit5 },
+    });
+    expect(calls.commits).toBe(0);
+  });
+
   it('asks the judge once for the same wording typed again', async () => {
     const options = { calls: freshCalls(), cache: memoryCache() };
-    const first = await submitWith(answer('concentrarse en algo'), options);
-    const again = await submitWith(answer('concentrarse en algo'), options);
+    const first = await submitWith(inRound('concentrarse en algo'), options);
+    const again = await submitWith(inRound('concentrarse en algo'), options);
     expect(again).toEqual(first);
     expect(options.calls).toEqual({ commits: 0, lookups: 2, judged: 1 });
   });
 
   it('grades the next try like a first answer', async () => {
     const options = { calls: freshCalls(), cache: memoryCache() };
-    await submitWith(answer('concentrarse en algo'), options);
-    const result = await submitWith(answer('enfocarse en algo'), options);
+    await submitWith(inRound('concentrarse en algo'), options);
+    const result = await submitWith(inRound('enfocarse en algo'), options);
     expect(result).toMatchObject({
       graded: true,
       correct: true,
@@ -204,6 +238,66 @@ describe('PracticeService answer in other wording', () => {
       rating: ratings.good,
     });
     expect(options.calls).toEqual({ commits: 1, lookups: 1, judged: 1 });
+  });
+});
+
+describe('PracticeService answer in other wording outside test practice', () => {
+  it('counts a scheduled answer as right without accepting its wording', async () => {
+    const calls = freshCalls();
+    const committed: Array<PersistReviewInput> = [];
+    const result = await submitWith(answer('concentrarse en algo'), {
+      calls,
+      committed,
+    });
+    // The judge's explanation rejects the answer, so none is shown.
+    expect(result).toEqual({
+      graded: true,
+      correct: true,
+      stored: true,
+      revision: persistedReview.revision,
+      rating: ratings.hard,
+      expectedAnswer: 'enfocarse en algo',
+      explanation: null,
+      acceptedAsAlternative: false,
+      acceptedAsOtherWording: true,
+      keyPoints: null,
+      schedule: persistedReview.schedule,
+      entryKnown: false,
+    });
+    expect(committed).toMatchObject([
+      {
+        rating: ratings.hard,
+        answer: 'concentrarse en algo',
+        outcome: { method: 'other-wording', verdict: otherWording },
+        examRoundId: null,
+      },
+    ]);
+    expect(calls).toEqual({ commits: 1, lookups: 0, judged: 1 });
+  });
+
+  it.each([
+    ['free practice', { ...answer('concentrarse en algo'), mode: 'drill' }],
+    [
+      'a sitting for a test of another course',
+      forExam('concentrarse en algo', '00000000-0000-0000-0000-000000000008'),
+    ],
+  ] as const)('counts it as right in %s', async (_case, payload) => {
+    const committed: Array<PersistReviewInput> = [];
+    expect(await submitWith(payload, { committed })).toMatchObject({
+      correct: true,
+      stored: true,
+      acceptedAsOtherWording: true,
+    });
+    expect(committed.map((input) => input.outcome.method)).toEqual([
+      'other-wording',
+    ]);
+  });
+
+  it('marks no other answer as another wording', async () => {
+    expect(await submitWith(answer('enfocarse en algo'))).toMatchObject({
+      correct: true,
+      acceptedAsOtherWording: false,
+    });
   });
 });
 

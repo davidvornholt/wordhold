@@ -42,6 +42,9 @@ const SubmitPayloadBase = Schema.Struct({
   // The test round the card was asked in. Its first answer there counts
   // towards the round's score; the schedule treats it like any drill.
   examRoundId: Schema.optional(Uuid),
+  // The test a sitting outside its rounds practices for, such as its missed
+  // words. Like a round, it accepts only the book's words.
+  examId: Schema.optional(Uuid),
 });
 
 const AnsweredPayloadBase = Schema.Struct({

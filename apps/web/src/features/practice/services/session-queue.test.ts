@@ -45,6 +45,7 @@ const result = (
   expectedAnswer: 'word',
   explanation: null,
   acceptedAsAlternative: false,
+  acceptedAsOtherWording: false,
   keyPoints: null,
   schedule: {
     advanced: true,

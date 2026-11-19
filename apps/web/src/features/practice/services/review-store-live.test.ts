@@ -65,7 +65,11 @@ describe('PracticeReviewStore introduction contract', () => {
               return yield* Effect.die('Missing unintroduced card fixture.');
             }
 
-            const submission = yield* store.findSubmission(identity.id, 0);
+            const submission = yield* store.findSubmission(
+              identity.id,
+              0,
+              null,
+            );
             expect(submission).toBeUndefined();
 
             const card: typeof cards.$inferSelect = {
