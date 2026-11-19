@@ -259,7 +259,6 @@ describe('PracticeService answer in other wording outside test practice', () => 
       expectedAnswer: 'enfocarse en algo',
       explanation: null,
       acceptedAsAlternative: false,
-      acceptedAsOtherWording: true,
       keyPoints: null,
       schedule: persistedReview.schedule,
       entryKnown: false,
@@ -286,18 +285,10 @@ describe('PracticeService answer in other wording outside test practice', () => 
     expect(await submitWith(payload, { committed })).toMatchObject({
       correct: true,
       stored: true,
-      acceptedAsOtherWording: true,
     });
     expect(committed.map((input) => input.outcome.method)).toEqual([
       'other-wording',
     ]);
-  });
-
-  it('marks no other answer as another wording', async () => {
-    expect(await submitWith(answer('enfocarse en algo'))).toMatchObject({
-      correct: true,
-      acceptedAsOtherWording: false,
-    });
   });
 });
 

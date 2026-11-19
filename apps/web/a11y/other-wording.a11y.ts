@@ -77,9 +77,6 @@ test('other practice counts a translation in other words as right', async ({
   await expect(
     feedback.getByText('enfocarse en algo', { exact: true }),
   ).toHaveAttribute('lang', 'es');
-  await expect(feedback).toContainText(
-    'Im Test zählt nur das Wort aus dem Buch.',
-  );
   await expect(page.getByText('Erwartet')).toHaveCount(0);
   await expect(page.getByText('Vertippt?')).toHaveCount(0);
   await expect(page.getByText('Gesucht ist')).toHaveCount(0);

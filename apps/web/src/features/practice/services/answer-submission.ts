@@ -171,7 +171,6 @@ const commitOutcome = ({
       expectedAnswer,
       ...judgeFeedback(outcome),
       acceptedAsAlternative: persisted.alternativeStored,
-      acceptedAsOtherWording: outcome.method === 'other-wording',
       schedule: persisted.schedule,
       entryKnown: persisted.entryKnown,
     };

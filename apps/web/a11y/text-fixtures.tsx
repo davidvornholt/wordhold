@@ -106,7 +106,6 @@ const recitedResult = (
     expectedAnswer: verse,
     explanation: null,
     acceptedAsAlternative: false,
-    acceptedAsOtherWording: false,
     keyPoints: null,
     schedule: correct
       ? { advanced: true, state: 'review', dueAt: tomorrowMorning }
