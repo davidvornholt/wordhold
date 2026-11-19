@@ -1,8 +1,4 @@
-import {
-  createFileRoute,
-  useNavigate,
-  useRouter,
-} from '@tanstack/react-router';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { PencilIcon } from 'lucide-react';
 import { useState } from 'react';
 import type { ExamDetail } from '../../../../../features/exams/schemas/exam-models';
@@ -19,7 +15,6 @@ import { Button } from '../../../../../shared/ui/button';
 import { ConfirmDialog } from '../../../../../shared/ui/confirm-dialog';
 import { PageLayout } from '../../../../../shared/ui/page-layout';
 import { getExamOfCourse } from '../-exam-of-course';
-import { ArchiveToggle } from './-archive-toggle';
 
 const roundPage = (exam: ExamDetail, roundId: string) =>
   ({
@@ -84,23 +79,6 @@ const RoundControls = ({ exam }: { readonly exam: ExamDetail }) => {
   );
 };
 
-// An archived test asks nothing until it is brought back.
-const ExamActions = ({ exam }: { readonly exam: ExamDetail }) => {
-  const router = useRouter();
-  if (exam.archivedAt !== null) {
-    return (
-      <div className="flex flex-col gap-3">
-        <p className="text-sm">
-          Der Test ist archiviert. Er behält seine Runden, startet aber keine
-          neue.
-        </p>
-        <ArchiveToggle afterChange={() => router.invalidate()} exam={exam} />
-      </div>
-    );
-  }
-  return exam.cards.learned === 0 ? null : <RoundControls exam={exam} />;
-};
-
 const ExamScreen = () => {
   const { course, exam } = Route.useLoaderData();
   const { missed } = exam.readiness;
@@ -108,18 +86,9 @@ const ExamScreen = () => {
   return (
     <PageLayout
       backControl={
-        exam.archivedAt === null ? (
-          <BackLink params={{ courseId: course.id }} to="/courses/$courseId">
-            {course.name}
-          </BackLink>
-        ) : (
-          <BackLink
-            params={{ courseId: course.id }}
-            to="/courses/$courseId/exams/archive"
-          >
-            Archivierte Tests
-          </BackLink>
-        )
+        <BackLink params={{ courseId: course.id }} to="/courses/$courseId">
+          {course.name}
+        </BackLink>
       }
       title={exam.name}
       titleAction={
@@ -170,7 +139,9 @@ const ExamScreen = () => {
             </ActionLink>
           )
         }
-        roundAction={<ExamActions exam={exam} />}
+        roundAction={
+          exam.cards.learned === 0 ? null : <RoundControls exam={exam} />
+        }
         subject={course}
       />
     </PageLayout>

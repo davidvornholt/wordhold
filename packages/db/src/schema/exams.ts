@@ -16,8 +16,7 @@ import { entries } from './entries';
 
 // A test the learner prepares for: the entries it can ask and the directions
 // it asks them in. Practising one runs rounds over all of its cards. A test
-// stores no date and never changes the schedule; when it is over, the learner
-// archives it.
+// stores no date and never changes the schedule.
 export const exams = pgTable(
   'exams',
   {
@@ -33,6 +32,8 @@ export const exams = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),
+    // Unused: kept for the previous image during rollout and rollback, and
+    // dropped in a later release. The current app no longer reads or writes it.
     archivedAt: timestamp('archived_at', { withTimezone: true }),
     // Tests created without one (before this column, or by a page loaded
     // before the deploy) have none, and any number of rows may.

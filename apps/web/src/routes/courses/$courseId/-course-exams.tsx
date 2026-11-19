@@ -25,16 +25,6 @@ export const CourseExams = ({
         Neuer Test
       </ActionLink>
     }
-    renderArchiveLink={(count) => (
-      <ActionLink
-        className="w-fit"
-        params={{ courseId: course.id }}
-        to="/courses/$courseId/exams/archive"
-        variant="quiet-muted"
-      >
-        Archiv ({count})
-      </ActionLink>
-    )}
     renderExamLink={(exam) => (
       <Link
         className={listItemNameClass}

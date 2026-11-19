@@ -34,7 +34,7 @@ const noWords = new Rejected({
 
 const emptied = new Rejected({
   message:
-    'A test keeps at least one word. Archive it instead, or delete it in the app.',
+    'A test keeps at least one word. To get rid of it, delete it in the app.',
 });
 
 const changesWords = (payload: EditExamPayload) =>
@@ -87,12 +87,6 @@ const edit = (examId: string, payload: EditExamPayload) =>
       const exam = yield* service.get(examId);
       if (changesContent(payload)) {
         yield* saveContent(service, exam, payload);
-      }
-      if (
-        payload.archived !== undefined &&
-        payload.archived !== (exam.archivedAt !== null)
-      ) {
-        yield* service.setArchived({ examId, archived: payload.archived });
       }
       return yield* service.get(examId);
     }),

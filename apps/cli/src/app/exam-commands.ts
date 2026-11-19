@@ -8,7 +8,6 @@ import { Command, Flag } from 'effect/cli';
 import { callWordhold } from '../shared/wordhold-api';
 import {
   fail,
-  flag,
   idArgument,
   idsFlag,
   optionalString,
@@ -28,13 +27,6 @@ const directionsFlag = (description: string) =>
 const nonEmpty = <A>(values: ReadonlyArray<A>) =>
   values.length === 0 ? undefined : values;
 
-const archivedOf = (archive: boolean, unarchive: boolean) => {
-  if (archive) {
-    return true;
-  }
-  return unarchive ? false : undefined;
-};
-
 const list = Command.make(
   'list',
   { course: idArgument('Course id', 'course') },
@@ -44,7 +36,7 @@ const list = Command.make(
     ),
 ).pipe(
   Command.withDescription(
-    "List a course's tests, active ones first, each with its newest finished round",
+    "List all of a course's tests, each with its newest finished round, ordered by when their newest round started, or when they were created if they have none, newest first",
   ),
 );
 
@@ -127,19 +119,11 @@ const edit = Command.make(
       'remove-unit',
       'Remove every word of this unit. Repeat it for more.',
     ),
-    archive: flag(
-      'archive',
-      'Archive the test: it keeps its rounds and starts no new one',
-    ),
-    unarchive: flag('unarchive', 'Bring an archived test back'),
   },
   (input) =>
     runApi(
       Effect.gen(function* () {
         const id = yield* validId(input.id);
-        if (input.archive && input.unarchive) {
-          return yield* fail('Pass either --archive or --unarchive.');
-        }
         const changes = {
           name: Option.getOrUndefined(input.name),
           directions: nonEmpty(input.directions),
@@ -147,11 +131,10 @@ const edit = Command.make(
           removeEntryIds: nonEmpty(input.removeEntries),
           addUnitIds: nonEmpty(input.addUnits),
           removeUnitIds: nonEmpty(input.removeUnits),
-          archived: archivedOf(input.archive, input.unarchive),
         };
         if (Object.values(changes).every((value) => value === undefined)) {
           return yield* fail(
-            'Nothing to change. Pass a name, directions, words to add or remove, or --archive; see --help.',
+            'Nothing to change. Pass a name, directions, or words to add or remove; see --help.',
           );
         }
         const payload = yield* validate(
