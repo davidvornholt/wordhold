@@ -23,7 +23,6 @@ export type UpdateExamResult =
 export type StartRoundResult =
   | { readonly kind: 'started'; readonly roundId: string }
   | { readonly kind: 'exam-missing' }
-  | { readonly kind: 'archived' }
   | { readonly kind: 'nothing-learned' };
 
 const databaseError =
@@ -152,22 +151,6 @@ export const updateExam = (sql: Database, input: UpdateExamData) =>
     )
     .pipe(Effect.mapError(databaseError('update exam', saveFailed)));
 
-// Archiving again keeps the first archiving time.
-export const setExamArchived = (
-  sql: Database,
-  examId: string,
-  archived: boolean,
-) =>
-  sql<{ readonly id: string }>`
-    update exams
-    set archived_at = case when ${archived} then coalesce(archived_at, now()) end
-    where id = ${examId}
-    returning id
-  `.pipe(
-    Effect.map((rows) => rows.length > 0),
-    Effect.mapError(databaseError('archive exam', saveFailed)),
-  );
-
 // The answers given in its rounds stay in the review log as ordinary
 // practice.
 export const deleteExam = (sql: Database, examId: string) =>
@@ -195,20 +178,13 @@ export const startExamRound = (sql: Database, examId: string) =>
   sql
     .withTransaction(
       Effect.gen(function* () {
-        const [exam] = yield* sql<{
-          readonly archived: boolean;
-          readonly learned: boolean;
-        }>`
-          select archived_at is not null as archived,
-            exists(${learnedCards(sql, examId)}) as learned
+        const [exam] = yield* sql<{ readonly learned: boolean }>`
+          select exists(${learnedCards(sql, examId)}) as learned
           from exams where id = ${examId}
           for update
         `;
         if (exam === undefined) {
           return { kind: 'exam-missing' } as const;
-        }
-        if (exam.archived) {
-          return { kind: 'archived' } as const;
         }
         if (!exam.learned) {
           return { kind: 'nothing-learned' } as const;

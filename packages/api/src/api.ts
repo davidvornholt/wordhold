@@ -139,7 +139,6 @@ export const EditExamPayloadSchema = Schema.Struct({
   removeEntryIds: Schema.optional(ids),
   addUnitIds: Schema.optional(ids),
   removeUnitIds: Schema.optional(ids),
-  archived: Schema.optional(Schema.Boolean),
 });
 export type EditExamPayload = typeof EditExamPayloadSchema.Type;
 

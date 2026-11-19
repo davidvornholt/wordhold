@@ -35,25 +35,25 @@ const ExamRows = ({ exams, subject, renderExamLink }: ExamRowsProps) => (
   </ul>
 );
 
+// The tests practised most recently stay in view; the older ones are rarely
+// opened, so they fold away.
+const shownExams = 3;
+
 type ExamSectionProps = ExamRowsProps & {
   readonly newExamAction: ReactNode;
-  // Opens the archived tests; called only while there are some.
-  readonly renderArchiveLink: (count: number) => ReactNode;
 };
 
-// The course's tests still ahead, under its books or above its list.
-// Archived ones stay on a page of their own for looking back. Without a test
-// the section is one quiet line, since most of the time none is due.
+// The course's tests, under its books or above its list, most recently
+// practised first as the store lists them. Without a test the section is one
+// quiet line, since most of the time none is due.
 export const ExamSection = ({
   exams,
   subject,
   renderExamLink,
   newExamAction,
-  renderArchiveLink,
 }: ExamSectionProps) => {
   const headingId = useId();
-  const active = exams.filter((exam) => exam.archivedAt === null);
-  const archived = exams.length - active.length;
+  const folded = exams.slice(shownExams);
   return (
     <section aria-labelledby={headingId} className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-4">
@@ -62,37 +62,29 @@ export const ExamSection = ({
         </h2>
         {newExamAction}
       </div>
-      {active.length === 0 ? (
+      {exams.length === 0 ? (
         <p className="text-muted-foreground text-sm">
-          {archived === 0
-            ? `Lege einen Test an, sobald du weißt, welche ${courseNouns(subject).plural} drankommen. Dann fragst du sie in Runden ab und siehst, wie gut du vorbereitet bist.`
-            : 'Gerade steht kein Test an.'}
+          {`Lege einen Test an, sobald du weißt, welche ${courseNouns(subject).plural} drankommen. Dann fragst du sie in Runden ab und siehst, wie gut du vorbereitet bist.`}
         </p>
       ) : (
         <ExamRows
-          exams={active}
+          exams={exams.slice(0, shownExams)}
           renderExamLink={renderExamLink}
           subject={subject}
         />
       )}
-      {archived === 0 ? null : renderArchiveLink(archived)}
+      {folded.length === 0 ? null : (
+        <details>
+          <summary className="min-h-11 w-fit cursor-pointer py-3 text-muted-foreground text-sm">
+            {countNoun(folded.length, 'weiterer Test', 'weitere Tests')}
+          </summary>
+          <ExamRows
+            exams={folded}
+            renderExamLink={renderExamLink}
+            subject={subject}
+          />
+        </details>
+      )}
     </section>
-  );
-};
-
-export const ArchivedExamList = ({
-  exams,
-  subject,
-  renderExamLink,
-}: ExamRowsProps) => {
-  const archived = exams.filter((exam) => exam.archivedAt !== null);
-  return archived.length === 0 ? (
-    <p className="text-sm">Kein Test ist archiviert.</p>
-  ) : (
-    <ExamRows
-      exams={archived}
-      renderExamLink={renderExamLink}
-      subject={subject}
-    />
   );
 };

@@ -29,8 +29,6 @@ const examFields = {
   name: Schema.String,
   directions: Schema.Array(DirectionSchema),
   createdAt: Instant,
-  /** An archived test keeps its rounds and starts no new one. */
-  archivedAt: Schema.NullOr(Instant),
   entryCount: Count,
 };
 

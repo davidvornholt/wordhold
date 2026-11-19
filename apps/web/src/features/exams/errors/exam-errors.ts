@@ -17,8 +17,7 @@ export class ExamInputError extends Schema.TaggedError<ExamInputError>()(
   { message: Schema.String },
 ) {}
 
-// The test cannot do this right now: it is archived, or none of its cards
-// has been learned yet.
+// The test cannot do this right now: none of its cards has been learned yet.
 export class ExamStateError extends Schema.TaggedError<ExamStateError>()(
   'ExamStateError',
   { message: Schema.String },

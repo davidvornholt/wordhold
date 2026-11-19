@@ -5,7 +5,6 @@ import {
   decodeCourseExamsRequest,
   decodeCreateExam,
   decodeExamRequest,
-  decodeSetExamArchived,
   decodeUpdateExam,
 } from '../schemas/exam-models';
 import { examRuntime } from './exam-runtime';
@@ -44,15 +43,6 @@ export const updateExam = createServerFn({ method: 'POST' })
     await requestMember({ exams: [data.examId], entries: data.entryIds });
     return examRuntime.runPromise(
       Effect.flatMap(ExamService, (service) => service.update(data)),
-    );
-  });
-
-export const setExamArchived = createServerFn({ method: 'POST' })
-  .validator(decodeSetExamArchived)
-  .handler(async ({ data }) => {
-    await requestMember({ exams: [data.examId] });
-    return examRuntime.runPromise(
-      Effect.flatMap(ExamService, (service) => service.setArchived(data)),
     );
   });
 

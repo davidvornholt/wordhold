@@ -79,7 +79,6 @@ const baseExam = {
   name: 'Vokabeltest Unit 3 und 4',
   directions: ['to_target', 'to_native'],
   createdAt: new Date('2026-11-03T15:00:00Z'),
-  archivedAt: null,
   entryCount: examEntries.length,
 } as const;
 
@@ -131,14 +130,8 @@ export const freshExam: ExamDetail = {
   },
 };
 
-// Written and archived, so it starts no round.
-export const archivedExam: ExamDetail = {
-  ...practisedExam,
-  archivedAt: new Date('2026-11-12T15:00:00Z'),
-  rounds: practisedExam.rounds.filter((score) => score.completed),
-  openRound: null,
-};
-
+// Most recently practised first, as the store lists them: more than the
+// course page shows before it folds the rest away.
 export const examSummaries: ReadonlyArray<ExamSummary> = [
   { ...baseExam, lastRound: secondRound },
   {
@@ -152,8 +145,22 @@ export const examSummaries: ReadonlyArray<ExamSummary> = [
     ...baseExam,
     id: fixtureId(202),
     name: 'Vokabeltest Unit 2',
-    archivedAt: new Date('2026-10-20T15:00:00Z'),
     entryCount: 15,
     lastRound: { ...firstRound, total: 30, answered: 30, correct: 27 },
+  },
+  {
+    ...baseExam,
+    id: fixtureId(203),
+    name: 'Vokabeltest Unit 1',
+    entryCount: 18,
+    lastRound: { ...firstRound, total: 36, answered: 36, correct: 30 },
+  },
+  {
+    ...baseExam,
+    id: fixtureId(204),
+    name: 'Unregelmäßige Verben',
+    directions: ['to_target'],
+    entryCount: 20,
+    lastRound: { ...firstRound, total: 20, answered: 20, correct: 17 },
   },
 ];

@@ -27,7 +27,6 @@ const examFields = (exam: ExamSummary | ExamDetail) => ({
   name: exam.name,
   directions: exam.directions,
   createdAt: exam.createdAt.toISOString(),
-  archivedAt: exam.archivedAt?.toISOString() ?? null,
   entryCount: exam.entryCount,
 });
 

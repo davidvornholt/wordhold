@@ -8,7 +8,6 @@ const beachPattern = /^beach/u;
 const switchedOffPattern = /In den Einstellungen ausgeschaltet/u;
 const givenUpPattern = /^abgebrochen/u;
 const underwayPattern = /^läuft/u;
-const roundPattern = /Runde/u;
 
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
@@ -80,20 +79,26 @@ test('a test shows its standing and its rounds', async ({ page }) => {
   );
 });
 
-// A written test leaves the course page for its archive and starts no round
-// until it is brought back.
-test('an archived test is found in the archive', async ({ page }) => {
+// The course page shows the three tests practised most recently and folds
+// the older ones away, one click from opening.
+test('older tests fold away on the course page', async ({ page }) => {
   await page.goto('/?state=course');
-  await page.getByRole('button', { name: 'Archiv (1)' }).click();
-  await expect(page.locator('body')).toHaveAttribute(
-    'data-fixture',
-    'exams-archive',
-  );
-  await page.getByRole('button', { name: 'Vokabeltest Unit 2' }).click();
-  await expect(page.locator('body')).toHaveAttribute(
-    'data-fixture',
-    'exam-archived',
-  );
-  await expect(page.getByRole('button', { name: 'Zurückholen' })).toBeVisible();
-  await expect(page.getByRole('button', { name: roundPattern })).toHaveCount(0);
+  const tests = page.getByRole('region', { name: 'Tests' });
+  for (const name of [
+    'Vokabeltest Unit 3 und 4',
+    'Wortschatz Holidays',
+    'Vokabeltest Unit 2',
+  ]) {
+    await expect(tests.getByRole('button', { name })).toBeVisible();
+  }
+  const older = tests.getByRole('button', { name: 'Vokabeltest Unit 1' });
+  await expect(older).toBeHidden();
+  await tests.getByText('2 weitere Tests', { exact: true }).click();
+  await expect(older).toBeVisible();
+  await expect(
+    tests.getByRole('button', { name: 'Unregelmäßige Verben' }),
+  ).toBeVisible();
+  assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
+  await older.click();
+  await expect(page.locator('body')).toHaveAttribute('data-fixture', 'exam');
 });
