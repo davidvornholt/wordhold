@@ -319,24 +319,6 @@ describe('ExamService rounds', () => {
 });
 
 describe('ExamService round start', () => {
-  // Tests archived before archiving was removed keep `archived_at` until a
-  // later release drops the column; they are ordinary tests now.
-  it('starts a round on a test the previous release archived', async () => {
-    await runExamTest(
-      Effect.gen(function* () {
-        const sql = yield* Database;
-        const service = yield* ExamService;
-        const { examId } = yield* createLearnedExam();
-        yield* sql`update exams set archived_at = now() where id = ${examId}`;
-        const { roundId } = yield* service.startRound(examId);
-        expect((yield* service.get(examId)).openRound).toMatchObject({
-          id: roundId,
-          total: 4,
-        });
-      }),
-    );
-  });
-
   it('starts no round for a test with nothing learned', async () => {
     await runExamTest(
       Effect.gen(function* () {

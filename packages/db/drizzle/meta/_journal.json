@@ -288,6 +288,13 @@
       "when": 1794817851111,
       "tag": "0040_entry_revision",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1795106752164,
+      "tag": "0041_drop_exam_archived_at",
+      "breakpoints": true
     }
   ]
 }
