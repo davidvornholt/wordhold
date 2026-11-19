@@ -52,6 +52,7 @@ export const needsReassessment = (review: RepairReview): boolean => {
   return (
     'method' in review.grading &&
     (review.grading.method === 'judge' ||
-      review.grading.method === 'learner-correction')
+      review.grading.method === 'learner-correction' ||
+      review.grading.method === 'other-wording')
   );
 };

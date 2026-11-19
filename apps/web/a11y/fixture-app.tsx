@@ -78,6 +78,7 @@ const bareStates: ReadonlySet<FixtureState> = new Set<FixtureState>([
   'french-practice',
   'sentence-practice',
   'practice-other-wording',
+  'practice-other-wording-accepted',
   'terms-learn',
   'terms-practice',
   'terms-feedback',

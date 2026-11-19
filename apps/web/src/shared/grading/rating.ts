@@ -66,6 +66,10 @@ export type GradeOutcome =
       readonly method: 'learner-correction';
       readonly assessed: AssessedGradeOutcome;
     }
+  // An answer into the target language that the judge rejected only for not
+  // using the book's words. Outside test practice it counts as right, but it
+  // is never stored as an accepted answer.
+  | { readonly method: 'other-wording'; readonly verdict: JudgeVerdictData }
   // The learner revealed the answer without attempting one: always a lapse.
   | { readonly method: 'skip' };
 
@@ -83,6 +87,7 @@ export const isCorrect = (outcome: GradeOutcome): boolean => {
   switch (outcome.method) {
     case 'exact':
     case 'learner-correction':
+    case 'other-wording':
       return true;
     case 'judge':
       return outcome.verdict.correct;
@@ -105,6 +110,24 @@ const recitationRating = (outcome: RecitationOutcome): DerivedRating => {
     return ratings.good;
   }
   return isCorrect(outcome) ? ratings.hard : ratings.again;
+};
+
+// A right answer with any flaw was recalled with effort. Another wording
+// fails intendedConstruction, so it is rated hard.
+const judgeRating = (
+  verdict: JudgeVerdictData,
+  correct: boolean,
+): DerivedRating => {
+  if (!correct) {
+    return ratings.again;
+  }
+  const flawless =
+    verdict.meaning.ok &&
+    verdict.grammar.ok &&
+    verdict.idiomaticity.ok &&
+    verdict.spelling.ok &&
+    verdict.intendedConstruction.ok;
+  return flawless ? ratings.good : ratings.hard;
 };
 
 // `state` is the card's state before this answer. Only a card that has come
@@ -135,15 +158,5 @@ export const deriveRating = (
   if (outcome.method === 'recitation') {
     return recitationRating(outcome);
   }
-  const { verdict } = outcome;
-  if (!verdict.correct) {
-    return ratings.again;
-  }
-  const flawless =
-    verdict.meaning.ok &&
-    verdict.grammar.ok &&
-    verdict.idiomaticity.ok &&
-    verdict.spelling.ok &&
-    verdict.intendedConstruction.ok;
-  return flawless ? ratings.good : ratings.hard;
+  return judgeRating(outcome.verdict, isCorrect(outcome));
 };

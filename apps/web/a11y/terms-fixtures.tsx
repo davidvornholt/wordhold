@@ -96,6 +96,7 @@ const submitDefinition = ({
     expectedAnswer: missedPoint.expectedAnswer,
     explanation: null,
     acceptedAsAlternative: false,
+    acceptedAsOtherWording: false,
     keyPoints: missedPoint.keyPoints,
     schedule: { advanced: true, state: 'relearning', dueAt: new Date() },
     entryKnown: false,

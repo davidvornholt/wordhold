@@ -14,7 +14,7 @@ const expectNoSolution = async (page: Page) => {
   await expect(page.getByText('Vertippt?')).toHaveCount(0);
 };
 
-test('a translation in other words leaves the card open for another try', async ({
+test('practice for a test leaves a translation in other words open for another try', async ({
   page,
 }) => {
   await page.goto('/?state=practice-other-wording');
@@ -61,4 +61,28 @@ test('a translation in other words leaves the card open for another try', async 
   await answer.press('Enter');
   await expect(page.getByText('Richtig', { exact: true })).toBeVisible();
   await expect(notice).toHaveCount(0);
+});
+
+test('other practice counts a translation in other words as right', async ({
+  page,
+}) => {
+  await page.goto('/?state=practice-other-wording-accepted');
+  const answer = page.getByLabel('Deine Antwort');
+
+  await answer.fill('concentrarse en algo');
+  await answer.press('Enter');
+  const feedback = page.getByRole('status').filter({ hasText: 'Im Buch' });
+  await expect(feedback.getByText('Richtig', { exact: true })).toBeVisible();
+  await expect(feedback).toContainText('Im Buch: enfocarse en algo');
+  await expect(
+    feedback.getByText('enfocarse en algo', { exact: true }),
+  ).toHaveAttribute('lang', 'es');
+  await expect(feedback).toContainText(
+    'Im Test zählt nur das Wort aus dem Buch.',
+  );
+  await expect(page.getByText('Erwartet')).toHaveCount(0);
+  await expect(page.getByText('Vertippt?')).toHaveCount(0);
+  await expect(page.getByText('Gesucht ist')).toHaveCount(0);
+  await expect(page.getByText('anderes Wort')).toHaveCount(0);
+  assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
 });
