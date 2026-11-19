@@ -32,6 +32,7 @@ const textSubmission: SubmissionRecord = {
   },
   targetLanguage: 'de',
   courseKind: 'texts',
+  examInCourse: false,
 };
 
 const reviewStore = (

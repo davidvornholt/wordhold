@@ -34,7 +34,8 @@ const otherWordingUnused = 'Set otherWording=false.';
 
 // A vocabulary test marks a synonym of the textbook word wrong, so an answer
 // in the target language must be that word. A complete one still shows the
-// task was understood, so it is marked for another try.
+// task was understood, so it is marked for the app to tell apart from a
+// mistake.
 const targetLanguageRules = [
   'The learner drills the textbook wording for a test, so accept only an expected answer. A synonym, paraphrase or regional variant is incorrect even when its meaning fits: pass meaning, fail intendedConstruction, name the expected answer in the explanation, and set otherWording=true if it is complete.',
   'Notation is not wording: accept expanded gender forms, optional infinitive to, sb./sth. written out or left out, an adapted possessive or reflexive pronoun, omitted gender or conjugation annotations, and harmless explanatory notes, but not a second word offered as an alternative.',

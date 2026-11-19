@@ -58,6 +58,9 @@ describe('review repair replay', () => {
   it('leaves skips and already successful reviews out of reassessment', () => {
     const base = review('a', '2026-09-21T10:01:00Z');
     expect(needsReassessment(base)).toBe(true);
+    expect(
+      needsReassessment({ ...base, grading: { method: 'other-wording' } }),
+    ).toBe(true);
     expect(needsReassessment({ ...base, rating: 3 })).toBe(false);
     expect(needsReassessment({ ...base, grading: { method: 'skip' } })).toBe(
       false,

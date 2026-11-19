@@ -54,7 +54,7 @@ export const makeReviewInput = ({
     if (cardId === undefined) {
       return yield* Effect.die('Expected the seeded card.');
     }
-    const submission = yield* store.findSubmission(cardId, 0);
+    const submission = yield* store.findSubmission(cardId, 0, null);
     if (submission === undefined) {
       return yield* Effect.die('Expected the seeded card revision.');
     }

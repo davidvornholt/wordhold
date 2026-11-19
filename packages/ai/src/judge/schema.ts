@@ -38,7 +38,8 @@ const allDimensionsPass = (verdict: {
 //
 // `otherWording` marks an answer into the target language that translates the
 // whole task correctly, but not in the textbook's words. It is rejected all
-// the same; `isOtherWording` decides whether the learner may try again.
+// the same; `isOtherWording` decides whether the app treats it as another
+// wording instead of a mistake.
 export const JudgeVerdict = Schema.Struct({
   correct: Schema.Boolean,
   acceptAsAlternative: Schema.Boolean,

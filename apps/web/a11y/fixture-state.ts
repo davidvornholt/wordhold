@@ -73,6 +73,7 @@ export const fixtureStates = [
   'sentence-practice',
   'synonym-practice',
   'practice-other-wording',
+  'practice-other-wording-accepted',
   'terms-learn',
   'terms-practice',
   'terms-feedback',

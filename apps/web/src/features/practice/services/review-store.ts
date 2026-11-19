@@ -35,6 +35,7 @@ type SubmissionRow = typeof cards.$inferSelect & {
   readonly relatedWords: ReadonlyArray<string>;
   readonly courseKind: CourseKind;
   readonly targetLanguage: LanguageCode;
+  readonly examInCourse: boolean;
 };
 
 const databaseError = (operation: string, cause: unknown) =>
@@ -141,12 +142,66 @@ const listCourseEntries = (sql: Database, entryId: string) =>
     Effect.mapError((cause) => databaseError('list course entries', cause)),
   );
 
+// `examInCourse` holds whether `examId` names a test of the card's course.
+const findSubmission = (
+  sql: Database,
+  cardId: string,
+  revision: number,
+  examId: string | null,
+) =>
+  sql<SubmissionRow>`
+      select c.id, c.entry_id as "entryId", c.direction,
+        c.state, c.due_at as "dueAt", c.stability,
+        c.stability_fast as "stabilityFast", c.difficulty,
+        c.reps, c.lapses, c.scheduled_days as "scheduledDays",
+        c.learning_steps as "learningSteps",
+        c.last_reviewed_at as "lastReviewedAt", c.revision,
+        e.target_text as "targetText",
+        e.native_text as "nativeText", e.key_points as "keyPoints",
+        ${cardRelatedWords(sql)} as "relatedWords",
+        co.kind as "courseKind", co.target_language as "targetLanguage",
+        exists (select from exams x
+          where x.id = ${examId}::uuid and x.course_id = co.id)
+          as "examInCourse"
+      from cards c
+      join entries e on e.id = c.entry_id
+      join courses co on co.id = e.course_id
+      where c.id = ${cardId} and c.revision = ${revision}
+        and c.introduced_at is not null
+    `.pipe(
+    Effect.flatMap(([stored]) =>
+      stored === undefined
+        ? Effect.succeed(undefined)
+        : withFsrs7Memory(sql, stored),
+    ),
+    Effect.map((row) =>
+      row === undefined
+        ? undefined
+        : {
+            card: row,
+            entry: {
+              id: row.entryId,
+              targetText: row.targetText,
+              nativeText: row.nativeText,
+              keyPoints: row.keyPoints,
+              relatedWords: row.relatedWords,
+            },
+            courseKind: row.courseKind,
+            targetLanguage: row.targetLanguage,
+            examInCourse: row.examInCourse,
+          },
+    ),
+    Effect.mapError((cause) => databaseError('find submitted card', cause)),
+  );
+
 export class PracticeReviewStore extends Context.Service<
   PracticeReviewStore,
   {
+    // `examId` is the test the submission names, if any.
     readonly findSubmission: (
       cardId: string,
       revision: number,
+      examId: string | null,
     ) => Effect.Effect<SubmissionRecord | undefined, PracticeDatabaseError>;
     readonly listAcceptedAnswers: (
       entryId: string,
@@ -175,49 +230,6 @@ export class PracticeReviewStore extends Context.Service<
     PracticeReviewStore,
     Effect.gen(function* () {
       const sql = yield* Database;
-      const findSubmission = (cardId: string, revision: number) =>
-        sql<SubmissionRow>`
-          select c.id, c.entry_id as "entryId", c.direction,
-            c.state, c.due_at as "dueAt", c.stability,
-            c.stability_fast as "stabilityFast", c.difficulty,
-            c.reps, c.lapses, c.scheduled_days as "scheduledDays",
-            c.learning_steps as "learningSteps",
-            c.last_reviewed_at as "lastReviewedAt", c.revision,
-            e.target_text as "targetText",
-            e.native_text as "nativeText", e.key_points as "keyPoints",
-            ${cardRelatedWords(sql)} as "relatedWords",
-            co.kind as "courseKind", co.target_language as "targetLanguage"
-          from cards c
-          join entries e on e.id = c.entry_id
-          join courses co on co.id = e.course_id
-          where c.id = ${cardId} and c.revision = ${revision}
-            and c.introduced_at is not null
-        `.pipe(
-          Effect.flatMap(([stored]) =>
-            stored === undefined
-              ? Effect.succeed(undefined)
-              : withFsrs7Memory(sql, stored),
-          ),
-          Effect.map((row) =>
-            row === undefined
-              ? undefined
-              : {
-                  card: row,
-                  entry: {
-                    id: row.entryId,
-                    targetText: row.targetText,
-                    nativeText: row.nativeText,
-                    keyPoints: row.keyPoints,
-                    relatedWords: row.relatedWords,
-                  },
-                  courseKind: row.courseKind,
-                  targetLanguage: row.targetLanguage,
-                },
-          ),
-          Effect.mapError((cause) =>
-            databaseError('find submitted card', cause),
-          ),
-        );
       const listAcceptedAnswers = (
         entryId: string,
         direction: AnswerDirection,
@@ -306,7 +318,11 @@ export class PracticeReviewStore extends Context.Service<
         );
       };
       return {
-        findSubmission,
+        findSubmission: (
+          cardId: string,
+          revision: number,
+          examId: string | null,
+        ) => findSubmission(sql, cardId, revision, examId),
         listAcceptedAnswers,
         listCourseEntries: (entryId: string) => listCourseEntries(sql, entryId),
         saveKeyPoints,

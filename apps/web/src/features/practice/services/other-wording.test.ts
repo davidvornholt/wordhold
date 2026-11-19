@@ -6,7 +6,11 @@ import type {
 } from '../schemas/practice-models';
 import type { AnsweredSubmitData } from '../schemas/submission-schema';
 import type { AssessedAnswer } from './answer-assessment';
-import { allowsAnotherTry, findCourseEntry } from './other-wording';
+import {
+  findCourseEntry,
+  isTestPractice,
+  otherWordingVerdict,
+} from './other-wording';
 import { testCard, testSubmission } from './practice-service-test-support';
 
 const passing = { ok: true, note: null } as const;
@@ -42,11 +46,11 @@ const intoGerman: SubmissionRecord = {
   card: { ...testCard, direction: 'to_native' },
 };
 
-describe('allowsAnotherTry', () => {
-  it('reopens a first answer into the target language in other wording', () => {
+describe('otherWordingVerdict', () => {
+  it('finds a first answer into the target language in other wording', () => {
     expect(
-      allowsAnotherTry(testSubmission, answered, judged(otherWording)),
-    ).toBe(true);
+      otherWordingVerdict(testSubmission, answered, judged(otherWording)),
+    ).toBe(otherWording);
   });
 
   it.each([
@@ -94,7 +98,31 @@ describe('allowsAnotherTry', () => {
   ] as const satisfies ReadonlyArray<
     readonly [string, SubmissionRecord, AnsweredSubmitData, AssessedAnswer]
   >)('keeps the verdict %s', (_case, row, data, assessed) => {
-    expect(allowsAnotherTry(row, data, assessed)).toBe(false);
+    expect(otherWordingVerdict(row, data, assessed)).toBeNull();
+  });
+});
+
+describe('isTestPractice', () => {
+  it('holds a test round and a sitting for a test of the course to the book', () => {
+    expect(
+      isTestPractice(testSubmission, {
+        ...answered,
+        examRoundId: '00000000-0000-0000-0000-000000000004',
+      }),
+    ).toBe(true);
+    expect(
+      isTestPractice({ ...testSubmission, examInCourse: true }, answered),
+    ).toBe(true);
+  });
+
+  it('leaves other practice and a test of another course lenient', () => {
+    expect(isTestPractice(testSubmission, answered)).toBe(false);
+    expect(
+      isTestPractice(testSubmission, {
+        ...answered,
+        examId: '00000000-0000-0000-0000-000000000005',
+      }),
+    ).toBe(false);
   });
 });
 

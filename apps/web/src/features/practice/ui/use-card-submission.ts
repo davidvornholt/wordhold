@@ -146,9 +146,9 @@ const isStoredResolution = (
   !('otherWording' in result) && (!result.graded || result.stored);
 
 // All state around one card's answer round trip: the deferred first
-// submission, the optional skip, and the resolution of a rejected answer. An
-// answer in other words than the book's leaves the card open, so the learner
-// may try again until the card is judged.
+// submission, the optional skip, and the resolution of a rejected answer. In
+// test practice, an answer in other words than the book's leaves the card
+// open, so the learner may try again until the card is judged.
 export const useCardSubmission = ({
   cardId,
   revision,

@@ -29,6 +29,7 @@ const termRow = (
   },
   targetLanguage: 'de',
   courseKind: 'terms',
+  examInCourse: false,
 });
 
 const missedVerdict: DefinitionVerdictData = {

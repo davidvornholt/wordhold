@@ -110,6 +110,7 @@ const alternativeResult: SubmitResult = {
   explanation:
     "'recollection' klingt gehobener; im Alltag sagt man meist 'memory'.",
   acceptedAsAlternative: true,
+  acceptedAsOtherWording: false,
   keyPoints: null,
   schedule: { advanced: true, state: 'review', dueAt: nextReviewAt },
   entryKnown: false,
@@ -124,6 +125,7 @@ const adolescentResult: SubmitResult = {
   expectedAnswer: 'adolescent',
   explanation: null,
   acceptedAsAlternative: false,
+  acceptedAsOtherWording: false,
   keyPoints: null,
   schedule: { advanced: true, state: 'review', dueAt: nextReviewAt },
   entryKnown: false,
@@ -203,6 +205,7 @@ export const PracticeOneCardSummaryFixture = ({
     expectedAnswer: 'memory',
     explanation: null,
     acceptedAsAlternative: false,
+    acceptedAsOtherWording: false,
     keyPoints: null,
     schedule: {
       advanced: true,

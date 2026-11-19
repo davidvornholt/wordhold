@@ -72,10 +72,10 @@ export type CourseEntryPlace = {
   readonly place: string;
 };
 
-// A correct translation in other words than the textbook's. It is neither
-// graded nor stored, and it carries no solution: the card stays open and the
-// learner looks for the textbook's word. `courseEntry` names the entry of the
-// course the answer spells out, if any.
+// A correct translation in other words than the textbook's, given in test
+// practice. It is neither graded nor stored, and it carries no solution: the
+// card stays open and the learner looks for the textbook's word.
+// `courseEntry` names the entry of the course the answer spells out, if any.
 export type OtherWordingResult = {
   readonly otherWording: true;
   readonly courseEntry: CourseEntryPlace | null;
@@ -110,6 +110,8 @@ export type SubmitResult =
       readonly expectedAnswer: string;
       readonly explanation: string | null;
       readonly acceptedAsAlternative: boolean;
+      // Right in other words than the book's, outside test practice.
+      readonly acceptedAsOtherWording: boolean;
       // Only for a definition the judge graded; null otherwise.
       readonly keyPoints: ReadonlyArray<KeyPointFinding> | null;
       readonly schedule: CardSchedule;
@@ -117,8 +119,8 @@ export type SubmitResult =
       readonly entryKnown: boolean;
     };
 
-// Every result the card answers with feedback: all but another wording,
-// which leaves the card open.
+// Every result the card answers with feedback: all but another wording in
+// test practice, which leaves the card open.
 export type FeedbackResult = Exclude<SubmitResult, OtherWordingResult>;
 
 export type ResolvedSubmitResult = Exclude<
@@ -138,6 +140,8 @@ export type SubmissionRecord = {
   };
   readonly courseKind: CourseKind;
   readonly targetLanguage: LanguageCode;
+  // Whether the submission named a test of the card's course.
+  readonly examInCourse: boolean;
 };
 
 export type PersistReviewInput = {

@@ -41,6 +41,7 @@ const termSubmission = (
   },
   targetLanguage: 'de',
   courseKind: 'terms',
+  examInCourse: false,
 });
 
 const verdict = (covered: ReadonlyArray<boolean>): DefinitionVerdictData => ({
