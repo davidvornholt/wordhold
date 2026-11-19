@@ -83,7 +83,16 @@ describe('wordhold exams', () => {
     expect(server.sent[0]).toMatchObject({
       method: 'PATCH',
       path: `/api/cli/exams/${examId}`,
-      body: { addUnitIds: [unit], removeEntryIds: [entryId] },
+    });
+    // Every field the request leaves unchanged is sent empty, and nothing else
+    // is sent.
+    expect(server.sent[0]?.body).toEqual({
+      name: null,
+      directions: null,
+      addEntryIds: null,
+      removeEntryIds: [entryId],
+      addUnitIds: [unit],
+      removeUnitIds: null,
     });
   });
 
