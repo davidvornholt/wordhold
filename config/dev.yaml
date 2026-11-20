@@ -10,3 +10,7 @@ apps:
     WORDHOLD_OWNER_TIME_ZONE: Europe/Berlin
     AWS_REGION: eu-central-1
     GOOGLE_VERTEX_LOCATION: global
+packages:
+  db:
+    # The migration starts due days in this zone, so it matches apps.web.
+    WORDHOLD_OWNER_TIME_ZONE: Europe/Berlin

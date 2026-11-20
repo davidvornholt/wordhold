@@ -4,6 +4,7 @@ import { Database } from '@wordhold/db/client';
 import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import {
   testDatabaseLayer,
+  testTimeZone,
   withMigratedTestDatabase,
 } from '@wordhold/db/testing/postgres-test-database';
 import { Effect, Layer } from 'effect';
@@ -78,7 +79,9 @@ const runReviewTest = <A, E>(
       const databaseLayer = testDatabaseLayer(database.url);
       return Effect.andThen(seedIntroducedCardFixture, test).pipe(
         Effect.provide(
-          PracticeReviewStore.live.pipe(Layer.provide(databaseLayer)),
+          PracticeReviewStore.live(testTimeZone).pipe(
+            Layer.provide(databaseLayer),
+          ),
         ),
         Effect.provide(databaseLayer),
       );

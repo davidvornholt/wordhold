@@ -2,10 +2,13 @@ import { expect, it } from 'bun:test';
 import { Database } from '@wordhold/db/client';
 import {
   testDatabaseLayer,
+  testTimeZone,
   withMigratedTestDatabase,
 } from '@wordhold/db/testing/postgres-test-database';
 import { Effect } from 'effect';
 import { administratorGithubId, seedSampleData } from './sample-data-seed';
+
+const clock = { now: new Date(), timeZone: testTimeZone };
 
 const rowCounts = Effect.gen(function* () {
   const sql = yield* Database;
@@ -33,7 +36,7 @@ it('fills an empty database once, owned by the allowlisted GitHub account', asyn
         yield* sql`insert into verification (id, identifier, value, expires_at)
           values ('state', 'github', 'pending', now() + interval '10 minutes')`;
 
-        const seeded = yield* seedSampleData(new Date());
+        const seeded = yield* seedSampleData(clock);
         expect(seeded).toMatchObject({ kind: 'seeded', people: 4 });
 
         const [owner] = yield* sql<{
@@ -79,7 +82,7 @@ it('fills an empty database once, owned by the allowlisted GitHub account', asyn
         expect(practice?.unintroducedRelations).toBe(0);
 
         const before = yield* rowCounts;
-        expect(yield* seedSampleData(new Date())).toEqual({ kind: 'skipped' });
+        expect(yield* seedSampleData(clock)).toEqual({ kind: 'skipped' });
         expect(yield* rowCounts).toEqual(before);
       }).pipe(Effect.provide(testDatabaseLayer(database.url))),
     ),

@@ -15,6 +15,10 @@ type Admin = postgres.Sql;
 const templateHashLength = 16;
 const insufficientPrivilegeCode = '42501';
 
+// The owner's zone that test databases are migrated in and test schedules
+// start their days in.
+export const testTimeZone = 'Europe/Berlin';
+
 const databaseUrl = (rootUrl: string, name: string) => {
   const url = new URL(rootUrl);
   url.pathname = `/${name}`;
@@ -83,7 +87,10 @@ const buildTemplate = (admin: Admin, rootUrl: string, template: string) => {
       'Could not create the migrated test template.',
       () => admin`create database ${admin(building)}`,
     );
-    yield* migrateDatabase(databaseUrl(rootUrl, building)).pipe(
+    yield* migrateDatabase({
+      url: databaseUrl(rootUrl, building),
+      timeZone: testTimeZone,
+    }).pipe(
       Effect.mapError(
         (cause) => new Error('Could not migrate the test template.', { cause }),
       ),

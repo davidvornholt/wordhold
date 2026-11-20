@@ -13,19 +13,16 @@ const lateEvening = new Date('2026-09-20T21:30:00Z');
 const afterMidnight = new Date('2026-09-20T23:30:00Z');
 
 describe('formatLearningDate', () => {
-  it('writes the time and counts the days in the owner time zone', () => {
+  it('writes the time only for today and counts the days in the owner time zone', () => {
     expect(
       formatLearningDate(new Date('2026-09-20T21:50:00Z'), berlin, lateEvening),
     ).toBe('Heute um 23:50');
     expect(
       formatLearningDate(new Date('2026-09-20T22:40:00Z'), berlin, lateEvening),
-    ).toBe('Morgen um 00:40');
+    ).toBe('Morgen');
     expect(
-      formatLearningDate(new Date('2026-09-21T06:40:00Z'), berlin, lateEvening),
-    ).toBe('Morgen um 08:40');
-    expect(
-      formatLearningDate(new Date('2026-09-22T22:30:00Z'), berlin, lateEvening),
-    ).toBe('23.09.2026 um 00:30');
+      formatLearningDate(new Date('2026-09-22T22:00:00Z'), berlin, lateEvening),
+    ).toBe('23.09.2026');
   });
 
   it('counts overdue days in the owner time zone', () => {
@@ -72,6 +69,7 @@ describe('formatLearningDate', () => {
     expect(formatLearningDate(dueAt, 'Asia/Tokyo', lateEvening)).toBe(
       'Heute um 07:40',
     );
+    expect(formatLearningDate(dueAt, berlin, lateEvening)).toBe('Morgen');
   });
 });
 
@@ -83,7 +81,21 @@ describe('formatLearningDateInline', () => {
         berlin,
         lateEvening,
       ),
-    ).toBe('morgen um 12:40');
+    ).toBe('morgen');
+    expect(
+      formatLearningDateInline(
+        new Date('2026-09-22T22:00:00Z'),
+        berlin,
+        lateEvening,
+      ),
+    ).toBe('am 23.09.2026');
+    expect(
+      formatLearningDateInline(
+        new Date('2026-09-20T21:50:00Z'),
+        berlin,
+        lateEvening,
+      ),
+    ).toBe('heute um 23:50');
     expect(
       formatLearningDateInline(
         new Date('2026-09-17T10:40:00Z'),
@@ -96,7 +108,7 @@ describe('formatLearningDateInline', () => {
   it('leaves the sentence-initial form untouched', () => {
     expect(
       formatLearningDate(new Date('2026-09-21T10:40:00Z'), berlin, lateEvening),
-    ).toBe('Morgen um 12:40');
+    ).toBe('Morgen');
   });
 });
 
