@@ -40,12 +40,8 @@ type WordCardProps = {
 // index cards seen from above.
 const deckEdges = ['inset-x-6 -bottom-3', 'inset-x-3 -bottom-1.5'];
 
-// The index card on top of the round's stack. The word is the hero; everything
-// else on it is small. Its buttons sit on it, so the card and what it asks for
-// move as one: dealCard moves the answered one out to the left while the next
-// one rises from the stack. The card keeps its own view-transition group for
-// that, and the stack stays outside it, so the stack holds still and thins out
-// as the round goes on.
+// The index card on top of the round's stack. Keep the waiting stack outside
+// the card's view-transition group so only the active card moves.
 export const WordCard = ({
   instruction,
   word,

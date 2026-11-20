@@ -16,8 +16,7 @@ import type { FeedbackResult } from '../schemas/practice-models';
 import type { RetypeState } from './answer-entry';
 
 // A wrong or skipped card is not left until its answer has been written out
-// once, as in the learning pass: the expected answer stands in the field as
-// the template and disappears as soon as the learner types.
+// once, as in the learning pass.
 export const needsRetype = (result: FeedbackResult | null): boolean =>
   result?.graded === true && !result.correct;
 
