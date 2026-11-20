@@ -10,7 +10,12 @@ const offsets = Array.from({ length: 61 }, (_, minutes) => minutes);
 
 const replays = (progress: Progress, ratesEasy = true) =>
   offsets.map((offsetMinutes) =>
-    replayProgress(progress, { now, offsetMinutes, ratesEasy }),
+    replayProgress(progress, {
+      now,
+      timeZone: 'Europe/Berlin',
+      offsetMinutes,
+      ratesEasy,
+    }),
   );
 
 const daysUntilDue = (card: ReplayedCard) =>

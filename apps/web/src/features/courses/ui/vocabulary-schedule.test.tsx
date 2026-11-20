@@ -33,7 +33,7 @@ const entry: VocabularyEntry = {
       cardId: '00000000-0000-0000-0000-000000000003',
       direction: 'to_target',
       state: 'review',
-      dueAt: new Date('2026-08-31T10:00:00Z'),
+      dueAt: new Date('2026-08-30T22:00:00Z'),
       introducedAt: new Date('2026-08-20T10:00:00Z'),
       failures: 0,
       hardAnswers: 2,
@@ -57,7 +57,7 @@ describe('vocabulary schedule', () => {
   it('keeps a disabled direction out of the compact regular-plan status', () => {
     const summary = scheduleSummary(entry, ['to_target'], now, berlin);
 
-    expect(summary).toContain('31.08.2026 um 12:00');
+    expect(summary).toContain('Nächste Wiederholung am 31.08.2026');
     expect(summary).not.toContain('Richtungen fällig');
   });
 
@@ -76,7 +76,7 @@ describe('vocabulary schedule', () => {
       </OwnerTimeZoneContext>,
     );
 
-    expect(markup).toContain('31.08.2026 um 12:00');
+    expect(markup).toContain('Nächste Wiederholung am 31.08.2026');
     expect(markup).toContain('Nicht im Lernplan');
     expect(markup).toContain('2× fast richtig');
     expect(markup).toContain('1× nicht gewusst');

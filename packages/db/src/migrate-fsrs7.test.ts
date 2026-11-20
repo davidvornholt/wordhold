@@ -2,6 +2,7 @@ import { expect, it } from 'bun:test';
 import { Database } from '@wordhold/db/client';
 import {
   testDatabaseLayer,
+  testTimeZone,
   withMigratedTestDatabase,
 } from '@wordhold/db/testing/postgres-test-database';
 import { Effect } from 'effect';
@@ -77,14 +78,14 @@ it('reschedules FSRS-6 cards from their answers under FSRS-7', async () => {
       Effect.gen(function* () {
         yield* insertFsrs6Card;
         yield* insertFsrs6Answers;
-        yield* migrateDatabase(database.url);
-        yield* migrateDatabase(database.url);
+        yield* migrateDatabase({ url: database.url, timeZone: testTimeZone });
+        yield* migrateDatabase({ url: database.url, timeZone: testTimeZone });
         return yield* loadRebuiltCard;
       }).pipe(Effect.provide(testDatabaseLayer(database.url))),
     ),
   );
 
-  const expected = replayReviews(fsrs6Answers);
+  const expected = replayReviews(fsrs6Answers, testTimeZone);
   expect(expected.stabilityFast).not.toBeNull();
   expect(card).toEqual({ ...expected, revision: 1 });
   expect(card?.dueAt).not.toEqual(new Date('2026-11-20T08:00:00Z'));
@@ -141,7 +142,9 @@ const migrateDuringAnswer = (url: string) =>
             await commit.promise;
           });
           await written.promise;
-          const migration = Effect.runPromise(migrateDatabase(url));
+          const migration = Effect.runPromise(
+            migrateDatabase({ url, timeZone: testTimeZone }),
+          );
           try {
             await Promise.race([waitForBlockedMigration(client), migration]);
           } finally {
@@ -169,7 +172,7 @@ it('reschedules a card answered while the migration runs with that answer', asyn
   );
 
   expect(card).toEqual({
-    ...replayReviews([...fsrs6Answers, answeredDuringDeploy]),
+    ...replayReviews([...fsrs6Answers, answeredDuringDeploy], testTimeZone),
     revision: 2,
   });
 });
@@ -179,7 +182,10 @@ it('refuses to reschedule a card whose answers are missing', async () => {
     withMigratedTestDatabase((database) =>
       Effect.gen(function* () {
         yield* insertFsrs6Card;
-        return yield* migrateDatabase(database.url).pipe(Effect.flip);
+        return yield* migrateDatabase({
+          url: database.url,
+          timeZone: testTimeZone,
+        }).pipe(Effect.flip);
       }).pipe(Effect.provide(testDatabaseLayer(database.url))),
     ),
   );

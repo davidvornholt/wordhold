@@ -1,5 +1,6 @@
 // Boundary to the ts-fsrs scheduler. It lives next to the cards schema because
 // both the app and the migration runner derive card schedules from it.
+import { DateTime } from 'effect';
 import { DefaultScheduler, type Grade, State } from 'ts-fsrs';
 import type { CardState, cards } from './schema/practice';
 
@@ -83,11 +84,26 @@ const toSchedulerCard = (row: CardSchedule, now: Date) => {
   };
 };
 
-// Returns the column updates for one graded review.
+// FSRS-7 times a card to the minute, so a word answered at 14:05 would come
+// back at 00:15 or 16:40 on some later day. Practice happens in days, so a
+// card due on a later day than it was answered is due from the start of that
+// day in the owner's zone, the day boundary of "heute" and the streak. A
+// step later the same day keeps its time. The scheduler reads the time of
+// the last answer, never the due time, so this changes no interval.
+const dueFrom = (dueAt: Date, answeredAt: Date, timeZone: string): Date => {
+  const dayStart = DateTime.toDateUtc(
+    DateTime.startOf(DateTime.makeZonedUnsafe(dueAt, { timeZone }), 'day'),
+  );
+  return dayStart.getTime() > answeredAt.getTime() ? dayStart : dueAt;
+};
+
+// Returns the column updates for one graded review. `timeZone` is the
+// owner's IANA zone.
 export const applyRating = (
   row: CardSchedule,
   rating: Grade,
   now: Date,
+  timeZone: string,
 ): CardSchedule & { readonly dueAt: Date; readonly lastReviewedAt: Date } => {
   const { card } = scheduler.review({
     card: toSchedulerCard(row, now),
@@ -96,7 +112,7 @@ export const applyRating = (
   });
   return {
     state: nameByState[card.state],
-    dueAt: card.dueAt,
+    dueAt: dueFrom(card.dueAt, now, timeZone),
     stability: card.stability,
     stabilityFast: card.stabilityFast,
     difficulty: card.difficulty,
@@ -138,11 +154,12 @@ export type ReplayedReview = {
 // the same early-review guard as live practice.
 export const replayReviews = (
   reviews: ReadonlyArray<ReplayedReview>,
+  timeZone: string,
 ): CardSchedule => {
   let card = unscheduled;
   for (const review of reviews) {
     if (advancesSchedule(card, review.reviewedAt, review.rating !== 1)) {
-      card = applyRating(card, review.rating, review.reviewedAt);
+      card = applyRating(card, review.rating, review.reviewedAt, timeZone);
     }
   }
   return card;

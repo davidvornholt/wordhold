@@ -3,7 +3,8 @@ import { migrateDatabase } from '../migrate';
 
 const program = Effect.gen(function* () {
   const databaseUrl = yield* Config.Redacted('DATABASE_URL');
-  yield* migrateDatabase(Redacted.value(databaseUrl));
+  const timeZone = yield* Config.String('WORDHOLD_OWNER_TIME_ZONE');
+  yield* migrateDatabase({ url: Redacted.value(databaseUrl), timeZone });
   yield* Effect.log('Wordhold database migrations are current.');
 });
 

@@ -4,6 +4,7 @@ import { Database } from '@wordhold/db/client';
 import { applyRating } from '@wordhold/db/fsrs';
 import {
   testDatabaseLayer,
+  testTimeZone,
   withMigratedTestDatabase,
 } from '@wordhold/db/testing/postgres-test-database';
 import { Effect } from 'effect';
@@ -49,7 +50,7 @@ values (${firstReviewEntryId}, 'to_target', 'el/la abogado/-a', 'el/la abogado/-
     lastReviewedAt: null,
     revision: 0,
   };
-  const original = applyRating(empty, 2, reviewedAt);
+  const original = applyRating(empty, 2, reviewedAt, testTimeZone);
   yield* sql`update cards set state = ${original.state}::card_state, due_at = ${original.dueAt},
 stability = ${original.stability}, stability_fast = ${original.stabilityFast},
 difficulty = ${original.difficulty}, reps = ${original.reps},
@@ -67,7 +68,7 @@ it('plans without writes, refuses concurrent changes, and preserves original gra
       Effect.gen(function* () {
         const sql = yield* Database;
         const card = yield* seedMisgradedCard;
-        const plans = yield* planReviewRepairs([card.id]);
+        const plans = yield* planReviewRepairs([card.id], testTimeZone);
         expect(plans).toHaveLength(1);
         const [before] = yield* sql<{
           readonly rating: number;
@@ -81,7 +82,7 @@ it('plans without writes, refuses concurrent changes, and preserves original gra
         }>`select rating from reviews where card_id = ${card.id}`;
         expect(unchanged?.rating).toBe(2);
 
-        const refreshed = yield* planReviewRepairs([card.id]);
+        const refreshed = yield* planReviewRepairs([card.id], testTimeZone);
         yield* applyReviewRepairs(refreshed);
         const [repaired] = yield* sql<{
           readonly rating: number;
@@ -96,7 +97,9 @@ it('plans without writes, refuses concurrent changes, and preserves original gra
             originalGrading: { method: 'judge', original: true },
           },
         });
-        expect(yield* planReviewRepairs([card.id])).toHaveLength(0);
+        expect(yield* planReviewRepairs([card.id], testTimeZone)).toHaveLength(
+          0,
+        );
       }).pipe(
         Effect.provide(testDatabaseLayer(database.url)),
         Effect.provideService(PracticeJudge, {
@@ -124,7 +127,9 @@ it('refuses to reassess a card from a terms course', async () => {
         if (card === undefined) {
           return yield* Effect.die('Fixture card missing');
         }
-        const plan = yield* planReviewRepairs([card.id]).pipe(Effect.result);
+        const plan = yield* planReviewRepairs([card.id], testTimeZone).pipe(
+          Effect.result,
+        );
         expect(plan).toMatchObject({
           _tag: 'Failure',
           failure: { _tag: 'ReviewRepairError' },
@@ -148,7 +153,7 @@ it('lets a correction of the entry expire a card that repair is about to regrade
       Effect.gen(function* () {
         const sql = yield* Database;
         const card = yield* seedMisgradedCard;
-        const plans = yield* planReviewRepairs([card.id]);
+        const plans = yield* planReviewRepairs([card.id], testTimeZone);
         const entryLocked = Promise.withResolvers<number>();
         const releaseEdit = Promise.withResolvers<void>();
         const [, repair] = yield* Effect.all(

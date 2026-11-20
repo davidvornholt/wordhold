@@ -47,6 +47,7 @@ describe('review repair replay', () => {
         rating: 3,
         outcome: { method: 'exact' },
       })),
+      'Europe/Berlin',
     );
     expect(repaired.state).toBe('review');
     // FSRS-7 graduates the first Good answer, so both repeats are premature.

@@ -4,6 +4,7 @@ import { Effect, Layer, ManagedRuntime } from 'effect';
 import { definitionLayer, judgeLayer } from '../../../shared/ai/runtime';
 import { billedTo, UsageLedger } from '../../../shared/ai/usage-ledger';
 import { requestMember } from '../../../shared/auth/member-request';
+import { serverEnv } from '../../../shared/env/server';
 import {
   decodeExamRoundRequest,
   decodeSessionRequest,
@@ -19,7 +20,8 @@ import { PracticeSessionStore } from './session-store';
 
 const storesLive = Layer.mergeAll(
   PracticeSessionStore.live,
-  PracticeReviewStore.live,
+  // Deferred so importing this module doesn't read the environment.
+  Layer.suspend(() => PracticeReviewStore.live(serverEnv.ownerTimeZone())),
   JudgeCacheStore.live,
 ).pipe(Layer.provide(PgLive));
 

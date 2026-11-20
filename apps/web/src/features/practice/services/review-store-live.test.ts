@@ -6,6 +6,7 @@ import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import type { cards } from '@wordhold/db/schema/practice';
 import {
   testDatabaseLayer,
+  testTimeZone,
   withMigratedTestDatabase,
 } from '@wordhold/db/testing/postgres-test-database';
 import { Effect, Layer } from 'effect';
@@ -49,7 +50,7 @@ describe('PracticeReviewStore introduction contract', () => {
       await Effect.runPromise(
         withMigratedTestDatabase((database) => {
           const databaseLayer = testDatabaseLayer(database.url);
-          const reviewLayer = PracticeReviewStore.live.pipe(
+          const reviewLayer = PracticeReviewStore.live(testTimeZone).pipe(
             Layer.provide(databaseLayer),
           );
           return Effect.gen(function* () {
@@ -186,10 +187,13 @@ describe('PracticeReviewStore FSRS-6 memory', () => {
           `;
           expect(committed.schedule.advanced).toBe(advanced);
           expect(stored).toEqual({
-            ...replayReviews([
-              ...fsrs6History,
-              { reviewedAt: input.reviewedAt, rating: input.rating },
-            ]),
+            ...replayReviews(
+              [
+                ...fsrs6History,
+                { reviewedAt: input.reviewedAt, rating: input.rating },
+              ],
+              testTimeZone,
+            ),
             revision: 1,
           });
         }),

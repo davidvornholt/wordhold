@@ -9,6 +9,7 @@ import {
   planReviewRepairs,
 } from '../src/features/practice/services/review-repair';
 import { UsageLedger } from '../src/shared/ai/usage-ledger';
+import { serverEnv } from '../src/shared/env/server';
 import { Uuid } from '../src/shared/validate/uuid';
 
 const args = globalThis.Bun.argv.slice(2);
@@ -40,7 +41,7 @@ const services = PracticeJudge.live.pipe(
 );
 
 const program = Effect.gen(function* () {
-  const plans = yield* planReviewRepairs(ids);
+  const plans = yield* planReviewRepairs(ids, serverEnv.ownerTimeZone());
   if (apply) {
     yield* applyReviewRepairs(plans);
   }

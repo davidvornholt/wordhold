@@ -56,8 +56,14 @@ const ratingOf = (
   return rating === 'easy' && ratesEasy ? ratings.easy : ratings.good;
 };
 
-export type ReplayInput = {
+// When the sample data is written, and the owner's IANA zone that due dates
+// start their days in.
+export type SampleClock = {
   readonly now: Date;
+  readonly timeZone: string;
+};
+
+export type ReplayInput = SampleClock & {
   // Moves the whole history earlier, so words with the same progress were
   // not all answered in the same second.
   readonly offsetMinutes: number;
@@ -98,7 +104,7 @@ export const replayProgress = (
       elapsedMs: elapsedMs(rating, input.offsetMinutes + answers.length),
       before: { state: schedule.state, dueAt: schedule.dueAt },
     });
-    schedule = applyRating(schedule, rating, reviewedAt);
+    schedule = applyRating(schedule, rating, reviewedAt, input.timeZone);
   }
   const first = answers[0]?.reviewedAt ?? input.now;
   return {

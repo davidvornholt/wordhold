@@ -4,6 +4,8 @@ import type { cards } from './schema/practice';
 
 const ratings = { again: 1, hard: 2, good: 3, easy: 4 } as const;
 
+const timeZone = 'Europe/Berlin';
+
 const newCard: typeof cards.$inferSelect = {
   id: '00000000-0000-0000-0000-000000000001',
   entryId: '00000000-0000-0000-0000-000000000002',
@@ -25,7 +27,7 @@ const newCard: typeof cards.$inferSelect = {
 describe('applyRating', () => {
   it('schedules a new card into the future after a Good review', () => {
     const now = new Date('2026-08-24T10:00:00Z');
-    const next = applyRating(newCard, ratings.good, now);
+    const next = applyRating(newCard, ratings.good, now, timeZone);
     expect(next.state).not.toBe('new');
     expect(next.reps).toBe(1);
     expect(next.dueAt.getTime()).toBeGreaterThan(now.getTime());
@@ -35,8 +37,8 @@ describe('applyRating', () => {
 
   it('keeps an Again review due sooner than a Good review', () => {
     const now = new Date('2026-08-24T10:00:00Z');
-    const again = applyRating(newCard, ratings.again, now);
-    const good = applyRating(newCard, ratings.good, now);
+    const again = applyRating(newCard, ratings.again, now, timeZone);
+    const good = applyRating(newCard, ratings.good, now, timeZone);
     expect(again.dueAt.getTime()).toBeLessThanOrEqual(good.dueAt.getTime());
   });
 
@@ -53,9 +55,68 @@ describe('applyRating', () => {
       scheduledDays: 10,
       lastReviewedAt: new Date('2026-08-14T08:00:00Z'),
     };
-    const next = applyRating(learned, ratings.again, now);
+    const next = applyRating(learned, ratings.again, now, timeZone);
     expect(next.lapses).toBe(1);
     expect(next.state).toBe('relearning');
+  });
+});
+
+describe('due dates', () => {
+  const reviewCard: typeof cards.$inferSelect = {
+    ...newCard,
+    state: 'review',
+    dueAt: new Date('2026-11-20T08:00:00Z'),
+    stability: 10,
+    stabilityFast: 2,
+    difficulty: 5,
+    reps: 4,
+    scheduledDays: 10,
+    lastReviewedAt: new Date('2026-11-10T13:05:00Z'),
+  };
+
+  // FSRS-7 alone would bring the card back at whatever minute its interval
+  // ends on, such as 00:15 or 16:40.
+  it('starts a card due on a later day at midnight in the owner zone', () => {
+    const answeredAt = new Date('2026-11-20T13:05:00Z');
+    const next = applyRating(reviewCard, ratings.good, answeredAt, timeZone);
+    expect(next.scheduledDays).toBeGreaterThan(1);
+    expect(next.dueAt.getTime()).toBeGreaterThan(answeredAt.getTime());
+    expect(next.dueAt.toLocaleTimeString('de-DE', { timeZone })).toBe(
+      '00:00:00',
+    );
+  });
+
+  it('starts the day in summer time too', () => {
+    const answeredAt = new Date('2027-06-20T13:05:00Z');
+    const next = applyRating(
+      {
+        ...reviewCard,
+        dueAt: answeredAt,
+        lastReviewedAt: new Date('2027-06-10T13:05:00Z'),
+      },
+      ratings.good,
+      answeredAt,
+      timeZone,
+    );
+    expect(next.dueAt.getUTCHours()).toBe(22);
+    expect(next.dueAt.toLocaleTimeString('de-DE', { timeZone })).toBe(
+      '00:00:00',
+    );
+  });
+
+  it('keeps the minute of a learning step later the same day', () => {
+    const answeredAt = new Date('2026-11-20T13:05:00Z');
+    const next = applyRating(newCard, ratings.again, answeredAt, timeZone);
+    expect(next.dueAt.getTime() - answeredAt.getTime()).toBe(60_000);
+  });
+
+  // A step that ends after midnight is due the next day, so it can be asked
+  // from the start of it.
+  it('starts a step that crosses midnight at the start of the next day', () => {
+    // 23:59:30 in Berlin, a minute before the step ends.
+    const answeredAt = new Date('2026-11-20T22:59:30Z');
+    const next = applyRating(newCard, ratings.again, answeredAt, timeZone);
+    expect(next.dueAt).toEqual(new Date('2026-11-20T23:00:00Z'));
   });
 });
 

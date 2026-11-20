@@ -1,11 +1,16 @@
 import { PgLive } from '@wordhold/db/client';
 import { Effect } from 'effect';
 import { seedSampleData } from '../src/features/sample-data/services/sample-data-seed';
+import { serverEnv } from '../src/shared/env/server';
 
 // Fills a pull request preview's empty database with made-up data. It needs
-// nothing but DATABASE_URL and leaves a database with app data untouched.
+// DATABASE_URL and WORDHOLD_OWNER_TIME_ZONE and leaves a database with app
+// data untouched.
 const result = await Effect.runPromise(
-  seedSampleData(new Date()).pipe(Effect.provide(PgLive), Effect.result),
+  seedSampleData({
+    now: new Date(),
+    timeZone: serverEnv.ownerTimeZone(),
+  }).pipe(Effect.provide(PgLive), Effect.result),
 );
 if (result._tag === 'Failure') {
   await globalThis.Bun.write(

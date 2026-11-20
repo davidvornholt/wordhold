@@ -2,6 +2,7 @@ import { expect, it } from 'bun:test';
 import { Database } from '@wordhold/db/client';
 import {
   testDatabaseLayer,
+  testTimeZone,
   withMigratedTestDatabase,
   withTestDatabase,
 } from '@wordhold/db/testing/postgres-test-database';
@@ -28,7 +29,7 @@ const migrationCount = migrations.length;
 const migrationReplayTimeoutMs = 15_000;
 
 const getMigrationErrorEffect = (url: string) =>
-  migrateDatabase(url).pipe(Effect.flip);
+  migrateDatabase({ url, timeZone: testTimeZone }).pipe(Effect.flip);
 const getMigrationError = (url: string) =>
   Effect.runPromise(getMigrationErrorEffect(url));
 
@@ -61,7 +62,7 @@ it(
     const applied = await Effect.runPromise(
       withTestDatabase((database) =>
         Effect.gen(function* () {
-          yield* migrateDatabase(database.url);
+          yield* migrateDatabase({ url: database.url, timeZone: testTimeZone });
           return yield* countAppliedMigrations;
         }).pipe(Effect.provide(testDatabaseLayer(database.url))),
       ),
@@ -145,7 +146,7 @@ it(
           yield* sql`alter table cards drop column stability_fast`;
           yield* sql`alter table entries drop column revision`;
           yield* unrecordMigrationsFrom(importPositionConstraintMigrationHash);
-          yield* migrateDatabase(database.url);
+          yield* migrateDatabase({ url: database.url, timeZone: testTimeZone });
           const pages = yield* sql<{ readonly expected: number }>`
           select import_expected_count as expected
           from pages
@@ -187,8 +188,8 @@ it('files units without a book into one placeholder book per course', async () =
             ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'U2 Descubre', 1),
             ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'Unit 1', 0)
         `;
-        yield* migrateDatabase(database.url);
-        yield* migrateDatabase(database.url);
+        yield* migrateDatabase({ url: database.url, timeZone: testTimeZone });
+        yield* migrateDatabase({ url: database.url, timeZone: testTimeZone });
         return yield* sql<{
           readonly unit: string;
           readonly book: string;
@@ -239,8 +240,8 @@ it("files entries without a book into their unit's book", async () => {
             ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'dddddddd-dddd-4ddd-8ddd-dddddddddddd', 'el libro', 'das Buch'),
             ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee', 'la casa', 'das Haus')
         `;
-        yield* migrateDatabase(database.url);
-        yield* migrateDatabase(database.url);
+        yield* migrateDatabase({ url: database.url, timeZone: testTimeZone });
+        yield* migrateDatabase({ url: database.url, timeZone: testTimeZone });
         return yield* sql<{
           readonly word: string;
           readonly book: string;
@@ -288,8 +289,8 @@ it('asks synonyms and antonyms once their word is learned', async () => {
             ('cccccccc-cccc-4ccc-8ccc-cccccccccccc', 'to_synonym', '2026-01-03T00:00:00Z', 'new'),
             ('cccccccc-cccc-4ccc-8ccc-cccccccccccc', 'to_antonym', '2026-01-04T00:00:00Z', 'review')
         `;
-        yield* migrateDatabase(database.url);
-        yield* migrateDatabase(database.url);
+        yield* migrateDatabase({ url: database.url, timeZone: testTimeZone });
+        yield* migrateDatabase({ url: database.url, timeZone: testTimeZone });
         return yield* sql<{
           readonly word: string;
           readonly direction: string;
@@ -345,7 +346,7 @@ it('drops the synonyms the judge accepted into the target language', async () =>
         yield* sql`alter table entries drop column revision`;
         yield* sql`alter table members drop column submission_id`;
         yield* unrecordMigrationsFrom(judgeTargetSynonymsMigrationHash);
-        yield* migrateDatabase(database.url);
+        yield* migrateDatabase({ url: database.url, timeZone: testTimeZone });
         return yield* sql<{
           readonly direction: string;
           readonly text: string;
@@ -393,7 +394,7 @@ it('drops the judge verdicts stored without otherWording', async () => {
         yield* sql`alter table entries drop column revision`;
         yield* sql`alter table members drop column submission_id`;
         yield* unrecordMigrationsFrom(staleJudgeVerdictsMigrationHash);
-        yield* migrateDatabase(database.url);
+        yield* migrateDatabase({ url: database.url, timeZone: testTimeZone });
         return yield* sql<{ readonly answer: string }>`
           select normalized_answer as answer from judge_cache order by normalized_answer
         `;

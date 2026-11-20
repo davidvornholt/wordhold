@@ -9,6 +9,7 @@ import {
 import type { SamplePerson } from '../content/sample-models';
 import { samplePeople } from '../content/sample-people';
 import { SampleDataError } from '../errors/sample-data-errors';
+import type { SampleClock } from './answer-history';
 import { writeSampleCourse } from './sample-course-writer';
 
 export type SeedOutcome =
@@ -81,8 +82,9 @@ const writeSignIn = (person: SamplePerson, userId: string, joinedAt: Date) =>
     }
   });
 
-const writePerson = (person: SamplePerson, now: Date) =>
+const writePerson = (person: SamplePerson, clock: SampleClock) =>
   Effect.gen(function* () {
+    const { now } = clock;
     const sql = yield* Database;
     const userId = crypto.randomUUID();
     const joinedAt = new Date(now.getTime() - person.joinedDaysAgo * day);
@@ -105,7 +107,7 @@ const writePerson = (person: SamplePerson, now: Date) =>
         ownerId: userId,
         course,
         createdAt: new Date(joinedAt.getTime() + index * hour),
-        now,
+        clock,
       });
       entries += written.entries;
       answers += written.answers;
@@ -127,9 +129,9 @@ const writePerson = (person: SamplePerson, now: Date) =>
   });
 
 // Fills an empty database with made-up people, courses and practice history,
-// all dated relative to `now`. A database that already holds app data is left
+// all dated relative to `clock.now`. A database that already holds app data is left
 // as it is. The lock keeps two runs from both finding the database empty.
-export const seedSampleData = (now: Date) =>
+export const seedSampleData = (clock: SampleClock) =>
   Effect.gen(function* () {
     const sql = yield* Database;
     return yield* sql.withTransaction(
@@ -142,7 +144,7 @@ export const seedSampleData = (now: Date) =>
         let entries = 0;
         let answers = 0;
         for (const person of samplePeople) {
-          const written = yield* writePerson(person, now);
+          const written = yield* writePerson(person, clock);
           courses += written.courses;
           entries += written.entries;
           answers += written.answers;
