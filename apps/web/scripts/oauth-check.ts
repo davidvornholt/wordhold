@@ -105,7 +105,12 @@ try {
     [duplicateAccount, 'legacy:other-issuer', allowedId, 'github', legacyUser],
   );
   await assert.rejects(() =>
-    Effect.runPromise(migrateDatabase(databaseUrl.toString())),
+    Effect.runPromise(
+      migrateDatabase({
+        url: databaseUrl.toString(),
+        timeZone: serverEnv.ownerTimeZone(),
+      }),
+    ),
   );
   assert.equal(
     (
@@ -129,7 +134,12 @@ try {
     2,
   );
   await pool.query('delete from account where id=$1', [duplicateAccount]);
-  await Effect.runPromise(migrateDatabase(databaseUrl.toString()));
+  await Effect.runPromise(
+    migrateDatabase({
+      url: databaseUrl.toString(),
+      timeZone: serverEnv.ownerTimeZone(),
+    }),
+  );
   assert.equal(
     (await pool.query('select issuer from account where id=$1', [legacyUser]))
       .rows[0].issuer,

@@ -2,6 +2,7 @@ import { expect, it } from 'bun:test';
 import { Database } from '@wordhold/db/client';
 import {
   testDatabaseLayer,
+  testTimeZone,
   withMigratedTestDatabase,
 } from '@wordhold/db/testing/postgres-test-database';
 import { Effect, Layer } from 'effect';
@@ -65,7 +66,9 @@ it('stores derived key points only for the definition they came from', async () 
       }).pipe(
         Effect.provide(
           Layer.merge(
-            PracticeReviewStore.live.pipe(Layer.provide(databaseLayer)),
+            PracticeReviewStore.live(testTimeZone).pipe(
+              Layer.provide(databaseLayer),
+            ),
             databaseLayer,
           ),
         ),

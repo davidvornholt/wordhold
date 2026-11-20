@@ -90,11 +90,11 @@ const reassess = (input: JudgeInput, accepted: ReadonlyArray<AcceptedAnswer>) =>
     } as const;
   });
 
-const planTranslationRepair = (card: EntryCard) =>
+const planTranslationRepair = (card: EntryCard, timeZone: string) =>
   Effect.gen(function* () {
     const judge = yield* PracticeJudge;
     const { reviews, accepted } = yield* loadHistory(card);
-    const baseline = replayCorrectedReviews(card, reviews, []);
+    const baseline = replayCorrectedReviews(card, reviews, [], timeZone);
     const scheduleFields = [
       'state',
       'reps',
@@ -137,6 +137,7 @@ const planTranslationRepair = (card: EntryCard) =>
         card,
         reviews.slice(0, index),
         corrections,
+        timeZone,
       );
       const rating = deriveRating(outcome, review.elapsedMs, before.state);
       // This repair can restore demonstrated knowledge, never downgrade it.
@@ -151,7 +152,7 @@ const planTranslationRepair = (card: EntryCard) =>
         reviews,
         accepted,
         corrections,
-        next: replayCorrectedReviews(card, reviews, corrections),
+        next: replayCorrectedReviews(card, reviews, corrections, timeZone),
         policy: yield* Effect.promise(() =>
           judgeCacheIdentity(judge.model, input),
         ),
@@ -161,15 +162,19 @@ const planTranslationRepair = (card: EntryCard) =>
 
 // Definitions are graded against key points, which this repair does not know
 // how to replay, and recited texts never reach the judge.
-const planCardRepair = (card: EntryCard) =>
+const planCardRepair = (card: EntryCard, timeZone: string) =>
   card.courseKind === 'language'
-    ? planTranslationRepair(card)
+    ? planTranslationRepair(card, timeZone)
     : Effect.fail(
         new ReviewRepairError({
           message: `${card.id} gehört zu keiner Sprache. Die Reparatur bewertet nur Übersetzungen neu.`,
         }),
       );
-export const planReviewRepairs = (ids: ReadonlyArray<string>) =>
+// `timeZone` is the owner's IANA zone, which due dates start their days in.
+export const planReviewRepairs = (
+  ids: ReadonlyArray<string>,
+  timeZone: string,
+) =>
   Effect.gen(function* () {
     const cards = yield* loadCards(ids);
     if (cards.length !== new Set(ids).size) {
@@ -179,7 +184,7 @@ export const planReviewRepairs = (ids: ReadonlyArray<string>) =>
     }
     const plans: Array<ReviewRepairPlan> = [];
     for (const card of cards) {
-      const plan = yield* planCardRepair(card);
+      const plan = yield* planCardRepair(card, timeZone);
       if (plan !== undefined) {
         plans.push(plan);
       }

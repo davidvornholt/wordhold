@@ -49,14 +49,23 @@ const databaseError = (operation: string, cause: unknown) =>
 // back, so a card can still have FSRS-6 memory after the migration rebuilt
 // every such card. It is rebuilt from its answers the way the migration does,
 // and the commit stores the result under the card's revision guard.
-const withFsrs7Memory = (sql: Database, row: SubmissionRow) =>
+const withFsrs7Memory = (
+  sql: Database,
+  row: SubmissionRow,
+  timeZone: string,
+) =>
   row.stability === null || row.stabilityFast !== null
     ? Effect.succeed(row)
     : sql<ReplayedReview>`
         select reviewed_at as "reviewedAt", rating from reviews
         where card_id = ${row.id}
         order by reviewed_at, id
-      `.pipe(Effect.map((history) => ({ ...row, ...replayReviews(history) })));
+      `.pipe(
+        Effect.map((history) => ({
+          ...row,
+          ...replayReviews(history, timeZone),
+        })),
+      );
 
 const loadEntryKnown = (sql: Database, entryId: string) =>
   sql<{ readonly known: boolean }>`
@@ -143,13 +152,10 @@ const listCourseEntries = (sql: Database, entryId: string) =>
   );
 
 // `examInCourse` holds whether `examId` names a test of the card's course.
-const findSubmission = (
-  sql: Database,
-  cardId: string,
-  revision: number,
-  examId: string | null,
-) =>
-  sql<SubmissionRow>`
+const findSubmission =
+  (sql: Database, timeZone: string) =>
+  (cardId: string, revision: number, examId: string | null) =>
+    sql<SubmissionRow>`
       select c.id, c.entry_id as "entryId", c.direction,
         c.state, c.due_at as "dueAt", c.stability,
         c.stability_fast as "stabilityFast", c.difficulty,
@@ -169,30 +175,30 @@ const findSubmission = (
       where c.id = ${cardId} and c.revision = ${revision}
         and c.introduced_at is not null
     `.pipe(
-    Effect.flatMap(([stored]) =>
-      stored === undefined
-        ? Effect.succeed(undefined)
-        : withFsrs7Memory(sql, stored),
-    ),
-    Effect.map((row) =>
-      row === undefined
-        ? undefined
-        : {
-            card: row,
-            entry: {
-              id: row.entryId,
-              targetText: row.targetText,
-              nativeText: row.nativeText,
-              keyPoints: row.keyPoints,
-              relatedWords: row.relatedWords,
+      Effect.flatMap(([stored]) =>
+        stored === undefined
+          ? Effect.succeed(undefined)
+          : withFsrs7Memory(sql, stored, timeZone),
+      ),
+      Effect.map((row) =>
+        row === undefined
+          ? undefined
+          : {
+              card: row,
+              entry: {
+                id: row.entryId,
+                targetText: row.targetText,
+                nativeText: row.nativeText,
+                keyPoints: row.keyPoints,
+                relatedWords: row.relatedWords,
+              },
+              courseKind: row.courseKind,
+              targetLanguage: row.targetLanguage,
+              examInCourse: row.examInCourse,
             },
-            courseKind: row.courseKind,
-            targetLanguage: row.targetLanguage,
-            examInCourse: row.examInCourse,
-          },
-    ),
-    Effect.mapError((cause) => databaseError('find submitted card', cause)),
-  );
+      ),
+      Effect.mapError((cause) => databaseError('find submitted card', cause)),
+    );
 
 export class PracticeReviewStore extends Context.Service<
   PracticeReviewStore,
@@ -226,56 +232,58 @@ export class PracticeReviewStore extends Context.Service<
     >;
   }
 >()('wordhold/PracticeReviewStore') {
-  static readonly live = Layer.effect(
-    PracticeReviewStore,
-    Effect.gen(function* () {
-      const sql = yield* Database;
-      const listAcceptedAnswers = (
-        entryId: string,
-        direction: AnswerDirection,
-      ) =>
-        sql<{
-          readonly text: string;
-          readonly source: AnswerSource;
-        }>`
+  // `timeZone` is the owner's IANA zone, which due dates start their days in.
+  static readonly live = (timeZone: string) =>
+    Layer.effect(
+      PracticeReviewStore,
+      Effect.gen(function* () {
+        const sql = yield* Database;
+        const listAcceptedAnswers = (
+          entryId: string,
+          direction: AnswerDirection,
+        ) =>
+          sql<{
+            readonly text: string;
+            readonly source: AnswerSource;
+          }>`
           select text, source from accepted_answers
           where entry_id = ${entryId} and direction = ${direction}
         `.pipe(
-          Effect.mapError((cause) =>
-            databaseError('load accepted answers', cause),
-          ),
-        );
-      const saveKeyPoints = (
-        entryId: string,
-        definition: string,
-        keyPoints: ReadonlyArray<string>,
-      ) =>
-        saveDerivedKeyPoints(sql, entryId, definition, keyPoints).pipe(
-          Effect.mapError((cause) => databaseError('save key points', cause)),
-        );
-      const commit = (input: PersistReviewInput) => {
-        const scheduleAdvances = advancesSchedule(
-          input.card,
-          input.reviewedAt,
-          input.rating !== ratings.again,
-        );
-        // A held answer writes back the schedule the card was loaded with,
-        // which stores the memory findSubmission rebuilt from FSRS-6.
-        const next = scheduleAdvances
-          ? applyRating(input.card, input.rating, input.reviewedAt)
-          : input.card;
-        const mapCommitError = (cause: unknown) =>
-          databaseError('commit graded answer', cause);
-        const runTransaction: RunReviewTransaction<PracticeDatabaseError> = (
-          work,
+            Effect.mapError((cause) =>
+              databaseError('load accepted answers', cause),
+            ),
+          );
+        const saveKeyPoints = (
+          entryId: string,
+          definition: string,
+          keyPoints: ReadonlyArray<string>,
         ) =>
-          sql
-            .withTransaction(
-              Effect.gen(function* () {
-                const unchanged = yield* lockGradedEntry(sql, input);
-                return yield* work({
-                  advanceCard: () =>
-                    sql<{ readonly revision: number }>`
+          saveDerivedKeyPoints(sql, entryId, definition, keyPoints).pipe(
+            Effect.mapError((cause) => databaseError('save key points', cause)),
+          );
+        const commit = (input: PersistReviewInput) => {
+          const scheduleAdvances = advancesSchedule(
+            input.card,
+            input.reviewedAt,
+            input.rating !== ratings.again,
+          );
+          // A held answer writes back the schedule the card was loaded with,
+          // which stores the memory findSubmission rebuilt from FSRS-6.
+          const next = scheduleAdvances
+            ? applyRating(input.card, input.rating, input.reviewedAt, timeZone)
+            : input.card;
+          const mapCommitError = (cause: unknown) =>
+            databaseError('commit graded answer', cause);
+          const runTransaction: RunReviewTransaction<PracticeDatabaseError> = (
+            work,
+          ) =>
+            sql
+              .withTransaction(
+                Effect.gen(function* () {
+                  const unchanged = yield* lockGradedEntry(sql, input);
+                  return yield* work({
+                    advanceCard: () =>
+                      sql<{ readonly revision: number }>`
                         update cards set state = ${next.state}::card_state,
                           due_at = ${next.dueAt}, stability = ${next.stability},
                           stability_fast = ${next.stabilityFast},
@@ -288,46 +296,43 @@ export class PracticeReviewStore extends Context.Service<
                           and introduced_at is not null
                         returning revision
                       `.pipe(
-                      Effect.map((rows) => rows.at(0)?.revision),
-                      Effect.mapError(mapCommitError),
-                    ),
-                  insertAcceptedAlternative: () =>
-                    insertJudgeAlternative(sql, input, unchanged),
-                  insertReview: () => insertReview(sql, input),
-                  entryKnown: () => loadEntryKnown(sql, input.entryId),
-                });
-              }),
-            )
-            .pipe(
-              Effect.catchTag('SqlError', (cause) =>
-                Effect.fail(mapCommitError(cause)),
-              ),
-            );
-        return commitGradedAnswer(
-          runTransaction,
-          input.outcome.method === 'judge' ? input.outcome.verdict : null,
-        ).pipe(
-          Effect.map((committed) => ({
-            ...committed,
-            schedule: {
-              advanced: scheduleAdvances,
-              state: next.state,
-              dueAt: next.dueAt,
-            },
-          })),
-        );
-      };
-      return {
-        findSubmission: (
-          cardId: string,
-          revision: number,
-          examId: string | null,
-        ) => findSubmission(sql, cardId, revision, examId),
-        listAcceptedAnswers,
-        listCourseEntries: (entryId: string) => listCourseEntries(sql, entryId),
-        saveKeyPoints,
-        commit,
-      } as const;
-    }),
-  );
+                        Effect.map((rows) => rows.at(0)?.revision),
+                        Effect.mapError(mapCommitError),
+                      ),
+                    insertAcceptedAlternative: () =>
+                      insertJudgeAlternative(sql, input, unchanged),
+                    insertReview: () => insertReview(sql, input),
+                    entryKnown: () => loadEntryKnown(sql, input.entryId),
+                  });
+                }),
+              )
+              .pipe(
+                Effect.catchTag('SqlError', (cause) =>
+                  Effect.fail(mapCommitError(cause)),
+                ),
+              );
+          return commitGradedAnswer(
+            runTransaction,
+            input.outcome.method === 'judge' ? input.outcome.verdict : null,
+          ).pipe(
+            Effect.map((committed) => ({
+              ...committed,
+              schedule: {
+                advanced: scheduleAdvances,
+                state: next.state,
+                dueAt: next.dueAt,
+              },
+            })),
+          );
+        };
+        return {
+          findSubmission: findSubmission(sql, timeZone),
+          listAcceptedAnswers,
+          listCourseEntries: (entryId: string) =>
+            listCourseEntries(sql, entryId),
+          saveKeyPoints,
+          commit,
+        } as const;
+      }),
+    );
 }

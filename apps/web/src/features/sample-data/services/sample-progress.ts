@@ -7,7 +7,11 @@ import { Array as Arr, Effect } from 'effect';
 import { isRelationDirection } from '../../../shared/directions';
 import { ratings } from '../../../shared/grading/rating';
 import { syncRelationIntroduction } from '../../../shared/practice/relation-introduction';
-import { type ReplayedCard, replayProgress } from './answer-history';
+import {
+  type ReplayedCard,
+  replayProgress,
+  type SampleClock,
+} from './answer-history';
 import type { WrittenEntry } from './sample-entries';
 
 type CardRow = {
@@ -64,7 +68,7 @@ const reviewRows = (
 const replayCards = (
   entries: ReadonlyArray<WrittenEntry>,
   cards: ReadonlyArray<CardRow>,
-  now: Date,
+  clock: SampleClock,
 ) => {
   const byId = new Map(
     entries.map((entry, index) => [entry.id, { entry, index }]),
@@ -75,7 +79,7 @@ const replayCards = (
       return [];
     }
     const replayed = replayProgress(written.entry.progress, {
-      now,
+      ...clock,
       offsetMinutes: offsetMinutes(written.index, card.direction),
       ratesEasy: written.entry.ratesEasy,
     });
@@ -93,7 +97,7 @@ const replayCards = (
 export const writeSampleProgress = (
   sql: Database,
   entries: ReadonlyArray<WrittenEntry>,
-  now: Date,
+  clock: SampleClock,
 ) =>
   Effect.gen(function* () {
     const ids = entries.map((entry) => entry.id);
@@ -101,7 +105,7 @@ export const writeSampleProgress = (
       select id, entry_id as "entryId", direction from cards
       where entry_id = any(${uuidArray(ids)}::uuid[])
     `;
-    const replayed = replayCards(entries, cards, now);
+    const replayed = replayCards(entries, cards, clock);
     const schedules = replayed.map((card) => card.schedule);
     const reviews = replayed.flatMap((card) => card.reviews);
     yield* sql`

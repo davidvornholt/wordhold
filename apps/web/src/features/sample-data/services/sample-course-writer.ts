@@ -1,6 +1,7 @@
 import type { Database } from '@wordhold/db/client';
 import { Effect } from 'effect';
 import type { SampleCourse } from '../content/sample-models';
+import type { SampleClock } from './answer-history';
 import { insertedId, writeSampleEntries } from './sample-entries';
 import { writeSampleProgress } from './sample-progress';
 
@@ -20,7 +21,7 @@ export const writeSampleCourse = (
     readonly ownerId: string;
     readonly course: SampleCourse;
     readonly createdAt: Date;
-    readonly now: Date;
+    readonly clock: SampleClock;
   },
 ) =>
   Effect.gen(function* () {
@@ -49,6 +50,6 @@ export const writeSampleCourse = (
         with ordinality as v(id, position)
       where e.id = v.id
     `;
-    const answers = yield* writeSampleProgress(sql, entries, input.now);
+    const answers = yield* writeSampleProgress(sql, entries, input.clock);
     return { entries: entries.length, answers } satisfies WrittenCourse;
   });

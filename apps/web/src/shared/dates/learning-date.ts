@@ -5,50 +5,67 @@ const time = zonedDateFormat({
   minute: '2-digit',
 });
 
-const dateTime = zonedDateFormat({
+const calendarDate = zonedDateFormat({
   day: '2-digit',
   month: '2-digit',
   year: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit',
+});
+
+type LearningDay =
+  | { readonly kind: 'phrase'; readonly phrase: string }
+  | { readonly kind: 'date'; readonly date: string };
+
+const phrase = (text: string): LearningDay => ({
+  kind: 'phrase',
+  phrase: text,
 });
 
 // "Heute" and "morgen" are the owner's calendar days, the same ones the
-// dashboard counts today's answers and the streak in.
-export const formatLearningDate = (
-  dueAt: Date,
-  timeZone: string,
-  now = new Date(),
-): string => {
+// dashboard counts today's answers and the streak in. A card due on a later
+// day is due from the start of that day, so only a step later today has a
+// time worth showing.
+const learningDay = (dueAt: Date, timeZone: string, now: Date): LearningDay => {
   const dayDifference =
     calendarDay(dueAt, timeZone) - calendarDay(now, timeZone);
 
   if (dueAt.getTime() <= now.getTime()) {
     if (dayDifference === 0) {
-      return 'Jetzt fällig';
+      return phrase('Jetzt fällig');
     }
     if (dayDifference === -1) {
-      return 'Seit gestern fällig';
+      return phrase('Seit gestern fällig');
     }
-    return `Seit ${Math.abs(dayDifference)} Tagen fällig`;
+    return phrase(`Seit ${Math.abs(dayDifference)} Tagen fällig`);
   }
   if (dayDifference === 0) {
-    return `Heute um ${time(timeZone).format(dueAt)}`;
+    return phrase(`Heute um ${time(timeZone).format(dueAt)}`);
   }
   if (dayDifference === 1) {
-    return `Morgen um ${time(timeZone).format(dueAt)}`;
+    return phrase('Morgen');
   }
-  return dateTime(timeZone).format(dueAt).replace(',', ' um');
+  return { kind: 'date', date: calendarDate(timeZone).format(dueAt) };
 };
 
-// The same phrase mid-sentence: "Nächster Termin morgen um 12:40".
+// On its own, such as under "Nächster Lerntermin": "Morgen" or "22.11.2026".
+export const formatLearningDate = (
+  dueAt: Date,
+  timeZone: string,
+  now = new Date(),
+): string => {
+  const day = learningDay(dueAt, timeZone, now);
+  return day.kind === 'date' ? day.date : day.phrase;
+};
+
+// Mid-sentence: "Nächster Termin morgen" or "Nächster Termin am 22.11.2026".
 export const formatLearningDateInline = (
   dueAt: Date,
   timeZone: string,
   now = new Date(),
 ): string => {
-  const phrase = formatLearningDate(dueAt, timeZone, now);
-  return `${phrase.charAt(0).toLocaleLowerCase('de-DE')}${phrase.slice(1)}`;
+  const day = learningDay(dueAt, timeZone, now);
+  return day.kind === 'date'
+    ? `am ${day.date}`
+    : `${day.phrase.charAt(0).toLocaleLowerCase('de-DE')}${day.phrase.slice(1)}`;
 };
 
 export const earliestDate = (dates: ReadonlyArray<Date | null>): Date | null =>

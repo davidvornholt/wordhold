@@ -1,5 +1,6 @@
 // Boundary to the ts-fsrs scheduler. It lives next to the cards schema because
 // both the app and the migration runner derive card schedules from it.
+import { DateTime } from 'effect';
 import { DefaultScheduler, type Grade, State } from 'ts-fsrs';
 import type { CardState, cards } from './schema/practice';
 
@@ -83,12 +84,26 @@ const toSchedulerCard = (row: CardSchedule, now: Date) => {
   };
 };
 
-// Returns the column updates for one graded review.
-export const applyRating = (
-  row: CardSchedule,
-  rating: Grade,
-  now: Date,
-): CardSchedule & { readonly dueAt: Date; readonly lastReviewedAt: Date } => {
+// FSRS-7 times a card to the minute, so a word answered at 14:05 would come
+// back at 00:15 or 16:40 on some later day. Practice happens in days, so a
+// card due on a later day than it was answered is due from the start of that
+// day in the owner's zone, the day boundary of "heute" and the streak. A
+// step later the same day keeps its time. The scheduler counts from a
+// reviewed card's last answer, so this changes no interval.
+const dueFrom = (dueAt: Date, answeredAt: Date, timeZone: string): Date => {
+  const dayStart = DateTime.toDateUtc(
+    DateTime.startOf(DateTime.makeZonedUnsafe(dueAt, { timeZone }), 'day'),
+  );
+  return dayStart.getTime() > answeredAt.getTime() ? dayStart : dueAt;
+};
+
+type RatedSchedule = CardSchedule & {
+  readonly dueAt: Date;
+  readonly lastReviewedAt: Date;
+};
+
+// The schedule FSRS gives, due to the minute.
+const rate = (row: CardSchedule, rating: Grade, now: Date): RatedSchedule => {
   const { card } = scheduler.review({
     card: toSchedulerCard(row, now),
     grade: rating,
@@ -106,6 +121,18 @@ export const applyRating = (
     learningSteps: card.learningStep,
     lastReviewedAt: now,
   };
+};
+
+// Returns the column updates for one graded review. `timeZone` is the
+// owner's IANA zone.
+export const applyRating = (
+  row: CardSchedule,
+  rating: Grade,
+  now: Date,
+  timeZone: string,
+): RatedSchedule => {
+  const rated = rate(row, rating, now);
+  return { ...rated, dueAt: dueFrom(rated.dueAt, now, timeZone) };
 };
 
 type ScheduledCard = Pick<CardSchedule, 'state' | 'dueAt'>;
@@ -134,16 +161,35 @@ export type ReplayedReview = {
   readonly rating: Grade;
 };
 
+// When due dates began to start at midnight, give or take the minutes the
+// release took. Before it, the early-review guard held a right answer given
+// on its due day but before FSRS's minute, so such answers are replayed
+// against the due time they had then.
+const dueDaysSince = new Date('2026-11-20T16:00:00Z');
+
+// The due time a card has once the migration has moved it to its day.
+const settled = (card: CardSchedule, timeZone: string): CardSchedule =>
+  card.dueAt === null || card.lastReviewedAt === null
+    ? card
+    : { ...card, dueAt: dueFrom(card.dueAt, card.lastReviewedAt, timeZone) };
+
 // The schedule a card's answers produce from scratch, in answer order, with
 // the same early-review guard as live practice.
 export const replayReviews = (
   reviews: ReadonlyArray<ReplayedReview>,
+  timeZone: string,
 ): CardSchedule => {
   let card = unscheduled;
   for (const review of reviews) {
+    const byMinute = review.reviewedAt.getTime() < dueDaysSince.getTime();
+    if (!byMinute) {
+      card = settled(card, timeZone);
+    }
     if (advancesSchedule(card, review.reviewedAt, review.rating !== 1)) {
-      card = applyRating(card, review.rating, review.reviewedAt);
+      card = byMinute
+        ? rate(card, review.rating, review.reviewedAt)
+        : applyRating(card, review.rating, review.reviewedAt, timeZone);
     }
   }
-  return card;
+  return settled(card, timeZone);
 };

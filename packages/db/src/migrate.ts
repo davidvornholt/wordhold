@@ -163,12 +163,16 @@ type CardAnswers = {
   }>;
 };
 
-const rebuildSchedule = ({ cardId, answers }: CardAnswers) => {
+const rebuildSchedule = (
+  { cardId, answers }: CardAnswers,
+  timeZone: string,
+) => {
   const schedule = replayReviews(
     answers.map((answer) => ({
       reviewedAt: new Date(answer.reviewedAt),
       rating: answer.rating,
     })),
+    timeZone,
   );
   if (schedule.stability === null) {
     throw new Error(`Card ${cardId} has a schedule but no answers.`);
@@ -176,7 +180,10 @@ const rebuildSchedule = ({ cardId, answers }: CardAnswers) => {
   return { id: cardId, ...schedule };
 };
 
-const rescheduleCardsWithFsrs7 = (database: ReturnType<typeof makeDrizzle>) =>
+const rescheduleCardsWithFsrs7 = (
+  database: ReturnType<typeof makeDrizzle>,
+  timeZone: string,
+) =>
   Effect.tryPromise({
     try: () =>
       database.transaction(async (transaction) => {
@@ -214,7 +221,7 @@ const rescheduleCardsWithFsrs7 = (database: ReturnType<typeof makeDrizzle>) =>
           )
           group by card.id
         `);
-        const schedules = cards.map(rebuildSchedule);
+        const schedules = cards.map((card) => rebuildSchedule(card, timeZone));
         await transaction.execute(sql`
           update cards as card set
             state = v.state,
@@ -241,7 +248,37 @@ const rescheduleCardsWithFsrs7 = (database: ReturnType<typeof makeDrizzle>) =>
     catch: migrationError,
   });
 
-export const migrateDatabase = (url: string) =>
+// Cards scheduled before due dates fell on the start of a day kept the
+// minute FSRS-7 gave them, such as 00:15. A card due on a later day than its
+// last answer now starts that day in the owner's zone, the rule `applyRating`
+// follows. It runs on every deploy, so a card the previous app version
+// answers during one is moved by the next. Safe to rerun: a card due at the
+// start of its day stays there.
+const startDueDaysAtMidnight = (
+  database: ReturnType<typeof makeDrizzle>,
+  timeZone: string,
+) =>
+  Effect.tryPromise({
+    try: () =>
+      database.execute(sql`
+        update cards
+        set due_at = date_trunc('day', due_at at time zone ${timeZone}) at time zone ${timeZone}
+        where (due_at at time zone ${timeZone})::date
+            > (last_reviewed_at at time zone ${timeZone})::date
+          and due_at
+            <> date_trunc('day', due_at at time zone ${timeZone}) at time zone ${timeZone}
+      `),
+    catch: migrationError,
+  });
+
+// `timeZone` is the owner's IANA zone, which due dates start their days in.
+export const migrateDatabase = ({
+  url,
+  timeZone,
+}: {
+  readonly url: string;
+  readonly timeZone: string;
+}) =>
   Effect.acquireUseRelease(
     Effect.try({
       try: () => makeDrizzle(url),
@@ -260,7 +297,8 @@ export const migrateDatabase = (url: string) =>
         Effect.flatMap(() => fileUnitsIntoBooks(database)),
         Effect.flatMap(() => fileEntriesIntoBooks(database)),
         Effect.flatMap(() => alignRelationCardsWithTheirWords(database)),
-        Effect.flatMap(() => rescheduleCardsWithFsrs7(database)),
+        Effect.flatMap(() => rescheduleCardsWithFsrs7(database, timeZone)),
+        Effect.flatMap(() => startDueDaysAtMidnight(database, timeZone)),
       ),
     (database) => Effect.promise(() => database.$client.end()),
   );

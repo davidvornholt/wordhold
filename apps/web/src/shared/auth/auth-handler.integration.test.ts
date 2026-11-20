@@ -1,6 +1,9 @@
 import { expect, it } from 'bun:test';
 import process from 'node:process';
-import { withTestDatabase } from '@wordhold/db/testing/postgres-test-database';
+import {
+  testTimeZone,
+  withTestDatabase,
+} from '@wordhold/db/testing/postgres-test-database';
 import { spawn } from 'bun';
 import { Effect } from 'effect';
 
@@ -20,6 +23,7 @@ it(
               NODE_ENV: 'test',
               DATABASE_URL: database.url,
               WORDHOLD_PUBLIC_URL: 'http://localhost:3199',
+              WORDHOLD_OWNER_TIME_ZONE: testTimeZone,
               AUTH_SECRET: 'public-auth-fixture-secret-32-characters',
               GITHUB_CLIENT_ID: 'fixture-client',
               GITHUB_CLIENT_SECRET: 'fixture-client-secret',

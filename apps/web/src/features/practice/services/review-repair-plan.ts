@@ -26,6 +26,7 @@ export const replayCorrectedReviews = (
   stored: RepairCard,
   reviews: ReadonlyArray<RepairReview>,
   corrections: ReadonlyArray<ReviewCorrection>,
+  timeZone: string,
 ): RepairCard => {
   const correctedRatings = new Map(
     corrections.map((item) => [item.review.id, item.rating]),
@@ -37,6 +38,7 @@ export const replayCorrectedReviews = (
         reviewedAt: review.reviewedAt,
         rating: correctedRatings.get(review.id) ?? review.rating,
       })),
+      timeZone,
     ),
   };
 };
