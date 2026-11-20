@@ -70,9 +70,9 @@ const feedbackHeading = (
   return repeated ? 'Diesmal richtig' : 'Richtig';
 };
 
-// When the card comes back, as a distance: "kommt morgen wieder". The exact
-// time is the title. An early answer to a card not yet due leaves its plan
-// as it was, which the note says, so the extra round does not look wasted.
+// When the card comes back, as a distance: "kommt morgen wieder". An early
+// answer to a card not yet due leaves its plan as it was, which the note
+// says, so the extra round does not look wasted.
 const ReturnNote = ({
   result,
   timeZone,
