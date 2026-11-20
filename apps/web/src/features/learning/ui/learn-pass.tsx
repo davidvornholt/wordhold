@@ -15,6 +15,7 @@ import {
 } from '../../../shared/pitfalls/pitfall-model';
 import { usePitfallWarmup } from '../../../shared/pitfalls/use-pitfall-warmup';
 import { CardRail } from '../../../shared/ui/card-rail';
+import { dealCard } from '../../../shared/ui/deal-card';
 import type { LearnItem } from '../schemas/learning-models';
 import { LearnDone } from './learn-done';
 import { LearnEntry } from './learn-entry';
@@ -69,7 +70,8 @@ export const LearnPass = ({
           activeIndex={item === undefined ? null : index}
           activeOutcome={null}
           description={`${index} von ${items.length} ${items.length === 1 ? nouns.singular : nouns.dativePlural} kennengelernt${shownDirection === null ? '' : ` · ${shownDirection}`}`}
-          label="Kennenlernen"
+          label={null}
+          progress={`${index} von ${items.length}`}
           ticks={items.map((_, position) =>
             position < index ? ('correct' as const) : null,
           )}
@@ -92,7 +94,7 @@ export const LearnPass = ({
           key={item.cardId}
           onLearned={async () => {
             await onIntroduce(item);
-            setIndex(index + 1);
+            dealCard(() => setIndex(index + 1));
           }}
           subject={subject}
         />

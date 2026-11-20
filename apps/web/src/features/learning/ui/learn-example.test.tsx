@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'bun:test';
 import { renderToStaticMarkup } from 'react-dom/server';
+import type { SoundControl } from '../../../shared/audio/use-pronunciation-audio';
 import type { LearnItem } from '../schemas/learning-models';
-import { LearnExampleAudio } from './learn-example-audio';
+import { LearnExample } from './learn-example';
 
 const item: LearnItem = {
   cardId: '00000000-0000-0000-0000-000000000011',
@@ -23,31 +24,48 @@ const example = {
   hasAudio: true,
 };
 
-const render = (shown: LearnItem, pending: boolean) =>
+const sound: SoundControl = {
+  play: () => Promise.resolve(),
+  stop: () => undefined,
+  playing: false,
+};
+
+const render = (
+  shown: LearnItem,
+  pending: boolean,
+  sentence: SoundControl | null = sound,
+) =>
   renderToStaticMarkup(
-    <LearnExampleAudio item={shown} pending={pending} targetLanguage="en" />,
+    <LearnExample
+      item={shown}
+      pending={pending}
+      sentence={sentence}
+      targetLanguage="en"
+    />,
   );
 
-describe('LearnExampleAudio', () => {
+describe('LearnExample', () => {
   it('holds the sentence place while the example is being prepared', () => {
     const html = render(item, true);
     expect(html).toContain('role="status"');
     expect(html).toContain('Beispielsatz wird vorbereitet …');
-    expect(html).toContain('Wort anhören');
     expect(html).not.toContain('Satz anhören');
   });
 
-  it('shows the sentence once it has arrived', () => {
+  it('shows the sentence with its sound once it has arrived', () => {
     const html = render({ ...item, example }, false);
     expect(html).toContain('This memory still makes me smile.');
     expect(html).toContain('Satz anhören');
     expect(html).not.toContain('Beispielsatz wird vorbereitet');
   });
 
-  it('leaves only the word when no sentence could be prepared', () => {
-    const html = render(item, false);
-    expect(html).toContain('Wort anhören');
-    expect(html).not.toContain('Im Satz');
-    expect(html).not.toContain('Beispielsatz wird vorbereitet');
+  it('offers no sound for a sentence without a recording', () => {
+    const html = render({ ...item, example }, false, null);
+    expect(html).toContain('This memory still makes me smile.');
+    expect(html).not.toContain('Satz anhören');
+  });
+
+  it('leaves no place when no sentence could be prepared', () => {
+    expect(render(item, false)).toBe('');
   });
 });

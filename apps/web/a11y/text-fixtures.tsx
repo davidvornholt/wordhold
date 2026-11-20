@@ -26,6 +26,7 @@ import {
   isCorrect,
 } from '../src/shared/grading/rating';
 import { withoutPitfalls } from '../src/shared/pitfalls/pitfall-model';
+import { ActionBar } from '../src/shared/ui/action-bar';
 import { Button } from '../src/shared/ui/button';
 import { CardRail } from '../src/shared/ui/card-rail';
 import { FocusLayout } from '../src/shared/ui/focus-layout';
@@ -149,7 +150,8 @@ export const TextsPracticeFixture = () => (
       activeIndex={0}
       activeOutcome={null}
       description="0 von 1 Karte bearbeitet"
-      label="Abschnitt 1"
+      label={null}
+      progress="0 von 1"
       ticks={[null]}
     />
     <CardPractice
@@ -173,8 +175,17 @@ export const TextsFeedbackFixture = () => {
     <FocusLayout exit={backControl} title={title}>
       <WordCard
         deck={0}
-        eyebrow="Schreib den Text auswendig"
-        tone="positive"
+        actions={
+          <ActionBar
+            primary={
+              <Button onClick={() => navigateToFixture('practice-empty')}>
+                Weiter
+              </Button>
+            }
+            secondary={null}
+          />
+        }
+        instruction="Schreib den Text auswendig"
         word={verseTitle}
         wordId={promptId}
         wordLang="de"
@@ -186,14 +197,15 @@ export const TextsFeedbackFixture = () => {
           example={null}
           id={feedbackId}
           kind="texts"
-          playSentence={null}
-          playWord={null}
           repeated={false}
           result={recitedResult(nearlyRecited, false, 1)}
+          retype={null}
+          sentence={null}
           skipped={false}
           spellingPitfalls={null}
           submittedAnswer={nearlyRecited}
           targetLanguage="de"
+          word={null}
         />
       </WordCard>
     </FocusLayout>

@@ -20,10 +20,12 @@ test('a completed one-card session uses the singular summary label', async ({
   });
   await expect(heading).toBeVisible();
   await expect(heading).toBeFocused();
-  await expect(page.getByText('1 von 1 Karte', { exact: true })).toBeVisible();
-  await expect(page.getByText('1 von 1 Karten', { exact: true })).toHaveCount(
-    0,
-  );
+  await expect(
+    page.getByText('Erster Durchgang: 1 von 1 Karte', { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText('Erster Durchgang: 1 von 1 Karten', { exact: true }),
+  ).toHaveCount(0);
 });
 
 test('an ungraded one-card session uses the singular summary label', async ({
@@ -36,10 +38,12 @@ test('an ungraded one-card session uses the singular summary label', async ({
   });
   await expect(heading).toBeVisible();
   await expect(heading).toBeFocused();
-  await expect(page.getByText('1 von 1 Karte', { exact: true })).toBeVisible();
-  await expect(page.getByText('1 von 1 Karten', { exact: true })).toHaveCount(
-    0,
-  );
+  await expect(
+    page.getByText('Erster Durchgang: 1 von 1 Karte', { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText('Erster Durchgang: 1 von 1 Karten', { exact: true }),
+  ).toHaveCount(0);
   await expect(
     page.getByText(
       '1 Karte konnte nicht bewertet werden. Lernstand und Termin blieben unverändert.',

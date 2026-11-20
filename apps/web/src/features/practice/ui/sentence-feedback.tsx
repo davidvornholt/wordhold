@@ -1,7 +1,8 @@
 import type { LanguageCode } from '@wordhold/db/schema/courses';
+import type { SoundControl } from '../../../shared/audio/use-pronunciation-audio';
 import { normalizeAnswerForComparison } from '../../../shared/grading/normalize';
-import { Button } from '../../../shared/ui/button';
-import { sentenceTone, toneDivider, toneText } from './feedback-tone';
+import { SoundButton } from '../../../shared/ui/sound-button';
+import { sentenceTone, toneText } from './feedback-tone';
 import type { SentenceOutcome } from './use-sentence-check';
 
 const sentenceHeading = (
@@ -27,17 +28,25 @@ const LabelledSentence = ({
   label,
   lang,
   sentence,
+  sound,
 }: {
   readonly label: string;
   readonly lang: LanguageCode;
   readonly sentence: string;
+  readonly sound: SoundControl | null;
 }) => (
-  <p>
-    <span className="text-muted-foreground text-sm">{label}</span>
-    <span className="wrap-break-word hyphens-auto text-lg" lang={lang}>
-      {sentence}
-    </span>
-  </p>
+  <div className="flex items-start gap-3">
+    <div className="grid min-w-0 flex-1 gap-1">
+      <p className="text-muted-foreground text-sm">{label}</p>
+      <p
+        className="wrap-break-word hyphens-auto font-display text-xl leading-snug"
+        lang={lang}
+      >
+        {sentence}
+      </p>
+    </div>
+    {sound === null ? null : <SoundButton label="Satz anhören" sound={sound} />}
+  </div>
 );
 
 // "Musterlösung" beside "Richtig" would read as a correction, so a correct
@@ -45,8 +54,8 @@ const LabelledSentence = ({
 // to say the same thing.
 const referenceLabel = (outcome: SentenceOutcome): string =>
   outcome.kind === 'checked' && outcome.result.graded && outcome.result.correct
-    ? 'Auch möglich: '
-    : 'Musterlösung: ';
+    ? 'Auch möglich'
+    : 'Musterlösung';
 
 type SentenceFeedbackProps = {
   // Links the "Weiter" action to this panel as its description.
@@ -54,19 +63,21 @@ type SentenceFeedbackProps = {
   readonly outcome: SentenceOutcome;
   readonly reference: string;
   readonly targetLanguage: LanguageCode;
-  readonly playSentence: (() => Promise<void>) | null;
+  // The stored translation read aloud.
+  readonly sentence: SoundControl | null;
   // The sentence was missed earlier in the round and is asked again.
   readonly repeated: boolean;
 };
 
-// The back of a sentence card: the verdict, the learner's sentence with the
-// fewest changes that fix it, why, and the stored translation to listen to.
+// The back of a sentence card, under the learner's sentence: the verdict,
+// the sentence with the fewest changes that fix it, why, and the stored
+// translation to listen to.
 export const SentenceFeedback = ({
   id,
   outcome,
   reference,
   targetLanguage,
-  playSentence,
+  sentence,
   repeated,
 }: SentenceFeedbackProps) => {
   const tone = sentenceTone(outcome);
@@ -79,18 +90,26 @@ export const SentenceFeedback = ({
   return (
     <div
       aria-live="polite"
-      className={`flex animate-rise flex-col gap-3 border-t pt-5 ${toneDivider[tone]}`}
+      className="flex animate-ink flex-col gap-4"
       id={id}
       role="status"
     >
-      <p className={`font-medium ${toneText[tone]}`}>
-        {sentenceHeading(outcome, repeated)}
-      </p>
+      <div className="flex items-center gap-3">
+        <p className={`font-medium text-sm ${toneText[tone]}`}>
+          {sentenceHeading(outcome, repeated)}
+        </p>
+        {repeatsReference && sentence !== null ? (
+          <span className="ml-auto flex shrink-0">
+            <SoundButton label="Satz anhören" sound={sentence} />
+          </span>
+        ) : null}
+      </div>
       {correction === null || sameSentence(correction, reference) ? null : (
         <LabelledSentence
-          label="Korrigiert: "
+          label="Korrigiert"
           lang={targetLanguage}
           sentence={correction}
+          sound={null}
         />
       )}
       {explanation === null ? null : <p className="text-sm">{explanation}</p>}
@@ -99,12 +118,8 @@ export const SentenceFeedback = ({
           label={referenceLabel(outcome)}
           lang={targetLanguage}
           sentence={reference}
+          sound={sentence}
         />
-      )}
-      {playSentence === null ? null : (
-        <Button className="w-fit" onClick={playSentence} variant="quiet">
-          Satz anhören
-        </Button>
       )}
     </div>
   );

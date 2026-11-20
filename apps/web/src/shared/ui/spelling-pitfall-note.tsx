@@ -60,9 +60,7 @@ export const SpellingPitfallNote = ({
   readonly covered?: boolean;
 }) =>
   pitfalls === null || pitfalls.length === 0 ? null : (
-    <div
-      className={`grid gap-2 border-l pl-3 starting:opacity-0 transition-[opacity,border-color] ${covered ? 'border-border' : 'border-warning-foreground'}`}
-    >
+    <div className="grid gap-2 starting:opacity-0 transition-opacity">
       <p className="eyebrow">
         {pitfalls.length === 1 ? 'Stolperstelle' : 'Stolperstellen'}
       </p>

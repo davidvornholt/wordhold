@@ -23,7 +23,7 @@ type PracticeAudioInput = {
   readonly loadExample: () => Promise<PreparedExampleSentence | null>;
 };
 
-// The card's three sounds: the word, the example sentence, and the automatic
+// The card's sounds: the word, the example sentence, and the automatic
 // playback after a graded answer, which prefers the sentence once prepared.
 export const usePracticeAudio = ({
   entryId,
@@ -36,15 +36,7 @@ export const usePracticeAudio = ({
   const sentenceAudioUrl = example?.hasAudio
     ? `/api/entries/${entryId}/example-audio`
     : null;
-  const { playAudio, playing, stopAudio } = useAudioPlayback();
-  const playSentence = useCallback(
-    () => playAudio(sentenceAudioUrl),
-    [playAudio, sentenceAudioUrl],
-  );
-  const playWord = useCallback(
-    () => playAudio(wordAudioUrl),
-    [playAudio, wordAudioUrl],
-  );
+  const { playAudio, sound } = useAudioPlayback();
   const playFeedbackAudio = useCallback(async () => {
     const prepared = await loadExample();
     if (!isOnScreen()) {
@@ -56,10 +48,8 @@ export const usePracticeAudio = ({
     await playAudio(preparedSentenceUrl ?? wordAudioUrl);
   }, [entryId, isOnScreen, loadExample, playAudio, wordAudioUrl]);
   return {
-    playing,
-    stopAudio,
     playFeedbackAudio,
-    playSentence: sentenceAudioUrl === null ? null : playSentence,
-    playWord: wordAudioUrl === null ? null : playWord,
+    word: sound(wordAudioUrl),
+    sentence: sound(sentenceAudioUrl),
   };
 };

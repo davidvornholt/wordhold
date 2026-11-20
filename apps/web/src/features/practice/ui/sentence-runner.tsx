@@ -4,6 +4,8 @@ import type { PrepareExamples } from '../../../shared/examples/example-model';
 import { useExampleWarmup } from '../../../shared/examples/use-example-warmup';
 import { countNoun } from '../../../shared/format/count';
 import { CardRail } from '../../../shared/ui/card-rail';
+import { dealCard } from '../../../shared/ui/deal-card';
+import { practiceCardClass } from '../../../shared/ui/surface-styles';
 import type { SentenceItem, SentenceSession } from '../schemas/sentence-models';
 import {
   acceptSentence,
@@ -35,7 +37,7 @@ const promptOf = (item: SentenceItem): SentencePrompt | null => {
 const PreparingSentence = () => (
   <div
     aria-busy="true"
-    className="flex min-h-48 animate-rise items-center justify-center border border-border bg-card px-6 py-8"
+    className={`flex min-h-48 animate-rise items-center justify-center px-6 py-8 ${practiceCardClass}`}
   >
     <p className="text-muted-foreground" role="status">
       Satz wird vorbereitet …
@@ -65,6 +67,20 @@ const railDescription = (
     'Satz',
     'Sätzen',
   )} bearbeitet`;
+  return round.repeat.length > 0
+    ? `${processed} · ${round.repeat.length} für die Nachrunde`
+    : processed;
+};
+
+const railProgress = (
+  round: SentenceRound,
+  roundSize: number,
+  repeated: boolean,
+): string => {
+  if (repeated) {
+    return `${round.repeat.length} noch einmal`;
+  }
+  const processed = `${round.asked.length} von ${roundSize}`;
   return round.repeat.length > 0
     ? `${processed} · ${round.repeat.length} für die Nachrunde`
     : processed;
@@ -107,13 +123,17 @@ export const SentenceRunner = ({
     );
   }
   const prompt = promptOf(active);
+  // dealCard can run a press's update after a later press has already moved
+  // the round on, so each update names the turn it was pressed on.
+  const shown = { entryId: active.entryId, turn: round.turn };
   return (
     <>
       <CardRail
         activeIndex={entryIds.indexOf(active.entryId)}
         activeOutcome={round.judged}
         description={railDescription(round, items.length, next.repeated)}
-        label={next.repeated ? 'Nachrunde' : 'Runde'}
+        label={next.repeated ? 'Nachrunde' : null}
+        progress={railProgress(round, items.length, next.repeated)}
         ticks={entryIds.map((entryId) => round.outcomes.get(entryId) ?? null)}
       />
       {prompt === null ? (
@@ -128,10 +148,14 @@ export const SentenceRunner = ({
           }
           key={`${prompt.entryId}-${round.turn}`}
           onAccept={() =>
-            setRound((current) => acceptSentence(current, prompt.entryId))
+            dealCard(() =>
+              setRound((current) => acceptSentence(current, shown)),
+            )
           }
           onNext={() =>
-            setRound((current) => finishSentence(current, prompt.entryId))
+            dealCard(() =>
+              setRound((current) => finishSentence(current, shown)),
+            )
           }
           onOutcome={(outcome) =>
             setRound((current) =>

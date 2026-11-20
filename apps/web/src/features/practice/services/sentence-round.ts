@@ -53,14 +53,22 @@ export const judgeSentence = (
   outcome: RailOutcome,
 ): SentenceRound => ({ ...round, judged: outcome });
 
+// The sentence card a learner finishes: its entry and the turn it was
+// shown on.
+export type ShownSentence = {
+  readonly entryId: string;
+  readonly turn: number;
+};
+
 // Moves past the sentence on screen with its verdict. Without a verdict
-// there is nothing to finish.
+// there is nothing to finish, and a card already finished, such as one
+// overruled twice in quick succession, is not finished again.
 export const finishSentence = (
   round: SentenceRound,
-  entryId: string,
+  { entryId, turn }: ShownSentence,
 ): SentenceRound => {
   const outcome = round.judged;
-  if (outcome === null) {
+  if (outcome === null || turn !== round.turn) {
     return round;
   }
   const firstPass = !round.asked.includes(entryId);
@@ -78,11 +86,16 @@ export const finishSentence = (
   };
 };
 
-// The learner overrules the judge: the sentence counts as correct.
+// The learner overrules the judge: the sentence counts as correct. A
+// verdict on a card already finished would land on the next one, so it is
+// dropped.
 export const acceptSentence = (
   round: SentenceRound,
-  entryId: string,
-): SentenceRound => finishSentence(judgeSentence(round, 'correct'), entryId);
+  shown: ShownSentence,
+): SentenceRound =>
+  shown.turn === round.turn
+    ? finishSentence(judgeSentence(round, 'correct'), shown)
+    : round;
 
 export type SentenceRoundCounts = {
   readonly firstTryCorrect: number;

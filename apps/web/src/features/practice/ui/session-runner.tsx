@@ -14,6 +14,7 @@ import {
 import { usePitfallWarmup } from '../../../shared/pitfalls/use-pitfall-warmup';
 import type { RailOutcome } from '../../../shared/session/rail-outcome';
 import { CardRail } from '../../../shared/ui/card-rail';
+import { dealCard } from '../../../shared/ui/deal-card';
 import {
   type PracticeSession,
   remainingReadyCount,
@@ -56,6 +57,25 @@ const railDescription = (queue: SessionQueue): string => {
   return queue.repeatCards.length > 0
     ? `${processed} · ${queue.repeatCards.length} für die Nachrunde`
     : processed;
+};
+
+const railProgress = (queue: SessionQueue): string => {
+  if (queue.phase === 'after-round') {
+    return `${queue.pending.length} noch einmal`;
+  }
+  const processed = `${queue.sectionProcessed} von ${queue.sectionTotal}`;
+  return queue.repeatCards.length > 0
+    ? `${processed} · ${queue.repeatCards.length} für die Nachrunde`
+    : processed;
+};
+
+// The first section goes without a name; only a later one or the
+// after-round says where the round is.
+const railLabel = (queue: SessionQueue): string | null => {
+  if (queue.phase === 'after-round') {
+    return 'Nachrunde';
+  }
+  return queue.section > 1 ? `Abschnitt ${queue.section}` : null;
 };
 
 export const SessionRunner = ({
@@ -124,8 +144,10 @@ export const SessionRunner = ({
         mode={mode}
         onJudged={setJudged}
         onNext={(result) => {
-          setJudged(null);
-          setQueue((current) => advanceQueue(current, card, result));
+          dealCard(() => {
+            setJudged(null);
+            setQueue((current) => advanceQueue(current, card, result));
+          });
         }}
         prepareExamples={warmup.prepareExamples}
         repeated={queue.phase === 'after-round'}
@@ -146,11 +168,8 @@ export const SessionRunner = ({
           }
           activeOutcome={judged}
           description={railDescription(queue)}
-          label={
-            queue.phase === 'after-round'
-              ? 'Nachrunde'
-              : `Abschnitt ${queue.section}`
-          }
+          label={railLabel(queue)}
+          progress={railProgress(queue)}
           ticks={queue.rail.map((tick) => tick.outcome)}
         />
       )}

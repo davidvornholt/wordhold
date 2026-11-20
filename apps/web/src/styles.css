@@ -41,6 +41,11 @@
   --ease-settle: var(--motion-ease-settle);
   --animate-rise: rise var(--motion-slow) var(--motion-ease) both;
   --animate-settle: settle var(--motion-base) var(--motion-ease-settle) both;
+  --animate-deal-in: deal-in var(--motion-base) var(--motion-ease)
+    calc(var(--motion-fast) / 2) both;
+  --animate-draw: draw var(--motion-slow) var(--motion-ease) both;
+  --animate-ink: ink var(--motion-base) var(--motion-ease) both;
+  --animate-scan: scan var(--motion-loop) var(--motion-ease) infinite;
 
   @keyframes rise {
     from {
@@ -53,6 +58,68 @@
     from {
       transform: scale(0.985);
     }
+  }
+
+  /*
+   * The next card rises from the stack as the answered one leaves to the
+   * left. Scaled from its foot (origin-bottom on the card), it starts where
+   * the nearest waiting card's edge shows: a little lower and narrower. It
+   * starts once the answered card has all but faded, so the words of the two
+   * cards don't show through each other.
+   */
+  @keyframes deal-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.375rem) scale(0.96);
+    }
+  }
+
+  /* A pen stroke drawn along its path; the path sets pathLength="1". */
+  @keyframes draw {
+    from {
+      stroke-dashoffset: 1;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  /* Handwriting appearing on the card, a little after the stroke before it. */
+  @keyframes ink {
+    from {
+      opacity: 0;
+      transform: translateY(0.25rem);
+    }
+  }
+
+  /* A mark running along the answer line while the answer is checked. */
+  @keyframes scan {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(300%);
+    }
+  }
+}
+
+@keyframes strike {
+  from {
+    background-size: 0% 0.125rem;
+  }
+}
+
+/*
+ * The answered card, buttons and all, slides a short way left and fades. It
+ * plays only in the transition dealCard starts, which marks the root with
+ * data-dealing, so a route change still cross-fades the card like the rest
+ * of the page. The next card animates its own entrance (deal-in) inside the
+ * live new image, so its image is not animated twice.
+ */
+@keyframes deal-out {
+  to {
+    opacity: 0;
+    transform: translateX(-1.5rem);
   }
 }
 
@@ -67,6 +134,21 @@
   ::view-transition-new(root) {
     animation-duration: var(--motion-base);
     animation-timing-function: var(--motion-ease);
+  }
+
+  ::view-transition-group(practice-card) {
+    animation-duration: var(--motion-base);
+    animation-timing-function: var(--motion-ease);
+  }
+
+  :root[data-dealing]::view-transition-old(practice-card) {
+    animation: deal-out var(--motion-fast) var(--motion-ease) both;
+    mix-blend-mode: normal;
+  }
+
+  :root[data-dealing]::view-transition-new(practice-card) {
+    animation: none;
+    mix-blend-mode: normal;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -87,9 +169,29 @@
   @apply mx-auto w-full max-w-3xl;
 }
 
-/* Small-caps style kicker above a value or heading. */
+/* A quiet kicker above a value or heading, in sentence case like all text. */
 @utility eyebrow {
-  @apply text-muted-foreground text-xs uppercase tracking-wide;
+  @apply text-muted-foreground text-sm;
+}
+
+/*
+ * The practice or learning card keeps its own view-transition group, so
+ * dealing a card moves it instead of cross-fading it with the page.
+ */
+@utility practice-card {
+  view-transition-name: practice-card;
+}
+
+/*
+ * A wrong answer struck through, drawn from its first letter to its last.
+ * The line is a background, so it follows an answer that wraps.
+ */
+@utility struck {
+  background-image: linear-gradient(var(--destructive), var(--destructive));
+  background-repeat: no-repeat;
+  background-position: 0 58%;
+  background-size: 100% 0.125rem;
+  animation: strike var(--motion-slow) var(--motion-ease) both;
 }
 
 /* The persistent top bar keeps its own view-transition group. */

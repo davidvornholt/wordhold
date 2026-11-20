@@ -1,14 +1,17 @@
-import { useId } from 'react';
+import { useId, useRef, useState } from 'react';
 import type { LearnItem } from '../src/features/learning/schemas/learning-models';
 import { LearnPass } from '../src/features/learning/ui/learn-pass';
 import type { SubmitResult } from '../src/features/practice/schemas/practice-models';
 import type { SubmitPayloadData } from '../src/features/practice/schemas/submission-schema';
+import { RetypeLine } from '../src/features/practice/ui/answer-entry';
+import { ContinueActions } from '../src/features/practice/ui/card-actions';
 import { CardPractice } from '../src/features/practice/ui/card-practice';
 import { FeedbackPanel } from '../src/features/practice/ui/feedback-panel';
 import { directionLabel } from '../src/shared/directions';
 import { withoutExamples } from '../src/shared/examples/example-model';
 import { ratings } from '../src/shared/grading/rating';
 import { withoutPitfalls } from '../src/shared/pitfalls/pitfall-model';
+import type { AnswerFieldElement } from '../src/shared/ui/answer-field';
 import { CardRail } from '../src/shared/ui/card-rail';
 import { FocusLayout } from '../src/shared/ui/focus-layout';
 import { WordCard } from '../src/shared/ui/word-card';
@@ -66,13 +69,9 @@ const missedPoint: SubmitResult = {
     'Du beschreibst die Wirkung richtig, aber nicht, dass der Stoff erhalten bleibt.',
   acceptedAsAlternative: false,
   keyPoints: [
-    { text: keyPoints[0] ?? '', covered: true, note: null },
-    { text: keyPoints[1] ?? '', covered: true, note: null },
-    {
-      text: keyPoints[2] ?? '',
-      covered: false,
-      note: 'Dass der Katalysator nicht verbraucht wird, fehlt.',
-    },
+    { text: keyPoints[0] ?? '', covered: true },
+    { text: keyPoints[1] ?? '', covered: true },
+    { text: keyPoints[2] ?? '', covered: false },
   ],
   assessmentId: '00000000-0000-0000-0000-000000000053',
 };
@@ -129,7 +128,8 @@ export const TermsPracticeFixture = () => (
       activeIndex={0}
       activeOutcome={null}
       description="0 von 1 Karte bearbeitet"
-      label="Abschnitt 1"
+      label={null}
+      progress="0 von 1"
       ticks={[null]}
     />
     <CardPractice
@@ -149,12 +149,26 @@ export const TermsPracticeFixture = () => (
 export const TermsFeedbackFixture = () => {
   const promptId = useId();
   const feedbackId = useId();
+  const retypeRef = useRef<AnswerFieldElement>(null);
+  const nextButtonRef = useRef<HTMLButtonElement>(null);
+  const [typed, setTyped] = useState('');
   return (
     <FocusLayout exit={backControl} title={title}>
       <WordCard
         deck={0}
-        eyebrow="Erkläre den Begriff"
-        tone="destructive"
+        actions={
+          <ContinueActions
+            busy={false}
+            feedbackId={feedbackId}
+            kind="terms"
+            nextButtonRef={nextButtonRef}
+            onOverrule={() => undefined}
+            overrulable={true}
+            resolution={null}
+            retypeMissing={typed.trim() === ''}
+          />
+        }
+        instruction="Erkläre den Begriff"
         word={term}
         wordId={promptId}
         wordLang="de"
@@ -166,14 +180,32 @@ export const TermsFeedbackFixture = () => {
           example={null}
           id={feedbackId}
           kind="terms"
-          playSentence={null}
-          playWord={null}
           repeated={false}
           result={missedPoint}
+          retype={
+            <RetypeLine
+              busy={false}
+              characters={null}
+              hintId={`${promptId}-retype-hint`}
+              inputRef={retypeRef}
+              kind="terms"
+              promptId={promptId}
+              retype={{
+                template: definition,
+                templateLanguage: 'de',
+                typed,
+                missedMessage: null,
+                onTypedChange: setTyped,
+              }}
+              showSource={true}
+            />
+          }
+          sentence={null}
           skipped={false}
           spellingPitfalls={null}
           submittedAnswer={submittedAnswer}
           targetLanguage="de"
+          word={null}
         />
       </WordCard>
     </FocusLayout>

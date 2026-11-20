@@ -68,6 +68,54 @@ export const formatLearningDateInline = (
     : `${day.phrase.charAt(0).toLocaleLowerCase('de-DE')}${day.phrase.slice(1)}`;
 };
 
+const minuteMs = 60_000;
+const daysPerWeek = 7;
+const daysPerMonth = 30.44;
+const daysPerYear = 365.25;
+// Up to here a distance counts days, then weeks, then months; past that,
+// years.
+const dayCountUntil = 14;
+const weekCountUntil = 60;
+const monthCountUntil = 365;
+
+const countPhrase = (count: number, one: string, many: string): string =>
+  count === 1 ? one : `in ${count} ${many}`;
+
+// How soon a card comes back, for "kommt … wieder" after an answer: later
+// today by the clock, a later day as a distance that rounds the further off
+// it is. A later day starts at midnight, so even one under an hour away is
+// "morgen". formatLearningDate gives the date.
+export const formatReturn = (
+  dueAt: Date,
+  timeZone: string,
+  now = new Date(),
+): string => {
+  const days = calendarDay(dueAt, timeZone) - calendarDay(now, timeZone);
+  if (days < 1) {
+    const minutes = Math.round((dueAt.getTime() - now.getTime()) / minuteMs);
+    if (minutes < 1) {
+      return 'gleich';
+    }
+    if (minutes < 60) {
+      return countPhrase(minutes, 'in einer Minute', 'Minuten');
+    }
+    return `heute um ${time(timeZone).format(dueAt)}`;
+  }
+  if (days === 1) {
+    return 'morgen';
+  }
+  if (days < dayCountUntil) {
+    return `in ${days} Tagen`;
+  }
+  if (days < weekCountUntil) {
+    return `in ${Math.round(days / daysPerWeek)} Wochen`;
+  }
+  if (days < monthCountUntil) {
+    return `in ${Math.round(days / daysPerMonth)} Monaten`;
+  }
+  return countPhrase(Math.round(days / daysPerYear), 'in einem Jahr', 'Jahren');
+};
+
 export const earliestDate = (dates: ReadonlyArray<Date | null>): Date | null =>
   dates.reduce<Date | null>(
     (earliest, date) =>

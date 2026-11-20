@@ -59,7 +59,6 @@ const keyPointFindings = (
     ? assessed.keyPoints.map((text, index) => ({
         text,
         covered: assessed.verdict.keyPoints[index]?.covered ?? false,
-        note: assessed.verdict.keyPoints[index]?.note ?? null,
       }))
     : null;
 

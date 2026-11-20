@@ -4,6 +4,12 @@ import { assertNoAccessibilityViolations } from './a11y-assertions';
 
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
+// Overruling a typo does not store it as another answer.
+const overruleConsequence = /nicht als weitere Lösung/u;
+// Not every screen reader reads a placeholder, so the word to write out,
+// which stands in the field until typing starts, is also its description.
+const retypeTemplate = /Vorlage: memory/u;
+
 test('a running sitting keeps the direction fixed', async ({ page }) => {
   await page.goto('/?state=practice-session');
   await expect(
@@ -30,7 +36,7 @@ test('a missed card returns in the end-of-section after-round', async ({
   // A mistake is written out before the card moves on, as when learning it.
   const retype = page.getByLabel('Schreib die Antwort ab');
   await expect(retype).toBeFocused();
-  await expect(retype).toHaveAttribute('placeholder', 'memory');
+  await expect(retype).toHaveAccessibleDescription(retypeTemplate);
   const next = page.getByRole('button', { name: 'Weiter' });
   await expect(next).toBeDisabled();
   await retype.fill('memorie');
@@ -113,10 +119,9 @@ test('a rejected typo can be stored as Hard without teaching it as an answer', a
   await answer.fill('memroy');
   await page.getByRole('button', { name: 'Prüfen' }).click();
   await expect(page.getByText('Noch nicht sicher')).toBeVisible();
-  await expect(
-    page.getByText('nicht als weitere Lösung', { exact: false }),
-  ).toBeVisible();
-  await page.getByRole('button', { name: 'Als richtig werten' }).click();
+  const overrule = page.getByRole('button', { name: 'Als richtig werten' });
+  await expect(overrule).toHaveAccessibleDescription(overruleConsequence);
+  await overrule.click();
 
   await expect(
     page.getByRole('heading', { level: 2, name: 'Ferien' }),

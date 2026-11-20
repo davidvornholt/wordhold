@@ -17,7 +17,10 @@ const answer = (round: SentenceRound, outcome: RailOutcome): SentenceRound => {
   if (next === null) {
     throw new Error('The round has already ended.');
   }
-  return finishSentence(judgeSentence(round, outcome), next.entryId);
+  return finishSentence(judgeSentence(round, outcome), {
+    entryId: next.entryId,
+    turn: round.turn,
+  });
 };
 
 const answerAll = (outcomes: ReadonlyArray<RailOutcome>) =>
@@ -73,12 +76,15 @@ describe('sentence round', () => {
   it('counts an overruled sentence as correct without asking it again', () => {
     const overruled = acceptSentence(
       judgeSentence(emptySentenceRound, 'wrong'),
-      'a',
+      { entryId: 'a', turn: 0 },
     );
     expect(overruled.repeat).toEqual([]);
 
     const missed = answer(answer(overruled, 'wrong'), 'correct');
-    const overruledLater = acceptSentence(judgeSentence(missed, 'wrong'), 'b');
+    const overruledLater = acceptSentence(judgeSentence(missed, 'wrong'), {
+      entryId: 'b',
+      turn: missed.turn,
+    });
     expect(nextSentence(overruledLater, entryIds)).toBeNull();
     expect(sentenceRoundCounts(overruledLater)).toMatchObject({
       firstTryCorrect: 2,
@@ -87,7 +93,24 @@ describe('sentence round', () => {
   });
 
   it('keeps a sentence on screen until it has a verdict', () => {
-    expect(finishSentence(emptySentenceRound, 'a')).toBe(emptySentenceRound);
+    expect(finishSentence(emptySentenceRound, { entryId: 'a', turn: 0 })).toBe(
+      emptySentenceRound,
+    );
+  });
+
+  it('finishes an overruled card once when it is overruled twice', () => {
+    const shown = { entryId: 'a', turn: 0 };
+    const once = acceptSentence(
+      judgeSentence(emptySentenceRound, 'wrong'),
+      shown,
+    );
+    const twice = acceptSentence(once, shown);
+
+    expect(twice).toBe(once);
+    expect(twice.judged).toBeNull();
+    expect(finishSentence(judgeSentence(once, 'wrong'), shown).turn).toBe(
+      once.turn,
+    );
   });
 
   it('gives a sentence asked again a fresh card', () => {

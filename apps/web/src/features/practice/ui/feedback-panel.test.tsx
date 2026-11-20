@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import type { SpellingPitfall } from '@wordhold/ai/pitfalls/schema';
+import type { ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { OwnerTimeZoneContext } from '../../../shared/dates/owner-time-zone';
 import type { FeedbackResult } from '../schemas/practice-models';
@@ -29,13 +30,18 @@ const result: FeedbackResult = {
 
 const feedbackId = 'feedback';
 
+// Stands in for the line a missed answer is written out on.
+const copyLine = <input aria-label="Schreib die Antwort ab" />;
+
 const render = (
   submittedAnswer: string,
   overrides: Partial<FeedbackResult> = {},
   {
+    retype = null,
     skipped = false,
     spellingPitfalls = null,
   }: {
+    readonly retype?: ReactNode;
     readonly skipped?: boolean;
     readonly spellingPitfalls?: ReadonlyArray<SpellingPitfall> | null;
   } = {},
@@ -49,14 +55,15 @@ const render = (
         example={null}
         id={feedbackId}
         kind="language"
-        playSentence={null}
-        playWord={null}
         repeated={false}
         result={{ ...result, ...overrides } as FeedbackResult}
+        retype={retype}
+        sentence={null}
         skipped={skipped}
         spellingPitfalls={spellingPitfalls}
         submittedAnswer={submittedAnswer}
         targetLanguage="en"
+        word={null}
       />
     </OwnerTimeZoneContext>,
   );
@@ -111,36 +118,39 @@ describe('answer feedback', () => {
 
   it('counts an answer in other words as right and names the book word', () => {
     const markup = render('server', { rating: 2 });
-    expect(markup).toContain('>Richtig</p>');
+    expect(markup).toContain('>Richtig</span>');
     expect(markup).toContain('Im Buch: ');
     expect(markup).toContain('>waiter</span>');
     expect(markup).not.toContain('Erwartet:');
     expect(markup).not.toContain('als gültige Alternative gespeichert');
   });
 
-  it('shows the expected answer beside a wrong answer', () => {
-    const markup = render('waitor', pendingWrongResult);
-    expect(markup).toContain('Erwartet:');
+  // A missed word is always written out, so the book's word shows once, in
+  // the line it is written on, and the verdict names it for screen readers.
+  it('names the expected answer of a wrong word once, under the attempt', () => {
+    const markup = render('waitor', pendingWrongResult, { retype: copyLine });
+    expect(markup).toContain('Deine Antwort: <span lang="en">waitor</span>');
+    expect(markup).toContain('Erwartet: <span lang="en">waiter</span>');
+    expect(markup).toContain(copyLine.props['aria-label']);
     expect(markup).not.toContain('Im Buch:');
   });
 
   it('distinguishes an early free exercise from a regular review', () => {
-    expect(render('waiter', heldResult)).toContain('Zusätzliche Übung.');
-    expect(render('waiter', heldResult)).toContain('Lernplan unverändert.');
+    expect(render('waiter', heldResult)).toContain(
+      'Zusätzliche Übung, kommt wie geplant',
+    );
+    expect(render('waiter')).not.toContain('Zusätzliche Übung');
   });
 
   it('reveals the solution of a skipped card without judging an attempt', () => {
-    const markup = render('', skippedResult, { skipped: true });
+    const markup = render('', skippedResult, {
+      retype: copyLine,
+      skipped: true,
+    });
     expect(markup).toContain('Nicht gewusst');
-    expect(markup).toContain('Erwartet:');
+    expect(markup).toContain('Erwartet: <span lang="en">waiter</span>');
+    expect(markup).not.toContain('Deine Antwort:');
     expect(markup).not.toContain('Als richtig werten');
-  });
-
-  it('explains the regrading option only while a wrong answer is pending', () => {
-    expect(render('waitor', pendingWrongResult)).toContain(
-      'nicht als weitere Lösung',
-    );
-    expect(render('server')).not.toContain('nicht als weitere Lösung');
   });
 
   it('shows where the word is misspelled after a right answer too', () => {
