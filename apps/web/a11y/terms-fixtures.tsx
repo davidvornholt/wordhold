@@ -133,6 +133,7 @@ export const TermsPracticeFixture = () => (
       ticks={[null]}
     />
     <CardPractice
+      deck={0}
       item={practiceItem}
       mode="scheduled"
       onJudged={() => undefined}
@@ -154,6 +155,7 @@ export const TermsFeedbackFixture = () => {
   return (
     <FocusLayout exit={backControl} title={title}>
       <WordCard
+        deck={0}
         actions={
           <ContinueActions
             busy={false}

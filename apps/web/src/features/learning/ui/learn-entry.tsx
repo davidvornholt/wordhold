@@ -38,6 +38,8 @@ import { useLearnAudio } from './use-learn-audio';
 
 type LearnEntryProps = {
   readonly item: LearnItem;
+  // Entries still waiting behind this one in the section.
+  readonly deck: number;
   // Whether the word's example sentence is still being prepared.
   readonly examplePending: boolean;
   readonly subject: CourseSubject;
@@ -152,6 +154,7 @@ const actionLabelFor = (busy: boolean, saveFailed: boolean): string => {
 // again.
 export const LearnEntry = ({
   item,
+  deck,
   examplePending,
   subject,
   onLearned,
@@ -210,6 +213,7 @@ export const LearnEntry = ({
   return (
     <form aria-busy={busy} onSubmit={onSubmit}>
       <WordCard
+        deck={deck}
         actions={
           <ActionBar
             primary={

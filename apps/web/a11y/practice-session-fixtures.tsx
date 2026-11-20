@@ -47,6 +47,8 @@ const audioItems = [
       hasAudio: true,
     },
   },
+  items[1],
+  card(4, 'journey', 'Reise'),
 ] as const;
 
 type PracticeSessionFixtureProps = {

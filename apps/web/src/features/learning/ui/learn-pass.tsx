@@ -86,6 +86,7 @@ export const LearnPass = ({
         />
       ) : (
         <LearnEntry
+          deck={items.length - index - 1}
           examplePending={
             item.example === null && !warmup.isSettled(item.entryId)
           }

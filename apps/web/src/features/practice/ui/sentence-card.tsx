@@ -74,6 +74,8 @@ const JudgedActions = ({
 type SentenceCardProps = {
   readonly prompt: SentencePrompt;
   readonly targetLanguage: LanguageCode;
+  // Sentences still waiting behind this one in the round.
+  readonly deck: number;
   readonly check: CheckSentence;
   // Fires as soon as the answer is judged, before "Weiter" moves on.
   readonly onOutcome: (outcome: SentenceOutcome) => void;
@@ -91,6 +93,7 @@ type SentenceCardProps = {
 export const SentenceCard = ({
   prompt,
   targetLanguage,
+  deck,
   check,
   onOutcome,
   onNext,
@@ -142,6 +145,7 @@ export const SentenceCard = ({
   return (
     <form aria-busy={busy} onSubmit={onSubmit}>
       <WordCard
+        deck={deck}
         actions={
           outcome === null ? (
             <CheckActions

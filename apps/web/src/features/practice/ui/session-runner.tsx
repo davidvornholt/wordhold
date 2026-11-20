@@ -138,6 +138,7 @@ export const SessionRunner = ({
   } else {
     content = (
       <CardPractice
+        deck={queue.pending.length - 1}
         item={card}
         key={`${card.cardId}-${card.revision}`}
         mode={mode}

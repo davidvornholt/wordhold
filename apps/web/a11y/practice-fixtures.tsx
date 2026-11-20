@@ -76,6 +76,7 @@ export const PracticeFixture = () => {
         ticks={[null]}
       />
       <CardPractice
+        deck={0}
         item={withPitfall ? adolescentPracticeItem : item}
         mode="scheduled"
         onJudged={() => undefined}
@@ -146,6 +147,7 @@ export const PracticeFeedbackFixture = ({
   return (
     <FocusLayout exit={backControl} title="English A2 · Üben">
       <WordCard
+        deck={1}
         actions={
           <ActionBar
             primary={
@@ -294,6 +296,7 @@ export const DeferredPracticeFixture = () => {
   return (
     <FocusLayout exit={backControl} title="English A2 · Üben">
       <CardPractice
+        deck={0}
         item={{ ...item, hasAudio: true }}
         mode="scheduled"
         onJudged={() => undefined}

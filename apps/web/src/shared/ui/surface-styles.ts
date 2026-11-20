@@ -10,7 +10,7 @@ export const cardCompactClass = 'border border-border bg-card p-4';
 export const cardListClass =
   'divide-y divide-border border border-border bg-card';
 
-// The practice card has no outline and no shadow, since the only lines on it
-// are the ones an answer is written on. It stands out from the page by its
-// tone alone, like a sheet of paper on a desk.
-export const practiceCardClass = 'bg-card';
+// The practice card keeps the hairline outline of every card, which also draws
+// the edges of the cards waiting behind it, but has no padding of its own and
+// no rules inside: the only lines on it are the ones an answer is written on.
+export const practiceCardClass = 'border border-border bg-card';

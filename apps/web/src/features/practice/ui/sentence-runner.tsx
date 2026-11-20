@@ -138,6 +138,11 @@ export const SentenceRunner = ({
       ) : (
         <SentenceCard
           check={check}
+          deck={
+            next.repeated
+              ? round.repeat.length - 1
+              : items.length - round.asked.length - 1
+          }
           key={`${prompt.entryId}-${round.turn}`}
           onAccept={() =>
             dealCard(() =>

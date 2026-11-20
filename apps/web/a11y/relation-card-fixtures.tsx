@@ -75,6 +75,7 @@ export const SynonymPracticeFixture = () => (
       ticks={[null]}
     />
     <CardPractice
+      deck={0}
       item={practiceItem}
       mode="scheduled"
       onJudged={() => undefined}

@@ -46,12 +46,18 @@ const practiceInstruction = (
 
 type CardPracticeProps = PracticeCardInput & {
   readonly repeated: boolean;
+  // Cards still waiting behind this one in the round.
+  readonly deck: number;
 };
 
 // One card, answered and continued in one form: Enter checks the answer,
 // and once judged, writes the missed one out or moves on. The one main button
 // does both, so the hand stays in place.
-export const CardPractice = ({ repeated, ...input }: CardPracticeProps) => {
+export const CardPractice = ({
+  repeated,
+  deck,
+  ...input
+}: CardPracticeProps) => {
   const { item, subject } = input;
   const { targetLanguage } = subject;
   const promptId = useId();
@@ -76,6 +82,7 @@ export const CardPractice = ({ repeated, ...input }: CardPracticeProps) => {
   return (
     <form aria-busy={busy} onSubmit={onSubmit}>
       <WordCard
+        deck={deck}
         actions={
           result === null ? (
             <CheckActions
