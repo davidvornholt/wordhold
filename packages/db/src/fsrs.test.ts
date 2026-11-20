@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { advancesSchedule, applyRating } from './fsrs';
+import { advancesSchedule, applyRating, replayReviews } from './fsrs';
 import type { cards } from './schema/practice';
 
 const ratings = { again: 1, hard: 2, good: 3, easy: 4 } as const;
@@ -117,6 +117,37 @@ describe('due dates', () => {
     const answeredAt = new Date('2026-11-20T22:59:30Z');
     const next = applyRating(newCard, ratings.again, answeredAt, timeZone);
     expect(next.dueAt).toEqual(new Date('2026-11-20T23:00:00Z'));
+  });
+});
+
+// A word first answered right at 14:05 in Berlin comes back 4.78 days later,
+// at 08:44 by FSRS's minute, so a right answer at 07:00 that day was given
+// before it was due by the minute but after the start of its day.
+const replayedOnDueDayMorning = (firstAnswer: string, early: string) =>
+  replayReviews(
+    [
+      { reviewedAt: new Date(firstAnswer), rating: ratings.good },
+      { reviewedAt: new Date(early), rating: ratings.good },
+    ],
+    timeZone,
+  );
+
+describe('replayReviews', () => {
+  it('holds an early answer given while due dates kept their minute', () => {
+    const replayed = replayedOnDueDayMorning(
+      '2026-11-10T13:05:00Z',
+      '2026-11-15T06:00:00Z',
+    );
+    expect(replayed.reps).toBe(1);
+    expect(replayed.dueAt).toEqual(new Date('2026-11-14T23:00:00Z'));
+  });
+
+  it('counts an answer on its due day once due days start at midnight', () => {
+    const replayed = replayedOnDueDayMorning(
+      '2027-01-10T13:05:00Z',
+      '2027-01-15T06:00:00Z',
+    );
+    expect(replayed.reps).toBe(2);
   });
 });
 

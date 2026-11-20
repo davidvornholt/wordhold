@@ -97,14 +97,13 @@ const dueFrom = (dueAt: Date, answeredAt: Date, timeZone: string): Date => {
   return dayStart.getTime() > answeredAt.getTime() ? dayStart : dueAt;
 };
 
-// Returns the column updates for one graded review. `timeZone` is the
-// owner's IANA zone.
-export const applyRating = (
-  row: CardSchedule,
-  rating: Grade,
-  now: Date,
-  timeZone: string,
-): CardSchedule & { readonly dueAt: Date; readonly lastReviewedAt: Date } => {
+type RatedSchedule = CardSchedule & {
+  readonly dueAt: Date;
+  readonly lastReviewedAt: Date;
+};
+
+// The schedule FSRS gives, due to the minute.
+const rate = (row: CardSchedule, rating: Grade, now: Date): RatedSchedule => {
   const { card } = scheduler.review({
     card: toSchedulerCard(row, now),
     grade: rating,
@@ -112,7 +111,7 @@ export const applyRating = (
   });
   return {
     state: nameByState[card.state],
-    dueAt: dueFrom(card.dueAt, now, timeZone),
+    dueAt: card.dueAt,
     stability: card.stability,
     stabilityFast: card.stabilityFast,
     difficulty: card.difficulty,
@@ -122,6 +121,18 @@ export const applyRating = (
     learningSteps: card.learningStep,
     lastReviewedAt: now,
   };
+};
+
+// Returns the column updates for one graded review. `timeZone` is the
+// owner's IANA zone.
+export const applyRating = (
+  row: CardSchedule,
+  rating: Grade,
+  now: Date,
+  timeZone: string,
+): RatedSchedule => {
+  const rated = rate(row, rating, now);
+  return { ...rated, dueAt: dueFrom(rated.dueAt, now, timeZone) };
 };
 
 type ScheduledCard = Pick<CardSchedule, 'state' | 'dueAt'>;
@@ -150,6 +161,12 @@ export type ReplayedReview = {
   readonly rating: Grade;
 };
 
+// When due dates began to start at midnight, give or take the minutes the
+// release took. Before it, the early-review guard held a right answer given
+// on its due day but before FSRS's minute, so such answers are replayed
+// against the due time they had then.
+const dueDaysSince = new Date('2026-11-20T16:00:00Z');
+
 // The schedule a card's answers produce from scratch, in answer order, with
 // the same early-review guard as live practice.
 export const replayReviews = (
@@ -159,8 +176,13 @@ export const replayReviews = (
   let card = unscheduled;
   for (const review of reviews) {
     if (advancesSchedule(card, review.reviewedAt, review.rating !== 1)) {
-      card = applyRating(card, review.rating, review.reviewedAt, timeZone);
+      card =
+        review.reviewedAt.getTime() < dueDaysSince.getTime()
+          ? rate(card, review.rating, review.reviewedAt)
+          : applyRating(card, review.rating, review.reviewedAt, timeZone);
     }
   }
-  return card;
+  return card.dueAt === null || card.lastReviewedAt === null
+    ? card
+    : { ...card, dueAt: dueFrom(card.dueAt, card.lastReviewedAt, timeZone) };
 };
