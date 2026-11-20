@@ -88,8 +88,8 @@ const toSchedulerCard = (row: CardSchedule, now: Date) => {
 // back at 00:15 or 16:40 on some later day. Practice happens in days, so a
 // card due on a later day than it was answered is due from the start of that
 // day in the owner's zone, the day boundary of "heute" and the streak. A
-// step later the same day keeps its time. The scheduler reads the time of
-// the last answer, never the due time, so this changes no interval.
+// step later the same day keeps its time. The scheduler counts from a
+// reviewed card's last answer, so this changes no interval.
 const dueFrom = (dueAt: Date, answeredAt: Date, timeZone: string): Date => {
   const dayStart = DateTime.toDateUtc(
     DateTime.startOf(DateTime.makeZonedUnsafe(dueAt, { timeZone }), 'day'),

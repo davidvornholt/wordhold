@@ -11,7 +11,6 @@ const calendarDate = zonedDateFormat({
   year: 'numeric',
 });
 
-// A phrase such as "Morgen", or the date of a day after tomorrow.
 type LearningDay =
   | { readonly kind: 'phrase'; readonly phrase: string }
   | { readonly kind: 'date'; readonly date: string };

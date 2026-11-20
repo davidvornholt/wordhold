@@ -110,8 +110,6 @@ describe('due dates', () => {
     expect(next.dueAt.getTime() - answeredAt.getTime()).toBe(60_000);
   });
 
-  // A step that ends after midnight is due the next day, so it can be asked
-  // from the start of it.
   it('starts a step that crosses midnight at the start of the next day', () => {
     // 23:59:30 in Berlin, a minute before the step ends.
     const answeredAt = new Date('2026-11-20T22:59:30Z');
