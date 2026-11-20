@@ -39,8 +39,9 @@ const lineColor = (missed: boolean, judged: boolean): string => {
   if (judged) {
     return 'border-transparent';
   }
+  // A missed copy keeps the warning color, so its focus thickens the line.
   return missed
-    ? 'border-warning-foreground'
+    ? 'border-warning-foreground focus-visible:shadow-[0_2px_0_var(--color-warning-foreground)]'
     : 'border-input focus-visible:border-ring';
 };
 

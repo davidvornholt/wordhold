@@ -44,6 +44,12 @@ test('a definition names the missed key point and keeps a slipped copy', async (
     page.getByText('Noch nicht ganz: Das 8. Wort ist „senkt“, nicht „erhöht“.'),
   ).toBeVisible();
   await expect(retype).toHaveValue(slippedCopy);
+  // The line keeps the warning color, so the focus has to show another way.
+  await expect(retype).toBeFocused();
+  await expect(retype).not.toHaveCSS('box-shadow', 'none');
+  await retype.blur();
+  await expect(retype).toHaveCSS('box-shadow', 'none');
+  await retype.focus();
 
   await retype.fill(definition);
   await retype.press('Enter');
