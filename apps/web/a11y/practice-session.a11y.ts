@@ -6,7 +6,8 @@ test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
 // Overruling a typo does not store it as another answer.
 const overruleConsequence = /nicht als weitere Lösung/u;
-// The word to write out is traced, not shown as a placeholder.
+// Not every screen reader reads a placeholder, so the word to write out,
+// which stands in the field until typing starts, is also its description.
 const retypeTemplate = /Vorlage: memory/u;
 
 test('a running sitting keeps the direction fixed', async ({ page }) => {

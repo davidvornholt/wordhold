@@ -125,9 +125,8 @@ describe('answer feedback', () => {
     expect(markup).not.toContain('als gültige Alternative gespeichert');
   });
 
-  // A missed word is always written out, so the book's word shows once, as
-  // the faint letters of that line, and the verdict names it for screen
-  // readers.
+  // A missed word is always written out, so the book's word shows once, in
+  // the line it is written on, and the verdict names it for screen readers.
   it('names the expected answer of a wrong word once, under the attempt', () => {
     const markup = render('waitor', pendingWrongResult, { retype: copyLine });
     expect(markup).toContain('Deine Antwort: <span lang="en">waitor</span>');

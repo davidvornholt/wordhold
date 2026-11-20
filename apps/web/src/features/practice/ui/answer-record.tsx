@@ -173,8 +173,8 @@ export const AnswerRecord = ({
 };
 
 // A wrong or missed word: the attempt struck through where it was written,
-// and beneath it the line to write the book's word on, whose faint letters
-// show the word itself, so it appears once. Both are drawn for the eye; the
+// and beneath it the line to write the book's word on, which shows the word
+// until typing starts, so it appears once. Both are drawn for the eye; the
 // verdict reads them out as MissedWordSummary.
 export const MissedWord = ({
   answerLanguage,

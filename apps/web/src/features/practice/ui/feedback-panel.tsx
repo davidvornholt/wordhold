@@ -162,7 +162,7 @@ const FeedbackExample = ({
 // description; then the word in use. A recited text shows the original with
 // every mistake marked in place.
 //
-// A missed answer is written out before the card moves on. A word is traced
+// A missed answer is written out before the card moves on. A word is written
 // right under the struck attempt, where the eye already is, so the verdict
 // follows it. A definition or text is copied after the verdict, whose key
 // points or marked mistakes say what to look out for while copying.

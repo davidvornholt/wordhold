@@ -110,8 +110,9 @@ const sourceLabels = {
 } as const;
 
 // The field a missed answer is written out on before the card moves on. A
-// word is traced over its own faint letters; a definition or text is copied
-// from above the field, where it stays while it is written.
+// word stands in the field until typing starts, as in the learning pass, so
+// it is written from memory, if only for a moment; a definition or text is
+// too long to hold, so it is copied from above the field.
 export const RetypeLine = ({
   busy,
   characters,
@@ -150,8 +151,7 @@ export const RetypeLine = ({
         missed={missed}
         multiline={isListCourse(kind)}
         onChange={retype.onTypedChange}
-        placeholder={isListCourse(kind) ? 'Hier abschreiben' : undefined}
-        trace={isListCourse(kind) ? undefined : retype.template}
+        placeholder={isListCourse(kind) ? 'Hier abschreiben' : retype.template}
         value={retype.typed}
       />
       {missed ? (
