@@ -167,6 +167,12 @@ export type ReplayedReview = {
 // against the due time they had then.
 const dueDaysSince = new Date('2026-11-20T16:00:00Z');
 
+// The due time a card has once the migration has moved it to its day.
+const settled = (card: CardSchedule, timeZone: string): CardSchedule =>
+  card.dueAt === null || card.lastReviewedAt === null
+    ? card
+    : { ...card, dueAt: dueFrom(card.dueAt, card.lastReviewedAt, timeZone) };
+
 // The schedule a card's answers produce from scratch, in answer order, with
 // the same early-review guard as live practice.
 export const replayReviews = (
@@ -175,14 +181,15 @@ export const replayReviews = (
 ): CardSchedule => {
   let card = unscheduled;
   for (const review of reviews) {
+    const byMinute = review.reviewedAt.getTime() < dueDaysSince.getTime();
+    if (!byMinute) {
+      card = settled(card, timeZone);
+    }
     if (advancesSchedule(card, review.reviewedAt, review.rating !== 1)) {
-      card =
-        review.reviewedAt.getTime() < dueDaysSince.getTime()
-          ? rate(card, review.rating, review.reviewedAt)
-          : applyRating(card, review.rating, review.reviewedAt, timeZone);
+      card = byMinute
+        ? rate(card, review.rating, review.reviewedAt)
+        : applyRating(card, review.rating, review.reviewedAt, timeZone);
     }
   }
-  return card.dueAt === null || card.lastReviewedAt === null
-    ? card
-    : { ...card, dueAt: dueFrom(card.dueAt, card.lastReviewedAt, timeZone) };
+  return settled(card, timeZone);
 };

@@ -140,6 +140,24 @@ describe('replayReviews', () => {
     expect(replayed.dueAt).toEqual(new Date('2026-11-14T23:00:00Z'));
   });
 
+  // The migration moved the first answer's due time to the start of its day,
+  // so live practice counted the second answer.
+  it('counts a later answer against the due day the migration set', () => {
+    const first = {
+      reviewedAt: new Date('2026-11-18T13:05:00Z'),
+      rating: ratings.good,
+    };
+    const second = {
+      reviewedAt: new Date('2026-11-23T06:00:00Z'),
+      rating: ratings.good,
+    };
+    const migrated = replayReviews([first], timeZone);
+    expect(migrated.dueAt).toEqual(new Date('2026-11-22T23:00:00Z'));
+    expect(replayReviews([first, second], timeZone)).toEqual(
+      applyRating(migrated, ratings.good, second.reviewedAt, timeZone),
+    );
+  });
+
   it('counts an answer on its due day once due days start at midnight', () => {
     const replayed = replayedOnDueDayMorning(
       '2027-01-10T13:05:00Z',
