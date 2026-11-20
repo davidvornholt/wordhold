@@ -1,6 +1,9 @@
 import { scanWcag22AaViolations } from '@davidvornholt/a11y-testing/axe';
 import { expect, test } from '@playwright/test';
-import { assertNoAccessibilityViolations } from './a11y-assertions';
+import {
+  assertNoAccessibilityViolations,
+  placeholderContrast,
+} from './a11y-assertions';
 
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
@@ -23,6 +26,11 @@ test('a round of sentences is translated, corrected and summed up', async ({
     'Meine Schwester arbeitet in einem Krankenhaus. Verwende das Wort für „Schwester“.',
   );
   await expect(field).toHaveAttribute('lang', 'en');
+  // The hint in an empty field is read like body text, in either theme.
+  expect(await placeholderContrast(field)).toBeGreaterThanOrEqual(4.5);
+  await page.emulateMedia({ colorScheme: 'dark' });
+  expect(await placeholderContrast(field)).toBeGreaterThanOrEqual(4.5);
+  await page.emulateMedia({ colorScheme: 'light' });
 
   await field.fill('My sister is working at a hospitel.');
   await field.press('Enter');

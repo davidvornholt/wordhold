@@ -24,7 +24,7 @@ export const answerPageType =
   'min-h-12 w-full border-b-2 pt-2 pb-2 text-lg leading-8';
 
 export const answerFieldStates =
-  'bg-transparent placeholder:text-muted-foreground/70 focus-visible:outline-none disabled:text-foreground';
+  'bg-transparent placeholder:text-muted-foreground focus-visible:outline-none disabled:text-foreground';
 
 // For fields sitting on a card surface.
 export const fieldOnCardClass = `min-h-11 border border-input bg-background px-3 py-2 text-base ${focusRing}`;
