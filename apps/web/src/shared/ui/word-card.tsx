@@ -34,9 +34,10 @@ type WordCardProps = {
 };
 
 // The index card. The word is the hero; everything else on it is small. Its
-// buttons sit on it, so the card and what it asks for move as one: a new card
-// rises into place, and dealCard throws the answered one away, which is why
-// the card keeps its own view-transition group around the part that moves.
+// buttons sit on it, so the card and what it asks for move as one: dealCard
+// moves the answered one out to the left while the new one slides in from the
+// right, which is why the card keeps its own view-transition group around the
+// part that moves.
 export const WordCard = ({
   instruction,
   word,

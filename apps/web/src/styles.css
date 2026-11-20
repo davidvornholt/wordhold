@@ -41,7 +41,8 @@
   --ease-settle: var(--motion-ease-settle);
   --animate-rise: rise var(--motion-slow) var(--motion-ease) both;
   --animate-settle: settle var(--motion-base) var(--motion-ease-settle) both;
-  --animate-deal-in: deal-in var(--motion-deal) var(--motion-ease) both;
+  --animate-deal-in: deal-in var(--motion-base) var(--motion-ease)
+    calc(var(--motion-fast) / 2) both;
   --animate-draw: draw var(--motion-slow) var(--motion-ease) both;
   --animate-ink: ink var(--motion-base) var(--motion-ease) both;
   --animate-scan: scan var(--motion-loop) var(--motion-ease) infinite;
@@ -59,10 +60,15 @@
     }
   }
 
-  /* The next card rises into the place of the one dealt away. */
+  /*
+   * The next card slides in from the right as the answered one leaves to
+   * the left. It starts once the answered card has all but faded, so the
+   * words of the two cards don't show through each other.
+   */
   @keyframes deal-in {
     from {
-      transform: translateY(0.5rem) scale(0.985);
+      opacity: 0;
+      transform: translateX(1.5rem);
     }
   }
 
@@ -102,21 +108,16 @@
 }
 
 /*
- * The answered card is dealt away to the left, with the buttons on it. It
+ * The answered card, buttons and all, slides a short way left and fades. It
  * plays only in the transition dealCard starts, which marks the root with
  * data-dealing, so a route change still cross-fades the card like the rest
- * of the page. The card stays opaque until it has cleared most of the next
- * one, which it covers like a real card; the next card animates its own
- * entrance (deal-in), inside the live new image, so its image is not
- * animated twice.
+ * of the page. The next card animates its own entrance (deal-in) inside the
+ * live new image, so its image is not animated twice.
  */
 @keyframes deal-out {
-  70% {
-    opacity: 1;
-  }
   to {
     opacity: 0;
-    transform: translate(-75%, 1.5rem) rotate(-8deg);
+    transform: translateX(-1.5rem);
   }
 }
 
@@ -134,15 +135,13 @@
   }
 
   ::view-transition-group(practice-card) {
-    animation-duration: var(--motion-deal);
+    animation-duration: var(--motion-base);
     animation-timing-function: var(--motion-ease);
   }
 
   :root[data-dealing]::view-transition-old(practice-card) {
-    animation: deal-out var(--motion-deal) var(--motion-ease-exit) both;
+    animation: deal-out var(--motion-fast) var(--motion-ease) both;
     mix-blend-mode: normal;
-    transform-origin: bottom left;
-    z-index: 1;
   }
 
   :root[data-dealing]::view-transition-new(practice-card) {
