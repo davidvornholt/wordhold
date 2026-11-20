@@ -132,6 +132,11 @@ describe('formatReturn', () => {
     expect(formatReturn(at(70), berlin, lateEvening)).toBe('morgen');
   });
 
+  it('names the next day for a card due at its midnight within the hour', () => {
+    // 00:00 the next day in Berlin, half an hour away.
+    expect(formatReturn(at(30), berlin, lateEvening)).toBe('morgen');
+  });
+
   it('rounds a later return the further off it is', () => {
     const inDays = (days: number) => at(days * 24 * 60);
     expect(formatReturn(inDays(3), berlin, lateEvening)).toBe('in 3 Tagen');
