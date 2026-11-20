@@ -7,8 +7,8 @@ let dealing = false;
 const reducedMotion = () =>
   globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? true;
 
-// Moves a practice or learning stack on to its next card by dealing the
-// answered one off the stack: the update runs inside a view transition
+// Moves a practice or learning round on to its next card by dealing the
+// answered one away: the update runs inside a view transition
 // that marks the root with data-dealing, which styles.css animates. Where
 // the browser has no view transitions, or motion is reduced, the next card
 // simply replaces the last.

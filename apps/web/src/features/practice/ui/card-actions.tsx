@@ -31,7 +31,7 @@ export const CheckActions = ({
       </Button>
     }
     secondary={
-      <Button disabled={blocked} onClick={onSkip} variant="quiet-muted">
+      <Button disabled={blocked} onClick={onSkip} variant="text">
         {skipping ? 'Wird gespeichert …' : 'Weiß ich nicht'}
       </Button>
     }
@@ -94,20 +94,21 @@ export const ContinueActions = ({
       }
       secondary={
         overrulable && kind !== 'texts' ? (
-          <p className="text-muted-foreground text-sm">
-            {overruleLabels[kind].question}{' '}
-            <Button
-              className="text-foreground"
-              disabled={saving}
-              onClick={onOverrule}
-              title={overruleLabels[kind].consequence}
-              variant="quiet"
-            >
-              {resolution === 'hard'
-                ? 'Wird gespeichert …'
-                : 'Als richtig werten'}
-            </Button>
-          </p>
+          <Button
+            disabled={saving}
+            onClick={onOverrule}
+            title={overruleLabels[kind].consequence}
+            variant="text"
+          >
+            {resolution === 'hard' ? (
+              'Wird gespeichert …'
+            ) : (
+              <span>
+                {overruleLabels[kind].question}{' '}
+                <span className="text-foreground">Als richtig werten</span>
+              </span>
+            )}
+          </Button>
         ) : null
       }
     />

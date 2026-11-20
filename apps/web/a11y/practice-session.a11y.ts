@@ -6,6 +6,8 @@ test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
 // Overruling a typo does not store it as another answer.
 const overruleConsequence = /nicht als weitere Lösung/u;
+// The word to write out is traced, not shown as a placeholder.
+const retypeTemplate = /Vorlage: memory/u;
 
 test('a running sitting keeps the direction fixed', async ({ page }) => {
   await page.goto('/?state=practice-session');
@@ -33,7 +35,7 @@ test('a missed card returns in the end-of-section after-round', async ({
   // A mistake is written out before the card moves on, as when learning it.
   const retype = page.getByLabel('Schreib die Antwort ab');
   await expect(retype).toBeFocused();
-  await expect(retype).toHaveAttribute('placeholder', 'memory');
+  await expect(retype).toHaveAccessibleDescription(retypeTemplate);
   const next = page.getByRole('button', { name: 'Weiter' });
   await expect(next).toBeDisabled();
   await retype.fill('memorie');

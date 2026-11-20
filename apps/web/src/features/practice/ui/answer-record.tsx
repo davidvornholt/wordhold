@@ -2,49 +2,22 @@ import type { CourseKind, LanguageCode } from '@wordhold/db/schema/courses';
 import type { ReactNode } from 'react';
 import type { SoundControl } from '../../../shared/audio/use-pronunciation-audio';
 import { normalizeAnswerForComparison } from '../../../shared/grading/normalize';
+import {
+  answerLineType,
+  answerPageType,
+} from '../../../shared/ui/field-styles';
 import { SoundButton } from '../../../shared/ui/sound-button';
+import { VerdictMark } from '../../../shared/ui/verdict-mark';
 import type { FeedbackResult } from '../schemas/practice-models';
 
-type AnswerRecordProps = {
-  readonly answerLanguage: LanguageCode;
-  readonly kind: CourseKind;
-  readonly result: FeedbackResult;
-  readonly submittedAnswer: string;
-  // The word's pronunciation, played from beside the book's answer.
-  readonly word: SoundControl | null;
-};
-
-// The line the answer was written on keeps the field's type and spacing, so
-// a word stays where it was written when the field gives way to the record.
-const lineClass =
-  'flex min-h-12 items-center gap-3 border-input border-b-2 pt-1 pb-1.5';
-const wordClass =
-  'wrap-break-word hyphens-auto min-w-0 font-display text-2xl leading-snug';
-// A definition or text keeps the lined page it was written on.
-const pageClass =
-  'ruled-lines wrap-break-word whitespace-pre-line text-lg leading-8';
+// The answer once judged keeps the field's type and spacing without its
+// rule, so the words stay where they were written when the field gives way
+// to the record.
+const lineClass = `${answerLineType} flex items-center gap-3 border-transparent`;
+const wordClass = 'wrap-break-word hyphens-auto min-w-0';
+const pageClass = `${answerPageType} wrap-break-word hyphens-auto whitespace-pre-line border-transparent`;
 // What follows the answer comes in just after the stroke that judged it.
 const afterStroke = 'animate-ink [animation-delay:var(--motion-base)]';
-
-// A teacher's tick, drawn once beside a right answer.
-const Tick = () => (
-  <svg
-    aria-hidden="true"
-    className="size-7 shrink-0 text-primary"
-    fill="none"
-    viewBox="0 0 28 28"
-  >
-    <path
-      className="animate-draw [stroke-dasharray:1]"
-      d="M4.5 15.5c2.4 1.3 4.3 3.4 5.8 6.5C13.6 13.8 18 8.3 24 4.5"
-      pathLength="1"
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="2.5"
-    />
-  </svg>
-);
 
 const WordSound = ({ word }: { readonly word: SoundControl | null }) =>
   word === null ? null : (
@@ -52,6 +25,23 @@ const WordSound = ({ word }: { readonly word: SoundControl | null }) =>
       <SoundButton label="Wort anhören" sound={word} />
     </span>
   );
+
+const repeatsBook = (expected: string, submitted: string): boolean =>
+  normalizeAnswerForComparison(expected) ===
+  normalizeAnswerForComparison(submitted);
+
+// "Erwartet" beside "Richtig" would read as a correction, so a right word
+// names the book's instead. Every word lives in a book, whether a textbook
+// or a novel, so "Im Buch" fits both.
+const bookLabel = (kind: CourseKind, correct: boolean): string => {
+  if (kind === 'terms') {
+    return 'Definition';
+  }
+  if (kind === 'texts') {
+    return 'Text';
+  }
+  return correct ? 'Im Buch' : 'Erwartet';
+};
 
 // The book's answer under the learner's, with a label, where the learner's
 // was not judged wrong: "Im Buch" beside a right answer, "Erwartet" beside
@@ -84,7 +74,7 @@ const LabelledAnswer = ({
     <div className={`grid gap-1 ${afterStroke}`}>
       <p className="text-muted-foreground text-sm">{label}</p>
       <p
-        className="wrap-break-word hyphens-auto whitespace-pre-line text-lg"
+        className="wrap-break-word hyphens-auto whitespace-pre-line text-lg leading-8"
         lang={answerLanguage}
       >
         {text}
@@ -92,151 +82,81 @@ const LabelledAnswer = ({
     </div>
   );
 
-// The learner's answer as written: a word on its line, a definition or text
-// on its page.
+// The learner's answer as written: a word on its line with whatever stands
+// beside it, a definition or text as a paragraph. A wrong definition is only
+// dimmed, since most of it is usually right.
 const Attempt = ({
   answerLanguage,
   children,
+  dimmed,
   kind,
   text,
-  tone,
 }: {
   readonly answerLanguage: LanguageCode;
   readonly children?: ReactNode;
+  readonly dimmed: boolean;
   readonly kind: CourseKind;
   readonly text: string;
-  // A wrong word is struck through; a wrong definition is only dimmed,
-  // since most of it is usually right.
-  readonly tone: 'plain' | 'struck';
-}) => {
-  if (kind !== 'language') {
-    return (
-      <p
-        className={`${pageClass} ${tone === 'struck' ? 'text-muted-foreground' : ''}`}
-        lang={answerLanguage}
-      >
-        <span className="sr-only">Deine Antwort: </span>
-        {text}
-      </p>
-    );
-  }
-  return (
+}) =>
+  kind === 'language' ? (
     <p className={lineClass}>
       <span className="sr-only">Deine Antwort: </span>
-      {tone === 'struck' ? (
-        <s
-          className={`${wordClass} struck text-muted-foreground no-underline`}
-          lang={answerLanguage}
-        >
-          {text}
-        </s>
-      ) : (
-        <span className={wordClass} lang={answerLanguage}>
-          {text}
-        </span>
-      )}
-      {children}
-    </p>
-  );
-};
-
-// "Erwartet" beside "Richtig" would read as a correction, so a right word
-// names the book's instead. Every word lives in a book, whether a textbook
-// or a novel, so "Im Buch" fits both.
-const bookLabel = (kind: CourseKind, correct: boolean): string => {
-  if (kind === 'terms') {
-    return 'Definition';
-  }
-  if (kind === 'texts') {
-    return 'Text';
-  }
-  return correct ? 'Im Buch' : 'Erwartet';
-};
-
-// The book's answer where the learner's was wrong or missing. A missed word
-// takes the line itself; under a struck one it is written beneath.
-const Correction = ({
-  answerLanguage,
-  kind,
-  onLine,
-  text,
-  word,
-}: {
-  readonly answerLanguage: LanguageCode;
-  readonly kind: CourseKind;
-  readonly onLine: boolean;
-  readonly text: string;
-  readonly word: SoundControl | null;
-}) => {
-  if (kind !== 'language') {
-    return (
-      <LabelledAnswer
-        answerLanguage={answerLanguage}
-        kind={kind}
-        label={bookLabel(kind, false)}
-        text={text}
-        word={null}
-      />
-    );
-  }
-  return (
-    <p className={onLine ? lineClass : 'flex items-center gap-3'}>
-      <span className="sr-only">Erwartet: </span>
-      <span className={`${wordClass} ${afterStroke}`} lang={answerLanguage}>
+      <span className={wordClass} lang={answerLanguage}>
         {text}
       </span>
-      <WordSound word={word} />
+      {children}
+    </p>
+  ) : (
+    <p
+      className={`${pageClass} ${dimmed ? 'text-muted-foreground' : ''}`}
+      lang={answerLanguage}
+    >
+      <span className="sr-only">Deine Antwort: </span>
+      {text}
     </p>
   );
-};
 
-// The answer once judged, where the field was: a right one ticked, a wrong
-// one struck through with the book's answer beneath, a missed one replaced
-// by the book's. The book's answer is left out where the learner's repeats
-// it; an accepted alternative still shows the one the entry intends.
+// A judged answer that was not wrong, where the field was: a right one with
+// a check, beside the book's answer where the two differ, and one that could
+// not be checked beside the answer expected. A wrong definition stays as
+// written, dimmed; the definition to copy comes after the verdict. A wrong
+// word is shown by MissedWord instead.
 export const AnswerRecord = ({
   answerLanguage,
   kind,
   result,
   submittedAnswer,
   word,
-}: AnswerRecordProps) => {
+}: {
+  readonly answerLanguage: LanguageCode;
+  readonly kind: CourseKind;
+  readonly result: FeedbackResult;
+  readonly submittedAnswer: string;
+  // The word's pronunciation, played from beside the book's answer.
+  readonly word: SoundControl | null;
+}) => {
   const expected = result.expectedAnswer;
-  const repeats =
-    normalizeAnswerForComparison(expected) ===
-    normalizeAnswerForComparison(submittedAnswer);
-  const attempted = submittedAnswer.trim() !== '';
   if (result.graded && !result.correct) {
-    return (
-      <>
-        {attempted && !repeats ? (
-          <Attempt
-            answerLanguage={answerLanguage}
-            kind={kind}
-            text={submittedAnswer}
-            tone="struck"
-          />
-        ) : null}
-        <Correction
-          answerLanguage={answerLanguage}
-          kind={kind}
-          onLine={!attempted || repeats}
-          text={expected}
-          word={word}
-        />
-      </>
+    return submittedAnswer.trim() === '' ? null : (
+      <Attempt
+        answerLanguage={answerLanguage}
+        dimmed={true}
+        kind={kind}
+        text={submittedAnswer}
+      />
     );
   }
   const correct = result.graded;
+  const repeats = repeatsBook(expected, submittedAnswer);
   return (
     <>
       <Attempt
         answerLanguage={answerLanguage}
+        dimmed={false}
         kind={kind}
         text={submittedAnswer}
-        tone="plain"
       >
-        {correct ? <Tick /> : null}
+        {correct ? <VerdictMark className="size-6" kind="check" /> : null}
         {repeats ? <WordSound word={word} /> : null}
       </Attempt>
       {repeats ? null : (
@@ -251,3 +171,65 @@ export const AnswerRecord = ({
     </>
   );
 };
+
+// A wrong or missed word: the attempt struck through where it was written,
+// and beneath it the line to write the book's word on, whose faint letters
+// show the word itself, so it appears once. Both are drawn for the eye; the
+// verdict reads them out as MissedWordSummary.
+export const MissedWord = ({
+  answerLanguage,
+  expected,
+  retype,
+  submittedAnswer,
+  word,
+}: {
+  readonly answerLanguage: LanguageCode;
+  readonly expected: string;
+  // The line to write the word on.
+  readonly retype: ReactNode;
+  readonly submittedAnswer: string;
+  readonly word: SoundControl | null;
+}) => (
+  <div className="flex flex-col">
+    {submittedAnswer.trim() === '' ||
+    repeatsBook(expected, submittedAnswer) ? null : (
+      <p aria-hidden="true" className={lineClass}>
+        <s
+          className={`${wordClass} struck text-muted-foreground no-underline`}
+          lang={answerLanguage}
+        >
+          {submittedAnswer}
+        </s>
+      </p>
+    )}
+    <div className={`flex items-start gap-3 ${afterStroke}`}>
+      <div className="min-w-0 flex-1">{retype}</div>
+      {word === null ? null : (
+        // Level with the line the word is written on.
+        <span className="flex h-12 shrink-0 items-center">
+          <SoundButton label="Wort anhören" sound={word} />
+        </span>
+      )}
+    </div>
+  </div>
+);
+
+// What MissedWord shows, in words, at the start of the verdict.
+export const MissedWordSummary = ({
+  answerLanguage,
+  expected,
+  submittedAnswer,
+}: {
+  readonly answerLanguage: LanguageCode;
+  readonly expected: string;
+  readonly submittedAnswer: string;
+}) => (
+  <span className="sr-only">
+    {submittedAnswer.trim() === '' ? null : (
+      <>
+        Deine Antwort: <span lang={answerLanguage}>{submittedAnswer}</span>.{' '}
+      </>
+    )}
+    Erwartet: <span lang={answerLanguage}>{expected}</span>.{' '}
+  </span>
+);

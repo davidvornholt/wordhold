@@ -11,14 +11,20 @@ export const fieldClass = `min-h-11 border border-input bg-card px-3 py-2 text-b
 // The line on a practice or learning card that the answer is written on, the
 // way a word is written on an index card: in the card's display face, on a
 // rule that takes the focus color while it is written on. Writing the word is
-// the whole act, so it is large.
-export const answerLineClass =
-  'min-h-12 w-full border-b-2 bg-transparent pt-1 pb-1.5 font-display text-2xl leading-snug placeholder:text-muted-foreground/70 focus-visible:outline-none disabled:text-foreground';
+// the whole act, so it is large. The type and spacing are kept apart from
+// the field's own states, so a copy laid under the field can match it to the
+// pixel.
+export const answerLineType =
+  'min-h-12 w-full border-b-2 pt-1 pb-1.5 font-display text-2xl leading-snug';
 
-// A definition, a text or a sentence wraps, so it is written on lined paper
-// in the body face, which reads better at length.
-export const answerPageClass =
-  'ruled-lines field-sizing-content min-h-[3lh] w-full resize-none bg-transparent text-lg leading-8 placeholder:text-muted-foreground/70 focus-visible:outline-none disabled:text-foreground';
+// A definition, a text or a sentence wraps, so it is written in the body
+// face, which reads better at length, above a single rule that moves down
+// as the answer grows.
+export const answerPageType =
+  'min-h-12 w-full border-b-2 pt-2 pb-2 text-lg leading-8';
+
+export const answerFieldStates =
+  'bg-transparent placeholder:text-muted-foreground/70 focus-visible:outline-none disabled:text-foreground';
 
 // For fields sitting on a card surface.
 export const fieldOnCardClass = `min-h-11 border border-input bg-background px-3 py-2 text-base ${focusRing}`;

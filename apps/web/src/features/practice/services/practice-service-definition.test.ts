@@ -142,13 +142,9 @@ describe('PracticeService definitions', () => {
         stored: false,
         explanation: 'Die Aktivierungsenergie fehlt.',
         keyPoints: [
-          { text: 'ist ein Stoff', covered: true, note: null },
-          {
-            text: 'senkt die Aktivierungsenergie',
-            covered: false,
-            note: 'Punkt 2 fehlt.',
-          },
-          { text: 'wird nicht verbraucht', covered: true, note: null },
+          { text: 'ist ein Stoff', covered: true },
+          { text: 'senkt die Aktivierungsenergie', covered: false },
+          { text: 'wird nicht verbraucht', covered: true },
         ],
       },
     });

@@ -45,19 +45,13 @@ const practiceInstruction = (
 };
 
 type CardPracticeProps = PracticeCardInput & {
-  // Cards still waiting behind this one in the round.
-  readonly deck: number;
   readonly repeated: boolean;
 };
 
 // One card, answered and continued in one form: Enter checks the answer,
-// and once judged, writes the missed one out or moves on. The one button at
-// the right does both, so the hand stays in place.
-export const CardPractice = ({
-  deck,
-  repeated,
-  ...input
-}: CardPracticeProps) => {
+// and once judged, writes the missed one out or moves on. The one main button
+// does both, so the hand stays in place.
+export const CardPractice = ({ repeated, ...input }: CardPracticeProps) => {
   const { item, subject } = input;
   const { targetLanguage } = subject;
   const promptId = useId();
@@ -80,9 +74,33 @@ export const CardPractice = ({
   const { result, busy, resolution, error, reconnecting } = submission;
 
   return (
-    <form aria-busy={busy} className="flex flex-col gap-4" onSubmit={onSubmit}>
+    <form aria-busy={busy} onSubmit={onSubmit}>
       <WordCard
-        deck={deck}
+        actions={
+          result === null ? (
+            <CheckActions
+              blocked={busy || dictating}
+              checking={busy && !skipping}
+              empty={submission.answer.trim() === ''}
+              nextButtonRef={nextButtonRef}
+              onSkip={skip}
+              skipping={skipping}
+            />
+          ) : (
+            <ContinueActions
+              busy={busy}
+              feedbackId={feedbackDescriptionId}
+              kind={subject.kind}
+              nextButtonRef={nextButtonRef}
+              onOverrule={() => {
+                submission.resolveWrongAnswer('hard').catch(() => undefined);
+              }}
+              overrulable={result.graded && !result.stored}
+              resolution={resolution}
+              retypeMissing={retype.required && retype.empty}
+            />
+          )
+        }
         instruction={practiceInstruction(item.direction, subject, repeated)}
         word={item.prompt}
         wordId={promptId}
@@ -122,6 +140,7 @@ export const CardPractice = ({
                   kind={subject.kind}
                   promptId={promptId}
                   retype={retype.field}
+                  showSource={subject.kind !== 'texts' || submission.skipped}
                 />
               )
             }
@@ -133,31 +152,8 @@ export const CardPractice = ({
             word={audio.word}
           />
         )}
+        <SubmissionNotice error={error} reconnecting={reconnecting} />
       </WordCard>
-      <SubmissionNotice error={error} reconnecting={reconnecting} />
-      {result === null ? (
-        <CheckActions
-          blocked={busy || dictating}
-          checking={busy && !skipping}
-          empty={submission.answer.trim() === ''}
-          nextButtonRef={nextButtonRef}
-          onSkip={skip}
-          skipping={skipping}
-        />
-      ) : (
-        <ContinueActions
-          busy={busy}
-          feedbackId={feedbackDescriptionId}
-          kind={subject.kind}
-          nextButtonRef={nextButtonRef}
-          onOverrule={() => {
-            submission.resolveWrongAnswer('hard').catch(() => undefined);
-          }}
-          overrulable={result.graded && !result.stored}
-          resolution={resolution}
-          retypeMissing={retype.required && retype.empty}
-        />
-      )}
     </form>
   );
 };

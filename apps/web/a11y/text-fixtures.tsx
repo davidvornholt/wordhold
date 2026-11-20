@@ -26,6 +26,7 @@ import {
   isCorrect,
 } from '../src/shared/grading/rating';
 import { withoutPitfalls } from '../src/shared/pitfalls/pitfall-model';
+import { ActionBar } from '../src/shared/ui/action-bar';
 import { Button } from '../src/shared/ui/button';
 import { CardRail } from '../src/shared/ui/card-rail';
 import { FocusLayout } from '../src/shared/ui/focus-layout';
@@ -154,7 +155,6 @@ export const TextsPracticeFixture = () => (
       ticks={[null]}
     />
     <CardPractice
-      deck={0}
       item={practiceItem}
       mode="scheduled"
       onJudged={() => undefined}
@@ -173,7 +173,16 @@ export const TextsFeedbackFixture = () => {
   return (
     <FocusLayout exit={backControl} title={title}>
       <WordCard
-        deck={0}
+        actions={
+          <ActionBar
+            primary={
+              <Button onClick={() => navigateToFixture('practice-empty')}>
+                Weiter
+              </Button>
+            }
+            secondary={null}
+          />
+        }
         instruction="Schreib den Text auswendig"
         word={verseTitle}
         wordId={promptId}

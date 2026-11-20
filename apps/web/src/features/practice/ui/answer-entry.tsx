@@ -1,5 +1,5 @@
 import type { CourseKind, LanguageCode } from '@wordhold/db/schema/courses';
-import { type RefObject, useId } from 'react';
+import type { RefObject } from 'react';
 import { isListCourse } from '../../../shared/directions';
 import type { CharacterSet } from '../../../shared/practice/answer-characters';
 import {
@@ -14,7 +14,7 @@ import {
 import type { Dictation } from './use-dictation';
 
 // After a wrong or skipped answer the card asks for the answer to be written
-// out; the expected answer is the line's template until the learner types.
+// out from the expected answer, its template.
 export type RetypeState = {
   readonly template: string;
   readonly templateLanguage: string;
@@ -99,11 +99,19 @@ type RetypeLineProps = {
   readonly kind: CourseKind;
   readonly promptId: string;
   readonly retype: RetypeState;
+  // Whether the definition or text to copy stands above the field. A recited
+  // text is already on the card with its mistakes marked.
+  readonly showSource: boolean;
 };
 
-// The line a missed answer is written out on before the card moves on. Its
-// template is the answer itself, gone as soon as typing starts; the label
-// says why the answer appears a second time.
+const sourceLabels = {
+  terms: 'Definition',
+  texts: 'Text',
+} as const;
+
+// The field a missed answer is written out on before the card moves on. A
+// word is traced over its own faint letters; a definition or text is copied
+// from above the field, where it stays while it is written.
 export const RetypeLine = ({
   busy,
   characters,
@@ -112,37 +120,45 @@ export const RetypeLine = ({
   kind,
   promptId,
   retype,
+  showSource,
 }: RetypeLineProps) => {
-  const fieldId = useId();
+  const missed = retype.missedMessage !== null;
   return (
-    <div className="flex flex-col gap-1">
-      <label className="text-muted-foreground text-sm" htmlFor={fieldId}>
-        Schreib die Antwort ab
-      </label>
-      {retype.typed === '' ? (
+    <div className="flex flex-col gap-2">
+      {isListCourse(kind) && showSource ? (
+        <div className="mb-1 flex flex-col gap-1">
+          <p className="text-muted-foreground text-sm">{sourceLabels[kind]}</p>
+          <p
+            className="wrap-break-word hyphens-auto whitespace-pre-line text-lg leading-8"
+            id={hintId}
+            lang={retype.templateLanguage}
+          >
+            {retype.template}
+          </p>
+        </div>
+      ) : (
         <span className="sr-only" id={hintId}>
           Vorlage: <span lang={retype.templateLanguage}>{retype.template}</span>
         </span>
-      ) : null}
+      )}
       <AnswerField
-        aria-describedby={
-          retype.typed === '' ? `${promptId} ${hintId}` : promptId
-        }
+        aria-describedby={`${promptId} ${hintId}`}
+        aria-label="Schreib die Antwort ab"
         characters={characters}
         disabled={busy}
         fieldRef={inputRef}
-        id={fieldId}
-        missed={retype.missedMessage !== null}
+        missed={missed}
         multiline={isListCourse(kind)}
         onChange={retype.onTypedChange}
-        placeholder={retype.template}
+        placeholder={isListCourse(kind) ? 'Hier abschreiben' : undefined}
+        trace={isListCourse(kind) ? undefined : retype.template}
         value={retype.typed}
       />
-      {retype.missedMessage === null ? null : (
-        <p className="mt-1 text-sm text-warning-foreground" role="status">
+      {missed ? (
+        <p className="text-sm text-warning-foreground" role="status">
           {retype.missedMessage}
         </p>
-      )}
+      ) : null}
     </div>
   );
 };

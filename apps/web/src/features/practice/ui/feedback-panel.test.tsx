@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import type { SpellingPitfall } from '@wordhold/ai/pitfalls/schema';
+import type { ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { OwnerTimeZoneContext } from '../../../shared/dates/owner-time-zone';
 import type { FeedbackResult } from '../schemas/practice-models';
@@ -29,13 +30,18 @@ const result: FeedbackResult = {
 
 const feedbackId = 'feedback';
 
+// Stands in for the line a missed answer is written out on.
+const copyLine = <input aria-label="Schreib die Antwort ab" />;
+
 const render = (
   submittedAnswer: string,
   overrides: Partial<FeedbackResult> = {},
   {
+    retype = null,
     skipped = false,
     spellingPitfalls = null,
   }: {
+    readonly retype?: ReactNode;
     readonly skipped?: boolean;
     readonly spellingPitfalls?: ReadonlyArray<SpellingPitfall> | null;
   } = {},
@@ -51,7 +57,7 @@ const render = (
         kind="language"
         repeated={false}
         result={{ ...result, ...overrides } as FeedbackResult}
-        retype={null}
+        retype={retype}
         sentence={null}
         skipped={skipped}
         spellingPitfalls={spellingPitfalls}
@@ -119,9 +125,14 @@ describe('answer feedback', () => {
     expect(markup).not.toContain('als gültige Alternative gespeichert');
   });
 
-  it('shows the expected answer beside a wrong answer', () => {
-    const markup = render('waitor', pendingWrongResult);
-    expect(markup).toContain('Erwartet:');
+  // A missed word is always written out, so the book's word shows once, as
+  // the faint letters of that line, and the verdict names it for screen
+  // readers.
+  it('names the expected answer of a wrong word once, under the attempt', () => {
+    const markup = render('waitor', pendingWrongResult, { retype: copyLine });
+    expect(markup).toContain('Deine Antwort: <span lang="en">waitor</span>');
+    expect(markup).toContain('Erwartet: <span lang="en">waiter</span>');
+    expect(markup).toContain(copyLine.props['aria-label']);
     expect(markup).not.toContain('Im Buch:');
   });
 
@@ -133,9 +144,13 @@ describe('answer feedback', () => {
   });
 
   it('reveals the solution of a skipped card without judging an attempt', () => {
-    const markup = render('', skippedResult, { skipped: true });
+    const markup = render('', skippedResult, {
+      retype: copyLine,
+      skipped: true,
+    });
     expect(markup).toContain('Nicht gewusst');
-    expect(markup).toContain('Erwartet:');
+    expect(markup).toContain('Erwartet: <span lang="en">waiter</span>');
+    expect(markup).not.toContain('Deine Antwort:');
     expect(markup).not.toContain('Als richtig werten');
   });
 

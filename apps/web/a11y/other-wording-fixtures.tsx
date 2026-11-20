@@ -135,7 +135,6 @@ export const OtherWordingFixture = ({
       ticks={[null]}
     />
     <CardPractice
-      deck={0}
       item={practiceItem}
       mode={testPractice ? 'drill' : 'scheduled'}
       onJudged={() => undefined}

@@ -38,8 +38,6 @@ import { useLearnAudio } from './use-learn-audio';
 
 type LearnEntryProps = {
   readonly item: LearnItem;
-  // Entries still waiting behind this one in the section.
-  readonly deck: number;
   // Whether the word's example sentence is still being prepared.
   readonly examplePending: boolean;
   readonly subject: CourseSubject;
@@ -66,11 +64,8 @@ const CopySource = ({
     </p>
     {kind === 'terms' && item.keyPoints !== null ? (
       <KeyPointList
-        items={item.keyPoints.map((text) => ({
-          text,
-          covered: null,
-          note: null,
-        }))}
+        items={item.keyPoints.map((text) => ({ text, covered: null }))}
+        titled={true}
       />
     ) : null}
   </>
@@ -86,12 +81,12 @@ const copyLabels = {
   },
   terms: {
     field: 'Schreib die Definition ab',
-    placeholder: 'Die Definition',
+    placeholder: 'Hier abschreiben',
     saveFailed: 'Der Begriff wurde nicht gespeichert. Versuch es noch einmal.',
   },
   texts: {
     field: 'Schreib den Text ab',
-    placeholder: 'Der Text',
+    placeholder: 'Hier abschreiben',
     saveFailed: 'Der Text wurde nicht gespeichert. Versuch es noch einmal.',
   },
 } as const satisfies Record<
@@ -157,7 +152,6 @@ const actionLabelFor = (busy: boolean, saveFailed: boolean): string => {
 // again.
 export const LearnEntry = ({
   item,
-  deck,
   examplePending,
   subject,
   onLearned,
@@ -214,9 +208,18 @@ export const LearnEntry = ({
 
   const hintVisible = copied || typed === '';
   return (
-    <form aria-busy={busy} className="flex flex-col gap-4" onSubmit={onSubmit}>
+    <form aria-busy={busy} onSubmit={onSubmit}>
       <WordCard
-        deck={deck}
+        actions={
+          <ActionBar
+            primary={
+              <Button disabled={busy || typed.trim() === ''} type="submit">
+                {actionLabel}
+              </Button>
+            }
+            secondary={null}
+          />
+        }
         instruction={directionLabel(item.direction, subject)}
         word={prompt}
         wordId={promptId}
@@ -287,20 +290,12 @@ export const LearnEntry = ({
             />
           </>
         ) : null}
+        {saveFailed ? (
+          <p className="text-destructive text-sm" role="alert">
+            {copyLabels[subject.kind].saveFailed}
+          </p>
+        ) : null}
       </WordCard>
-      {saveFailed ? (
-        <p className="text-destructive text-sm" role="alert">
-          {copyLabels[subject.kind].saveFailed}
-        </p>
-      ) : null}
-      <ActionBar
-        primary={
-          <Button disabled={busy || typed.trim() === ''} type="submit">
-            {actionLabel}
-          </Button>
-        }
-        secondary={null}
-      />
     </form>
   );
 };

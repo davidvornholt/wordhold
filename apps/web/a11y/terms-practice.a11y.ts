@@ -25,21 +25,19 @@ test('a definition names the missed key point and keeps a slipped copy', async (
 
   await expect(
     page.getByRole('listitem').filter({ hasText: 'Fehlt:' }),
-  ).toContainText(
-    'Fehlt: Er wird bei der Reaktion nicht verbraucht.Dass der Katalysator nicht verbraucht wird, fehlt.',
-  );
+  ).toHaveText('Fehlt: Er wird bei der Reaktion nicht verbraucht.');
   await expect(
     page.getByRole('listitem').filter({ hasText: 'Genannt:' }),
   ).toHaveCount(2);
-  await expect(
-    page
-      .getByRole('status')
-      .filter({ hasText: 'Noch nicht sicher' })
-      .getByText(secondLine),
-  ).toHaveJSProperty('innerText', definition);
 
+  // The definition to copy stands above the field and describes it.
   const retype = page.getByLabel('Schreib die Antwort ab');
   await expect(retype).toBeFocused();
+  await expect(page.getByText(secondLine)).toHaveJSProperty(
+    'innerText',
+    definition,
+  );
+  await expect(retype).toHaveAccessibleDescription(`Katalysator ${definition}`);
   await retype.fill(slippedCopy);
   await retype.press('Enter');
   await expect(

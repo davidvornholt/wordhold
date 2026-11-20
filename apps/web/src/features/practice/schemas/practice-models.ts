@@ -61,7 +61,6 @@ export const remainingReadyCount = (session: PracticeSession): number =>
 export type KeyPointFinding = {
   readonly text: string;
   readonly covered: boolean;
-  readonly note: string | null;
 };
 
 // Another entry of the course: its target-language text as the book writes

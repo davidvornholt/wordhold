@@ -16,6 +16,9 @@ const variants = {
   destructive: `${touchTarget} border border-destructive px-4 py-2 font-medium text-destructive underline-offset-4 hover:underline disabled:opacity-50`,
   quiet: `${touchTarget} underline underline-offset-4 disabled:opacity-50`,
   'quiet-muted': `${touchTarget} text-muted-foreground underline underline-offset-4 disabled:opacity-50`,
+  // A secondary action beside a primary one, as plain text that answers the
+  // pointer with a tint, so the pair reads as one row of buttons.
+  text: `${touchTarget} px-3 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50 disabled:hover:bg-transparent`,
   // A square, unlabelled glyph; callers give it an aria-label and a title.
   icon: `${touchTarget} min-w-11 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50 disabled:hover:bg-transparent`,
   'fine-print':

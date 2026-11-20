@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { practiceCardClass } from './surface-styles';
 
 // A sentence to translate runs to several words, so it is set smaller.
 const sentenceSize = 'text-2xl sm:text-3xl';
@@ -25,22 +26,17 @@ type WordCardProps = {
   readonly wordLang: string | undefined;
   // A short note on how to answer, under the word.
   readonly hint?: ReactNode;
-  // Cards still waiting behind this one in the round; at most two show.
-  readonly deck: number;
   // The line the answer is written on, and once answered, the back of the
   // card.
   readonly children?: ReactNode;
+  // The buttons that check or continue the card, at its foot.
+  readonly actions: ReactNode;
 };
 
-const deckOffsets = [
-  'translate-x-1.5 translate-y-1.5',
-  'translate-x-3 translate-y-3',
-];
-
-// The index card. The word is the hero; everything else on it is small. It
-// sits on the remaining stack. A new card lifts off the stack into place, and
-// dealCard throws the answered one off it, which is why the card keeps its
-// own view-transition group around the part that moves.
+// The index card. The word is the hero; everything else on it is small. Its
+// buttons sit on it, so the card and what it asks for move as one: a new card
+// rises into place, and dealCard throws the answered one away, which is why
+// the card keeps its own view-transition group around the part that moves.
 export const WordCard = ({
   instruction,
   word,
@@ -48,36 +44,28 @@ export const WordCard = ({
   wordId,
   wordLang,
   hint,
-  deck,
   children,
+  actions,
 }: WordCardProps) => (
-  <div className="relative">
-    {deckOffsets.slice(0, Math.min(deck, deckOffsets.length)).map((offset) => (
-      <div
-        aria-hidden="true"
-        className={`absolute inset-0 border border-border bg-card ${offset}`}
-        key={offset}
-      />
-    ))}
-    <div className="practice-card relative">
-      <div className="@container flex animate-deal-in flex-col gap-6 border border-border bg-card px-6 pt-7 pb-8 sm:px-10 sm:pt-9 sm:pb-10">
-        <div className="flex flex-col gap-2">
-          <p className="eyebrow">{instruction}</p>
-          <h2
-            className={`wrap-break-word hyphens-auto text-balance font-display leading-tight ${size === 'sentence' ? sentenceSize : ''}`}
-            id={wordId}
-            lang={wordLang}
-            // biome-ignore lint/nursery/noInlineStyles: The size follows the length of the word, which is data.
-            style={
-              size === 'word' ? { fontSize: wordFontSize(word) } : undefined
-            }
-          >
-            {word}
-          </h2>
-          {hint}
-        </div>
-        {children}
+  <div className="practice-card">
+    <div
+      className={`@container flex animate-deal-in flex-col gap-6 px-6 pt-7 pb-6 sm:px-10 sm:pt-9 sm:pb-8 ${practiceCardClass}`}
+    >
+      <div className="flex flex-col gap-2">
+        <p className="eyebrow">{instruction}</p>
+        <h2
+          className={`wrap-break-word hyphens-auto text-balance font-display leading-tight ${size === 'sentence' ? sentenceSize : ''}`}
+          id={wordId}
+          lang={wordLang}
+          // biome-ignore lint/nursery/noInlineStyles: The size follows the length of the word, which is data.
+          style={size === 'word' ? { fontSize: wordFontSize(word) } : undefined}
+        >
+          {word}
+        </h2>
+        {hint}
       </div>
+      {children}
+      {actions}
     </div>
   </div>
 );

@@ -59,10 +59,10 @@
     }
   }
 
-  /* The next card lifts off the deck into the place of the one dealt away. */
+  /* The next card rises into the place of the one dealt away. */
   @keyframes deal-in {
     from {
-      transform: translate(0.375rem, 0.375rem);
+      transform: translateY(0.5rem) scale(0.985);
     }
   }
 
@@ -102,13 +102,13 @@
 }
 
 /*
- * The answered card is dealt off the stack to the left. It plays only in the
- * transition dealCard starts, which marks the root with data-dealing, so a
- * route change still cross-fades the card like the rest of the page. The
- * card stays opaque until it has cleared most of the next one, which it
- * covers like a real card; the next card animates its own entrance from the
- * deck (deal-in), inside the live new image, so its image is not animated
- * twice.
+ * The answered card is dealt away to the left, with the buttons on it. It
+ * plays only in the transition dealCard starts, which marks the root with
+ * data-dealing, so a route change still cross-fades the card like the rest
+ * of the page. The card stays opaque until it has cleared most of the next
+ * one, which it covers like a real card; the next card animates its own
+ * entrance (deal-in), inside the live new image, so its image is not
+ * animated twice.
  */
 @keyframes deal-out {
   70% {
@@ -117,14 +117,6 @@
   to {
     opacity: 0;
     transform: translate(-75%, 1.5rem) rotate(-8deg);
-  }
-}
-
-/* The old card's actions leave before the next card's arrive, so two
- * labels never show through each other. */
-@keyframes leave {
-  to {
-    opacity: 0;
   }
 }
 
@@ -141,8 +133,7 @@
     animation-timing-function: var(--motion-ease);
   }
 
-  ::view-transition-group(practice-card),
-  ::view-transition-group(practice-actions) {
+  ::view-transition-group(practice-card) {
     animation-duration: var(--motion-deal);
     animation-timing-function: var(--motion-ease);
   }
@@ -157,14 +148,6 @@
   :root[data-dealing]::view-transition-new(practice-card) {
     animation: none;
     mix-blend-mode: normal;
-  }
-
-  :root[data-dealing]::view-transition-old(practice-actions) {
-    animation: leave var(--motion-fast) var(--motion-ease-exit) both;
-  }
-
-  :root[data-dealing]::view-transition-new(practice-actions) {
-    animation: ink var(--motion-base) var(--motion-ease) var(--motion-fast) both;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -191,35 +174,11 @@
 }
 
 /*
- * The top card of a practice or learning stack, and the actions beneath it,
- * each keep their own view-transition group, so dealing a card moves them
- * instead of cross-fading them with the page.
+ * The practice or learning card keeps its own view-transition group, so
+ * dealing a card moves it instead of cross-fading it with the page.
  */
 @utility practice-card {
   view-transition-name: practice-card;
-}
-
-@utility practice-actions {
-  view-transition-name: practice-actions;
-}
-
-/*
- * Lined paper behind a field that wraps: a rule under every line of text,
- * scrolling with the text. Set --rule to color the lines.
- */
-@utility ruled-lines {
-  --rule: var(--input);
-  background-image: linear-gradient(
-    to bottom,
-    transparent calc(100% - 1px),
-    var(--rule) calc(100% - 1px)
-  );
-  background-size: 100% 1lh;
-
-  /* A field that scrolls takes its lines along. */
-  @supports (background-attachment: local) {
-    background-attachment: local;
-  }
 }
 
 /*

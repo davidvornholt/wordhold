@@ -17,7 +17,7 @@ import { KeyPointList } from '../../../shared/ui/key-point-list';
 import { SpellingPitfallNote } from '../../../shared/ui/spelling-pitfall-note';
 import { Unfold } from '../../../shared/ui/unfold';
 import type { FeedbackResult } from '../schemas/practice-models';
-import { AnswerRecord } from './answer-record';
+import { AnswerRecord, MissedWord, MissedWordSummary } from './answer-record';
 import { feedbackTone, toneText } from './feedback-tone';
 import { RecitationFeedback } from './recitation-feedback';
 
@@ -47,7 +47,7 @@ type FeedbackPanelProps = {
   // The language of the expected answer, for hyphenation and speech.
   readonly answerLanguage: LanguageCode;
   readonly kind: CourseKind;
-  // The line a missed answer is written out on, or null.
+  // The field a missed answer is written out on, or null.
   readonly retype: ReactNode;
 };
 
@@ -113,7 +113,7 @@ const JudgeNotes = ({
 }) => (
   <>
     {result.keyPoints === null ? null : (
-      <KeyPointList items={result.keyPoints} />
+      <KeyPointList items={result.keyPoints} titled={false} />
     )}
     {result.explanation === null ? null : (
       <p className="text-sm">{result.explanation}</p>
@@ -159,9 +159,13 @@ const FeedbackExample = ({
 // The back of the card, written where the field was once the answer is
 // judged: the answer itself, the verdict and when the card returns, and
 // where the word is easy to misspell, all of which "Weiter" reads out as its
-// description; then the line to write a missed answer out on, and the word
-// in use. A recited text shows the original with every mistake marked in
-// place.
+// description; then the word in use. A recited text shows the original with
+// every mistake marked in place.
+//
+// A missed answer is written out before the card moves on. A word is traced
+// right under the struck attempt, where the eye already is, so the verdict
+// follows it. A definition or text is copied after the verdict, whose key
+// points or marked mistakes say what to look out for while copying.
 export const FeedbackPanel = ({
   busy,
   id,
@@ -184,9 +188,19 @@ export const FeedbackPanel = ({
       ? compareRecitation(result.expectedAnswer, submittedAnswer, { dictated })
       : null;
   const timeZone = useOwnerTimeZone();
+  const missedWord = kind === 'language' && retype !== null;
 
   return (
     <div className="flex flex-col gap-6">
+      {missedWord ? (
+        <MissedWord
+          answerLanguage={answerLanguage}
+          expected={result.expectedAnswer}
+          retype={retype}
+          submittedAnswer={submittedAnswer}
+          word={word}
+        />
+      ) : null}
       <div
         aria-busy={busy}
         aria-live="polite"
@@ -194,7 +208,14 @@ export const FeedbackPanel = ({
         id={id}
         role="status"
       >
-        {recitation === null ? (
+        {missedWord ? (
+          <MissedWordSummary
+            answerLanguage={answerLanguage}
+            expected={result.expectedAnswer}
+            submittedAnswer={submittedAnswer}
+          />
+        ) : null}
+        {!missedWord && recitation === null ? (
           <AnswerRecord
             answerLanguage={answerLanguage}
             kind={kind}
@@ -202,7 +223,8 @@ export const FeedbackPanel = ({
             submittedAnswer={submittedAnswer}
             word={word}
           />
-        ) : (
+        ) : null}
+        {recitation === null ? null : (
           <RecitationFeedback
             original={result.expectedAnswer}
             recitation={recitation}
@@ -222,7 +244,7 @@ export const FeedbackPanel = ({
           pitfalls={spellingPitfalls}
         />
       </div>
-      {retype === null ? null : <Unfold>{retype}</Unfold>}
+      {missedWord || retype === null ? null : <Unfold>{retype}</Unfold>}
       {result.graded ? (
         <FeedbackExample
           busy={busy}

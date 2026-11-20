@@ -1,5 +1,12 @@
 import type { LanguageCode } from '@wordhold/db/schema/courses';
-import { type SubmitEvent, useCallback, useEffect, useId, useRef } from 'react';
+import {
+  type RefObject,
+  type SubmitEvent,
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+} from 'react';
 import { useAudioPlayback } from '../../../shared/audio/use-pronunciation-audio';
 import { germanLabels } from '../../../shared/languages';
 import { answerCharacters } from '../../../shared/practice/answer-characters';
@@ -37,11 +44,36 @@ const canAccept = (outcome: SentenceOutcome): boolean =>
   outcome.kind === 'checked' &&
   !(outcome.result.graded && outcome.result.correct);
 
+// Once judged: move on, or first count the sentence as correct.
+const JudgedActions = ({
+  feedbackId,
+  nextButtonRef,
+  onAccept,
+}: {
+  readonly feedbackId: string;
+  readonly nextButtonRef: RefObject<HTMLButtonElement | null>;
+  // Null where the sentence was judged correct already.
+  readonly onAccept: (() => void) | null;
+}) => (
+  <ActionBar
+    primary={
+      <Button aria-describedby={feedbackId} ref={nextButtonRef} type="submit">
+        Weiter
+      </Button>
+    }
+    secondary={
+      onAccept === null ? null : (
+        <Button onClick={onAccept} variant="text">
+          Als richtig werten
+        </Button>
+      )
+    }
+  />
+);
+
 type SentenceCardProps = {
   readonly prompt: SentencePrompt;
   readonly targetLanguage: LanguageCode;
-  // Sentences still waiting behind this one in the round.
-  readonly deck: number;
   readonly check: CheckSentence;
   // Fires as soon as the answer is judged, before "Weiter" moves on.
   readonly onOutcome: (outcome: SentenceOutcome) => void;
@@ -52,14 +84,13 @@ type SentenceCardProps = {
   readonly repeated: boolean;
 };
 
-// One German sentence to translate, written on the card's lined page. Focus
+// One German sentence to translate, written on the card's line. Focus
 // follows the loop as on a word card: the field while answering, "Weiter"
 // once judged, when the sentence also plays. Giving up needs no server: the
 // stored translation is shown straight away.
 export const SentenceCard = ({
   prompt,
   targetLanguage,
-  deck,
   check,
   onOutcome,
   onNext,
@@ -109,9 +140,26 @@ export const SentenceCard = ({
   };
 
   return (
-    <form aria-busy={busy} className="flex flex-col gap-4" onSubmit={onSubmit}>
+    <form aria-busy={busy} onSubmit={onSubmit}>
       <WordCard
-        deck={deck}
+        actions={
+          outcome === null ? (
+            <CheckActions
+              blocked={busy}
+              checking={busy}
+              empty={answer.trim() === ''}
+              nextButtonRef={nextButtonRef}
+              onSkip={sentenceCheck.skip}
+              skipping={false}
+            />
+          ) : (
+            <JudgedActions
+              feedbackId={feedbackId}
+              nextButtonRef={nextButtonRef}
+              onAccept={canAccept(outcome) ? onAccept : null}
+            />
+          )
+        }
         hint={
           <p className="text-muted-foreground text-sm" id={hintId}>
             Verwende das Wort für „{prompt.word}“.
@@ -125,23 +173,28 @@ export const SentenceCard = ({
         wordId={promptId}
         wordLang={undefined}
       >
-        <AnswerField
-          aria-describedby={`${promptId} ${hintId}`}
-          aria-label="Deine Übersetzung"
-          characters={
-            outcome === null
-              ? answerCharacters('language', targetLanguage)
-              : null
-          }
-          disabled={busy || outcome !== null}
-          fieldRef={inputRef}
-          lang={targetLanguage}
-          multiline={true}
-          onChange={sentenceCheck.setAnswer}
-          pending={busy}
-          placeholder="Deine Übersetzung"
-          value={answer}
-        />
+        {/* A sentence given up on before anything was written leaves no
+            empty field behind. */}
+        {outcome !== null && answer.trim() === '' ? null : (
+          <AnswerField
+            aria-describedby={`${promptId} ${hintId}`}
+            aria-label="Deine Übersetzung"
+            characters={
+              outcome === null
+                ? answerCharacters('language', targetLanguage)
+                : null
+            }
+            disabled={busy || outcome !== null}
+            fieldRef={inputRef}
+            judged={outcome !== null}
+            lang={targetLanguage}
+            multiline={true}
+            onChange={sentenceCheck.setAnswer}
+            pending={busy}
+            placeholder="Deine Übersetzung"
+            value={answer}
+          />
+        )}
         {outcome === null ? null : (
           <SentenceFeedback
             id={feedbackId}
@@ -156,37 +209,8 @@ export const SentenceCard = ({
             targetLanguage={targetLanguage}
           />
         )}
+        <SubmissionNotice error={error} reconnecting={reconnecting} />
       </WordCard>
-      <SubmissionNotice error={error} reconnecting={reconnecting} />
-      {outcome === null ? (
-        <CheckActions
-          blocked={busy}
-          checking={busy}
-          empty={answer.trim() === ''}
-          nextButtonRef={nextButtonRef}
-          onSkip={sentenceCheck.skip}
-          skipping={false}
-        />
-      ) : (
-        <ActionBar
-          primary={
-            <Button
-              aria-describedby={feedbackId}
-              ref={nextButtonRef}
-              type="submit"
-            >
-              Weiter
-            </Button>
-          }
-          secondary={
-            canAccept(outcome) ? (
-              <Button onClick={onAccept} variant="quiet">
-                Als richtig werten
-              </Button>
-            ) : null
-          }
-        />
-      )}
     </form>
   );
 };

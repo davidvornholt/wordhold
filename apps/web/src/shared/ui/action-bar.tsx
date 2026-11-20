@@ -1,19 +1,20 @@
 import type { ReactNode } from 'react';
 
 type ActionBarProps = {
-  // A quieter way out of the card, such as "Weiß ich nicht", or nothing.
-  readonly secondary: ReactNode;
-  // The one action that moves the card on. It keeps its place from
+  // The one action that moves the card on. It keeps its place and width from
   // answering to continuing, so the hand does not move between the two.
   readonly primary: ReactNode;
+  // A quieter way out of the card, such as "Weiß ich nicht", or nothing.
+  readonly secondary: ReactNode;
 };
 
-// The row beneath a practice or learning card. It keeps its own
-// view-transition group, so when a card is dealt the row slides to the next
-// card's edge instead of fading with the page.
-export const ActionBar = ({ secondary, primary }: ActionBarProps) => (
-  <div className="practice-actions flex items-center justify-between gap-4">
-    <div className="min-w-0 text-left">{secondary}</div>
-    <div className="flex shrink-0 *:min-w-32 sm:*:min-w-40">{primary}</div>
+// The row at the foot of a practice or learning card: the main button first,
+// where the eye ends after reading the card, and a text button beside it. On
+// a phone the main button spans the card under the thumb, with the text
+// button centred beneath it, as a row would not fit both.
+export const ActionBar = ({ primary, secondary }: ActionBarProps) => (
+  <div className="flex flex-col gap-1 pt-2 sm:flex-row sm:items-center sm:gap-2">
+    <div className="flex *:flex-1 sm:*:min-w-40 sm:*:flex-none">{primary}</div>
+    {secondary}
   </div>
 );

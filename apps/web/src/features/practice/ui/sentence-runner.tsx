@@ -5,6 +5,7 @@ import { useExampleWarmup } from '../../../shared/examples/use-example-warmup';
 import { countNoun } from '../../../shared/format/count';
 import { CardRail } from '../../../shared/ui/card-rail';
 import { dealCard } from '../../../shared/ui/deal-card';
+import { practiceCardClass } from '../../../shared/ui/surface-styles';
 import type { SentenceItem, SentenceSession } from '../schemas/sentence-models';
 import {
   acceptSentence,
@@ -36,7 +37,7 @@ const promptOf = (item: SentenceItem): SentencePrompt | null => {
 const PreparingSentence = () => (
   <div
     aria-busy="true"
-    className="flex min-h-48 animate-rise items-center justify-center border border-border bg-card px-6 py-8"
+    className={`flex min-h-48 animate-rise items-center justify-center px-6 py-8 ${practiceCardClass}`}
   >
     <p className="text-muted-foreground" role="status">
       Satz wird vorbereitet …
@@ -137,11 +138,6 @@ export const SentenceRunner = ({
       ) : (
         <SentenceCard
           check={check}
-          deck={
-            next.repeated
-              ? round.repeat.length - 1
-              : items.length - round.asked.length - 1
-          }
           key={`${prompt.entryId}-${round.turn}`}
           onAccept={() =>
             dealCard(() =>

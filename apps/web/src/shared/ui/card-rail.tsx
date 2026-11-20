@@ -67,7 +67,7 @@ export const CardRail = ({
         const active = index === activeIndex;
         return (
           <li
-            className={`h-1 flex-1 transition-colors duration-(--motion-slow) ${tickClass(
+            className={`h-0.5 flex-1 transition-colors duration-(--motion-slow) ${tickClass(
               outcome,
               active ? (activeOutcome ?? outcome) : outcome,
               active,
