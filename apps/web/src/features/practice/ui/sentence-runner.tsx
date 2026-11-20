@@ -123,6 +123,9 @@ export const SentenceRunner = ({
     );
   }
   const prompt = promptOf(active);
+  // dealCard can run a press's update after a later press has already moved
+  // the round on, so each update names the turn it was pressed on.
+  const shown = { entryId: active.entryId, turn: round.turn };
   return (
     <>
       <CardRail
@@ -146,12 +149,12 @@ export const SentenceRunner = ({
           key={`${prompt.entryId}-${round.turn}`}
           onAccept={() =>
             dealCard(() =>
-              setRound((current) => acceptSentence(current, prompt.entryId)),
+              setRound((current) => acceptSentence(current, shown)),
             )
           }
           onNext={() =>
             dealCard(() =>
-              setRound((current) => finishSentence(current, prompt.entryId)),
+              setRound((current) => finishSentence(current, shown)),
             )
           }
           onOutcome={(outcome) =>
