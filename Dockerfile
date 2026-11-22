@@ -1,4 +1,4 @@
-FROM oven/bun:1.4.3@sha256:ec06c3b6cea04192ae6770c434f668ca41d343ad19fa6472216c7b48be39c598 AS dependencies
+FROM oven/bun:1.4.5@sha256:3aa040e5445efa09d75bb428a64ba50db13e2b3ac9b6b0c7f145615f62b2ee18 AS dependencies
 
 WORKDIR /app
 
@@ -18,7 +18,7 @@ FROM dependencies AS build
 COPY . .
 RUN bun run --cwd apps/web build
 
-FROM oven/bun:1.4.3@sha256:ec06c3b6cea04192ae6770c434f668ca41d343ad19fa6472216c7b48be39c598 AS production-dependencies
+FROM oven/bun:1.4.5@sha256:3aa040e5445efa09d75bb428a64ba50db13e2b3ac9b6b0c7f145615f62b2ee18 AS production-dependencies
 
 WORKDIR /app
 
@@ -33,7 +33,7 @@ COPY packages/typescript-config/package.json packages/typescript-config/package.
 COPY packages/ui/package.json packages/ui/package.json
 RUN bun install --frozen-lockfile --production
 
-FROM oven/bun:1.4.3@sha256:ec06c3b6cea04192ae6770c434f668ca41d343ad19fa6472216c7b48be39c598 AS runtime
+FROM oven/bun:1.4.5@sha256:3aa040e5445efa09d75bb428a64ba50db13e2b3ac9b6b0c7f145615f62b2ee18 AS runtime
 
 WORKDIR /app
 
