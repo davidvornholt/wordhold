@@ -51,6 +51,13 @@ const audioItems = [
   card(4, 'journey', 'Reise'),
 ] as const;
 
+// Longer than a phone's answer line is wide.
+const phraseItem = card(
+  5,
+  'to take something into consideration',
+  'etwas berücksichtigen',
+);
+
 type PracticeSessionFixtureProps = {
   readonly sessionItems?: ReadonlyArray<FixtureCard>;
   readonly mode?: ReviewMode;
@@ -77,6 +84,11 @@ export const PracticeSessionFixture = ({
     fixtureSearch.get('audio') === 'true'
   ) {
     activeItems = audioItems;
+  } else if (
+    sessionItems === undefined &&
+    fixtureSearch.get('phrase') === 'true'
+  ) {
+    activeItems = [phraseItem];
   }
   const session: PracticeSession = {
     items: activeItems,

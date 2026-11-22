@@ -6,7 +6,7 @@ import {
   answerLineType,
   answerPageType,
 } from './field-styles';
-import { submitOnEnter } from './submit-on-enter';
+import { submitOnEnter, submitOnEveryEnter } from './submit-on-enter';
 
 export type AnswerFieldElement = HTMLInputElement | HTMLTextAreaElement;
 
@@ -14,6 +14,9 @@ type AnswerFieldProps = {
   // A definition is a sentence or two, so it gets room to wrap. Enter still
   // submits, as in the one-line field; Shift+Enter starts a new line.
   readonly multiline: boolean;
+  // A one-line field that wraps in the word's type, so a long phrase to copy
+  // shows whole on a phone.
+  readonly wraps?: boolean;
   readonly fieldRef: RefObject<AnswerFieldElement | null>;
   // Characters the keyboard lacks, offered from the field's end; null where
   // the keyboard has them all or the field takes no more input.
@@ -71,6 +74,7 @@ const FieldShadow = ({
 // the field keeps its focus.
 export const AnswerField = ({
   multiline,
+  wraps = false,
   fieldRef,
   characters,
   missed = false,
@@ -97,7 +101,7 @@ export const AnswerField = ({
   };
   return (
     <div className="grid gap-3">
-      {multiline ? (
+      {multiline || wraps ? (
         <>
           <FieldShadow
             className={type}
@@ -108,7 +112,7 @@ export const AnswerField = ({
             {...shared}
             className={`${shared.className} resize-none overflow-hidden`}
             onChange={(event) => onChange(event.target.value)}
-            onKeyDown={submitOnEnter}
+            onKeyDown={multiline ? submitOnEnter : submitOnEveryEnter}
             ref={attach}
             rows={1}
           />
@@ -133,7 +137,7 @@ export const AnswerField = ({
           characters={characters}
           disabled={field.disabled}
           fieldRef={fieldRef}
-          multiline={multiline}
+          multiline={multiline || wraps}
         />
       )}
     </div>

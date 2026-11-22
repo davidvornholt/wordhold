@@ -110,6 +110,40 @@ test('an unknown card reveals its solution and returns in the after-round', asyn
   ).toBeVisible();
 });
 
+const longPhrase = 'to take something into consideration';
+
+for (const width of [320, 360, 390]) {
+  test(`a missed phrase shows whole before it is copied, ${width} px wide`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 800 });
+    await page.goto('/?state=practice-session&phrase=true');
+    await page.getByRole('button', { name: 'Weiß ich nicht' }).click();
+    const retype = page.getByLabel('Schreib die Antwort ab');
+    await expect(retype).toBeFocused();
+    await expect(retype).toHaveAttribute('placeholder', longPhrase);
+    // The phrase stands in the field only as its placeholder, which is drawn
+    // in the field's own type and box. Written into the field for a moment,
+    // it has to fit without scrolling, or the placeholder is cut off.
+    const overflow = await retype.evaluate((field: HTMLTextAreaElement) => {
+      field.value = field.placeholder;
+      const hidden = {
+        across: field.scrollWidth - field.clientWidth,
+        down: field.scrollHeight - field.clientHeight,
+      };
+      field.value = '';
+      return hidden;
+    });
+    expect(overflow).toEqual({ across: 0, down: 0 });
+    // The wrapping line still takes no line breaks: Enter sends the copy
+    // with or without Shift, as in a one-line field.
+    await retype.fill(longPhrase);
+    await retype.press('Shift+Enter');
+    await expect(page.getByText('Nachrunde', { exact: true })).toBeVisible();
+    await expect(page.getByLabel('Deine Antwort')).toBeFocused();
+  });
+}
+
 test('a rejected typo can be stored as Hard without teaching it as an answer', async ({
   page,
 }) => {
