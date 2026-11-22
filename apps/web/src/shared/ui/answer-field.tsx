@@ -6,7 +6,7 @@ import {
   answerLineType,
   answerPageType,
 } from './field-styles';
-import { submitOnEnter } from './submit-on-enter';
+import { submitOnEnter, submitOnEveryEnter } from './submit-on-enter';
 
 export type AnswerFieldElement = HTMLInputElement | HTMLTextAreaElement;
 
@@ -113,7 +113,7 @@ export const AnswerField = ({
             {...shared}
             className={`${shared.className} resize-none overflow-hidden`}
             onChange={(event) => onChange(event.target.value)}
-            onKeyDown={submitOnEnter}
+            onKeyDown={multiline ? submitOnEnter : submitOnEveryEnter}
             ref={attach}
             rows={1}
           />

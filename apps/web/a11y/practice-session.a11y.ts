@@ -136,6 +136,12 @@ for (const width of [320, 360, 390]) {
       return hidden;
     });
     expect(overflow).toEqual({ across: 0, down: 0 });
+    // The wrapping line still takes no line breaks: Enter sends the copy
+    // with or without Shift, as in a one-line field.
+    await retype.fill(longPhrase);
+    await retype.press('Shift+Enter');
+    await expect(page.getByText('Nachrunde', { exact: true })).toBeVisible();
+    await expect(page.getByLabel('Deine Antwort')).toBeFocused();
   });
 }
 
