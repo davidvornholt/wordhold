@@ -14,9 +14,8 @@ type AnswerFieldProps = {
   // A definition is a sentence or two, so it gets room to wrap. Enter still
   // submits, as in the one-line field; Shift+Enter starts a new line.
   readonly multiline: boolean;
-  // A one-line field whose placeholder is the answer to copy wraps onto more
-  // lines in the same type, so a phrase longer than a phone's line is shown
-  // whole rather than cut off at the field's edge.
+  // A one-line field that wraps in the word's type, so a long phrase to copy
+  // shows whole on a phone.
   readonly wraps?: boolean;
   readonly fieldRef: RefObject<AnswerFieldElement | null>;
   // Characters the keyboard lacks, offered from the field's end; null where

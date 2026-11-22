@@ -110,7 +110,6 @@ test('an unknown card reveals its solution and returns in the after-round', asyn
   ).toBeVisible();
 });
 
-// Wider than a phone's answer line, in the fixture's phrase=true session.
 const longPhrase = 'to take something into consideration';
 
 for (const width of [320, 360, 390]) {
