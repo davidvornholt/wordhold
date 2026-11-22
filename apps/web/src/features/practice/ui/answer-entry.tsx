@@ -153,6 +153,7 @@ export const RetypeLine = ({
         onChange={retype.onTypedChange}
         placeholder={isListCourse(kind) ? 'Hier abschreiben' : retype.template}
         value={retype.typed}
+        wraps={true}
       />
       {missed ? (
         <p className="text-sm text-warning-foreground" role="status">
