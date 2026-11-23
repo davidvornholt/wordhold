@@ -54,7 +54,7 @@ test('a text keeps its lines and the next text follows', async ({ page }) => {
   ).toBeVisible();
 
   // A title without its text is held, not dropped, until it is discarded.
-  await dialog.getByRole('button', { name: 'Fertig' }).click();
+  await dialog.getByRole('button', { name: 'Schließen' }).click();
   await expect(
     dialog.getByRole('status', { name: 'Status beim Eintragen eines Texts' }),
   ).toHaveText('Dieser Text ist noch nicht eingetragen.');

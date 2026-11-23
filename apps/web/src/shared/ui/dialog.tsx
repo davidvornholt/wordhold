@@ -8,30 +8,21 @@ import {
 } from 'react';
 import { Button } from './button';
 
-type DialogProps = {
+type ModalProps = {
   readonly open: boolean;
-  readonly title: ReactNode;
-  readonly description?: ReactNode;
-  // A button beside the title, for a dialog that is left rather than
-  // answered, such as a form that takes one entry after another.
-  readonly closeLabel?: string;
   // False while a change is being saved, so Escape cannot drop it.
   readonly closable: boolean;
   readonly onClose: () => void;
   // Where focus goes on closing when the control that opened the dialog may
   // be gone by then. Otherwise focus returns to that control.
   readonly returnFocusRef?: RefObject<HTMLElement | null>;
-  // A card by default. A desk is a work surface that cards are laid on: the
-  // page background, wider, and held near the top, so what is added below
-  // while it is open never moves what is above.
-  readonly surface?: 'card' | 'desk';
+  // The id of the visible title, and of the description if there is one.
+  readonly labelledBy: string;
+  readonly describedBy?: string;
+  // Where the dialog sits and what surface it has.
+  readonly className: string;
   readonly children: ReactNode;
 };
-
-const surfaceClass = {
-  card: 'm-auto max-h-[calc(100dvh-2rem)] max-w-lg bg-card p-6',
-  desk: 'mx-auto mt-4 mb-auto max-h-[calc(100dvh-2rem)] max-w-2xl bg-background p-4 sm:mt-[8dvh] sm:max-h-[calc(92dvh-1rem)] sm:p-6',
-} as const;
 
 // A modal over the page instead of a panel inside it, so opening it moves
 // nothing underneath. The native dialog traps focus, closes on Escape and
@@ -40,21 +31,18 @@ const surfaceClass = {
 // and every opening starts from a fresh form. Showing and closing happen
 // before the browser paints, so the dialog never appears without its
 // content.
-export const Dialog = ({
+export const Modal = ({
   open,
-  title,
-  description,
-  closeLabel,
   closable,
   onClose,
   returnFocusRef,
-  surface = 'card',
+  labelledBy,
+  describedBy,
+  className,
   children,
-}: DialogProps) => {
+}: ModalProps) => {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [shown, setShown] = useState(false);
-  const titleId = useId();
-  const descriptionId = useId();
 
   useLayoutEffect(() => {
     const dialog = dialogRef.current;
@@ -73,9 +61,9 @@ export const Dialog = ({
 
   return (
     <dialog
-      aria-describedby={description === undefined ? undefined : descriptionId}
-      aria-labelledby={titleId}
-      className={`w-[calc(100%-2rem)] overflow-y-auto border border-border text-foreground backdrop:bg-foreground/40 ${surfaceClass[surface]}`}
+      aria-describedby={describedBy}
+      aria-labelledby={labelledBy}
+      className={`max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] overflow-y-auto text-foreground backdrop:bg-foreground/40 ${className}`}
       onCancel={(event) => {
         event.preventDefault();
         if (closable) {
@@ -83,6 +71,39 @@ export const Dialog = ({
         }
       }}
       ref={dialogRef}
+    >
+      {shown ? children : null}
+    </dialog>
+  );
+};
+
+type DialogProps = Omit<
+  ModalProps,
+  'labelledBy' | 'describedBy' | 'className'
+> & {
+  readonly title: ReactNode;
+  readonly description?: ReactNode;
+  // A button beside the title, for a dialog that is left rather than
+  // answered, such as a list that is worked through.
+  readonly closeLabel?: string;
+};
+
+// A modal card with its title at the top.
+export const Dialog = ({
+  title,
+  description,
+  closeLabel,
+  children,
+  ...modal
+}: DialogProps) => {
+  const titleId = useId();
+  const descriptionId = useId();
+  return (
+    <Modal
+      {...modal}
+      className="m-auto max-w-lg border border-border bg-card p-6"
+      describedBy={description === undefined ? undefined : descriptionId}
+      labelledBy={titleId}
     >
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
@@ -93,8 +114,8 @@ export const Dialog = ({
             {closeLabel === undefined ? null : (
               <Button
                 className="-my-2.5 shrink-0"
-                disabled={!closable}
-                onClick={onClose}
+                disabled={!modal.closable}
+                onClick={modal.onClose}
                 variant="quiet-muted"
               >
                 {closeLabel}
@@ -107,8 +128,8 @@ export const Dialog = ({
             </div>
           )}
         </div>
-        {shown ? children : null}
+        {children}
       </div>
-    </dialog>
+    </Modal>
   );
 };

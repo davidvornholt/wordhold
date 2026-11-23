@@ -69,44 +69,61 @@ test('a unit takes typed vocabulary one word after another', async ({
     filedJourney,
   ]);
 
-  await entryDialog(page).getByRole('button', { name: 'Fertig' }).click();
+  await entryDialog(page).getByRole('button', { name: 'Schließen' }).click();
   await expect(entryDialog(page)).toBeHidden();
   await expect(targetField(page)).toHaveCount(0);
   await expect(opener).toBeFocused();
 });
 
-test('"Fertig" files a complete word before it closes', async ({ page }) => {
-  await page.goto('/?state=unit');
-  await page.getByRole('button', { name: 'Vokabel eintragen' }).click();
-  await targetField(page).fill('journey');
-  await nativeField(page).fill('die Reise');
-  await entryDialog(page).getByRole('button', { name: 'Fertig' }).click();
-  await expect(entryDialog(page)).toBeHidden();
-  await expect(page.getByLabel('journey auswählen')).toBeVisible();
-});
-
-test('"Fertig" holds a half-typed word until it is completed or discarded', async ({
+test('"Schließen" never files: a complete word is held until it is filed', async ({
   page,
 }) => {
   await page.goto('/?state=unit');
   const opener = page.getByRole('button', { name: 'Vokabel eintragen' });
   await opener.click();
-  const finish = entryDialog(page).getByRole('button', { name: 'Fertig' });
+  const close = entryDialog(page).getByRole('button', { name: 'Schließen' });
+  await targetField(page).fill('journey');
+  await nativeField(page).fill('die Reise');
+  await close.click();
+  await expect(entryDialog(page)).toBeVisible();
+  await expect(status(page)).toHaveText(
+    'Diese Vokabel ist noch nicht eingetragen.',
+  );
+  await expect(
+    page.getByRole('button', { exact: true, name: 'Eintragen' }),
+  ).toBeFocused();
+  await expect(page.getByLabel('journey auswählen')).toHaveCount(0);
+
+  await page.keyboard.press('Enter');
+  await expect(status(page)).toHaveText('„journey“ eingetragen.');
+  await expect(page.getByLabel('journey auswählen')).toBeVisible();
+  await close.click();
+  await expect(entryDialog(page)).toBeHidden();
+  await expect(opener).toBeFocused();
+});
+
+test('"Schließen" holds a half-typed word until it is completed or discarded', async ({
+  page,
+}) => {
+  await page.goto('/?state=unit');
+  const opener = page.getByRole('button', { name: 'Vokabel eintragen' });
+  await opener.click();
+  const close = entryDialog(page).getByRole('button', { name: 'Schließen' });
   const discard = entryDialog(page).getByRole('button', { name: 'Verwerfen' });
   await targetField(page).fill('journey');
-  await finish.click();
+  await close.click();
   await expect(entryDialog(page)).toBeVisible();
   await expect(status(page)).toHaveText(
     'Diese Vokabel ist noch nicht eingetragen.',
   );
   await expect(nativeField(page)).toBeFocused();
   await expect(discard).toBeVisible();
-  await expect(finish).toHaveCount(0);
+  await expect(close).toHaveCount(0);
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
 
   // Writing on the card takes the hold back.
   await nativeField(page).fill('die');
-  await expect(finish).toBeVisible();
+  await expect(close).toBeVisible();
   await nativeField(page).fill('');
 
   // Escape asks the same way.
@@ -187,6 +204,21 @@ test('a typed entry can carry a generated example sentence', async ({
   ).toBeVisible();
 });
 
+test('an example sentence is only offered until one is written', async ({
+  page,
+}) => {
+  await page.goto('/?state=unit');
+  await page.getByRole('button', { name: 'Vokabel eintragen' }).click();
+  const sentence = page.getByLabel('Beispielsatz (optional)');
+  await expect(sentence).toHaveCount(0);
+  await page
+    .getByRole('button', { name: 'Beispielsatz selbst schreiben' })
+    .click();
+  await expect(sentence).toBeFocused();
+  await sentence.fill('The journey took all day.');
+  assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
+});
+
 test('a missing pronunciation is reported without losing the entry', async ({
   page,
 }) => {
@@ -224,7 +256,7 @@ test('an empty unit offers typing next to photographing', async ({ page }) => {
 
   // The empty state's button is gone, so focus lands on the one that
   // replaced it.
-  await entryDialog(page).getByRole('button', { name: 'Fertig' }).click();
+  await entryDialog(page).getByRole('button', { name: 'Schließen' }).click();
   await expect(
     page.getByRole('button', { name: 'Vokabel eintragen' }),
   ).toBeFocused();

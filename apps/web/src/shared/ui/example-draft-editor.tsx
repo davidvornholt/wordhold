@@ -1,10 +1,13 @@
 import type { LanguageCode } from '@wordhold/db/schema/courses';
-import { useId } from 'react';
+import { SparklesIcon } from 'lucide-react';
+import { useId, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import type {
   ExampleDraft,
   ExampleGenerationSource,
   GeneratedExample,
 } from '../examples/example-draft';
+import { Button } from './button';
 import { entryTextLineClass, entryTranslationLineClass } from './field-styles';
 import { LineAction, LineWithAction } from './line-action';
 import { useExampleDraft } from './use-example-draft';
@@ -52,10 +55,12 @@ const ReviewHint = ({
 };
 
 // The example sentence and its German translation, written on a card under
-// the word: the sentence on a line of its own, which offers to write one
-// while it is empty, and its translation a size smaller on the line below.
-// The translation line is there from the start, so writing the sentence
-// moves nothing.
+// the word. Without a sentence, it is only offered, so the card shows the
+// word and nothing that has to be filled in: write one with AI or by hand.
+// Then the sentence is written on a line of its own, which offers to write
+// one while it is empty, and its translation a size smaller on the line
+// below. The translation line is there from the start, so writing the
+// sentence moves nothing.
 export const ExampleDraftEditor = <T extends ExampleDraft>({
   reviewStep,
   targetLanguage,
@@ -63,6 +68,56 @@ export const ExampleDraftEditor = <T extends ExampleDraft>({
 }: ExampleDraftEditorProps<T>) => {
   const example = useExampleDraft(input);
   const sentenceId = useId();
+  const sentenceRef = useRef<HTMLInputElement>(null);
+  // Whether the learner chose to write a sentence by hand.
+  const [writing, setWriting] = useState(false);
+  const generateLabel = example.generating
+    ? 'Satz wird erzeugt …'
+    : 'Beispielsatz erzeugen';
+  const generateDisabled =
+    input.disabled || example.generating || !example.canGenerate;
+
+  if (!writing && input.entry.example === '') {
+    return (
+      <div className="flex flex-col gap-1">
+        <div className="flex flex-wrap items-center gap-x-5">
+          <span className="eyebrow">
+            Beispielsatz{' '}
+            <span className="text-muted-foreground">(optional)</span>
+          </span>
+          {/* The buttons wrap together, and their text lines up with the
+              label's when they do. */}
+          <div className="-mx-3 flex">
+            <Button
+              aria-label={generateLabel}
+              disabled={generateDisabled}
+              onClick={example.generateExample}
+              variant="text"
+            >
+              <SparklesIcon aria-hidden={true} className="size-4" />
+              {example.generating ? 'Wird erzeugt …' : 'Erzeugen'}
+            </Button>
+            <Button
+              aria-label="Beispielsatz selbst schreiben"
+              disabled={input.disabled || example.generating}
+              onClick={() => {
+                flushSync(() => setWriting(true));
+                sentenceRef.current?.focus();
+              }}
+              variant="text"
+            >
+              Selbst schreiben
+            </Button>
+          </div>
+        </div>
+        <ExampleErrors
+          generationError={example.generationError}
+          translationError={example.translationError}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-1">
       <label className="eyebrow" htmlFor={sentenceId}>
@@ -72,14 +127,10 @@ export const ExampleDraftEditor = <T extends ExampleDraft>({
         action={
           example.sentence === '' ? (
             <LineAction
-              disabled={
-                input.disabled || example.generating || !example.canGenerate
-              }
+              disabled={generateDisabled}
               onClick={example.generateExample}
             >
-              {example.generating
-                ? 'Satz wird erzeugt …'
-                : 'Beispielsatz erzeugen'}
+              {generateLabel}
             </LineAction>
           ) : null
         }
@@ -89,6 +140,7 @@ export const ExampleDraftEditor = <T extends ExampleDraft>({
             className={entryTextLineClass}
             id={sentenceId}
             lang={targetLanguage}
+            ref={sentenceRef}
           />
         }
       />

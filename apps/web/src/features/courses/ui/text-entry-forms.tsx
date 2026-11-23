@@ -24,11 +24,7 @@ import { EntryCard } from './entry-card';
 import { listEntryDuplicate } from './entry-duplicates';
 import { type TextLookup, useTextSource } from './text-lookup';
 import { TextLookupControls } from './text-lookup-controls';
-import {
-  type AfterFiling,
-  useEntryCard,
-  useEntryFinish,
-} from './use-entry-card';
+import { missingField, useCloseRequest, useEntryCard } from './use-entry-card';
 import { quoted } from './vocabulary-entry-draft';
 
 export type TextDraft = {
@@ -155,7 +151,6 @@ export const NewTextForm = ({
 }: NewTextFormProps) => {
   const titleRef = useRef<HTMLInputElement>(null);
   const textRef = useRef<HTMLTextAreaElement>(null);
-  const saveRef = useRef<HTMLButtonElement>(null);
   const card = useEntryCard(emptyText, titleRef);
   const { draft, setDraft, busy } = card;
   const { sources, source, pick } = useTextSource(lookup);
@@ -178,13 +173,13 @@ export const NewTextForm = ({
           return `${quoted(found.title)} nachgeschlagen. Lies den Text durch und trag ihn ein.`;
         },
         'Der Text wurde nicht nachgeschlagen. Versuche es noch einmal.',
-        saveRef,
+        card.submitRef,
       )
       .catch(() => undefined);
     return true;
   };
 
-  const save = (after: AfterFiling) =>
+  const save = () =>
     card.file({
       pending: `${quoted(title)} wird eingetragen …`,
       create: async () => {
@@ -195,23 +190,21 @@ export const NewTextForm = ({
         };
       },
       fallback: 'Der Text wurde nicht eingetragen. Versuche es noch einmal.',
-      after,
     });
 
-  const finish = useEntryFinish(card, {
+  const requestClose = useCloseRequest(card, {
     blank: title === '' && text === '',
-    submittable,
-    fileAndClose: () => {
-      save('close').catch(() => undefined);
-    },
-    unfinishedRef: title === '' || duplicate.blocked ? titleRef : textRef,
-    unfinished: 'Dieser Text ist noch nicht eingetragen.',
+    missingRef: missingField([
+      [title === '' || duplicate.blocked, titleRef],
+      [text === '', textRef],
+    ]),
+    notice: 'Dieser Text ist noch nicht eingetragen.',
   });
 
   const submit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (submittable) {
-      save('next').catch(() => undefined);
+      save().catch(() => undefined);
     }
   };
 
@@ -219,11 +212,10 @@ export const NewTextForm = ({
     <EntryCard
       card={card}
       enterFiles={false}
-      finish={finish}
       nouns={courseNouns({ kind: 'texts' })}
       onSubmit={submit}
+      requestClose={requestClose}
       statusLabel="Status beim Eintragen eines Texts"
-      submitRef={saveRef}
       submittable={submittable}
     >
       <TextFields

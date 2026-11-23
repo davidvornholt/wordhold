@@ -11,11 +11,7 @@ import type { VocabularyEntry } from '../schemas/course-units';
 import type { CreatedVocabularyEntry } from '../services/vocabulary-entry-service';
 import { EntryCard } from './entry-card';
 import { wordDuplicate } from './entry-duplicates';
-import {
-  type AfterFiling,
-  useEntryCard,
-  useEntryFinish,
-} from './use-entry-card';
+import { missingField, useCloseRequest, useEntryCard } from './use-entry-card';
 import {
   emptyDraft,
   exampleOf,
@@ -65,7 +61,7 @@ export const NewVocabularyForm = ({
   const submittable =
     !busy && targetText !== '' && nativeText !== '' && !duplicate.blocked;
 
-  const save = (after: AfterFiling) =>
+  const save = () =>
     card.file({
       pending: `${quoted(targetText)} wird eingetragen …`,
       create: async () => {
@@ -88,28 +84,25 @@ export const NewVocabularyForm = ({
         };
       },
       fallback: 'Die Vokabel wurde nicht eingetragen. Versuche es noch einmal.',
-      after,
     });
 
-  const finish = useEntryFinish(card, {
+  const requestClose = useCloseRequest(card, {
     blank:
       targetText === '' &&
       nativeText === '' &&
       draft.example.trim() === '' &&
       draft.exampleNativeText.trim() === '',
-    submittable,
-    fileAndClose: () => {
-      save('close').catch(() => undefined);
-    },
-    unfinishedRef:
-      targetText === '' || duplicate.blocked ? targetRef : nativeRef,
-    unfinished: 'Diese Vokabel ist noch nicht eingetragen.',
+    missingRef: missingField([
+      [targetText === '' || duplicate.blocked, targetRef],
+      [nativeText === '', nativeRef],
+    ]),
+    notice: 'Diese Vokabel ist noch nicht eingetragen.',
   });
 
   const submit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (submittable) {
-      save('next').catch(() => undefined);
+      save().catch(() => undefined);
     }
   };
 
@@ -117,9 +110,9 @@ export const NewVocabularyForm = ({
     <EntryCard
       card={card}
       enterFiles={true}
-      finish={finish}
       nouns={courseNouns({ kind: 'language' })}
       onSubmit={submit}
+      requestClose={requestClose}
       statusLabel="Status beim Eintragen einer Vokabel"
       submittable={submittable}
     >

@@ -8,11 +8,7 @@ import {
   TermDefinitionFields,
   type TermDraft,
 } from './term-definition-fields';
-import {
-  type AfterFiling,
-  useEntryCard,
-  useEntryFinish,
-} from './use-entry-card';
+import { missingField, useCloseRequest, useEntryCard } from './use-entry-card';
 import { quoted } from './vocabulary-entry-draft';
 
 export type CreateTerm = (draft: TermDraft) => Promise<void>;
@@ -45,7 +41,7 @@ export const NewTermForm = ({
   const submittable =
     !busy && term !== '' && definition !== '' && !duplicate.blocked;
 
-  const save = (after: AfterFiling) =>
+  const save = () =>
     card.file({
       pending: `${quoted(term)} wird eingetragen …`,
       create: async () => {
@@ -61,23 +57,21 @@ export const NewTermForm = ({
         };
       },
       fallback: 'Der Begriff wurde nicht eingetragen. Versuche es noch einmal.',
-      after,
     });
 
-  const finish = useEntryFinish(card, {
+  const requestClose = useCloseRequest(card, {
     blank: term === '' && definition === '',
-    submittable,
-    fileAndClose: () => {
-      save('close').catch(() => undefined);
-    },
-    unfinishedRef: term === '' || duplicate.blocked ? termRef : definitionRef,
-    unfinished: 'Dieser Begriff ist noch nicht eingetragen.',
+    missingRef: missingField([
+      [term === '' || duplicate.blocked, termRef],
+      [definition === '', definitionRef],
+    ]),
+    notice: 'Dieser Begriff ist noch nicht eingetragen.',
   });
 
   const submit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (submittable) {
-      save('next').catch(() => undefined);
+      save().catch(() => undefined);
     }
   };
 
@@ -85,9 +79,9 @@ export const NewTermForm = ({
     <EntryCard
       card={card}
       enterFiles={true}
-      finish={finish}
       nouns={courseNouns({ kind: 'terms' })}
       onSubmit={submit}
+      requestClose={requestClose}
       statusLabel="Status beim Eintragen eines Begriffs"
       submittable={submittable}
     >

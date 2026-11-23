@@ -104,9 +104,9 @@ test('a term takes a suggested definition and the next term follows', async ({
   ).toBeVisible();
   await expect(submit).toBeDisabled();
 
-  // The repeat cannot be filed, so "Fertig" holds it until it is discarded.
+  // The repeat cannot be filed, so "Schließen" holds it until it is discarded.
   const dialog = page.getByRole('dialog', { name: 'Begriffe eintragen' });
-  await dialog.getByRole('button', { name: 'Fertig' }).click();
+  await dialog.getByRole('button', { name: 'Schließen' }).click();
   await expect(entryStatus(page)).toHaveText(
     'Dieser Begriff ist noch nicht eingetragen.',
   );

@@ -27,15 +27,11 @@ export type Filing = {
   readonly status: string;
 };
 
-// After filing, the next card, or out of the dialog.
-export type AfterFiling = 'next' | 'close';
-
 type FileInput = {
   readonly pending: string;
   readonly create: () => Promise<Filing>;
   // The status when saving fails with no message of its own.
   readonly fallback: string;
-  readonly after: AfterFiling;
 };
 
 const failureMessage = (cause: unknown, fallback: string) =>
@@ -50,13 +46,13 @@ export const useEntryCard = <Draft>(
   empty: Draft,
   firstFieldRef: RefObject<HTMLElement | null>,
 ) => {
-  const { close } = useEntryDialog();
+  const submitRef = useRef<HTMLButtonElement>(null);
   const [draft, setDraft] = useState(empty);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
   const [status, setStatus] = useState('');
   const [filed, setFiled] = useState<ReadonlyArray<FiledRow>>([]);
-  // The draft "Fertig" found unfinished. It stays held, and "Fertig" offers
+  // The draft "Schließen" found typed. It stays held, and "Schließen" offers
   // to discard it, until it changes.
   const [heldDraft, setHeldDraft] = useState<Draft | null>(null);
   // Where focus goes once the fields are enabled again.
@@ -113,17 +109,13 @@ export const useEntryCard = <Draft>(
     }
   };
 
-  const file = async ({ pending, create, fallback, after }: FileInput) => {
+  const file = async ({ pending, create, fallback }: FileInput) => {
     start(pending);
     let filing: Filing;
     try {
       filing = await create();
     } catch (cause) {
       fail(cause, fallback);
-      return;
-    }
-    if (after === 'close') {
-      close();
       return;
     }
     fileCard(() => {
@@ -152,6 +144,7 @@ export const useEntryCard = <Draft>(
     status,
     filed,
     held: heldDraft === draft,
+    submitRef,
     run,
     file,
     hold,
@@ -160,49 +153,52 @@ export const useEntryCard = <Draft>(
 
 export type EntryCardState<Draft> = ReturnType<typeof useEntryCard<Draft>>;
 
-type FinishInput = {
+type CloseRequestInput = {
   // Whether nothing has been typed on the card.
   readonly blank: boolean;
-  readonly submittable: boolean;
-  // Files the card and closes the dialog.
-  readonly fileAndClose: () => void;
-  // The field to complete, which takes focus when "Fertig" finds the card
-  // unfinished.
-  readonly unfinishedRef: RefObject<HTMLElement | null>;
+  // The field to complete, or null when the entry can be filed as it is.
+  readonly missingRef: RefObject<HTMLElement | null> | null;
   // Says the entry is not filed yet, such as "Diese Vokabel ist noch nicht
   // eingetragen."
-  readonly unfinished: string;
+  readonly notice: string;
 };
 
-// "Fertig", and Escape with it, never drops a typed entry unasked: a blank
-// card closes the dialog, a complete one is filed first, and an unfinished
-// one is held, with focus in the field to complete, while "Fertig" turns
-// into "Verwerfen". Pressing it then discards the entry and closes.
-export const useEntryFinish = <Draft>(
+// The first field still to write, each given with whether it is, or null
+// when the entry can be filed.
+export const missingField = (
+  fields: ReadonlyArray<
+    readonly [missing: boolean, ref: RefObject<HTMLElement | null>]
+  >,
+) => fields.find(([missing]) => missing)?.[1] ?? null;
+
+// "Schließen", and Escape with it, only ever closes; filing is "Eintragen"
+// alone, so each button means one thing. A blank card closes at once. A typed
+// one is held instead, with focus where it can be finished: in the field to
+// complete, or on "Eintragen". "Schließen" turns into "Verwerfen" meanwhile,
+// which discards the entry and closes.
+export const useCloseRequest = <Draft>(
   card: EntryCardState<Draft>,
-  { blank, submittable, fileAndClose, unfinishedRef, unfinished }: FinishInput,
+  { blank, missingRef, notice }: CloseRequestInput,
 ) => {
-  const { close, finishRef } = useEntryDialog();
-  const finish = () => {
+  const { close, requestCloseRef } = useEntryDialog();
+  const requestClose = () => {
     if (card.busy) {
       return;
     }
     if (blank || card.held) {
       close();
-    } else if (submittable) {
-      fileAndClose();
     } else {
-      card.hold(unfinished);
-      unfinishedRef.current?.focus();
+      card.hold(notice);
+      (missingRef ?? card.submitRef).current?.focus();
     }
   };
-  // The dialog calls the latest finish on Escape, which needs this render's
+  // The dialog calls the latest request on Escape, which needs this render's
   // draft.
   useLayoutEffect(() => {
-    finishRef.current = finish;
+    requestCloseRef.current = requestClose;
     return () => {
-      finishRef.current = null;
+      requestCloseRef.current = null;
     };
   });
-  return finish;
+  return requestClose;
 };

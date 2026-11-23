@@ -72,7 +72,7 @@ test('a word typed on the course page goes where the last word went', async ({
     'Green Line 3 · Unit 3 – Holidays',
   );
 
-  await dialog.getByRole('button', { name: 'Fertig' }).click();
+  await dialog.getByRole('button', { name: 'Schließen' }).click();
   await expect(dialog).toBeHidden();
   await expect(place).toHaveCount(0);
   await expect(opener).toBeFocused();

@@ -1,32 +1,29 @@
-import { type ReactNode, type RefObject, type SubmitEvent, useId } from 'react';
+import { type ReactNode, type SubmitEvent, useContext, useId } from 'react';
 import type { CourseNouns } from '../../../shared/directions';
 import { countNoun } from '../../../shared/format/count';
 import { ActionBar } from '../../../shared/ui/action-bar';
 import { Button } from '../../../shared/ui/button';
 import { DeckEdges } from '../../../shared/ui/deck-edges';
-import {
-  cardListClass,
-  practiceCardClass,
-} from '../../../shared/ui/surface-styles';
+import { practiceCardClass } from '../../../shared/ui/surface-styles';
 import { VerdictMark } from '../../../shared/ui/verdict-mark';
+import { EntryPlaceContext, useEntryDialog } from './entry-dialog-context';
 import type { EntryCardState } from './use-entry-card';
 
 type EntryCardProps = {
   readonly card: Pick<
     EntryCardState<unknown>,
-    'busy' | 'failed' | 'filed' | 'held' | 'status'
+    'busy' | 'failed' | 'filed' | 'held' | 'status' | 'submitRef'
   >;
   readonly nouns: CourseNouns;
   readonly submittable: boolean;
   readonly onSubmit: (event: SubmitEvent<HTMLFormElement>) => void;
-  readonly finish: () => void;
+  readonly requestClose: () => void;
   // Names the live status for screen readers, such as "Status beim
   // Eintragen einer Vokabel".
   readonly statusLabel: string;
   // Whether Enter in the last field files the card, which "Eintragen" then
   // shows. A text takes Enter as a new line.
   readonly enterFiles: boolean;
-  readonly submitRef?: RefObject<HTMLButtonElement | null>;
   // The fields written on the card.
   readonly children: ReactNode;
 };
@@ -47,80 +44,94 @@ const statusTone = (card: EntryCardProps['card']) => {
   return card.held ? 'text-warning-foreground' : 'text-muted-foreground';
 };
 
-// The top card of a stack of blank index cards, and the entries filed from
-// it below. Both ways on sit side by side where the typing ends: "Eintragen"
-// files the entry and takes the next card, "Fertig" files it and leaves.
-// The fields are mounted anew for each card, so whatever a field kept of the
-// last entry, such as a proposal's hint, goes with it.
+// The top card of a stack of blank index cards, which carries the dialog's
+// title, and the entries filed from it below. The two buttons sit side by
+// side where the typing ends and mean one thing each: "Eintragen" files the
+// entry and takes the next card, "Schließen" closes. The fields are mounted
+// anew for each card, so whatever a field kept of the last entry, such as a
+// proposal's hint, goes with it.
 export const EntryCard = ({
   card,
   nouns,
   submittable,
   onSubmit,
-  finish,
+  requestClose,
   statusLabel,
   enterFiles,
-  submitRef,
   children,
-}: EntryCardProps) => (
-  <div className="flex flex-col gap-8">
-    <div className="relative">
-      <DeckEdges count={2} />
-      <form
-        className={`${filingCardClass} relative flex flex-col gap-6 px-5 pt-5 pb-4 sm:px-8 sm:pt-7 sm:pb-6 ${practiceCardClass}`}
-        onSubmit={onSubmit}
-      >
-        <div
-          className="flex animate-ink flex-col gap-4"
-          key={card.filed.length}
+}: EntryCardProps) => {
+  const { title, titleId } = useEntryDialog();
+  const place = useContext(EntryPlaceContext);
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="relative">
+        <DeckEdges count={2} />
+        <form
+          className={`${filingCardClass} relative flex flex-col gap-6 px-5 pt-5 pb-4 sm:px-8 sm:py-6 ${practiceCardClass}`}
+          onSubmit={onSubmit}
         >
-          {children}
-        </div>
-        <div className="flex flex-col gap-2">
-          <ActionBar
-            primary={
-              <Button
-                aria-keyshortcuts={enterFiles ? 'Enter' : undefined}
-                disabled={!submittable}
-                ref={submitRef}
-                type="submit"
-              >
-                Eintragen
-                {enterFiles ? (
-                  <span
-                    aria-hidden={true}
-                    className="pointer-fine:inline hidden border border-primary-foreground/40 px-1 text-primary-foreground text-xs"
-                  >
-                    ↵
-                  </span>
-                ) : null}
-              </Button>
-            }
-            secondary={
-              <Button
-                disabled={card.busy}
-                onClick={finish}
-                variant={card.held ? 'destructive' : 'text'}
-              >
-                {card.held ? 'Verwerfen' : 'Fertig'}
-              </Button>
-            }
-          />
-          <output
-            aria-label={statusLabel}
-            className={`min-h-5 text-sm ${statusTone(card)}`}
+          <div className="flex flex-col gap-4">
+            <h2 className="font-display text-xl" id={titleId}>
+              {title}
+            </h2>
+            {place}
+          </div>
+          <div
+            className="flex animate-ink flex-col gap-4"
+            key={card.filed.length}
           >
-            {card.status}
-          </output>
-        </div>
-      </form>
+            {children}
+          </div>
+          <div className="flex flex-col gap-2">
+            <ActionBar
+              primary={
+                <Button
+                  aria-keyshortcuts={enterFiles ? 'Enter' : undefined}
+                  disabled={!submittable}
+                  ref={card.submitRef}
+                  type="submit"
+                >
+                  Eintragen
+                  {enterFiles ? (
+                    <span
+                      aria-hidden={true}
+                      className="pointer-fine:inline hidden text-primary-foreground/70"
+                    >
+                      ↵
+                    </span>
+                  ) : null}
+                </Button>
+              }
+              secondary={
+                <Button
+                  aria-keyshortcuts="Escape"
+                  disabled={card.busy}
+                  onClick={requestClose}
+                  variant={card.held ? 'destructive' : 'text'}
+                >
+                  {card.held ? 'Verwerfen' : 'Schließen'}
+                </Button>
+              }
+            />
+            <output
+              aria-label={statusLabel}
+              className={`min-h-5 text-sm ${statusTone(card)}`}
+            >
+              {card.status}
+            </output>
+          </div>
+        </form>
+      </div>
+      <FiledEntries entries={card.filed} nouns={nouns} />
     </div>
-    <FiledEntries entries={card.filed} nouns={nouns} />
-  </div>
-);
+  );
+};
 
 // The entries filed while the dialog is open, newest first, so the one just
-// filed lands right under the card it was written on.
+// filed lands right under the card it was written on. The list is a plain
+// sheet with no lines, since the check on each row already sets it apart;
+// the heading is on the sheet, as the dimmed page around it gives text no
+// contrast.
 const FiledEntries = ({
   entries,
   nouns,
@@ -133,14 +144,14 @@ const FiledEntries = ({
     return null;
   }
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-2">
-      <h3 className="eyebrow" id={headingId}>
+    <section aria-labelledby={headingId} className="bg-card py-1">
+      <h3 className="eyebrow px-4 pt-3 pb-1" id={headingId}>
         {countNoun(entries.length, nouns.singular, nouns.plural)} eingetragen
       </h3>
-      <ul className={cardListClass}>
+      <ul>
         {entries.map((entry) => (
           <li
-            className={`${filedRowClass} grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-3 px-4 py-3 sm:grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)]`}
+            className={`${filedRowClass} grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-3 px-4 py-2 sm:grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)]`}
             key={entry.key}
           >
             <VerdictMark className="size-4 self-center" kind="check" />

@@ -1,5 +1,5 @@
-import { type ReactNode, type RefObject, useRef } from 'react';
-import { Dialog } from '../../../shared/ui/dialog';
+import { type ReactNode, type RefObject, useId, useRef } from 'react';
+import { Modal } from '../../../shared/ui/dialog';
 import { EntryDialogContext } from './entry-dialog-context';
 
 type EntryDialogProps = {
@@ -11,11 +11,11 @@ type EntryDialogProps = {
   readonly children: ReactNode;
 };
 
-// The desk new entries are typed on, one card after another. It has no
-// button of its own: the card's foot offers both ways on, "Eintragen" to file
-// the entry and take the next card and "Fertig" to file it and leave, side by
-// side where the typing ends. Escape leaves the same way as "Fertig", so a
-// typed entry is never dropped unasked.
+// A stack of blank index cards over the dimmed page, with no frame of its
+// own: the top card carries the title, and the entries filed from it lie
+// below. It is held near the top, so the growing list never moves the card.
+// Escape asks the card to close, the same as its "Schließen", so a typed
+// entry is never dropped unasked.
 export const EntryDialog = ({
   open,
   title,
@@ -23,19 +23,22 @@ export const EntryDialog = ({
   returnFocusRef,
   children,
 }: EntryDialogProps) => {
-  const finishRef = useRef<(() => void) | null>(null);
+  const titleId = useId();
+  const requestCloseRef = useRef<(() => void) | null>(null);
   return (
-    <Dialog
+    <Modal
+      className="mx-auto mt-4 mb-auto max-w-2xl bg-transparent pb-4 backdrop:backdrop-blur-sm sm:mt-[8dvh] sm:max-h-[calc(92dvh-1rem)]"
       closable={true}
-      onClose={() => (finishRef.current ?? onClose)()}
+      labelledBy={titleId}
+      onClose={() => (requestCloseRef.current ?? onClose)()}
       open={open}
       returnFocusRef={returnFocusRef}
-      surface="desk"
-      title={title}
     >
-      <EntryDialogContext value={{ close: onClose, finishRef }}>
+      <EntryDialogContext
+        value={{ title, titleId, close: onClose, requestCloseRef }}
+      >
         {children}
       </EntryDialogContext>
-    </Dialog>
+    </Modal>
   );
 };

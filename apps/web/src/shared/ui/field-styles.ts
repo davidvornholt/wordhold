@@ -49,3 +49,7 @@ export const entryTextLineClass = `${entryTextLine} text-lg leading-7`;
 
 // The translation under a sentence, a size smaller, as it follows from it.
 export const entryTranslationLineClass = `${entryTextLine} text-base leading-6`;
+
+// A choice on an entry card, such as where its entries go, on a rule like
+// the lines written on, so the card holds no boxes.
+export const entryChoiceLineClass = `min-h-11 border-b-2 py-2 text-base ${entryLineStates}`;
