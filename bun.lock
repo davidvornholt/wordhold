@@ -17,7 +17,7 @@
       "dependencies": {
         "@effect/platform-bun": "4.1.4",
         "@wordhold/api": "workspace:*",
-        "effect": "^4.1.4",
+        "effect": "^4.1.5",
       },
       "devDependencies": {
         "@davidvornholt/typescript-config": "workspace:*",
@@ -43,7 +43,7 @@
         "@wordhold/ui": "workspace:*",
         "better-auth": "^1.7.23",
         "drizzle-orm": "^0.45.4",
-        "effect": "^4.1.4",
+        "effect": "^4.1.5",
         "image-dimensions": "^2.6.0",
         "lucide-react": "^1.72.0",
         "react": "^19.3.1",
@@ -91,7 +91,7 @@
         "@aws-sdk/client-polly": "^3.1168.0",
         "@aws-sdk/client-transcribe-streaming": "^3.1168.0",
         "ai": "^7.0.172",
-        "effect": "^4.1.4",
+        "effect": "^4.1.5",
       },
       "devDependencies": {
         "@davidvornholt/typescript-config": "workspace:*",
@@ -103,7 +103,7 @@
       "name": "@wordhold/api",
       "version": "0.0.0",
       "dependencies": {
-        "effect": "^4.1.4",
+        "effect": "^4.1.5",
       },
       "devDependencies": {
         "@davidvornholt/typescript-config": "workspace:*",
@@ -117,7 +117,7 @@
       "dependencies": {
         "@effect/sql-pg": "^4.1.4",
         "drizzle-orm": "^0.45.4",
-        "effect": "^4.1.4",
+        "effect": "^4.1.5",
         "postgres": "^4.1.1",
         "ts-fsrs": "^6.0.0",
       },
@@ -692,7 +692,7 @@
 
     "ecdsa-sig-formatter": ["ecdsa-sig-formatter@1.0.11", "", { "dependencies": { "safe-buffer": "^5.0.1" } }, "sha512-nagl3RYrbNv6kQkeJIpt6NJZy8twLB/2vtz6yN9Z4vRKHN4/QZJIEbqohALSgwKdnksuY3k5Addp5lg8sVoVcQ=="],
 
-    "effect": ["effect@4.1.4", "", {}, "sha512-Tgrv/9FN+TZYyOn8XSli+fVqAfwDrDAkiX5Uu9vztINb675VTQdhD0gWI5Kzvhlh9QqzjZvw72iugqw5pwoghQ=="],
+    "effect": ["effect@4.1.5", "", {}, "sha512-xyR20KhQI0vg2gD8ILUSQRTTESEYJ0JKdP+QD8J37xbwPTqXRxFM/l0+vUVD9fuSvoYruoTqyt33C4FZv1s4TQ=="],
 
     "electron-to-chromium": ["electron-to-chromium@1.5.439", "", {}, "sha512-qu6QIPXhsb+CRcAiTMNjR4A1y/7tCYKkKjr5CZXRVih6qkDf79peZ2BpEU3qoDBNCRrcy3Mra3X9nG5oruuA7Q=="],
 

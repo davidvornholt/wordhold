@@ -50,7 +50,7 @@
     "@aws-sdk/client-polly": "^3.1168.0",
     "@aws-sdk/client-transcribe-streaming": "^3.1168.0",
     "ai": "^7.0.172",
-    "effect": "^4.1.4"
+    "effect": "^4.1.5"
   },
   "devDependencies": {
     "@davidvornholt/typescript-config": "workspace:*",
