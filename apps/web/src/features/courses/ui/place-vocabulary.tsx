@@ -13,6 +13,8 @@ import { VocabularyLibrary } from './vocabulary-library';
 
 type PlaceVocabularyProps = {
   readonly place: 'book' | 'unit';
+  // The book, or the book and unit, as the learner reads it.
+  readonly placeName: string;
   readonly initialFilter: VocabularyFilter;
   readonly entries: ReadonlyArray<VocabularyEntry>;
   readonly enabledDirections: ReadonlyArray<AnswerDirection>;
@@ -31,6 +33,7 @@ type PlaceVocabularyProps = {
 // to photographing.
 export const PlaceVocabulary = ({
   place,
+  placeName,
   initialFilter,
   entries,
   enabledDirections,
@@ -108,6 +111,7 @@ export const PlaceVocabulary = ({
       <EntryDialog
         onClose={() => setAdding(false)}
         open={adding}
+        place={placeName}
         returnFocusRef={addRef}
         title="Vokabeln eintragen"
       >

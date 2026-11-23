@@ -24,8 +24,7 @@ export const useEntryDialog = (): EntryDialogValue => {
   return value;
 };
 
-// Where the entries go, as a control on the card under its title, when the
-// dialog was opened from no place of its own. It is on the card rather than
-// around it, since the dimmed page around the card gives a control no
-// contrast.
+// Where the entries go, on the card under its title: the dialog names a
+// fixed place, and a form opened from no place of its own puts its choice of
+// place here instead.
 export const EntryPlaceContext = createContext<ReactNode>(null);

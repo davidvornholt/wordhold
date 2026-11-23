@@ -17,6 +17,8 @@ import { VocabularyLibrary } from './vocabulary-library';
 
 type SubjectOverviewProps = {
   readonly subject: CourseSubject;
+  // The subject's or collection's name, which its entries go to.
+  readonly name: string;
   readonly entries: ReadonlyArray<VocabularyEntry>;
   readonly enabledDirections: ReadonlyArray<AnswerDirection>;
   // The filter shown on arrival, such as the difficult entries the overview
@@ -56,6 +58,7 @@ const subjectSummary = (
 // with typing, since its first entry is all there is to do.
 export const SubjectOverview = ({
   subject,
+  name,
   entries,
   enabledDirections,
   initialFilter,
@@ -103,6 +106,7 @@ export const SubjectOverview = ({
       <EntryDialog
         onClose={() => setAdding(false)}
         open={adding}
+        place={name}
         title={`${nouns.plural} eintragen`}
       >
         {entryForm}

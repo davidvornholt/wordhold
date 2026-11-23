@@ -129,9 +129,7 @@ export const EntryCard = ({
 
 // The entries filed while the dialog is open, newest first, so the one just
 // filed lands right under the card it was written on. The list is a plain
-// sheet with no lines, since the check on each row already sets it apart;
-// the heading is on the sheet, as the dimmed page around it gives text no
-// contrast.
+// sheet with no lines, since the check on each row already sets it apart.
 const FiledEntries = ({
   entries,
   nouns,

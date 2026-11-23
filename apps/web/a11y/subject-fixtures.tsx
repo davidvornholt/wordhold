@@ -184,6 +184,7 @@ export const SubjectCourseFixture = ({
           />
         }
         initialFilter="all"
+        name={subjectName}
         photoAction={fixtureControl(
           'Notizen fotografieren',
           'terms-review',

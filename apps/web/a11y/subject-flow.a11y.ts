@@ -60,6 +60,9 @@ test('a new subject is named in a dialog and leads with its first term', async (
 
   await openEntryDialog(page);
   await expect(termField(page)).toBeFocused();
+  await expect(
+    page.getByRole('dialog', { name: 'Begriffe eintragen' }),
+  ).toHaveAccessibleDescription('Eintragen in Chemie');
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
 });
 

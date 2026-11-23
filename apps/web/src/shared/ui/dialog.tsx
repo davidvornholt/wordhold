@@ -19,7 +19,7 @@ type ModalProps = {
   // The id of the visible title, and of the description if there is one.
   readonly labelledBy: string;
   readonly describedBy?: string;
-  // Where the dialog sits and what surface it has.
+  // Where the dialog sits, what surface it has and what covers the page.
   readonly className: string;
   readonly children: ReactNode;
 };
@@ -63,7 +63,7 @@ export const Modal = ({
     <dialog
       aria-describedby={describedBy}
       aria-labelledby={labelledBy}
-      className={`max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] overflow-y-auto text-foreground backdrop:bg-foreground/40 ${className}`}
+      className={`max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] overflow-y-auto text-foreground ${className}`}
       onCancel={(event) => {
         event.preventDefault();
         if (closable) {
@@ -88,7 +88,7 @@ type DialogProps = Omit<
   readonly closeLabel?: string;
 };
 
-// A modal card with its title at the top.
+// A modal card with its title at the top, over the dimmed page.
 export const Dialog = ({
   title,
   description,
@@ -101,7 +101,7 @@ export const Dialog = ({
   return (
     <Modal
       {...modal}
-      className="m-auto max-w-lg border border-border bg-card p-6"
+      className="m-auto max-w-lg border border-border bg-card p-6 backdrop:bg-foreground/40"
       describedBy={description === undefined ? undefined : descriptionId}
       labelledBy={titleId}
     >

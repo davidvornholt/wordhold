@@ -34,6 +34,10 @@ test('a unit takes typed vocabulary one word after another', async ({
   await opener.click();
   const target = targetField(page);
   await expect(target).toBeFocused();
+  // The dialog covers the unit's page, so it names where the words go.
+  await expect(entryDialog(page)).toHaveAccessibleDescription(
+    'Eintragen in Green Line 3 · Unit 3 – Holidays',
+  );
   const submit = page.getByRole('button', { exact: true, name: 'Eintragen' });
   await expect(submit).toBeDisabled();
 
