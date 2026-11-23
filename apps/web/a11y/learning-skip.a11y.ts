@@ -1,11 +1,13 @@
 import { scanWcag22AaViolations } from '@davidvornholt/a11y-testing/axe';
 import { expect, test } from '@playwright/test';
 import { assertNoAccessibilityViolations } from './a11y-assertions';
+import { releaseHeldRequestsKey } from './held-requests';
 
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
 const skipAction = /^Kennenlernen überspringen/u;
 const reopenAction = /^Wieder kennenlernen/u;
+const undoAction = /^Rückgängig/u;
 
 test('an entry skips and reopens its learning pass one direction at a time', async ({
   page,
@@ -130,6 +132,64 @@ test('a selection skips its learning pass per direction and can undo it', async 
       name: 'Wieder kennenlernen · Englisch → Deutsch',
     }),
   ).toBeVisible();
+});
+
+// Pressing Escape is no user activation, so the browser closes the dialog on a
+// second Escape while a skip is being saved (see Modal). The skip still
+// finishes, and the next opening must not offer to undo it.
+test('a skip that finishes after the browser closed the dialog stays out of the next opening', async ({
+  page,
+}) => {
+  await page.goto('/?state=vocabulary-related&hold=skip');
+  await page.getByLabel('memory auswählen').check();
+  const menuButton = page.getByRole('button', { name: 'Weitere Aktionen' });
+  const openDialog = page.getByRole('menuitem', {
+    exact: true,
+    name: 'Kennenlernen überspringen',
+  });
+  await menuButton.click();
+  await openDialog.click();
+  const dialog = page.getByRole('dialog', {
+    name: 'Kennenlernen überspringen',
+  });
+  const toNative = dialog.getByRole('region', { name: 'Englisch → Deutsch' });
+  const skipButton = toNative.getByRole('button', {
+    name: '1 Vokabel überspringen · Englisch → Deutsch',
+  });
+  await skipButton.click();
+  const saving = toNative.getByRole('button', {
+    name: 'Wird gespeichert … · Englisch → Deutsch',
+  });
+  await expect(saving).toBeDisabled();
+  // Until the browser moves focus off the disabled button, a key pressed there
+  // goes nowhere.
+  await expect(saving).not.toBeFocused();
+  // The browser hides the dialog at once and tells the page a frame later. The
+  // skip has to finish after the page has heard of the close.
+  const listener = await dialog.evaluateHandle((element) => ({
+    closed: new Promise<void>((resolve) => {
+      element.addEventListener('close', () => resolve(), { once: true });
+    }),
+  }));
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+  await listener.evaluate(({ closed }) => closed);
+
+  await page.evaluate(
+    (key) => Reflect.get(globalThis, key)(),
+    releaseHeldRequestsKey,
+  );
+  // memory has nothing left to skip once the skip is stored.
+  await menuButton.click();
+  await expect(openDialog).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await page.getByLabel('happy auswählen').check();
+  await page.getByLabel('memory auswählen').uncheck();
+  await menuButton.click();
+  await openDialog.click();
+  await expect(skipButton).toBeVisible();
+  await expect(dialog.getByRole('button', { name: undoAction })).toHaveCount(0);
 });
 
 test('synonyms and opposites have no learning pass and follow their word', async ({

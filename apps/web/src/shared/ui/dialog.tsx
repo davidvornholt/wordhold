@@ -1,6 +1,7 @@
 import {
   type ReactNode,
   type RefObject,
+  useEffect,
   useId,
   useLayoutEffect,
   useRef,
@@ -34,7 +35,8 @@ type ModalProps = {
 // and every opening starts from a fresh form. Showing and closing happen
 // before the browser paints, so the dialog never appears without its
 // content. The browser lets a page hold Escape back only once per user
-// activation and then closes the dialog itself, which `open` then follows.
+// activation and then closes the dialog itself, which `open` follows once the
+// dialog is closable.
 export const Modal = ({
   open,
   closable,
@@ -48,13 +50,17 @@ export const Modal = ({
 }: ModalProps) => {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [shown, setShown] = useState(false);
+  // The browser closed the dialog while a change was being saved. It stays
+  // closed, with its content mounted, until the change settles, so its owner
+  // learns how the change ended before closing resets it.
+  const [closedWhileSaving, setClosedWhileSaving] = useState(false);
 
   useLayoutEffect(() => {
     const dialog = dialogRef.current;
     if (dialog === null) {
       return;
     }
-    if (open && !dialog.open) {
+    if (open && !dialog.open && !closedWhileSaving) {
       dialog.showModal();
       setShown(true);
     } else if (!open && shown) {
@@ -63,9 +69,16 @@ export const Modal = ({
         dialog.close();
       }
       setShown(false);
+      setClosedWhileSaving(false);
       returnFocusRef?.current?.focus();
     }
-  }, [open, shown, returnFocusRef]);
+  }, [open, shown, closedWhileSaving, returnFocusRef]);
+
+  useEffect(() => {
+    if (open && closedWhileSaving && closable) {
+      onClose();
+    }
+  }, [open, closedWhileSaving, closable, onClose]);
 
   return (
     <dialog
@@ -86,8 +99,13 @@ export const Modal = ({
       onClose={() => {
         // The event comes a moment after the close, when the dialog may have
         // been shown again.
-        if (open && dialogRef.current?.open === false) {
+        if (!open || dialogRef.current?.open !== false) {
+          return;
+        }
+        if (closable) {
           onClose();
+        } else {
+          setClosedWhileSaving(true);
         }
       }}
       ref={dialogRef}
