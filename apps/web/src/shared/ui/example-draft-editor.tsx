@@ -69,15 +69,20 @@ export const ExampleDraftEditor = <T extends ExampleDraft>({
   const example = useExampleDraft(input);
   const sentenceId = useId();
   const sentenceRef = useRef<HTMLInputElement>(null);
-  // Whether the learner chose to write a sentence by hand.
+  // Whether the sentence line is shown. Once a sentence is there or the
+  // learner chose to write one, it stays for the rest of the card, so clearing
+  // the sentence to write another keeps the line and its focus.
   const [writing, setWriting] = useState(false);
+  if (!writing && input.entry.example !== '') {
+    setWriting(true);
+  }
   const generateLabel = example.generating
     ? 'Satz wird erzeugt …'
     : 'Beispielsatz erzeugen';
   const generateDisabled =
     input.disabled || example.generating || !example.canGenerate;
 
-  if (!writing && input.entry.example === '') {
+  if (!writing) {
     return (
       <div className="flex flex-col gap-1">
         <div className="flex flex-wrap items-center gap-x-5">

@@ -208,6 +208,36 @@ test('a typed entry can carry a generated example sentence', async ({
   ).toBeVisible();
 });
 
+test('a generated example sentence can be cleared and written anew', async ({
+  page,
+}) => {
+  await page.goto('/?state=unit');
+  await page.getByRole('button', { name: 'Vokabel eintragen' }).click();
+  await targetField(page).fill('journey');
+  await nativeField(page).fill('die Reise');
+  await page.getByRole('button', { name: 'Beispielsatz erzeugen' }).click();
+  const sentence = page.getByLabel('Beispielsatz (optional)');
+  await expect(sentence).toHaveValue('We packed our bags for the journey.');
+  await sentence.press('ControlOrMeta+A');
+  await sentence.press('Backspace');
+  await expect(sentence).toBeFocused();
+  await page.keyboard.type('The journey took all day.');
+  await expect(sentence).toHaveValue('The journey took all day.');
+  await sentence.press('Tab');
+  await expect(
+    page.getByLabel('Deutsche Übersetzung des Beispielsatzes'),
+  ).toHaveValue('Wir packten unsere Koffer für die Reise.');
+  await page.getByRole('button', { exact: true, name: 'Eintragen' }).click();
+  await expect(status(page)).toHaveText('„journey“ eingetragen.');
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { exact: true, name: 'journey' }).click();
+  await expect(
+    page
+      .getByRole('dialog', { name: 'journey' })
+      .getByText('The journey took all day.'),
+  ).toBeVisible();
+});
+
 test('an example sentence is only offered until one is written', async ({
   page,
 }) => {
