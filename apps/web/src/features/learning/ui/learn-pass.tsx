@@ -15,7 +15,7 @@ import {
 } from '../../../shared/pitfalls/pitfall-model';
 import { usePitfallWarmup } from '../../../shared/pitfalls/use-pitfall-warmup';
 import { CardRail } from '../../../shared/ui/card-rail';
-import { dealCard } from '../../../shared/ui/deal-card';
+import { dealCard } from '../../../shared/ui/card-transition';
 import type { LearnItem } from '../schemas/learning-models';
 import { LearnDone } from './learn-done';
 import { LearnEntry } from './learn-entry';

@@ -2,10 +2,10 @@ import type { AnswerDirection } from '@wordhold/db/schema/directions';
 import { type ReactNode, useId, useRef, useState } from 'react';
 import type { CourseSubject } from '../../../shared/directions';
 import { Button } from '../../../shared/ui/button';
-import { Dialog } from '../../../shared/ui/dialog';
 import type { VocabularyEntry } from '../schemas/course-units';
 import type { VocabularyFilter } from '../schemas/vocabulary-search';
 import type { CourseEntryActions } from './entry-actions';
+import { EntryDialog } from './entry-dialog';
 import { PlaceVocabularyEmpty } from './place-vocabulary-empty';
 import { SelectionNotice } from './selection-notice';
 import type { StudyAction } from './study-action';
@@ -105,16 +105,14 @@ export const PlaceVocabulary = ({
       </div>
       <SelectionNotice notice={selectionNotice} />
       {content}
-      <Dialog
-        closable={true}
-        closeLabel="Fertig"
+      <EntryDialog
         onClose={() => setAdding(false)}
         open={adding}
         returnFocusRef={addRef}
-        title="Vokabel eintragen"
+        title="Vokabeln eintragen"
       >
         {entryForm}
-      </Dialog>
+      </EntryDialog>
     </section>
   );
 };

@@ -21,8 +21,17 @@ type DialogProps = {
   // Where focus goes on closing when the control that opened the dialog may
   // be gone by then. Otherwise focus returns to that control.
   readonly returnFocusRef?: RefObject<HTMLElement | null>;
+  // A card by default. A desk is a work surface that cards are laid on: the
+  // page background, wider, and held near the top, so what is added below
+  // while it is open never moves what is above.
+  readonly surface?: 'card' | 'desk';
   readonly children: ReactNode;
 };
+
+const surfaceClass = {
+  card: 'm-auto max-h-[calc(100dvh-2rem)] max-w-lg bg-card p-6',
+  desk: 'mx-auto mt-4 mb-auto max-h-[calc(100dvh-2rem)] max-w-2xl bg-background p-4 sm:mt-[8dvh] sm:max-h-[calc(92dvh-1rem)] sm:p-6',
+} as const;
 
 // A modal over the page instead of a panel inside it, so opening it moves
 // nothing underneath. The native dialog traps focus, closes on Escape and
@@ -39,6 +48,7 @@ export const Dialog = ({
   closable,
   onClose,
   returnFocusRef,
+  surface = 'card',
   children,
 }: DialogProps) => {
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -65,7 +75,7 @@ export const Dialog = ({
     <dialog
       aria-describedby={description === undefined ? undefined : descriptionId}
       aria-labelledby={titleId}
-      className="m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-lg overflow-y-auto border border-border bg-card p-6 text-foreground backdrop:bg-foreground/40"
+      className={`w-[calc(100%-2rem)] overflow-y-auto border border-border text-foreground backdrop:bg-foreground/40 ${surfaceClass[surface]}`}
       onCancel={(event) => {
         event.preventDefault();
         if (closable) {

@@ -8,7 +8,7 @@ import type {
   CreatedVocabularyEntry,
   UpdatedVocabularyEntry,
 } from '../src/features/courses/services/vocabulary-entry-service';
-import type { NewVocabularyEntryDraft } from '../src/features/courses/ui/use-new-vocabulary-entry';
+import type { NewVocabularyEntryDraft } from '../src/features/courses/ui/vocabulary-entry-draft';
 import type { WordSide } from '../src/features/courses/ui/word-pair-fields';
 import type { WordPlace } from '../src/features/courses/ui/word-places';
 import { courseOutline, fixtureEntry } from './course-fixture-data';

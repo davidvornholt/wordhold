@@ -10,7 +10,7 @@ test('a Bible reference typed as the title is looked up, read and saved', async 
 }) => {
   await page.goto('/?state=texts-course-empty');
   await page.getByRole('button', { name: 'Text eintragen' }).click();
-  const dialog = page.getByRole('dialog', { name: 'Text eintragen' });
+  const dialog = page.getByRole('dialog', { name: 'Texte eintragen' });
   const title = dialog.getByRole('textbox', { exact: true, name: 'Titel' });
   const text = dialog.getByRole('textbox', { exact: true, name: 'Text' });
   const status = dialog.getByRole('status', {
@@ -38,7 +38,7 @@ test('a Bible reference typed as the title is looked up, read and saved', async 
 test('a passage that cannot be looked up is explained', async ({ page }) => {
   await page.goto('/?state=texts-course-empty');
   await page.getByRole('button', { name: 'Text eintragen' }).click();
-  const dialog = page.getByRole('dialog', { name: 'Text eintragen' });
+  const dialog = page.getByRole('dialog', { name: 'Texte eintragen' });
   const title = dialog.getByRole('textbox', { exact: true, name: 'Titel' });
   const lookUp = dialog.getByRole('button', {
     name: 'In LUT1912 nachschlagen',

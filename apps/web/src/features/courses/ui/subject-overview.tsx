@@ -7,10 +7,10 @@ import {
 } from '../../../shared/directions';
 import { countNoun } from '../../../shared/format/count';
 import { Button } from '../../../shared/ui/button';
-import { Dialog } from '../../../shared/ui/dialog';
 import type { VocabularyEntry } from '../schemas/course-units';
 import type { VocabularyFilter } from '../schemas/vocabulary-search';
 import type { CourseEntryActions } from './entry-actions';
+import { EntryDialog } from './entry-dialog';
 import { SelectionNotice } from './selection-notice';
 import type { StudyAction } from './study-action';
 import { VocabularyLibrary } from './vocabulary-library';
@@ -100,15 +100,13 @@ export const SubjectOverview = ({
         </Button>
         {photoAction}
       </div>
-      <Dialog
-        closable={true}
-        closeLabel="Fertig"
+      <EntryDialog
         onClose={() => setAdding(false)}
         open={adding}
-        title={`${nouns.singular} eintragen`}
+        title={`${nouns.plural} eintragen`}
       >
         {entryForm}
-      </Dialog>
+      </EntryDialog>
       <SelectionNotice notice={selectionNotice} />
       {examSection}
       {isEmpty ? null : (

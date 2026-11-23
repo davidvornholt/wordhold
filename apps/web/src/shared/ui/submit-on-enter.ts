@@ -6,7 +6,7 @@ const inputMethodKeyCode = 229;
 // An Enter that picks an input method's candidate writes the word rather than
 // sending the answer. Safari reports that Enter after the composition has
 // ended, with isComposing false, so only its keyCode gives it away.
-const confirmsCandidate = (event: KeyboardEvent<HTMLTextAreaElement>) =>
+const confirmsCandidate = (event: KeyboardEvent<HTMLElement>) =>
   event.nativeEvent.isComposing ||
   event.nativeEvent.keyCode === inputMethodKeyCode;
 
@@ -44,3 +44,8 @@ export const submitOnEveryEnter = (
   }
   submitForm(event);
 };
+
+// An Enter that moves on, such as to the next field, rather than writing an
+// input method's candidate.
+export const movesOnEnter = (event: KeyboardEvent<HTMLElement>): boolean =>
+  event.key === 'Enter' && !event.shiftKey && !confirmsCandidate(event);

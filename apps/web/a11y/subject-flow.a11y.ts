@@ -87,7 +87,7 @@ test('a term takes a suggested definition and the next term follows', async ({
   await expect(entryStatus(page)).toHaveText('„Oxidation“ eingetragen.');
   await expect(page.getByText('1 Begriff · 1 noch kennenlernen')).toBeVisible();
   await expect(
-    page.getByRole('heading', { level: 2, name: 'Begriffe' }),
+    page.getByRole('heading', { exact: true, level: 2, name: 'Begriffe' }),
   ).toBeVisible();
   await expect(termField(page)).toBeFocused();
   await expect(termField(page)).toHaveValue('');
@@ -104,10 +104,14 @@ test('a term takes a suggested definition and the next term follows', async ({
   ).toBeVisible();
   await expect(submit).toBeDisabled();
 
-  await page
-    .getByRole('dialog', { name: 'Begriff eintragen' })
-    .getByRole('button', { name: 'Fertig' })
-    .click();
+  // The repeat cannot be filed, so "Fertig" holds it until it is discarded.
+  const dialog = page.getByRole('dialog', { name: 'Begriffe eintragen' });
+  await dialog.getByRole('button', { name: 'Fertig' }).click();
+  await expect(entryStatus(page)).toHaveText(
+    'Dieser Begriff ist noch nicht eingetragen.',
+  );
+  await expect(termField(page)).toBeFocused();
+  await dialog.getByRole('button', { name: 'Verwerfen' }).click();
   await expect(
     page.getByRole('button', { name: 'Begriff eintragen' }),
   ).toBeFocused();
@@ -243,6 +247,6 @@ test('the overview lists a subject with its failed terms by name only', async ({
     'terms-course',
   );
   await expect(
-    page.getByRole('heading', { level: 2, name: 'Begriffe' }),
+    page.getByRole('heading', { exact: true, level: 2, name: 'Begriffe' }),
   ).toBeVisible();
 });

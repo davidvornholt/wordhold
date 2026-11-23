@@ -1,7 +1,7 @@
 import { wordLocation } from '../../../shared/vocabulary/book-name';
 import { findDuplicate } from '../../../shared/vocabulary/entry-identity';
 import type { VocabularyEntry } from '../schemas/course-units';
-import { quoted } from './use-new-vocabulary-entry';
+import { quoted } from './vocabulary-entry-draft';
 
 // What the learner is told about a draft that repeats a stored entry. Only
 // an exact repeat blocks saving; a variant is pointed out and left to the

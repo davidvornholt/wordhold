@@ -1,16 +1,19 @@
-import { type ReactNode, useId } from 'react';
+import type { LanguageCode } from '@wordhold/db/schema/courses';
+import { useId } from 'react';
 import type {
   ExampleDraft,
   ExampleGenerationSource,
   GeneratedExample,
 } from '../examples/example-draft';
-import { Button } from './button';
-import { fieldOnCardClass } from './field-styles';
+import { entryTextLineClass, entryTranslationLineClass } from './field-styles';
+import { LineAction, LineWithAction } from './line-action';
 import { useExampleDraft } from './use-example-draft';
 
 type ExampleDraftEditorProps<T extends ExampleDraft> = {
   readonly disabled: boolean;
   readonly entry: T;
+  // The language the sentence is written in.
+  readonly targetLanguage: LanguageCode;
   // Names the step the learner reviews the AI text before, e.g. "Eintragen".
   readonly reviewStep: string;
   readonly generate: (
@@ -26,30 +29,6 @@ type ExampleDraftEditorProps<T extends ExampleDraft> = {
     source: ExampleGenerationSource,
     generated: GeneratedExample,
   ) => void;
-};
-
-type FieldProps = {
-  readonly label: string;
-  readonly hint?: string;
-  readonly children: (fieldProps: {
-    readonly className: string;
-    readonly id: string;
-  }) => ReactNode;
-};
-
-const Field = ({ label, hint, children }: FieldProps) => {
-  const id = useId();
-  return (
-    <div className="flex flex-col gap-1 text-sm">
-      <label className="font-medium" htmlFor={id}>
-        {label}
-        {hint === undefined ? null : (
-          <span className="font-normal text-muted-foreground"> ({hint})</span>
-        )}
-      </label>
-      {children({ className: fieldOnCardClass, id })}
-    </div>
-  );
 };
 
 // Only AI text needs the learner's review; a saved sentence had it.
@@ -72,49 +51,67 @@ const ReviewHint = ({
   );
 };
 
-// The example sentence and its German translation as labelled fields of a
-// standalone form on a card.
+// The example sentence and its German translation, written on a card under
+// the word: the sentence on a line of its own, which offers to write one
+// while it is empty, and its translation a size smaller on the line below.
+// The translation line is there from the start, so writing the sentence
+// moves nothing.
 export const ExampleDraftEditor = <T extends ExampleDraft>({
   reviewStep,
+  targetLanguage,
   ...input
 }: ExampleDraftEditorProps<T>) => {
   const example = useExampleDraft(input);
+  const sentenceId = useId();
   return (
-    <div className="grid gap-2">
-      <Field hint="optional" label="Beispielsatz">
-        {(fieldProps) => <input {...fieldProps} {...example.sentenceField} />}
-      </Field>
-      {example.sentence === '' ? null : (
-        <Field label="Deutsche Übersetzung des Beispielsatzes">
-          {(fieldProps) => (
-            <input
-              {...fieldProps}
-              {...example.translationField}
-              placeholder={
-                example.translating ? 'Übersetzung wird erzeugt …' : undefined
+    <div className="flex flex-col gap-1">
+      <label className="eyebrow" htmlFor={sentenceId}>
+        Beispielsatz <span className="text-muted-foreground">(optional)</span>
+      </label>
+      <LineWithAction
+        action={
+          example.sentence === '' ? (
+            <LineAction
+              disabled={
+                input.disabled || example.generating || !example.canGenerate
               }
-            />
-          )}
-        </Field>
-      )}
-      {example.sentence === '' ? (
-        <Button
-          className="w-fit"
-          disabled={
-            input.disabled || example.generating || !example.canGenerate
-          }
-          onClick={example.generateExample}
-          variant="quiet-muted"
-        >
-          {example.generating ? 'Satz wird erzeugt …' : 'Beispielsatz erzeugen'}
-        </Button>
-      ) : (
-        <ReviewHint entry={input.entry} reviewStep={reviewStep} />
-      )}
-      <ExampleErrors
-        generationError={example.generationError}
-        translationError={example.translationError}
+              onClick={example.generateExample}
+            >
+              {example.generating
+                ? 'Satz wird erzeugt …'
+                : 'Beispielsatz erzeugen'}
+            </LineAction>
+          ) : null
+        }
+        line={
+          <input
+            {...example.sentenceField}
+            className={entryTextLineClass}
+            id={sentenceId}
+            lang={targetLanguage}
+          />
+        }
       />
+      <input
+        {...example.translationField}
+        aria-label="Deutsche Übersetzung des Beispielsatzes"
+        className={entryTranslationLineClass}
+        disabled={example.translationField.disabled || example.sentence === ''}
+        placeholder={
+          example.translating
+            ? 'Übersetzung wird erzeugt …'
+            : 'Deutsche Übersetzung'
+        }
+      />
+      <div className="flex min-h-5 flex-col gap-1 text-sm">
+        {example.sentence === '' ? null : (
+          <ReviewHint entry={input.entry} reviewStep={reviewStep} />
+        )}
+        <ExampleErrors
+          generationError={example.generationError}
+          translationError={example.translationError}
+        />
+      </div>
     </div>
   );
 };
