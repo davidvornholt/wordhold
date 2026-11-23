@@ -1,13 +1,15 @@
-import { type SubmitEvent, useEffect, useRef, useState } from 'react';
-import { Button } from '../../../shared/ui/button';
+import { type SubmitEvent, useRef } from 'react';
+import { courseNouns } from '../../../shared/directions';
 import type { VocabularyEntry } from '../schemas/course-units';
+import { EntryCard } from './entry-card';
 import { listEntryDuplicate } from './entry-duplicates';
 import {
   type SuggestDefinition,
   TermDefinitionFields,
   type TermDraft,
 } from './term-definition-fields';
-import { quoted } from './use-new-vocabulary-entry';
+import { missingField, useCloseRequest, useEntryCard } from './use-entry-card';
+import { quoted } from './vocabulary-entry-draft';
 
 export type CreateTerm = (draft: TermDraft) => Promise<void>;
 
@@ -21,66 +23,50 @@ type NewTermFormProps = {
 
 const emptyTerm: TermDraft = { term: '', definition: '' };
 
-// Saving one typed term: the fields are disabled meanwhile, cleared on
-// success, and focus returns to the term once the form is enabled again, so
-// the next term can be typed right away.
-const useNewTermEntry = (createEntry: CreateTerm) => {
-  const [draft, setDraft] = useState(emptyTerm);
-  const [busy, setBusy] = useState(false);
-  const [failed, setFailed] = useState(false);
-  const [status, setStatus] = useState('');
-  const termRef = useRef<HTMLInputElement>(null);
-  const refocusRef = useRef(false);
-
-  useEffect(() => {
-    if (!busy && refocusRef.current) {
-      refocusRef.current = false;
-      termRef.current?.focus();
-    }
-  }, [busy]);
-
-  const save = async () => {
-    const term = draft.term.trim();
-    setBusy(true);
-    setFailed(false);
-    setStatus(`${quoted(term)} wird eingetragen …`);
-    try {
-      await createEntry({ term, definition: draft.definition.trim() });
-      setDraft(emptyTerm);
-      setStatus(`${quoted(term)} eingetragen.`);
-      refocusRef.current = true;
-    } catch (cause) {
-      setFailed(true);
-      setStatus(
-        cause instanceof Error
-          ? cause.message
-          : 'Der Begriff wurde nicht eingetragen. Versuche es noch einmal.',
-      );
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return { draft, setDraft, busy, failed, status, termRef, save } as const;
-};
-
-// One term at a time, for as long as the form stays open. An exact repeat of
-// a stored term is stopped here; the same term in another casing is pointed
+// One term after another, each on a card of its own. An exact repeat of a
+// stored term is stopped here; the same term in another casing is pointed
 // out and left to the learner.
 export const NewTermForm = ({
   entries,
   createEntry,
   suggestDefinition,
 }: NewTermFormProps) => {
-  const { draft, setDraft, busy, failed, status, termRef, save } =
-    useNewTermEntry(createEntry);
+  const termRef = useRef<HTMLInputElement>(null);
+  const definitionRef = useRef<HTMLTextAreaElement>(null);
+  const card = useEntryCard(emptyTerm, termRef);
+  const { draft, setDraft, busy } = card;
   const term = draft.term.trim();
+  const definition = draft.definition.trim();
   const duplicate = listEntryDuplicate(entries, term, null);
   const submittable =
-    !busy &&
-    term !== '' &&
-    draft.definition.trim() !== '' &&
-    !duplicate.blocked;
+    !busy && term !== '' && definition !== '' && !duplicate.blocked;
+
+  const save = () =>
+    card.file({
+      pending: `${quoted(term)} wird eingetragen …`,
+      create: async () => {
+        await createEntry({ term, definition });
+        return {
+          entry: {
+            front: term,
+            back: definition,
+            frontLang: undefined,
+            note: null,
+          },
+          status: `${quoted(term)} eingetragen.`,
+        };
+      },
+      fallback: 'Der Begriff wurde nicht eingetragen. Versuche es noch einmal.',
+    });
+
+  const requestClose = useCloseRequest(card, {
+    blank: term === '' && definition === '',
+    missingRef: missingField([
+      [term === '' || duplicate.blocked, termRef],
+      [definition === '', definitionRef],
+    ]),
+    notice: 'Dieser Begriff ist noch nicht eingetragen.',
+  });
 
   const submit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -90,29 +76,27 @@ export const NewTermForm = ({
   };
 
   return (
-    <form className="grid gap-3" onSubmit={submit}>
+    <EntryCard
+      card={card}
+      enterFiles={true}
+      nouns={courseNouns({ kind: 'terms' })}
+      onSubmit={submit}
+      requestClose={requestClose}
+      statusLabel="Status beim Eintragen eines Begriffs"
+      submittable={submittable}
+    >
       <TermDefinitionFields
         busy={busy}
+        definitionRef={definitionRef}
         draft={draft}
+        // While the entry is filed, the list may already hold it, and it
+        // would be pointed out as a repeat of itself.
+        hint={busy ? null : duplicate.hint}
         reviewStep="Eintragen"
         setDraft={setDraft}
         suggestDefinition={suggestDefinition}
         termRef={termRef}
       />
-      {duplicate.hint === null ? null : (
-        <p className="text-sm text-warning-foreground">{duplicate.hint}</p>
-      )}
-      <div className="flex flex-wrap items-center gap-4">
-        <Button disabled={!submittable} type="submit">
-          Eintragen
-        </Button>
-        <output
-          aria-label="Status beim Eintragen eines Begriffs"
-          className={failed ? 'text-destructive text-sm' : 'text-sm'}
-        >
-          {status}
-        </output>
-      </div>
-    </form>
+    </EntryCard>
   );
 };

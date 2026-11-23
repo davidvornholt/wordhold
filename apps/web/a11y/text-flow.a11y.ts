@@ -28,7 +28,7 @@ test('a new collection is named in a dialog and leads with its first text', asyn
 test('a text keeps its lines and the next text follows', async ({ page }) => {
   await page.goto('/?state=texts-course-empty');
   await page.getByRole('button', { name: 'Text eintragen' }).click();
-  const dialog = page.getByRole('dialog', { name: 'Text eintragen' });
+  const dialog = page.getByRole('dialog', { name: 'Texte eintragen' });
   const title = dialog.getByRole('textbox', { exact: true, name: 'Titel' });
   const text = dialog.getByRole('textbox', { exact: true, name: 'Text' });
   await expect(title).toBeFocused();
@@ -53,7 +53,14 @@ test('a text keeps its lines and the next text follows', async ({ page }) => {
     dialog.getByText('„psalm 23,1“ ist schon als „Psalm 23,1“ eingetragen.'),
   ).toBeVisible();
 
-  await dialog.getByRole('button', { name: 'Fertig' }).click();
+  // A title without its text is held, not dropped, until it is discarded.
+  await dialog.getByRole('button', { name: 'Schließen' }).click();
+  await expect(
+    dialog.getByRole('status', { name: 'Status beim Eintragen eines Texts' }),
+  ).toHaveText('Dieser Text ist noch nicht eingetragen.');
+  await expect(text).toBeFocused();
+  await dialog.getByRole('button', { name: 'Verwerfen' }).click();
+  await expect(dialog).toBeHidden();
   await expect(
     page.getByRole('heading', { level: 2, name: 'Texte' }),
   ).toBeVisible();

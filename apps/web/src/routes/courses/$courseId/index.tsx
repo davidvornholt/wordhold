@@ -283,6 +283,7 @@ const SubjectScreen = ({
         )
       }
       initialFilter={filter ?? 'all'}
+      name={course.name}
       photoAction={
         hasPhotoImport(course.kind) ? (
           <ActionLink

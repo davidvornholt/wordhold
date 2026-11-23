@@ -151,6 +151,24 @@
     mix-blend-mode: normal;
   }
 
+  /*
+   * Filing a typed entry (fileCard): the card sinks into the newest row of
+   * the list below it, its top coming down to the row's, while the rows
+   * filed before move down to make room and a blank card shows where it
+   * was. Card and row are equally wide, so both snapshots keep their size,
+   * anchored at the top where the entry was written, and the shrinking
+   * group clips the card's instead of squeezing its text. The entry card
+   * names what takes part with the filing variants below.
+   */
+  :root[data-filing]::view-transition-group(*) {
+    animation-duration: var(--motion-slow);
+    animation-timing-function: var(--motion-ease);
+  }
+
+  ::view-transition-image-pair(filing-entry) {
+    overflow: clip;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     ::view-transition-group(*),
     ::view-transition-old(*),
@@ -159,6 +177,14 @@
     }
   }
 }
+
+/*
+ * While fileCard runs, the root is marked "card" before the update and "row"
+ * after it, so the card and the row it becomes can share a view-transition
+ * name across it.
+ */
+@custom-variant filing-card (:root[data-filing="card"] &);
+@custom-variant filing-row (:root[data-filing="row"] &);
 
 /*
  * Every screen anchors navigation and titles to the same column, so moving

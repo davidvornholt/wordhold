@@ -181,6 +181,7 @@ const BookScreen = () => {
             initialFilter={filter ?? 'all'}
             outline={outline}
             place={wordPlace}
+            placeName={book.name}
           />
         ) : null}
         {units.length === 0 ? null : (

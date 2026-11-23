@@ -8,11 +8,12 @@ import type {
   CreatedVocabularyEntry,
   UpdatedVocabularyEntry,
 } from '../src/features/courses/services/vocabulary-entry-service';
-import type { NewVocabularyEntryDraft } from '../src/features/courses/ui/use-new-vocabulary-entry';
+import type { NewVocabularyEntryDraft } from '../src/features/courses/ui/vocabulary-entry-draft';
 import type { WordSide } from '../src/features/courses/ui/word-pair-fields';
 import type { WordPlace } from '../src/features/courses/ui/word-places';
 import { courseOutline, fixtureEntry } from './course-fixture-data';
 import { changeLearning } from './fixture-learning';
+import { settleRequest } from './held-requests';
 
 const tripExample = 'Wir packten unsere Koffer für die Reise.';
 
@@ -62,10 +63,10 @@ export const useFixtureEntries = (initial: ReadonlyArray<VocabularyEntry>) => {
       example: storedExample(draft),
     };
     setEntries((current) => [...current, added]);
-    return Promise.resolve({
+    return settleRequest('filing', () => ({
       entryId: added.id,
       audio: pronunciation(draft.targetText),
-    });
+    }));
   };
   const updateEntry = (
     entryId: string,
@@ -115,11 +116,12 @@ export const useFixtureEntries = (initial: ReadonlyArray<VocabularyEntry>) => {
   const changeEntryLearning = (
     cardIds: ReadonlyArray<string>,
     change: 'skip' | 'return',
-  ) => {
-    const result = changeLearning(entries, cardIds, change);
-    setEntries(result.entries);
-    return Promise.resolve(result.changed);
-  };
+  ) =>
+    settleRequest(change, () => {
+      const result = changeLearning(entries, cardIds, change);
+      setEntries(result.entries);
+      return result.changed;
+    });
   return {
     entries,
     createEntry,

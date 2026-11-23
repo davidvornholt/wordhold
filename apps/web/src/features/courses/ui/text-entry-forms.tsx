@@ -6,20 +6,26 @@ import {
   type RefObject,
   type SetStateAction,
   type SubmitEvent,
-  useEffect,
+  useId,
   useRef,
   useState,
 } from 'react';
-import { Button } from '../../../shared/ui/button';
-import { fieldOnCardClass } from '../../../shared/ui/field-styles';
+import { courseNouns } from '../../../shared/directions';
+import {
+  entryTextLineClass,
+  entryWordLineClass,
+} from '../../../shared/ui/field-styles';
+import { movesOnEnter } from '../../../shared/ui/submit-on-enter';
 import { maximumMemorizedTextLength } from '../../../shared/vocabulary/entry-fields';
 import type { VocabularyEntry } from '../schemas/course-units';
 import { EditEntryFooter } from './edit-entry-footer';
 import { type EntryEditorControl, useEntryEdit } from './entry-actions';
+import { EntryCard } from './entry-card';
 import { listEntryDuplicate } from './entry-duplicates';
 import { type TextLookup, useTextSource } from './text-lookup';
 import { TextLookupControls } from './text-lookup-controls';
-import { quoted } from './use-new-vocabulary-entry';
+import { missingField, useCloseRequest, useEntryCard } from './use-entry-card';
+import { quoted } from './vocabulary-entry-draft';
 
 export type TextDraft = {
   readonly title: string;
@@ -31,56 +37,88 @@ type TextFieldsProps = {
   readonly setDraft: Dispatch<SetStateAction<TextDraft>>;
   readonly busy: boolean;
   readonly titleRef: RefObject<HTMLInputElement | null>;
-  readonly onTitleKeyDown?: (event: KeyboardEvent<HTMLInputElement>) => void;
+  readonly textRef?: RefObject<HTMLTextAreaElement | null>;
+  // What Enter in the title does instead of moving to the text, such as
+  // looking the text up; it returns whether it did.
+  readonly onTitleEnter?: () => boolean;
   // Shown below the title, such as the controls to look the text up.
   readonly titleAction?: ReactNode;
+  // A note on the typed title, such as that it repeats a stored one.
+  readonly hint: string | null;
 };
 
-// A title, such as a Bible reference, and the text learned under it. Enter
-// starts a new line of the text, since verses and poems keep their lines;
-// the button saves.
+// A title, such as a Bible reference, written on a line of its own, and the
+// text learned under it on a line that grows as it is written. Enter on the
+// title moves to the text while it is empty. Enter in the text starts a new
+// line, since verses and poems keep their lines; the button files it.
 const TextFields = ({
   draft,
   setDraft,
   busy,
   titleRef,
-  onTitleKeyDown,
+  textRef,
+  onTitleEnter,
   titleAction,
-}: TextFieldsProps) => (
-  <div className="grid gap-3">
-    <label className="flex flex-col gap-1 text-sm">
-      <span className="font-medium">Titel</span>
-      <input
-        // biome-ignore lint/a11y/noAutofocus: The form appears on request; the learner asked to type, so the title takes focus.
-        autoFocus={true}
-        className={fieldOnCardClass}
-        disabled={busy}
-        maxLength={maximumEntryTextLength}
-        onChange={(event) =>
-          setDraft((current) => ({ ...current, title: event.target.value }))
-        }
-        onKeyDown={onTitleKeyDown}
-        placeholder="z. B. Johannes 3,16"
-        ref={titleRef}
-        value={draft.title}
-      />
-    </label>
-    {titleAction}
-    <label className="flex flex-col gap-1 text-sm">
-      <span className="font-medium">Text</span>
-      <textarea
-        className={`${fieldOnCardClass} field-sizing-content min-h-32 resize-none`}
-        disabled={busy}
-        maxLength={maximumMemorizedTextLength}
-        onChange={(event) =>
-          setDraft((current) => ({ ...current, text: event.target.value }))
-        }
-        rows={5}
-        value={draft.text}
-      />
-    </label>
-  </div>
-);
+  hint,
+}: TextFieldsProps) => {
+  const id = useId();
+  const moves = draft.title.trim() !== '' && draft.text.trim() === '';
+  const titleEnter = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (!(moves && movesOnEnter(event))) {
+      return;
+    }
+    event.preventDefault();
+    if (onTitleEnter?.() !== true) {
+      textRef?.current?.focus();
+    }
+  };
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1">
+        <label className="eyebrow" htmlFor={`${id}-title`}>
+          Titel
+        </label>
+        <input
+          // biome-ignore lint/a11y/noAutofocus: The form appears on request; the learner asked to type, so the title takes focus.
+          autoFocus={true}
+          className={entryWordLineClass}
+          disabled={busy}
+          enterKeyHint={moves ? 'next' : undefined}
+          id={`${id}-title`}
+          maxLength={maximumEntryTextLength}
+          onChange={(event) =>
+            setDraft((current) => ({ ...current, title: event.target.value }))
+          }
+          onKeyDown={titleEnter}
+          placeholder="z. B. Johannes 3,16"
+          ref={titleRef}
+          value={draft.title}
+        />
+        {hint === null ? null : (
+          <p className="text-sm text-warning-foreground">{hint}</p>
+        )}
+      </div>
+      {titleAction}
+      <div className="flex flex-col gap-1">
+        <label className="eyebrow" htmlFor={`${id}-text`}>
+          Text
+        </label>
+        <textarea
+          className={`${entryTextLineClass} field-sizing-content min-h-24 resize-none`}
+          disabled={busy}
+          id={`${id}-text`}
+          maxLength={maximumMemorizedTextLength}
+          onChange={(event) =>
+            setDraft((current) => ({ ...current, text: event.target.value }))
+          }
+          ref={textRef}
+          rows={3}
+          value={draft.text}
+        />
+      </div>
+    </div>
+  );
+};
 
 const trimmed = (draft: TextDraft): TextDraft => ({
   title: draft.title.trim(),
@@ -91,95 +129,6 @@ export type CreateText = (draft: TextDraft) => Promise<void>;
 
 const emptyText: TextDraft = { title: '', text: '' };
 
-const failureMessage = (cause: unknown, fallback: string) =>
-  cause instanceof Error ? cause.message : fallback;
-
-// Saving or looking up one text: the fields are disabled meanwhile. A saved
-// text clears the form and focus returns to the title, so the next text can
-// be typed right away. A looked-up text fills the form and focus moves to
-// the button that saves it, so Enter saves it once it has been read.
-const useNewTextEntry = (createEntry: CreateText) => {
-  const [draft, setDraft] = useState(emptyText);
-  const [busy, setBusy] = useState(false);
-  const [failed, setFailed] = useState(false);
-  const [status, setStatus] = useState('');
-  const titleRef = useRef<HTMLInputElement>(null);
-  const saveRef = useRef<HTMLButtonElement>(null);
-  const focusRef = useRef<'title' | 'save' | null>(null);
-
-  useEffect(() => {
-    if (busy || focusRef.current === null) {
-      return;
-    }
-    const save = saveRef.current;
-    if (focusRef.current === 'save' && save !== null && !save.disabled) {
-      save.focus();
-    } else {
-      titleRef.current?.focus();
-    }
-    focusRef.current = null;
-  }, [busy]);
-
-  const run = async (
-    pending: string,
-    work: () => Promise<string>,
-    fallback: string,
-  ) => {
-    setBusy(true);
-    setFailed(false);
-    setStatus(pending);
-    try {
-      setStatus(await work());
-    } catch (cause) {
-      setFailed(true);
-      setStatus(failureMessage(cause, fallback));
-      focusRef.current = 'title';
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const save = () => {
-    const text = trimmed(draft);
-    return run(
-      `${quoted(text.title)} wird eingetragen …`,
-      async () => {
-        await createEntry(text);
-        setDraft(emptyText);
-        focusRef.current = 'title';
-        return `${quoted(text.title)} eingetragen.`;
-      },
-      'Der Text wurde nicht eingetragen. Versuche es noch einmal.',
-    );
-  };
-
-  const lookUp = (lookup: TextLookup, sourceId: string) => {
-    const title = draft.title.trim();
-    return run(
-      `${quoted(title)} wird nachgeschlagen …`,
-      async () => {
-        const found = await lookup.lookUp(title, sourceId);
-        setDraft(found);
-        focusRef.current = 'save';
-        return `${quoted(found.title)} nachgeschlagen. Lies den Text durch und trag ihn ein.`;
-      },
-      'Der Text wurde nicht nachgeschlagen. Versuche es noch einmal.',
-    );
-  };
-
-  return {
-    draft,
-    setDraft,
-    busy,
-    failed,
-    status,
-    titleRef,
-    saveRef,
-    save,
-    lookUp,
-  } as const;
-};
-
 type NewTextFormProps = {
   // Every stored text of the collection, so a repeated title is pointed out
   // while typing.
@@ -189,17 +138,21 @@ type NewTextFormProps = {
   readonly lookup: TextLookup | null;
 };
 
-// One text at a time, for as long as the form stays open. A title that
-// repeats a stored one exactly is stopped here; the same title in another
-// casing is pointed out and left to the learner. With a Bible to look in,
-// Enter in the title looks the text up while the text is still empty.
+// One text after another, each on a card of its own. A title that repeats a
+// stored one exactly is stopped here; the same title in another casing is
+// pointed out and left to the learner. With a Bible to look in, Enter in the
+// title looks the text up while the text is still empty. A looked-up text
+// fills the card and focus moves to "Eintragen", so Enter files it once it
+// has been read.
 export const NewTextForm = ({
   entries,
   createEntry,
   lookup,
 }: NewTextFormProps) => {
-  const entry = useNewTextEntry(createEntry);
-  const { draft, setDraft, busy, failed, status } = entry;
+  const titleRef = useRef<HTMLInputElement>(null);
+  const textRef = useRef<HTMLTextAreaElement>(null);
+  const card = useEntryCard(emptyText, titleRef);
+  const { draft, setDraft, busy } = card;
   const { sources, source, pick } = useTextSource(lookup);
   const { title, text } = trimmed(draft);
   const duplicate = listEntryDuplicate(entries, title, null);
@@ -208,36 +161,72 @@ export const NewTextForm = ({
   const lookable = !busy && title !== '' && lookup !== null && source !== null;
 
   const lookUp = () => {
-    if (lookable) {
-      entry.lookUp(lookup, source.id).catch(() => undefined);
+    if (!lookable) {
+      return false;
     }
+    card
+      .run(
+        `${quoted(title)} wird nachgeschlagen …`,
+        async () => {
+          const found = await lookup.lookUp(title, source.id);
+          setDraft(found);
+          return `${quoted(found.title)} nachgeschlagen. Lies den Text durch und trag ihn ein.`;
+        },
+        'Der Text wurde nicht nachgeschlagen. Versuche es noch einmal.',
+        card.submitRef,
+      )
+      .catch(() => undefined);
+    return true;
   };
+
+  const save = () =>
+    card.file({
+      pending: `${quoted(title)} wird eingetragen …`,
+      create: async () => {
+        await createEntry({ title, text });
+        return {
+          entry: { front: title, back: text, frontLang: undefined, note: null },
+          status: `${quoted(title)} eingetragen.`,
+        };
+      },
+      fallback: 'Der Text wurde nicht eingetragen. Versuche es noch einmal.',
+    });
+
+  const requestClose = useCloseRequest(card, {
+    blank: title === '' && text === '',
+    missingRef: missingField([
+      [title === '' || duplicate.blocked, titleRef],
+      [text === '', textRef],
+    ]),
+    notice: 'Dieser Text ist noch nicht eingetragen.',
+  });
 
   const submit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (submittable) {
-      entry.save().catch(() => undefined);
-    }
-  };
-
-  const lookUpOnEnter = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (
-      event.key === 'Enter' &&
-      !event.nativeEvent.isComposing &&
-      text === ''
-    ) {
-      event.preventDefault();
-      lookUp();
+      save().catch(() => undefined);
     }
   };
 
   return (
-    <form className="grid gap-3" onSubmit={submit}>
+    <EntryCard
+      card={card}
+      enterFiles={false}
+      nouns={courseNouns({ kind: 'texts' })}
+      onSubmit={submit}
+      requestClose={requestClose}
+      statusLabel="Status beim Eintragen eines Texts"
+      submittable={submittable}
+    >
       <TextFields
         busy={busy}
         draft={draft}
-        onTitleKeyDown={source === null ? undefined : lookUpOnEnter}
+        // While the entry is filed, the list may already hold it, and it
+        // would be pointed out as a repeat of itself.
+        hint={busy ? null : duplicate.hint}
+        onTitleEnter={source === null ? undefined : lookUp}
         setDraft={setDraft}
+        textRef={textRef}
         titleAction={
           source === null ? null : (
             <TextLookupControls
@@ -249,23 +238,9 @@ export const NewTextForm = ({
             />
           )
         }
-        titleRef={entry.titleRef}
+        titleRef={titleRef}
       />
-      {duplicate.hint === null ? null : (
-        <p className="text-sm text-warning-foreground">{duplicate.hint}</p>
-      )}
-      <div className="flex flex-wrap items-center gap-4">
-        <Button disabled={!submittable} ref={entry.saveRef} type="submit">
-          Eintragen
-        </Button>
-        <output
-          aria-label="Status beim Eintragen eines Texts"
-          className={failed ? 'text-destructive text-sm' : 'text-sm'}
-        >
-          {status}
-        </output>
-      </div>
-    </form>
+    </EntryCard>
   );
 };
 
@@ -309,16 +284,14 @@ export const EditTextForm = ({
   };
 
   return (
-    <form className="grid gap-3" onSubmit={submit}>
+    <form className="flex flex-col gap-4" onSubmit={submit}>
       <TextFields
         busy={busy}
         draft={draft}
+        hint={duplicate.hint}
         setDraft={setDraft}
         titleRef={firstFieldRef}
       />
-      {duplicate.hint === null ? null : (
-        <p className="text-sm text-warning-foreground">{duplicate.hint}</p>
-      )}
       <EditEntryFooter
         busy={busy}
         error={error}

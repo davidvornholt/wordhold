@@ -7,16 +7,18 @@ import {
 } from '../../../shared/directions';
 import { countNoun } from '../../../shared/format/count';
 import { Button } from '../../../shared/ui/button';
-import { Dialog } from '../../../shared/ui/dialog';
 import type { VocabularyEntry } from '../schemas/course-units';
 import type { VocabularyFilter } from '../schemas/vocabulary-search';
 import type { CourseEntryActions } from './entry-actions';
+import { EntryDialog } from './entry-dialog';
 import { SelectionNotice } from './selection-notice';
 import type { StudyAction } from './study-action';
 import { VocabularyLibrary } from './vocabulary-library';
 
 type SubjectOverviewProps = {
   readonly subject: CourseSubject;
+  // The subject's or collection's name, which its entries go to.
+  readonly name: string;
   readonly entries: ReadonlyArray<VocabularyEntry>;
   readonly enabledDirections: ReadonlyArray<AnswerDirection>;
   // The filter shown on arrival, such as the difficult entries the overview
@@ -56,6 +58,7 @@ const subjectSummary = (
 // with typing, since its first entry is all there is to do.
 export const SubjectOverview = ({
   subject,
+  name,
   entries,
   enabledDirections,
   initialFilter,
@@ -100,15 +103,14 @@ export const SubjectOverview = ({
         </Button>
         {photoAction}
       </div>
-      <Dialog
-        closable={true}
-        closeLabel="Fertig"
+      <EntryDialog
         onClose={() => setAdding(false)}
         open={adding}
-        title={`${nouns.singular} eintragen`}
+        place={name}
+        title={`${nouns.plural} eintragen`}
       >
         {entryForm}
-      </Dialog>
+      </EntryDialog>
       <SelectionNotice notice={selectionNotice} />
       {examSection}
       {isEmpty ? null : (

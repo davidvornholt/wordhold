@@ -1,4 +1,4 @@
-import { type SubmitEvent, useState } from 'react';
+import { type SubmitEvent, useRef, useState } from 'react';
 import type { VocabularyEntry } from '../schemas/course-units';
 import { EditEntryFooter } from './edit-entry-footer';
 import { type EntryEditorControl, useEntryEdit } from './entry-actions';
@@ -8,7 +8,7 @@ import {
   TermDefinitionFields,
   type TermDraft,
 } from './term-definition-fields';
-import { quoted } from './use-new-vocabulary-entry';
+import { quoted } from './vocabulary-entry-draft';
 
 type EditTermFormProps = {
   readonly entry: VocabularyEntry;
@@ -29,6 +29,7 @@ export const EditTermForm = ({
   updateEntry,
   suggestDefinition,
 }: EditTermFormProps) => {
+  const definitionRef = useRef<HTMLTextAreaElement>(null);
   const [draft, setDraft] = useState<TermDraft>({
     term: entry.targetText,
     definition: entry.nativeText,
@@ -57,18 +58,17 @@ export const EditTermForm = ({
   };
 
   return (
-    <form className="grid gap-3" onSubmit={submit}>
+    <form className="flex flex-col gap-4" onSubmit={submit}>
       <TermDefinitionFields
         busy={busy}
+        definitionRef={definitionRef}
         draft={draft}
+        hint={duplicate.hint}
         reviewStep="Speichern"
         setDraft={setDraft}
         suggestDefinition={suggestDefinition}
         termRef={firstFieldRef}
       />
-      {duplicate.hint === null ? null : (
-        <p className="text-sm text-warning-foreground">{duplicate.hint}</p>
-      )}
       {keyPointsReset ? (
         <p className="text-muted-foreground text-xs">
           Mit der neuen Definition werden die Kernpunkte neu abgeleitet.

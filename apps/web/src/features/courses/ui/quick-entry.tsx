@@ -1,6 +1,7 @@
 import { type ReactNode, useId, useState } from 'react';
-import { fieldOnCardClass } from '../../../shared/ui/field-styles';
+import { entryChoiceLineClass } from '../../../shared/ui/field-styles';
 import type { CourseOutline } from '../schemas/course-units';
+import { EntryPlaceContext } from './entry-dialog-context';
 import {
   lastUsedWordPlace,
   type WordPlace,
@@ -13,9 +14,10 @@ type QuickEntryProps = {
   readonly renderForm: (place: WordPlace) => ReactNode;
 };
 
-// Typing a word without first opening its book: the place starts at the book
-// or unit that received the latest word, so reading one novel means picking
-// it once.
+// Typing words without first opening their book: the place starts at the
+// book or unit that received the latest word, so reading one novel means
+// picking it once. It sits on the card under its title, and changing it
+// keeps the words filed so far, as the form stays mounted.
 export const QuickEntry = ({ outline, renderForm }: QuickEntryProps) => {
   const placeId = useId();
   const options = wordPlaceOptions(outline);
@@ -23,24 +25,32 @@ export const QuickEntry = ({ outline, renderForm }: QuickEntryProps) => {
     () => lastUsedWordPlace(options)?.value ?? '',
   );
   const selected = options.find((option) => option.value === value);
+  if (selected === undefined) {
+    return null;
+  }
   return (
-    <div className="flex flex-col gap-3">
-      <label className="flex flex-col gap-1 text-sm" htmlFor={placeId}>
-        Eintragen in
-        <select
-          className={fieldOnCardClass}
-          id={placeId}
-          onChange={(event) => setValue(event.target.value)}
-          value={value}
-        >
-          {options.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </label>
-      {selected === undefined ? null : renderForm(selected.place)}
-    </div>
+    <EntryPlaceContext
+      value={
+        <div className="flex flex-wrap items-baseline gap-x-3">
+          <label className="eyebrow" htmlFor={placeId}>
+            Eintragen in
+          </label>
+          <select
+            className={`${entryChoiceLineClass} min-w-0 max-w-full sm:max-w-sm`}
+            id={placeId}
+            onChange={(event) => setValue(event.target.value)}
+            value={value}
+          >
+            {options.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      }
+    >
+      {renderForm(selected.place)}
+    </EntryPlaceContext>
   );
 };

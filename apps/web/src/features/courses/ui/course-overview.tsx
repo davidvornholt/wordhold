@@ -1,13 +1,13 @@
 import { type ReactNode, useState } from 'react';
 import { countNoun } from '../../../shared/format/count';
 import { Button } from '../../../shared/ui/button';
-import { Dialog } from '../../../shared/ui/dialog';
 import {
   type CourseBook,
   type CourseOutline,
   courseTotals,
 } from '../schemas/course-units';
 import { BookSection } from './book-section';
+import { EntryDialog } from './entry-dialog';
 
 type CourseOverviewProps = {
   // Null when the course is named after its language, which would otherwise
@@ -79,15 +79,13 @@ export const CourseOverview = ({
         {vocabularyAction}
         {importAction}
       </div>
-      <Dialog
-        closable={true}
-        closeLabel="Fertig"
+      <EntryDialog
         onClose={() => setAdding(false)}
         open={adding && quickEntry !== null}
-        title="Vokabel eintragen"
+        title="Vokabeln eintragen"
       >
         {quickEntry}
-      </Dialog>
+      </EntryDialog>
       <BookSection
         createBook={createBook}
         outline={outline}

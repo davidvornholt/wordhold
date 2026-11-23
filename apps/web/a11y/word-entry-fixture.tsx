@@ -7,9 +7,10 @@ import type { CreatedVocabularyEntry } from '../src/features/courses/services/vo
 import { NewVocabularyForm } from '../src/features/courses/ui/new-vocabulary-form';
 import { PlaceVocabulary } from '../src/features/courses/ui/place-vocabulary';
 import type { StudyAction } from '../src/features/courses/ui/study-action';
-import type { NewVocabularyEntryDraft } from '../src/features/courses/ui/use-new-vocabulary-entry';
+import type { NewVocabularyEntryDraft } from '../src/features/courses/ui/vocabulary-entry-draft';
 import { VocabularyExample } from '../src/features/courses/ui/vocabulary-example';
 import { Button } from '../src/shared/ui/button';
+import { wordLocation } from '../src/shared/vocabulary/book-name';
 import { englishSubject, targetLabel } from './course-fixture-data';
 import { fixtureControl } from './fixture-controls';
 import { navigateToFixture } from './fixture-state';
@@ -121,6 +122,7 @@ export const FixturePlaceVocabulary = ({
       importAction={fixtureControl('Seite fotografieren', 'import', 'primary')}
       initialFilter="all"
       place={unit === null ? 'book' : 'unit'}
+      placeName={wordLocation(book.name, unit?.name ?? null)}
       renderStudyAction={(action) => <FixtureStudyAction action={action} />}
       subject={englishSubject}
     />

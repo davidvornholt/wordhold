@@ -325,6 +325,7 @@ export const TextsCourseFixture = ({
           />
         }
         initialFilter="all"
+        name={collectionName}
         photoAction={null}
         primaryAction={
           empty

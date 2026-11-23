@@ -32,3 +32,24 @@ export const fieldOnCardClass = `min-h-11 border border-input bg-background px-3
 // For the ruled lines of the verification ledger: the field is the line it
 // is written on, like an entry in a vocabulary notebook.
 export const ledgerFieldClass = `min-h-10 w-full border-input border-b border-dotted bg-transparent px-1 py-2 text-base placeholder:text-muted-foreground hover:border-foreground/40 hover:border-solid disabled:text-muted-foreground ${focusRing}`;
+
+// The lines of an entry card, where a word, term or text is written down or
+// corrected the way an answer is written on a practice card: on a rule that
+// takes the focus color while it is written on.
+const entryLineStates = `${answerFieldStates} border-input focus-visible:border-ring`;
+
+// A word, term or title, in the card's display face.
+export const entryWordLineClass = `${answerLineType} ${entryLineStates}`;
+
+const entryTextLine = `min-h-12 w-full border-b-2 pt-2 pb-1.5 ${entryLineStates}`;
+
+// What runs on, such as a sentence, a definition or a text, in the body
+// face, which reads better at length.
+export const entryTextLineClass = `${entryTextLine} text-lg leading-7`;
+
+// The translation under a sentence, a size smaller, as it follows from it.
+export const entryTranslationLineClass = `${entryTextLine} text-base leading-6`;
+
+// A choice on an entry card, such as where its entries go, on a rule like
+// the lines written on, so the card holds no boxes.
+export const entryChoiceLineClass = `min-h-11 border-b-2 py-2 text-base ${entryLineStates}`;

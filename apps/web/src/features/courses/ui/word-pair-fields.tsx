@@ -5,12 +5,14 @@ import {
   type RefObject,
   type SetStateAction,
   useEffect,
+  useId,
   useRef,
   useState,
 } from 'react';
 import type { ExampleDraft } from '../../../shared/examples/example-draft';
-import { Button } from '../../../shared/ui/button';
-import { fieldOnCardClass } from '../../../shared/ui/field-styles';
+import { entryWordLineClass } from '../../../shared/ui/field-styles';
+import { LineAction, LineWithAction } from '../../../shared/ui/line-action';
+import { movesOnEnter } from '../../../shared/ui/submit-on-enter';
 
 export type WordSide = 'target' | 'native';
 
@@ -28,25 +30,46 @@ type WordPairFieldsProps = {
   readonly targetLabel: string;
   readonly targetLanguage: LanguageCode;
   readonly targetRef: RefObject<HTMLInputElement | null>;
+  readonly nativeRef: RefObject<HTMLInputElement | null>;
+  // A note on the typed word, such as that it repeats a stored one.
+  readonly hint: string | null;
   readonly suggestTranslation: SuggestTranslation;
 };
 
 const fieldOf = { target: 'targetText', native: 'nativeText' } as const;
 const otherSide = { target: 'native', native: 'target' } as const;
 
-const filledSide = (draft: ExampleDraft): WordSide | null => {
-  const hasTarget = draft.targetText.trim() !== '';
-  const hasNative = draft.nativeText.trim() !== '';
-  if (hasTarget === hasNative) {
-    return null;
-  }
-  return hasTarget ? 'target' : 'native';
-};
+const filled = (draft: ExampleDraft, side: WordSide) =>
+  draft[fieldOf[side]].trim() !== '';
 
-// The word pair, with the missing side proposed on request: type either
-// side, ask, review the proposal in the other field. A proposal only lands
-// while the typed side is unchanged and the other still empty, and the
-// hint stays only as long as the proposed text does.
+const ProposeTranslation = ({
+  suggesting,
+  disabled,
+  onClick,
+}: {
+  readonly suggesting: boolean;
+  readonly disabled: boolean;
+  readonly onClick: () => void;
+}) => (
+  <LineAction
+    aria-label={
+      suggesting
+        ? 'Übersetzung wird vorgeschlagen …'
+        : 'Übersetzung vorschlagen'
+    }
+    disabled={disabled}
+    onClick={onClick}
+  >
+    {suggesting ? 'Wird vorgeschlagen …' : 'Vorschlagen'}
+  </LineAction>
+);
+
+// The word pair, written on two lines like the front and back of an index
+// card. Enter on the one side written moves to the other, which offers to
+// propose it: type either side, ask, review the proposal. A proposal only
+// lands while the typed side is unchanged and the other still empty, and
+// the hint stays only as long as the proposed text does. With both sides
+// written, Enter files the card.
 export const WordPairFields = ({
   draft,
   setDraft,
@@ -55,9 +78,11 @@ export const WordPairFields = ({
   targetLabel,
   targetLanguage,
   targetRef,
+  nativeRef,
+  hint,
   suggestTranslation,
 }: WordPairFieldsProps) => {
-  const nativeRef = useRef<HTMLInputElement>(null);
+  const id = useId();
   const [suggesting, setSuggesting] = useState(false);
   const [suggestionError, setSuggestionError] = useState(false);
   const [suggested, setSuggested] = useState<{
@@ -66,7 +91,6 @@ export const WordPairFields = ({
   } | null>(null);
   const refs = { target: targetRef, native: nativeRef } as const;
   const reviewRef = useRef<WordSide | null>(null);
-  const givenSide = filledSide(draft);
 
   // The fields are disabled while a proposal is fetched, so the proposed
   // side can only take focus for review once they are enabled again.
@@ -76,13 +100,13 @@ export const WordPairFields = ({
       reviewRef.current = null;
       (side === 'target' ? targetRef : nativeRef).current?.focus();
     }
-  }, [suggesting, targetRef]);
+  }, [suggesting, targetRef, nativeRef]);
   const showHint =
     suggested !== null && draft[fieldOf[suggested.side]] === suggested.text;
 
-  const suggest = async (given: WordSide) => {
+  const suggest = async (side: WordSide) => {
+    const given = otherSide[side];
     const text = draft[fieldOf[given]].trim();
-    const side = otherSide[given];
     setSuggesting(true);
     setSuggestionError(false);
     try {
@@ -102,59 +126,81 @@ export const WordPairFields = ({
     }
   };
 
-  const field = (side: WordSide, label: string) => (
-    <label className="flex flex-col gap-1 text-sm">
-      <span className="font-medium">{label}</span>
-      <input
-        // biome-ignore lint/a11y/noAutofocus: The form appears on request; the learner asked to type, so the first field takes focus.
-        autoFocus={side === 'target'}
-        className={fieldOnCardClass}
-        disabled={busy || suggesting}
-        lang={side === 'target' ? targetLanguage : undefined}
-        maxLength={maximumEntryTextLength}
-        onChange={(event) =>
-          setDraft((current) => ({
-            ...current,
-            [fieldOf[side]]: event.target.value,
-          }))
-        }
-        ref={refs[side]}
-        value={draft[fieldOf[side]]}
-      />
-    </label>
-  );
+  const field = (side: WordSide, label: string) => {
+    const fieldId = `${id}-${side}`;
+    const other = otherSide[side];
+    const moves = filled(draft, side) && !filled(draft, other);
+    const proposable = !filled(draft, side) && filled(draft, other);
+    return (
+      <div className="flex flex-col gap-1">
+        <label className="eyebrow" htmlFor={fieldId}>
+          {label}
+        </label>
+        <LineWithAction
+          action={
+            proposable ? (
+              <ProposeTranslation
+                disabled={busy || suggesting}
+                onClick={() => {
+                  suggest(side).catch(() => undefined);
+                }}
+                suggesting={suggesting}
+              />
+            ) : null
+          }
+          line={
+            <input
+              // biome-ignore lint/a11y/noAutofocus: The form appears on request; the learner asked to type, so the first field takes focus.
+              autoFocus={side === 'target'}
+              className={entryWordLineClass}
+              disabled={busy || suggesting}
+              enterKeyHint={moves ? 'next' : undefined}
+              id={fieldId}
+              lang={side === 'target' ? targetLanguage : undefined}
+              maxLength={maximumEntryTextLength}
+              onChange={(event) =>
+                setDraft((current) => ({
+                  ...current,
+                  [fieldOf[side]]: event.target.value,
+                }))
+              }
+              onKeyDown={(event) => {
+                if (moves && movesOnEnter(event)) {
+                  event.preventDefault();
+                  refs[other].current?.focus();
+                }
+              }}
+              ref={refs[side]}
+              value={draft[fieldOf[side]]}
+            />
+          }
+        />
+      </div>
+    );
+  };
 
   return (
-    <div className="grid gap-2">
-      <div className="grid gap-3 sm:grid-cols-2">
+    <div className="flex flex-col gap-1">
+      <div className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
         {field('target', targetLabel)}
         {field('native', 'Deutsch')}
       </div>
-      {givenSide === null ? null : (
-        <Button
-          className="w-fit"
-          disabled={busy || suggesting}
-          onClick={() => {
-            suggest(givenSide).catch(() => undefined);
-          }}
-          variant="quiet-muted"
-        >
-          {suggesting
-            ? 'Übersetzung wird vorgeschlagen …'
-            : 'Übersetzung vorschlagen'}
-        </Button>
-      )}
-      {showHint ? (
-        <p className="text-muted-foreground text-xs">
-          Übersetzung mit KI vorgeschlagen. Prüfe sie vor dem {reviewStep}.
-        </p>
-      ) : null}
-      {suggestionError ? (
-        <p className="text-destructive text-sm" role="alert">
-          Die Übersetzung konnte nicht vorgeschlagen werden. Trage sie ein oder
-          versuche es noch einmal.
-        </p>
-      ) : null}
+      <div className="flex min-h-5 flex-col gap-1 text-sm">
+        {hint === null ? null : (
+          <p className="text-warning-foreground">{hint}</p>
+        )}
+        {showHint ? (
+          <p className="text-muted-foreground text-xs">
+            KI-Vorschlag. Prüfe ihn vor dem {reviewStep}.
+          </p>
+        ) : null}
+        {suggestionError ? (
+          <p className="text-destructive" role="alert">
+            Die Übersetzung konnte nicht vorgeschlagen werden. Trage sie ein
+            oder versuche es noch einmal.
+          </p>
+        ) : null}
+      </div>
     </div>
   );
 };

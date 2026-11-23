@@ -1,5 +1,5 @@
 import type { LanguageCode } from '@wordhold/db/schema/courses';
-import { type SubmitEvent, useState } from 'react';
+import { type SubmitEvent, useRef, useState } from 'react';
 import {
   awaitsTranslationFor,
   type ExampleDraft,
@@ -22,7 +22,7 @@ import {
   exampleOf,
   type NewVocabularyEntryDraft,
   quoted,
-} from './use-new-vocabulary-entry';
+} from './vocabulary-entry-draft';
 import { type SuggestTranslation, WordPairFields } from './word-pair-fields';
 
 type EditVocabularyFormProps = {
@@ -74,6 +74,7 @@ export const EditVocabularyForm = ({
   translateExample,
   suggestTranslation,
 }: EditVocabularyFormProps) => {
+  const nativeRef = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState(() => storedDraft(entry));
   const [relatedWords, setRelatedWords] = useState(() => ({
     synonyms: relatedWordsText(entry.synonyms),
@@ -108,10 +109,12 @@ export const EditVocabularyForm = ({
   };
 
   return (
-    <form className="grid gap-3" onSubmit={submit}>
+    <form className="flex flex-col gap-4" onSubmit={submit}>
       <WordPairFields
         busy={busy}
         draft={draft}
+        hint={duplicate.hint}
+        nativeRef={nativeRef}
         reviewStep="Speichern"
         setDraft={setDraft}
         suggestTranslation={suggestTranslation}
@@ -119,9 +122,6 @@ export const EditVocabularyForm = ({
         targetLanguage={targetLanguage}
         targetRef={firstFieldRef}
       />
-      {duplicate.hint === null ? null : (
-        <p className="text-sm text-warning-foreground">{duplicate.hint}</p>
-      )}
       <ExampleDraftEditor
         disabled={busy}
         entry={draft}
@@ -151,6 +151,7 @@ export const EditVocabularyForm = ({
           )
         }
         reviewStep="Speichern"
+        targetLanguage={targetLanguage}
         translate={translateExample}
       />
       <RelatedWordFields

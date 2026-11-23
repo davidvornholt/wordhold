@@ -1,19 +1,23 @@
 import type { LanguageCode } from '@wordhold/db/schema/courses';
-import type { SubmitEvent } from 'react';
+import { type SubmitEvent, useRef } from 'react';
+import { courseNouns } from '../../../shared/directions';
 import {
   awaitsTranslationFor,
   type GeneratedExample,
   matchesGenerationSource,
 } from '../../../shared/examples/example-draft';
-import { Button } from '../../../shared/ui/button';
 import { ExampleDraftEditor } from '../../../shared/ui/example-draft-editor';
 import type { VocabularyEntry } from '../schemas/course-units';
 import type { CreatedVocabularyEntry } from '../services/vocabulary-entry-service';
+import { EntryCard } from './entry-card';
 import { wordDuplicate } from './entry-duplicates';
+import { missingField, useCloseRequest, useEntryCard } from './use-entry-card';
 import {
+  emptyDraft,
+  exampleOf,
   type NewVocabularyEntryDraft,
-  useNewVocabularyEntry,
-} from './use-new-vocabulary-entry';
+  quoted,
+} from './vocabulary-entry-draft';
 import { type SuggestTranslation, WordPairFields } from './word-pair-fields';
 
 type NewVocabularyFormProps = {
@@ -35,9 +39,9 @@ type NewVocabularyFormProps = {
   readonly suggestTranslation: SuggestTranslation;
 };
 
-// One word at a time, for as long as the form stays open. An exact repeat
-// of a stored word is stopped here; a variant is pointed out and left to
-// the learner, who typed it on purpose.
+// One word after another, each on a card of its own. An exact repeat of a
+// stored word is stopped here; a variant is pointed out and left to the
+// learner, who typed it on purpose.
 export const NewVocabularyForm = ({
   targetLabel,
   targetLanguage,
@@ -47,12 +51,53 @@ export const NewVocabularyForm = ({
   translateExample,
   suggestTranslation,
 }: NewVocabularyFormProps) => {
-  const { draft, setDraft, busy, failed, status, targetRef, save } =
-    useNewVocabularyEntry(createEntry);
+  const targetRef = useRef<HTMLInputElement>(null);
+  const nativeRef = useRef<HTMLInputElement>(null);
+  const card = useEntryCard(emptyDraft, targetRef);
+  const { draft, setDraft, busy } = card;
   const targetText = draft.targetText.trim();
-  const complete = targetText !== '' && draft.nativeText.trim() !== '';
+  const nativeText = draft.nativeText.trim();
   const duplicate = wordDuplicate(entries, draft, null);
-  const submittable = !busy && complete && !duplicate.blocked;
+  const submittable =
+    !busy && targetText !== '' && nativeText !== '' && !duplicate.blocked;
+
+  const save = () =>
+    card.file({
+      pending: `${quoted(targetText)} wird eingetragen …`,
+      create: async () => {
+        const { audio } = await createEntry({
+          targetText,
+          nativeText,
+          example: exampleOf(draft),
+        });
+        const pronounced = audio === 'generated';
+        return {
+          entry: {
+            front: targetText,
+            back: nativeText,
+            frontLang: targetLanguage,
+            note: pronounced ? null : 'Ohne Aussprache',
+          },
+          status: pronounced
+            ? `${quoted(targetText)} eingetragen.`
+            : `${quoted(targetText)} eingetragen. Die Aussprache konnte nicht erzeugt werden.`,
+        };
+      },
+      fallback: 'Die Vokabel wurde nicht eingetragen. Versuche es noch einmal.',
+    });
+
+  const requestClose = useCloseRequest(card, {
+    blank:
+      targetText === '' &&
+      nativeText === '' &&
+      draft.example.trim() === '' &&
+      draft.exampleNativeText.trim() === '',
+    missingRef: missingField([
+      [targetText === '' || duplicate.blocked, targetRef],
+      [nativeText === '', nativeRef],
+    ]),
+    notice: 'Diese Vokabel ist noch nicht eingetragen.',
+  });
 
   const submit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -62,10 +107,22 @@ export const NewVocabularyForm = ({
   };
 
   return (
-    <form className="grid gap-3" onSubmit={submit}>
+    <EntryCard
+      card={card}
+      enterFiles={true}
+      nouns={courseNouns({ kind: 'language' })}
+      onSubmit={submit}
+      requestClose={requestClose}
+      statusLabel="Status beim Eintragen einer Vokabel"
+      submittable={submittable}
+    >
       <WordPairFields
         busy={busy}
         draft={draft}
+        // While the entry is filed, the list may already hold it, and it
+        // would be pointed out as a repeat of itself.
+        hint={busy ? null : duplicate.hint}
+        nativeRef={nativeRef}
         reviewStep="Eintragen"
         setDraft={setDraft}
         suggestTranslation={suggestTranslation}
@@ -73,9 +130,6 @@ export const NewVocabularyForm = ({
         targetLanguage={targetLanguage}
         targetRef={targetRef}
       />
-      {duplicate.hint === null ? null : (
-        <p className="text-sm text-warning-foreground">{duplicate.hint}</p>
-      )}
       <ExampleDraftEditor
         disabled={busy}
         entry={draft}
@@ -101,19 +155,9 @@ export const NewVocabularyForm = ({
           )
         }
         reviewStep="Eintragen"
+        targetLanguage={targetLanguage}
         translate={translateExample}
       />
-      <div className="flex flex-wrap items-center gap-4">
-        <Button disabled={!submittable} type="submit">
-          Eintragen
-        </Button>
-        <output
-          aria-label="Status beim Eintragen einer Vokabel"
-          className={failed ? 'text-destructive text-sm' : 'text-sm'}
-        >
-          {status}
-        </output>
-      </div>
-    </form>
+    </EntryCard>
   );
 };

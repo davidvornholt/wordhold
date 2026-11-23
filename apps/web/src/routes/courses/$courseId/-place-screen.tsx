@@ -172,6 +172,7 @@ type PlaceWordsProps = {
   readonly initialFilter: VocabularyFilter;
   readonly course: EntryCourse;
   readonly place: WordPlace;
+  readonly placeName: string;
   readonly enabledDirections: ReadonlyArray<AnswerDirection>;
   readonly entries: ReadonlyArray<VocabularyEntry>;
   readonly courseEntries: ReadonlyArray<VocabularyEntry>;
@@ -182,6 +183,7 @@ export const PlaceWords = ({
   course,
   initialFilter,
   place,
+  placeName,
   enabledDirections,
   entries,
   courseEntries,
@@ -209,6 +211,7 @@ export const PlaceWords = ({
       }
       initialFilter={initialFilter}
       place={place.unitId === null ? 'book' : 'unit'}
+      placeName={placeName}
       renderStudyAction={(action) => (
         <SelectionActions
           action={action}

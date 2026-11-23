@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { DeckEdges } from './deck-edges';
 import { practiceCardClass } from './surface-styles';
 
 // A sentence to translate runs to several words, so it is set smaller.
@@ -35,11 +36,6 @@ type WordCardProps = {
   readonly deck: number;
 };
 
-// The edges of the waiting cards, the farthest first so the nearer one is drawn
-// over it. Each peeks out further below the card and narrower, like a stack of
-// index cards seen from above.
-const deckEdges = ['inset-x-6 -bottom-3', 'inset-x-3 -bottom-1.5'];
-
 // The index card on top of the round's stack. Keep the waiting stack outside
 // the card's view-transition group so only the active card moves.
 export const WordCard = ({
@@ -54,13 +50,7 @@ export const WordCard = ({
   deck,
 }: WordCardProps) => (
   <div className="relative">
-    {deckEdges.slice(Math.max(deckEdges.length - deck, 0)).map((edge) => (
-      <div
-        aria-hidden="true"
-        className={`absolute top-0 border border-border bg-card ${edge}`}
-        key={edge}
-      />
-    ))}
+    <DeckEdges count={deck} />
     <div className="practice-card relative">
       <div
         className={`@container flex origin-bottom animate-deal-in flex-col gap-6 px-6 pt-7 pb-6 sm:px-10 sm:pt-9 sm:pb-8 ${practiceCardClass}`}

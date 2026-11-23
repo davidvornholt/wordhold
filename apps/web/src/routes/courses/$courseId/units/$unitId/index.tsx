@@ -12,6 +12,7 @@ import { isListCourse } from '../../../../../shared/directions';
 import { BackLink } from '../../../../../shared/ui/back-link';
 import { PageLayout } from '../../../../../shared/ui/page-layout';
 import { cardClass } from '../../../../../shared/ui/surface-styles';
+import { wordLocation } from '../../../../../shared/vocabulary/book-name';
 import {
   PlaceDirectionPlan,
   PlaceSentencePractice,
@@ -93,6 +94,9 @@ const UnitScreen = () => {
         initialFilter={filter ?? 'all'}
         outline={outline}
         place={place}
+        placeName={
+          book === undefined ? unit.name : wordLocation(book.name, unit.name)
+        }
       />
     </PageLayout>
   );

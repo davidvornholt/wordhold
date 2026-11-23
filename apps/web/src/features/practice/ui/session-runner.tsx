@@ -14,7 +14,7 @@ import {
 import { usePitfallWarmup } from '../../../shared/pitfalls/use-pitfall-warmup';
 import type { RailOutcome } from '../../../shared/session/rail-outcome';
 import { CardRail } from '../../../shared/ui/card-rail';
-import { dealCard } from '../../../shared/ui/deal-card';
+import { dealCard } from '../../../shared/ui/card-transition';
 import {
   type PracticeSession,
   remainingReadyCount,

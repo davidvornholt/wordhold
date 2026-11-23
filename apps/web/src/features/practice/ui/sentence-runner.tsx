@@ -4,7 +4,7 @@ import type { PrepareExamples } from '../../../shared/examples/example-model';
 import { useExampleWarmup } from '../../../shared/examples/use-example-warmup';
 import { countNoun } from '../../../shared/format/count';
 import { CardRail } from '../../../shared/ui/card-rail';
-import { dealCard } from '../../../shared/ui/deal-card';
+import { dealCard } from '../../../shared/ui/card-transition';
 import { practiceCardClass } from '../../../shared/ui/surface-styles';
 import type { SentenceItem, SentenceSession } from '../schemas/sentence-models';
 import {

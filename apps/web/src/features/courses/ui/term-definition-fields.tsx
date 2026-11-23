@@ -4,12 +4,19 @@ import {
   type RefObject,
   type SetStateAction,
   useEffect,
+  useId,
   useRef,
   useState,
 } from 'react';
-import { Button } from '../../../shared/ui/button';
-import { fieldOnCardClass } from '../../../shared/ui/field-styles';
-import { submitOnEnter } from '../../../shared/ui/submit-on-enter';
+import {
+  entryTextLineClass,
+  entryWordLineClass,
+} from '../../../shared/ui/field-styles';
+import { LineAction, LineWithAction } from '../../../shared/ui/line-action';
+import {
+  movesOnEnter,
+  submitOnEnter,
+} from '../../../shared/ui/submit-on-enter';
 
 export type TermDraft = {
   readonly term: string;
@@ -27,23 +34,30 @@ type TermDefinitionFieldsProps = {
   // Names the step the learner reviews the AI text before, e.g. "Eintragen".
   readonly reviewStep: string;
   readonly termRef: RefObject<HTMLInputElement | null>;
+  readonly definitionRef: RefObject<HTMLTextAreaElement | null>;
+  // A note on the typed term, such as that it repeats a stored one.
+  readonly hint: string | null;
   readonly suggestDefinition: SuggestDefinition;
 };
 
-// A term and its definition, with the definition proposed on request once
-// the term is typed. A proposal only lands while the term is unchanged and
-// the definition still empty, and the hint stays only as long as the
-// proposed text does. Enter saves from either field, as it answers in
-// practice; Shift+Enter starts a new line of the definition.
+// A term and its definition, written on a card like an answer in practice:
+// the term on a line of its own and the definition on a line that grows as
+// it is written. Enter on the term moves to the definition while it is
+// empty, and the definition then offers to propose it. A proposal only lands
+// while the term is unchanged and the definition still empty, and the hint
+// stays only as long as the proposed text does. Enter in the definition
+// files the card, as it answers in practice; Shift+Enter starts a new line.
 export const TermDefinitionFields = ({
   draft,
   setDraft,
   busy,
   reviewStep,
   termRef,
+  definitionRef,
+  hint,
   suggestDefinition,
 }: TermDefinitionFieldsProps) => {
-  const definitionRef = useRef<HTMLTextAreaElement>(null);
+  const id = useId();
   const [suggesting, setSuggesting] = useState(false);
   const [suggestionError, setSuggestionError] = useState(false);
   const [suggested, setSuggested] = useState<string | null>(null);
@@ -59,7 +73,7 @@ export const TermDefinitionFields = ({
       reviewRef.current = false;
       definitionRef.current?.focus();
     }
-  }, [suggesting]);
+  }, [suggesting, definitionRef]);
 
   const suggest = async () => {
     setSuggesting(true);
@@ -81,65 +95,91 @@ export const TermDefinitionFields = ({
   };
 
   return (
-    <div className="grid gap-3">
-      <label className="flex flex-col gap-1 text-sm">
-        <span className="font-medium">Begriff</span>
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1">
+        <label className="eyebrow" htmlFor={`${id}-term`}>
+          Begriff
+        </label>
         <input
           // biome-ignore lint/a11y/noAutofocus: The form appears on request; the learner asked to type, so the term takes focus.
           autoFocus={true}
-          className={fieldOnCardClass}
+          className={entryWordLineClass}
           disabled={disabled}
+          enterKeyHint={canSuggest ? 'next' : undefined}
+          id={`${id}-term`}
           maxLength={maximumEntryTextLength}
           onChange={(event) =>
             setDraft((current) => ({ ...current, term: event.target.value }))
           }
+          onKeyDown={(event) => {
+            if (canSuggest && movesOnEnter(event)) {
+              event.preventDefault();
+              definitionRef.current?.focus();
+            }
+          }}
           ref={termRef}
           value={draft.term}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-sm">
-        <span className="font-medium">Definition</span>
-        <textarea
-          className={`${fieldOnCardClass} field-sizing-content min-h-24 resize-none`}
-          disabled={disabled}
-          maxLength={maximumEntryTextLength}
-          onChange={(event) =>
-            setDraft((current) => ({
-              ...current,
-              definition: event.target.value,
-            }))
+      </div>
+      <div className="flex flex-col gap-1">
+        <label className="eyebrow" htmlFor={`${id}-definition`}>
+          Definition
+        </label>
+        <LineWithAction
+          action={
+            canSuggest ? (
+              <LineAction
+                align="start"
+                aria-label={
+                  suggesting
+                    ? 'Definition wird vorgeschlagen …'
+                    : 'Definition vorschlagen'
+                }
+                disabled={disabled}
+                onClick={() => {
+                  suggest().catch(() => undefined);
+                }}
+              >
+                {suggesting ? 'Wird vorgeschlagen …' : 'Vorschlagen'}
+              </LineAction>
+            ) : null
           }
-          onKeyDown={submitOnEnter}
-          ref={definitionRef}
-          rows={3}
-          value={draft.definition}
+          line={
+            <textarea
+              className={`${entryTextLineClass} field-sizing-content resize-none`}
+              disabled={disabled}
+              id={`${id}-definition`}
+              maxLength={maximumEntryTextLength}
+              onChange={(event) =>
+                setDraft((current) => ({
+                  ...current,
+                  definition: event.target.value,
+                }))
+              }
+              onKeyDown={submitOnEnter}
+              ref={definitionRef}
+              rows={1}
+              value={draft.definition}
+            />
+          }
         />
-      </label>
-      {canSuggest ? (
-        <Button
-          className="w-fit"
-          disabled={disabled}
-          onClick={() => {
-            suggest().catch(() => undefined);
-          }}
-          variant="quiet-muted"
-        >
-          {suggesting
-            ? 'Definition wird vorgeschlagen …'
-            : 'Definition vorschlagen'}
-        </Button>
-      ) : null}
-      {suggested !== null && draft.definition === suggested ? (
-        <p className="text-muted-foreground text-xs">
-          Definition mit KI vorgeschlagen. Prüfe sie vor dem {reviewStep}.
-        </p>
-      ) : null}
-      {suggestionError ? (
-        <p className="text-destructive text-sm" role="alert">
-          Die Definition konnte nicht vorgeschlagen werden. Schreib sie selbst
-          oder versuche es noch einmal.
-        </p>
-      ) : null}
+        <div className="flex min-h-5 flex-col gap-1 text-sm">
+          {hint === null ? null : (
+            <p className="text-warning-foreground">{hint}</p>
+          )}
+          {suggested !== null && draft.definition === suggested ? (
+            <p className="text-muted-foreground text-xs">
+              KI-Vorschlag. Prüfe ihn vor dem {reviewStep}.
+            </p>
+          ) : null}
+          {suggestionError ? (
+            <p className="text-destructive" role="alert">
+              Die Definition konnte nicht vorgeschlagen werden. Schreib sie
+              selbst oder versuche es noch einmal.
+            </p>
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 };

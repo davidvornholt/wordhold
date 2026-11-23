@@ -67,6 +67,7 @@ it.each(
           importAction={null}
           initialFilter={returned.filter ?? 'all'}
           place={'bookId' in selection ? 'book' : 'unit'}
+          placeName="Book"
           renderStudyAction={() => null}
           subject={{ kind: 'language', targetLanguage: 'en' }}
         />,

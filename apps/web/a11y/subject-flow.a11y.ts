@@ -60,6 +60,9 @@ test('a new subject is named in a dialog and leads with its first term', async (
 
   await openEntryDialog(page);
   await expect(termField(page)).toBeFocused();
+  await expect(
+    page.getByRole('dialog', { name: 'Begriffe eintragen' }),
+  ).toHaveAccessibleDescription('Eintragen in Chemie');
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
 });
 
@@ -77,9 +80,7 @@ test('a term takes a suggested definition and the next term follows', async ({
   await expect(definitionField(page)).toHaveValue(suggestedDefinition);
   await expect(definitionField(page)).toBeFocused();
   await expect(
-    page.getByText(
-      'Definition mit KI vorgeschlagen. Prüfe sie vor dem Eintragen.',
-    ),
+    page.getByText('KI-Vorschlag. Prüfe ihn vor dem Eintragen.'),
   ).toBeVisible();
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
 
@@ -87,7 +88,7 @@ test('a term takes a suggested definition and the next term follows', async ({
   await expect(entryStatus(page)).toHaveText('„Oxidation“ eingetragen.');
   await expect(page.getByText('1 Begriff · 1 noch kennenlernen')).toBeVisible();
   await expect(
-    page.getByRole('heading', { level: 2, name: 'Begriffe' }),
+    page.getByRole('heading', { exact: true, level: 2, name: 'Begriffe' }),
   ).toBeVisible();
   await expect(termField(page)).toBeFocused();
   await expect(termField(page)).toHaveValue('');
@@ -104,10 +105,14 @@ test('a term takes a suggested definition and the next term follows', async ({
   ).toBeVisible();
   await expect(submit).toBeDisabled();
 
-  await page
-    .getByRole('dialog', { name: 'Begriff eintragen' })
-    .getByRole('button', { name: 'Fertig' })
-    .click();
+  // The repeat cannot be filed, so "Schließen" holds it until it is discarded.
+  const dialog = page.getByRole('dialog', { name: 'Begriffe eintragen' });
+  await dialog.getByRole('button', { name: 'Schließen' }).click();
+  await expect(entryStatus(page)).toHaveText(
+    'Dieser Begriff ist noch nicht eingetragen.',
+  );
+  await expect(termField(page)).toBeFocused();
+  await dialog.getByRole('button', { name: 'Verwerfen' }).click();
   await expect(
     page.getByRole('button', { name: 'Begriff eintragen' }),
   ).toBeFocused();
@@ -243,6 +248,23 @@ test('the overview lists a subject with its failed terms by name only', async ({
     'terms-course',
   );
   await expect(
-    page.getByRole('heading', { level: 2, name: 'Begriffe' }),
+    page.getByRole('heading', { exact: true, level: 2, name: 'Begriffe' }),
   ).toBeVisible();
+});
+
+test('a proposed definition moves nothing on the card', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.goto('/?state=terms-course-empty');
+  await openEntryDialog(page);
+  await termField(page).fill('Ion');
+  const submit = page.getByRole('button', { exact: true, name: 'Eintragen' });
+  const before = await submit.boundingBox();
+  await page.getByRole('button', { name: 'Definition vorschlagen' }).click();
+  await expect(definitionField(page)).toHaveValue(
+    'Eine kurze Definition von Ion.',
+  );
+  await expect(
+    page.getByText('KI-Vorschlag. Prüfe ihn vor dem Eintragen.'),
+  ).toBeVisible();
+  expect((await submit.boundingBox())?.y).toBe(before?.y);
 });

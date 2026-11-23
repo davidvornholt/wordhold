@@ -59,7 +59,7 @@ test('a word typed on the course page goes where the last word went', async ({
   const opener = page.getByRole('button', { name: 'Vokabel eintragen' });
   await expect(opener).toHaveAttribute('aria-haspopup', 'dialog');
   await opener.click();
-  const dialog = page.getByRole('dialog', { name: 'Vokabel eintragen' });
+  const dialog = page.getByRole('dialog', { name: 'Vokabeln eintragen' });
   const place = dialog.getByLabel('Eintragen in');
   await expect(place.locator('option:checked')).toHaveText('The Hobbit');
   await expect(targetField(page)).toBeFocused();
@@ -72,7 +72,7 @@ test('a word typed on the course page goes where the last word went', async ({
     'Green Line 3 · Unit 3 – Holidays',
   );
 
-  await dialog.getByRole('button', { name: 'Fertig' }).click();
+  await dialog.getByRole('button', { name: 'Schließen' }).click();
   await expect(dialog).toBeHidden();
   await expect(place).toHaveCount(0);
   await expect(opener).toBeFocused();
