@@ -80,9 +80,7 @@ test('a term takes a suggested definition and the next term follows', async ({
   await expect(definitionField(page)).toHaveValue(suggestedDefinition);
   await expect(definitionField(page)).toBeFocused();
   await expect(
-    page.getByText(
-      'Definition mit KI vorgeschlagen. Prüfe sie vor dem Eintragen.',
-    ),
+    page.getByText('KI-Vorschlag. Prüfe ihn vor dem Eintragen.'),
   ).toBeVisible();
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
 
@@ -252,4 +250,21 @@ test('the overview lists a subject with its failed terms by name only', async ({
   await expect(
     page.getByRole('heading', { exact: true, level: 2, name: 'Begriffe' }),
   ).toBeVisible();
+});
+
+test('a proposed definition moves nothing on the card', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.goto('/?state=terms-course-empty');
+  await openEntryDialog(page);
+  await termField(page).fill('Ion');
+  const submit = page.getByRole('button', { exact: true, name: 'Eintragen' });
+  const before = await submit.boundingBox();
+  await page.getByRole('button', { name: 'Definition vorschlagen' }).click();
+  await expect(definitionField(page)).toHaveValue(
+    'Eine kurze Definition von Ion.',
+  );
+  await expect(
+    page.getByText('KI-Vorschlag. Prüfe ihn vor dem Eintragen.'),
+  ).toBeVisible();
+  expect((await submit.boundingBox())?.y).toBe(before?.y);
 });

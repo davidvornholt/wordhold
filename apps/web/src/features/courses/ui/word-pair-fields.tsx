@@ -191,7 +191,7 @@ export const WordPairFields = ({
         )}
         {showHint ? (
           <p className="text-muted-foreground text-xs">
-            Übersetzung mit KI vorgeschlagen. Prüfe sie vor dem {reviewStep}.
+            KI-Vorschlag. Prüfe ihn vor dem {reviewStep}.
           </p>
         ) : null}
         {suggestionError ? (

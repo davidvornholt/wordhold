@@ -169,7 +169,7 @@ export const TermDefinitionFields = ({
           )}
           {suggested !== null && draft.definition === suggested ? (
             <p className="text-muted-foreground text-xs">
-              Definition mit KI vorgeschlagen. Prüfe sie vor dem {reviewStep}.
+              KI-Vorschlag. Prüfe ihn vor dem {reviewStep}.
             </p>
           ) : null}
           {suggestionError ? (

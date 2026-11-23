@@ -353,16 +353,12 @@ test('the missing side of a word pair can be proposed from either side', async (
   await expect(nativeField(page)).toHaveValue('die Reise');
   await expect(nativeField(page)).toBeFocused();
   await expect(
-    page.getByText(
-      'Übersetzung mit KI vorgeschlagen. Prüfe sie vor dem Eintragen.',
-    ),
+    page.getByText('KI-Vorschlag. Prüfe ihn vor dem Eintragen.'),
   ).toBeVisible();
   await expect(suggest).toHaveCount(0);
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
   await nativeField(page).fill('die Fahrt');
-  await expect(page.getByText('Übersetzung mit KI vorgeschlagen')).toHaveCount(
-    0,
-  );
+  await expect(page.getByText('KI-Vorschlag')).toHaveCount(0);
   await page.getByRole('button', { exact: true, name: 'Eintragen' }).click();
   await expect(status(page)).toHaveText('„journey“ eingetragen.');
 
@@ -370,4 +366,18 @@ test('the missing side of a word pair can be proposed from either side', async (
   await suggest.click();
   await expect(targetField(page)).toHaveValue('the die Stille');
   await expect(targetField(page)).toBeFocused();
+});
+
+test('a proposed translation moves nothing on the card', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.goto('/?state=unit');
+  await page.getByRole('button', { name: 'Vokabel eintragen' }).click();
+  await targetField(page).fill('journey');
+  const submit = page.getByRole('button', { exact: true, name: 'Eintragen' });
+  const before = await submit.boundingBox();
+  await page.getByRole('button', { name: 'Übersetzung vorschlagen' }).click();
+  await expect(
+    page.getByText('KI-Vorschlag. Prüfe ihn vor dem Eintragen.'),
+  ).toBeVisible();
+  expect((await submit.boundingBox())?.y).toBe(before?.y);
 });
