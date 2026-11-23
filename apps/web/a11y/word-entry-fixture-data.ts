@@ -42,6 +42,13 @@ const storedExample = (draft: NewVocabularyEntryDraft) =>
 const pronunciation = (targetText: string) =>
   targetText === 'silence' ? 'failed' : 'generated';
 
+// How long a new entry takes to be stored: a second with `?filing=slow`, so a
+// test can act while the card is filing.
+const filingDelay = () =>
+  new URLSearchParams(globalThis.location.search).get('filing') === 'slow'
+    ? 1000
+    : 0;
+
 // Typed, corrected, moved and deleted entries change the list in memory so the
 // flows can be exercised end to end without a server. "silence" stands for a
 // word whose pronunciation cannot be made.
@@ -62,10 +69,16 @@ export const useFixtureEntries = (initial: ReadonlyArray<VocabularyEntry>) => {
       example: storedExample(draft),
     };
     setEntries((current) => [...current, added]);
-    return Promise.resolve({
+    const created: CreatedVocabularyEntry = {
       entryId: added.id,
       audio: pronunciation(draft.targetText),
-    });
+    };
+    const delay = filingDelay();
+    return delay === 0
+      ? Promise.resolve(created)
+      : new Promise((resolve) => {
+          globalThis.setTimeout(() => resolve(created), delay);
+        });
   };
   const updateEntry = (
     entryId: string,

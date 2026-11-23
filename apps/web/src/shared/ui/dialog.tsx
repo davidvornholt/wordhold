@@ -12,6 +12,9 @@ type ModalProps = {
   readonly open: boolean;
   // False while a change is being saved, so Escape cannot drop it.
   readonly closable: boolean;
+  // What Escape asks for while the dialog is closable.
+  readonly onCancel: () => void;
+  // Sets `open` to false once the dialog has closed, however it closed.
   readonly onClose: () => void;
   // Where focus goes on closing when the control that opened the dialog may
   // be gone by then. Otherwise focus returns to that control.
@@ -30,10 +33,12 @@ type ModalProps = {
 // once the dialog is shown: a field that takes focus on mount then gets it,
 // and every opening starts from a fresh form. Showing and closing happen
 // before the browser paints, so the dialog never appears without its
-// content.
+// content. The browser lets a page hold Escape back only once per user
+// activation and then closes the dialog itself, which `open` then follows.
 export const Modal = ({
   open,
   closable,
+  onCancel,
   onClose,
   returnFocusRef,
   labelledBy,
@@ -52,12 +57,15 @@ export const Modal = ({
     if (open && !dialog.open) {
       dialog.showModal();
       setShown(true);
-    } else if (!open && dialog.open) {
-      dialog.close();
+    } else if (!open && shown) {
+      // The browser may have closed the dialog already.
+      if (dialog.open) {
+        dialog.close();
+      }
       setShown(false);
       returnFocusRef?.current?.focus();
     }
-  }, [open, returnFocusRef]);
+  }, [open, shown, returnFocusRef]);
 
   return (
     <dialog
@@ -65,8 +73,20 @@ export const Modal = ({
       aria-labelledby={labelledBy}
       className={`max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] overflow-y-auto text-foreground ${className}`}
       onCancel={(event) => {
+        // A cancel the page may not hold back closes the dialog, which the
+        // close event follows.
+        if (!event.cancelable) {
+          return;
+        }
         event.preventDefault();
         if (closable) {
+          onCancel();
+        }
+      }}
+      onClose={() => {
+        // The event comes a moment after the close, when the dialog may have
+        // been shown again.
+        if (open && dialogRef.current?.open === false) {
           onClose();
         }
       }}
@@ -79,7 +99,7 @@ export const Modal = ({
 
 type DialogProps = Omit<
   ModalProps,
-  'labelledBy' | 'describedBy' | 'className'
+  'labelledBy' | 'describedBy' | 'className' | 'onCancel'
 > & {
   readonly title: ReactNode;
   readonly description?: ReactNode;
@@ -104,6 +124,7 @@ export const Dialog = ({
       className="m-auto max-w-lg border border-border bg-card p-6 backdrop:bg-foreground/40"
       describedBy={description === undefined ? undefined : descriptionId}
       labelledBy={titleId}
+      onCancel={modal.onClose}
     >
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">

@@ -148,6 +148,50 @@ test('Escape closes a blank card at once', async ({ page }) => {
   await expect(entryDialog(page)).toBeHidden();
 });
 
+// Pressing Escape is no user activation, so the browser closes the dialog on a
+// second Escape right after the first, whatever the page does (see Modal).
+// The next opening must still start from a blank card.
+test('a second Escape while a word is filed closes the dialog', async ({
+  page,
+}) => {
+  await page.goto('/?state=unit&filing=slow');
+  const opener = page.getByRole('button', { name: 'Vokabel eintragen' });
+  await opener.click();
+  await targetField(page).fill('journey');
+  await nativeField(page).fill('die Reise');
+  await nativeField(page).press('Enter');
+  await expect(status(page)).toHaveText('„journey“ wird eingetragen …');
+  // Until the browser moves focus off the disabled field, a key pressed there
+  // goes nowhere.
+  await expect(nativeField(page)).not.toBeFocused();
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
+  await expect(entryDialog(page)).toBeHidden();
+  await expect(opener).toBeFocused();
+
+  await opener.click();
+  await expect(targetField(page)).toBeFocused();
+  await expect(targetField(page)).toHaveValue('');
+  await expect(nativeField(page)).toHaveValue('');
+  await expect(status(page)).toHaveText('');
+});
+
+test('a second Escape discards a held word', async ({ page }) => {
+  await page.goto('/?state=unit');
+  const opener = page.getByRole('button', { name: 'Vokabel eintragen' });
+  await opener.click();
+  await targetField(page).fill('journey');
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
+  await expect(entryDialog(page)).toBeHidden();
+  await expect(opener).toBeFocused();
+
+  await opener.click();
+  await expect(targetField(page)).toBeFocused();
+  await expect(targetField(page)).toHaveValue('');
+  await expect(status(page)).toHaveText('');
+});
+
 test('a repeated word is pointed out before it is sent', async ({ page }) => {
   await page.goto('/?state=unit');
   await page.getByRole('button', { name: 'Vokabel eintragen' }).click();

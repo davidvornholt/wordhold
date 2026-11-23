@@ -38,7 +38,8 @@ export const EntryDialog = ({
       closable={true}
       describedBy={place === undefined ? undefined : placeId}
       labelledBy={titleId}
-      onClose={() => (requestCloseRef.current ?? onClose)()}
+      onCancel={() => (requestCloseRef.current ?? onClose)()}
+      onClose={onClose}
       open={open}
       returnFocusRef={returnFocusRef}
     >
