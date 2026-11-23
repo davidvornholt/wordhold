@@ -16,7 +16,6 @@ const nativeField = (page: Page) =>
   page.getByRole('textbox', { exact: true, name: 'Deutsch' });
 const entryDialog = (page: Page) =>
   page.getByRole('dialog', { name: 'Vokabeln eintragen' });
-// A filed row shows the word, then its translation.
 const filedJourney = /journey.*die Reise/u;
 const filedIsland = /island.*die Insel/u;
 const filedEntries = (page: Page, heading: string) =>
@@ -61,7 +60,6 @@ test('a unit takes typed vocabulary one word after another', async ({
   ]);
   assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
 
-  // Enter on the one side written moves to the other.
   await target.fill('island');
   await target.press('Enter');
   await expect(nativeField(page)).toBeFocused();

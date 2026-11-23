@@ -54,13 +54,9 @@ const ReviewHint = ({
   );
 };
 
-// The example sentence and its German translation, written on a card under
-// the word. Without a sentence, it is only offered, so the card shows the
-// word and nothing that has to be filled in: write one with AI or by hand.
-// Then the sentence is written on a line of its own, which offers to write
-// one while it is empty, and its translation a size smaller on the line
-// below. The translation line is there from the start, so writing the
-// sentence moves nothing.
+// Until there is a sentence, only the offer shows, so the card has no empty
+// field that looks as if it had to be filled in. The translation line shows
+// with the sentence line, so writing the sentence moves nothing.
 export const ExampleDraftEditor = <T extends ExampleDraft>({
   reviewStep,
   targetLanguage,
@@ -70,8 +66,8 @@ export const ExampleDraftEditor = <T extends ExampleDraft>({
   const sentenceId = useId();
   const sentenceRef = useRef<HTMLInputElement>(null);
   // Whether the sentence line is shown. Once a sentence is there or the
-  // learner chose to write one, it stays for the rest of the card, so clearing
-  // the sentence to write another keeps the line and its focus.
+  // learner chose to write one, the line stays while the editor is mounted,
+  // so clearing the sentence to write another keeps the line and its focus.
   const [writing, setWriting] = useState(false);
   if (!writing && input.entry.example !== '') {
     setWriting(true);

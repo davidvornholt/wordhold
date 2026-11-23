@@ -24,7 +24,6 @@ type EntryCardProps = {
   // Whether Enter in the last field files the card, which "Eintragen" then
   // shows. A text takes Enter as a new line.
   readonly enterFiles: boolean;
-  // The fields written on the card.
   readonly children: ReactNode;
 };
 
@@ -45,11 +44,9 @@ const statusTone = (card: EntryCardProps['card']) => {
 };
 
 // The top card of a stack of blank index cards, which carries the dialog's
-// title, and the entries filed from it below. The two buttons sit side by
-// side where the typing ends and mean one thing each: "Eintragen" files the
-// entry and takes the next card, "Schließen" closes. The fields are mounted
-// anew for each card, so whatever a field kept of the last entry, such as a
-// proposal's hint, goes with it.
+// title, and the entries filed from it below. The fields are mounted anew for
+// each card, so whatever a field kept of the last entry, such as a proposal's
+// hint, goes with it.
 export const EntryCard = ({
   card,
   nouns,
