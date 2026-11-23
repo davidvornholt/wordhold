@@ -1,7 +1,7 @@
 import { scanWcag22AaViolations } from '@davidvornholt/a11y-testing/axe';
 import { expect, test } from '@playwright/test';
 import { assertNoAccessibilityViolations } from './a11y-assertions';
-import { releaseHeldRequestsKey } from './held-requests';
+import { releaseHeldRequests } from './held-requests';
 
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
@@ -176,10 +176,7 @@ test('a skip that finishes after the browser closed the dialog stays out of the 
   await expect(dialog).toBeHidden();
   await listener.evaluate(({ closed }) => closed);
 
-  await page.evaluate(
-    (key) => Reflect.get(globalThis, key)(),
-    releaseHeldRequestsKey,
-  );
+  await page.evaluate(releaseHeldRequests);
   // memory has nothing left to skip once the skip is stored.
   await menuButton.click();
   await expect(openDialog).toHaveCount(0);

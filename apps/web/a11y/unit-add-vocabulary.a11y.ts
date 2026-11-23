@@ -1,6 +1,7 @@
 import { scanWcag22AaViolations } from '@davidvornholt/a11y-testing/axe';
 import { expect, test } from '@playwright/test';
 import { assertNoAccessibilityViolations } from './a11y-assertions';
+import { releaseHeldRequests } from './held-requests';
 
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
@@ -152,19 +153,34 @@ test('Escape closes a blank card at once', async ({ page }) => {
 test('a second Escape while a word is filed closes the dialog', async ({
   page,
 }) => {
-  await page.goto('/?state=unit&filing=slow');
+  await page.goto('/?state=unit&hold=filing');
   const opener = page.getByRole('button', { name: 'Vokabel eintragen' });
   await opener.click();
   await targetField(page).fill('journey');
   await nativeField(page).fill('die Reise');
   await nativeField(page).press('Enter');
-  await expect(status(page)).toHaveText('„journey“ wird eingetragen …');
+  const filing = '„journey“ wird eingetragen …';
+  await expect(status(page)).toHaveText(filing);
   // Until the browser moves focus off the disabled field, a key pressed there
   // goes nowhere.
   await expect(nativeField(page)).not.toBeFocused();
+  // Playwright reads the page with a user gesture, which would let the page
+  // hold the second Escape back too. So the page notes whether the dialog is
+  // still open after each Escape, and the test reads that afterwards.
+  const openAfterEscapes = await entryDialog(page).evaluateHandle(
+    (dialog: HTMLDialogElement) => {
+      const open: Array<boolean> = [];
+      document.addEventListener('keyup', () => open.push(dialog.open));
+      return open;
+    },
+  );
   await page.keyboard.press('Escape');
   await page.keyboard.press('Escape');
   await expect(entryDialog(page)).toBeHidden();
+  // The first Escape left the filing card open, and the second closed it
+  // while the word was still held.
+  expect(await openAfterEscapes.jsonValue()).toEqual([true, false]);
+  await page.evaluate(releaseHeldRequests);
   await expect(opener).toBeFocused();
 
   await opener.click();
