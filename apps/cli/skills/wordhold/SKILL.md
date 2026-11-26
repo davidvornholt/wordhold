@@ -1,20 +1,16 @@
 ---
 name: wordhold
-description: Read and add to the user's vocabulary in Wordhold with the wordhold command. Use when the user asks about the words, terms or texts they are learning, whether they already have a word, how their practice is going, which words they keep getting wrong, wants a word they came across added, an entry corrected or words sorted into units, or prepares for a vocabulary test at school.
+description: Use when the user asks about or wants to change the vocabulary, terms or texts they are learning, or prepares for a vocabulary test.
 ---
 
 # Wordhold
 
-Run `wordhold --help` for commands and `wordhold <command> --help` for options. Output is JSON on stdout. Errors are JSON on stderr, `{"error":{"tag","message"}}`, and exit 1, or 2 for invalid arguments. Messages from Wordhold itself, such as a duplicate word, are in German.
+Run `wordhold --help` for commands and `wordhold <command> --help` for options.
 
-- If a command reports `NotSignedIn`, ask the user to run `wordhold login` in their own terminal. It opens the browser and waits for the user to approve the code there, so don't run it yourself. `wordhold status` shows who is signed in.
-- Use the ids that commands print. `wordhold courses list` gives each course's id and kind; `wordhold courses get <id>` lists a language course's books and units.
-- A course's kind says what an entry's two texts are. In a `language` course, `targetText` is the word in the course's `targetLanguage` and `nativeText` its German meaning, and words live in books and units. In a `terms` course they are a German term and its definition; in a `texts` course a title and the text to learn word for word. Terms and texts have no books, units or examples.
-- Before adding, search with `wordhold entries search` and ask the user before adding something the course already has. Like the app, Wordhold refuses only an exact repeat, with the same spelling and example sentence; the same word in another case or with another example is saved as a second entry. Write words the way the course's other entries are written, for example with or without an article.
-- Wordhold stores an `--example` as one the user came across. Write an example yourself only when the user asks, because the app writes a missing one when the word comes up in practice, and pass `--example-by-ai` with it so the app marks it as written by AI.
-- Change an entry only when the user asks or agrees. Changing a word's `targetText` records its pronunciation again, and changing a term's definition clears its key points until the app derives them again.
-- A word with synonyms or antonyms gets a practice card that asks for them, and `--no-synonyms` or `--no-antonyms` deletes that card with its schedule. Daily reviews ask these cards only while "Synonyme und Gegenteile" is switched on in the course's settings, which `wordhold courses get` shows as `to_synonym` and `to_antonym` in `directions`. Tests and practice of chosen words ask them either way.
-- A test (`wordhold exams`) is a set of a course's words and the directions it asks them in, for a test at school. The user practises it in rounds in the app; a round asks every learned card of the test once and counts the first answer per card, and it doesn't change the learning plan beyond an ordinary answer. `wordhold exams get` shows the newest finished round, the one before, how many cards were right in both, and the cards missed. Wordhold gives no verdict on whether the user is ready, so report these numbers rather than one of your own. Cards the user hasn't learned yet are not asked; `cards.unlearned` counts them, and `cards.switchedOff` those of them in a direction the course has switched off, which the user meets only after switching it on in the course's settings.
+- If a command reports `NotSignedIn`, ask the user to run `wordhold login` in their own terminal, because it waits for them to approve a code in the browser.
+- A course's kind says what an entry's two texts are. In a `language` course, `targetText` is the word in the course's `targetLanguage` and `nativeText` its German meaning. In a `terms` course they are a German term and its definition, and in a `texts` course a title and the text to learn word for word.
+- Before adding, search with `wordhold entries search` and ask the user before adding something the course already has, because Wordhold refuses only an exact repeat. Write words the way the course's other entries are written, for example with or without an article.
+- Wordhold stores an `--example` as one the user came across. Write one yourself only when the user asks, and pass `--example-by-ai` with it.
+- Change entries, create units or move words only when the user asks or agrees. Changing a word's `targetText` records its pronunciation again, changing a term's definition clears its key points, and `--no-synonyms` or `--no-antonyms` deletes that practice card with its schedule.
+- `wordhold exams get` shows how the last two rounds of a test went. Report its numbers rather than a verdict of your own on whether the user is ready. Cards the user hasn't learned yet aren't asked; `cards.unlearned` counts them.
 - Due times such as `nextDueAt` are UTC instants. A card due on a later day than its last answer is due from the start of that day in the user's time zone, so name the day, and give a time only for a card due later today.
-- Create units or move words only when the user asks or agrees.
-- Deleting entries, deleting tests, practising rounds, a course's practice directions, new courses and books, and the order of units are done in the app, not with this command.
