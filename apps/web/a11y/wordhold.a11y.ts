@@ -1,6 +1,9 @@
 import { scanWcag22AaViolations } from '@davidvornholt/a11y-testing/axe';
 import { expect, test } from '@playwright/test';
-import { assertNoAccessibilityViolations } from './a11y-assertions';
+import {
+  assertNoAccessibilityViolations,
+  inputEdgeContrasts,
+} from './a11y-assertions';
 import { fixtureStates } from './fixture-state';
 
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
@@ -16,6 +19,23 @@ for (const state of fixtureStates) {
     await expect(page.locator('main')).toHaveCount(1);
     await expect(page.locator('body')).toHaveAttribute('data-fixture', state);
     assertNoAccessibilityViolations(await scanWcag22AaViolations(page));
+  });
+
+  test(`${state} draws field and control edges at 3:1 in light and dark`, async ({
+    page,
+  }) => {
+    await page.goto(`/?state=${state}`);
+    await expect(page.locator('body')).toHaveAttribute('data-fixture', state);
+    for (const colorScheme of ['light', 'dark'] as const) {
+      await page.emulateMedia({ colorScheme });
+      const faint = (await inputEdgeContrasts(page))
+        .filter(({ contrast }) => contrast < 3)
+        .map(
+          ({ control, contrast }) =>
+            `${colorScheme}: ${control} at ${contrast.toFixed(2)}:1`,
+        );
+      expect(faint).toEqual([]);
+    }
   });
 }
 
