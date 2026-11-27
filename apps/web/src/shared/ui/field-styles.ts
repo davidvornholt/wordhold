@@ -31,7 +31,7 @@ export const fieldOnCardClass = `min-h-11 border border-input bg-background px-3
 
 // For the ruled lines of the verification ledger: the field is the line it
 // is written on, like an entry in a vocabulary notebook.
-export const ledgerFieldClass = `min-h-10 w-full border-input border-b border-dotted bg-transparent px-1 py-2 text-base placeholder:text-muted-foreground hover:border-foreground/40 hover:border-solid disabled:text-muted-foreground ${focusRing}`;
+export const ledgerFieldClass = `min-h-10 w-full border-input border-b border-dotted bg-transparent px-1 py-2 text-base placeholder:text-muted-foreground hover:border-foreground hover:border-solid disabled:text-muted-foreground ${focusRing}`;
 
 // The lines of an entry card, where a word, term or text is written down or
 // corrected the way an answer is written on a practice card: on a rule that

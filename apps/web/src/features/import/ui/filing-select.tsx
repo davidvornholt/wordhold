@@ -4,7 +4,7 @@ import { focusRing } from '../../../shared/ui/field-styles';
 
 // Where the page's words are filed, book and unit, set in the display face
 // like the heading of a notebook page.
-const filingFieldClass = `min-h-11 w-full border-input border-b bg-transparent py-1 pl-1 font-display text-xl placeholder:text-muted-foreground hover:border-foreground/40 disabled:text-muted-foreground ${focusRing}`;
+const filingFieldClass = `min-h-11 w-full border-input border-b bg-transparent py-1 pl-1 font-display text-xl placeholder:text-muted-foreground hover:border-foreground disabled:text-muted-foreground ${focusRing}`;
 
 export const FilingSelect = (props: ComponentProps<'select'>) => (
   <div className="relative">

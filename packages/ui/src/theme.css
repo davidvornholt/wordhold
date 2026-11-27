@@ -8,6 +8,9 @@
  * Motion tokens are the only durations and easings in the app. Reduced
  * motion zeroes the durations, so every transition and animation that
  * consumes them completes instantly without a per-site guard.
+ * --input draws the only edge of a field, a checkbox or an outline button,
+ * so it keeps at least 3:1 against both --background and --card (WCAG
+ * 1.4.11). The accessibility suite measures it on every fixture.
  */
 @layer overrides {
   :root {
@@ -32,7 +35,7 @@
     --destructive: oklch(46% 0.14 28);
     --destructive-foreground: oklch(97.5% 0.008 92);
     --border: oklch(86% 0.015 100);
-    --input: oklch(82% 0.018 100);
+    --input: oklch(61% 0.018 100);
     --ring: oklch(43% 0.09 155);
     --radius: 0px;
     --font-display: "Spectral", georgia, serif;
@@ -58,7 +61,7 @@
       --destructive: oklch(64% 0.15 28);
       --destructive-foreground: oklch(16% 0.02 28);
       --border: oklch(31% 0.02 152);
-      --input: oklch(35% 0.022 152);
+      --input: oklch(55% 0.022 152);
       --ring: oklch(72% 0.1 152);
     }
   }
