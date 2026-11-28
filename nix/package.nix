@@ -2,6 +2,7 @@
 # share/wordhold-cli/skills/<skill>. passthru.skills names them.
 {
   bun,
+  callPackage,
   lib,
   stdenvNoCC,
   version,
@@ -14,32 +15,14 @@ let
     lib.filterAttrs (_name: type: type == "directory") (builtins.readDir ../apps/cli/skills)
   );
   # The CLI's runtime dependencies only; the compiled binary bundles them.
-  # The name holds Bun's version and a digest of bun.lock, so a change to either
-  # installs them again and fails on a stale hash instead of silently reusing
-  # the old dependencies.
-  lockDigest = builtins.substring 0 12 (builtins.hashFile "sha256" ../bun.lock);
-  nodeModules = stdenvNoCC.mkDerivation {
-    name = "${pname}-node-modules-bun-${bun.version}-${lockDigest}";
-    inherit src;
-    nativeBuildInputs = [ bun ];
-    dontConfigure = true;
-    buildPhase = ''
-      runHook preBuild
-      export HOME=$TMPDIR BUN_INSTALL_CACHE_DIR=$TMPDIR/bun-cache
-      bun install --frozen-lockfile --production --ignore-scripts --no-progress --filter @wordhold/cli
-      runHook postBuild
-    '';
-    installPhase = ''
-      runHook preInstall
-      mkdir "$out"
-      find . -type d -name node_modules -prune -print0 | tar --null --files-from=- -cf - | tar -C "$out" -xf -
-      runHook postInstall
-    '';
-    dontFixup = true;
-    outputHash = "sha256-3/ri2RvbHhQTa0w04z83g+BCOQ+Rz0VTlA3/uLG3JDE=";
-    outputHashAlgo = "sha256";
-    outputHashMode = "recursive";
-    impureEnvVars = lib.fetchers.proxyImpureEnvVars;
+  # bun-lock-deps.nix fetches them by the hashes in bun.lock.
+  nodeModules = callPackage ./bun-lock-deps.nix {
+    inherit bun src;
+    name = "${pname}-node-modules";
+    installFlags = [
+      "--filter"
+      "@wordhold/cli"
+    ];
   };
 in
 stdenvNoCC.mkDerivation {
